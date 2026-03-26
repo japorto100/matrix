@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__search_repositories",
+      "mcp__github__search_code",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "WebFetch(domain:servers.joinmatrix.org)",
+      "Bash(find D:/tradingview-clones/tradeview-fusion -name golangci* -o -name .golangci*)",
+      "WebFetch(domain:tuwunel.chat)",
+      "WebFetch(domain:matrix-construct.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:matrix.org)",
+      "Bash(find /d/tradingview-clones/tradeview-fusion/go-backend -type f -name *.go)",
+      "Bash(find /d/tradingview-clones/tradeview-fusion/python-backend/python-agent -maxdepth 2 -name *.py)",
+      "Bash(find /d/tradingview-clones/tradeview-fusion/python-backend/python-compute -maxdepth 2 -name *.py)",
+      "Bash(find /d/tradingview-clones/tradeview-fusion/python-backend -name shared.py -o -name __init__.py -path */shared/*)",
+      "Bash(find D:tradingview-clonestradeview-fusiongo-backend -name *crypto* -type f)",
+      "WebFetch(domain:maunium.net)",
+      "WebFetch(domain:docs.mau.fi)",
+      "Bash(bunx tsc:*)",
+      "Bash(find /d/matrix/nextjs-chat -name *.go)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:spec.matrix.org)",
+      "Bash(find /d/matrix -path */mautrix/crypto/*.go)",
+      "Read(//c/Users/dj_fi/go/pkg/mod/**)",
+      "WebFetch(domain:element-hq.github.io)",
+      "Bash(find /c/Users/dj_fi/go/pkg/mod/cache /d/matrix/go-appservice -name cross_sign*.go)",
+      "WebFetch(domain:sourcegraph.com)",
+      "Bash(grep '\"\"matrix-js-sdk\"\"' package.json)",
+      "Bash(bunx @biomejs/biome check --write src/components/matrix/Message.tsx src/components/matrix/MatrixProvider.tsx src/lib/matrix/types.ts src/lib/matrix/hooks/useTimeline.ts src/lib/matrix/hooks/useCall.ts src/lib/matrix/hooks/useCrossSigning.ts)",
+      "Bash(bunx @biomejs/biome check --write src/components/matrix/Message.tsx)",
+      "Bash(bunx @biomejs/biome check --write --unsafe src/components/matrix/Message.tsx)",
+      "Bash(bunx @biomejs/biome check --write src/lib/matrix/client.ts src/app/api/matrix/preview/route.ts src/components/matrix/UrlPreview.tsx)",
+      "Bash(bunx @biomejs/biome check --write src/lib/matrix/types.ts)",
+      "Bash(npm view:*)",
+      "Bash(find /d/matrix -type f -name *.ts -o -name *.js)",
+      "mcp__matrix-next__browser_eval"
+    ]
+  }
+}

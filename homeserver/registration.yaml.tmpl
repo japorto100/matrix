@@ -1,0 +1,41 @@
+# Matrix Appservice Registration Template
+# Diese Datei wird vom Go Appservice generiert:
+#   cd go-appservice && go run ./cmd/appservice/... --generate-registration
+#
+# Nach Generierung: Tuwunel neu starten (liest registration.yaml beim Start)
+#
+# TOKENS: Mit folgendem Befehl generieren (PowerShell):
+#   [System.Convert]::ToHexString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLower()
+# Oder WSL:
+#   openssl rand -hex 32
+
+id: "trading-agent-appservice"
+
+# URL des Go Appservice — muss von Tuwunel erreichbar sein
+url: "http://localhost:29318"
+
+# Tokens für Authentifizierung (Go Appservice ↔ Tuwunel)
+# as_token: Appservice → Homeserver (Go sendet diesen)
+# hs_token: Homeserver → Appservice (Tuwunel sendet diesen, Go verifiziert)
+as_token: "REPLACE_WITH_GENERATED_AS_TOKEN"
+hs_token: "REPLACE_WITH_GENERATED_HS_TOKEN"
+
+# Lokale Matrix-User-ID des Appservice selbst
+sender_localpart: "appservice-bot"
+
+# Namespace: Welche User-IDs kontrolliert der Appservice?
+# exclusive: true → nur Appservice darf diese User-IDs erstellen
+namespaces:
+  users:
+    - exclusive: true
+      regex: "@agent-.*:matrix\\.local"  # Dev
+    # - exclusive: true
+    #   regex: "@agent-.*:matrix\\.yourdomain\\.com"  # Production
+  rooms: []
+  aliases: []
+
+# Appservice ist nicht rate-limited (wichtig für schnelle Bot-Antworten)
+rate_limited: false
+
+# Protokoll-Version
+protocols: []

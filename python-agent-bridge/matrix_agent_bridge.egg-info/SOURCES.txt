@@ -1,0 +1,12 @@
+pyproject.toml
+agent_bridge/__init__.py
+agent_bridge/agent_client.py
+agent_bridge/app.py
+agent_bridge/config.py
+agent_bridge/matrix_client.py
+matrix_agent_bridge.egg-info/PKG-INFO
+matrix_agent_bridge.egg-info/SOURCES.txt
+matrix_agent_bridge.egg-info/dependency_links.txt
+matrix_agent_bridge.egg-info/requires.txt
+matrix_agent_bridge.egg-info/top_level.txt
+tests/test_config.py

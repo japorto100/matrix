@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# setuptools editable install creates a .pth file pointing to python-backend/.
+# This adds python-backend/ to the venv sys.path, making services._shared.*
+# importable in all workspace members without any sys.path manipulation in
+# application code. ml_ai/ has been merged into python-agent/ and python-compute/.
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = true
+include = ["shared*", "scripts*"]
+
+[tool.uv.workspace]
+members = ["python-agent", "python-compute", "python-ingest-workers"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.13.0",
+    "ty>=0.0.1a5",                      # Astral type checker — alpha, evaluate-only
+    "basedpyright>=1.34.0",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.23",
+    "pytest-xdist>=3.6",
+    # Build tools (not runtime)
+    "maturin>=1.7,<2",                  # Rust extension build (rust_core)
+    # Type stubs — needed by basedpyright for python-compute sub-module
+    "pandas-stubs>=3.0.0.260204",
+    "scipy-stubs>=1.17.1.0",
+    "scikit-learn-stubs>=0.0.3",
+]
+
+[project]
+name = "tradeview-fusion-python-backend"
+version = "0.1.0"
+description = "Shared service foundation (services/_shared/) — app_factory, cache_adapter, gRPC IPC"
+requires-python = ">=3.11"
+dependencies = [
+    # ── HTTP framework (app_factory.py) ──────────────────────────────────────
+    "fastapi==0.116.1",
+    "uvicorn==0.35.0",
+    # python_runtime_eval_delta: Granian (Rust/Tokio ASGI server, drop-in for uvicorn)
+    "granian>=2.0.0",
+    "python-dotenv==1.0.1",
+    # httpx: required by ipc_servicer.py via starlette.testclient.TestClient
+    # (starlette does NOT pull httpx automatically — must be declared explicitly)
+    "httpx==0.28.1",
+    # ── Cache adapter (services/_shared/cache_adapter.py) ────────────────────
+    # redis-py 5.x works with Redis server 5.0+ (RESP2 default) and Valkey (wire-compatible)
+    "redis>=5.0.0",
+    # ── gRPC IPC (grpc_server.py + ipc_servicer.py) ──────────────────────────
+    "grpcio>=1.68.0",
+    "grpcio-tools>=1.68.0",
+    "protobuf>=5.28.0",
+    # ── NATS JetStream (Cross-Service Event Bus) ─────────────────────────────
+    # python-agent: subscribes signals.*, publishes agent-events.
+    # python-ingest: publishes normalised raw data.
+    # Workspace-root declaration — all members inherit it (same pattern as redis/grpcio).
+    "nats-py>=2.7.0",
+    # ── Rust extension (workspace-wide via transitive dep) ────────────────────
+    "tradeviewfusion-rust-core",
+    # ── OpenTelemetry (app_factory.py, opt-in via OTEL_ENABLED=true) ──────────
+    "opentelemetry-sdk>=1.29.0",
+    "opentelemetry-instrumentation-fastapi>=0.50b0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.29.0",
+    "opentelemetry-instrumentation-httpx>=0.50b0",
+    # NOTE: compute deps (polars, scipy, numpy, pandas, hmmlearn, hdbscan,
+    # yfinance, cachetools) → python-compute/pyproject.toml
+    # NOTE: agent deps (anthropic, openai, kuzu, chromadb, sentence-transformers,
+    # psycopg, opentelemetry-instrumentation-anthropic) → python-agent/pyproject.toml
+]
+
+# python_runtime_eval_delta: load testing tools for GRN.V1/PY3.V2 benchmarks
+[project.scripts]
+# uv run maturin-dev             → debug build (persistent wheel install)
+# uv run maturin-dev --release   → release build
+# uv run maturin-dev --smoke     → + smoke test all 8 public functions
+# uv run maturin-dev --develop   → maturin develop (fast, editable — may be overwritten by uv sync)
+maturin-dev = "scripts.maturin_rebuild:main"
+
+[project.optional-dependencies]
+eval = [
+    "locust>=2.24.0",
+]
+grpclib = [
+    "grpclib>=0.4.0",  # Async gRPC for Python 3.13t/nogil (GRPC_BACKEND=grpclib in ipc_servicer_async.py)
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+# Keep pytest cache inside the project dir (stays on D: if repo is on D:).
+# Override at CLI with: uv run pytest --cache-clear or -p no:cacheprovider
+cache_dir = ".pytest_cache"
+
+[tool.ruff]
+exclude = [
+    ".venv",
+    ".venv/**",
+    "**/.venv/**",
+    "archive",
+    "archive/**",
+]
+
+# Rebuild rust_core:  uv run scripts/maturin_rebuild.py [--release] [--smoke]
+# On Windows also:    .\scripts\rebuild-rust-core.ps1 [-Release] [-SmokeTest]
+
+[tool.uv.sources]
+# Rust extension: single source declaration for all workspace members.
+# python-agent, python-compute, python-ingest-workers get it transitively
+# via tradeview-fusion-python-backend — no duplicate path entry needed.
+tradeviewfusion-rust-core = { path = "rust_core" }
+tradeview-fusion-python-ingest-workers = { workspace = true }

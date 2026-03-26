@@ -1,0 +1,84 @@
+# Tuwunel v1.5.1 — Dev Config
+# Starten: wsl -d Ubuntu -u root bash -c "cd /mnt/d/matrix && ./tools/tuwunel --config ./homeserver/tuwunel.toml"
+
+[global]
+server_name = "matrix.local"
+database_path = "./homeserver/data/db"
+# Dev: 0.0.0.0 damit Mobile-Geräte im LAN zugreifen können (192.168.1.34:8448)
+# Prod: 127.0.0.1 hinter Reverse Proxy
+address = "0.0.0.0"
+port = 8448
+log = "warn"
+
+# ─── Room Version ─────────────────────────────────────────────────────────────
+# V12 = Project Hydra: State Resolution 2.1 + kryptografische Room-IDs
+default_room_version = "12"
+
+# ─── Registrierung ───────────────────────────────────────────────────────────
+allow_registration = true
+registration_token = "matrix-dev-token-2026"
+allow_guest_registration = false
+
+# ─── Federation ──────────────────────────────────────────────────────────────
+allow_federation = false
+federate_created_rooms = false
+
+# ─── E2EE ────────────────────────────────────────────────────────────────────
+# Neue Invite-Räume standardmäßig verschlüsseln
+encryption_enabled_by_default_for_room_type = "invite"
+
+# ─── Presence (B-6) ──────────────────────────────────────────────────────────
+# Für Dev aktiviert → grüner Online-Punkt in der UI.
+# Für Production mit Privacy-Anforderungen: auf false setzen.
+allow_local_presence    = true
+allow_incoming_presence = false   # Federation deaktiviert, irrelevant
+allow_outgoing_presence = false   # kein Aussenden an andere Server
+
+# ─── Media: Legacy-URLs erlauben (QW-4 / MSC3916) ───────────────────────────
+# Erlaubt /_matrix/media/v3/download/ ohne Auth-Header (Dev-Modus).
+# Für Production: auf false setzen und Next.js API-Proxy verwenden.
+allow_legacy_media = true
+
+# ─── TURN/STUN (Voice/Video Calls) ──────────────────────────────────────────
+# WICHTIG: Ohne TURN scheitern Calls wenn beide Peers hinter NAT sind.
+# coturn installieren und hier konfigurieren:
+# turn_uris = ["turn:turn.example.com?transport=udp", "turn:turn.example.com?transport=tcp"]
+# turn_secret = "coturn-shared-secret"
+# turn_ttl = 86400
+
+# ─── RocksDB / Storage ──────────────────────────────────────────────────────
+# Direct I/O: Umgeht OS-Dateisystem-Cache, schreibt direkt auf Disk.
+# - false: Sicher für WSL2+NTFS (/mnt/d/ via 9P) — devstack.ps1 Workflow
+# - true:  Schneller auf nativem Linux-Filesystem — Podman Machine (~/projects/)
+# Wenn DB auf /mnt/d/ liegt → false. Wenn DB auf ext4 (Podman) → true.
+rocksdb_direct_io = false
+
+# Backups aktivieren
+database_backup_path = "./homeserver/data/db-backups"
+database_backups_to_keep = 3
+
+# ─── URL Preview (B-5) ────────────────────────────────────────────────────────
+# Für Dev aktiviert. Für Production: Denylist einsetzen.
+# url_preview_domain_explicit_denylist = ["*"]
+
+# ─── .well-known (F-2: Client-Discovery für Mobile-Apps) ─────────────────────
+# Tuwunel bedient /.well-known/matrix/client und /server direkt.
+# Element X / FluffyChat finden den Homeserver automatisch über die Domain.
+# Dev: localhost (kein HTTPS nötig). Prod: HTTPS-Domain setzen.
+# Dev: LAN-IP damit Element X Mobile den Homeserver findet
+# Prod: HTTPS-Domain setzen (z.B. https://matrix.yourdomain.com)
+[global.well_known]
+client = "http://192.168.1.34:8448"
+server = "192.168.1.34:8448"
+
+# ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
+[global.appservice.trading-agent]
+url        = "http://127.0.0.1:8090"
+as_token   = "1afe887982fea51764e0c144f01b80c246673be07f1af00fac717ce04bf1b1ba"
+hs_token   = "14eb01ae88e2eafa0b3ce31fe80970ca51a5dc4e0c1e914b6e9bb532d810076d"
+sender_localpart = "appservice-bot"
+rate_limited = false
+
+[[global.appservice.trading-agent.namespaces.users]]
+exclusive = true
+regex = "@agent-.*:matrix\\.local"

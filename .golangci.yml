@@ -1,0 +1,91 @@
+# Run from go-backend: golangci-lint run ./...
+# Covers cmd/, internal/, pkg/ — go-crypto-trader excluded via own go.mod + paths exclusion below
+# golangci-lint v2.9+ config
+version: "2"
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+linters:
+  enable:
+    # --- standard baseline ---
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # --- code quality ---
+    - gocritic
+    - exhaustive
+    - revive
+    - nolintlint
+    - errorlint        # errors.Is/As enforcement (broken since Go 1.13 wrapping)
+    - wrapcheck        # errors from external pkgs must be wrapped
+    # --- context safety ---
+    - fatcontext       # context.WithValue() in loops grows the context chain on each iteration
+    # --- security ---
+    - gosec            # SQL injection, hardcoded secrets, weak crypto, unsafe rand
+    # --- observability ---
+    - spancheck        # unclosed OTel spans (relevant: Phase 0e OTel wiring)
+    - loggercheck      # slog/zap key-value pair validation
+    # --- database ---
+    - sqlclosecheck    # rows.Close() and statement.Close() enforcement
+    # --- modernization (requires go 1.21+ in go.mod — we have 1.26) ---
+    - modernize        # flags interface{} vs any, manual loops vs slices.Contains, etc.
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019"   # grpc.DialContext deprecation -- migration tracked separately
+        - "-ST1000"   # package comments -- not enforced yet
+        - "-ST1003"   # naming conventions -- existing code uses JsonRPC prefix
+    govet:
+      enable:
+        - shadow       # variable shadowing
+        - waitgroup    # misplaced WaitGroup.Add() (new in Go 1.25)
+        - hostport     # fmt.Sprintf host:port broken for IPv6 (new in Go 1.25)
+    revive:
+      rules:
+        - name: exported
+          disabled: true   # export comments not enforced yet
+        - name: var-naming
+          disabled: true   # existing code uses JsonRPC prefix
+    exhaustive:
+      default-signifies-exhaustive: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    gosec:
+      excludes:
+        - G104   # errors unhandled -- covered by errcheck
+        - G304   # file path from variable -- intentional in storage/object store
+    wrapcheck:
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - .Wrap(
+        - .Wrapf(
+    spancheck:
+      checks:
+        - end          # span.End() must be called
+        - record-error # span.RecordError() on error paths
+    loggercheck:
+      require-string-key: true
+      no-printf-like: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gocritic
+          - wrapcheck   # test helpers don't need full error wrapping
+          - gosec       # test code can use hardcoded values
+      - path: go-crypto-trader/
+        linters:
+          - gosec
+          - wrapcheck
+          - errorlint
+          - modernize
+    paths:
+      - vendor-forks
+      - go-crypto-trader

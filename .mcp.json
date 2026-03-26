@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "matrix-agent-bridge": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "mcp-openapi"],
+      "env": {
+        "OPENAPI_SPEC_URL": "http://127.0.0.1:8097/openapi.json"
+      }
+    },
+    "matrix-next": {
+      "type": "stdio",
+      "command": "D:/DevCache/bun/bin/next-devtools-mcp",
+      "args": [],
+      "env": {
+        "NEXTJS_URL": "http://localhost:3000"
+      }
+    }
+  }
+}

@@ -1,0 +1,104 @@
+# Dendrite v0.13 — Dev Config (privacy-optimiert, Windows Fallback)
+# Starten: tools\dendrite.exe --config homeserver\dendrite.yaml -really-enable-open-registration
+#
+# Bekannte Dendrite Privacy-Einschränkungen (v0.13):
+#   - Read Receipts können nicht deaktiviert werden (Bug #3284)
+#   - Kein Message Retention (Feature Request #3330)
+#   → Für Production: Tuwunel bevorzugen
+
+version: 2
+
+global:
+  server_name: "matrix.local"
+  private_key: D:/matrix/homeserver/dendrite_key.pem
+  key_validity_period: 168h
+
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite.db?_busy_timeout=5000&_txlock=immediate"
+    max_open_conns: 10
+    max_idle_conns: 2
+
+  cache:
+    max_size_estimated: 512mb   # reduziert (default 1gb)
+    max_age: 1h
+
+  # .well-known: Dendrite bedient KEIN .well-known selbst (anders als Tuwunel).
+  # Für Mobile-Clients (Element X): .well-known via Reverse Proxy (Nginx/Caddy) bereitstellen:
+  #   /.well-known/matrix/client → {"m.homeserver": {"base_url": "https://matrix.local:8448"}}
+  #   /.well-known/matrix/server → {"m.server": "matrix.local:8448"}
+  # Für Dev mit direkter IP (localhost:8448) nicht nötig.
+  well_known_client_name: "http://localhost:8448"
+  well_known_server_name: "localhost:8448"
+
+  # Federation deaktiviert → kein Metadaten-Leak nach außen
+  disable_federation: true
+
+  # Logging: warn-Level — minimiert geloggte User-Aktivität
+  log_level: warn
+
+  # Privacy: Metriken + Telemetrie deaktivieren
+  metrics:
+    enabled: false
+  report_stats:
+    enabled: false
+
+  # Privacy: Presence deaktivieren
+  presence:
+    enable_inbound: false    # keine Presence-Updates empfangen
+    enable_outbound: false   # eigenen Status nicht senden
+
+app_service_api:
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_appservice.db"
+  config_files:
+    - D:/matrix/homeserver/registration.yaml
+
+client_api:
+  registration_disabled: false
+  registration_requires_token: true
+  guests_disabled: true
+  turn_uris: []
+
+  # Privacy: URL Preview deaktivieren
+  # (Dendrite hat keine granulare Kontrolle — proxy wird einfach nicht aktiviert)
+
+federation_api:
+  send_max_retries: 0
+  disable_tls_validation: true
+
+media_api:
+  base_path: D:/matrix/homeserver/data/media
+  max_file_size_bytes: 10485760   # 10 MB
+  dynamic_thumbnails: false
+
+  # Privacy: Remote Media Cache minimieren
+  max_size_estimated: 256mb
+  max_age: 30m
+
+room_server:
+  default_room_version: "12"
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_roomserver.db"
+
+sync_api:
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_syncapi.db"
+  # Privacy: Kein Real-IP Header — keine IP-Weitergabe
+  real_ip_header: ""
+
+user_api:
+  bcrypt_cost: 10
+  auto_join_rooms: []
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_userapi.db"
+
+key_server:
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_keyserver.db"
+
+relay_api:
+  database:
+    connection_string: "file:D:/matrix/homeserver/data/dendrite_relay.db"
+
+mscs:
+  mscs: []

@@ -1,0 +1,83 @@
+# Run from go-appservice: golangci-lint run ./...
+# golangci-lint v2.9+ config — identisch mit Hauptprojekt
+version: "2"
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  build-tags:
+    - goolm   # Pure-Go Olm (kein libolm/CGO nötig — Windows-kompatibel)
+linters:
+  enable:
+    # --- standard baseline ---
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # --- code quality ---
+    - gocritic
+    - exhaustive
+    - revive
+    - nolintlint
+    - errorlint
+    - wrapcheck
+    # --- context safety ---
+    - fatcontext
+    # --- security ---
+    - gosec
+    # --- observability ---
+    - spancheck
+    - loggercheck
+    # --- database ---
+    - sqlclosecheck
+    # --- modernization (requires go 1.21+ in go.mod — we have 1.26) ---
+    - modernize
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019"   # deprecated API calls -- migration tracked separately
+        - "-ST1000"   # package comments -- not enforced yet
+        - "-ST1003"   # naming conventions
+    govet:
+      enable:
+        - shadow
+        - waitgroup
+        - hostport
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: var-naming
+          disabled: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    gosec:
+      excludes:
+        - G104   # errors unhandled -- covered by errcheck
+        - G304   # file path from variable -- intentional
+    wrapcheck:
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Unwrap(
+        - .Wrap(
+        - .Wrapf(
+    spancheck:
+      checks:
+        - end
+        - record-error
+    loggercheck:
+      require-string-key: true
+      no-printf-like: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gocritic
+          - wrapcheck
+          - gosec

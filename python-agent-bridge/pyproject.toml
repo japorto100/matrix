@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = true
+include = ["agent_bridge*"]
+
+[project]
+name = "matrix-agent-bridge"
+version = "0.1.0"
+description = "Matrix Bot Bridge — verbindet Matrix-Räume mit dem bestehenden Agent-Service"
+requires-python = ">=3.11"
+dependencies = [
+    # ── HTTP Framework ──────────────────────────────────────────────────────
+    "fastapi==0.116.1",
+    "uvicorn==0.35.0",
+    "httpx==0.28.1",
+    "python-dotenv==1.0.1",
+    "pydantic>=2.0",
+
+    # ── Matrix Client ───────────────────────────────────────────────────────
+    # matrix-nio: async, sans-I/O, aktiv Feb 2026
+    # [e2e] Extra weggelassen — libolm nicht auf Windows verfügbar (Phase 1: kein E2EE)
+    # Für Phase 2 (E2EE): WSL/Linux verwenden wo libolm installierbar ist
+    "matrix-nio>=0.24.0",  # kein [e2e] — Go Appservice übernimmt E2EE (Option C)
+
+    # ── Message Queue (NATS — für Go Appservice Koordination) ──────────────
+    "nats-py>=2.7.0",
+
+    # ── Cache / State ───────────────────────────────────────────────────────
+    "redis>=5.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.13.0",
+    "basedpyright>=1.34.0",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.ruff]
+exclude = [".venv", ".venv/**", "data/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+# ─── Start ──────────────────────────────────────────────────────────────────
+# uv sync
+# uv run uvicorn agent_bridge.app:app --host 127.0.0.1 --port 8097 --reload
+#
+# Bot registrieren (einmalig):
+# uv run python scripts/register_bot.py

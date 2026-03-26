@@ -1,0 +1,82 @@
+# Tuwunel Matrix Homeserver — Production Config Template
+# Kommentiert — Werte anpassen und als tuwunel.toml deployen
+#
+# Empfohlenes Setup:
+#   - Nginx/Caddy als TLS-terminierende Reverse Proxy
+#   - Tuwunel hört auf 127.0.0.1:6167 (intern)
+#   - Nginx leitet /_matrix/* und /.well-known/matrix/* weiter
+
+[global]
+server_name = "matrix.yourdomain.com"
+database_path = "/var/lib/tuwunel/db"
+address = "127.0.0.1"
+port = 6167
+log = "warn,tuwunel=info"
+
+# ─── Room Version ─────────────────────────────────────────────────────────────
+default_room_version = "12"
+
+# ─── Registrierung ───────────────────────────────────────────────────────────
+allow_registration = true
+registration_token = "REPLACE_WITH_SECURE_TOKEN"
+allow_guest_registration = false
+
+# ─── Federation ──────────────────────────────────────────────────────────────
+# Aktivieren wenn externe Homeserver (z.B. matrix.org) kommunizieren sollen
+allow_federation = true
+federate_created_rooms = true
+
+# ─── E2EE ────────────────────────────────────────────────────────────────────
+encryption_enabled_by_default_for_room_type = "invite"
+
+# ─── Presence ────────────────────────────────────────────────────────────────
+allow_local_presence = true
+allow_incoming_presence = true
+allow_outgoing_presence = true
+
+# ─── Media ───────────────────────────────────────────────────────────────────
+# Produktion: Legacy Media deaktivieren, Next.js Media-Proxy nutzen
+allow_legacy_media = false
+
+# ─── .well-known (Client-Discovery für Mobile-Apps) ─────────────────────────
+# Element X / FluffyChat finden den Homeserver automatisch über die Domain.
+[global.well_known]
+client = "https://matrix.yourdomain.com"
+server = "matrix.yourdomain.com:443"
+
+# ─── TURN/STUN (Voice/Video Calls) ──────────────────────────────────────────
+# WICHTIG: Ohne TURN scheitern Calls wenn beide Peers hinter NAT sind.
+turn_uris = ["turn:turn.yourdomain.com?transport=udp", "turn:turn.yourdomain.com?transport=tcp"]
+turn_secret = "REPLACE_WITH_COTURN_SHARED_SECRET"
+turn_ttl = 86400
+
+# ─── RocksDB / Storage ──────────────────────────────────────────────────────
+# true auf nativem Linux (Produktion), false auf WSL2+NTFS (Dev)
+rocksdb_direct_io = true
+database_backup_path = "/var/lib/tuwunel/db-backups"
+database_backups_to_keep = 5
+
+# ─── SSO/OIDC (Tuwunel Legacy SSO, KEIN MAS) ────────────────────────────────
+# Tuwunel agiert als OIDC-Client → leitet User zu NextAuth weiter.
+# MAS funktioniert NICHT mit Tuwunel (nur Synapse). Legacy SSO seit v1.5.0.
+# [global.identity_provider.nextauth]
+# issuer = "https://app.yourdomain.com"
+# client_id = "tuwunel-matrix"
+# client_secret_file = "/secrets/oidc-secret"
+# registration = true
+# trusted = true
+
+# ─── URL Preview ─────────────────────────────────────────────────────────────
+# url_preview_domain_explicit_denylist = ["*"]
+
+# ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
+[global.appservice.trading-agent]
+url        = "http://127.0.0.1:8090"
+as_token   = "REPLACE_WITH_AS_TOKEN"
+hs_token   = "REPLACE_WITH_HS_TOKEN"
+sender_localpart = "appservice-bot"
+rate_limited = false
+
+[[global.appservice.trading-agent.namespaces.users]]
+exclusive = true
+regex = "@agent-.*:matrix\\.yourdomain\\.com"
