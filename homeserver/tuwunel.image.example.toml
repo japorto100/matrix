@@ -13,8 +13,9 @@ default_room_version = "12"
 
 # ─── Registrierung ───────────────────────────────────────────────────────────
 allow_registration = true
-registration_token = "matrix-dev-token-2026"
+registration_token = "REPLACE_WITH_REGISTRATION_TOKEN"
 allow_guest_registration = false
+auto_join_rooms = ["#general:matrix.local"]
 
 # ─── Federation ──────────────────────────────────────────────────────────────
 allow_federation = false
@@ -30,7 +31,12 @@ allow_incoming_presence = false
 allow_outgoing_presence = false
 
 # ─── Media ─────────────────────────────────────────────────────────────────
+max_request_size = 524288000  # 500 MB
 allow_legacy_media = true
+
+# ─── URL Preview ─────────────────────────────────────────────────────────────
+# Deaktiviert (SSRF-Risiko). Siehe specs/16-security.md.
+# url_preview_domain_contains_allowlist = [""]
 
 # ─── RocksDB / Storage ──────────────────────────────────────────────────────
 # Container = ext4 → Direct I/O sicher
@@ -51,8 +57,8 @@ server = "localhost:8448"
 # Container-Netzwerk: Service-Name statt 127.0.0.1
 [global.appservice.trading-agent]
 url        = "http://go-appservice:8090"
-as_token   = "1afe887982fea51764e0c144f01b80c246673be07f1af00fac717ce04bf1b1ba"
-hs_token   = "14eb01ae88e2eafa0b3ce31fe80970ca51a5dc4e0c1e914b6e9bb532d810076d"
+as_token   = "REPLACE_WITH_AS_TOKEN"
+hs_token   = "REPLACE_WITH_HS_TOKEN"
 sender_localpart = "appservice-bot"
 rate_limited = false
 

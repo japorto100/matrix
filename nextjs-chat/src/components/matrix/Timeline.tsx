@@ -19,6 +19,8 @@ interface Props {
 	onEdit?: (eventId: string, body: string) => void;
 	onRedact?: (eventId: string) => void;
 	onForward?: (body: string, senderName: string) => void;
+	onPin?: (eventId: string) => void;
+	pinnedEventIds?: string[];
 	client?: MatrixClient | null;
 	roomId?: string | null;
 	onThreadOpen?: (eventId: string) => void;
@@ -50,6 +52,8 @@ export function Timeline({
 	onEdit,
 	onRedact,
 	onForward,
+	onPin,
+	pinnedEventIds,
 	client,
 	roomId,
 	onThreadOpen,
@@ -208,6 +212,8 @@ export function Timeline({
 									onEdit={onEdit}
 									onRedact={onRedact}
 									onForward={onForward}
+									onPin={onPin}
+									pinnedEventIds={pinnedEventIds}
 									client={client}
 									roomId={roomId}
 									onThreadOpen={onThreadOpen}

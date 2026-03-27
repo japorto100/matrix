@@ -3,7 +3,9 @@
 import { AlertCircle, BarChart2, Loader2, MessageCircle, WifiOff } from "lucide-react";
 import { ClientEvent, SyncState } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useAutoAcceptInvites } from "@/lib/matrix/hooks/useAutoAcceptInvites";
 import { useCall } from "@/lib/matrix/hooks/useCall";
 import { useCrossSigning } from "@/lib/matrix/hooks/useCrossSigning";
 import { useMatrixClient } from "@/lib/matrix/hooks/useMatrixClient";
@@ -44,6 +46,7 @@ export function MatrixChat() {
 	const [syncStatus, setSyncStatus] = useState<"syncing" | "reconnecting" | "error">("syncing");
 	const callState = useCall();
 	const crossSigning = useCrossSigning(isReady ? client : null);
+	useAutoAcceptInvites(isReady ? client : null);
 
 	// Sync-Status Listener
 	useEffect(() => {
@@ -80,53 +83,33 @@ export function MatrixChat() {
 	}, [selectedRoomId]);
 
 	// B-3: Reaction senden (WhatsApp-Style: 1 pro User, Toggle, Replace)
-	// Nutzt HTTP API für redact weil client.redactEvent bei pendingEventOrdering=="chronological" crasht
+	// B-3: Reaction senden (WhatsApp-Style: 1 pro User, Toggle, Replace)
 	const handleReact = useCallback(
 		async (eventId: string, emoji: string, myReactions?: Record<string, string>) => {
 			if (!client || !selectedRoomId) return;
-
-			const redact = async (rxnEventId: string) => {
-				try {
-					const token = client.getAccessToken();
-					await fetch(
-						`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(selectedRoomId)}/redact/${encodeURIComponent(rxnEventId)}/${Date.now()}`,
-						{
-							method: "PUT",
-							headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-							body: "{}",
-						},
-					);
-				} catch (err) {
-					console.error("[react] redact failed:", err);
-				}
-			};
 
 			const myExistingEventId = myReactions?.[emoji];
 
 			// Dasselbe Emoji nochmal → entfernen (Toggle)
 			if (myExistingEventId) {
-				await redact(myExistingEventId);
+				await client.redactEvent(selectedRoomId, myExistingEventId).catch(() => {});
 				return;
 			}
 
-			// Alle bisherigen eigenen Reactions auf dieser Message entfernen
+			// Alle bisherigen eigenen Reactions entfernen
 			if (myReactions) {
-				await Promise.all(Object.values(myReactions).map(redact));
+				await Promise.all(
+					Object.values(myReactions).map((id) =>
+						client.redactEvent(selectedRoomId, id).catch(() => {}),
+					),
+				);
 			}
 
-			// Neue Reaction senden (fetch statt SDK wegen pendingEventOrdering bug)
+			// Neue Reaction senden
 			try {
-				const token = client.getAccessToken();
-				await fetch(
-					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(selectedRoomId)}/send/m.reaction/${Date.now()}`,
-					{
-						method: "PUT",
-						headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-						body: JSON.stringify({
-							"m.relates_to": { rel_type: "m.annotation", event_id: eventId, key: emoji },
-						}),
-					},
-				);
+				await client.sendEvent(selectedRoomId, "m.reaction" as any, {
+					"m.relates_to": { rel_type: "m.annotation", event_id: eventId, key: emoji },
+				});
 			} catch (err) {
 				console.error("[react] send failed:", err);
 			}
@@ -154,6 +137,35 @@ export function MatrixChat() {
 		},
 		[client, selectedRoomId],
 	);
+
+	// Pin/Unpin Message
+	const handlePin = useCallback(
+		(eventId: string) => {
+			if (!client || !selectedRoomId) return;
+			const room = client.getRoom(selectedRoomId);
+			const pinnedEvent = room?.currentState.getStateEvents("m.room.pinned_events", "");
+			const currentPinned: string[] = pinnedEvent?.getContent()?.pinned ?? [];
+			const isPinned = currentPinned.includes(eventId);
+			const newPinned = isPinned
+				? currentPinned.filter((id) => id !== eventId)
+				: [...currentPinned, eventId];
+			client
+				.sendStateEvent(selectedRoomId, "m.room.pinned_events" as any, { pinned: newPinned }, "")
+				.then(() => toast.success(isPinned ? "Nachricht entpinnt." : "Nachricht angepinnt."))
+				.catch(() => toast.error("Pin fehlgeschlagen."));
+		},
+		[client, selectedRoomId],
+	);
+
+	// Pinned Event IDs für aktuelle Room
+	const pinnedEventIds = (() => {
+		if (!client || !selectedRoomId) return [];
+		const room = client.getRoom(selectedRoomId);
+		return (
+			(room?.currentState.getStateEvents("m.room.pinned_events", "")?.getContent()
+				?.pinned as string[]) ?? []
+		);
+	})();
 
 	// B-8: Thread öffnen
 	const handleThreadOpen = useCallback((eventId: string) => {
@@ -267,49 +279,108 @@ export function MatrixChat() {
 										setShowRoomSettings(false);
 									}}
 								/>
-								<Timeline
-									messages={messages}
-									isLoading={isLoading}
-									canLoadMore={canLoadMore}
-									onLoadMore={loadMore}
-									onReact={handleReact}
-									onReply={handleReply}
-									onEdit={handleEdit}
-									onRedact={handleRedact}
-									onForward={handleForward}
-									client={client}
-									roomId={selectedRoomId}
-									onThreadOpen={handleThreadOpen}
-								/>
-								<TypingIndicator typers={typers} />
-								<div className="flex items-end border-t border-border">
-									<div className="flex-1">
-										<MessageComposer
-											client={client}
-											roomId={selectedRoomId!}
-											editState={editState}
-											onEditCancel={() => setEditState(null)}
-											replyState={replyState}
-											onReplyCancel={() => setReplyState(null)}
-										/>
+								{selectedRoom.membership === "invite" ? (
+									<div className="flex-1 flex items-center justify-center">
+										<div className="text-center space-y-4 p-8">
+											<div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+												<MessageCircle className="h-8 w-8 text-primary" />
+											</div>
+											<div>
+												<p className="font-semibold text-lg">{selectedRoom.name}</p>
+												<p className="text-sm text-muted-foreground mt-1">
+													{selectedRoom.dmUserId ? "Direktnachricht" : "Gruppen-Einladung"}
+												</p>
+											</div>
+											<div className="flex gap-3 justify-center">
+												<Button
+													className="gap-2"
+													onClick={() => {
+														client
+															.joinRoom(selectedRoomId!)
+															.catch(() => toast.error("Beitreten fehlgeschlagen."));
+													}}
+												>
+													Annehmen
+												</Button>
+												<Button
+													variant="outline"
+													className="gap-2 text-destructive"
+													onClick={() => {
+														client.leave(selectedRoomId!).catch(() => {});
+														setSelectedRoomId(null);
+													}}
+												>
+													Ablehnen
+												</Button>
+											</div>
+										</div>
 									</div>
-									{/* B-7: Poll erstellen Button */}
-									<CreatePollDialog
-										client={client}
-										roomId={selectedRoomId!}
-										trigger={
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												className="shrink-0 h-[44px] w-[44px] text-muted-foreground hover:text-foreground mr-1 mb-3"
-												title="Abstimmung erstellen"
-											>
-												<BarChart2 className="h-4 w-4" />
-											</Button>
-										}
-									/>
-								</div>
+								) : (
+									<>
+										{/* DM mit invited Member — Hinweis-Banner */}
+										{selectedRoom.dmUserId &&
+											selectedRoom.membership === "join" &&
+											(() => {
+												const matrixRoom = client.getRoom(selectedRoomId!);
+												const otherMembership = matrixRoom?.getMember(
+													selectedRoom.dmUserId,
+												)?.membership;
+												if (otherMembership === "invite") {
+													return (
+														<div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-500 text-sm border-b border-amber-500/20">
+															<span>Warte auf Antwort von {selectedRoom.name}…</span>
+														</div>
+													);
+												}
+												return null;
+											})()}
+										<Timeline
+											messages={messages}
+											isLoading={isLoading}
+											canLoadMore={canLoadMore}
+											onLoadMore={loadMore}
+											onReact={handleReact}
+											onReply={handleReply}
+											onEdit={handleEdit}
+											onRedact={handleRedact}
+											onForward={handleForward}
+											onPin={handlePin}
+											pinnedEventIds={pinnedEventIds}
+											client={client}
+											roomId={selectedRoomId}
+											onThreadOpen={handleThreadOpen}
+										/>
+										<TypingIndicator typers={typers} />
+										<div className="flex items-end border-t border-border">
+											<div className="flex-1">
+												<MessageComposer
+													client={client}
+													roomId={selectedRoomId!}
+													editState={editState}
+													onEditCancel={() => setEditState(null)}
+													replyState={replyState}
+													onReplyCancel={() => setReplyState(null)}
+												/>
+											</div>
+											{/* B-7: Poll erstellen Button */}
+											<CreatePollDialog
+												client={client}
+												roomId={selectedRoomId!}
+												trigger={
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="shrink-0 h-[44px] w-[44px] text-muted-foreground hover:text-foreground mr-1 mb-3"
+														title="Abstimmung erstellen"
+													>
+														<BarChart2 className="h-4 w-4" />
+													</Button>
+												}
+											/>
+										</div>
+									</>
+								)}
 							</>
 						) : (
 							<div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -355,11 +426,12 @@ export function MatrixChat() {
 						!activeThreadId &&
 						selectedRoom &&
 						client &&
-						(selectedRoom.otherUserId ? (
+						(selectedRoom.dmUserId ? (
 							<DMInfoPanel
 								client={client}
 								roomId={selectedRoomId!}
-								otherUserId={selectedRoom.otherUserId}
+								dmUserId={selectedRoom.dmUserId}
+								membership={selectedRoom.membership}
 								onClose={() => setShowRoomSettings(false)}
 							/>
 						) : (

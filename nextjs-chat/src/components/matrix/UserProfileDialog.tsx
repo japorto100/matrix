@@ -13,6 +13,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { getAutoAcceptDMs, setAutoAcceptDMs } from "@/lib/matrix/hooks/useAutoAcceptInvites";
 
 interface Props {
 	client: MatrixClient;
@@ -26,7 +27,9 @@ export function UserProfileDialog({ client, trigger }: Props) {
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	const [statusMsg, setStatusMsg] = useState("");
 	const [isCrossSigningReady, setIsCrossSigningReady] = useState<boolean | null>(null);
+	const [autoAccept, setAutoAccept] = useState(getAutoAcceptDMs());
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Profil laden wenn Dialog öffnet
@@ -36,6 +39,7 @@ export function UserProfileDialog({ client, trigger }: Props) {
 		if (!userId) return;
 		const user = client.getUser(userId);
 		setDisplayName(user?.displayName ?? "");
+		setStatusMsg(user?.presenceStatusMsg ?? "");
 		setAvatarMxc(user?.avatarUrl ?? undefined);
 		setAvatarPreview(undefined);
 		setSelectedFile(null);
@@ -77,6 +81,12 @@ export function UserProfileDialog({ client, trigger }: Props) {
 			if (selectedFile) {
 				const upload = await client.uploadContent(selectedFile);
 				await client.setAvatarUrl(upload.content_uri);
+			}
+
+			// Status/Bio setzen
+			const currentStatus = client.getUser(client.getUserId()!)?.presenceStatusMsg ?? "";
+			if (statusMsg.trim() !== currentStatus) {
+				await client.setPresence({ presence: "online", status_msg: statusMsg.trim() || undefined });
 			}
 
 			setOpen(false);
@@ -154,6 +164,33 @@ export function UserProfileDialog({ client, trigger }: Props) {
 							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 						/>
 					</div>
+					{/* Status/Bio */}
+					<div className="w-full">
+						<label className="text-xs font-medium text-muted-foreground mb-1 block">Status</label>
+						<input
+							type="text"
+							value={statusMsg}
+							onChange={(e) => setStatusMsg(e.target.value)}
+							placeholder="Was machst du gerade?"
+							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+						/>
+					</div>
+
+					{/* Auto-Accept DMs */}
+					<label className="flex items-center justify-between w-full cursor-pointer">
+						<span className="text-xs font-medium text-muted-foreground">
+							DM-Einladungen automatisch annehmen
+						</span>
+						<input
+							type="checkbox"
+							checked={autoAccept}
+							onChange={(e) => {
+								setAutoAccept(e.target.checked);
+								setAutoAcceptDMs(e.target.checked);
+							}}
+							className="rounded border"
+						/>
+					</label>
 				</div>
 
 				<DialogFooter>

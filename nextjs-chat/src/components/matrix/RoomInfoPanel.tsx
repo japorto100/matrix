@@ -1,6 +1,24 @@
 "use client";
 
-import { Ban, Camera, Lock, LockOpen, Pencil, Trash2, UserMinus, X } from "lucide-react";
+import {
+	Ban,
+	Bell,
+	BellOff,
+	Camera,
+	Check,
+	Copy,
+	FileText,
+	Image,
+	Link2,
+	Lock,
+	LockOpen,
+	Pencil,
+	Pin,
+	Shield,
+	Trash2,
+	UserMinus,
+	X,
+} from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -37,12 +55,19 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const [leaveConfirm, setLeaveConfirm] = useState(false);
 	const [myPowerLevel, setMyPowerLevel] = useState(0);
 	const [banConfirmId, setBanConfirmId] = useState<string | null>(null);
+	const [isMuted, setIsMuted] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
 	const avatarInputRef = useRef<HTMLInputElement>(null);
 
 	const room = client.getRoom(roomId);
 	const myUserId = client.getUserId() ?? "";
+	const membership = room?.getMyMembership() ?? "leave";
 	const isEncrypted = !!room?.currentState.getStateEvents("m.room.encryption", "");
+	// Power-Level Check: Wer darf Name/Topic/Avatar ändern
+	const stateDefault =
+		(room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent()
+			?.state_default as number) ?? 50;
+	const canEditRoomInfo = myPowerLevel >= stateDefault;
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: room ist abgeleiteter Wert
 	useEffect(() => {
@@ -74,6 +99,38 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 			console.error("[RoomInfoPanel] load failed:", err);
 		}
 	}, [client, roomId, myUserId]);
+
+	// Mute-Status
+	useEffect(() => {
+		try {
+			// biome-ignore lint/suspicious/noExplicitAny: push_rules nicht typisiert
+			const pushRules = (client.getAccountData as any)("m.push_rules")?.getContent();
+			const overrides =
+				(pushRules?.global as { override?: Array<{ rule_id: string; enabled: boolean }> })
+					?.override ?? [];
+			setIsMuted(!!overrides.find((r: { rule_id: string }) => r.rule_id === roomId)?.enabled);
+		} catch {
+			/* ignore */
+		}
+	}, [client, roomId]);
+
+	const toggleMute = useCallback(async () => {
+		try {
+			if (isMuted) {
+				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
+				await (client.deletePushRule as any)("global", "override", roomId);
+			} else {
+				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
+				await (client.addPushRule as any)("global", "override", roomId, {
+					conditions: [{ kind: "event_match", key: "room_id", pattern: roomId }],
+					actions: ["dont_notify"],
+				});
+			}
+			setIsMuted(!isMuted);
+		} catch {
+			toast.error("Stummschalten fehlgeschlagen.");
+		}
+	}, [client, roomId, isMuted]);
 
 	const saveName = useCallback(async () => {
 		setEditingName(false);
@@ -115,23 +172,11 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const kickMember = useCallback(
 		async (userId: string) => {
 			try {
-				const token = client.getAccessToken();
-				const res = await fetch(
-					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/kick`,
-					{
-						method: "POST",
-						headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-						body: JSON.stringify({ user_id: userId, reason: "Entfernt durch Moderator" }),
-					},
-				);
-				if (res.ok) {
-					setMembers((prev) => prev.filter((m) => m.userId !== userId));
-					toast.success("Benutzer entfernt.");
-				} else {
-					toast.error("Benutzer konnte nicht entfernt werden.");
-				}
+				await client.kick(roomId, userId, "Entfernt durch Moderator");
+				setMembers((prev) => prev.filter((m) => m.userId !== userId));
+				toast.success("Benutzer entfernt.");
 			} catch {
-				toast.error("Verbindungsfehler.");
+				toast.error("Benutzer konnte nicht entfernt werden.");
 			}
 		},
 		[client, roomId],
@@ -140,24 +185,12 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const banMember = useCallback(
 		async (userId: string) => {
 			try {
-				const token = client.getAccessToken();
-				const res = await fetch(
-					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/ban`,
-					{
-						method: "POST",
-						headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-						body: JSON.stringify({ user_id: userId, reason: "Gesperrt durch Moderator" }),
-					},
-				);
-				if (res.ok) {
-					setMembers((prev) => prev.filter((m) => m.userId !== userId));
-					setBanConfirmId(null);
-					toast.success("Benutzer gesperrt.");
-				} else {
-					toast.error("Benutzer konnte nicht gesperrt werden.");
-				}
+				await client.ban(roomId, userId, "Gesperrt durch Moderator");
+				setMembers((prev) => prev.filter((m) => m.userId !== userId));
+				setBanConfirmId(null);
+				toast.success("Benutzer gesperrt.");
 			} catch {
-				toast.error("Verbindungsfehler.");
+				toast.error("Benutzer konnte nicht gesperrt werden.");
 			}
 		},
 		[client, roomId],
@@ -166,31 +199,15 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const leaveOrDelete = useCallback(async () => {
 		setIsLeaving(true);
 		try {
-			const token = client.getAccessToken();
-			const rid = encodeURIComponent(roomId);
 			if (myPowerLevel >= 100) {
 				for (const m of members) {
 					if (m.userId !== myUserId) {
-						await fetch(`${client.baseUrl}/_matrix/client/v3/rooms/${rid}/kick`, {
-							method: "POST",
-							headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-							body: JSON.stringify({ user_id: m.userId, reason: "Raum gelöscht" }),
-						}).catch(() => {});
+						await client.kick(roomId, m.userId, "Raum gelöscht").catch(() => {});
 					}
 				}
 			}
-			await fetch(`${client.baseUrl}/_matrix/client/v3/rooms/${rid}/leave`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-				body: "{}",
-			});
-			await fetch(`${client.baseUrl}/_matrix/client/v3/rooms/${rid}/forget`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-				body: "{}",
-			}).catch(() => {});
-			client.store.removeRoom(roomId);
-			client.emit("deleteRoom" as any, roomId);
+			await client.leave(roomId);
+			await client.forget(roomId).catch(() => {});
 			onClose();
 		} catch {
 			toast.error("Raum konnte nicht verlassen werden.");
@@ -222,14 +239,16 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 							{avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
 							<AvatarFallback className="text-lg font-semibold bg-muted">{initials}</AvatarFallback>
 						</Avatar>
-						<button
-							type="button"
-							className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-							title="Raum-Avatar ändern"
-							onClick={() => avatarInputRef.current?.click()}
-						>
-							<Camera className="h-3.5 w-3.5" />
-						</button>
+						{canEditRoomInfo && (
+							<button
+								type="button"
+								className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+								title="Raum-Avatar ändern"
+								onClick={() => avatarInputRef.current?.click()}
+							>
+								<Camera className="h-3.5 w-3.5" />
+							</button>
+						)}
 						<input
 							ref={avatarInputRef}
 							type="file"
@@ -255,13 +274,15 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 						) : (
 							<div className="flex items-center justify-center gap-1">
 								<p className="font-semibold text-base">{displayName}</p>
-								<button
-									type="button"
-									onClick={() => setEditingName(true)}
-									className="text-muted-foreground hover:text-foreground transition-colors"
-								>
-									<Pencil className="h-3 w-3" />
-								</button>
+								{canEditRoomInfo && (
+									<button
+										type="button"
+										onClick={() => setEditingName(true)}
+										className="text-muted-foreground hover:text-foreground transition-colors"
+									>
+										<Pencil className="h-3 w-3" />
+									</button>
+								)}
 							</div>
 						)}
 						<p className="text-xs text-muted-foreground mt-0.5">{members.length} Mitglieder</p>
@@ -281,11 +302,21 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 					</div>
 				</div>
 
+				{/* Stummschalten */}
+				<button
+					type="button"
+					onClick={toggleMute}
+					className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+				>
+					{isMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+					{isMuted ? "Benachrichtigungen aktivieren" : "Stummschalten"}
+				</button>
+
 				{/* Thema */}
 				<div>
 					<div className="flex items-center gap-1 mb-1">
 						<label className="text-xs font-medium text-muted-foreground">Thema</label>
-						{!editingTopic && (
+						{!editingTopic && canEditRoomInfo && (
 							<button
 								type="button"
 								onClick={() => setEditingTopic(true)}
@@ -314,10 +345,14 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 						/>
 					) : (
 						<p
-							className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-							onClick={() => setEditingTopic(true)}
+							className={
+								canEditRoomInfo
+									? "text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+									: "text-sm text-muted-foreground"
+							}
+							onClick={canEditRoomInfo ? () => setEditingTopic(true) : undefined}
 						>
-							{roomTopic || "Thema hinzufügen…"}
+							{roomTopic || (canEditRoomInfo ? "Thema hinzufügen…" : "Kein Thema")}
 						</p>
 					)}
 				</div>
@@ -405,11 +440,233 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 						})}
 					</div>
 				</div>
+				{/* Invite-Link */}
+				{(() => {
+					const alias = room?.getCanonicalAlias();
+					const link = alias ? `https://matrix.to/#/${alias}` : `https://matrix.to/#/${roomId}`;
+					return (
+						<div>
+							<label className="text-xs font-medium text-muted-foreground mb-1 block">
+								Einladungslink
+							</label>
+							<div className="flex items-center gap-2">
+								<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">
+									{link}
+								</code>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-7 w-7 shrink-0"
+									title="Kopieren"
+									onClick={() => {
+										navigator.clipboard.writeText(link);
+										toast.success("Link kopiert");
+									}}
+								>
+									<Copy className="h-3 w-3" />
+								</Button>
+							</div>
+						</div>
+					);
+				})()}
+
+				{/* Gepinnte Nachrichten */}
+				{(() => {
+					const pinnedEvent = room?.currentState.getStateEvents("m.room.pinned_events", "");
+					const pinnedIds: string[] = pinnedEvent?.getContent()?.pinned ?? [];
+					if (pinnedIds.length === 0) return null;
+					const timeline = room?.getLiveTimeline().getEvents() ?? [];
+					const pinnedMessages = pinnedIds
+						.map((id) => timeline.find((ev) => ev.getId() === id))
+						.filter(Boolean)
+						.slice(0, 5);
+					return (
+						<div>
+							<label className="text-xs font-medium text-muted-foreground mb-2 block">
+								<Pin className="h-3 w-3 inline mr-1" />
+								Angepinnt ({pinnedIds.length})
+							</label>
+							<div className="flex flex-col gap-1">
+								{pinnedMessages.map((ev) => (
+									<div
+										key={ev!.getId()}
+										className="text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5 truncate"
+									>
+										<span className="font-medium">
+											{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
+										</span>{" "}
+										{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
+									</div>
+								))}
+								{pinnedIds.length > pinnedMessages.length && (
+									<p className="text-[10px] text-muted-foreground">
+										+{pinnedIds.length - pinnedMessages.length} weitere (nicht in Timeline)
+									</p>
+								)}
+							</div>
+						</div>
+					);
+				})()}
+
+				{/* Geteilte Medien */}
+				{(() => {
+					if (!room) return null;
+					const events = room.getLiveTimeline().getEvents();
+					let images = 0,
+						files = 0,
+						links = 0;
+					for (const ev of events) {
+						if (ev.getType() !== "m.room.message") continue;
+						const msgtype = ev.getContent()?.msgtype;
+						if (msgtype === "m.image") images++;
+						else if (msgtype === "m.file" || msgtype === "m.video" || msgtype === "m.audio")
+							files++;
+						if ((ev.getContent()?.body as string)?.match(/https?:\/\//)) links++;
+					}
+					if (images === 0 && files === 0 && links === 0) return null;
+					return (
+						<div>
+							<label className="text-xs font-medium text-muted-foreground mb-2 block">
+								Geteilte Medien
+							</label>
+							<div className="flex gap-3">
+								{images > 0 && (
+									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+										<Image className="h-3.5 w-3.5" />
+										<span>{images} Bilder</span>
+									</div>
+								)}
+								{files > 0 && (
+									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+										<FileText className="h-3.5 w-3.5" />
+										<span>{files} Dateien</span>
+									</div>
+								)}
+								{links > 0 && (
+									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+										<Link2 className="h-3.5 w-3.5" />
+										<span>{links} Links</span>
+									</div>
+								)}
+							</div>
+						</div>
+					);
+				})()}
+
+				{/* Rollen-Management (nur Admin) */}
+				{myPowerLevel >= 100 && (
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-2 block">
+							Rollen verwalten
+						</label>
+						<div className="flex flex-col gap-1">
+							{members
+								.filter((m) => m.userId !== myUserId)
+								.map((member) => (
+									<div
+										key={`role-${member.userId}`}
+										className="flex items-center justify-between px-2 py-1 rounded hover:bg-muted/50"
+									>
+										<span className="text-xs truncate flex-1">{member.displayName}</span>
+										<select
+											value={member.powerLevel}
+											onChange={(e) => {
+												const level = Number.parseInt(e.target.value);
+												client
+													.setPowerLevel(roomId, member.userId, level)
+													.catch(() => toast.error("Rolle ändern fehlgeschlagen"));
+											}}
+											className="text-[10px] bg-muted/30 border border-border/50 rounded px-1 py-0.5"
+										>
+											<option value={0}>Member</option>
+											<option value={50}>Moderator</option>
+											<option value={100}>Admin</option>
+										</select>
+									</div>
+								))}
+						</div>
+					</div>
+				)}
+
+				{/* Gruppen-Einstellungen (nur Admin) */}
+				{myPowerLevel >= 100 && (
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-2 block">
+							<Shield className="h-3 w-3 inline mr-1" />
+							Berechtigungen
+						</label>
+						<div className="space-y-2 text-xs">
+							{[
+								{
+									key: "events_default",
+									label: "Nachrichten senden",
+									desc: "Wer darf Nachrichten senden",
+								},
+								{ key: "invite", label: "Einladen", desc: "Wer darf neue Mitglieder einladen" },
+								{
+									key: "state_default",
+									label: "Raum-Info ändern",
+									desc: "Wer darf Name/Topic/Avatar ändern",
+								},
+							].map(({ key, label }) => {
+								const powerLevels =
+									room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent() ?? {};
+								const currentLevel =
+									(powerLevels as Record<string, number>)[key] ??
+									(key === "state_default" ? 50 : 0);
+								return (
+									<div key={key} className="flex items-center justify-between">
+										<span className="text-muted-foreground">{label}</span>
+										<select
+											value={currentLevel}
+											onChange={(e) => {
+												const level = Number.parseInt(e.target.value);
+												const newPL = { ...powerLevels, [key]: level };
+												client
+													.sendStateEvent(roomId, "m.room.power_levels" as any, newPL, "")
+													.catch(() => toast.error("Berechtigung ändern fehlgeschlagen"));
+											}}
+											className="text-[10px] bg-muted/30 border border-border/50 rounded px-1 py-0.5"
+										>
+											<option value={0}>Alle</option>
+											<option value={50}>Moderator+</option>
+											<option value={100}>Admin</option>
+										</select>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* Footer */}
 			<div className="p-3 border-t border-border shrink-0">
-				{leaveConfirm ? (
+				{membership === "invite" ? (
+					<div className="flex gap-2">
+						<Button
+							className="flex-1 gap-1"
+							onClick={() => {
+								client
+									.joinRoom(roomId)
+									.then(() => toast.success("Beigetreten"))
+									.catch(() => toast.error("Fehlgeschlagen"));
+							}}
+						>
+							<Check className="h-4 w-4" /> Annehmen
+						</Button>
+						<Button
+							variant="outline"
+							className="flex-1 gap-1 text-destructive"
+							onClick={() => {
+								client.leave(roomId).catch(() => {});
+								onClose();
+							}}
+						>
+							<X className="h-4 w-4" /> Ablehnen
+						</Button>
+					</div>
+				) : leaveConfirm ? (
 					<div className="flex items-center gap-2">
 						<span className="text-xs text-muted-foreground flex-1">
 							{myPowerLevel >= 100 ? "Raum wirklich löschen?" : "Raum wirklich verlassen?"}

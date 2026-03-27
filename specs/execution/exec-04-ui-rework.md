@@ -284,15 +284,82 @@
   - Markdown-Rendering in Agent-Antwort (Bold, Emoji)
   - Bot-User: `@trading-agent:matrix.local`
 
-### Invite-Handling (noch nicht implementiert)
-- [ ] RoomList: Einladungs-Räume (`membership === "invite"`) mit Accept/Decline Buttons
-- [ ] DM-Einladung: Raumname sofort "Bob" (aus Invite-Target), nicht "Empty room"
-- [ ] DM-Einladung: Status-Text "Warte auf Antwort..." solange invited, kein Composer
-- [ ] DM Auto-Accept: `is_direct` Einladungen automatisch annehmen (Default an, abschaltbar in Profil)
-- [ ] Bei Accept: Existierenden Raum nutzen (kein neuer Raum erstellen)
-- [ ] Bei Decline: Raum aus Liste entfernen (leave + forget)
-- [ ] `m.direct` Account-Data korrekt setzen bei DM-Erstellung
-- [ ] Gruppen-Einladung: Toast-Benachrichtigung + Accept/Decline im InfoPanel
+### SDK-Migration + Invite-Handling (27.03.2026)
+- [x] SDK-Migration: DM-Erkennung via `m.direct` Account-Data (statt guessDMUserId)
+- [x] SDK-Migration: `room.getMyMembership()` → `membership` Feld in RoomInfo
+- [x] SDK-Migration: `room.getInvitedAndJoinedMemberCount()` statt nur joined
+- [x] SDK-Migration: `otherUserId` → `dmUserId` + `inviterUserId` in RoomInfo
+- [x] useRooms: Filter erweitert auf `["join", "invite"]` (Invite-Rooms sichtbar)
+- [x] useRooms: `RoomEvent.MyMembership` listener hinzugefügt
+- [x] Auto-Accept: `useAutoAcceptInvites` Hook (DMs auto-join, Gruppen Toast)
+- [x] Auto-Accept: localStorage Setting `matrix_auto_accept_dms` (default: true)
+- [x] RoomList: Invite-Sektion oberhalb normaler Rooms mit Accept/Decline Buttons
+- [x] RoomList: InviteItem Komponente (DM vs Gruppe unterscheidbar)
+- [x] DMInfoPanel: Invite-Status "Einladung ausstehend" wenn anderer User invited
+- [x] DMInfoPanel: Accept/Decline wenn eigene Membership = invite
+- [x] DMInfoPanel: Block nur bei joined (nicht bei invite)
+- [x] Timeline: Invite-Placeholder mit Annehmen/Ablehnen (kein Composer bei invite)
+- [x] InfoPanel.tsx gelöscht → DMInfoPanel + RoomInfoPanel
+- [x] Tuwunel: `auto_join_rooms = ["#general:matrix.local"]`
+- [x] DM Name-Fix: "Bob" statt "Empty room" bei invited Members
+- [x] Auto-Accept Toggle in UserProfileDialog (Checkbox)
+- [x] RoomInfoPanel: Accept/Decline Footer bei invite Membership
+- [x] "Warte auf Antwort..." Banner bei DM mit invited Member
+- [x] General-Raum erstellt + Alice gejoined
+- [x] fetch→SDK Migration: alle leave/forget/kick/ban/redact/sendEvent auf SDK-Calls umgestellt
+- [x] DM-Name: Immer Display-Name des anderen Users (nicht User-ID oder "Empty room")
+- [x] DM-Erkennung: `m.direct` Account-Data statt `guessDMUserId()` (SDK rät zu aggressiv)
+- [x] Mute aus Header entfernt → nur noch in InfoPanels (DM + Room)
+- [x] DMInfoPanel vollständig: Online-Status, Presence-Text, Status/Bio, Mute, Block (SDK setIgnoredUsers), geteilte Medien, gemeinsame Räume, Invite-Status, E2EE Lock
+- [x] RoomInfoPanel: Mute-Button hinzugefügt
+- [x] UserProfileDialog: Status/Bio Input + Speichern (SDK setPresence)
+- [x] Auto-Accept Toggle in UserProfileDialog (Checkbox + localStorage)
+
+### Security (27.03.2026)
+- [x] tuwunel.toml aus Git entfernt (enthält Tokens)
+- [x] tuwunel.example.toml + tuwunel.image.example.toml erstellt (Platzhalter)
+- [x] gitignore: `homeserver/tuwunel.toml`, `tuwunel.prod.toml`, `tuwunel.image.toml`
+- [x] Portierungs-Spec: NextAuth → Admin API User-Provisioning dokumentiert
+- [x] Prod + Image TOMLs: max_request_size, auto_join_rooms, URL Preview ergänzt
+
+### Federation (noch nicht aktiviert, Checkboxen für später)
+- [ ] `allow_federation = true` in Tuwunel setzen
+- [ ] DNS: `_matrix._tcp` SRV Record oder `.well-known/matrix/server`
+- [ ] HTTPS + echte Domain (Cloudflare Tunnel oder eigene)
+- [ ] Draupnir/Mjolnir Bot deployen (Spam-Schutz, separater Node.js Prozess mit eigenem Matrix-Account)
+- [ ] Server ACLs konfigurieren (Blacklist für bekannte Spam-Server)
+- [ ] `block_non_admin_invites` evaluieren
+- [ ] Auto-Accept auf interne User beschränken (`endsWith(":matrix.local")`)
+- [ ] Public Room Directory versteckt lassen
+- [ ] Testen: Externer User von matrix.org kann Alice/Bob nicht finden aber eingeladen werden
+
+### RoomInfoPanel Features (27.03.2026)
+- [x] Geteilte Medien: Bilder/Dateien/Links Zähler (wie DMInfoPanel)
+- [x] Invite-Link: `matrix.to` URL generiert + Copy-Button
+- [x] Rollen-Management: Admin kann andere zu Admin/Mod/Member befördern (`client.setPowerLevel()`)
+- [x] Gruppen-Einstellungen: Berechtigungen für Senden/Einladen/Raum-Info ändern (`m.room.power_levels`)
+- [x] Pinned Messages: Liste im InfoPanel + Pin/Unpin Button auf Message-Hover-Toolbar
+- [x] Topic nur Admin/Mod editierbar (`state_default` Power-Level Check)
+- [x] Name/Avatar nur Admin/Mod editierbar (`canEditRoomInfo` Check)
+- [x] Mute aus Header entfernt → nur noch in InfoPanels (DM + Room)
+- [x] DM Name-Bug gefixt: SDK room.name Fallback-Kette (sdkName → member.name → displayName → username)
+- [x] General Stern-Bug gefixt (auto-favourited entfernt)
+
+### Nicht eingebaut (Begründung)
+- ❌ Disappearing Messages: SDK hat kein `m.room.retention` (MSC1763 nicht finalisiert), Cross-Client inkompatibel
+- ❌ View Once: Existiert in Matrix Spec nicht, eigene Erfindung wäre nicht Spec-konform
+- ❌ Globale Rollen: Matrix hat keine — NextAuth Rollen → Power-Levels Mapping bei Portierung (Go Backend)
+
+### Noch zu verifizieren
+- [ ] DM erstellen → Bob erscheint als "Eingeladen", Name = "Bob"
+- [ ] Bob akzeptiert → normaler Chat
+- [ ] Auto-Accept DM: Alice wird eingeladen → auto-join + Toast
+- [ ] Gruppen-Einladung: Toast mit Accept/Decline
+- [ ] Read Receipts: Mini-Avatar (braucht echten zweiten Client)
+- [ ] Online-Status Dot (braucht echten zweiten Client)
+- [ ] B-8: Thread-Chip + Side-Panel (braucht Element X)
+- [ ] UI-14: ReadBy Liste
+- [ ] Call starten + Overlay (braucht zweites Device)
 
 ### Element X Mobile Verbindung (Cloudflare Tunnel)
 - [ ] `tools/cloudflared.exe` vorhanden ✅

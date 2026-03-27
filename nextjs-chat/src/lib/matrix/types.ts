@@ -66,9 +66,14 @@ export interface RoomInfo {
 	lastMessage?: string;
 	lastTimestamp?: number;
 	avatarUrl?: string;
-	// B-6: Presence — nur für DMs (2 Mitglieder)
-	otherUserId?: string; // userId des anderen Users bei DMs
-	isOnline?: boolean; // true = currently active
+	// Membership-State des eigenen Users
+	membership: "join" | "invite" | "leave";
+	// DM: User-ID des anderen Users (SDK guessDMUserId)
+	dmUserId?: string;
+	// DM: Wer hat uns eingeladen (SDK getDMInviter)
+	inviterUserId?: string;
+	// B-6: Presence
+	isOnline?: boolean;
 	// Favourites (m.favourite Tag)
 	isFavourite?: boolean;
 }
@@ -334,38 +339,66 @@ export function resolveMessage(
 
 // ─── resolveRoom ─────────────────────────────────────────────────────────────
 
-/** Konvertiert einen Room in RoomInfo. Optionaler client für Presence (B-6). */
+/** Konvertiert einen Room in RoomInfo. SDK-Methoden für Name, DM-Erkennung, Avatar. */
 export function resolveRoom(room: Room, client?: import("matrix-js-sdk").MatrixClient): RoomInfo {
+	const membership = room.getMyMembership() as "join" | "invite" | "leave";
 	const lastEvent = room.getLastLiveEvent();
 	const lastContent = lastEvent?.getContent() as Record<string, unknown> | undefined;
 	const notifs = room.getUnreadNotificationCount();
 
-	// B-6: Presence für DMs (2 joined ODER 1 joined + 1 invited)
-	const members = room.getJoinedMembers();
-	const myId = client?.getUserId();
-	let otherMember = members.length === 2 ? members.find((m) => m.userId !== myId) : undefined;
-	// Fallback: invited Members (DM wo anderer noch nicht akzeptiert hat)
-	if (!otherMember && members.length === 1) {
-		const invited = room.getMembersWithMembership("invite");
-		if (invited.length === 1) otherMember = invited[0];
+	// DM-Erkennung: m.direct Account-Data — einzige zuverlässige Quelle
+	let dmUserId: string | undefined;
+	if (client) {
+		// biome-ignore lint/suspicious/noExplicitAny: m.direct nicht in SDK-Typen
+		const directEvent = (client.getAccountData as any)("m.direct");
+		const directMap: Record<string, string[]> = directEvent?.getContent() ?? {};
+		for (const [userId, roomIds] of Object.entries(directMap)) {
+			if (roomIds.includes(room.roomId)) {
+				dmUserId = userId;
+				break;
+			}
+		}
 	}
-	const otherUser = otherMember ? client?.getUser(otherMember.userId) : undefined;
+	const inviterUserId = room.getDMInviter() || undefined;
+
+	// SDK: Presence für DMs
+	const dmUser = dmUserId ? client?.getUser(dmUserId) : undefined;
+
+	// Name: Bei DMs immer Display-Name des anderen Users, sonst SDK room.name
+	let name: string;
+	if (dmUserId) {
+		const dmMember = room.getMember(dmUserId);
+		// SDK room.name funktioniert bei DMs korrekt wenn Member geladen
+		const sdkName = room.name;
+		const sdkNameUsable =
+			sdkName && sdkName !== "Empty room" && sdkName !== room.roomId && !sdkName.startsWith("@");
+		name =
+			(sdkNameUsable ? sdkName : null) ??
+			(dmMember?.name && dmMember.name !== dmUserId ? dmMember.name : null) ??
+			dmUser?.displayName ??
+			dmUserId.split(":")[0]?.replace("@", "") ??
+			dmUserId;
+	} else {
+		name = room.name ?? room.roomId;
+	}
 
 	return {
 		roomId: room.roomId,
-		name: room.name ?? room.roomId,
+		name,
 		topic: (
 			room.currentState.getStateEvents("m.room.topic", "")?.getContent() as
 				| Record<string, unknown>
 				| undefined
 		)?.topic as string | undefined,
-		memberCount: room.getJoinedMemberCount(),
+		memberCount: room.getInvitedAndJoinedMemberCount(),
 		unreadCount: typeof notifs === "number" ? notifs : 0,
-		lastMessage: lastContent?.body as string | undefined,
+		lastMessage: membership === "invite" ? undefined : (lastContent?.body as string | undefined),
 		lastTimestamp: lastEvent?.getTs(),
 		avatarUrl: room.getMxcAvatarUrl() ?? undefined,
-		otherUserId: otherMember?.userId,
-		isOnline: otherUser?.currentlyActive ?? false,
+		membership,
+		dmUserId,
+		inviterUserId,
+		isOnline: dmUser?.currentlyActive ?? false,
 		isFavourite: !!room.tags?.["m.favourite"],
 	};
 }

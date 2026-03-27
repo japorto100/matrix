@@ -13,6 +13,8 @@ import {
 	Mic,
 	Music,
 	Pencil,
+	Pin,
+	PinOff,
 	Reply,
 	Share,
 	SmilePlus,
@@ -34,7 +36,9 @@ import { formatFileSize, type ResolvedMessage } from "@/lib/matrix/types";
 import { cn } from "@/lib/utils";
 import { PollMessage } from "./PollMessage";
 import { ReadByDialog } from "./ReadByDialog";
-import { extractFirstUrl, UrlPreview } from "./UrlPreview";
+
+// URL Preview deaktiviert (SSRF-Risiko) — Import beibehalten für spätere Aktivierung
+// import { extractFirstUrl, UrlPreview } from "./UrlPreview";
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
@@ -114,8 +118,7 @@ const htmlProcessor = unified()
 
 function TextContent({ message }: { message: ResolvedMessage }) {
 	// URL Preview deaktiviert (SSRF-Risiko, siehe specs/16-security.md)
-	// Aktivieren: const previewUrl = !message.isOwn ? extractFirstUrl(message.body) : null;
-	const previewUrl: string | null = null;
+	// const previewUrl = !message.isOwn ? extractFirstUrl(message.body) : null;
 
 	// formatted_body vorhanden → HTML direkt verarbeiten (Matrix spec: format = "org.matrix.custom.html")
 	// Unified + rehype-parse statt ReactMarkdown, damit Markdown-Metazeichen im HTML nicht fehlinterpretiert werden.
@@ -137,7 +140,7 @@ function TextContent({ message }: { message: ResolvedMessage }) {
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: HTML is sanitized by rehype-sanitize above
 					dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
 				/>
-				{previewUrl && <UrlPreview url={previewUrl} />}
+				{/* {previewUrl && <UrlPreview url={previewUrl} />} — deaktiviert (SSRF-Risiko) */}
 			</div>
 		);
 	}
@@ -147,14 +150,14 @@ function TextContent({ message }: { message: ResolvedMessage }) {
 				<div className="prose prose-sm dark:prose-invert max-w-none break-words">
 					<ReactMarkdown remarkPlugins={[remarkGfm]}>{message.body}</ReactMarkdown>
 				</div>
-				{previewUrl && <UrlPreview url={previewUrl} />}
+				{/* {previewUrl && <UrlPreview url={previewUrl} />} — deaktiviert (SSRF-Risiko) */}
 			</div>
 		);
 	}
 	return (
 		<div>
 			<p className="whitespace-pre-wrap break-words text-sm">{linkifyText(message.body)}</p>
-			{previewUrl && <UrlPreview url={previewUrl} />}
+			{/* {previewUrl && <UrlPreview url={previewUrl} />} — deaktiviert (SSRF-Risiko) */}
 		</div>
 	);
 }
@@ -432,7 +435,7 @@ function XlsxContent({ message }: { message: ResolvedMessage }) {
 						aria-describedby={undefined}
 					>
 						<DialogTitle className="sr-only">{message.fileName ?? "Tabelle"}</DialogTitle>
-						{/* biome-ignore lint/security/noDangerouslySetInnerHtml: SheetJS generiert sicheres HTML aus Zelldaten */}
+						{/* biome-ignore lint/security/noDangerouslySetInnerHtml: SheetJS HTML */}
 						<div
 							className="w-full h-[80vh] overflow-auto bg-white p-4 text-black [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-gray-300 [&_td]:px-2 [&_td]:py-1 [&_td]:text-xs [&_th]:border [&_th]:border-gray-300 [&_th]:px-2 [&_th]:py-1 [&_th]:text-xs [&_th]:bg-gray-100 [&_th]:font-semibold"
 							dangerouslySetInnerHTML={{ __html: tableHtml }}
@@ -691,9 +694,20 @@ interface ActionProps {
 	onEdit?: (eventId: string, body: string) => void;
 	onRedact?: (eventId: string) => void;
 	onForward?: (body: string, senderName: string) => void;
+	onPin?: (eventId: string) => void;
+	isPinned?: boolean;
 }
 
-function MessageActions({ message, onReact, onReply, onEdit, onRedact, onForward }: ActionProps) {
+function MessageActions({
+	message,
+	onReact,
+	onReply,
+	onEdit,
+	onRedact,
+	onForward,
+	onPin,
+	isPinned,
+}: ActionProps) {
 	const [showReactions, setShowReactions] = useState(false);
 
 	if (message.isRedacted) return null;
@@ -766,6 +780,18 @@ function MessageActions({ message, onReact, onReply, onEdit, onRedact, onForward
 					</Button>
 				)}
 
+				{onPin && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className={cn("h-7 w-7", isPinned && "text-amber-500")}
+						title={isPinned ? "Entpinnen" : "Anpinnen"}
+						onClick={() => onPin(message.eventId)}
+					>
+						{isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+					</Button>
+				)}
+
 				{onEdit && message.isOwn && message.msgType === "m.text" && (
 					<Button
 						variant="ghost"
@@ -827,6 +853,8 @@ interface Props {
 	onEdit?: (eventId: string, body: string) => void;
 	onRedact?: (eventId: string) => void;
 	onForward?: (body: string, senderName: string) => void;
+	onPin?: (eventId: string) => void;
+	pinnedEventIds?: string[];
 	client?: MatrixClient | null;
 	roomId?: string | null;
 	onThreadOpen?: (eventId: string) => void;
@@ -840,6 +868,8 @@ function MessageRaw({
 	onEdit,
 	onRedact,
 	onForward,
+	onPin,
+	pinnedEventIds,
 	client,
 	roomId,
 	onThreadOpen,
@@ -869,6 +899,8 @@ function MessageRaw({
 				onEdit={onEdit}
 				onRedact={onRedact}
 				onForward={onForward}
+				onPin={onPin}
+				isPinned={pinnedEventIds?.includes(message.eventId)}
 			/>
 			{/* Avatar — ausblenden bei gruppierten Messages */}
 			{!isGrouped ? (

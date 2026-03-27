@@ -42,9 +42,13 @@ nextjs-chat/.cache/
 # ─── Homeserver ───────────────────────────────────────────────────────────────
 homeserver/tuwunel
 homeserver/tuwunel.exe
+homeserver/tuwunel.toml
+homeserver/tuwunel.prod.toml
+homeserver/tuwunel.image.toml
 homeserver/registration.yaml
 homeserver/data/
 homeserver/*.pem
+!homeserver/tuwunel.example.toml
 
 # ─── Tools ───────────────────────────────────────────────────────────────────
 tools/dendrite-src/

@@ -1,8 +1,8 @@
 "use client";
 
-import { Bell, BellOff, Lock, LockOpen, Phone, Search, UserPlus, Users, Video } from "lucide-react";
+import { Lock, LockOpen, Phone, Search, UserPlus, Users, Video } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { RoomInfo } from "@/lib/matrix/types";
@@ -18,45 +18,6 @@ interface Props {
 }
 
 export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSearchOpen }: Props) {
-	const [isMuted, setIsMuted] = useState(false);
-
-	// UI-9: Mute-Status prüfen
-	useEffect(() => {
-		if (!client || !roomId) return;
-		try {
-			// biome-ignore lint/suspicious/noExplicitAny: push_rules AccountData nicht typisiert
-			const pushRules = (client.getAccountData as any)("m.push_rules")?.getContent();
-			const overrides =
-				(pushRules?.global as { override?: Array<{ rule_id: string; enabled: boolean }> })
-					?.override ?? [];
-			const muteRule = overrides.find((r: { rule_id: string }) => r.rule_id === roomId);
-			setIsMuted(!!muteRule?.enabled);
-		} catch (err) {
-			console.error("[RoomHeader] push rules check failed:", err);
-		}
-	}, [client, roomId]);
-
-	// UI-9: Mute/Unmute toggle
-	const toggleMute = useCallback(async () => {
-		if (!client || !roomId) return;
-		try {
-			if (isMuted) {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind Type-Mismatch im SDK
-				await (client.deletePushRule as any)("global", "override", roomId);
-				setIsMuted(false);
-			} else {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind Type-Mismatch im SDK
-				await (client.addPushRule as any)("global", "override", roomId, {
-					conditions: [{ kind: "event_match", key: "room_id", pattern: roomId }],
-					actions: ["dont_notify"],
-				});
-				setIsMuted(true);
-			}
-		} catch (err) {
-			console.error("[RoomHeader] mute toggle failed:", err);
-		}
-	}, [client, roomId, isMuted]);
-
 	const headerAvatarSrc = room.avatarUrl?.startsWith("mxc://")
 		? `/api/matrix/media?mxc=${encodeURIComponent(room.avatarUrl.slice(6))}`
 		: room.avatarUrl;
@@ -115,19 +76,6 @@ export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSea
 						onClick={onSearchOpen}
 					>
 						<Search className="h-4 w-4" />
-					</Button>
-				)}
-
-				{/* UI-9: Mute/Unmute */}
-				{client && roomId && (
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8"
-						title={isMuted ? "Benachrichtigungen aktivieren" : "Stummschalten"}
-						onClick={toggleMute}
-					>
-						{isMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
 					</Button>
 				)}
 

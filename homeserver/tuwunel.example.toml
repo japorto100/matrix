@@ -4,7 +4,7 @@
 [global]
 server_name = "matrix.local"
 database_path = "./homeserver/data/db"
-# Dev: 0.0.0.0 damit Mobile-Geräte im LAN zugreifen können (192.168.1.34:8448)
+# Dev: 0.0.0.0 damit Mobile-Geräte im LAN zugreifen können (YOUR_LAN_IP:8448)
 # Prod: 127.0.0.1 hinter Reverse Proxy
 address = "0.0.0.0"
 port = 8448
@@ -16,8 +16,9 @@ default_room_version = "12"
 
 # ─── Registrierung ───────────────────────────────────────────────────────────
 allow_registration = true
-registration_token = "matrix-dev-token-2026"
+registration_token = "REPLACE_WITH_REGISTRATION_TOKEN"
 allow_guest_registration = false
+auto_join_rooms = ["#general:matrix.local"]
 
 # ─── Federation ──────────────────────────────────────────────────────────────
 allow_federation = false
@@ -74,14 +75,14 @@ database_backups_to_keep = 3
 # Dev: LAN-IP damit Element X Mobile den Homeserver findet
 # Prod: HTTPS-Domain setzen (z.B. https://matrix.yourdomain.com)
 [global.well_known]
-client = "http://192.168.1.34:8448"
-server = "192.168.1.34:8448"
+client = "http://YOUR_LAN_IP:8448"
+server = "YOUR_LAN_IP:8448"
 
 # ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
 [global.appservice.trading-agent]
 url        = "http://127.0.0.1:8090"
-as_token   = "1afe887982fea51764e0c144f01b80c246673be07f1af00fac717ce04bf1b1ba"
-hs_token   = "14eb01ae88e2eafa0b3ce31fe80970ca51a5dc4e0c1e914b6e9bb532d810076d"
+as_token   = "REPLACE_WITH_AS_TOKEN"
+hs_token   = "REPLACE_WITH_HS_TOKEN"
 sender_localpart = "appservice-bot"
 rate_limited = false
 

@@ -1,6 +1,16 @@
 "use client";
 
-import { LogOut, MessageSquarePlus, MoreVertical, Plus, Search, Star, Trash2 } from "lucide-react";
+import {
+	Check,
+	LogOut,
+	MessageSquarePlus,
+	MoreVertical,
+	Plus,
+	Search,
+	Star,
+	Trash2,
+	X,
+} from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -56,15 +66,19 @@ function RoomListRaw({
 
 	// Space-Filterung
 	const selectedSpace = spaces?.find((s) => s.roomId === selectedSpaceId);
-	const filteredRooms = useMemo(() => {
+	const { inviteRooms, filteredRooms } = useMemo(() => {
 		let list = selectedSpace
 			? rooms.filter((r) => selectedSpace.childRoomIds.includes(r.roomId))
 			: rooms;
 
-		// Tab-Filter
+		// Invite-Rooms separieren (nur in "Alle" Tab)
+		const invites = filter === "all" ? list.filter((r) => r.membership === "invite") : [];
+		list = list.filter((r) => r.membership === "join");
+
+		// Tab-Filter (nur auf joined Rooms)
 		if (filter === "unread") list = list.filter((r) => r.unreadCount > 0);
-		if (filter === "people") list = list.filter((r) => r.otherUserId);
-		if (filter === "rooms") list = list.filter((r) => !r.otherUserId);
+		if (filter === "people") list = list.filter((r) => r.dmUserId);
+		if (filter === "rooms") list = list.filter((r) => !r.dmUserId);
 		if (filter === "favourites") list = list.filter((r) => r.isFavourite);
 
 		// Suchfilter
@@ -73,7 +87,7 @@ function RoomListRaw({
 			list = list.filter((r) => r.name.toLowerCase().includes(q));
 		}
 
-		return list;
+		return { inviteRooms: invites, filteredRooms: list };
 	}, [rooms, selectedSpace, filter, search]);
 
 	const totalUnread = rooms.reduce((sum, r) => sum + r.unreadCount, 0);
@@ -169,6 +183,17 @@ function RoomListRaw({
 			{/* Room-Liste */}
 			<div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
 				<div className="px-2 pb-2 space-y-0.5">
+					{/* Invite-Sektion */}
+					{inviteRooms.length > 0 && (
+						<div className="mb-2">
+							<p className="text-[10px] font-semibold text-primary uppercase tracking-wider px-2.5 py-1">
+								Einladungen ({inviteRooms.length})
+							</p>
+							{inviteRooms.map((room) => (
+								<InviteItem key={room.roomId} room={room} client={client} onSelect={onSelect} />
+							))}
+						</div>
+					)}
 					{filteredRooms.map((room) => (
 						<RoomItem
 							key={room.roomId}
@@ -230,6 +255,75 @@ function shortTimeAgo(ts: number): string {
 	return `${weeks}w`;
 }
 
+function InviteItem({
+	room,
+	client,
+	onSelect,
+}: {
+	room: RoomInfo;
+	client?: MatrixClient | null;
+	onSelect: (roomId: string) => void;
+}) {
+	const initials = room.name.slice(0, 2).toUpperCase();
+	const isDM = !!room.dmUserId;
+
+	const handleAccept = async () => {
+		if (!client) return;
+		try {
+			await client.joinRoom(room.roomId);
+			toast.success(isDM ? `Chat mit ${room.name} gestartet.` : `${room.name} beigetreten.`);
+			onSelect(room.roomId);
+		} catch {
+			toast.error("Beitreten fehlgeschlagen.");
+		}
+	};
+
+	const handleDecline = async () => {
+		if (!client) return;
+		try {
+			await client.leave(room.roomId);
+			await client.forget(room.roomId).catch(() => {});
+			toast.success("Einladung abgelehnt.");
+		} catch {
+			toast.error("Ablehnen fehlgeschlagen.");
+		}
+	};
+
+	return (
+		<div className="flex items-center gap-3 px-2.5 py-2 rounded-lg bg-primary/5 border-l-2 border-primary">
+			<Avatar className="h-9 w-9 shrink-0">
+				<AvatarFallback className={cn("text-xs font-semibold text-white", avatarColor(room.name))}>
+					{initials}
+				</AvatarFallback>
+			</Avatar>
+			<div className="flex-1 min-w-0">
+				<p className="text-sm font-medium truncate">{room.name}</p>
+				<p className="text-[10px] text-primary">{isDM ? "Direktnachricht" : "Gruppen-Einladung"}</p>
+			</div>
+			<div className="flex items-center gap-1 shrink-0">
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-7 w-7 text-emerald-500 hover:bg-emerald-500/20"
+					onClick={handleAccept}
+					title="Annehmen"
+				>
+					<Check className="h-4 w-4" />
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-7 w-7 text-destructive hover:bg-destructive/20"
+					onClick={handleDecline}
+					title="Ablehnen"
+				>
+					<X className="h-4 w-4" />
+				</Button>
+			</div>
+		</div>
+	);
+}
+
 function RoomItem({ room, isSelected, onSelect, client }: RoomItemProps) {
 	const [showMenu, setShowMenu] = useState(false);
 	const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -240,43 +334,21 @@ function RoomItem({ room, isSelected, onSelect, client }: RoomItemProps) {
 		: room.avatarUrl;
 	const lastMsg = formatLastMessage(room.lastMessage);
 	const isEncryptedMsg = lastMsg === "Verschlüsselte Nachricht";
-	const isDM = !!room.otherUserId;
+	const isDM = !!room.dmUserId;
 
 	const handleLeave = async () => {
 		if (!client) return;
 		setShowMenu(false);
 		try {
-			// Prüfe ob wir joined sind
 			const matrixRoom = client.getRoom(room.roomId);
 			const membership = matrixRoom?.getMyMembership();
 			if (membership !== "join") {
-				// Nicht joined — nur aus Store entfernen
 				client.store.removeRoom(room.roomId);
 				toast.success(isDM ? "Chat entfernt." : "Raum entfernt.");
 				return;
 			}
-			const token = client.getAccessToken();
-			const base = client.baseUrl;
-			const rid = encodeURIComponent(room.roomId);
-			// 1. Leave
-			const leaveRes = await fetch(`${base}/_matrix/client/v3/rooms/${rid}/leave`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-				body: "{}",
-			});
-			if (!leaveRes.ok) {
-				toast.error("Verlassen fehlgeschlagen.");
-				return;
-			}
-			// 2. Forget
-			await fetch(`${base}/_matrix/client/v3/rooms/${rid}/forget`, {
-				method: "POST",
-				headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-				body: "{}",
-			}).catch(() => {});
-			// 3. Aus SDK Store entfernen + Event emittern
-			client.store.removeRoom(room.roomId);
-			client.emit("deleteRoom" as any, room.roomId);
+			await client.leave(room.roomId);
+			await client.forget(room.roomId).catch(() => {});
 			toast.success(isDM ? "Chat gelöscht." : "Raum verlassen.");
 		} catch (err) {
 			toast.error("Verbindungsfehler.");
@@ -288,34 +360,12 @@ function RoomItem({ room, isSelected, onSelect, client }: RoomItemProps) {
 		if (!client) return;
 		setShowMenu(false);
 		try {
-			const token = client.getAccessToken();
-			const base = client.baseUrl;
-			const uid = encodeURIComponent(client.getUserId() ?? "");
-			const rid = encodeURIComponent(room.roomId);
-			const method = room.isFavourite ? "DELETE" : "PUT";
-			const res = await fetch(
-				`${base}/_matrix/client/v3/user/${uid}/rooms/${rid}/tags/m.favourite`,
-				{
-					method,
-					headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-					...(method === "PUT" ? { body: JSON.stringify({ order: 0.5 }) } : {}),
-				},
-			);
-			if (res.ok) {
-				// SDK-Store sofort updaten damit UI reagiert
-				const matrixRoom = client.getRoom(room.roomId);
-				if (matrixRoom) {
-					if (room.isFavourite) {
-						delete matrixRoom.tags["m.favourite"];
-					} else {
-						matrixRoom.tags["m.favourite"] = { order: 0.5 };
-					}
-					matrixRoom.emit("Room.tags" as any, matrixRoom);
-				}
-				toast.success(room.isFavourite ? "Favorit entfernt." : "Als Favorit markiert.");
+			if (room.isFavourite) {
+				await client.deleteRoomTag(room.roomId, "m.favourite");
 			} else {
-				toast.error("Favorit konnte nicht gesetzt werden.");
+				await client.setRoomTag(room.roomId, "m.favourite", { order: 0.5 });
 			}
+			toast.success(room.isFavourite ? "Favorit entfernt." : "Als Favorit markiert.");
 		} catch (err) {
 			toast.error("Verbindungsfehler.");
 			console.error("[RoomList] favourite toggle failed:", err);
@@ -324,7 +374,6 @@ function RoomItem({ room, isSelected, onSelect, client }: RoomItemProps) {
 
 	return (
 		<div className="relative group">
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: Room selection via click */}
 			<div
 				onClick={() => onSelect(room.roomId)}
 				className={cn(
@@ -410,7 +459,6 @@ function RoomItem({ room, isSelected, onSelect, client }: RoomItemProps) {
 			{/* Kontextmenü */}
 			{showMenu && (
 				<>
-					{/* biome-ignore lint/a11y/useKeyWithClickEvents: Overlay zum Schließen */}
 					<div className="fixed inset-0 z-40" onMouseDown={() => setShowMenu(false)} />
 					<div
 						className="fixed z-50 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[160px]"

@@ -16,7 +16,8 @@ function roomInfoEqual(a: RoomInfo, b: RoomInfo): boolean {
 		a.lastMessage === b.lastMessage &&
 		a.lastTimestamp === b.lastTimestamp &&
 		a.avatarUrl === b.avatarUrl &&
-		a.otherUserId === b.otherUserId &&
+		a.dmUserId === b.dmUserId &&
+		a.membership === b.membership &&
 		a.isOnline === b.isOnline &&
 		a.isFavourite === b.isFavourite
 	);
@@ -33,8 +34,11 @@ export function useRooms(client: MatrixClient | null): RoomInfo[] {
 
 		function refresh() {
 			if (!client) return;
-			const joined = client.getRooms().filter((r) => r.getMyMembership() === "join");
-			const next = joined
+			// Join + Invite Rooms anzeigen (leave/ban ausblenden)
+			const visible = client
+				.getRooms()
+				.filter((r) => ["join", "invite"].includes(r.getMyMembership()));
+			const next = visible
 				.map((r) => resolveRoom(r, client))
 				.sort((a, b) => (b.lastTimestamp ?? 0) - (a.lastTimestamp ?? 0));
 
@@ -68,6 +72,7 @@ export function useRooms(client: MatrixClient | null): RoomInfo[] {
 		client.on(RoomEvent.Timeline, refresh);
 		client.on(RoomEvent.Name, refresh);
 		client.on(RoomEvent.Tags, refresh);
+		client.on(RoomEvent.MyMembership, refresh);
 		client.on(RoomMemberEvent.Membership, refresh);
 		client.on(UserEvent.CurrentlyActive, refresh);
 		client.on(UserEvent.Presence, refresh);
@@ -78,6 +83,7 @@ export function useRooms(client: MatrixClient | null): RoomInfo[] {
 			client.off(RoomEvent.Timeline, refresh);
 			client.off(RoomEvent.Name, refresh);
 			client.off(RoomEvent.Tags, refresh);
+			client.off(RoomEvent.MyMembership, refresh);
 			client.off(RoomMemberEvent.Membership, refresh);
 			client.off(UserEvent.CurrentlyActive, refresh);
 			client.off(UserEvent.Presence, refresh);
