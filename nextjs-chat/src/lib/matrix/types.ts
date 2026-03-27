@@ -39,6 +39,8 @@ export interface ResolvedMessage {
 	location?: { geoUri: string };
 	// Reaktionen { Emoji → Anzahl }
 	reactions?: Record<string, number>;
+	// Eigene Reactions: { Emoji → Reaction-Event-ID } (zum Entfernen/Ersetzen)
+	myReactions?: Record<string, string>;
 	// Mention-Highlight (MSC3952: m.mentions.user_ids enthält eigene User-ID)
 	isMentioned?: boolean;
 	// UI-11: Avatar-URL des Senders
@@ -67,6 +69,8 @@ export interface RoomInfo {
 	// B-6: Presence — nur für DMs (2 Mitglieder)
 	otherUserId?: string; // userId des anderen Users bei DMs
 	isOnline?: boolean; // true = currently active
+	// Favourites (m.favourite Tag)
+	isFavourite?: boolean;
 }
 
 /** Konfigurierbarer Agent-Prefix (aus NEXT_PUBLIC_MATRIX_AGENT_PREFIX oder Standard "agent-"). */
@@ -128,6 +132,11 @@ export function resolveMessage(
 ): ResolvedMessage | null {
 	const evType = ev.getType();
 	const content = ev.getContent() as Record<string, unknown>;
+
+	// Redacted non-message Events (z.B. m.reaction) komplett ausblenden
+	if (ev.isRedacted() && evType !== "m.room.message") {
+		return null;
+	}
 
 	// Gelöschte Nachrichten anzeigen
 	if (ev.isRedacted()) {
@@ -233,6 +242,10 @@ export function resolveMessage(
 	const info = content.info as Record<string, unknown> | undefined;
 	const relates = content["m.relates_to"] as Record<string, unknown> | undefined;
 
+	// Edit-Events (m.replace) nicht als separate Nachricht anzeigen — sie werden vom SDK
+	// auf dem Original-Event gemergt und über ev.replacingEvent() abgefragt
+	if (relates?.rel_type === "m.replace") return null;
+
 	// mxc:// → HTTP
 	function resolveUrl(mxcUrl: unknown): string | undefined {
 		if (typeof mxcUrl !== "string" || !mxcUrl.startsWith("mxc://") || !homeserverUrl)
@@ -250,8 +263,16 @@ export function resolveMessage(
 	const inReplyTo = relates?.["m.in_reply_to"] as { event_id?: string } | undefined;
 	const replyToId = inReplyTo?.event_id;
 
+	// Bei editierten Nachrichten: m.new_content Body bevorzugen (ohne * Prefix)
+	const replacingEv = ev.replacingEvent?.();
+	const effectiveContent = replacingEv
+		? ((replacingEv.getContent()["m.new_content"] as Record<string, unknown> | undefined) ??
+			content)
+		: content;
+
 	// Fallback-Quote aus Body entfernen (Matrix-Spec: Zeilen mit "> " am Anfang)
-	let body = (content.body as string | undefined) ?? "";
+	let body =
+		(effectiveContent.body as string | undefined) ?? (content.body as string | undefined) ?? "";
 	if (replyToId && body.startsWith("> ")) {
 		const lines = body.split("\n");
 		const firstNonQuote = lines.findIndex((l) => l !== "" && !l.startsWith("> "));
@@ -319,10 +340,15 @@ export function resolveRoom(room: Room, client?: import("matrix-js-sdk").MatrixC
 	const lastContent = lastEvent?.getContent() as Record<string, unknown> | undefined;
 	const notifs = room.getUnreadNotificationCount();
 
-	// B-6: Presence für DMs (genau 2 Mitglieder)
+	// B-6: Presence für DMs (2 joined ODER 1 joined + 1 invited)
 	const members = room.getJoinedMembers();
 	const myId = client?.getUserId();
-	const otherMember = members.length === 2 ? members.find((m) => m.userId !== myId) : undefined;
+	let otherMember = members.length === 2 ? members.find((m) => m.userId !== myId) : undefined;
+	// Fallback: invited Members (DM wo anderer noch nicht akzeptiert hat)
+	if (!otherMember && members.length === 1) {
+		const invited = room.getMembersWithMembership("invite");
+		if (invited.length === 1) otherMember = invited[0];
+	}
 	const otherUser = otherMember ? client?.getUser(otherMember.userId) : undefined;
 
 	return {
@@ -340,5 +366,6 @@ export function resolveRoom(room: Room, client?: import("matrix-js-sdk").MatrixC
 		avatarUrl: room.getMxcAvatarUrl() ?? undefined,
 		otherUserId: otherMember?.userId,
 		isOnline: otherUser?.currentlyActive ?? false,
+		isFavourite: !!room.tags?.["m.favourite"],
 	};
 }

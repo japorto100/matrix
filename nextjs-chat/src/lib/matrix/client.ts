@@ -30,15 +30,17 @@ export async function getMatrixClient(opts: MatrixClientOptions): Promise<Matrix
 	});
 	await store.startup();
 
-	const clientOpts: ICreateClientOpts & { threadSupport?: boolean } = {
-		baseUrl: opts.homeserverUrl,
-		userId: opts.userId,
-		accessToken: opts.accessToken,
-		deviceId: opts.deviceId,
-		timelineSupport: true,
-		threadSupport: true, // B-8: Thread-Unterstützung (MSC3440)
-		store,
-	};
+	const clientOpts: ICreateClientOpts & { threadSupport?: boolean; pendingEventOrdering?: string } =
+		{
+			baseUrl: opts.homeserverUrl,
+			userId: opts.userId,
+			accessToken: opts.accessToken,
+			deviceId: opts.deviceId,
+			timelineSupport: true,
+			threadSupport: true, // B-8: Thread-Unterstützung (MSC3440)
+			pendingEventOrdering: "detached", // Fix: "chronological" crasht bei sendEvent/redact/etc.
+			store,
+		};
 
 	_client = createClient(clientOpts);
 

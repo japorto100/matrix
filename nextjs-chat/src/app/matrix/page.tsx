@@ -22,8 +22,7 @@ export default async function MatrixPage() {
 				<div className="text-center max-w-md space-y-3">
 					<h2 className="font-semibold text-lg">Matrix nicht konfiguriert</h2>
 					<p className="text-sm text-muted-foreground">
-						Lege{" "}
-						<code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">.env.local</code>{" "}
+						Lege <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">.env.local</code>{" "}
 						an mit:
 					</p>
 					<pre className="text-xs bg-muted p-4 rounded-md text-left leading-relaxed">

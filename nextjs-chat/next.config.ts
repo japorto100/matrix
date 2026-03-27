@@ -12,7 +12,10 @@ const nextConfig: NextConfig = {
   // 2. Unified Caching Model (Next.js 16)
   // cacheComponents: true,
 
-  // 3. Performance & Dev
+  // 3. Docker: standalone output für minimalen Container
+  output: "standalone",
+
+  // 4. Performance & Dev
   experimental: {
     turbopackFileSystemCacheForDev: true,
     optimizePackageImports: ["lucide-react", "framer-motion", "matrix-js-sdk"],

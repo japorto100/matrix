@@ -34,7 +34,17 @@
       "Bash(bunx @biomejs/biome check --write src/lib/matrix/types.ts)",
       "Bash(npm view:*)",
       "Bash(find /d/matrix -type f -name *.ts -o -name *.js)",
-      "mcp__matrix-next__browser_eval"
+      "mcp__matrix-next__browser_eval",
+      "Bash(find /d/matrix -type f -name *.yml -o -name *.yaml -o -name *.toml -o -name *.env -o -name Dockerfile*)",
+      "Read(//c/Users/dj_fi/.claude/**)",
+      "Read(//c/Users/dj_fi/AppData/Roaming/claude/**)",
+      "mcp__next-devtools__nextjs_call",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__type_text",
+      "mcp__chrome-devtools__handle_dialog",
+      "mcp__next-devtools__nextjs_index",
+      "Bash(./node_modules/.bin/tsc --noEmit)"
     ]
   }
 }

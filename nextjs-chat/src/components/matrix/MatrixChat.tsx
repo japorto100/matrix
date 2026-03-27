@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle, BarChart2, Loader2 } from "lucide-react";
-import { EventType, RelationType } from "matrix-js-sdk";
+import { AlertCircle, BarChart2, Loader2, MessageCircle, WifiOff } from "lucide-react";
+import { ClientEvent, SyncState } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCall } from "@/lib/matrix/hooks/useCall";
@@ -14,12 +14,14 @@ import { useTyping } from "@/lib/matrix/hooks/useTyping";
 import { CallOverlay } from "./CallOverlay";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { CrossSigningSetup } from "./CrossSigningSetup";
+import { DMInfoPanel } from "./DMInfoPanel";
 import { ForwardDialog } from "./ForwardDialog";
 import { type EditState, MessageComposer } from "./MessageComposer";
 import { RoomHeader } from "./RoomHeader";
+import { RoomInfoPanel } from "./RoomInfoPanel";
 import { RoomList } from "./RoomList";
-import { RoomSettingsPanel } from "./RoomSettingsPanel";
 import { SearchPanel } from "./SearchPanel";
+import { SpaceSelector } from "./SpaceSelector";
 import { ThreadPanel } from "./ThreadPanel";
 import { Timeline } from "./Timeline";
 import { TypingIndicator } from "./TypingIndicator";
@@ -39,8 +41,23 @@ export function MatrixChat() {
 	const [forwardState, setForwardState] = useState<{ body: string; senderName: string } | null>(
 		null,
 	);
+	const [syncStatus, setSyncStatus] = useState<"syncing" | "reconnecting" | "error">("syncing");
 	const callState = useCall();
 	const crossSigning = useCrossSigning(isReady ? client : null);
+
+	// Sync-Status Listener
+	useEffect(() => {
+		if (!client) return;
+		function onSync(state: SyncState) {
+			if (state === SyncState.Syncing || state === SyncState.Prepared) setSyncStatus("syncing");
+			else if (state === SyncState.Reconnecting) setSyncStatus("reconnecting");
+			else if (state === SyncState.Error) setSyncStatus("error");
+		}
+		client.on(ClientEvent.Sync, onSync);
+		return () => {
+			client.off(ClientEvent.Sync, onSync);
+		};
+	}, [client]);
 
 	const rooms = useRooms(isReady ? client : null);
 	const { spaces } = useSpaces(isReady ? client : null);
@@ -54,6 +71,7 @@ export function MatrixChat() {
 	const selectedRoom = rooms.find((r) => r.roomId === selectedRoomId) ?? null;
 
 	// B-8: Thread-Panel schließen bei Raumwechsel
+	// biome-ignore lint/correctness/useExhaustiveDependencies: setState-Funktionen sind stabil (React-Garantie)
 	useEffect(() => {
 		setActiveThreadId(null);
 		setReplyState(null);
@@ -61,15 +79,57 @@ export function MatrixChat() {
 		setShowSearch(false);
 	}, [selectedRoomId]);
 
-	// B-3: Reaction senden
+	// B-3: Reaction senden (WhatsApp-Style: 1 pro User, Toggle, Replace)
+	// Nutzt HTTP API für redact weil client.redactEvent bei pendingEventOrdering=="chronological" crasht
 	const handleReact = useCallback(
-		(eventId: string, emoji: string) => {
+		async (eventId: string, emoji: string, myReactions?: Record<string, string>) => {
 			if (!client || !selectedRoomId) return;
-			(client.sendEvent as (r: string, t: string, c: unknown) => Promise<unknown>)(
-				selectedRoomId,
-				EventType.Reaction,
-				{ "m.relates_to": { rel_type: RelationType.Annotation, event_id: eventId, key: emoji } },
-			).catch((err) => console.error("[react] failed:", err));
+
+			const redact = async (rxnEventId: string) => {
+				try {
+					const token = client.getAccessToken();
+					await fetch(
+						`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(selectedRoomId)}/redact/${encodeURIComponent(rxnEventId)}/${Date.now()}`,
+						{
+							method: "PUT",
+							headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+							body: "{}",
+						},
+					);
+				} catch (err) {
+					console.error("[react] redact failed:", err);
+				}
+			};
+
+			const myExistingEventId = myReactions?.[emoji];
+
+			// Dasselbe Emoji nochmal → entfernen (Toggle)
+			if (myExistingEventId) {
+				await redact(myExistingEventId);
+				return;
+			}
+
+			// Alle bisherigen eigenen Reactions auf dieser Message entfernen
+			if (myReactions) {
+				await Promise.all(Object.values(myReactions).map(redact));
+			}
+
+			// Neue Reaction senden (fetch statt SDK wegen pendingEventOrdering bug)
+			try {
+				const token = client.getAccessToken();
+				await fetch(
+					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(selectedRoomId)}/send/m.reaction/${Date.now()}`,
+					{
+						method: "PUT",
+						headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+						body: JSON.stringify({
+							"m.relates_to": { rel_type: "m.annotation", event_id: eventId, key: emoji },
+						}),
+					},
+				);
+			} catch (err) {
+				console.error("[react] send failed:", err);
+			}
 		},
 		[client, selectedRoomId],
 	);
@@ -105,17 +165,29 @@ export function MatrixChat() {
 		setForwardState({ body, senderName });
 	}, []);
 
-	// QW-2: Read Receipt für die letzte Nachricht senden wenn Raum aktiv
+	// QW-2: Read Receipt senden wenn Raum aktiv + Unread lokal zurücksetzen
+	const lastMsg = messages.length > 0 ? messages[messages.length - 1] : undefined;
+	const lastEventId = lastMsg?.eventId ?? null;
 	useEffect(() => {
-		if (!client || !selectedRoomId || messages.length === 0) return;
+		if (!client || !selectedRoomId || !lastEventId) return;
 		const room = client.getRoom(selectedRoomId);
 		if (!room) return;
 		const events = room.getLiveTimeline().getEvents();
 		const lastEv = events[events.length - 1];
 		if (lastEv) {
 			client.sendReadReceipt(lastEv).catch(() => {});
+			client.setRoomReadMarkers(selectedRoomId, lastEv.getId()!).catch(() => {});
 		}
-	}, [client, selectedRoomId, messages]);
+		// Sliding Sync aktualisiert den Count nicht sofort — lokal zurücksetzen + UI refresh
+		const notifTypes = ["total", "highlight"] as const;
+		for (const t of notifTypes) {
+			(room as any).setUnreadNotificationCount?.(t, 0);
+		}
+		// ClientEvent.Room triggert useRooms refresh
+		setTimeout(() => {
+			client.emit("Room" as any, room);
+		}, 100);
+	}, [client, selectedRoomId, lastEventId]);
 
 	// Fehler-State
 	if (error) {
@@ -147,7 +219,25 @@ export function MatrixChat() {
 			{/* Cross-Signing Banner + Modal */}
 			<CrossSigningSetup cs={crossSigning} />
 
+			{/* Sync-Status Banner */}
+			{syncStatus !== "syncing" && (
+				<div className="flex items-center gap-2 px-4 py-1.5 text-xs bg-amber-500/10 text-amber-400 border-b border-amber-500/20">
+					<WifiOff className="h-3.5 w-3.5" />
+					{syncStatus === "reconnecting" ? "Verbindung wird hergestellt..." : "Verbindung verloren"}
+				</div>
+			)}
+
 			<div className="flex h-full overflow-hidden">
+				{/* Space-Rail (vertikale Icon-Leiste links) */}
+				{isReady && (
+					<SpaceSelector
+						spaces={spaces}
+						selectedSpaceId={selectedSpaceId}
+						onSelect={setSelectedSpaceId}
+						client={client}
+					/>
+				)}
+
 				{/* Sidebar — Raumliste */}
 				<RoomList
 					rooms={rooms}
@@ -157,7 +247,6 @@ export function MatrixChat() {
 					client={client}
 					spaces={spaces}
 					selectedSpaceId={selectedSpaceId}
-					onSpaceSelect={setSelectedSpaceId}
 				/>
 
 				{/* Hauptbereich + optionaler Thread-Panel */}
@@ -193,7 +282,7 @@ export function MatrixChat() {
 									onThreadOpen={handleThreadOpen}
 								/>
 								<TypingIndicator typers={typers} />
-								<div className="flex items-end border-t bg-background">
+								<div className="flex items-end border-t border-border">
 									<div className="flex-1">
 										<MessageComposer
 											client={client}
@@ -224,9 +313,18 @@ export function MatrixChat() {
 							</>
 						) : (
 							<div className="flex-1 flex items-center justify-center text-muted-foreground">
-								<div className="text-center">
-									<p className="font-medium">Raum auswählen</p>
-									<p className="text-sm mt-1">Wähle links einen Raum aus, um zu chatten.</p>
+								<div className="text-center space-y-3">
+									<div className="flex items-center justify-center">
+										<div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center">
+											<MessageCircle className="h-8 w-8 text-muted-foreground/50" />
+										</div>
+									</div>
+									<div>
+										<p className="font-medium text-foreground">Raum auswählen</p>
+										<p className="text-sm mt-1 text-muted-foreground">
+											Wähle links einen Raum aus, um zu chatten.
+										</p>
+									</div>
 								</div>
 							</div>
 						)}
@@ -252,14 +350,25 @@ export function MatrixChat() {
 						/>
 					)}
 
-					{/* UI-5+6: Room Settings Side-Panel */}
-					{showRoomSettings && !activeThreadId && selectedRoom && client && (
-						<RoomSettingsPanel
-							client={client}
-							roomId={selectedRoomId!}
-							onClose={() => setShowRoomSettings(false)}
-						/>
-					)}
+					{/* InfoPanel: DM oder Room */}
+					{showRoomSettings &&
+						!activeThreadId &&
+						selectedRoom &&
+						client &&
+						(selectedRoom.otherUserId ? (
+							<DMInfoPanel
+								client={client}
+								roomId={selectedRoomId!}
+								otherUserId={selectedRoom.otherUserId}
+								onClose={() => setShowRoomSettings(false)}
+							/>
+						) : (
+							<RoomInfoPanel
+								client={client}
+								roomId={selectedRoomId!}
+								onClose={() => setShowRoomSettings(false)}
+							/>
+						))}
 				</div>
 			</div>
 			{/* B-9: Call-Overlay (Klingeln + aktiver Call) */}

@@ -107,6 +107,9 @@ async def root():
 
 
 if __name__ == "__main__":
-    logger.info("Mock Agent startet auf http://127.0.0.1:8094")
+    import os
+
+    host = os.environ.get("MOCK_HOST", "127.0.0.1")
+    logger.info("Mock Agent startet auf http://%s:8094", host)
     logger.info("Endpunkte: POST /api/v1/agent/chat | GET /health")
-    uvicorn.run(app, host="127.0.0.1", port=8094, log_level="warning")
+    uvicorn.run(app, host=host, port=8094, log_level="warning")

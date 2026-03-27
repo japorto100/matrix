@@ -35,7 +35,6 @@ export function CallOverlay({ call }: Props) {
 			<div className="relative bg-card rounded-2xl shadow-2xl overflow-hidden w-[480px] max-w-[95vw]">
 				{/* Remote Video (groß) */}
 				<div className="relative bg-zinc-900 aspect-video w-full flex items-center justify-center">
-					{/* biome-ignore lint/a11y/useMediaCaption: Call-Video hat keine Captions */}
 					<video
 						ref={remoteVideoRef}
 						autoPlay
@@ -60,7 +59,6 @@ export function CallOverlay({ call }: Props) {
 					)}
 
 					{/* Lokales Video (klein, oben rechts) */}
-					{/* biome-ignore lint/a11y/useMediaCaption: eigenes Preview-Video */}
 					<video
 						ref={localVideoRef}
 						autoPlay

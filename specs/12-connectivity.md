@@ -288,3 +288,67 @@ Deshalb nutzen viele Firmen Relay-Services (SendGrid, Mailgun) statt eigenem Ser
 - Cloudflare Tunnel einrichten (kostenlos)
 - `tuwunel.toml`: `server_name = "matrix.deine-domain.com"`
 - Registration deaktivieren, User via Admin-API erstellen
+
+---
+
+## TURN Server (Voice/Video Calls — Production)
+
+### Warum TURN?
+
+STUN reicht nur wenn mindestens ein Peer eine direkte Verbindung herstellen kann.
+Wenn beide hinter striktem NAT sitzen (typisch bei Mobilfunk), braucht man TURN
+als Relay — der Server leitet dann Audio/Video zwischen den Peers weiter.
+
+```
+STUN:  Peer A ←──────────────────→ Peer B     (direkt, wenn NAT es erlaubt)
+TURN:  Peer A ←→ TURN-Server ←→ Peer B        (Relay, funktioniert immer)
+```
+
+### Dev: Nur STUN (jetzt aktiv)
+
+In `tuwunel.toml` sind öffentliche STUN-Server konfiguriert:
+```toml
+turn_uris = ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"]
+```
+Reicht für Calls im LAN und einfaches NAT. Kein eigener Server nötig.
+
+### Production: coturn
+
+coturn ist der Standard-TURN-Server für Matrix. Braucht einen Server mit öffentlicher IP.
+
+```bash
+# 1. coturn installieren (auf VPS oder eigenem Server)
+sudo apt install coturn
+
+# 2. /etc/turnserver.conf
+listening-port=3478
+tls-listening-port=5349
+realm=matrix.deine-domain.com
+use-auth-secret
+static-auth-secret=GENERIERTES_SECRET
+cert=/etc/letsencrypt/live/matrix.deine-domain.com/fullchain.pem
+pkey=/etc/letsencrypt/live/matrix.deine-domain.com/privkey.pem
+no-multicast-peers
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+
+# 3. tuwunel.toml (Production)
+turn_uris = ["turn:turn.deine-domain.com?transport=udp", "turn:turn.deine-domain.com?transport=tcp"]
+turn_secret = "GENERIERTES_SECRET"
+turn_ttl = 86400
+```
+
+### Alternative: Cloudflare TURN (Managed)
+
+Cloudflare bietet einen managed TURN-Service. Kein eigener Server nötig,
+aber kostenpflichtig nach Free Tier (1 GB/Monat kostenlos).
+
+### Entscheidung
+
+| Szenario | STUN reicht? | TURN nötig? |
+|---|---|---|
+| Calls im LAN | ✅ | ❌ |
+| Calls über WLAN (gleiches NAT) | ✅ | ❌ |
+| Calls Mobilfunk ↔ WLAN | ❌ | ✅ |
+| Calls Mobilfunk ↔ Mobilfunk | ❌ | ✅ |

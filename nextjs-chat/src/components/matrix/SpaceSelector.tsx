@@ -1,90 +1,123 @@
 "use client";
 
-import { ChevronDown, Layers } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Home } from "lucide-react";
+import type { MatrixClient } from "matrix-js-sdk";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { SpaceInfo } from "@/lib/matrix/hooks/useSpaces";
 import { cn } from "@/lib/utils";
+import { UserProfileDialog } from "./UserProfileDialog";
 
 interface Props {
 	spaces: SpaceInfo[];
 	selectedSpaceId: string | null;
 	onSelect: (spaceId: string | null) => void;
+	client?: MatrixClient | null;
 }
 
-export function SpaceSelector({ spaces, selectedSpaceId, onSelect }: Props) {
-	const [open, setOpen] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
+// Hash-basierte Farbe für Space-Avatare
+const SPACE_COLORS = [
+	"bg-blue-600",
+	"bg-emerald-600",
+	"bg-violet-600",
+	"bg-amber-600",
+	"bg-rose-600",
+	"bg-cyan-600",
+	"bg-indigo-600",
+	"bg-pink-600",
+];
+function spaceColor(name: string): string {
+	let hash = 0;
+	for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+	return SPACE_COLORS[Math.abs(hash) % SPACE_COLORS.length] ?? "bg-blue-600";
+}
 
-	// Click-Outside schließt das Dropdown
-	useEffect(() => {
-		if (!open) return;
-		function handleClick(e: MouseEvent) {
-			if (ref.current && !ref.current.contains(e.target as Node)) {
-				setOpen(false);
-			}
-		}
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
-	}, [open]);
-
-	if (spaces.length === 0) return null;
-
-	const selectedSpace = spaces.find((s) => s.roomId === selectedSpaceId);
-	const label = selectedSpace?.name ?? "Alle Räume";
+export function SpaceSelector({ spaces, selectedSpaceId, onSelect, client }: Props) {
+	const myUserId = client?.getUserId() ?? null;
+	const myUser = myUserId ? client?.getUser(myUserId) : null;
+	const myDisplayName = myUser?.displayName ?? myUserId ?? "";
+	const myInitials = myDisplayName.slice(0, 2).toUpperCase() || "?";
+	const myAvatarUrl = myUser?.avatarUrl?.startsWith("mxc://")
+		? `/api/matrix/media?mxc=${encodeURIComponent(myUser.avatarUrl.slice(6))}`
+		: undefined;
 
 	return (
-		<div className="relative px-3 pt-2 pb-1" ref={ref}>
+		<div className="w-14 shrink-0 flex flex-col items-center py-2 gap-1.5 border-r border-border/50 bg-sidebar overflow-y-auto scrollbar-hide">
+			{/* Home — Alle Räume */}
 			<button
 				type="button"
-				onClick={() => setOpen((v) => !v)}
+				onClick={() => onSelect(null)}
+				title="Alle Chats"
 				className={cn(
-					"w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium",
-					"hover:bg-accent hover:text-accent-foreground transition-colors",
-					"border border-border bg-background",
+					"relative flex items-center justify-center h-10 w-10 rounded-xl transition-all",
+					selectedSpaceId === null
+						? "bg-primary text-primary-foreground rounded-2xl"
+						: "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground hover:rounded-xl",
 				)}
 			>
-				<Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-				<span className="truncate flex-1 text-left">{label}</span>
-				<ChevronDown
-					className={cn(
-						"h-3 w-3 shrink-0 text-muted-foreground transition-transform",
-						open && "rotate-180",
-					)}
-				/>
+				<Home className="h-5 w-5" />
+				{selectedSpaceId === null && (
+					<span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r bg-primary" />
+				)}
 			</button>
-			{open && (
-				<div className="absolute left-3 right-3 top-full mt-1 z-20 bg-popover border rounded-md shadow-lg py-1 max-h-48 overflow-y-auto">
+
+			{/* Separator */}
+			{spaces.length > 0 && <div className="w-6 h-px bg-border/50 my-0.5" />}
+
+			{/* Space Icons */}
+			{spaces.map((space) => {
+				const isSelected = selectedSpaceId === space.roomId;
+				const initials = space.name.slice(0, 2).toUpperCase();
+				return (
 					<button
+						key={space.roomId}
 						type="button"
-						onClick={() => {
-							onSelect(null);
-							setOpen(false);
-						}}
+						onClick={() => onSelect(space.roomId)}
+						title={`${space.name} (${space.childRoomIds.length})`}
 						className={cn(
-							"w-full text-left px-3 py-1.5 text-xs hover:bg-accent transition-colors",
-							!selectedSpaceId && "font-semibold text-primary",
+							"relative flex items-center justify-center h-10 w-10 rounded-xl transition-all",
+							isSelected ? "rounded-2xl ring-2 ring-primary" : "hover:rounded-xl",
 						)}
 					>
-						Alle Räume
+						<Avatar className="h-10 w-10">
+							<AvatarFallback
+								className={cn(
+									"text-xs font-semibold text-white rounded-xl",
+									isSelected ? "rounded-2xl" : "",
+									spaceColor(space.name),
+								)}
+							>
+								{initials}
+							</AvatarFallback>
+						</Avatar>
+						{isSelected && (
+							<span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r bg-primary" />
+						)}
 					</button>
-					{spaces.map((space) => (
+				);
+			})}
+
+			{/* Spacer */}
+			<div className="flex-1" />
+
+			{/* Profil-Avatar (A4: aus Sidebar-Footer hierher) */}
+			{client && (
+				<UserProfileDialog
+					client={client}
+					trigger={
 						<button
-							key={space.roomId}
 							type="button"
-							onClick={() => {
-								onSelect(space.roomId);
-								setOpen(false);
-							}}
-							className={cn(
-								"w-full text-left px-3 py-1.5 text-xs hover:bg-accent transition-colors truncate",
-								selectedSpaceId === space.roomId && "font-semibold text-primary",
-							)}
+							title={myDisplayName}
+							className="flex items-center justify-center h-10 w-10 rounded-xl hover:rounded-2xl transition-all"
 						>
-							{space.name}
-							<span className="text-muted-foreground ml-1">({space.childRoomIds.length})</span>
+							<Avatar className="h-9 w-9">
+								{myAvatarUrl && <AvatarImage src={myAvatarUrl} />}
+								<AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
+									{myInitials}
+								</AvatarFallback>
+							</Avatar>
 						</button>
-					))}
-				</div>
+					}
+				/>
 			)}
 		</div>
 	);

@@ -24,8 +24,9 @@ allow_federation = false
 federate_created_rooms = false
 
 # ─── E2EE ────────────────────────────────────────────────────────────────────
-# Neue Invite-Räume standardmäßig verschlüsseln
-encryption_enabled_by_default_for_room_type = "invite"
+# E2EE aus — Clients entscheiden pro Raum (Privat=E2EE, Offen=kein E2EE)
+# Wird nicht auf "invite" zurückgesetzt — auch nach exec-05 bleibt Client-Entscheidung
+encryption_enabled_by_default_for_room_type = "off"
 
 # ─── Presence (B-6) ──────────────────────────────────────────────────────────
 # Für Dev aktiviert → grüner Online-Punkt in der UI.
@@ -34,15 +35,19 @@ allow_local_presence    = true
 allow_incoming_presence = false   # Federation deaktiviert, irrelevant
 allow_outgoing_presence = false   # kein Aussenden an andere Server
 
+# ─── Media: Upload-Limit ──────────────────────────────────────────────────────
+# Tuwunel/conduwuit: max_request_size in Bytes (Default 24 MB)
+max_request_size = 524288000  # 500 MB
+
 # ─── Media: Legacy-URLs erlauben (QW-4 / MSC3916) ───────────────────────────
 # Erlaubt /_matrix/media/v3/download/ ohne Auth-Header (Dev-Modus).
 # Für Production: auf false setzen und Next.js API-Proxy verwenden.
 allow_legacy_media = true
 
-# ─── TURN/STUN (Voice/Video Calls) ──────────────────────────────────────────
-# WICHTIG: Ohne TURN scheitern Calls wenn beide Peers hinter NAT sind.
-# coturn installieren und hier konfigurieren:
-# turn_uris = ["turn:turn.example.com?transport=udp", "turn:turn.example.com?transport=tcp"]
+# ─── STUN/TURN (Voice/Video Calls) ──────────────────────────────────────────
+# STUN: Öffentliche Server, kostenlos, reicht für Dev im LAN / einfaches NAT.
+# TURN: Braucht coturn auf Server mit öffentlicher IP — siehe specs/ für Prod-Setup.
+turn_uris = ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"]
 # turn_secret = "coturn-shared-secret"
 # turn_ttl = 86400
 
@@ -58,8 +63,9 @@ database_backup_path = "./homeserver/data/db-backups"
 database_backups_to_keep = 3
 
 # ─── URL Preview (B-5) ────────────────────────────────────────────────────────
-# Für Dev aktiviert. Für Production: Denylist einsetzen.
-# url_preview_domain_explicit_denylist = ["*"]
+# Deaktiviert (SSRF-Risiko). Siehe specs/16-security.md für Details.
+# Wenn keine Allowlist gesetzt → Tuwunel blockiert alle Previews.
+# url_preview_domain_contains_allowlist = [""]
 
 # ─── .well-known (F-2: Client-Discovery für Mobile-Apps) ─────────────────────
 # Tuwunel bedient /.well-known/matrix/client und /server direkt.

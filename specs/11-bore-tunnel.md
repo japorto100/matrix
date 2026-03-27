@@ -44,8 +44,12 @@ Handy ──HTTP──► bore.pub:34521
 | URL stabil | ❌ ändert sich | ❌ ändert sich | ✅ (paid) |
 | Open Source | ✅ vollständig | ⚠️ teilweise | ❌ |
 | Eigener Server | ✅ möglich | ❌ | ❌ |
-| Element X | ⚠️ Warnung | ✅ | ✅ |
+| Element X Mobile | ❌ **Funktioniert nicht** (erzwingt HTTPS) | ✅ | ✅ |
 | FluffyChat | ✅ (akzeptiert HTTP) | ✅ | ✅ |
+
+> **Wichtig:** Element X (Android/iOS) akzeptiert **kein HTTP** — nur HTTPS.
+> bore liefert nur TCP ohne TLS → Element X verweigert die Verbindung.
+> Für Element X Mobile **muss** Cloudflare Tunnel oder ngrok verwendet werden.
 
 ---
 

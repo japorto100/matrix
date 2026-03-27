@@ -31,10 +31,13 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 			const homeserverUrl = client.baseUrl;
 			const timeline = room.getLiveTimeline().getEvents();
 
-			// Reaktionen aggregieren (m.reaction events)
+			// Reaktionen aggregieren (m.reaction events, redacted ignorieren)
 			const reactionMap: Record<string, Record<string, number>> = {};
+			// Alle eigenen Reactions pro Target-Event: { targetEventId → { emoji → reactionEventId } }
+			const myReactionsMap: Record<string, Record<string, string>> = {};
 			for (const ev of timeline) {
 				if (ev.getType() !== "m.reaction") continue;
+				if (ev.isRedacted()) continue;
 				const content = ev.getContent() as Record<string, unknown>;
 				const rel = content["m.relates_to"] as
 					| { rel_type?: string; event_id?: string; key?: string }
@@ -44,6 +47,11 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 					const existing = reactionMap[rel.event_id];
 					if (existing) {
 						existing[rel.key] = (existing[rel.key] ?? 0) + 1;
+					}
+					if (ev.getSender() === myId) {
+						const myMap = myReactionsMap[rel.event_id] ?? {};
+						myMap[rel.key] = ev.getId() ?? "";
+						myReactionsMap[rel.event_id] = myMap;
 					}
 				}
 			}
@@ -78,6 +86,10 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 				// Reaktionen anfügen
 				const rxns = reactionMap[msg.eventId];
 				if (rxns) msg.reactions = rxns;
+				const myRxns = myReactionsMap[msg.eventId];
+				if (myRxns && Object.keys(myRxns).length > 0) {
+					msg.myReactions = myRxns;
+				}
 
 				// Read Receipts anfügen
 				const readers = readByMap[msg.eventId];
@@ -125,9 +137,12 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 			if (room?.roomId === roomId) buildMessages(roomId!);
 		}
 
-		// B-2 Fix: Read Receipts reaktiv aktualisieren
+		// B-2 Fix: Read Receipts reaktiv aktualisieren (debounced to avoid loops)
+		let receiptTimer: ReturnType<typeof setTimeout> | null = null;
 		function onReceipt(_ev: MatrixEvent, room: Room | undefined) {
-			if (room?.roomId === roomId) buildMessages(roomId!);
+			if (room?.roomId !== roomId) return;
+			if (receiptTimer) clearTimeout(receiptTimer);
+			receiptTimer = setTimeout(() => buildMessages(roomId!), 300);
 		}
 
 		// B-8: Thread-Update Listener für Reply-Count Aktualisierung
@@ -145,6 +160,7 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 		client.on(RoomEvent.Receipt, onReceipt);
 
 		return () => {
+			if (receiptTimer) clearTimeout(receiptTimer);
 			client.off(RoomEvent.Timeline, onTimeline);
 			client.off(RoomEvent.Redaction, onRedaction);
 			client.off(RoomEvent.Receipt, onReceipt);

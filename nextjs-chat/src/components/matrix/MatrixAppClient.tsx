@@ -1,6 +1,7 @@
 "use client";
 
 import type { MatrixCredentials } from "@/lib/matrix/types";
+import { MatrixErrorBoundary } from "./ErrorBoundary";
 import { MatrixChat } from "./MatrixChat";
 import { MatrixProvider } from "./MatrixProvider";
 
@@ -14,8 +15,10 @@ interface Props {
  */
 export function MatrixAppClient({ credentials }: Props) {
 	return (
-		<MatrixProvider credentials={credentials}>
-			<MatrixChat />
-		</MatrixProvider>
+		<MatrixErrorBoundary fallbackTitle="Chat konnte nicht geladen werden">
+			<MatrixProvider credentials={credentials}>
+				<MatrixChat />
+			</MatrixProvider>
+		</MatrixErrorBoundary>
 	);
 }

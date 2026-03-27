@@ -31,19 +31,20 @@ export function CrossSigningSetup({ cs }: Props) {
 		<>
 			{/* Banner */}
 			{state === "needs_verification" && (
-				<div className="flex items-center gap-3 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/30 text-sm">
-					<ShieldAlert className="h-4 w-4 text-yellow-500 shrink-0" />
-					<span className="flex-1 text-yellow-700 dark:text-yellow-400">
-						Dieses Gerät ist nicht verifiziert — öffne Element X um E2EE freizuschalten.
+				<div className="flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-sm">
+					<ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
+					<span className="flex-1 text-destructive/90">
+						Cross-Signing nicht eingerichtet — verbinde ein zweites Gerät (z.B. Element X) um Geräte
+						zu verifizieren.
 					</span>
 					<Button
 						size="sm"
 						variant="outline"
-						className="h-7 text-xs border-yellow-500/40 hover:bg-yellow-500/10"
+						className="h-7 text-xs border-destructive/40 hover:bg-destructive/10"
 						onClick={startVerification}
 					>
 						<ShieldCheck className="h-3.5 w-3.5 mr-1" />
-						Verifizieren
+						Einrichten
 					</Button>
 				</div>
 			)}
@@ -73,10 +74,14 @@ export function CrossSigningSetup({ cs }: Props) {
 
 					{/* Warten */}
 					{state === "verifying_wait" && (
-						<div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-							<div className="flex flex-col items-center gap-3">
-								<div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-								Warte auf Element X…
+						<div className="flex flex-col items-center gap-4 py-6 text-sm">
+							<div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+							<div className="text-center space-y-2">
+								<p className="text-muted-foreground">Warte auf Element X…</p>
+								<p className="text-xs text-muted-foreground/70">
+									Öffne Element X auf deinem Handy, logge dich mit demselben Account ein und
+									bestätige dort die Verifikationsanfrage.
+								</p>
 							</div>
 						</div>
 					)}
@@ -84,9 +89,10 @@ export function CrossSigningSetup({ cs }: Props) {
 					{/* QR Code */}
 					{state === "verifying_qr" && qrPng && (
 						<div className="flex flex-col items-center gap-3 py-2">
-							{/* biome-ignore lint/a11y/useAltText: QR-Code für Geräteverifikation */}
+							{/* biome-ignore lint/performance/noImgElement: Data-URL QR-Code, next/image nicht geeignet */}
 							<img
 								src={qrPng}
+								alt="QR-Code zur Geräteverifikation"
 								width={200}
 								height={200}
 								className="rounded-lg border bg-white p-2"

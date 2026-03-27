@@ -102,6 +102,13 @@ Credentials-Source ändern:
 const creds = await fetch("/api/matrix/credentials");  // Go liefert Token
 ```
 
+Profil-Handling (Option A):
+- Display-Name + Avatar aus dem Hauptprojekt synchronisieren, nicht im Chat editierbar
+- `src/components/matrix/UserProfileDialog.tsx` — bei Portierung entfernen oder read-only machen
+- `SpaceSelector.tsx` Zeile ~104 rendert UserProfileDialog als letztes Element in der Space-Rail → Trigger entfernen
+- Matrix-Account wird beim Hauptprojekt-Login erstellt, Display-Name vom Hauptprojekt gesetzt
+- Aktuell (Testsetup): Frei editierbar — OK für Entwicklung
+
 ### Schritt 3 — Homeserver Production-Config
 
 ```toml

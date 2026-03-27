@@ -8,7 +8,6 @@ import {
 	VerificationPhase,
 	type VerificationRequest,
 	VerificationRequestEvent,
-	type Verifier,
 	VerifierEvent,
 } from "matrix-js-sdk/lib/crypto-api/verification";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -66,6 +65,7 @@ export function useCrossSigning(client: MatrixClient | null): UseCrossSigningRet
 	}, [client]);
 
 	// Eingehende Verifikationsanfragen von Element X abfangen
+	// biome-ignore lint/correctness/useExhaustiveDependencies: processRequest ist stabil (useCallback), Re-Subscribe nicht gewünscht
 	useEffect(() => {
 		if (!client) return;
 		function onRequest(request: VerificationRequest) {
@@ -78,8 +78,9 @@ export function useCrossSigning(client: MatrixClient | null): UseCrossSigningRet
 		return () => {
 			client.off(CryptoEvent.VerificationRequestReceived, onRequest);
 		};
-	}, [client]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [client]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: cancelVerification und cleanup sind stabile Referenzen
 	const processRequest = useCallback(async (request: VerificationRequest) => {
 		// Auf Ready-Phase warten
 		await waitForPhase(request, VerificationPhase.Ready);
@@ -154,8 +155,9 @@ export function useCrossSigning(client: MatrixClient | null): UseCrossSigningRet
 				}
 			}
 		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+	}, []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: cleanup ist eine stabile Referenz
 	const startVerification = useCallback(async () => {
 		if (!client) return;
 		const crypto = client.getCrypto();
@@ -165,7 +167,12 @@ export function useCrossSigning(client: MatrixClient | null): UseCrossSigningRet
 			const request = await crypto.requestOwnUserVerification();
 			requestRef.current = request;
 			await processRequest(request);
-		} catch {
+		} catch (err) {
+			console.warn("[cross-signing] verification failed:", err);
+			// Nicht sofort zurück zu needs_verification — User soll Nachricht sehen
+			// Toast statt sofortiges Schließen
+			const { toast } = await import("sonner");
+			toast.error("Verifikation fehlgeschlagen — öffne Element X und versuche es erneut.");
 			setState("needs_verification");
 			cleanup();
 		}

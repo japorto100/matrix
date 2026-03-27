@@ -24,9 +24,9 @@ export function ThreadPanel({ client, roomId, threadRootId, threadRootMessage, o
 	);
 
 	return (
-		<div className="w-[380px] shrink-0 flex flex-col border-l bg-background overflow-hidden">
+		<div className="w-[380px] shrink-0 flex flex-col border-l border-border/50 bg-background overflow-hidden">
 			{/* Header */}
-			<div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+			<div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 shrink-0">
 				<div className="flex flex-col min-w-0">
 					<span className="text-sm font-semibold">Thread</span>
 					{threadRootMessage && (

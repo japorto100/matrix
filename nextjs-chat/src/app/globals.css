@@ -191,10 +191,46 @@
 	--info: oklch(0.7 0.12 190);
 }
 
+@layer base {
+	*,
+	*::before,
+	*::after {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground antialiased;
+	}
+}
+
 @utility scrollbar-hide {
 	-ms-overflow-style: none;
 	scrollbar-width: none;
 	&::-webkit-scrollbar {
 		display: none;
 	}
+}
+
+@utility text-status-success {
+	color: var(--success);
+}
+@utility text-status-warning {
+	color: var(--warning);
+}
+@utility text-status-error {
+	color: var(--error);
+}
+@utility text-status-info {
+	color: var(--info);
+}
+@utility bg-status-success {
+	background-color: var(--success);
+}
+@utility bg-status-warning {
+	background-color: var(--warning);
+}
+@utility bg-status-error {
+	background-color: var(--error);
+}
+@utility bg-status-info {
+	background-color: var(--info);
 }

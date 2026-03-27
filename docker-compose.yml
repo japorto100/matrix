@@ -1,0 +1,116 @@
+# Matrix Stack — Podman Compose
+# Starten:  podman-compose up         (in Machine, ~/projects/matrix/)
+# Mit Mock: podman-compose --profile dev up
+
+services:
+  # ── Homeserver (Tuwunel) ─────────────────────────────────────────────────
+  tuwunel:
+    image: ghcr.io/matrix-construct/tuwunel:latest
+    container_name: tuwunel
+    volumes:
+      - ./homeserver/tuwunel.image.toml:/etc/tuwunel/tuwunel.toml:ro
+      - tuwunel-data:/var/lib/tuwunel
+    ports:
+      - "8448:8448"
+    command: ["--config", "/etc/tuwunel/tuwunel.toml"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8448/_matrix/client/versions"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── NATS (Message Queue) ─────────────────────────────────────────────────
+  nats:
+    image: nats:2-alpine
+    container_name: nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["--js", "-m", "8222"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Go Appservice ────────────────────────────────────────────────────────
+  go-appservice:
+    build: ./go-appservice
+    container_name: go-appservice
+    env_file: ./go-appservice/.env.development
+    ports:
+      - "8090:8090"
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Python Agent Bridge ──────────────────────────────────────────────────
+  python-bridge:
+    build: ./python-agent-bridge
+    container_name: python-bridge
+    env_file: ./python-agent-bridge/.env
+    ports:
+      - "8097:8097"
+    depends_on:
+      nats:
+        condition: service_healthy
+      go-appservice:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Next.js Chat UI ──────────────────────────────────────────────────────
+  nextjs-chat:
+    build:
+      context: ./nextjs-chat
+      args:
+        - NEXT_PUBLIC_MATRIX_HOMESERVER_URL=http://localhost:8448
+    container_name: nextjs-chat
+    ports:
+      - "3000:3000"
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── LLM Mock Agent (Dev only) ───────────────────────────────────────────
+  llm-mock:
+    image: python:3.13-slim
+    container_name: llm-mock
+    working_dir: /app
+    volumes:
+      - ./llm-mock:/app:ro
+    environment:
+      - MOCK_HOST=0.0.0.0
+    entrypoint: ["sh", "-c", "pip install -q 'fastapi>=0.116.0' 'uvicorn>=0.35.0' && python mock_agent.py"]
+    ports:
+      - "8094:8094"
+    profiles:
+      - dev
+
+  # ── TURN Server (Voice/Video Call Relay) ────────────────────────────────
+  # Ohne TURN scheitern Calls wenn beide Peers hinter striktem NAT sitzen
+  # (z.B. Mobilfunk ↔ Mobilfunk). STUN allein reicht dafür nicht.
+  # Im dev-Profil nicht nötig — STUN-Server in tuwunel.toml reichen für LAN.
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    network_mode: host
+    volumes:
+      - ./homeserver/turnserver.conf:/etc/turnserver.conf:ro
+    command: ["-c", "/etc/turnserver.conf"]
+    restart: unless-stopped
+    profiles:
+      - prod
+
+volumes:
+  tuwunel-data:

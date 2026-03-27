@@ -1,13 +1,13 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
 import {
 	Download,
+	ExternalLink,
 	File,
 	FileText,
 	Film,
 	LayoutGrid,
+	Lock,
 	MapPin,
 	MessageSquare,
 	Mic,
@@ -28,6 +28,8 @@ import remarkGfm from "remark-gfm";
 import { unified } from "unified";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatFileSize, type ResolvedMessage } from "@/lib/matrix/types";
 import { cn } from "@/lib/utils";
 import { PollMessage } from "./PollMessage";
@@ -64,9 +66,9 @@ function osmUrl(geoUri: string): string {
 
 function ReplyBanner({ replyTo }: { replyTo: NonNullable<ResolvedMessage["replyTo"]> }) {
 	return (
-		<div className="flex items-start gap-1 mb-1.5 pl-2 border-l-2 border-primary/40 text-[11px] text-muted-foreground max-w-full">
-			<span className="font-medium shrink-0">{replyTo.sender}:</span>
-			<span className="truncate">{replyTo.body}</span>
+		<div className="flex flex-col gap-0.5 mb-2 pl-2.5 border-l-2 border-blue-400/50 max-w-full">
+			<span className="text-sm font-semibold text-blue-400">{replyTo.sender}</span>
+			<span className="text-sm text-muted-foreground line-clamp-2">{replyTo.body}</span>
 		</div>
 	);
 }
@@ -111,7 +113,9 @@ const htmlProcessor = unified()
 	.use(rehypeStringify);
 
 function TextContent({ message }: { message: ResolvedMessage }) {
-	const previewUrl = !message.isOwn ? extractFirstUrl(message.body) : null;
+	// URL Preview deaktiviert (SSRF-Risiko, siehe specs/16-security.md)
+	// Aktivieren: const previewUrl = !message.isOwn ? extractFirstUrl(message.body) : null;
+	const previewUrl: string | null = null;
 
 	// formatted_body vorhanden → HTML direkt verarbeiten (Matrix spec: format = "org.matrix.custom.html")
 	// Unified + rehype-parse statt ReactMarkdown, damit Markdown-Metazeichen im HTML nicht fehlinterpretiert werden.
@@ -149,10 +153,35 @@ function TextContent({ message }: { message: ResolvedMessage }) {
 	}
 	return (
 		<div>
-			<p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
+			<p className="whitespace-pre-wrap break-words text-sm">{linkifyText(message.body)}</p>
 			{previewUrl && <UrlPreview url={previewUrl} />}
 		</div>
 	);
+}
+
+/** URLs im Text als klickbare Links rendern */
+function linkifyText(text: string): (string | React.ReactElement)[] {
+	const urlRegex = /https?:\/\/[^\s<>"{}|\\^[\]`]+/g;
+	const parts: (string | React.ReactElement)[] = [];
+	let lastIndex = 0;
+	for (const match of text.matchAll(urlRegex)) {
+		const idx = match.index ?? 0;
+		if (idx > lastIndex) parts.push(text.slice(lastIndex, idx));
+		parts.push(
+			<a
+				key={idx}
+				href={match[0]}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="text-blue-400 hover:underline"
+			>
+				{match[0]}
+			</a>,
+		);
+		lastIndex = idx + match[0].length;
+	}
+	if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+	return parts;
 }
 
 function NoticeContent({ message }: { message: ResolvedMessage }) {
@@ -176,6 +205,8 @@ function ImageContent({ message }: { message: ResolvedMessage }) {
 	const src = message.thumbnailUrl ?? message.url;
 	if (!src) return <TextContent message={message} />;
 
+	const hasCaption = message.body && message.body !== message.fileName;
+
 	return (
 		<>
 			<button
@@ -188,28 +219,52 @@ function ImageContent({ message }: { message: ResolvedMessage }) {
 				<img
 					src={src}
 					alt={message.fileName ?? message.body}
-					className="rounded-lg max-w-[300px] max-h-[300px] object-contain"
+					style={{ width: 150, height: 150, maxWidth: 150, maxHeight: 150, objectFit: "contain" }}
+					className="rounded-lg bg-muted/30"
 					loading="lazy"
 				/>
 			</button>
-			{message.fileName && (
-				<p className="text-[10px] text-muted-foreground mt-1 truncate">{message.fileName}</p>
-			)}
-			{/* Lightbox-Overlay */}
+			{hasCaption && <p className="text-sm mt-1">{message.body}</p>}
+			{/* Lightbox-Dialog mit Download */}
 			{lightbox && (
-				<button
-					type="button"
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 border-0 cursor-zoom-out"
-					onClick={() => setLightbox(false)}
-					aria-label="Lightbox schließen"
-				>
-					{/* biome-ignore lint/performance/noImgElement: Matrix-URLs sind dynamisch */}
-					<img
-						src={message.url ?? src}
-						alt={message.fileName ?? message.body}
-						className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-					/>
-				</button>
+				<Dialog open={lightbox} onOpenChange={setLightbox}>
+					<DialogContent
+						className="max-w-[80vw] max-h-[85vh] p-0 bg-black/95 border-none overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-0 data-[state=open]:slide-in-from-top-0"
+						aria-describedby={undefined}
+					>
+						<DialogTitle className="sr-only">{message.fileName ?? "Bild"}</DialogTitle>
+						<div className="relative flex flex-col items-center justify-center h-full">
+							{/* biome-ignore lint/performance/noImgElement: Matrix-URLs sind dynamisch */}
+							<img
+								src={message.url ?? src}
+								alt={message.fileName ?? message.body}
+								className="max-w-full max-h-[75vh] object-contain"
+							/>
+							<div className="absolute top-2 right-2 flex items-center gap-1">
+								<a
+									href={message.url ?? src}
+									download={message.fileName ?? "image"}
+									className="h-8 w-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+									title="Herunterladen"
+								>
+									<Download className="h-4 w-4" />
+								</a>
+								<a
+									href={message.url ?? src}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="h-8 w-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+									title="In neuem Tab öffnen"
+								>
+									<ExternalLink className="h-4 w-4" />
+								</a>
+							</div>
+							{message.fileName && (
+								<p className="text-xs text-white/70 mt-2 pb-2">{message.fileName}</p>
+							)}
+						</div>
+					</DialogContent>
+				</Dialog>
 			)}
 		</>
 	);
@@ -223,7 +278,8 @@ function VideoContent({ message }: { message: ResolvedMessage }) {
 				src={message.url}
 				controls
 				poster={message.thumbnailUrl}
-				className="rounded-lg max-w-[300px] max-h-[240px]"
+				className="rounded-lg bg-black"
+				style={{ width: 250, height: 140, maxWidth: 250, maxHeight: 200, objectFit: "contain" }}
 				preload="metadata"
 			/>
 			{message.fileName && (
@@ -268,7 +324,164 @@ function AudioContent({ message }: { message: ResolvedMessage }) {
 	);
 }
 
-function FileContent({ message }: { message: ResolvedMessage }) {
+function DocxContent({ message }: { message: ResolvedMessage }) {
+	const [showPreview, setShowPreview] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!showPreview || !message.url || !containerRef.current) return;
+		let cancelled = false;
+		(async () => {
+			try {
+				const { renderAsync } = await import("docx-preview");
+				const res = await fetch(message.url!);
+				const blob = await res.blob();
+				if (cancelled || !containerRef.current) return;
+				containerRef.current.innerHTML = "";
+				await renderAsync(blob, containerRef.current, undefined, { className: "docx-preview" });
+			} catch (err) {
+				console.error("[DocxContent] render failed:", err);
+				if (containerRef.current)
+					containerRef.current.innerHTML =
+						"<p class='p-4 text-sm text-muted-foreground'>Vorschau nicht verfügbar</p>";
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [showPreview, message.url]);
+
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => setShowPreview(true)}
+				className="flex items-center gap-3 bg-muted/50 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors max-w-[280px] border-0 cursor-pointer text-left"
+			>
+				<FileText className="h-5 w-5 text-blue-500 shrink-0" />
+				<div className="flex-1 min-w-0">
+					<p className="text-xs font-medium truncate">{message.fileName ?? message.body}</p>
+					{message.fileSize !== undefined && (
+						<p className="text-[10px] text-muted-foreground">{formatFileSize(message.fileSize)}</p>
+					)}
+				</div>
+			</button>
+			{showPreview && (
+				<Dialog open={showPreview} onOpenChange={setShowPreview}>
+					<DialogContent
+						className="max-w-[80vw] max-h-[85vh] p-0 border-none overflow-hidden"
+						aria-describedby={undefined}
+					>
+						<DialogTitle className="sr-only">{message.fileName ?? "Dokument"}</DialogTitle>
+						<div ref={containerRef} className="w-full h-[80vh] overflow-auto bg-white p-4" />
+					</DialogContent>
+				</Dialog>
+			)}
+		</>
+	);
+}
+
+function XlsxContent({ message }: { message: ResolvedMessage }) {
+	const [showPreview, setShowPreview] = useState(false);
+	const [tableHtml, setTableHtml] = useState<string>("");
+
+	useEffect(() => {
+		if (!showPreview || !message.url) return;
+		let cancelled = false;
+		(async () => {
+			try {
+				const XLSX = await import("xlsx");
+				const res = await fetch(message.url!);
+				const buf = await res.arrayBuffer();
+				if (cancelled) return;
+				const wb = XLSX.read(buf, { type: "array" });
+				const sheetName = wb.SheetNames[0];
+				const ws = sheetName ? wb.Sheets[sheetName] : undefined;
+				if (ws) {
+					setTableHtml(XLSX.utils.sheet_to_html(ws));
+				}
+			} catch (err) {
+				console.error("[XlsxContent] render failed:", err);
+				setTableHtml("<p class='p-4 text-sm'>Vorschau nicht verfügbar</p>");
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [showPreview, message.url]);
+
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => setShowPreview(true)}
+				className="flex items-center gap-3 bg-muted/50 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors max-w-[280px] border-0 cursor-pointer text-left"
+			>
+				<LayoutGrid className="h-5 w-5 text-emerald-500 shrink-0" />
+				<div className="flex-1 min-w-0">
+					<p className="text-xs font-medium truncate">{message.fileName ?? message.body}</p>
+					{message.fileSize !== undefined && (
+						<p className="text-[10px] text-muted-foreground">{formatFileSize(message.fileSize)}</p>
+					)}
+				</div>
+			</button>
+			{showPreview && (
+				<Dialog open={showPreview} onOpenChange={setShowPreview}>
+					<DialogContent
+						className="max-w-[80vw] max-h-[85vh] p-0 border-none overflow-hidden"
+						aria-describedby={undefined}
+					>
+						<DialogTitle className="sr-only">{message.fileName ?? "Tabelle"}</DialogTitle>
+						{/* biome-ignore lint/security/noDangerouslySetInnerHtml: SheetJS generiert sicheres HTML aus Zelldaten */}
+						<div
+							className="w-full h-[80vh] overflow-auto bg-white p-4 text-black [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-gray-300 [&_td]:px-2 [&_td]:py-1 [&_td]:text-xs [&_th]:border [&_th]:border-gray-300 [&_th]:px-2 [&_th]:py-1 [&_th]:text-xs [&_th]:bg-gray-100 [&_th]:font-semibold"
+							dangerouslySetInnerHTML={{ __html: tableHtml }}
+						/>
+					</DialogContent>
+				</Dialog>
+			)}
+		</>
+	);
+}
+
+function PdfContent({ message }: { message: ResolvedMessage }) {
+	const [showPreview, setShowPreview] = useState(false);
+	if (!message.url) return <GenericFileContent message={message} />;
+	return (
+		<>
+			<button
+				type="button"
+				onClick={() => setShowPreview(true)}
+				className="flex items-center gap-3 bg-muted/50 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors max-w-[280px] border-0 cursor-pointer text-left"
+			>
+				<FileText className="h-5 w-5 text-red-500 shrink-0" />
+				<div className="flex-1 min-w-0">
+					<p className="text-xs font-medium truncate">{message.fileName ?? message.body}</p>
+					{message.fileSize !== undefined && (
+						<p className="text-[10px] text-muted-foreground">{formatFileSize(message.fileSize)}</p>
+					)}
+				</div>
+			</button>
+			{showPreview && (
+				<Dialog open={showPreview} onOpenChange={setShowPreview}>
+					<DialogContent
+						className="max-w-[80vw] max-h-[85vh] p-0 border-none overflow-hidden"
+						aria-describedby={undefined}
+					>
+						<DialogTitle className="sr-only">{message.fileName ?? "PDF"}</DialogTitle>
+						<iframe
+							src={message.url}
+							title={message.fileName ?? "PDF"}
+							className="w-full h-[80vh] border-0"
+						/>
+					</DialogContent>
+				</Dialog>
+			)}
+		</>
+	);
+}
+
+function GenericFileContent({ message }: { message: ResolvedMessage }) {
 	return (
 		<a
 			href={message.url ?? "#"}
@@ -287,6 +500,27 @@ function FileContent({ message }: { message: ResolvedMessage }) {
 			<Download className="h-4 w-4 text-muted-foreground shrink-0" />
 		</a>
 	);
+}
+
+function FileContent({ message }: { message: ResolvedMessage }) {
+	const mime = message.mimeType ?? "";
+	const ext = (message.fileName ?? "").split(".").pop()?.toLowerCase();
+
+	if (mime === "application/pdf") return <PdfContent message={message} />;
+	if (
+		mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+		ext === "docx"
+	)
+		return <DocxContent message={message} />;
+	if (
+		mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+		ext === "xlsx" ||
+		ext === "xls" ||
+		ext === "csv"
+	)
+		return <XlsxContent message={message} />;
+
+	return <GenericFileContent message={message} />;
 }
 
 function LocationContent({ message }: { message: ResolvedMessage }) {
@@ -321,20 +555,45 @@ function StickerContent({ message }: { message: ResolvedMessage }) {
 
 // ─── Reaktionen ──────────────────────────────────────────────────────────────
 
-function Reactions({ reactions }: { reactions: Record<string, number> }) {
+function Reactions({
+	reactions,
+	myReactions,
+	onReact,
+	eventId,
+}: {
+	reactions: Record<string, number>;
+	myReactions?: Record<string, string>;
+	onReact?: (eventId: string, emoji: string, myReactions?: Record<string, string>) => void;
+	eventId: string;
+}) {
 	const entries = Object.entries(reactions);
 	if (entries.length === 0) return null;
 	return (
 		<div className="flex flex-wrap gap-1 mt-1">
-			{entries.map(([emoji, count]) => (
-				<span
-					key={emoji}
-					className="inline-flex items-center gap-0.5 bg-muted rounded-full px-1.5 py-0.5 text-xs"
-				>
-					{emoji}
-					{count > 1 && <span className="text-[10px] text-muted-foreground">{count}</span>}
-				</span>
-			))}
+			{entries.map(([emoji, count]) => {
+				const isMine = !!myReactions?.[emoji];
+				return (
+					<button
+						key={emoji}
+						type="button"
+						className={cn(
+							"inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm transition-colors",
+							isMine ? "bg-primary/20 hover:bg-destructive/20 cursor-pointer" : "bg-muted/60",
+						)}
+						title={isMine ? "Reaktion entfernen" : emoji}
+						onClick={() => {
+							if (onReact && isMine) {
+								onReact(eventId, emoji, myReactions);
+							}
+						}}
+					>
+						<span className="text-base">{emoji}</span>
+						{count > 1 && (
+							<span className="text-xs text-muted-foreground font-medium">{count}</span>
+						)}
+					</button>
+				);
+			})}
 		</div>
 	);
 }
@@ -381,9 +640,9 @@ function messageBubble(message: ResolvedMessage) {
 	return (
 		<div
 			className={cn(
-				"rounded-2xl px-3 py-2 text-sm",
+				"inline-block rounded-2xl px-3 py-2 text-sm",
 				message.isOwn
-					? "bg-primary text-primary-foreground rounded-tr-sm"
+					? "bg-zinc-800/90 text-white rounded-tr-sm"
 					: isNotice
 						? "bg-muted/40 rounded-tl-sm border border-border"
 						: message.isMentioned
@@ -423,17 +682,11 @@ function messageBubble(message: ResolvedMessage) {
 
 // ─── Hover-Aktionen (B-3 Reactions, B-1 Edit, B-4 Redact) ───────────────────
 
-const EMOJI_CATEGORIES: Record<string, string[]> = {
-	Häufig: ["👍", "❤️", "😂", "😮", "😢", "🔥", "🎉", "✅"],
-	Gesichter: ["😊", "😄", "🤣", "😍", "🤔", "😎", "🥳", "😴"],
-	Gesten: ["👋", "🤝", "👏", "💪", "🙏", "✌️", "🤞", "👌"],
-	Herzen: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💯"],
-	Objekte: ["📊", "📈", "📉", "💰", "🏦", "⚡", "🚀", "🎯"],
-};
+const QUICK_REACTIONS = ["👍", "👎", "😂", "🔥", "😮", "😢"];
 
 interface ActionProps {
 	message: ResolvedMessage;
-	onReact?: (eventId: string, emoji: string) => void;
+	onReact?: (eventId: string, emoji: string, myReactions?: Record<string, string>) => void;
 	onReply?: (eventId: string, sender: string, body: string) => void;
 	onEdit?: (eventId: string, body: string) => void;
 	onRedact?: (eventId: string) => void;
@@ -441,152 +694,135 @@ interface ActionProps {
 }
 
 function MessageActions({ message, onReact, onReply, onEdit, onRedact, onForward }: ActionProps) {
-	const [pickerOpen, setPickerOpen] = useState(false);
-	const [emojiFilter, setEmojiFilter] = useState("");
-	const pickerRef = useRef<HTMLDivElement>(null);
+	const [showReactions, setShowReactions] = useState(false);
 
-	// B-3 Fix: Click-Outside schließt den Emoji-Picker
-	useEffect(() => {
-		if (!pickerOpen) return;
-		function handleClickOutside(e: MouseEvent) {
-			if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-				setPickerOpen(false);
-			}
-		}
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, [pickerOpen]);
-
-	// B-4 Fix: isRedacted boolean statt fragiler String-Vergleich
 	if (message.isRedacted) return null;
 
 	return (
 		<div
 			className={cn(
-				"absolute top-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-				message.isOwn ? "left-2" : "right-2",
+				"absolute -top-4 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-opacity z-10",
+				message.isOwn ? "right-2" : "left-10",
 			)}
 		>
-			{/* Reaction-Picker (B-3) */}
-			{onReact && (
-				<div className="relative" ref={pickerRef}>
-					<button
-						type="button"
-						className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-						title="Reagieren"
-						onClick={() => setPickerOpen((v) => !v)}
-					>
-						<SmilePlus className="h-3.5 w-3.5" />
-					</button>
-					{pickerOpen && (
-						<div
+			{/* Quick-Reactions Leiste — oberhalb der Action-Buttons */}
+			{showReactions && onReact && (
+				<div className="flex items-center gap-0.5 bg-popover border border-border/50 rounded-lg shadow-lg px-1.5 py-1 mb-1">
+					{QUICK_REACTIONS.map((emoji) => (
+						<button
+							key={emoji}
+							type="button"
 							className={cn(
-								"absolute bottom-full mb-1 bg-popover border rounded-xl shadow-lg p-2 z-20 w-[240px]",
-								message.isOwn ? "right-0" : "left-0",
+								"h-8 w-8 flex items-center justify-center text-base rounded hover:scale-125 transition-transform",
+								message.myReactions?.[emoji] ? "bg-primary/20" : "hover:bg-muted",
 							)}
+							title={message.myReactions?.[emoji] ? "Reaktion entfernen" : emoji}
+							onClick={() => {
+								onReact(message.eventId, emoji, message.myReactions);
+								setShowReactions(false);
+							}}
 						>
-							{/* UI-12: Emoji-Filter */}
-							<input
-								type="text"
-								value={emojiFilter}
-								onChange={(e) => setEmojiFilter(e.target.value)}
-								placeholder="Emoji suchen…"
-								className="w-full rounded-md border bg-background px-2 py-1 text-xs mb-2 focus:outline-none focus:ring-1 focus:ring-primary"
-							/>
-							<div className="max-h-[200px] overflow-y-auto space-y-1.5">
-								{Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => {
-									const filtered = emojiFilter
-										? emojis.filter((e) => e.includes(emojiFilter))
-										: emojis;
-									if (filtered.length === 0) return null;
-									return (
-										<div key={category}>
-											<span className="text-[10px] text-muted-foreground font-medium px-0.5">
-												{category}
-											</span>
-											<div className="flex flex-wrap gap-0.5 mt-0.5">
-												{filtered.map((emoji) => (
-													<button
-														key={`${category}-${emoji}`}
-														type="button"
-														className="text-base hover:scale-125 transition-transform p-0.5 rounded hover:bg-muted"
-														onClick={() => {
-															onReact(message.eventId, emoji);
-															setPickerOpen(false);
-															setEmojiFilter("");
-														}}
-													>
-														{emoji}
-													</button>
-												))}
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
-					)}
+							{emoji}
+						</button>
+					))}
 				</div>
 			)}
 
-			{/* Reply (UI-4) — alle nicht-gelöschten Nachrichten */}
-			{onReply && (
-				<button
-					type="button"
-					className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-					title="Antworten"
-					onClick={() => onReply(message.eventId, message.senderDisplayName, message.body)}
-				>
-					<Reply className="h-3.5 w-3.5" />
-				</button>
-			)}
+			{/* Action-Buttons Leiste */}
+			<div className="flex items-center gap-0.5 bg-popover border border-border/50 rounded-lg shadow-sm px-1 py-0.5">
+				{onReact && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Reagieren"
+						onClick={() => setShowReactions((v) => !v)}
+					>
+						<SmilePlus className="h-3.5 w-3.5" />
+					</Button>
+				)}
 
-			{/* UI-13: Weiterleiten */}
-			{onForward && (
-				<button
-					type="button"
-					className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-					title="Weiterleiten"
-					onClick={() => onForward(message.body, message.senderDisplayName)}
-				>
-					<Share className="h-3.5 w-3.5" />
-				</button>
-			)}
+				{onReply && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Antworten"
+						onClick={() => onReply(message.eventId, message.senderDisplayName, message.body)}
+					>
+						<Reply className="h-3.5 w-3.5" />
+					</Button>
+				)}
 
-			{/* Edit (B-1) — nur eigene Textnachrichten */}
-			{onEdit && message.isOwn && message.msgType === "m.text" && (
-				<button
-					type="button"
-					className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-					title="Bearbeiten"
-					onClick={() => onEdit(message.eventId, message.body)}
-				>
-					<Pencil className="h-3.5 w-3.5" />
-				</button>
-			)}
+				{onForward && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Weiterleiten"
+						onClick={() => onForward(message.body, message.senderDisplayName)}
+					>
+						<Share className="h-3.5 w-3.5" />
+					</Button>
+				)}
 
-			{/* Redact (B-4) — nur eigene Nachrichten */}
-			{onRedact && message.isOwn && (
-				<button
-					type="button"
-					className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-					title="Löschen"
-					onClick={() => {
-						if (confirm("Nachricht löschen?")) onRedact(message.eventId);
-					}}
-				>
-					<Trash2 className="h-3.5 w-3.5" />
-				</button>
-			)}
+				{onEdit && message.isOwn && message.msgType === "m.text" && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Bearbeiten"
+						onClick={() => onEdit(message.eventId, message.body)}
+					>
+						<Pencil className="h-3.5 w-3.5" />
+					</Button>
+				)}
+
+				{onRedact && message.isOwn && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7 hover:bg-destructive/20 hover:text-destructive"
+						title="Löschen"
+						onClick={() => {
+							if (confirm("Nachricht löschen?")) onRedact(message.eventId);
+						}}
+					>
+						<Trash2 className="h-3.5 w-3.5" />
+					</Button>
+				)}
+			</div>
 		</div>
 	);
 }
 
 // ─── MessageRaw ───────────────────────────────────────────────────────────────
 
+// Hash-basierte Sender-Farben (wie Element X Web)
+const SENDER_COLORS = [
+	"text-blue-400",
+	"text-emerald-400",
+	"text-violet-400",
+	"text-amber-400",
+	"text-rose-400",
+	"text-cyan-400",
+	"text-indigo-400",
+	"text-pink-400",
+	"text-teal-400",
+	"text-orange-400",
+	"text-lime-400",
+	"text-fuchsia-400",
+];
+function senderColor(sender: string): string {
+	let hash = 0;
+	for (let i = 0; i < sender.length; i++) hash = ((hash << 5) - hash + sender.charCodeAt(i)) | 0;
+	return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length] ?? "text-blue-400";
+}
+
 interface Props {
 	message: ResolvedMessage;
-	onReact?: (eventId: string, emoji: string) => void;
+	isGrouped?: boolean;
+	onReact?: (eventId: string, emoji: string, myReactions?: Record<string, string>) => void;
 	onReply?: (eventId: string, sender: string, body: string) => void;
 	onEdit?: (eventId: string, body: string) => void;
 	onRedact?: (eventId: string) => void;
@@ -598,6 +834,7 @@ interface Props {
 
 function MessageRaw({
 	message,
+	isGrouped,
 	onReact,
 	onReply,
 	onEdit,
@@ -609,14 +846,20 @@ function MessageRaw({
 }: Props) {
 	const [showReadBy, setShowReadBy] = useState(false);
 	const initials = message.senderDisplayName.slice(0, 2).toUpperCase();
-	const timeAgo = formatDistanceToNow(message.timestamp, { addSuffix: true, locale: de });
+	const timeStr = new Date(message.timestamp).toLocaleTimeString("de-DE", {
+		hour: "2-digit",
+		minute: "2-digit",
+	});
 	const isEmote = message.msgType === "m.emote";
+	const isDecryptError =
+		message.body.startsWith("** Unable to decrypt") || message.body.includes("DecryptionError");
 
 	return (
 		<div
 			className={cn(
-				"relative flex gap-3 px-4 py-2 group hover:bg-accent/30 transition-colors",
+				"relative flex gap-3 px-4 group hover:bg-accent/20 transition-colors",
 				message.isOwn && "flex-row-reverse",
+				isGrouped ? "py-0.5" : "py-1.5",
 			)}
 		>
 			<MessageActions
@@ -627,47 +870,57 @@ function MessageRaw({
 				onRedact={onRedact}
 				onForward={onForward}
 			/>
-			{/* Avatar — bei Emote ebenfalls zeigen */}
-			<Avatar className="h-8 w-8 shrink-0 mt-0.5">
-				{message.avatarUrl && (
-					<AvatarImage src={message.avatarUrl} alt={message.senderDisplayName} />
-				)}
-				<AvatarFallback
-					className={cn(
-						"text-xs font-semibold",
-						message.isBot
-							? "bg-primary/20 text-primary"
-							: message.isOwn
-								? "bg-accent text-accent-foreground"
-								: "bg-muted text-muted-foreground",
+			{/* Avatar — ausblenden bei gruppierten Messages */}
+			{!isGrouped ? (
+				<Avatar className="h-8 w-8 shrink-0 mt-0.5">
+					{message.avatarUrl && (
+						<AvatarImage src={message.avatarUrl} alt={message.senderDisplayName} />
 					)}
-				>
-					{message.isBot ? "AI" : initials}
-				</AvatarFallback>
-			</Avatar>
+					<AvatarFallback
+						className={cn(
+							"text-xs font-semibold text-white",
+							message.isBot ? "bg-primary/20 text-primary" : "bg-violet-600",
+						)}
+					>
+						{message.isBot ? "AI" : initials}
+					</AvatarFallback>
+				</Avatar>
+			) : (
+				<div className="w-8 shrink-0" />
+			)}
 
 			{/* Inhalt */}
-			<div className={cn("flex flex-col max-w-[75%]", message.isOwn && "items-end")}>
-				{/* Sender + Badges + Zeit (außer bei Emote: nur Zeit) */}
-				{!isEmote && (
+			<div className={cn("flex flex-col", message.isOwn ? "items-end max-w-[75%]" : "max-w-[75%]")}>
+				{/* Sender + Zeit — nur bei erstem in der Gruppe */}
+				{!isGrouped && !isEmote && (
 					<div className="flex items-baseline gap-2 mb-0.5">
-						<span className="text-sm font-medium leading-none">{message.senderDisplayName}</span>
+						<span
+							className={cn(
+								"text-sm font-semibold leading-none",
+								message.isOwn ? "text-foreground" : senderColor(message.sender),
+							)}
+						>
+							{message.senderDisplayName}
+						</span>
 						{message.isBot && (
 							<Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
 								Agent
 							</Badge>
 						)}
+						<span className="text-[10px] text-muted-foreground">{timeStr}</span>
 						{message.isEdited && (
-							<span className="text-[10px] text-muted-foreground">(bearbeitet)</span>
+							<span className="text-[10px] text-muted-foreground italic">(bearbeitet)</span>
 						)}
-						<span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-							{timeAgo}
-						</span>
 					</div>
 				)}
 
 				{/* Nachrichtenblase — B-7: Polls als Sonderfall */}
-				{message.isPoll && message.pollEventId && client && roomId ? (
+				{isDecryptError ? (
+					<div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-muted/30 border border-border/50 text-muted-foreground italic text-sm">
+						<Lock className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+						<span>Diese Nachricht kann nicht entschlüsselt werden</span>
+					</div>
+				) : message.isPoll && message.pollEventId && client && roomId ? (
 					<PollMessage
 						pollEventId={message.pollEventId}
 						roomId={roomId}
@@ -692,7 +945,12 @@ function MessageRaw({
 
 				{/* Reaktionen */}
 				{message.reactions && Object.keys(message.reactions).length > 0 && (
-					<Reactions reactions={message.reactions} />
+					<Reactions
+						reactions={message.reactions}
+						myReactions={message.myReactions}
+						onReact={onReact}
+						eventId={message.eventId}
+					/>
 				)}
 
 				{/* B-2: Read Receipts — Mini-Avatare für eigene Nachrichten (UI-14: klickbar) */}

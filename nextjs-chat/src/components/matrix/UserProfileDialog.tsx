@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +26,7 @@ export function UserProfileDialog({ client, trigger }: Props) {
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isCrossSigningReady, setIsCrossSigningReady] = useState<boolean | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Profil laden wenn Dialog öffnet
@@ -38,6 +39,13 @@ export function UserProfileDialog({ client, trigger }: Props) {
 		setAvatarMxc(user?.avatarUrl ?? undefined);
 		setAvatarPreview(undefined);
 		setSelectedFile(null);
+
+		// Cross-Signing Status prüfen
+		client
+			.getCrypto()
+			?.isCrossSigningReady()
+			.then((ready) => setIsCrossSigningReady(ready))
+			.catch(() => setIsCrossSigningReady(false));
 	}, [open, client]);
 
 	const avatarSrc =
@@ -115,6 +123,23 @@ export function UserProfileDialog({ client, trigger }: Props) {
 
 					{/* User-ID (nicht editierbar) */}
 					<p className="text-xs text-muted-foreground">{userId}</p>
+
+					{/* Cross-Signing Status */}
+					{isCrossSigningReady !== null && (
+						<div className="flex items-center gap-1.5 text-xs">
+							{isCrossSigningReady ? (
+								<>
+									<ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+									<span className="text-emerald-500">Cross-Signing eingerichtet</span>
+								</>
+							) : (
+								<>
+									<ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+									<span className="text-destructive/80">Cross-Signing nicht eingerichtet</span>
+								</>
+							)}
+						</div>
+					)}
 
 					{/* Anzeigename */}
 					<div className="w-full">
