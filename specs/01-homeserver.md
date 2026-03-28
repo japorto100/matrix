@@ -1,19 +1,27 @@
-# Matrix Homeserver — Tuwunel + Dendrite Setup
+# Matrix Homeserver — Tuwunel + Zendrite Setup
 
 ## Homeserver-Übersicht
 
-| | Synapse | Tuwunel | Dendrite |
-|---|---|---|---|
-| RAM idle | ~1 GB | **~50–150 MB** | ~200 MB |
-| RAM 100 User | 2–4 GB | **~200–500 MB** | ~400 MB |
-| Datenbank | PostgreSQL | **RocksDB** (eingebettet) | SQLite oder PostgreSQL |
-| Binary | Nein (Python) | **Ja, Single Binary** | **Ja (Go, Windows-kompatibel)** |
-| Windows Native | Nein | Nein (nur Linux) | **Ja (.exe kompilierbar)** |
-| OIDC nativ | Nein | **Ja** | Teilweise |
-| Entwicklung 2026 | stabil | **aktiv** | verlangsamt |
+| | Synapse | Tuwunel | Zendrite | ~~Dendrite~~ |
+|---|---|---|---|---|
+| RAM idle | ~1 GB | **~50–150 MB** | ~150–200 MB | ~200 MB |
+| RAM 100 User | 2–4 GB | **~200–500 MB** | ~300–400 MB | ~400 MB |
+| Datenbank | PostgreSQL | **RocksDB** (eingebettet) | SQLite oder PostgreSQL | SQLite oder PostgreSQL |
+| Binary | Nein (Python) | **Ja, Single Binary** | **Ja (Go, Windows-kompatibel)** | **Ja (Go)** |
+| Windows Native | Nein | Nein (nur Linux) | **Ja (.exe kompilierbar)** | Ja |
+| OIDC nativ | Nein | **Ja (main branch)** | Noch nicht | Teilweise |
+| Sliding Sync | Ja (nativ ab 1.114) | **Ja (nativ)** | **Ja (nativ, MSC4186)** | Nein |
+| MAS | **Ja (vollständig)** | In Arbeit | Nein | Nein |
+| Entwicklung 2026 | stabil | **aktiv** | **aktiv (Community-Fork)** | ❌ Maintenance-only |
 
 **Primär:** Tuwunel auf Linux (Production + WSL1 für lokale Dev)
-**Fallback:** Dendrite als Windows-native .exe — kein WSL nötig, ideal wenn WSL Probleme macht
+**Fallback:** Zendrite als Windows-native .exe — kein WSL nötig, ideal wenn WSL Probleme macht
+
+> **Dendrite → Zendrite Migration (28.03.2026):**
+> Dendrite wird von Element nur noch mit Security-Fixes maintained. Die Matrix Foundation
+> hat keine Ressourcen dafür. Community-Fork **Zendrite** übernimmt aktive Entwicklung:
+> native Sliding Sync, bessere Performance, weniger RAM, nahtlose Migration von Dendrite.
+> Repo: CodeFloe (EU, Forgejo-basiert). Migration ist seamless — Config bleibt kompatibel.
 
 ---
 
@@ -36,24 +44,27 @@ wsl ./tools/tuwunel --config ./homeserver/tuwunel.toml
 > **Hinweis WSL OOBE-Fehler:** Bei alten PCs kann `LxInitOobeResult / Broken pipe` auftreten.
 > Wenn Ubuntu nicht installierbar ist → Option B nutzen.
 
-### Option B: Dendrite Windows Native (.exe)
+### Option B: Zendrite Windows Native (.exe)
 
-Dendrite ist in Go geschrieben und läuft nativ unter Windows:
+Zendrite (Community-Fork von Dendrite, Go) läuft nativ unter Windows:
 
 ```powershell
-# Einmalig builden (aus D:\matrix\tools\dendrite-src\):
-go build -o ../dendrite.exe ./cmd/dendrite/
+# Einmalig builden (aus D:\matrix\tools\zendrite-src\):
+go build -o ../zendrite.exe ./cmd/zendrite/
 
 # Key generieren (einmalig):
 cd D:\matrix\tools && go run genkey.go
 
 # Starten:
-D:\matrix\tools\dendrite.exe `
+D:\matrix\tools\zendrite.exe `
   --config D:\matrix\homeserver\dendrite.yaml `
   -really-enable-open-registration   # nur für lokales Dev!
 ```
 
-**devstack.ps1 erkennt automatisch:** Wenn `tools/dendrite.exe` vorhanden → Dendrite,
+> **Migration von Dendrite:** Config-Format ist identisch. `dendrite.yaml` funktioniert
+> unverändert mit Zendrite. Einfach Binary austauschen.
+
+**devstack.ps1 erkennt automatisch:** Wenn `tools/zendrite.exe` (oder `dendrite.exe`) vorhanden → Zendrite/Dendrite,
 sonst `tools/tuwunel` via WSL1.
 
 ---
@@ -192,6 +203,6 @@ curl -X POST http://localhost:8448/_matrix/client/v3/register \
 ## Production-Entscheidung
 
 - **Production:** Tuwunel läuft als weiterer Prozess auf dem **bestehenden Server** (kein extra VPS nötig) — single binary, RocksDB eingebettet, ~50-150 MB RAM
-- **Windows-Entwicklung:** Dendrite als .exe — kein WSL, kein Docker
+- **Windows-Entwicklung:** Zendrite als .exe — kein WSL, kein Docker (Dendrite-Config kompatibel)
 - **Gemeinsame Konfiguration:** Appservice-Registration und Tokens identisch für beide — Homeserver ist austauschbar weil das Appservice-API Matrix-standardisiert ist
 - **Kein federation-Zwang:** Tuwunel läuft auch ohne öffentliche Domain (nur interne User)

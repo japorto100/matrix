@@ -381,6 +381,14 @@
 - [ ] UI-14: ReadBy Liste
 - [ ] Call starten + Overlay
 
+### Verify Gates — Mobile Infrastruktur (28.03.2026)
+- [ ] TURN Server: Metered.ca Open Relay in tuwunel.toml konfiguriert ✅ — Cross-Network Call testen
+- [ ] Push Notifications: Element X (Play Store) → Elements Sygnal automatisch → verifizieren
+- [ ] Push Notifications (Prod): ntfy + UnifiedPush evaluieren (F-Droid, kein Google)
+- [ ] Authenticated Media: MSC3916 aktiv, Element X nutzt nativ → verifizieren dass Bilder laden
+- [ ] Cross-Signing: Web-Client Verify-Button → QR-Code → Element X scannt → verifiziert
+- [ ] Zendrite: `tools/zendrite.exe` builden + testen als Windows-Fallback (statt Dendrite)
+
 ### Element X Mobile Verbindung (Cloudflare Tunnel)
 - [ ] `tools/cloudflared.exe` vorhanden ✅
 - [ ] Cloudflare Account erstellen (gratis)
@@ -389,7 +397,8 @@
 - [ ] tuwunel.toml: `well_known.client` auf Tunnel-URL setzen
 - [ ] Element X Mobile: Tunnel-URL als Homeserver eingeben
 - [ ] Login testen mit Alice oder Bob
-- [ ] Cross-Signing zwischen Web + Mobile testen
+- [ ] Cross-Signing zwischen Web + Mobile testen (QR-Code / Emoji-Vergleich)
+- [ ] Cross-Network Call testen (Mobile 4G ↔ Webapp Browser) — TURN muss funktionieren
 - [ ] Devstack2: `-Tunnel` Flag auf cloudflared umstellen (statt bore)
 
 ### Test-Accounts

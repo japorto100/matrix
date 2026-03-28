@@ -41,18 +41,127 @@ Kein Custom APK nötig — offizielle Apps + Custom Homeserver URL eintragen.
 
 ---
 
-## Push Notifications — Kein eigener Setup nötig
+## Push Notifications
+
+### Option 1: Elements Sygnal (Default, Google/Apple)
 
 Offizielle Apps aus Play Store / App Store nutzen Elements Sygnal automatisch:
 
 ```
-Tuwunel Homeserver → Elements Sygnal → Apple APNs / Google FCM → App
+Tuwunel Homeserver → Elements Sygnal (matrix.gateway.element.io) → Apple APNs / Google FCM → App
 ```
 
 Kein eigenes APNs-Zertifikat, kein FCM-Projekt nötig.
 Gilt für alle vier Apps wenn aus offiziellen Stores installiert.
 
-**Eigener Sygnal erst nötig wenn:** Custom-branded App im eigenen Store, oder Sygnal-Kontrolle gewünscht.
+**Nachteil:** Push-Metadaten (wer, welcher Raum) gehen über Google/Apple Server.
+
+### Option 2: ntfy + UnifiedPush (Open Source, kein Google) ← Empfohlen
+
+**ntfy** ist ein self-hosted Push-Service (Apache 2.0 + GPLv2). Mit **UnifiedPush**-Standard
+werden Push-Benachrichtigungen komplett ohne Google FCM zugestellt.
+
+```
+Tuwunel Homeserver → ntfy Server (self-hosted) → UnifiedPush → Element X / FluffyChat
+```
+
+**Setup:**
+1. ntfy-Server aufsetzen (Docker, ~10 MB RAM):
+   ```yaml
+   # docker-compose.yml Ergänzung
+   ntfy:
+     image: binwiederhier/ntfy
+     command: serve
+     ports:
+       - "8099:80"
+     volumes:
+       - ./homeserver/data/ntfy:/var/cache/ntfy
+   ```
+2. ntfy-App auf Android installieren (F-Droid oder Play Store)
+3. Element X / FluffyChat erkennt UnifiedPush-Distributor automatisch
+4. ntfy hat eingebautes Matrix-Push-Gateway (konvertiert Matrix Push Format → UnifiedPush)
+
+**iOS:** ntfy leitet an ntfy.sh weiter → APNs. Funktioniert, aber nicht 100% self-hosted.
+
+**Vorteile:**
+- Kein Google FCM nötig
+- Push-Daten bleiben auf eigenem Server
+- F-Droid-kompatibel (kein Google Play Services nötig)
+- FluffyChat nutzt UnifiedPush bereits nativ
+
+### Option 3: Eigener Sygnal-Server
+
+Sygnal (Elements Push-Gateway) selbst hosten. Braucht FCM-API-Key und/oder APNs-Zertifikat.
+Nur nötig bei Custom-branded App im eigenen Store.
+
+### Empfehlung
+
+Für Dev: Option 1 reicht (Element X aus Play Store, Push funktioniert sofort).
+Für Production: Option 2 (ntfy + UnifiedPush) — Open Source, kein Google, F-Droid-kompatibel.
+
+### TODO
+- [ ] ntfy-Server in docker-compose.yml aufnehmen (profile: prod)
+- [ ] ntfy Domain via Cloudflare Tunnel erreichbar machen
+- [ ] UnifiedPush auf Android-Testgerät verifizieren
+
+---
+
+## TURN Server (Voice/Video Calls)
+
+**Problem:** Calls zwischen Geräten in verschiedenen Netzwerken (z.B. Mobile 4G ↔ Desktop LAN)
+brauchen einen TURN-Server um NAT zu traversieren. STUN allein reicht nicht bei striktem NAT.
+
+**Ist-Zustand:**
+- tuwunel.toml hat STUN konfiguriert: `stun:stun.cloudflare.com:3478` + `stun:stun.l.google.com:19302`
+- TURN ist auskommentiert (`turn_secret`, `turn_ttl`)
+- `homeserver/turnserver.conf` existiert (coturn Config-Template)
+- coturn Service in `docker-compose.yml` vorhanden (profile: prod)
+- **Calls im gleichen LAN funktionieren** (STUN reicht)
+- **Calls über Internet funktionieren NICHT** (TURN fehlt)
+
+**Optionen:**
+
+| Option | Aufwand | Kosten | Empfehlung |
+|---|---|---|---|
+| **coturn self-hosted** | Mittel | Server mit Public IP nötig | Production |
+| **Cloudflare TURN** | Niedrig | Free Tier verfügbar | Dev + Production |
+| **Metered TURN** | Sehr niedrig | Free Tier (50 GB/Monat) | Schnellster Start |
+| Kein TURN | Keiner | Kostenlos | Nur LAN-Calls |
+
+**TODO:**
+- [ ] Cloudflare TURN oder Metered.ca Free Tier evaluieren
+- [ ] tuwunel.toml: `turn_uris` + `turn_secret` konfigurieren
+- [ ] Cross-Network Call testen (Mobile 4G ↔ Desktop)
+
+---
+
+## Authenticated Media (MSC3916)
+
+**Ist-Zustand:**
+- Tuwunel hat MSC3916 aktiv
+- `allow_legacy_media = true` in tuwunel.toml (Dev-Modus — Legacy-URLs ohne Auth erlaubt)
+- Next.js Media-Proxy existiert: `/api/matrix/media` → `/_matrix/client/v1/media/` mit Auth-Header
+- Fallback auf `/_matrix/media/v3/` für Legacy
+
+**Für Element X Mobile:** Funktioniert automatisch — Element X nutzt Authenticated Media nativ.
+Kein Handlungsbedarf.
+
+**Für Production:** `allow_legacy_media = false` setzen → erzwingt Auth-Header für alle Media-Requests.
+
+---
+
+## Element X Mobile — Checkliste Homeserver-Anforderungen
+
+| # | Anforderung | Status | Anmerkung |
+|---|---|---|---|
+| 1 | **Simplified Sliding Sync (MSC4186)** | ✅ | Tuwunel hat nativ. Element X hat alten MSC3575 Jan 2026 eingestellt |
+| 2 | **`.well-known/matrix/client`** | ✅ | Vorhanden |
+| 3 | **HTTPS mit gültigem TLS-Zertifikat** | ⚠️ Cloudflare Tunnel | Self-signed geht NICHT. Cloudflare Tunnel gibt automatisch gültiges TLS |
+| 4 | **Push Notifications** | ⚠️ | Play Store → Elements Sygnal automatisch. F-Droid → ntfy nötig (siehe oben) |
+| 5 | **TURN Server** | ❌ fehlt | Nur STUN konfiguriert → Cross-Network Calls gehen nicht (siehe oben) |
+| 6 | **Authenticated Media (MSC3916)** | ✅ | Tuwunel aktiv, Next.js Proxy vorhanden, Element X nutzt nativ |
+| 7 | **Cross-Signing / Device Verification** | ✅ | Web-Client hat Verify-Button mit QR-Code → Element X scannt |
+| 8 | **MAS / OIDC** | ❌ nicht nötig | Element X unterstützt klassisches Passwort-Login weiterhin |
 
 ---
 

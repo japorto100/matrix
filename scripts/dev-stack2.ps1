@@ -255,8 +255,8 @@ try {
     if (-not $SkipHomeserver) {
         $tuwunelBin = Join-Path $repoRoot "tools\tuwunel"
         $tuwunelCfg = Join-Path $repoRoot "homeserver\tuwunel.toml"
-        $dendriteBin = Join-Path $repoRoot "tools\dendrite.exe"
-        $dendriteCfg = Join-Path $repoRoot "homeserver\dendrite.yaml"
+        $zendriteBin = Join-Path $repoRoot "tools\zendrite.exe"
+        $zendriteCfg = Join-Path $repoRoot "homeserver\dendrite.yaml"  # Config-Format kompatibel mit Zendrite
 
         if (Test-Path $tuwunelBin) {
             Register-Service -Name "tuwunel" -Port 8448 -Tier "infra" -TimeoutSecs 30 `
@@ -267,15 +267,18 @@ try {
                         "cd /mnt/d/matrix && ./tools/tuwunel --config ./homeserver/tuwunel.toml") `
                     -WorkingDirectory $repoRoot
             }
-        } elseif (Test-Path $dendriteBin) {
-            Register-Service -Name "dendrite" -Port 8448 -Tier "infra" -TimeoutSecs 20 -StartAction {
+        } elseif (Test-Path $zendriteBin) {
+            # Zendrite = Community-Fork von Dendrite, Go, Windows-native
+            Register-Service -Name "zendrite" -Port 8448 -Tier "infra" -TimeoutSecs 20 -StartAction {
                 New-Item -ItemType Directory -Force -Path (Join-Path $repoRoot "homeserver\data") | Out-Null
-                Start-LoggedProcess -Name "dendrite" -FilePath $dendriteBin `
-                    -ArgumentList @("--config", $dendriteCfg, "-really-enable-open-registration") `
+                Start-LoggedProcess -Name "zendrite" -FilePath $zendriteBin `
+                    -ArgumentList @("--config", $zendriteCfg, "-really-enable-open-registration") `
                     -WorkingDirectory $repoRoot
             }
         } else {
-            Write-Host "[homeserver] No binary found (tools/tuwunel or tools/dendrite.exe)" -ForegroundColor Red
+            Write-Host "[homeserver] No binary found (tools/tuwunel or tools/zendrite.exe)" -ForegroundColor Red
+            Write-Host "  Tuwunel: Linux binary in tools/tuwunel (via WSL1)" -ForegroundColor DarkGray
+            Write-Host "  Zendrite: go build -o tools/zendrite.exe ./cmd/zendrite/ (from tools/zendrite-src)" -ForegroundColor DarkGray
         }
     }
 
@@ -415,7 +418,7 @@ try {
     if ($script:services["mock-agent"])    { Write-Host "    LLM Mock Agent:  http://127.0.0.1:8094" }
     Write-Host ""
     Write-Host "  Infrastructure" -ForegroundColor Cyan
-    if ($script:services["tuwunel"] -or $script:services["dendrite"]) {
+    if ($script:services["tuwunel"] -or $script:services["zendrite"]) {
         Write-Host "    Homeserver:      http://127.0.0.1:8448"
     }
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }

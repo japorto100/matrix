@@ -93,13 +93,13 @@ $jobs = @()
 
 # --- 1. Tuwunel Homeserver ---------------------------------------------------
 if (-not $NoHomeserver -and -not $AgentOnly -and -not $FrontendOnly) {
-  # Tuwunel (Linux via WSL) oder Dendrite (Windows native) -- automatische Erkennung
-  $tuwunelBin  = Join-Path $RootDir "tools\tuwunel"
-  $dendriteBin = Join-Path $RootDir "tools\dendrite.exe"
-  $tuwunelCfg  = Join-Path $RootDir "homeserver\tuwunel.toml"
-  $dendriteCfg = Join-Path $RootDir "homeserver\dendrite.yaml"
+  # Tuwunel (Linux via WSL) oder Zendrite (Windows native) -- automatische Erkennung
+  $tuwunelBin   = Join-Path $RootDir "tools\tuwunel"
+  $zendriteBin  = Join-Path $RootDir "tools\zendrite.exe"
+  $tuwunelCfg   = Join-Path $RootDir "homeserver\tuwunel.toml"
+  $zendriteCfg  = Join-Path $RootDir "homeserver\dendrite.yaml"  # Config-Format kompatibel
 
-  # Tuwunel bevorzugen (Linux via WSL1), Dendrite als Windows-Fallback
+  # Tuwunel bevorzugen (Linux via WSL1), Zendrite als Windows-Fallback
   if (Test-Path $tuwunelBin) {
     Write-HS "Nutze Tuwunel (via WSL1) auf :8448..."
     $jobs += Start-Job -Name "homeserver" -ScriptBlock {
@@ -110,20 +110,20 @@ if (-not $NoHomeserver -and -not $AgentOnly -and -not $FrontendOnly) {
     } -ArgumentList $RootDir
     Start-Sleep -Seconds 7   # Tuwunel braucht ~5-7s bis HTTP bereit
     Write-HS "Tuwunel gestartet (Job-ID: $($jobs[-1].Id))"
-  } elseif (Test-Path $dendriteBin) {
-    Write-HS "Nutze Dendrite (Windows native) auf :8448..."
+  } elseif (Test-Path $zendriteBin) {
+    Write-HS "Nutze Zendrite (Windows native) auf :8448..."
     # data/ Verzeichnis sicherstellen
     New-Item -ItemType Directory -Force -Path (Join-Path $RootDir "homeserver\data") | Out-Null
     $jobs += Start-Job -Name "homeserver" -ScriptBlock {
       param($bin, $cfg)
       & $bin --config $cfg -really-enable-open-registration 2>&1
-    } -ArgumentList $dendriteBin, $dendriteCfg
+    } -ArgumentList $zendriteBin, $zendriteCfg
     Start-Sleep -Seconds 3
-    Write-HS "Dendrite gestartet (Job-ID: $($jobs[-1].Id))"
+    Write-HS "Zendrite gestartet (Job-ID: $($jobs[-1].Id))"
   } else {
     Write-Host "[homeserver] WARNUNG: Kein Homeserver-Binary gefunden." -ForegroundColor Red
-    Write-Host "  Dendrite:  tools\dendrite.exe  (Go build aus dendrite-src/)" -ForegroundColor Yellow
     Write-Host "  Tuwunel:   tools\tuwunel       (Linux, via WSL1)" -ForegroundColor Yellow
+    Write-Host "  Zendrite:  tools\zendrite.exe   (Go build aus zendrite-src/)" -ForegroundColor Yellow
   }
 }
 

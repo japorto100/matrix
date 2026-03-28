@@ -32,6 +32,8 @@ allow_outgoing_presence = false
 
 # ─── Media ─────────────────────────────────────────────────────────────────
 max_request_size = 524288000  # 500 MB
+# Dev: true (Legacy-URLs ohne Auth-Header erlaubt)
+# Prod: false (erzwingt Authenticated Media MSC3916, Next.js API-Proxy übernimmt Auth)
 allow_legacy_media = true
 
 # ─── URL Preview ─────────────────────────────────────────────────────────────
@@ -45,7 +47,22 @@ database_backup_path = "/var/lib/tuwunel/db-backups"
 database_backups_to_keep = 3
 
 # ─── STUN/TURN (Voice/Video Calls) ──────────────────────────────────────────
-turn_uris = ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"]
+# Dev: Metered.ca Open Relay (kostenlos, 50 GB/Monat, Static Auth)
+# Prod: Eigener coturn Server empfohlen (docker-compose.yml hat coturn Service)
+turn_uris = [
+    "stun:stun.cloudflare.com:3478",
+    "stun:stun.l.google.com:19302",
+    "turn:a.relay.metered.ca:80",
+    "turn:a.relay.metered.ca:80?transport=tcp",
+    "turn:a.relay.metered.ca:443?transport=tcp",
+    "turns:a.relay.metered.ca:443?transport=tcp"
+]
+turn_username = "openrelayproject"
+turn_password = "openrelayproject"
+# Prod mit eigenem coturn:
+# turn_uris = ["turn:turn.yourdomain.com:3478?transport=udp", "turn:turn.yourdomain.com:3478?transport=tcp"]
+# turn_secret = "your-coturn-shared-secret"
+# turn_ttl = 86400
 
 # ─── .well-known ─────────────────────────────────────────────────────────────
 # localhost:8448 — Browser/Mobile greifen über Host-Port zu
