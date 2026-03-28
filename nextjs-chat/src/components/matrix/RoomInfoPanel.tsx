@@ -20,6 +20,7 @@ import {
 	X,
 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
+import { RoomStateEvent } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -53,20 +54,23 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const [editingTopic, setEditingTopic] = useState(false);
 	const [isLeaving, setIsLeaving] = useState(false);
 	const [leaveConfirm, setLeaveConfirm] = useState(false);
-	const [myPowerLevel, setMyPowerLevel] = useState(0);
 	const [banConfirmId, setBanConfirmId] = useState<string | null>(null);
 	const [isMuted, setIsMuted] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
+	const [pinnedIds, setPinnedIds] = useState<string[]>([]);
 	const avatarInputRef = useRef<HTMLInputElement>(null);
 
 	const room = client.getRoom(roomId);
 	const myUserId = client.getUserId() ?? "";
 	const membership = room?.getMyMembership() ?? "leave";
 	const isEncrypted = !!room?.currentState.getStateEvents("m.room.encryption", "");
-	// Power-Level Check: Wer darf Name/Topic/Avatar ändern
-	const stateDefault =
-		(room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent()
-			?.state_default as number) ?? 50;
+	// Power-Level: direkt aus currentState lesen (kein useState-Lag)
+	const powerLevelsContent = room?.currentState
+		.getStateEvents("m.room.power_levels", "")
+		?.getContent();
+	const myPowerLevel =
+		(powerLevelsContent?.users as Record<string, number> | undefined)?.[myUserId] ?? 0;
+	const stateDefault = (powerLevelsContent?.state_default as number) ?? 50;
 	const canEditRoomInfo = myPowerLevel >= stateDefault;
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: room ist abgeleiteter Wert
@@ -75,29 +79,50 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 		setRoomName(room.name || "");
 		setRoomTopic(room.currentState.getStateEvents("m.room.topic", "")?.getContent()?.topic ?? "");
 		setAvatarPreview(undefined);
-		try {
-			const powerLevels = room.currentState.getStateEvents("m.room.power_levels", "")?.getContent();
-			const myPower = (powerLevels?.users as Record<string, number> | undefined)?.[myUserId] ?? 0;
-			setMyPowerLevel(myPower);
-			const joined = room.getJoinedMembers();
-			const memberList: MemberInfo[] = joined.map((m) => {
-				const mxcAvatar = m.getMxcAvatarUrl();
-				return {
+
+		// Members via API laden (SDK-Cache hat bei Sliding Sync nicht alle)
+		// powerLevelsContent aus currentState für Member-Liste (Snapshot zum Ladezeitpunkt)
+		const plContent = room.currentState.getStateEvents("m.room.power_levels", "")?.getContent();
+		(async () => {
+			try {
+				const token = client.getAccessToken();
+				const res = await fetch(
+					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`,
+					{ headers: { Authorization: `Bearer ${token}` } },
+				);
+				if (!res.ok) throw new Error("members fetch failed");
+				const data = await res.json();
+				const joined =
+					(data.joined as Record<string, { display_name?: string; avatar_url?: string }>) ?? {};
+				const memberList: MemberInfo[] = Object.entries(joined).map(([userId, info]) => ({
+					userId,
+					displayName: info.display_name || userId.split(":")[0]?.replace("@", "") || userId,
+					powerLevel: (plContent?.users as Record<string, number> | undefined)?.[userId] ?? 0,
+					avatarUrl: info.avatar_url?.startsWith("mxc://")
+						? `/api/matrix/media?mxc=${encodeURIComponent(info.avatar_url.slice(6))}`
+						: undefined,
+				}));
+				memberList.sort(
+					(a, b) => b.powerLevel - a.powerLevel || a.displayName.localeCompare(b.displayName),
+				);
+				setMembers(memberList);
+			} catch {
+				// Fallback: SDK-Cache
+				const joined = room.getJoinedMembers();
+				const memberList: MemberInfo[] = joined.map((m) => ({
 					userId: m.userId,
 					displayName: m.name || m.userId,
-					powerLevel: (powerLevels?.users as Record<string, number> | undefined)?.[m.userId] ?? 0,
-					avatarUrl: mxcAvatar
-						? `/api/matrix/media?mxc=${encodeURIComponent(mxcAvatar.slice(6))}`
+					powerLevel: (plContent?.users as Record<string, number> | undefined)?.[m.userId] ?? 0,
+					avatarUrl: m.getMxcAvatarUrl()?.startsWith("mxc://")
+						? `/api/matrix/media?mxc=${encodeURIComponent(m.getMxcAvatarUrl()!.slice(6))}`
 						: undefined,
-				};
-			});
-			memberList.sort(
-				(a, b) => b.powerLevel - a.powerLevel || a.displayName.localeCompare(b.displayName),
-			);
-			setMembers(memberList);
-		} catch (err) {
-			console.error("[RoomInfoPanel] load failed:", err);
-		}
+				}));
+				memberList.sort(
+					(a, b) => b.powerLevel - a.powerLevel || a.displayName.localeCompare(b.displayName),
+				);
+				setMembers(memberList);
+			}
+		})();
 	}, [client, roomId, myUserId]);
 
 	// Mute-Status
@@ -113,6 +138,24 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 			/* ignore */
 		}
 	}, [client, roomId]);
+
+	// Gepinnte Nachrichten: State + Live-Listener damit InfoPanel bei Pin/Unpin neu rendert
+	useEffect(() => {
+		if (!room) return;
+		const readPinned = () => {
+			const pinned: string[] =
+				room.currentState.getStateEvents("m.room.pinned_events", "")?.getContent()?.pinned ?? [];
+			setPinnedIds(pinned);
+		};
+		readPinned();
+		const handler = (_event: unknown, _room: unknown, type: string) => {
+			if (type === "m.room.pinned_events") readPinned();
+		};
+		client.on(RoomStateEvent.Events, handler as any);
+		return () => {
+			client.off(RoomStateEvent.Events, handler as any);
+		};
+	}, [client, room, roomId]);
 
 	const toggleMute = useCallback(async () => {
 		try {
@@ -214,7 +257,7 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 		} finally {
 			setIsLeaving(false);
 		}
-	}, [client, roomId, onClose, myPowerLevel, members, myUserId]);
+	}, [client, roomId, onClose, members, myUserId, powerLevelsContent]);
 
 	const displayName = room?.name ?? "";
 	const initials = displayName.slice(0, 2).toUpperCase() || "?";
@@ -508,47 +551,96 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 					);
 				})()}
 
-				{/* Geteilte Medien */}
+				{/* Geteilte Medien — Tabs mit Inhalten */}
 				{(() => {
 					if (!room) return null;
-					const events = room.getLiveTimeline().getEvents();
-					let images = 0,
-						files = 0,
-						links = 0;
-					for (const ev of events) {
-						if (ev.getType() !== "m.room.message") continue;
-						const msgtype = ev.getContent()?.msgtype;
-						if (msgtype === "m.image") images++;
-						else if (msgtype === "m.file" || msgtype === "m.video" || msgtype === "m.audio")
-							files++;
-						if ((ev.getContent()?.body as string)?.match(/https?:\/\//)) links++;
-					}
-					if (images === 0 && files === 0 && links === 0) return null;
+					const events = room
+						.getLiveTimeline()
+						.getEvents()
+						.filter((ev) => ev.getType() === "m.room.message");
+					const mediaItems = events.filter((ev) =>
+						["m.image", "m.video"].includes(ev.getContent()?.msgtype as string),
+					);
+					const fileItems = events.filter((ev) =>
+						["m.file", "m.audio"].includes(ev.getContent()?.msgtype as string),
+					);
+					const linkItems = events.filter((ev) =>
+						(ev.getContent()?.body as string)?.match(/https?:\/\//),
+					);
+					if (mediaItems.length === 0 && fileItems.length === 0 && linkItems.length === 0)
+						return null;
 					return (
 						<div>
 							<label className="text-xs font-medium text-muted-foreground mb-2 block">
 								Geteilte Medien
 							</label>
-							<div className="flex gap-3">
-								{images > 0 && (
-									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-										<Image className="h-3.5 w-3.5" />
-										<span>{images} Bilder</span>
+							{mediaItems.length > 0 && (
+								<div className="mb-2">
+									<p className="text-[10px] text-muted-foreground mb-1">
+										<Image className="h-3 w-3 inline mr-1" />
+										Medien ({mediaItems.length})
+									</p>
+									<div className="flex flex-wrap gap-1">
+										{mediaItems.slice(0, 6).map((ev) => {
+											const url = ev.getContent()?.url as string;
+											const src = url?.startsWith("mxc://")
+												? `/api/matrix/media?mxc=${encodeURIComponent(url.slice(6))}&thumbnail=1&w=60&h=60`
+												: undefined;
+											return src ? (
+												// biome-ignore lint/performance/noImgElement: Matrix-URLs dynamisch
+												<img
+													key={ev.getId()}
+													src={src}
+													alt=""
+													className="h-12 w-12 rounded object-cover"
+													loading="lazy"
+												/>
+											) : null;
+										})}
+										{mediaItems.length > 6 && (
+											<p className="text-[10px] text-muted-foreground self-end">
+												+{mediaItems.length - 6}
+											</p>
+										)}
 									</div>
-								)}
-								{files > 0 && (
-									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-										<FileText className="h-3.5 w-3.5" />
-										<span>{files} Dateien</span>
-									</div>
-								)}
-								{links > 0 && (
-									<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-										<Link2 className="h-3.5 w-3.5" />
-										<span>{links} Links</span>
-									</div>
-								)}
-							</div>
+								</div>
+							)}
+							{fileItems.length > 0 && (
+								<div className="mb-2">
+									<p className="text-[10px] text-muted-foreground mb-1">
+										<FileText className="h-3 w-3 inline mr-1" />
+										Dateien ({fileItems.length})
+									</p>
+									{fileItems.slice(0, 3).map((ev) => (
+										<p key={ev.getId()} className="text-[10px] text-muted-foreground truncate">
+											{(ev.getContent()?.body as string) ?? "Datei"}
+										</p>
+									))}
+								</div>
+							)}
+							{linkItems.length > 0 && (
+								<div>
+									<p className="text-[10px] text-muted-foreground mb-1">
+										<Link2 className="h-3 w-3 inline mr-1" />
+										Links ({linkItems.length})
+									</p>
+									{linkItems.slice(0, 3).map((ev) => {
+										const body = ev.getContent()?.body as string;
+										const match = body?.match(/https?:\/\/[^\s]+/);
+										return match ? (
+											<a
+												key={ev.getId()}
+												href={match[0]}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-[10px] text-primary truncate block hover:underline"
+											>
+												{match[0]}
+											</a>
+										) : null;
+									})}
+								</div>
+							)}
 						</div>
 					);
 				})()}
@@ -609,10 +701,8 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 									desc: "Wer darf Name/Topic/Avatar ändern",
 								},
 							].map(({ key, label }) => {
-								const powerLevels =
-									room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent() ?? {};
 								const currentLevel =
-									(powerLevels as Record<string, number>)[key] ??
+									((powerLevelsContent ?? {}) as Record<string, number>)[key] ??
 									(key === "state_default" ? 50 : 0);
 								return (
 									<div key={key} className="flex items-center justify-between">
@@ -621,7 +711,7 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 											value={currentLevel}
 											onChange={(e) => {
 												const level = Number.parseInt(e.target.value);
-												const newPL = { ...powerLevels, [key]: level };
+												const newPL = { ...(powerLevelsContent ?? {}), [key]: level };
 												client
 													.sendStateEvent(roomId, "m.room.power_levels" as any, newPL, "")
 													.catch(() => toast.error("Berechtigung ändern fehlgeschlagen"));

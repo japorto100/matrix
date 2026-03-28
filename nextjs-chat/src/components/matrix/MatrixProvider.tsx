@@ -56,6 +56,8 @@ export function MatrixProvider({ credentials, children }: Props) {
 					["m.room.join_rules", ""],
 					["m.room.history_visibility", ""],
 					["m.room.encryption", ""],
+					["m.room.power_levels", ""],
+					["m.room.pinned_events", ""],
 					["m.room.member", "$ME"],
 				],
 				extensions: {
@@ -71,6 +73,8 @@ export function MatrixProvider({ credentials, children }: Props) {
 					required_state: [
 						["m.room.member", "$LAZY"],
 						["m.room.encryption", ""],
+						["m.room.power_levels", ""],
+						["m.room.pinned_events", ""],
 					],
 				},
 				mc,

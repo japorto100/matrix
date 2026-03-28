@@ -350,16 +350,36 @@
 - ❌ View Once: Existiert in Matrix Spec nicht, eigene Erfindung wäre nicht Spec-konform
 - ❌ Globale Rollen: Matrix hat keine — NextAuth Rollen → Power-Levels Mapping bei Portierung (Go Backend)
 
-### Noch zu verifizieren
-- [ ] DM erstellen → Bob erscheint als "Eingeladen", Name = "Bob"
-- [ ] Bob akzeptiert → normaler Chat
-- [ ] Auto-Accept DM: Alice wird eingeladen → auto-join + Toast
-- [ ] Gruppen-Einladung: Toast mit Accept/Decline
-- [ ] Read Receipts: Mini-Avatar (braucht echten zweiten Client)
-- [ ] Online-Status Dot (braucht echten zweiten Client)
-- [ ] B-8: Thread-Chip + Side-Panel (braucht Element X)
+### Verify Gates — RoomInfoPanel Features
+- [ ] Geteilte Medien: Room mit Bildern/Dateien öffnen → Zähler im InfoPanel sichtbar
+- [ ] Invite-Link: Room öffnen → InfoPanel → Link sichtbar + Copy-Button kopiert in Zwischenablage
+- [ ] Rollen-Management: Als Admin → InfoPanel → Member-Dropdown → "Moderator" wählen → Power-Level ändert sich
+- [ ] Gruppen-Einstellungen: Als Admin → InfoPanel → "Nachrichten senden" auf "Moderator+" setzen → normaler Member kann nicht mehr senden
+- [ ] Pinned Messages: Nachricht hovern → Pin-Button klicken → Toast "Angepinnt" → Pin-Liste im InfoPanel sichtbar
+- [ ] Pinned Messages: Bereits gepinnte Nachricht → PinOff-Button → Toast "Entpinnt" → verschwindet aus Liste
+- [ ] Topic Edit: Als Admin → InfoPanel → Stift bei Thema → editieren → Enter → gespeichert
+- [ ] Topic Edit: Als normaler Member → kein Stift sichtbar (wenn state_default >= 50)
+- [ ] Name Edit: Als Admin → Stift neben Name → editieren → Enter → gespeichert
+- [ ] Avatar Edit: Als Admin → Camera-Button am Avatar → Bild wählen → hochgeladen
+- [ ] Name/Avatar/Topic: Als normaler Member → kein Stift, kein Camera-Button
+
+### Verify Gates — DM + Invite
+- [ ] DM erstellen mit `@bob:matrix.local` → Name "bob" (nicht "Empty room" oder "@bob:matrix.local")
+- [ ] DM erstellen → Bob auto-accept (wenn Python Bridge / Bot) oder Invite-Sektion in RoomList
+- [ ] DMInfoPanel: Avatar, Name, User-ID, Online-Status, E2EE, Mute, Block, Chat löschen
+- [ ] DMInfoPanel: Gemeinsame Räume sichtbar (wenn Bob in gleichen Räumen)
+- [ ] Auto-Accept DM: Bob erstellt DM an Alice → Alice auto-joined + Toast
+- [ ] Auto-Accept Toggle: Profil → Checkbox aus → DM-Einladung zeigt Accept/Decline statt Auto-Join
+- [ ] Gruppen-Einladung: Bob erstellt Gruppe + lädt Alice ein → Toast mit Accept/Decline
+- [ ] Timeline Invite-Placeholder: Raum mit membership=invite → "Annehmen/Ablehnen" statt Composer
+- [ ] "Warte auf Antwort..." Banner bei DM wo anderer User invited
+
+### Verify Gates — Noch offen (braucht Element X Mobile)
+- [ ] Read Receipts: Mini-Avatar wenn anderer User liest
+- [ ] Online-Status Dot bei DM
+- [ ] B-8: Thread-Chip + Side-Panel
 - [ ] UI-14: ReadBy Liste
-- [ ] Call starten + Overlay (braucht zweites Device)
+- [ ] Call starten + Overlay
 
 ### Element X Mobile Verbindung (Cloudflare Tunnel)
 - [ ] `tools/cloudflared.exe` vorhanden ✅
