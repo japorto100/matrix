@@ -46,18 +46,27 @@ export function MessageBubble({ message }: { message: ResolvedMessage }) {
 			{message.replyTo && <ReplyBanner replyTo={message.replyTo} />}
 			{(() => {
 				switch (message.msgType) {
-					case "m.image": return <ImageContent message={message} />;
-					case "m.video": return <VideoContent message={message} />;
-					case "m.audio": return <AudioContent message={message} />;
-					case "m.file": return <FileContent message={message} />;
-					case "m.location": return <LocationContent message={message} />;
-					case "m.notice": return <NoticeContent message={message} />;
-					case "m.widget": return (
-						<div className="flex items-center gap-2 text-xs text-muted-foreground italic">
-							<LayoutGrid className="h-4 w-4 shrink-0" /><span>{message.body}</span>
-						</div>
-					);
-					default: return <TextContent message={message} />;
+					case "m.image":
+						return <ImageContent message={message} />;
+					case "m.video":
+						return <VideoContent message={message} />;
+					case "m.audio":
+						return <AudioContent message={message} />;
+					case "m.file":
+						return <FileContent message={message} />;
+					case "m.location":
+						return <LocationContent message={message} />;
+					case "m.notice":
+						return <NoticeContent message={message} />;
+					case "m.widget":
+						return (
+							<div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+								<LayoutGrid className="h-4 w-4 shrink-0" />
+								<span>{message.body}</span>
+							</div>
+						);
+					default:
+						return <TextContent message={message} />;
 				}
 			})()}
 		</div>

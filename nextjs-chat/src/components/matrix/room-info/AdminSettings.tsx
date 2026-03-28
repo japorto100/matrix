@@ -3,7 +3,6 @@
 import { Shield } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { toast } from "sonner";
-import type { MemberInfo } from "@/lib/matrix/hooks/useRoomMembers";
 import {
 	Select,
 	SelectContent,
@@ -11,6 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import type { MemberInfo } from "@/lib/matrix/hooks/useRoomMembers";
 
 interface RoleProps {
 	members: MemberInfo[];

@@ -440,6 +440,22 @@ Element X zeigt "Video call started" + "Join call" Button inline in der Message-
 - Bei Portierung zum Hauptprojekt: Profil in App-Settings (Hauptprojekt hat eigenes Settings-UI)
 - Chat-Komponente sollte kein eigenes Profil-UI haben
 
+### MessageComposer Refactoring (zu evaluieren)
+- Aktuell 634 LOC, reviewed in exec-07 Phase 9 — bewusst zusammen gelassen (Refs stark verflochten)
+- Option: Aufbrechen in composer/ mit Hooks (useVoiceRecording, useFileUpload, useSendMessage)
+- Vorteil: Hooks wiederverwendbar (z.B. Voice Recording im ThreadPanel), ~380 LOC verteilt
+- Risiko: Geteilte Refs (recorderRef, audioChunksRef) machen Hook-Extraktion nicht trivial
+- Entscheidung: Evaluieren wenn Composer erweitert wird oder bei Portierung
+
+### api.ts fuer zentralisierte Matrix-API-Calls (zu evaluieren)
+- Aktuell sind Fetch-Calls (fetchRoomMembers, setRoomAvatar, setUserAvatar) inline in Hooks/Komponenten
+- Lohnt sich wenn: mehrere Stellen gleiche Calls brauchen, Error-Handling/Retry zentralisiert, bei Portierung
+- Aktuell kein Duplikat → kein akuter Bedarf
+- **Hinweis fetch in useRoomMembers:** `room.getJoinedMembers()` liefert bei Sliding Sync nicht alle Members
+  (SDK cached nur die die der Client bisher "gesehen" hat). Deshalb holt der Hook Members via REST API
+  (`/_matrix/client/v3/rooms/{roomId}/joined_members`) mit SDK-Cache als Fallback. Wenn Sliding Sync
+  das irgendwann korrekt cached, kann der fetch weg und `room.getJoinedMembers()` reicht allein.
+
 ### Audio-Nachricht
 - Recording-UI implementiert (Mic/MicOff, Timer, Send)
 - Upload als `m.audio` mit `org.matrix.msc3245.voice` Flag

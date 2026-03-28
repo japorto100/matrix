@@ -20,9 +20,7 @@ export function SharedMedia({ room }: Props) {
 	const fileItems = events.filter((ev) =>
 		["m.file", "m.audio"].includes(ev.getContent()?.msgtype as string),
 	);
-	const linkItems = events.filter((ev) =>
-		(ev.getContent()?.body as string)?.match(/https?:\/\//),
-	);
+	const linkItems = events.filter((ev) => (ev.getContent()?.body as string)?.match(/https?:\/\//));
 	if (mediaItems.length === 0 && fileItems.length === 0 && linkItems.length === 0) return null;
 
 	return (
@@ -42,7 +40,13 @@ export function SharedMedia({ room }: Props) {
 							const src = url?.startsWith("mxc://") ? mxcToThumbnail(url, "", 60, 60) : undefined;
 							return src ? (
 								// biome-ignore lint/performance/noImgElement: Matrix-URLs dynamisch
-								<img key={ev.getId()} src={src} alt="" className="h-12 w-12 rounded object-cover" loading="lazy" />
+								<img
+									key={ev.getId()}
+									src={src}
+									alt=""
+									className="h-12 w-12 rounded object-cover"
+									loading="lazy"
+								/>
 							) : null;
 						})}
 						{mediaItems.length > 6 && (
@@ -74,7 +78,13 @@ export function SharedMedia({ room }: Props) {
 						const body = ev.getContent()?.body as string;
 						const match = body?.match(/https?:\/\/[^\s]+/);
 						return match ? (
-							<a key={ev.getId()} href={match[0]} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary truncate block hover:underline">
+							<a
+								key={ev.getId()}
+								href={match[0]}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-[10px] text-primary truncate block hover:underline"
+							>
 								{match[0]}
 							</a>
 						) : null;

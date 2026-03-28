@@ -27,6 +27,7 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 	const [fetchKey, setFetchKey] = useState(0);
 	const refresh = useCallback(() => setFetchKey((k) => k + 1), []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: fetchKey is intentional refresh trigger
 	useEffect(() => {
 		if (!client || !roomId) {
 			setMembers([]);
@@ -54,9 +55,7 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 					userId,
 					displayName: info.display_name || userId.split(":")[0]?.replace("@", "") || userId,
 					powerLevel: usersMap?.[userId] ?? usersDefault,
-					avatarUrl: info.avatar_url?.startsWith("mxc://")
-						? mxcToHttp(info.avatar_url)
-						: undefined,
+					avatarUrl: info.avatar_url?.startsWith("mxc://") ? mxcToHttp(info.avatar_url) : undefined,
 				}));
 				memberList.sort(
 					(a, b) => b.powerLevel - a.powerLevel || a.displayName.localeCompare(b.displayName),

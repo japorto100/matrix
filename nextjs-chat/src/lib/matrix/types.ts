@@ -80,8 +80,8 @@ export interface RoomInfo {
 	isFavourite?: boolean;
 }
 
+export { isAgentUser, resolveMessage, resolveRoom } from "./resolvers";
 // ─── Re-Exports für Backward-Kompatibilität ──────────────────────────────────
 // Bestehende Imports wie `import { mxcToHttp } from "@/lib/matrix/types"` funktionieren weiterhin.
 // Neue Imports sollten direkt aus ./utils oder ./resolvers kommen.
-export { mxcToHttp, mxcToThumbnail, formatFileSize } from "./utils";
-export { resolveMessage, resolveRoom, isAgentUser } from "./resolvers";
+export { formatFileSize, mxcToHttp, mxcToThumbnail } from "./utils";

@@ -5,8 +5,6 @@ import type { MatrixClient } from "matrix-js-sdk";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
 	Dialog,
 	DialogContent,
@@ -15,6 +13,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { getAutoAcceptDMs, setAutoAcceptDMs } from "@/lib/matrix/hooks/useAutoAcceptInvites";
 import { mxcToHttp } from "@/lib/matrix/utils";
 
@@ -56,8 +56,7 @@ export function UserProfileDialog({ client, trigger }: Props) {
 	}, [open, client]);
 
 	const avatarSrc =
-		avatarPreview ??
-		(avatarMxc?.startsWith("mxc://") ? mxcToHttp(avatarMxc) : undefined);
+		avatarPreview ?? (avatarMxc?.startsWith("mxc://") ? mxcToHttp(avatarMxc) : undefined);
 
 	const initials = displayName.slice(0, 2).toUpperCase() || "?";
 

@@ -34,7 +34,9 @@ export function Reactions({
 						}}
 					>
 						<span className="text-base">{emoji}</span>
-						{count > 1 && <span className="text-xs text-muted-foreground font-medium">{count}</span>}
+						{count > 1 && (
+							<span className="text-xs text-muted-foreground font-medium">{count}</span>
+						)}
 					</button>
 				);
 			})}
@@ -42,12 +44,23 @@ export function Reactions({
 	);
 }
 
-export function ThreadChip({ count, onOpen, isOwn }: { count: number; onOpen: () => void; isOwn: boolean }) {
+export function ThreadChip({
+	count,
+	onOpen,
+	isOwn,
+}: {
+	count: number;
+	onOpen: () => void;
+	isOwn: boolean;
+}) {
 	return (
 		<button
 			type="button"
 			onClick={onOpen}
-			className={cn("mt-1 flex items-center gap-1 text-xs font-medium text-primary hover:underline", isOwn && "self-end")}
+			className={cn(
+				"mt-1 flex items-center gap-1 text-xs font-medium text-primary hover:underline",
+				isOwn && "self-end",
+			)}
 		>
 			<MessageSquare className="h-3 w-3" />
 			{count} {count === 1 ? "Antwort" : "Antworten"}

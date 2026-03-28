@@ -25,9 +25,7 @@ export function useMessageActions(client: MatrixClient | null, roomId: string | 
 			// Alle bisherigen eigenen Reactions entfernen
 			if (myReactions) {
 				await Promise.all(
-					Object.values(myReactions).map((id) =>
-						client.redactEvent(roomId, id).catch(() => {}),
-					),
+					Object.values(myReactions).map((id) => client.redactEvent(roomId, id).catch(() => {})),
 				);
 			}
 
@@ -48,9 +46,7 @@ export function useMessageActions(client: MatrixClient | null, roomId: string | 
 	const handleRedact = useCallback(
 		(eventId: string) => {
 			if (!client || !roomId) return;
-			client
-				.redactEvent(roomId, eventId)
-				.catch((err) => console.error("[redact] failed:", err));
+			client.redactEvent(roomId, eventId).catch((err) => console.error("[redact] failed:", err));
 		},
 		[client, roomId],
 	);

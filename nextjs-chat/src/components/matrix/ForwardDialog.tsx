@@ -4,8 +4,8 @@ import { Loader2 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import type { RoomInfo } from "@/lib/matrix/types";
 
 interface Props {

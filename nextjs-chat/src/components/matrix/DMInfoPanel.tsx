@@ -19,8 +19,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useMuteRoom } from "@/lib/matrix/hooks/useMuteRoom";
 import { mxcToHttp } from "@/lib/matrix/utils";
-import { EncryptionBadge } from "./shared/EncryptionBadge";
 import { cn } from "@/lib/utils";
+import { EncryptionBadge } from "./shared/EncryptionBadge";
 
 interface Props {
 	client: MatrixClient;

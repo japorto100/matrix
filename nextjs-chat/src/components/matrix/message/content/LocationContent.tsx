@@ -15,7 +15,12 @@ export function LocationContent({ message }: { message: ResolvedMessage }) {
 	if (!message.location) return <TextContent message={message} />;
 	const url = osmUrl(message.location.geoUri);
 	return (
-		<a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+		<a
+			href={url}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="flex items-center gap-2 text-sm text-primary hover:underline"
+		>
 			<MapPin className="h-4 w-4 shrink-0" />
 			<span>Standort öffnen</span>
 		</a>

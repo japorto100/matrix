@@ -64,32 +64,70 @@ export function MessageActions({
 
 			<div className="flex items-center gap-0.5 bg-popover border border-border/50 rounded-lg shadow-sm px-1 py-0.5">
 				{onReact && (
-					<Button variant="ghost" size="icon" className="h-7 w-7" title="Reagieren" onClick={() => setShowReactions((v) => !v)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Reagieren"
+						onClick={() => setShowReactions((v) => !v)}
+					>
 						<SmilePlus className="h-3.5 w-3.5" />
 					</Button>
 				)}
 				{onReply && (
-					<Button variant="ghost" size="icon" className="h-7 w-7" title="Antworten" onClick={() => onReply(message.eventId, message.senderDisplayName, message.body)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Antworten"
+						onClick={() => onReply(message.eventId, message.senderDisplayName, message.body)}
+					>
 						<Reply className="h-3.5 w-3.5" />
 					</Button>
 				)}
 				{onForward && (
-					<Button variant="ghost" size="icon" className="h-7 w-7" title="Weiterleiten" onClick={() => onForward(message.body, message.senderDisplayName)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Weiterleiten"
+						onClick={() => onForward(message.body, message.senderDisplayName)}
+					>
 						<Share className="h-3.5 w-3.5" />
 					</Button>
 				)}
 				{onPin && (
-					<Button variant="ghost" size="icon" className={cn("h-7 w-7", isPinned && "text-amber-500")} title={isPinned ? "Entpinnen" : "Anpinnen"} onClick={() => onPin(message.eventId)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className={cn("h-7 w-7", isPinned && "text-amber-500")}
+						title={isPinned ? "Entpinnen" : "Anpinnen"}
+						onClick={() => onPin(message.eventId)}
+					>
 						{isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
 					</Button>
 				)}
 				{onEdit && message.isOwn && message.msgType === "m.text" && (
-					<Button variant="ghost" size="icon" className="h-7 w-7" title="Bearbeiten" onClick={() => onEdit(message.eventId, message.body)}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Bearbeiten"
+						onClick={() => onEdit(message.eventId, message.body)}
+					>
 						<Pencil className="h-3.5 w-3.5" />
 					</Button>
 				)}
 				{onRedact && message.isOwn && (
-					<Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/20 hover:text-destructive" title="Löschen" onClick={() => { if (confirm("Nachricht löschen?")) onRedact(message.eventId); }}>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7 hover:bg-destructive/20 hover:text-destructive"
+						title="Löschen"
+						onClick={() => {
+							if (confirm("Nachricht löschen?")) onRedact(message.eventId);
+						}}
+					>
 						<Trash2 className="h-3.5 w-3.5" />
 					</Button>
 				)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mxcToHttp, hashColor } from "@/lib/matrix/utils";
+import { hashColor, mxcToHttp } from "@/lib/matrix/utils";
 import { cn } from "@/lib/utils";
 
 const BG_COLORS = [

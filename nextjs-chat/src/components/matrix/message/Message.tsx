@@ -89,8 +89,15 @@ function MessageRaw({
 			/>
 			{!isGrouped ? (
 				<Avatar className="h-8 w-8 shrink-0 mt-0.5">
-					{message.avatarUrl && <AvatarImage src={message.avatarUrl} alt={message.senderDisplayName} />}
-					<AvatarFallback className={cn("text-xs font-semibold text-white", message.isBot ? "bg-primary/20 text-primary" : "bg-violet-600")}>
+					{message.avatarUrl && (
+						<AvatarImage src={message.avatarUrl} alt={message.senderDisplayName} />
+					)}
+					<AvatarFallback
+						className={cn(
+							"text-xs font-semibold text-white",
+							message.isBot ? "bg-primary/20 text-primary" : "bg-violet-600",
+						)}
+					>
 						{message.isBot ? "AI" : initials}
 					</AvatarFallback>
 				</Avatar>
@@ -101,12 +108,23 @@ function MessageRaw({
 			<div className={cn("flex flex-col", message.isOwn ? "items-end max-w-[75%]" : "max-w-[75%]")}>
 				{!isGrouped && !isEmote && (
 					<div className="flex items-baseline gap-2 mb-0.5">
-						<span className={cn("text-sm font-semibold leading-none", message.isOwn ? "text-foreground" : senderColor(message.sender))}>
+						<span
+							className={cn(
+								"text-sm font-semibold leading-none",
+								message.isOwn ? "text-foreground" : senderColor(message.sender),
+							)}
+						>
 							{message.senderDisplayName}
 						</span>
-						{message.isBot && <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">Agent</Badge>}
+						{message.isBot && (
+							<Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+								Agent
+							</Badge>
+						)}
 						<span className="text-[10px] text-muted-foreground">{timeStr}</span>
-						{message.isEdited && <span className="text-[10px] text-muted-foreground italic">(bearbeitet)</span>}
+						{message.isEdited && (
+							<span className="text-[10px] text-muted-foreground italic">(bearbeitet)</span>
+						)}
 					</div>
 				)}
 
@@ -116,29 +134,68 @@ function MessageRaw({
 						<span>Diese Nachricht kann nicht entschlüsselt werden</span>
 					</div>
 				) : message.isPoll && message.pollEventId && client && roomId ? (
-					<PollMessage pollEventId={message.pollEventId} roomId={roomId} client={client} isOwn={message.isOwn} />
+					<PollMessage
+						pollEventId={message.pollEventId}
+						roomId={roomId}
+						client={client}
+						isOwn={message.isOwn}
+					/>
 				) : (
 					<MessageBubble message={message} />
 				)}
 
-				{message.isThreadRoot && message.threadReplyCount !== undefined && message.threadReplyCount > 0 && onThreadOpen && (
-					<ThreadChip count={message.threadReplyCount} onOpen={() => onThreadOpen(message.eventId)} isOwn={message.isOwn} />
-				)}
+				{message.isThreadRoot &&
+					message.threadReplyCount !== undefined &&
+					message.threadReplyCount > 0 &&
+					onThreadOpen && (
+						<ThreadChip
+							count={message.threadReplyCount}
+							onOpen={() => onThreadOpen(message.eventId)}
+							isOwn={message.isOwn}
+						/>
+					)}
 
 				{message.reactions && Object.keys(message.reactions).length > 0 && (
-					<Reactions reactions={message.reactions} myReactions={message.myReactions} onReact={onReact} eventId={message.eventId} />
+					<Reactions
+						reactions={message.reactions}
+						myReactions={message.myReactions}
+						onReact={onReact}
+						eventId={message.eventId}
+					/>
 				)}
 
 				{message.isOwn && message.readBy && message.readBy.length > 0 && (
 					<>
-						<button type="button" className="flex items-center gap-0.5 mt-0.5 bg-transparent border-0 p-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowReadBy(true)} title="Gelesen von…">
+						<button
+							type="button"
+							className="flex items-center gap-0.5 mt-0.5 bg-transparent border-0 p-0 cursor-pointer hover:opacity-80 transition-opacity"
+							onClick={() => setShowReadBy(true)}
+							title="Gelesen von…"
+						>
 							{message.readBy.slice(0, 5).map((userId) => {
 								const ini = userId.split(":")[0]?.replace("@", "").slice(0, 2).toUpperCase() ?? "?";
-								return <span key={userId} className="inline-flex items-center justify-center h-3.5 w-3.5 rounded-full bg-primary/30 text-primary text-[8px] font-semibold">{ini}</span>;
+								return (
+									<span
+										key={userId}
+										className="inline-flex items-center justify-center h-3.5 w-3.5 rounded-full bg-primary/30 text-primary text-[8px] font-semibold"
+									>
+										{ini}
+									</span>
+								);
 							})}
-							{message.readBy.length > 5 && <span className="text-[8px] text-muted-foreground ml-0.5">+{message.readBy.length - 5}</span>}
+							{message.readBy.length > 5 && (
+								<span className="text-[8px] text-muted-foreground ml-0.5">
+									+{message.readBy.length - 5}
+								</span>
+							)}
 						</button>
-						{showReadBy && <ReadByDialog open={showReadBy} onOpenChange={setShowReadBy} readBy={message.readBy} />}
+						{showReadBy && (
+							<ReadByDialog
+								open={showReadBy}
+								onOpenChange={setShowReadBy}
+								readBy={message.readBy}
+							/>
+						)}
 					</>
 				)}
 			</div>

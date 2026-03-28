@@ -5,7 +5,6 @@ import type { MatrixClient } from "matrix-js-sdk";
 import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
 	Dialog,
 	DialogContent,
@@ -14,6 +13,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Props {
 	client: MatrixClient;
@@ -131,11 +131,7 @@ export function CreateRoomDialog({ client, trigger }: Props) {
 						<label className="text-xs font-medium text-muted-foreground mb-1 block">
 							Name (erforderlich)
 						</label>
-						<Input
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="Raumname"
-						/>
+						<Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Raumname" />
 					</div>
 
 					<div>

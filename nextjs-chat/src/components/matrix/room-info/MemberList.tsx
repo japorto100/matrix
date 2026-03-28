@@ -34,7 +34,9 @@ export function MemberList({ members, myUserId, myPowerLevel, onKick, onBan }: P
 							className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors group/member"
 						>
 							<Avatar className="h-7 w-7 shrink-0">
-								{member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.displayName} />}
+								{member.avatarUrl && (
+									<AvatarImage src={member.avatarUrl} alt={member.displayName} />
+								)}
 								<AvatarFallback className="text-[10px] font-semibold bg-muted text-muted-foreground">
 									{memberInitials}
 								</AvatarFallback>
@@ -53,19 +55,44 @@ export function MemberList({ members, myUserId, myPowerLevel, onKick, onBan }: P
 									{banConfirmId === member.userId ? (
 										<div className="flex items-center gap-1">
 											<span className="text-[10px] text-destructive">Sperren?</span>
-											<Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setBanConfirmId(null)}>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6"
+												onClick={() => setBanConfirmId(null)}
+											>
 												<X className="h-3 w-3" />
 											</Button>
-											<Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/20" onClick={() => { onBan(member.userId); setBanConfirmId(null); }}>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6 text-destructive hover:bg-destructive/20"
+												onClick={() => {
+													onBan(member.userId);
+													setBanConfirmId(null);
+												}}
+											>
 												<Ban className="h-3 w-3" />
 											</Button>
 										</div>
 									) : (
 										<>
-											<Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground" onClick={() => onKick(member.userId)} title="Entfernen">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6 text-muted-foreground hover:text-foreground"
+												onClick={() => onKick(member.userId)}
+												title="Entfernen"
+											>
 												<UserMinus className="h-3 w-3" />
 											</Button>
-											<Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => setBanConfirmId(member.userId)} title="Sperren">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-6 w-6 text-muted-foreground hover:text-destructive"
+												onClick={() => setBanConfirmId(member.userId)}
+												title="Sperren"
+											>
 												<Ban className="h-3 w-3" />
 											</Button>
 										</>

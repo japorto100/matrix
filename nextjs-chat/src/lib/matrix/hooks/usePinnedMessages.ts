@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatrixClient, Room } from "matrix-js-sdk";
+import type { MatrixClient } from "matrix-js-sdk";
 import { EventType, RoomStateEvent } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,13 +9,10 @@ import { toast } from "sonner";
  * Hook fuer gepinnte Nachrichten — State, Live-Listener, Pin/Unpin, Power-Level Check.
  * Extrahiert aus MatrixChat + RoomInfoPanel (exec-07 Phase 4).
  */
-export function usePinnedMessages(
-	client: MatrixClient | null,
-	roomId: string | null,
-) {
+export function usePinnedMessages(client: MatrixClient | null, roomId: string | null) {
 	const [pinnedIds, setPinnedIds] = useState<string[]>([]);
 
-	const room = roomId ? client?.getRoom(roomId) ?? null : null;
+	const room = roomId ? (client?.getRoom(roomId) ?? null) : null;
 
 	// Pinned State lesen + Live-Listener
 	useEffect(() => {
@@ -45,8 +42,7 @@ export function usePinnedMessages(
 		const pl = room.currentState.getStateEvents("m.room.power_levels", "")?.getContent();
 		const usersDefault = (pl?.users_default as number) ?? 0;
 		const myPl =
-			(pl?.users as Record<string, number> | undefined)?.[client.getUserId() ?? ""] ??
-			usersDefault;
+			(pl?.users as Record<string, number> | undefined)?.[client.getUserId() ?? ""] ?? usersDefault;
 		const pinLevel =
 			(pl?.events as Record<string, number> | undefined)?.[EventType.RoomPinnedEvents] ??
 			(pl?.state_default as number) ??
@@ -59,10 +55,7 @@ export function usePinnedMessages(
 		(eventId: string) => {
 			if (!client || !roomId) return;
 			const currentRoom = client.getRoom(roomId);
-			const pinnedEvent = currentRoom?.currentState.getStateEvents(
-				EventType.RoomPinnedEvents,
-				"",
-			);
+			const pinnedEvent = currentRoom?.currentState.getStateEvents(EventType.RoomPinnedEvents, "");
 			const currentPinned: string[] = pinnedEvent?.getContent()?.pinned ?? [];
 			const isPinned = currentPinned.includes(eventId);
 			const newPinned = isPinned

@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { RoomInfo } from "@/lib/matrix/types";
 import { mxcToHttp } from "@/lib/matrix/utils";
-import { EncryptionBadge } from "./shared/EncryptionBadge";
 import { InviteDialog } from "./InviteDialog";
+import { EncryptionBadge } from "./shared/EncryptionBadge";
 
 interface Props {
 	room: RoomInfo;

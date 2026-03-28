@@ -1,29 +1,18 @@
 "use client";
 
-import {
-	Bell,
-	BellOff,
-	Camera,
-	Check,
-	Copy,
-	Pencil,
-	Pin,
-	PinOff,
-	Trash2,
-	X,
-} from "lucide-react";
+import { Bell, BellOff, Camera, Check, Copy, Pencil, Pin, PinOff, Trash2, X } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { EventType } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useMuteRoom } from "@/lib/matrix/hooks/useMuteRoom";
 import { usePinnedMessages } from "@/lib/matrix/hooks/usePinnedMessages";
 import { useRoomMembers } from "@/lib/matrix/hooks/useRoomMembers";
 import { mxcToHttp } from "@/lib/matrix/utils";
 import { EncryptionBadge } from "../shared/EncryptionBadge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PermissionsPanel, RoleManagement } from "./AdminSettings";
 import { MemberList } from "./MemberList";
 import { SharedMedia } from "./SharedMedia";
@@ -70,14 +59,20 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 
 	const saveName = useCallback(async () => {
 		setEditingName(false);
-		try { await client.setRoomName(roomId, roomName.trim()); }
-		catch { toast.error("Raumname konnte nicht gespeichert werden."); }
+		try {
+			await client.setRoomName(roomId, roomName.trim());
+		} catch {
+			toast.error("Raumname konnte nicht gespeichert werden.");
+		}
 	}, [client, roomId, roomName]);
 
 	const saveTopic = useCallback(async () => {
 		setEditingTopic(false);
-		try { await client.setRoomTopic(roomId, roomTopic.trim()); }
-		catch { toast.error("Thema konnte nicht gespeichert werden."); }
+		try {
+			await client.setRoomTopic(roomId, roomTopic.trim());
+		} catch {
+			toast.error("Thema konnte nicht gespeichert werden.");
+		}
 	}, [client, roomId, roomTopic]);
 
 	const handleAvatarUpload = useCallback(
@@ -88,7 +83,9 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 			setAvatarPreview(URL.createObjectURL(file));
 			try {
 				const upload = await client.uploadContent(file);
-				await (client.sendStateEvent as (r: string, t: string, c: unknown, s: string) => Promise<unknown>)(roomId, "m.room.avatar", { url: upload.content_uri }, "");
+				await (
+					client.sendStateEvent as (r: string, t: string, c: unknown, s: string) => Promise<unknown>
+				)(roomId, "m.room.avatar", { url: upload.content_uri }, "");
 			} catch {
 				toast.error("Avatar konnte nicht gesetzt werden.");
 				setAvatarPreview(undefined);
@@ -97,29 +94,49 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 		[client, roomId],
 	);
 
-	const kickMember = useCallback(async (userId: string) => {
-		try { await client.kick(roomId, userId, "Entfernt durch Moderator"); refreshMembers(); toast.success("Benutzer entfernt."); }
-		catch { toast.error("Benutzer konnte nicht entfernt werden."); }
-	}, [client, roomId, refreshMembers]);
+	const kickMember = useCallback(
+		async (userId: string) => {
+			try {
+				await client.kick(roomId, userId, "Entfernt durch Moderator");
+				refreshMembers();
+				toast.success("Benutzer entfernt.");
+			} catch {
+				toast.error("Benutzer konnte nicht entfernt werden.");
+			}
+		},
+		[client, roomId, refreshMembers],
+	);
 
-	const banMember = useCallback(async (userId: string) => {
-		try { await client.ban(roomId, userId, "Gesperrt durch Moderator"); refreshMembers(); toast.success("Benutzer gesperrt."); }
-		catch { toast.error("Benutzer konnte nicht gesperrt werden."); }
-	}, [client, roomId, refreshMembers]);
+	const banMember = useCallback(
+		async (userId: string) => {
+			try {
+				await client.ban(roomId, userId, "Gesperrt durch Moderator");
+				refreshMembers();
+				toast.success("Benutzer gesperrt.");
+			} catch {
+				toast.error("Benutzer konnte nicht gesperrt werden.");
+			}
+		},
+		[client, roomId, refreshMembers],
+	);
 
 	const leaveOrDelete = useCallback(async () => {
 		setIsLeaving(true);
 		try {
 			if (myPowerLevel >= 100) {
 				for (const m of members) {
-					if (m.userId !== myUserId) await client.kick(roomId, m.userId, "Raum gelöscht").catch(() => {});
+					if (m.userId !== myUserId)
+						await client.kick(roomId, m.userId, "Raum gelöscht").catch(() => {});
 				}
 			}
 			await client.leave(roomId);
 			await client.forget(roomId).catch(() => {});
 			onClose();
-		} catch { toast.error("Raum konnte nicht verlassen werden."); }
-		finally { setIsLeaving(false); }
+		} catch {
+			toast.error("Raum konnte nicht verlassen werden.");
+		} finally {
+			setIsLeaving(false);
+		}
 	}, [client, roomId, onClose, members, myUserId, myPowerLevel]);
 
 	const displayName = room?.name ?? "";
@@ -145,20 +162,45 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 							<AvatarFallback className="text-lg font-semibold bg-muted">{initials}</AvatarFallback>
 						</Avatar>
 						{canEditRoomInfo && (
-							<button type="button" className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors" title="Raum-Avatar ändern" onClick={() => avatarInputRef.current?.click()}>
+							<button
+								type="button"
+								className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+								title="Raum-Avatar ändern"
+								onClick={() => avatarInputRef.current?.click()}
+							>
 								<Camera className="h-3.5 w-3.5" />
 							</button>
 						)}
-						<input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+						<input
+							ref={avatarInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={handleAvatarUpload}
+						/>
 					</div>
 					<div className="w-full">
 						{editingName ? (
-							<Input value={roomName} onChange={(e) => setRoomName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }} onBlur={saveName} autoFocus className="text-center font-semibold text-base" />
+							<Input
+								value={roomName}
+								onChange={(e) => setRoomName(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") saveName();
+									if (e.key === "Escape") setEditingName(false);
+								}}
+								onBlur={saveName}
+								autoFocus
+								className="text-center font-semibold text-base"
+							/>
 						) : (
 							<div className="flex items-center justify-center gap-1">
 								<p className="font-semibold text-base">{displayName}</p>
 								{canEditRoomInfo && (
-									<button type="button" onClick={() => setEditingName(true)} className="text-muted-foreground hover:text-foreground transition-colors">
+									<button
+										type="button"
+										onClick={() => setEditingName(true)}
+										className="text-muted-foreground hover:text-foreground transition-colors"
+									>
 										<Pencil className="h-3 w-3" />
 									</button>
 								)}
@@ -170,7 +212,11 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 				</div>
 
 				{/* Mute */}
-				<button type="button" onClick={toggleMute} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+				<button
+					type="button"
+					onClick={toggleMute}
+					className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+				>
 					{isMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
 					{isMuted ? "Benachrichtigungen aktivieren" : "Stummschalten"}
 				</button>
@@ -180,22 +226,54 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 					<div className="flex items-center gap-1 mb-1">
 						<label className="text-xs font-medium text-muted-foreground">Thema</label>
 						{!editingTopic && canEditRoomInfo && (
-							<button type="button" onClick={() => setEditingTopic(true)} className="text-muted-foreground hover:text-foreground transition-colors">
+							<button
+								type="button"
+								onClick={() => setEditingTopic(true)}
+								className="text-muted-foreground hover:text-foreground transition-colors"
+							>
 								<Pencil className="h-2.5 w-2.5" />
 							</button>
 						)}
 					</div>
 					{editingTopic ? (
-						<textarea value={roomTopic} onChange={(e) => setRoomTopic(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveTopic(); } if (e.key === "Escape") setEditingTopic(false); }} onBlur={saveTopic} rows={2} placeholder="Worum geht es in diesem Raum?" autoFocus className="w-full rounded-lg border border-primary bg-muted/30 px-3 py-1.5 text-sm resize-none placeholder:text-muted-foreground/60 focus:outline-none" />
+						<textarea
+							value={roomTopic}
+							onChange={(e) => setRoomTopic(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && !e.shiftKey) {
+									e.preventDefault();
+									saveTopic();
+								}
+								if (e.key === "Escape") setEditingTopic(false);
+							}}
+							onBlur={saveTopic}
+							rows={2}
+							placeholder="Worum geht es in diesem Raum?"
+							autoFocus
+							className="w-full rounded-lg border border-primary bg-muted/30 px-3 py-1.5 text-sm resize-none placeholder:text-muted-foreground/60 focus:outline-none"
+						/>
 					) : (
-						<p className={canEditRoomInfo ? "text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors" : "text-sm text-muted-foreground"} onClick={canEditRoomInfo ? () => setEditingTopic(true) : undefined}>
+						<p
+							className={
+								canEditRoomInfo
+									? "text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+									: "text-sm text-muted-foreground"
+							}
+							onClick={canEditRoomInfo ? () => setEditingTopic(true) : undefined}
+						>
 							{roomTopic || (canEditRoomInfo ? "Thema hinzufügen…" : "Kein Thema")}
 						</p>
 					)}
 				</div>
 
 				{/* Members */}
-				<MemberList members={members} myUserId={myUserId} myPowerLevel={myPowerLevel} onKick={kickMember} onBan={banMember} />
+				<MemberList
+					members={members}
+					myUserId={myUserId}
+					myPowerLevel={myPowerLevel}
+					onKick={kickMember}
+					onBan={banMember}
+				/>
 
 				{/* Invite Link */}
 				{(() => {
@@ -203,10 +281,23 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 					const link = alias ? `https://matrix.to/#/${alias}` : `https://matrix.to/#/${roomId}`;
 					return (
 						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-1 block">Einladungslink</label>
+							<label className="text-xs font-medium text-muted-foreground mb-1 block">
+								Einladungslink
+							</label>
 							<div className="flex items-center gap-2">
-								<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">{link}</code>
-								<Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Kopieren" onClick={() => { navigator.clipboard.writeText(link); toast.success("Link kopiert"); }}>
+								<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">
+									{link}
+								</code>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-7 w-7 shrink-0"
+									title="Kopieren"
+									onClick={() => {
+										navigator.clipboard.writeText(link);
+										toast.success("Link kopiert");
+									}}
+								>
 									<Copy className="h-3 w-3" />
 								</Button>
 							</div>
@@ -215,32 +306,59 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 				})()}
 
 				{/* Pinned Messages */}
-				{pinnedIds.length > 0 && (() => {
-					const timeline = room?.getLiveTimeline().getEvents() ?? [];
-					const pinnedMessages = pinnedIds.map((id) => timeline.find((ev) => ev.getId() === id)).filter(Boolean).slice(0, 5);
-					const handleUnpin = (eventId: string) => {
-						const newPinned = pinnedIds.filter((id) => id !== eventId);
-						client.sendStateEvent(roomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "").then(() => toast.success("Nachricht entpinnt.")).catch(() => toast.error("Entpinnen fehlgeschlagen."));
-					};
-					return (
-						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-2 block"><Pin className="h-3 w-3 inline mr-1" />Angepinnt ({pinnedIds.length})</label>
-							<div className="flex flex-col gap-1">
-								{pinnedMessages.map((ev) => (
-									<div key={ev!.getId()} className="group flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5">
-										<div className="truncate flex-1"><span className="font-medium">{ev!.getSender()?.split(":")[0]?.replace("@", "")}:</span> {(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}</div>
-										{canEditRoomInfo && (
-											<button type="button" className="hidden group-hover:block shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleUnpin(ev!.getId()!)} title="Entpinnen">
-												<PinOff className="h-3 w-3" />
-											</button>
-										)}
-									</div>
-								))}
-								{pinnedIds.length > pinnedMessages.length && <p className="text-[10px] text-muted-foreground">+{pinnedIds.length - pinnedMessages.length} weitere (nicht in Timeline)</p>}
+				{pinnedIds.length > 0 &&
+					(() => {
+						const timeline = room?.getLiveTimeline().getEvents() ?? [];
+						const pinnedMessages = pinnedIds
+							.map((id) => timeline.find((ev) => ev.getId() === id))
+							.filter(Boolean)
+							.slice(0, 5);
+						const handleUnpin = (eventId: string) => {
+							const newPinned = pinnedIds.filter((id) => id !== eventId);
+							client
+								.sendStateEvent(roomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
+								.then(() => toast.success("Nachricht entpinnt."))
+								.catch(() => toast.error("Entpinnen fehlgeschlagen."));
+						};
+						return (
+							<div>
+								<label className="text-xs font-medium text-muted-foreground mb-2 block">
+									<Pin className="h-3 w-3 inline mr-1" />
+									Angepinnt ({pinnedIds.length})
+								</label>
+								<div className="flex flex-col gap-1">
+									{pinnedMessages.map((ev) => (
+										<div
+											key={ev!.getId()}
+											className="group flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5"
+										>
+											<div className="truncate flex-1">
+												<span className="font-medium">
+													{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
+												</span>{" "}
+												{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
+											</div>
+											{canEditRoomInfo && (
+												<button
+													type="button"
+													className="hidden group-hover:block shrink-0 text-muted-foreground hover:text-destructive"
+													onClick={() => handleUnpin(ev!.getId()!)}
+													title="Entpinnen"
+												>
+													<PinOff className="h-3 w-3" />
+												</button>
+											)}
+										</div>
+									))}
+									{pinnedIds.length > pinnedMessages.length && (
+										<p className="text-[10px] text-muted-foreground">
+											+{pinnedIds.length - pinnedMessages.length} weitere (nicht in Timeline)
+										</p>
+									)}
+								</div>
 							</div>
-						</div>
-					);
-				})()}
+						);
+					})()}
 
 				{/* Shared Media */}
 				<SharedMedia room={room} />
@@ -249,7 +367,11 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 				{myPowerLevel >= 100 && (
 					<>
 						<RoleManagement members={members} myUserId={myUserId} client={client} roomId={roomId} />
-						<PermissionsPanel powerLevelsContent={powerLevelsContent} client={client} roomId={roomId} />
+						<PermissionsPanel
+							powerLevelsContent={powerLevelsContent}
+							client={client}
+							roomId={roomId}
+						/>
 					</>
 				)}
 			</div>
@@ -258,22 +380,48 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 			<div className="p-3 border-t border-border shrink-0">
 				{membership === "invite" ? (
 					<div className="flex gap-2">
-						<Button className="flex-1 gap-1" onClick={() => { client.joinRoom(roomId).then(() => toast.success("Beigetreten")).catch(() => toast.error("Fehlgeschlagen")); }}>
+						<Button
+							className="flex-1 gap-1"
+							onClick={() => {
+								client
+									.joinRoom(roomId)
+									.then(() => toast.success("Beigetreten"))
+									.catch(() => toast.error("Fehlgeschlagen"));
+							}}
+						>
 							<Check className="h-4 w-4" /> Annehmen
 						</Button>
-						<Button variant="outline" className="flex-1 gap-1 text-destructive" onClick={() => { client.leave(roomId).catch(() => {}); onClose(); }}>
+						<Button
+							variant="outline"
+							className="flex-1 gap-1 text-destructive"
+							onClick={() => {
+								client.leave(roomId).catch(() => {});
+								onClose();
+							}}
+						>
 							<X className="h-4 w-4" /> Ablehnen
 						</Button>
 					</div>
 				) : leaveConfirm ? (
 					<div className="flex items-center gap-2">
-						<span className="text-xs text-muted-foreground flex-1">{myPowerLevel >= 100 ? "Raum wirklich löschen?" : "Raum wirklich verlassen?"}</span>
-						<Button size="sm" variant="ghost" onClick={() => setLeaveConfirm(false)}>Abbrechen</Button>
-						<Button size="sm" variant="destructive" onClick={leaveOrDelete} disabled={isLeaving}>{isLeaving ? "…" : "Bestätigen"}</Button>
+						<span className="text-xs text-muted-foreground flex-1">
+							{myPowerLevel >= 100 ? "Raum wirklich löschen?" : "Raum wirklich verlassen?"}
+						</span>
+						<Button size="sm" variant="ghost" onClick={() => setLeaveConfirm(false)}>
+							Abbrechen
+						</Button>
+						<Button size="sm" variant="destructive" onClick={leaveOrDelete} disabled={isLeaving}>
+							{isLeaving ? "…" : "Bestätigen"}
+						</Button>
 					</div>
 				) : (
-					<Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setLeaveConfirm(true)}>
-						<Trash2 className="h-4 w-4 mr-2" />{myPowerLevel >= 100 ? "Raum löschen" : "Raum verlassen"}
+					<Button
+						variant="outline"
+						className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+						onClick={() => setLeaveConfirm(true)}
+					>
+						<Trash2 className="h-4 w-4 mr-2" />
+						{myPowerLevel >= 100 ? "Raum löschen" : "Raum verlassen"}
 					</Button>
 				)}
 			</div>
