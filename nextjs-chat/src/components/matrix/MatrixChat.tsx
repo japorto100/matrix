@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle, BarChart2, Loader2, MessageCircle, WifiOff } from "lucide-react";
-import { ClientEvent, SyncState } from "matrix-js-sdk";
+import { AlertCircle, BarChart2, Loader2, MessageCircle, Pin, WifiOff } from "lucide-react";
+import { ClientEvent, EventType, SyncState } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -143,28 +143,39 @@ export function MatrixChat() {
 		(eventId: string) => {
 			if (!client || !selectedRoomId) return;
 			const room = client.getRoom(selectedRoomId);
-			const pinnedEvent = room?.currentState.getStateEvents("m.room.pinned_events", "");
+			const pinnedEvent = room?.currentState.getStateEvents(EventType.RoomPinnedEvents, "");
 			const currentPinned: string[] = pinnedEvent?.getContent()?.pinned ?? [];
 			const isPinned = currentPinned.includes(eventId);
 			const newPinned = isPinned
 				? currentPinned.filter((id) => id !== eventId)
 				: [...currentPinned, eventId];
 			client
-				.sendStateEvent(selectedRoomId, "m.room.pinned_events" as any, { pinned: newPinned }, "")
+				.sendStateEvent(selectedRoomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
 				.then(() => toast.success(isPinned ? "Nachricht entpinnt." : "Nachricht angepinnt."))
-				.catch(() => toast.error("Pin fehlgeschlagen."));
+				.catch((err) => {
+					const msg = err?.data?.error?.includes("power level")
+						? "Keine Berechtigung zum Pinnen."
+						: "Pin fehlgeschlagen.";
+					toast.error(msg);
+				});
 		},
 		[client, selectedRoomId],
 	);
 
-	// Pinned Event IDs für aktuelle Room
-	const pinnedEventIds = (() => {
-		if (!client || !selectedRoomId) return [];
+	// Pinned Event IDs + Power-Level Check für aktuelle Room
+	const { pinnedEventIds, canPin } = (() => {
+		if (!client || !selectedRoomId) return { pinnedEventIds: [] as string[], canPin: false };
 		const room = client.getRoom(selectedRoomId);
-		return (
-			(room?.currentState.getStateEvents("m.room.pinned_events", "")?.getContent()
-				?.pinned as string[]) ?? []
-		);
+		const pinned =
+			(room?.currentState.getStateEvents(EventType.RoomPinnedEvents, "")?.getContent()
+				?.pinned as string[]) ?? [];
+		const pl = room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent();
+		const myPl = (pl?.users as Record<string, number> | undefined)?.[client.getUserId() ?? ""] ?? 0;
+		const pinLevel =
+			(pl?.events as Record<string, number> | undefined)?.[EventType.RoomPinnedEvents] ??
+			(pl?.state_default as number) ??
+			50;
+		return { pinnedEventIds: pinned, canPin: myPl >= pinLevel };
 	})();
 
 	// B-8: Thread öffnen
@@ -334,6 +345,24 @@ export function MatrixChat() {
 												}
 												return null;
 											})()}
+										{/* Pinned Messages Banner */}
+										{pinnedEventIds.length > 0 && (
+											<button
+												type="button"
+												className="flex items-center gap-2 w-full px-4 py-1.5 bg-muted/50 text-xs text-muted-foreground border-b border-border hover:bg-muted/80 transition-colors"
+												onClick={() => setShowRoomSettings(true)}
+											>
+												<Pin className="h-3 w-3 text-amber-500 shrink-0" />
+												<span>
+													{pinnedEventIds.length === 1
+														? "1 angepinnte Nachricht"
+														: `${pinnedEventIds.length} angepinnte Nachrichten`}
+												</span>
+												<span className="ml-auto text-[10px] text-muted-foreground/60">
+													Anzeigen
+												</span>
+											</button>
+										)}
 										<Timeline
 											messages={messages}
 											isLoading={isLoading}
@@ -344,7 +373,7 @@ export function MatrixChat() {
 											onEdit={handleEdit}
 											onRedact={handleRedact}
 											onForward={handleForward}
-											onPin={handlePin}
+											onPin={canPin ? handlePin : undefined}
 											pinnedEventIds={pinnedEventIds}
 											client={client}
 											roomId={selectedRoomId}

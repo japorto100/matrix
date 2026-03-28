@@ -44,6 +44,26 @@
 
 	--shadow-chromatic: 0 0 15px -3px var(--success), 0 0 6px -2px var(--success);
 	--shadow-chromatic-error: 0 0 15px -3px var(--error), 0 0 6px -2px var(--error);
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+		}
+    to {
+      height: var(--radix-accordion-content-height);
+		}
+	}
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+		}
+    to {
+      height: 0;
+		}
+	}
 }
 
 :root {

@@ -339,6 +339,10 @@
 - [x] Rollen-Management: Admin kann andere zu Admin/Mod/Member befördern (`client.setPowerLevel()`)
 - [x] Gruppen-Einstellungen: Berechtigungen für Senden/Einladen/Raum-Info ändern (`m.room.power_levels`)
 - [x] Pinned Messages: Liste im InfoPanel + Pin/Unpin Button auf Message-Hover-Toolbar
+- [x] Pinned Messages Banner: "📌 X angepinnte Nachrichten" unter Room-Header, Klick öffnet InfoPanel
+- [x] Pinned Messages: Unpin-Button (PinOff) in InfoPanel Pin-Liste (hover, nur für Admins/Mods)
+- [x] Pinned Messages: Power-Level Check — Pin-Button nur sichtbar wenn User Berechtigung hat
+- [x] Pinned Messages: SDK-Typen korrekt (`EventType.RoomPinnedEvents` statt `as any`)
 - [x] Topic nur Admin/Mod editierbar (`state_default` Power-Level Check)
 - [x] Name/Avatar nur Admin/Mod editierbar (`canEditRoomInfo` Check)
 - [x] Mute aus Header entfernt → nur noch in InfoPanels (DM + Room)
@@ -357,6 +361,9 @@
 - [ ] Gruppen-Einstellungen: Als Admin → InfoPanel → "Nachrichten senden" auf "Moderator+" setzen → normaler Member kann nicht mehr senden
 - [ ] Pinned Messages: Nachricht hovern → Pin-Button klicken → Toast "Angepinnt" → Pin-Liste im InfoPanel sichtbar
 - [ ] Pinned Messages: Bereits gepinnte Nachricht → PinOff-Button → Toast "Entpinnt" → verschwindet aus Liste
+- [ ] Pinned Messages Banner: Banner unter Header zeigt "X angepinnte Nachrichten" → Klick öffnet InfoPanel
+- [ ] Pinned Messages: Als normaler Member (PL < state_default) → kein Pin-Button sichtbar
+- [ ] Pinned Messages: Im InfoPanel → Hover über Pin → PinOff-Button → Entpinnen funktioniert
 - [ ] Topic Edit: Als Admin → InfoPanel → Stift bei Thema → editieren → Enter → gespeichert
 - [ ] Topic Edit: Als normaler Member → kein Stift sichtbar (wenn state_default >= 50)
 - [ ] Name Edit: Als Admin → Stift neben Name → editieren → Enter → gespeichert

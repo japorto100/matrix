@@ -14,13 +14,14 @@ import {
 	LockOpen,
 	Pencil,
 	Pin,
+	PinOff,
 	Shield,
 	Trash2,
 	UserMinus,
 	X,
 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
-import { RoomStateEvent } from "matrix-js-sdk";
+import { EventType, RoomStateEvent } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -68,8 +69,9 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const powerLevelsContent = room?.currentState
 		.getStateEvents("m.room.power_levels", "")
 		?.getContent();
+	const usersDefault = (powerLevelsContent?.users_default as number) ?? 0;
 	const myPowerLevel =
-		(powerLevelsContent?.users as Record<string, number> | undefined)?.[myUserId] ?? 0;
+		(powerLevelsContent?.users as Record<string, number> | undefined)?.[myUserId] ?? usersDefault;
 	const stateDefault = (powerLevelsContent?.state_default as number) ?? 50;
 	const canEditRoomInfo = myPowerLevel >= stateDefault;
 
@@ -144,12 +146,12 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 		if (!room) return;
 		const readPinned = () => {
 			const pinned: string[] =
-				room.currentState.getStateEvents("m.room.pinned_events", "")?.getContent()?.pinned ?? [];
+				room.currentState.getStateEvents(EventType.RoomPinnedEvents, "")?.getContent()?.pinned ?? [];
 			setPinnedIds(pinned);
 		};
 		readPinned();
 		const handler = (_event: unknown, _room: unknown, type: string) => {
-			if (type === "m.room.pinned_events") readPinned();
+			if (type === EventType.RoomPinnedEvents) readPinned();
 		};
 		client.on(RoomStateEvent.Events, handler as any);
 		return () => {
@@ -515,14 +517,19 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 
 				{/* Gepinnte Nachrichten */}
 				{(() => {
-					const pinnedEvent = room?.currentState.getStateEvents("m.room.pinned_events", "");
-					const pinnedIds: string[] = pinnedEvent?.getContent()?.pinned ?? [];
 					if (pinnedIds.length === 0) return null;
 					const timeline = room?.getLiveTimeline().getEvents() ?? [];
 					const pinnedMessages = pinnedIds
 						.map((id) => timeline.find((ev) => ev.getId() === id))
 						.filter(Boolean)
 						.slice(0, 5);
+					const handleUnpin = (eventId: string) => {
+						const newPinned = pinnedIds.filter((id) => id !== eventId);
+						client
+							.sendStateEvent(roomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
+							.then(() => toast.success("Nachricht entpinnt."))
+							.catch(() => toast.error("Entpinnen fehlgeschlagen."));
+					};
 					return (
 						<div>
 							<label className="text-xs font-medium text-muted-foreground mb-2 block">
@@ -533,12 +540,24 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 								{pinnedMessages.map((ev) => (
 									<div
 										key={ev!.getId()}
-										className="text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5 truncate"
+										className="group flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5"
 									>
-										<span className="font-medium">
-											{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
-										</span>{" "}
-										{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
+										<div className="truncate flex-1">
+											<span className="font-medium">
+												{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
+											</span>{" "}
+											{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
+										</div>
+										{canEditRoomInfo && (
+											<button
+												type="button"
+												className="hidden group-hover:block shrink-0 text-muted-foreground hover:text-destructive"
+												onClick={() => handleUnpin(ev!.getId()!)}
+												title="Entpinnen"
+											>
+												<PinOff className="h-3 w-3" />
+											</button>
+										)}
 									</div>
 								))}
 								{pinnedIds.length > pinnedMessages.length && (
