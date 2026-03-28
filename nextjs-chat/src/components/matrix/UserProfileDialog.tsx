@@ -5,6 +5,8 @@ import type { MatrixClient } from "matrix-js-sdk";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
 	Dialog,
 	DialogContent,
@@ -14,6 +16,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { getAutoAcceptDMs, setAutoAcceptDMs } from "@/lib/matrix/hooks/useAutoAcceptInvites";
+import { mxcToHttp } from "@/lib/matrix/utils";
 
 interface Props {
 	client: MatrixClient;
@@ -54,9 +57,7 @@ export function UserProfileDialog({ client, trigger }: Props) {
 
 	const avatarSrc =
 		avatarPreview ??
-		(avatarMxc?.startsWith("mxc://")
-			? `/api/matrix/media?mxc=${encodeURIComponent(avatarMxc.slice(6))}`
-			: undefined);
+		(avatarMxc?.startsWith("mxc://") ? mxcToHttp(avatarMxc) : undefined);
 
 	const initials = displayName.slice(0, 2).toUpperCase() || "?";
 
@@ -156,23 +157,19 @@ export function UserProfileDialog({ client, trigger }: Props) {
 						<label className="text-xs font-medium text-muted-foreground mb-1 block">
 							Anzeigename
 						</label>
-						<input
-							type="text"
+						<Input
 							value={displayName}
 							onChange={(e) => setDisplayName(e.target.value)}
 							placeholder="Dein Anzeigename"
-							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 						/>
 					</div>
 					{/* Status/Bio */}
 					<div className="w-full">
 						<label className="text-xs font-medium text-muted-foreground mb-1 block">Status</label>
-						<input
-							type="text"
+						<Input
 							value={statusMsg}
 							onChange={(e) => setStatusMsg(e.target.value)}
 							placeholder="Was machst du gerade?"
-							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 						/>
 					</div>
 
@@ -181,14 +178,12 @@ export function UserProfileDialog({ client, trigger }: Props) {
 						<span className="text-xs font-medium text-muted-foreground">
 							DM-Einladungen automatisch annehmen
 						</span>
-						<input
-							type="checkbox"
+						<Switch
 							checked={autoAccept}
-							onChange={(e) => {
-								setAutoAccept(e.target.checked);
-								setAutoAcceptDMs(e.target.checked);
+							onCheckedChange={(checked) => {
+								setAutoAccept(checked);
+								setAutoAcceptDMs(checked);
 							}}
-							className="rounded border"
 						/>
 					</label>
 				</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useState } from "react";
+import { mxcToHttp } from "@/lib/matrix/utils";
 import { MatrixContext } from "./MatrixProvider";
 
 interface OgData {
@@ -57,9 +58,7 @@ export function UrlPreview({ url }: Props) {
 	const description = data["og:description"];
 	const image = data["og:image"];
 	// OG image kann mxc:// sein (Homeserver cached es) — in HTTP umwandeln
-	const imageSrc = image?.startsWith("mxc://")
-		? `/api/matrix/media?mxc=${encodeURIComponent(image.slice(6))}`
-		: image;
+	const imageSrc = image?.startsWith("mxc://") ? mxcToHttp(image) : image;
 	const displayUrl = (() => {
 		try {
 			return new URL(url).hostname;

@@ -3,6 +3,7 @@
 import type { MatrixClient } from "matrix-js-sdk";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Dialog,
 	DialogContent,
@@ -54,12 +55,10 @@ export function InviteDialog({ client, roomId, trigger }: Props) {
 						<label className="text-xs font-medium text-muted-foreground mb-1 block">
 							Benutzer-ID
 						</label>
-						<input
-							type="text"
+						<Input
 							value={userId}
 							onChange={(e) => setUserId(e.target.value)}
 							placeholder="@benutzer:server.de"
-							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 						/>
 					</div>
 				</div>

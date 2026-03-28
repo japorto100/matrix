@@ -45,7 +45,9 @@
       "mcp__chrome-devtools__handle_dialog",
       "mcp__next-devtools__nextjs_index",
       "Bash(./node_modules/.bin/tsc --noEmit)",
-      "Bash(wc -l /d/matrix/nextjs-chat/src/components/matrix/*.tsx)"
+      "Bash(wc -l /d/matrix/nextjs-chat/src/components/matrix/*.tsx)",
+      "Bash(wc -l D:/matrix/nextjs-chat/src/*.tsx D:/matrix/nextjs-chat/src/*.ts)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

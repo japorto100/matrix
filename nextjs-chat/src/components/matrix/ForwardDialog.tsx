@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RoomInfo } from "@/lib/matrix/types";
 
@@ -56,12 +57,10 @@ export function ForwardDialog({
 				</DialogHeader>
 
 				<div className="flex flex-col gap-3">
-					<input
-						type="text"
+					<Input
 						value={filter}
 						onChange={(e) => setFilter(e.target.value)}
 						placeholder="Raum suchen…"
-						className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 					/>
 
 					<div className="max-h-[300px] overflow-y-auto flex flex-col gap-1">

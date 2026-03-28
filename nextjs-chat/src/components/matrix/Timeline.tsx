@@ -7,7 +7,7 @@ import { ChevronDown, Loader2 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ResolvedMessage } from "@/lib/matrix/types";
-import { Message } from "./Message";
+import { Message } from "./message/Message";
 
 interface Props {
 	messages: ResolvedMessage[];

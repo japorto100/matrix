@@ -1,11 +1,13 @@
 "use client";
 
 import { AlertCircle, BarChart2, Loader2, MessageCircle, Pin, WifiOff } from "lucide-react";
-import { ClientEvent, EventType, SyncState } from "matrix-js-sdk";
+import { ClientEvent, SyncState } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAutoAcceptInvites } from "@/lib/matrix/hooks/useAutoAcceptInvites";
+import { useMessageActions } from "@/lib/matrix/hooks/useMessageActions";
+import { usePinnedMessages } from "@/lib/matrix/hooks/usePinnedMessages";
 import { useCall } from "@/lib/matrix/hooks/useCall";
 import { useCrossSigning } from "@/lib/matrix/hooks/useCrossSigning";
 import { useMatrixClient } from "@/lib/matrix/hooks/useMatrixClient";
@@ -20,8 +22,8 @@ import { DMInfoPanel } from "./DMInfoPanel";
 import { ForwardDialog } from "./ForwardDialog";
 import { type EditState, MessageComposer } from "./MessageComposer";
 import { RoomHeader } from "./RoomHeader";
-import { RoomInfoPanel } from "./RoomInfoPanel";
-import { RoomList } from "./RoomList";
+import { RoomInfoPanel } from "./room-info/RoomInfoPanel";
+import { RoomList } from "./room-list/RoomList";
 import { SearchPanel } from "./SearchPanel";
 import { SpaceSelector } from "./SpaceSelector";
 import { ThreadPanel } from "./ThreadPanel";
@@ -82,40 +84,8 @@ export function MatrixChat() {
 		setShowSearch(false);
 	}, [selectedRoomId]);
 
-	// B-3: Reaction senden (WhatsApp-Style: 1 pro User, Toggle, Replace)
-	// B-3: Reaction senden (WhatsApp-Style: 1 pro User, Toggle, Replace)
-	const handleReact = useCallback(
-		async (eventId: string, emoji: string, myReactions?: Record<string, string>) => {
-			if (!client || !selectedRoomId) return;
-
-			const myExistingEventId = myReactions?.[emoji];
-
-			// Dasselbe Emoji nochmal → entfernen (Toggle)
-			if (myExistingEventId) {
-				await client.redactEvent(selectedRoomId, myExistingEventId).catch(() => {});
-				return;
-			}
-
-			// Alle bisherigen eigenen Reactions entfernen
-			if (myReactions) {
-				await Promise.all(
-					Object.values(myReactions).map((id) =>
-						client.redactEvent(selectedRoomId, id).catch(() => {}),
-					),
-				);
-			}
-
-			// Neue Reaction senden
-			try {
-				await client.sendEvent(selectedRoomId, "m.reaction" as any, {
-					"m.relates_to": { rel_type: "m.annotation", event_id: eventId, key: emoji },
-				});
-			} catch (err) {
-				console.error("[react] send failed:", err);
-			}
-		},
-		[client, selectedRoomId],
-	);
+	// Message Actions (React, Redact) via Hook
+	const { handleReact, handleRedact } = useMessageActions(client, selectedRoomId);
 
 	// UI-4: Reply starten
 	const handleReply = useCallback((eventId: string, sender: string, body: string) => {
@@ -127,56 +97,12 @@ export function MatrixChat() {
 		setEditState({ eventId, body });
 	}, []);
 
-	// B-4: Nachricht löschen (Redaction)
-	const handleRedact = useCallback(
-		(eventId: string) => {
-			if (!client || !selectedRoomId) return;
-			client
-				.redactEvent(selectedRoomId, eventId)
-				.catch((err) => console.error("[redact] failed:", err));
-		},
-		[client, selectedRoomId],
-	);
-
-	// Pin/Unpin Message
-	const handlePin = useCallback(
-		(eventId: string) => {
-			if (!client || !selectedRoomId) return;
-			const room = client.getRoom(selectedRoomId);
-			const pinnedEvent = room?.currentState.getStateEvents(EventType.RoomPinnedEvents, "");
-			const currentPinned: string[] = pinnedEvent?.getContent()?.pinned ?? [];
-			const isPinned = currentPinned.includes(eventId);
-			const newPinned = isPinned
-				? currentPinned.filter((id) => id !== eventId)
-				: [...currentPinned, eventId];
-			client
-				.sendStateEvent(selectedRoomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
-				.then(() => toast.success(isPinned ? "Nachricht entpinnt." : "Nachricht angepinnt."))
-				.catch((err) => {
-					const msg = err?.data?.error?.includes("power level")
-						? "Keine Berechtigung zum Pinnen."
-						: "Pin fehlgeschlagen.";
-					toast.error(msg);
-				});
-		},
-		[client, selectedRoomId],
-	);
-
-	// Pinned Event IDs + Power-Level Check für aktuelle Room
-	const { pinnedEventIds, canPin } = (() => {
-		if (!client || !selectedRoomId) return { pinnedEventIds: [] as string[], canPin: false };
-		const room = client.getRoom(selectedRoomId);
-		const pinned =
-			(room?.currentState.getStateEvents(EventType.RoomPinnedEvents, "")?.getContent()
-				?.pinned as string[]) ?? [];
-		const pl = room?.currentState.getStateEvents("m.room.power_levels", "")?.getContent();
-		const myPl = (pl?.users as Record<string, number> | undefined)?.[client.getUserId() ?? ""] ?? 0;
-		const pinLevel =
-			(pl?.events as Record<string, number> | undefined)?.[EventType.RoomPinnedEvents] ??
-			(pl?.state_default as number) ??
-			50;
-		return { pinnedEventIds: pinned, canPin: myPl >= pinLevel };
-	})();
+	// Pin/Unpin Messages (Hook)
+	const {
+		pinnedIds: pinnedEventIds,
+		canPin,
+		togglePin: handlePin,
+	} = usePinnedMessages(client, selectedRoomId);
 
 	// B-8: Thread öffnen
 	const handleThreadOpen = useCallback((eventId: string) => {

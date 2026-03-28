@@ -8,8 +8,6 @@ import {
 	FileText,
 	Image,
 	Link2,
-	Lock,
-	LockOpen,
 	ShieldBan,
 	Trash2,
 	X,
@@ -19,6 +17,9 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useMuteRoom } from "@/lib/matrix/hooks/useMuteRoom";
+import { mxcToHttp } from "@/lib/matrix/utils";
+import { EncryptionBadge } from "./shared/EncryptionBadge";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -33,7 +34,7 @@ export function DMInfoPanel({ client, roomId, dmUserId, membership, onClose }: P
 	const [isLeaving, setIsLeaving] = useState(false);
 	const [leaveConfirm, setLeaveConfirm] = useState(false);
 	const [isBlocked, setIsBlocked] = useState(false);
-	const [isMuted, setIsMuted] = useState(false);
+	const { isMuted, toggleMute } = useMuteRoom(client, roomId);
 
 	const room = client.getRoom(roomId);
 	const isEncrypted = !!room?.currentState.getStateEvents("m.room.encryption", "");
@@ -52,9 +53,7 @@ export function DMInfoPanel({ client, roomId, dmUserId, membership, onClose }: P
 
 	// Avatar
 	const mxcAvatar = otherMember?.getMxcAvatarUrl() ?? otherUser?.avatarUrl;
-	const avatarSrc = mxcAvatar?.startsWith("mxc://")
-		? `/api/matrix/media?mxc=${encodeURIComponent(mxcAvatar.slice(6))}`
-		: undefined;
+	const avatarSrc = mxcAvatar?.startsWith("mxc://") ? mxcToHttp(mxcAvatar) : undefined;
 
 	// SDK: Presence
 	const isOnline = otherUser?.currentlyActive ?? false;
@@ -79,20 +78,6 @@ export function DMInfoPanel({ client, roomId, dmUserId, membership, onClose }: P
 	useEffect(() => {
 		setIsBlocked(client.getIgnoredUsers().includes(dmUserId));
 	}, [client, dmUserId]);
-
-	// Mute-Status
-	useEffect(() => {
-		try {
-			// biome-ignore lint/suspicious/noExplicitAny: push_rules nicht typisiert
-			const pushRules = (client.getAccountData as any)("m.push_rules")?.getContent();
-			const overrides =
-				(pushRules?.global as { override?: Array<{ rule_id: string; enabled: boolean }> })
-					?.override ?? [];
-			setIsMuted(!!overrides.find((r: { rule_id: string }) => r.rule_id === roomId)?.enabled);
-		} catch {
-			/* ignore */
-		}
-	}, [client, roomId]);
 
 	// Gemeinsame Räume
 	const sharedRooms = (() => {
@@ -124,24 +109,7 @@ export function DMInfoPanel({ client, roomId, dmUserId, membership, onClose }: P
 		return { images, files, links };
 	})();
 
-	// SDK: Mute toggle
-	const toggleMute = useCallback(async () => {
-		try {
-			if (isMuted) {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
-				await (client.deletePushRule as any)("global", "override", roomId);
-			} else {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
-				await (client.addPushRule as any)("global", "override", roomId, {
-					conditions: [{ kind: "event_match", key: "room_id", pattern: roomId }],
-					actions: ["dont_notify"],
-				});
-			}
-			setIsMuted(!isMuted);
-		} catch {
-			toast.error("Stummschalten fehlgeschlagen.");
-		}
-	}, [client, roomId, isMuted]);
+	// Mute: via useMuteRoom Hook
 
 	// SDK: Block toggle
 	const toggleBlock = useCallback(async () => {
@@ -216,19 +184,7 @@ export function DMInfoPanel({ client, roomId, dmUserId, membership, onClose }: P
 						)}
 					</div>
 					{/* E2EE */}
-					<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-						{isEncrypted ? (
-							<>
-								<Lock className="h-3.5 w-3.5 text-emerald-500" />
-								<span>Verschlüsselt</span>
-							</>
-						) : (
-							<>
-								<LockOpen className="h-3.5 w-3.5 text-destructive/70" />
-								<span>Nicht verschlüsselt</span>
-							</>
-						)}
-					</div>
+					<EncryptionBadge isEncrypted={isEncrypted} />
 				</div>
 
 				{/* Invite-Status */}

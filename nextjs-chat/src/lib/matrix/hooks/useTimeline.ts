@@ -4,7 +4,9 @@ import type { MatrixClient, MatrixEvent, Room } from "matrix-js-sdk";
 import { RoomEvent } from "matrix-js-sdk";
 import { ThreadEvent } from "matrix-js-sdk/lib/models/thread";
 import { useCallback, useEffect, useState } from "react";
-import { type ResolvedMessage, resolveMessage } from "@/lib/matrix/types";
+import type { ResolvedMessage } from "@/lib/matrix/types";
+import { mxcToHttp } from "@/lib/matrix/utils";
+import { resolveMessage } from "@/lib/matrix/resolvers";
 
 const PAGE_SIZE = 50;
 
@@ -105,7 +107,7 @@ export function useTimeline(client: MatrixClient | null, roomId: string | null):
 				// UI-11: Sender-Avatar auflösen
 				const member = room.getMember(msg.sender);
 				if (member?.getMxcAvatarUrl()) {
-					msg.avatarUrl = `/api/matrix/media?mxc=${encodeURIComponent(member.getMxcAvatarUrl()!.slice(6))}`;
+					msg.avatarUrl = mxcToHttp(member.getMxcAvatarUrl()!);
 				}
 
 				replyLookup[msg.eventId] = {

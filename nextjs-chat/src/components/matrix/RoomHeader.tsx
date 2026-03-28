@@ -1,11 +1,13 @@
 "use client";
 
-import { Lock, LockOpen, Phone, Search, UserPlus, Users, Video } from "lucide-react";
+import { Phone, Search, UserPlus, Users, Video } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { RoomInfo } from "@/lib/matrix/types";
+import { mxcToHttp } from "@/lib/matrix/utils";
+import { EncryptionBadge } from "./shared/EncryptionBadge";
 import { InviteDialog } from "./InviteDialog";
 
 interface Props {
@@ -19,7 +21,7 @@ interface Props {
 
 export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSearchOpen }: Props) {
 	const headerAvatarSrc = room.avatarUrl?.startsWith("mxc://")
-		? `/api/matrix/media?mxc=${encodeURIComponent(room.avatarUrl.slice(6))}`
+		? mxcToHttp(room.avatarUrl)
 		: room.avatarUrl;
 	const headerInitials = room.name.slice(0, 2).toUpperCase();
 
@@ -47,15 +49,7 @@ export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSea
 			{/* Raum-Name + Topic */}
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-1.5">
-					{isEncrypted ? (
-						<span title="Verschlüsselt">
-							<Lock className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-						</span>
-					) : (
-						<span title="Nicht verschlüsselt">
-							<LockOpen className="h-3.5 w-3.5 text-destructive/70 shrink-0" />
-						</span>
-					)}
+					<EncryptionBadge isEncrypted={isEncrypted} compact />
 					<span className="font-semibold text-sm truncate">{room.name}</span>
 					<div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
 						<Users className="h-3 w-3" />

@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Dialog,
 	DialogContent,
@@ -81,12 +82,10 @@ export function CreatePollDialog({ client, roomId, trigger }: Props) {
 				<div className="flex flex-col gap-3">
 					<div>
 						<label className="text-xs font-medium text-muted-foreground mb-1 block">Frage</label>
-						<input
-							type="text"
+						<Input
 							value={question}
 							onChange={(e) => setQuestion(e.target.value)}
 							placeholder="Worüber möchtest du abstimmen?"
-							className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
 						/>
 					</div>
 
@@ -98,12 +97,11 @@ export function CreatePollDialog({ client, roomId, trigger }: Props) {
 							{answers.map((ans, idx) => (
 								// biome-ignore lint/suspicious/noArrayIndexKey: Antworten haben keine stabile ID bis zum Senden
 								<div key={idx} className="flex items-center gap-1.5">
-									<input
-										type="text"
+									<Input
 										value={ans}
 										onChange={(e) => updateAnswer(idx, e.target.value)}
 										placeholder={`Antwort ${idx + 1}`}
-										className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+										className="flex-1"
 									/>
 									{answers.length > 2 && (
 										<button

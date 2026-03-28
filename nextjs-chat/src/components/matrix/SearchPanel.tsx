@@ -4,6 +4,7 @@ import { Loader2, Search, X } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface Props {
 	client: MatrixClient;
@@ -77,13 +78,12 @@ export function SearchPanel({ client, roomId, onClose }: Props) {
 				<div className="flex gap-2">
 					<div className="flex-1 relative">
 						<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-						<input
-							type="text"
+						<Input
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
 							onKeyDown={handleKeyDown}
 							placeholder="Nachrichten durchsuchen…"
-							className="w-full rounded-lg border border-border/50 bg-muted/30 pl-8 pr-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+							className="pl-8"
 						/>
 					</div>
 					<Button size="sm" onClick={doSearch} disabled={isSearching || !query.trim()}>
