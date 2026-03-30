@@ -7,6 +7,7 @@ import {
 	VideoConference,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { BackgroundBlur, type BackgroundOptions } from "@livekit/track-processors";
 import type { RoomOptions } from "livekit-client";
 import { PhoneOff, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
@@ -33,18 +34,30 @@ export function CallOverlay({ call }: Props) {
 		isVoiceOnly,
 	} = call;
 
-	// LiveKit RoomOptions mit E2EE — Worker verschlüsselt Audio/Video Frames (SFrame)
+	// LiveKit RoomOptions: E2EE + Video Processors (Background Blur)
 	const roomOptions = useMemo((): RoomOptions | undefined => {
 		if (typeof window === "undefined") return undefined;
+
+		const options: RoomOptions = {};
+
+		// E2EE — Worker verschlüsselt Audio/Video Frames (SFrame)
 		try {
 			const worker = new Worker(new URL("livekit-client/e2ee-worker", import.meta.url));
-			return {
-				e2ee: { keyProvider: e2eeKeyProvider, worker },
-			};
+			options.e2ee = { keyProvider: e2eeKeyProvider, worker };
 		} catch {
 			console.warn("[call] E2EE Worker nicht verfügbar — Calls laufen unverschlüsselt");
-			return undefined;
 		}
+
+		// Background Blur für Video-Calls (track-processors)
+		try {
+			options.videoCaptureDefaults = {
+				processor: BackgroundBlur(10),
+			};
+		} catch {
+			// Track Processors nicht verfügbar — kein Blur
+		}
+
+		return options;
 	}, [e2eeKeyProvider]);
 
 	const isE2EE = !!roomOptions?.e2ee;

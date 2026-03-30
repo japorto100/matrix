@@ -9,6 +9,8 @@ import {
 	BrainCircuit,
 	ChevronDown,
 	Columns2,
+	Mic,
+	MicOff,
 	PanelRight,
 	PlusCircle,
 	RotateCcw,
@@ -53,6 +55,9 @@ interface AgentChatToolbarProps {
 	/** AC50: TTS autoplay toggle */
 	autoplayTts?: boolean;
 	onAutoplayToggle?: () => void;
+	/** Voice mode: Text ↔ Voice (LiveKit WebRTC) */
+	voiceActive?: boolean;
+	onVoiceToggle?: () => void;
 }
 
 export function AgentChatToolbar({
@@ -64,6 +69,8 @@ export function AgentChatToolbar({
 	onReasoningEffortChange,
 	autoplayTts = false,
 	onAutoplayToggle,
+	voiceActive = false,
+	onVoiceToggle,
 }: AgentChatToolbarProps) {
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const { mode, toggleMode } = useGlobalChat();
@@ -123,6 +130,18 @@ export function AgentChatToolbar({
 			</button>
 
 			<div className="ml-auto flex items-center gap-0.5">
+				{/* Voice mode toggle: Text ↔ Voice (LiveKit WebRTC) */}
+				{onVoiceToggle && (
+					<button
+						type="button"
+						onClick={onVoiceToggle}
+						className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] hover:bg-muted/60 transition-colors ${voiceActive ? "text-green-500" : "text-muted-foreground/50"}`}
+						title={voiceActive ? "Voice aktiv — klicken zum Beenden" : "Voice Chat starten (WebRTC)"}
+					>
+						{voiceActive ? <Mic className="h-2.5 w-2.5" /> : <MicOff className="h-2.5 w-2.5" />}
+						<span className="font-mono">{voiceActive ? "Voice" : "Text"}</span>
+					</button>
+				)}
 				{/* AC50: TTS autoplay toggle */}
 				{onAutoplayToggle && (
 					<button

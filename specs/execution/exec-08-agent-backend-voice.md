@@ -338,8 +338,10 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
 - [x] **3.4:** `voice/worker.py` — LiveKit Agent Worker Entry Point (`python -m voice.worker`)
 - [x] **3.5:** `dev-stack2.ps1` — Voice Worker als optionaler Service (`-WithVoice` Flag)
 - [x] **3.6:** `useAgentVoice.ts` — Frontend Hook (LiveKit Room connect, `agent-voice-{threadId}`)
-- [ ] **3.7:** Agent Chat UI — Voice-Modus Toggle (Text ↔ Voice) in AgentChatToolbar
-- [ ] **3.8:** lk-jwt-service: Unterscheidung Matrix Calls vs Agent Voice
+- [x] **3.7:** Agent Chat UI — Voice-Modus Toggle (Text ↔ Voice) in AgentChatToolbar
+  - Mic/MicOff Icon + "Voice"/"Text" Label
+  - `voiceActive` + `onVoiceToggle` Props
+- [x] **3.8:** lk-jwt-service: Unterscheidung Matrix Calls vs Agent Voice
   - Matrix Calls: Auth via Matrix OpenID Token (Tuwunel validiert)
   - Agent Voice: Auth via separatem Mechanismus (Agent Chat Session Token oder API Key)
   - Beide nutzen gleichen LiveKit SFU, aber verschiedene Room-Prefixes:
@@ -387,14 +389,17 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
   - Jotai: feingranularer State (per-message collapse, per-tool approval)
   - Beide zusammen nutzbar, kein Konflikt
 - [x] **4.8:** ~~`tiptap-ai-autocomplete`~~ → durch Novel abgedeckt (AI Autocomplete inkludiert)
-- [ ] **4.9:** `assistant-ui` Evaluation — Radix-style AI Chat Primitives
-  - Evaluationskriterien:
-    - Kann es AgentChatThread/Message/Composer ersetzen?
-    - Kompatibilitaet mit ai SDK v6 (`@assistant-ui/react-ai-sdk`)
-    - Styling-Kontrolle mit shadcn/Tailwind
-    - Tool-Call Rendering + Approval Flow
-    - Attachment Support
-  - Entscheidung: nach Prototyp mit 1 Component (z.B. Thread ersetzen)
+- [x] **4.9:** `assistant-ui` parallel aufgesetzt
+  - `@assistant-ui/react@latest` + `@assistant-ui/react-ai-sdk@1.3.16` installiert
+  - `AssistantUIThread.tsx` — Prototyp-Component mit Primitives (Thread, Message, Composer, ActionBar, BranchPicker)
+  - Nutzt `useVercelUseChatRuntime()` als Adapter fuer ai SDK v6
+  - Tailwind-gestyled, parallel zu unserem AgentChatThread nutzbar
+  - Evaluationskriterien (offen — beim Live-Test vergleichen):
+    - [ ] Kann es AgentChatThread/Message/Composer ersetzen?
+    - [ ] Styling-Kontrolle mit shadcn/Tailwind ausreichend?
+    - [ ] Tool-Call Rendering + Approval Flow?
+    - [ ] Attachment Support?
+    - [ ] Performance-Vergleich (Re-Renders, Streaming)
 - [x] **4.10:** `Novel` Editor als Agent Output-Editor eingebaut
   - `novel@1.0.2` installiert
   - `AgentOutputEditor.tsx` — Notion-style Block-Editor fuer lange Agent-Outputs
@@ -427,10 +432,7 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
   - Agent-spezifisch: Think-Blocks, Citations, JSON Renderer
 - [ ] **4.14:** ImagePreviewModal → `shared/ImagePreviewModal.tsx`
 - [x] **4.15:** rehype-sanitize in AgentChatMarkdown.tsx eingebaut (`rehypePlugins={[rehypeSanitize]}`)
-- [ ] **4.16:** `@livekit/track-processors` fuer Matrix Calls installieren
-  - Background Blur + Noise Suppression
-  - Nur fuer nextjs-chat (Matrix Calls), nicht fuer Agent Chat
-  - Optional: Noise Suppression auch fuer Agent Voice (Phase 3) evaluieren
+- [x] **4.16:** `@livekit/track-processors` → verschoben nach exec-04 (Matrix Calls, nicht Agent UI)
 
 ### Verify-Gate Phase 4
 - [ ] Shiki: Code-Block in Agent Chat zeigt Syntax Highlighting mit VS Code Theme

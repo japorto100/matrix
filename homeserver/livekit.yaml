@@ -18,5 +18,15 @@ rtc:
 keys:
   devkey: "your-livekit-secret-change-in-production"
 
+# Room-Namenskonventionen (gleicher SFU, verschiedene Use-Cases):
+#   Matrix Calls:  "!roomId:server"         (MatrixRTC Session, OpenID Auth)
+#   Agent Voice:   "agent-voice-{threadId}"  (direkter LiveKit Room)
+#
+# Auth-Unterscheidung:
+#   Dev:  ein lk-jwt-service (Port 8080) für beide — LIVEKIT_FULL_ACCESS_HOMESERVERS=matrix.local
+#   Prod: zwei Instanzen oder ein Proxy mit Route-basiertem Auth
+#         Matrix: /sfu/get (OpenID Token Validation via Homeserver)
+#         Agent:  /agent/jwt (API Key oder Session Token Validation)
+
 logging:
   level: info

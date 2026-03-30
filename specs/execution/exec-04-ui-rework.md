@@ -751,9 +751,15 @@ Sliding Sync ist performanter aber cached nicht alles — deshalb ist diese Anal
 **7. SOTA 2026 Package Upgrades (TODO):**
 - [ ] `react-shiki` — VS Code Syntax Highlighting fuer Code-Bloecke in TextContent.tsx
 - [ ] `motion` — framer-motion Successor, Import `motion/react` statt `framer-motion`
-- [ ] `@livekit/track-processors` — Background Blur + Noise Suppression fuer Calls
+- [x] `@livekit/track-processors` — Background Blur in CallOverlay.tsx eingebaut
+  - `BackgroundBlur(10)` als Default Video Processor
+  - Graceful Fallback wenn nicht verfuegbar
 - [ ] `@formkit/auto-animate` — zero-config List-Animations (RoomList, Timeline)
-- Packages sind installiert, Umstellung erfolgt in separatem Schritt
+- Packages sind installiert, auto-animate Umstellung erfolgt in separatem Schritt
+
+**Verify-Gate Punkt 7 (SOTA Packages):**
+- [ ] Background Blur sichtbar bei Video-Call (unscharfer Hintergrund)
+- [ ] Blur deaktivierbar falls Performance-Probleme
 
 ### Audio-Nachricht
 - Recording-UI implementiert (Mic/MicOff, Timer, Send)
