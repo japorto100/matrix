@@ -10,6 +10,8 @@ param(
     [switch]$SkipPython,
     [switch]$SkipFrontend,
     [switch]$SkipMock,
+    [switch]$DevTools,
+    [switch]$WithVoice,
     [switch]$Tunnel,
     [switch]$FrontendOnly,
     [switch]$AgentOnly,
@@ -337,6 +339,22 @@ try {
         }
     }
 
+    # -- Voice AI Worker (optional, -WithVoice Flag) --
+    if ($WithVoice) {
+        Register-Service -Name "voice-worker" -Port 0 -Tier "app" -TimeoutSecs 30 -StartAction {
+            Start-LoggedProcess -Name "voice-worker" -FilePath "uv" `
+                -ArgumentList @("run", "python", "-m", "voice.worker") -WorkingDirectory $pyDir
+        }
+    }
+
+    # -- AI SDK DevTools (optional, -DevTools Flag) --
+    if ($DevTools) {
+        Register-Service -Name "ai-devtools" -Port 4983 -Tier "app" -TimeoutSecs 10 -StartAction {
+            Start-LoggedProcess -Name "ai-devtools" -FilePath "npx" `
+                -ArgumentList @("@ai-sdk/devtools") -WorkingDirectory $nextDir
+        }
+    }
+
     $registered = $script:services.Keys -join ", "
     Write-Host "Registered: $registered" -ForegroundColor DarkGray
 
@@ -423,6 +441,8 @@ try {
     }
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }
     if ($script:services["tunnel"])        { Write-Host "    Tunnel:          see logs/dev-stack/tunnel.stdout.log" -ForegroundColor DarkCyan }
+    if ($script:services["voice-worker"])  { Write-Host "    Voice Worker:    LiveKit Agent (-WithVoice)" -ForegroundColor DarkYellow }
+    if ($script:services["ai-devtools"])   { Write-Host "    AI DevTools:     http://127.0.0.1:4983  (-DevTools)" -ForegroundColor DarkYellow }
     Write-Host ""
     Write-Host "  Logs: logs\dev-stack\*.log" -ForegroundColor DarkGray
     Write-Host "============================================" -ForegroundColor Green

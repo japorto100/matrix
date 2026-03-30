@@ -7,6 +7,7 @@
 // AC66: onApproveToolCall/onDenyToolCall pass-through to AgentChatMessage
 // Phase 22d: Uses UIMessage[] from ai SDK
 
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import type { TextUIPart, UIMessage } from "ai";
 import { Bot, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -189,9 +190,16 @@ export function AgentChatThread({
 	// AC54: map user messages to their sentAttachments by order index
 	let userMsgIdx = 0;
 
+	// auto-animate: neue Nachrichten faden sanft ein, keine manuelle Animation nötig
+	const [animateRef] = useAutoAnimate();
+
 	return (
 		<div
-			ref={containerRef}
+			ref={(el) => {
+				// Beide Refs verbinden: scroll container + auto-animate
+				(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+				animateRef(el);
+			}}
 			className="flex-1 overflow-y-auto px-3 py-3 space-y-3"
 			onScroll={handleScroll}
 		>

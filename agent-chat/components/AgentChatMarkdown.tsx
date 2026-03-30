@@ -2,7 +2,7 @@
 
 // Markdown renderer for agent chat messages — Phase 22a / 22f
 // AC34: react-markdown + remark-gfm
-// AC35: syntax highlighting via react-syntax-highlighter
+// AC35: syntax highlighting via react-shiki (SOTA 2026 — VS Code Engine, ersetzt react-syntax-highlighter)
 // AC36: code-block copy button (1.5s feedback)
 // AC37: table rendering (GFM)
 // AC38: <think> tag collapsible box
@@ -11,8 +11,8 @@
 import { Check, ChevronDown, ChevronRight, Copy } from "lucide-react";
 import { memo, useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { ShikiHighlighter } from "react-shiki";
+import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
 // ---- Think-block collapsible ----
@@ -184,20 +184,13 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
 					)}
 				</button>
 			</div>
-			<SyntaxHighlighter
-				style={oneDark}
+			<ShikiHighlighter
 				language={language || "text"}
-				PreTag="div"
-				customStyle={{
-					margin: 0,
-					borderRadius: 0,
-					fontSize: "0.75rem",
-					lineHeight: "1.5",
-					background: "transparent",
-				}}
+				theme="one-dark-pro"
+				className="text-xs leading-relaxed !bg-transparent !m-0 !rounded-none"
 			>
 				{value}
-			</SyntaxHighlighter>
+			</ShikiHighlighter>
 		</div>
 	);
 }
@@ -353,7 +346,7 @@ function AgentChatMarkdownInner({ content }: AgentChatMarkdownProps) {
 					return <ThinkBlock key={seg.key} content={seg.content} />;
 				}
 				return (
-					<ReactMarkdown key={seg.key} remarkPlugins={[remarkGfm]} components={markdownComponents}>
+					<ReactMarkdown key={seg.key} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]} components={markdownComponents}>
 						{seg.content}
 					</ReactMarkdown>
 				);

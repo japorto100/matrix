@@ -14,7 +14,7 @@
 // AC104: Cost-per-token estimate badge
 
 import type { TextUIPart, UIMessage } from "ai";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import {
 	BrainCircuit,
 	Check,

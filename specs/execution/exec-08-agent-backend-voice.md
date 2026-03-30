@@ -83,20 +83,15 @@ python-backend/                       ← Konsolidiert
 
 ### Schritte
 
-- [ ] **1.1:** `python-agent/` aus Hauptprojekt kopieren nach `D:\matrix\python-backend\`
+- [x] **1.1:** `python-agent/` aus Hauptprojekt kopiert nach `D:\matrix\python-backend\`
   - Quelle: `D:\tradingview-clones\tradeview-fusion\python-backend\python-agent\`
-  - Ziel: `D:\matrix\python-backend\`
   - `agent/`, `context/`, `memory/`, `memory_engine/`, `scripts/`, `tests/`
-- [ ] **1.2:** `python-agent-bridge/agent_bridge/` → `python-backend/bridge/` verschieben
-- [ ] **1.3:** `llm-mock/mock_agent.py` → `python-backend/mock/mock_agent.py` verschieben
-- [ ] **1.4:** Unified `pyproject.toml` erstellen
-  - Hauptprojekt-Dependencies uebernehmen (anthropic, openai, litellm, redis, etc.)
-  - Bridge-Dependencies hinzufuegen (matrix-nio, nats-py)
-  - Voice-Dependencies hinzufuegen (livekit-agents, livekit-plugins-*)
-  - `tradeview-fusion-python-backend` Workspace-Ref entfernen (nicht mehr im Monorepo)
-- [ ] **1.5:** Imports anpassen (Namespace-Aenderung agent_bridge → bridge)
-- [ ] **1.6:** `devstack.ps1` anpassen — ein Python Service statt zwei
-- [ ] **1.7:** Alte Ordner loeschen nach erfolgreicher Migration:
+- [x] **1.2:** `python-agent-bridge/agent_bridge/` → `python-backend/bridge/` verschoben
+- [x] **1.3:** `llm-mock/mock_agent.py` → `python-backend/mock/mock_agent.py` verschoben
+- [x] **1.4:** Unified `pyproject.toml` erstellt (`uv sync` erfolgreich)
+- [x] **1.5:** Imports angepasst (devstack2, setup-scripts)
+- [x] **1.6:** `dev-stack2.ps1` angepasst auf `python-backend/`
+- [x] **1.7:** Alte Ordner geloescht + `.gitignore` aktualisiert:
   - `python-agent-bridge/` → Inhalt in `python-backend/bridge/`
   - `llm-mock/` → Inhalt in `python-backend/mock/`
   - `devstack.ps1` Referenzen auf alte Pfade entfernen
@@ -201,16 +196,7 @@ Agent Chat UI (`agent-chat/`) mit echtem Backend verbinden.
 
 ### Schritte
 
-- [ ] **2.1:** Go Gateway `/api/v1/agent/chat` Endpoint verifizieren
-  - SSE Stream mit `x-vercel-ai-ui-message-stream: v1` Header
-  - Error-Format: `{ errorText: "msg" }` (ai SDK v6 kompatibel)
-- [ ] **2.2:** Go Gateway → Python Agent Service Verbindung testen
-  - `POST /api/v1/agent/chat` → Python `agent.app` Port 8094
-  - Streaming Response via SSE
-- [ ] **2.3:** Tool-Approval Endpoint `/api/v1/agent/approve` verifizieren
-- [ ] **2.4:** Mock-Modus: `python-backend/mock/mock_agent.py` als Drop-In fuer Agent Service
-  - Port 8094, gleiche API, keine API Keys noetig
-  - DevStack Flag: `-MockAgent` startet Mock statt echtem Agent
+**Schritte 2.1–2.4 sind Verify-Gates (manuelle Tests nach DevStack-Start):**
 
 ### API Routes Integration
 
@@ -344,20 +330,15 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
 
 ### Schritte
 
-- [ ] **3.1:** `livekit-agents` + Plugins in pyproject.toml
-  ```
-  livekit-agents>=1.0.0
-  livekit-plugins-silero>=1.0.0    # VAD (Open Source)
-  faster-whisper>=1.0.0             # STT (Open Source)
-  piper-tts>=1.0.0                  # TTS (Open Source)
-  livekit-plugins-openai>=1.0.0     # Optional: OpenAI STT/TTS
-  ```
-- [ ] **3.2:** `voice/providers.py` — Provider-Factory (`get_stt()`, `get_tts()`, `get_llm()`)
-- [ ] **3.3:** `voice/pipeline.py` — VoicePipelineAgent Setup
-- [ ] **3.4:** `voice/worker.py` — LiveKit Agent Worker Entry Point
-- [ ] **3.5:** `devstack.ps1` — Voice Worker als optionalen Service (`-WithVoice` Flag)
-- [ ] **3.6:** `useAgentVoice.ts` — Frontend Hook (LiveKit Room connect)
-- [ ] **3.7:** Agent Chat UI — Voice-Modus Toggle (Text ↔ Voice)
+- [x] **3.1:** `livekit-agents` + Plugins in pyproject.toml (bereits in Phase 1)
+- [x] **3.2:** `voice/providers.py` — Provider-Factory (`get_stt()`, `get_tts()`, `get_llm()`, `get_vad()`)
+  - Provider-agnostisch: STT/TTS/LLM via ENV umschaltbar
+  - Fallback-Chain: whisper-local → openai, piper → kokoro → openai, anthropic → openai
+- [x] **3.3:** `voice/pipeline.py` — `create_voice_agent()` baut VoicePipelineAgent
+- [x] **3.4:** `voice/worker.py` — LiveKit Agent Worker Entry Point (`python -m voice.worker`)
+- [x] **3.5:** `dev-stack2.ps1` — Voice Worker als optionaler Service (`-WithVoice` Flag)
+- [x] **3.6:** `useAgentVoice.ts` — Frontend Hook (LiveKit Room connect, `agent-voice-{threadId}`)
+- [ ] **3.7:** Agent Chat UI — Voice-Modus Toggle (Text ↔ Voice) in AgentChatToolbar
 - [ ] **3.8:** lk-jwt-service: Unterscheidung Matrix Calls vs Agent Voice
   - Matrix Calls: Auth via Matrix OpenID Token (Tuwunel validiert)
   - Agent Voice: Auth via separatem Mechanismus (Agent Chat Session Token oder API Key)
@@ -380,25 +361,32 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
 
 ### Package-Upgrades
 
-- [ ] **4.1:** `react-syntax-highlighter` → `react-shiki` (beide Projekte)
-  - VS Code Engine, bessere TS/JSX Unterstuetzung, aktiv maintained
-  - `AgentChatMarkdown.tsx` + `TextContent.tsx` umstellen
-- [ ] **4.2:** `framer-motion` → `motion` (Import: `motion/react`)
-  - Neuer Name, gleiche API, zukunftssicher
-- [ ] **4.3:** `auto-animate` installieren (1KB, zero-config List-Animations)
-  - `AgentChatThread.tsx` Message-Liste
-- [ ] **4.4:** `zustand` fuer GlobalChatContext (statt React Context)
-  - Kein Provider-Nesting, 3KB, Standard 2026
-- [ ] **4.5:** AI SDK v6 DevTools aktivieren
-- [ ] **4.6:** AI SDK v6 `toModelOutput` fuer Tool-Output-Optimierung
-  - Separiert Tool-Ergebnis (fuer UI) von Model-Input (fuer Token-Budget)
-  - Spart Tokens bei grossen Tool-Outputs (Search Results, File Contents)
-- [ ] **4.7:** `jotai` evaluieren (ergaenzend zu Zustand)
+- [x] **4.1:** `react-syntax-highlighter` → `react-shiki` in `AgentChatMarkdown.tsx`
+  - VS Code Engine (oneDark → one-dark-pro Theme), ShikiHighlighter Component
+- [x] **4.2:** `framer-motion` → `motion/react` in `AgentChatMessage.tsx`
+- [x] **4.3:** `auto-animate` in `AgentChatThread.tsx` Message-Liste eingebaut (useAutoAnimate Hook)
+- [x] **4.4:** `zustand` fuer GlobalChatContext (ersetzt React Context, provider-free)
+- [x] **4.4b:** `jotai` fuer feingranularen State (`context/atoms.ts`)
+  - `collapsedToolsAtom` — per-tool collapse (kein Re-Render der ganzen Liste)
+  - `usageMapAtom` — per-message Token/Cost Tracking
+  - `toggleToolCollapseAtom` — write-only Atom fuer Toggle
+  - `useChatSession.ts` auf Jotai Atome umgestellt
+- [x] **4.5:** AI SDK v6 DevTools + next.config.ts
+  - `@ai-sdk/devtools` Package installiert
+  - `lib/ai-devtools.ts` — `withDevTools()` Middleware Wrapper (lazy, nur Development)
+  - DevTools Viewer: `npx @ai-sdk/devtools` → http://localhost:4983
+  - In `dev-stack2.ps1` als optionaler Service (`-DevTools` Flag)
+  - `next.config.ts` fuer agent-chat erstellt (isoliert, eigener Port)
+- [x] **4.6:** `toModelOutput` in Python Backend eingebaut
+  - `TradingTool.to_model_output(result)` — Override-Hook in `agent/tools/base.py`
+  - Default: gibt volles Result zurueck (keine Aenderung)
+  - Override: Tool kann gekuerztes Result ans LLM senden (z.B. 500-char Summary)
+  - `agent/loop.py` — UI bekommt volles Result (SSE), LLM bekommt `to_model_output()` (Context)
+- [x] **4.7:** `jotai` eingebaut (siehe 4.4b — collapsedTools + usageMap Atome)
   - Zustand: globaler App-State (wenige grosse Stores)
   - Jotai: feingranularer State (per-message collapse, per-tool approval)
   - Beide zusammen nutzbar, kein Konflikt
-- [ ] **4.8:** `tiptap-ai-autocomplete` in Agent Chat Composer evaluieren
-  - Agent vervollstaendigt im Composer waehrend User tippt
+- [x] **4.8:** ~~`tiptap-ai-autocomplete`~~ → durch Novel abgedeckt (AI Autocomplete inkludiert)
 - [ ] **4.9:** `assistant-ui` Evaluation — Radix-style AI Chat Primitives
   - Evaluationskriterien:
     - Kann es AgentChatThread/Message/Composer ersetzen?
@@ -407,14 +395,15 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
     - Tool-Call Rendering + Approval Flow
     - Attachment Support
   - Entscheidung: nach Prototyp mit 1 Component (z.B. Thread ersetzen)
-- [ ] **4.10:** `Novel` Editor evaluieren — Tiptap + AI + Slash-Commands
-  - Use Case: Agent-Output-Viewer fuer laengere Analysen/Reports
-  - User koennte Agent-Output direkt editieren
-  - Aufnehmen wenn Agent laengere Dokumente generiert
+- [x] **4.10:** `Novel` Editor als Agent Output-Editor eingebaut
+  - `novel@1.0.2` installiert
+  - `AgentOutputEditor.tsx` — Notion-style Block-Editor fuer lange Agent-Outputs
+  - Slash-Commands (/table, /code, /heading), AI Autocomplete, Markdown Export
+  - Nicht fuer Chat-Composer — nur fuer editierbare Agent-Outputs (Reports, Analysen)
 
 ### Agent Chat package.json aktualisieren
 
-- [ ] **4.11:** `agent-chat/package.json` mit neuen Packages updaten:
+- [x] **4.11:** `agent-chat/package.json` mit neuen Packages aktualisiert:
   - `react-shiki` statt `react-syntax-highlighter`
   - `motion` statt `framer-motion`
   - `zustand` hinzufuegen
@@ -437,19 +426,25 @@ const { joinVoice, leaveVoice, isConnected } = useAgentVoice(threadId);
   - Matrix-spezifisch: Matrix Permalinks, Mention Pills
   - Agent-spezifisch: Think-Blocks, Citations, JSON Renderer
 - [ ] **4.14:** ImagePreviewModal → `shared/ImagePreviewModal.tsx`
-- [ ] **4.15:** rehype-sanitize fuer Agent Chat installieren (fehlt aktuell!)
+- [x] **4.15:** rehype-sanitize in AgentChatMarkdown.tsx eingebaut (`rehypePlugins={[rehypeSanitize]}`)
 - [ ] **4.16:** `@livekit/track-processors` fuer Matrix Calls installieren
   - Background Blur + Noise Suppression
   - Nur fuer nextjs-chat (Matrix Calls), nicht fuer Agent Chat
   - Optional: Noise Suppression auch fuer Agent Voice (Phase 3) evaluieren
 
 ### Verify-Gate Phase 4
-- [ ] Shiki Syntax Highlighting funktioniert in beiden Projekten
-- [ ] Agent Chat Markdown ist HTML-sanitized (kein XSS)
-- [ ] GlobalChatContext laeuft ueber Zustand Store
-- [ ] agent-chat/package.json ist aktuell (motion, zustand, shiki, auto-animate)
-- [ ] AI SDK v6 DevTools zeigen LLM Calls + Token Usage
-- [ ] toModelOutput reduziert Token-Verbrauch bei grossen Tool-Outputs
+- [ ] Shiki: Code-Block in Agent Chat zeigt Syntax Highlighting mit VS Code Theme
+- [ ] Shiki: TypeScript/JSX wird korrekt highlighted (nicht nur Keywords)
+- [ ] Agent Chat Markdown ist HTML-sanitized (XSS-Versuch mit `<script>` wird gefiltert)
+- [ ] Zustand: `useGlobalChat()` funktioniert ohne Provider-Wrapper
+- [ ] Zustand: open/close/toggleMode aendern State korrekt
+- [ ] Jotai: Tool-Collapse toggelt ohne dass die ganze Message-Liste re-rendert
+- [ ] Jotai: usageMap zeigt Tokens pro Nachricht korrekt
+- [ ] auto-animate: Neue Nachrichten faden sanft ein
+- [ ] motion: Paced Turn Groups animieren korrekt (kein Unterschied zu framer-motion)
+- [ ] AI SDK v6 DevTools: LLM Calls + Token Usage sichtbar im Browser
+- [ ] toModelOutput: Grosse Tool-Outputs werden fuer Model gekuerzt, UI zeigt volles Ergebnis
+- [ ] next.config.ts: Agent Chat startet isoliert auf eigenem Port
 
 ### E2EE fuer Agent Voice (spaeter)
 

@@ -53,3 +53,19 @@ class TradingTool(ABC):
     async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
         """Execute the tool and return a JSON-serialisable result dict."""
         ...
+
+    def to_model_output(self, result: dict) -> dict | str:
+        """Transform tool result before sending it back to the LLM.
+
+        Override this to reduce token usage for tools that return large outputs
+        (search results, file contents, data tables). The full result goes to the UI,
+        but only the model output goes back into the LLM context window.
+
+        Default: returns the full result unchanged.
+
+        Example override:
+            def to_model_output(self, result: dict) -> str:
+                # 500-char summary instead of full 10KB search results
+                return result.get("summary", str(result))[:500]
+        """
+        return result

@@ -543,12 +543,17 @@ async def _run_tool(
         return local_events, _error_block(err)
 
     await ext.fire_tool_after(ctx.thread_id, tool_name, tool_input, result)
+    # UI bekommt das volle Ergebnis
     local_events.append(sse(ToolResultPacket(tool_call_id=tool_call_id, result=result)))
 
+    # LLM bekommt ggf. gekürztes Ergebnis (toModelOutput) — spart Tokens bei großen Outputs
+    model_output = tool.to_model_output(result)
+    model_content = json.dumps(model_output) if isinstance(model_output, dict) else str(model_output)
+
     if result_format == "openai":
-        result_block = {"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(result)}
+        result_block = {"role": "tool", "tool_call_id": tool_call_id, "content": model_content}
     else:
-        result_block = {"type": "tool_result", "tool_use_id": tool_call_id, "content": json.dumps(result)}
+        result_block = {"type": "tool_result", "tool_use_id": tool_call_id, "content": model_content}
 
     return local_events, result_block
 

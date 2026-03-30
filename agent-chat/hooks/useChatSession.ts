@@ -15,8 +15,10 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { collapsedToolsAtom, toggleToolCollapseAtom, usageMapAtom } from "../context/atoms";
 import type { ReasoningEffort } from "../components/AgentChatToolbar";
 import type { RequestAttachment, StagedAttachment } from "./useAttachments";
 
@@ -93,13 +95,13 @@ export function useChatSession(): UseChatSessionReturn {
 	const [urlChatId, setUrlChatId] = useQueryState("t");
 	const chatIdRef = useRef(urlChatId || localId("chat"));
 	const threadIdRef = useRef<string | undefined>(undefined);
-	const [collapsedTools, setCollapsedTools] = useState<Set<string>>(new Set());
+	// Jotai Atoms — feingranularer State (kein Re-Render der ganzen Liste)
+	const collapsedTools = useAtomValue(collapsedToolsAtom);
+	const toggleToolCollapse = useSetAtom(toggleToolCollapseAtom);
+	const [usageMap, setUsageMap] = useAtom(usageMapAtom);
+
 	const [selectedModel, setSelectedModel] = useState("claude-sonnet-4-6");
 	const selectedModelRef = useRef(selectedModel);
-
-	// Usage tracking
-	const usageMapRef = useRef<Map<string, MessageUsage>>(new Map());
-	const [usageVersion, setUsageVersion] = useState(0);
 
 	// AC56: pending attachments ref (populated before sendMessage, read in prepareSendMessagesRequest)
 	const pendingAttachmentsRef = useRef<RequestAttachment[] | undefined>(undefined);
@@ -182,13 +184,16 @@ export function useChatSession(): UseChatSessionReturn {
 						costs && (promptTokens || completionTokens)
 							? promptTokens * costs.input + completionTokens * costs.output
 							: undefined;
-					usageMapRef.current.set(message.id, {
-						promptTokens,
-						completionTokens,
-						finishReason: finishReason ?? "stop",
-						costUsd,
+					setUsageMap((prev) => {
+						const next = new Map(prev);
+						next.set(message.id, {
+							promptTokens,
+							completionTokens,
+							finishReason: finishReason ?? "stop",
+							costUsd,
+						});
+						return next;
 					});
-					setUsageVersion((v) => v + 1);
 				}
 			},
 		});
@@ -248,15 +253,6 @@ export function useChatSession(): UseChatSessionReturn {
 		});
 	}, []);
 
-	const toggleToolCollapse = useCallback((toolCallId: string) => {
-		setCollapsedTools((prev) => {
-			const next = new Set(prev);
-			if (next.has(toolCallId)) next.delete(toolCallId);
-			else next.add(toolCallId);
-			return next;
-		});
-	}, []);
-
 	const isStreaming = status === "streaming";
 	const isConnecting = status === "submitted";
 
@@ -266,15 +262,11 @@ export function useChatSession(): UseChatSessionReturn {
 		.map((p) => p.text)
 		.join("");
 
-	const usageMap = usageMapRef.current;
-	void usageVersion; // consumed to keep lint happy
 	void sentAttachmentsVersion;
 
 	// AC64: context pressure from latest assistant usage promptTokens
 	const latestAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
-	const latestUsage = latestAssistantMsg
-		? usageMapRef.current.get(latestAssistantMsg.id)
-		: undefined;
+	const latestUsage = latestAssistantMsg ? usageMap.get(latestAssistantMsg.id) : undefined;
 	const maxCtx = MODEL_MAX_CONTEXT[selectedModel] ?? DEFAULT_MAX_CONTEXT;
 	const contextPressure = latestUsage ? Math.min(latestUsage.promptTokens / maxCtx, 1) : 0;
 
