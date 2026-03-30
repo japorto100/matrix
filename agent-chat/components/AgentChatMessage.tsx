@@ -59,51 +59,9 @@ interface AgentChatMessageProps {
 	onDenyToolCall?: (toolCallId: string) => Promise<void>;
 }
 
-function CopyButton({ text }: { text: string }) {
-	const [copied, setCopied] = useState(false);
-	const handleCopy = useCallback(() => {
-		void navigator.clipboard.writeText(text).then(() => {
-			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
-		});
-	}, [text]);
-	return (
-		<button
-			type="button"
-			onClick={handleCopy}
-			className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-			title="Copy message"
-		>
-			{copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-		</button>
-	);
-}
-
-function ReasoningBlock({ text }: { text: string }) {
-	const [open, setOpen] = useState(false);
-	return (
-		<div className="mt-1 rounded border border-border/50 bg-muted/20 text-xs">
-			<button
-				type="button"
-				className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-muted-foreground hover:text-foreground transition-colors"
-				onClick={() => setOpen((v) => !v)}
-			>
-				{open ? (
-					<ChevronDown className="h-3 w-3 shrink-0" />
-				) : (
-					<ChevronRight className="h-3 w-3 shrink-0" />
-				)}
-				<BrainCircuit className="h-3 w-3 shrink-0" />
-				<span className="font-semibold">Thinking</span>
-			</button>
-			{open && (
-				<div className="border-t border-border/40 px-2 py-1.5 text-[11px] text-muted-foreground/80 italic whitespace-pre-wrap">
-					{text}
-				</div>
-			)}
-		</div>
-	);
-}
+// CopyButton + ReasoningBlock extracted to own files
+import { CopyButton } from "./CopyButton";
+import { ReasoningBlock } from "./ReasoningBlock";
 
 // AC104: format cost as $X.XXXXXX
 function formatCost(usd: number): string {

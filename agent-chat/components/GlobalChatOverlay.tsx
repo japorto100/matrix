@@ -7,7 +7,7 @@
 import { useCallback, useRef } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AgentChatPanel } from "@/features/agent-chat/AgentChatPanel";
-import { useGlobalChat } from "@/features/agent-chat/context/GlobalChatContext";
+import { useGlobalChat } from "../stores/globalChatStore";
 
 export function GlobalChatOverlay() {
 	const { open, mode, closeChat } = useGlobalChat();

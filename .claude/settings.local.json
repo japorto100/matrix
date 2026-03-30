@@ -60,7 +60,8 @@
       "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''deps:'''', JSON.stringify\\(p.dependencies,null,2\\)\\); console.log\\(''''peerDeps:'''', JSON.stringify\\(p.peerDependencies,null,2\\)\\); console.log\\(''''main:'''', p.main\\); console.log\\(''''exports keys:'''', Object.keys\\(p.exports||{}\\)\\); }\\)\")",
       "Bash(find /d/matrix -name *.toml -type f)",
       "Bash(find:*)",
-      "Bash(grep -v \"^#$\")"
+      "Bash(grep -v \"^#$\")",
+      "WebFetch(domain:arxiv.org)"
     ]
   }
 }

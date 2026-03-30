@@ -198,14 +198,16 @@ function CodeBlock({ language, value }: { language: string; value: string }) {
 // ---- AC39: Citation badge renderer ----
 // Transforms [N] text fragments (e.g. [1], [2]) into superscript citation badges.
 
-const CITE_RE = /(\[\d+\])/g;
+// Split regex (g flag for split) and test regex (no g flag — avoids lastIndex corruption)
+const CITE_SPLIT_RE = /(\[\d+\])/g;
+const CITE_TEST_RE = /^\[\d+\]$/;
 
 function renderWithCitations(children: React.ReactNode): React.ReactNode {
 	if (typeof children === "string") {
-		const parts = children.split(CITE_RE);
+		const parts = children.split(CITE_SPLIT_RE);
 		if (parts.length === 1) return children;
 		return parts.map((part, i) =>
-			CITE_RE.test(part) ? (
+			CITE_TEST_RE.test(part) ? (
 				<sup
 					// biome-ignore lint/suspicious/noArrayIndexKey: stable citation index
 					key={i}

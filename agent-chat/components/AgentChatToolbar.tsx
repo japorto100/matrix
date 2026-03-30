@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useGlobalChat } from "@/features/agent-chat/context/GlobalChatContext";
+import { useGlobalChat } from "../stores/globalChatStore";
 
 export const AGENT_MODELS = [
 	{ id: "claude-sonnet-4-6", label: "Sonnet 4.6" },

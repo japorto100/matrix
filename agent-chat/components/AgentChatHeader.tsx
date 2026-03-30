@@ -7,7 +7,7 @@ import { ExternalLink, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useGlobalChat } from "@/features/agent-chat/context/GlobalChatContext";
+import { useGlobalChat } from "../stores/globalChatStore";
 
 export function AgentChatHeader() {
 	const { chatContext, clearChatContext, closeChat } = useGlobalChat();

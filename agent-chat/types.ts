@@ -1,5 +1,7 @@
-// Agent Chat UI — type definitions (Phase 22d)
-// ChatBlock/ChatMessage/SseEvent types removed — replaced by UIMessage from ai SDK.
+// Agent Chat UI — centralized type definitions
+// All domain types live here. Components/hooks import from this file.
+
+// ── Config ──────────────────────────────────────────────────────────────────
 
 export interface AgentChatConfig {
 	/** Go Gateway SSE endpoint for streaming agent responses */
@@ -15,4 +17,63 @@ export interface ChatThread {
 	title?: string;
 	createdAt: number;
 	updatedAt: number;
+}
+
+// ── Models & Reasoning ──────────────────────────────────────────────────────
+
+export const AGENT_MODELS = [
+	{ id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
+	{ id: "claude-opus-4-6", label: "Opus 4.6" },
+	{ id: "claude-haiku-4-5", label: "Haiku 4.5" },
+] as const;
+
+export type AgentModelId = (typeof AGENT_MODELS)[number]["id"];
+
+export type ReasoningEffort = "low" | "medium" | "high";
+
+// ── Chat Session ────────────────────────────────────────────────────────────
+
+export interface MessageUsage {
+	promptTokens: number;
+	completionTokens: number;
+	finishReason: string;
+	costUsd?: number;
+}
+
+// ── Attachments ─────────────────────────────────────────────────────────────
+
+export interface RequestAttachment {
+	base64: string;
+	mime_type: string;
+	name: string;
+}
+
+export interface StagedAttachment {
+	id: string;
+	file: File;
+	previewUrl: string;
+	base64?: string;
+}
+
+// ── Voice ───────────────────────────────────────────────────────────────────
+
+export type VoiceStatus = "idle" | "connecting" | "active" | "disconnecting";
+
+// ── Global Chat ─────────────────────────────────────────────────────────────
+
+export type ChatMode = "sheet" | "split" | "rail";
+
+// ── Status Types ────────────────────────────────────────────────────────────
+
+export type RailStatus = "idle" | "live" | "degraded" | "reconnecting";
+
+export type StreamStatus = "connected" | "reconnecting" | "degraded";
+
+// ── Sources ─────────────────────────────────────────────────────────────────
+
+export interface SourceItem {
+	url: string;
+	title?: string;
+	description?: string;
+	favicon?: string;
 }

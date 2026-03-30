@@ -11,7 +11,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useGlobalChat } from "@/features/agent-chat/context/GlobalChatContext";
+import { useGlobalChat } from "../stores/globalChatStore";
 
 interface AskAiContextMenuProps {
 	/** Pre-built context string injected into chat when "Ask AI" is clicked */

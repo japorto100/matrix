@@ -485,6 +485,37 @@ Port   Service                           Gestartet von
 
 ---
 
+## Phase 4b: Code Quality Refactoring (Audit 30.03.2026)
+
+### God Component Splitting
+- [x] `AgentChatComposer.tsx` (544→280 LOC): 3 Hooks extrahiert
+  - `hooks/useSpeechInput.ts` — Web Speech API
+  - `hooks/useMediaRecorderInput.ts` — MediaRecorder Fallback
+  - `hooks/useMicDevices.ts` — Audio Device Enumeration
+- [x] `AgentChatThread.tsx` (245→175 LOC): TTS Autoplay extrahiert
+  - `hooks/useAutoplayTts.ts` — fetches + plays TTS via Web Audio API
+- [x] `AgentChatMessage.tsx` (379→330 LOC): Sub-Components extrahiert
+  - `components/CopyButton.tsx` — Shared (Message + Markdown CodeBlock)
+  - `components/ReasoningBlock.tsx` — Collapsible Thinking Block
+
+### Type Safety
+- [x] `types.ts` zentralisiert (18→75 LOC): ReasoningEffort, AGENT_MODELS, AgentModelId,
+  MessageUsage, StagedAttachment, RequestAttachment, VoiceStatus, ChatMode, RailStatus,
+  StreamStatus, SourceItem — alles aus Component/Hook-Files nach types.ts verschoben
+
+### Bug Fixes
+- [x] Regex-Bug: `CITE_RE` mit g-Flag in split() + test() = lastIndex Korruption
+  → aufgeteilt in `CITE_SPLIT_RE` (g) + `CITE_TEST_RE` (kein g)
+- [x] Dual-ref Callback in Thread ohne useCallback → `useCallback` wrappen
+- [x] Duplizierte Emoji-Regex → `EMOJI_STRIP_RE` in `lib/utils.ts` zentralisiert
+
+### Organisation
+- [x] `context/GlobalChatContext.tsx` → `stores/globalChatStore.ts` (Zustand, kein Context)
+- [x] `components/assistant-ui/` → `_eval/assistant-ui/` (Evaluation-Code nicht in Production)
+- [x] Alle GlobalChat Imports auf relative Pfade umgestellt (nicht mehr @/features/...)
+
+---
+
 ## Hinweis: agent_chat_ui_delta.md
 
 Rein frontend-bezogene Aenderungen (Phase 4: Shiki, motion, zustand, auto-animate, assistant-ui,

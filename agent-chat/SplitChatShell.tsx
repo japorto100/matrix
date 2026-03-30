@@ -6,7 +6,7 @@
 
 import type { ReactNode } from "react";
 import { AgentChatPanel } from "@/features/agent-chat/AgentChatPanel";
-import { useGlobalChat } from "@/features/agent-chat/context/GlobalChatContext";
+import { useGlobalChat } from "../stores/globalChatStore";
 
 export function SplitChatShell({ children }: { children: ReactNode }) {
 	const { open, mode } = useGlobalChat();

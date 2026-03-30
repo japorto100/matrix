@@ -8,9 +8,10 @@
 // Phase 22d: Uses UIMessage[] from ai SDK
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import type { TextUIPart, UIMessage } from "ai";
+import type { UIMessage } from "ai";
 import { Bot, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAutoplayTts } from "../hooks/useAutoplayTts";
 import type { StagedAttachment } from "../hooks/useAttachments";
 import type { MessageUsage } from "../hooks/useChatSession";
 import { AgentChatMessage } from "./AgentChatMessage";
@@ -86,9 +87,6 @@ function MessageSkeleton() {
 	);
 }
 
-const EMOJI_STRIP_RE =
-	/[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]/gu;
-
 export function AgentChatThread({
 	messages,
 	isConnecting,
@@ -109,67 +107,8 @@ export function AgentChatThread({
 	const isAtBottomRef = useRef(true);
 	const [speakingId, setSpeakingId] = useState<string | null>(null);
 
-	// AC50: autoplay TTS for sealed assistant messages
-	const autoplayAbortRef = useRef<AbortController | null>(null);
-	const autoplaySrcRef = useRef<AudioBufferSourceNode | null>(null);
-	const lastAutoPlayedIdRef = useRef<string | null>(null);
-
-	// Cleanup autoplay resources on unmount
-	useEffect(
-		() => () => {
-			autoplayAbortRef.current?.abort();
-			try {
-				autoplaySrcRef.current?.stop();
-			} catch {}
-		},
-		[],
-	);
-
-	useEffect(() => {
-		if (!autoplayTts || isStreaming) return;
-		const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-		if (!lastAssistant || lastAssistant.id === lastAutoPlayedIdRef.current) return;
-		const isMsgStreaming = lastAssistant.parts.some(
-			(p) => p.type === "text" && (p as TextUIPart & { state?: string }).state === "streaming",
-		);
-		if (isMsgStreaming) return;
-		const text = lastAssistant.parts
-			.filter((p): p is TextUIPart => p.type === "text")
-			.map((p) => p.text)
-			.join("")
-			.replace(EMOJI_STRIP_RE, "")
-			.trim();
-		if (!text) return;
-
-		lastAutoPlayedIdRef.current = lastAssistant.id;
-		autoplayAbortRef.current?.abort();
-		const ac = new AbortController();
-		autoplayAbortRef.current = ac;
-
-		void (async () => {
-			try {
-				const res = await fetch("/api/audio/synthesize", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ text: text.slice(0, 4096) }),
-					signal: ac.signal,
-				});
-				if (!res.ok || ac.signal.aborted) return;
-				const buf = await res.arrayBuffer();
-				if (ac.signal.aborted) return;
-				const ctx = new AudioContext();
-				const audioBuffer = await ctx.decodeAudioData(buf);
-				if (ac.signal.aborted) return;
-				const source = ctx.createBufferSource();
-				source.buffer = audioBuffer;
-				source.connect(ctx.destination);
-				autoplaySrcRef.current = source;
-				source.start(0);
-			} catch {
-				// silent fail — autoplay is best-effort
-			}
-		})();
-	}, [messages, isStreaming, autoplayTts]);
+	// AC50: autoplay TTS — extracted to hook
+	useAutoplayTts(messages, isStreaming, autoplayTts ?? false);
 
 	const handleScroll = useCallback(() => {
 		const el = containerRef.current;
@@ -193,13 +132,18 @@ export function AgentChatThread({
 	// auto-animate: neue Nachrichten faden sanft ein, keine manuelle Animation nötig
 	const [animateRef] = useAutoAnimate();
 
+	// Stabile dual-ref Callback — verhindert ref re-attach jedes Render
+	const setContainerAndAnimate = useCallback(
+		(el: HTMLDivElement | null) => {
+			(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+			animateRef(el);
+		},
+		[animateRef],
+	);
+
 	return (
 		<div
-			ref={(el) => {
-				// Beide Refs verbinden: scroll container + auto-animate
-				(containerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-				animateRef(el);
-			}}
+			ref={setContainerAndAnimate}
 			className="flex-1 overflow-y-auto px-3 py-3 space-y-3"
 			onScroll={handleScroll}
 		>
