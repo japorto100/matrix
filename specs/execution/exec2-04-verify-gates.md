@@ -6,6 +6,33 @@
 
 ---
 
+## Offene Tasks (aus exec2-01/02/03 + exec-04)
+
+### Extern blockiert (kein Action moeglich)
+- [ ] Encrypted State Events (MSC3414/MSC4362) — wartet auf Tuwunel-Support
+- [ ] OIDC/MAS Auth — Tuwunel Legacy SSO, MAS nicht kompatibel, spaetere Portierung
+
+### Code-Tasks (Matrix Chat)
+- [ ] react-shiki in Matrix TextContent.tsx umstellen (Syntax Highlighting)
+- [ ] motion Import in Matrix Components umstellen (framer-motion → motion/react)
+- [ ] auto-animate in Matrix RoomList/Timeline einbauen
+- [ ] Location Content: OpenStreetMap-Embed statt Link
+- [ ] Client→Server Analyse: welche API Calls optimierbar
+- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
+
+### Federation + Security (Backlog — erst bei Prod-Deployment)
+- [ ] `allow_federation = true` in Tuwunel setzen
+- [ ] DNS: `_matrix._tcp` SRV Record oder `.well-known/matrix/server`
+- [ ] HTTPS + echte Domain (Cloudflare Tunnel oder eigene)
+- [ ] Draupnir/Mjolnir Bot deployen (Spam-Schutz)
+- [ ] Server ACLs konfigurieren (Blacklist fuer bekannte Spam-Server)
+- [ ] `block_non_admin_invites` evaluieren
+- [ ] Auto-Accept auf interne User beschraenken
+- [ ] Public Room Directory versteckt lassen
+- [ ] Testen: Externer User kann Alice/Bob nicht finden aber eingeladen werden
+
+---
+
 ## A. Infrastruktur (zuerst pruefen — ohne das laeuft nichts)
 
 ### A1. Homeserver
@@ -113,7 +140,17 @@
 
 ---
 
-## D. Erweiterte Features
+## D. Erweiterte Features (brauchen teils zweiten Client / Element X Mobile)
+
+### D0. Grundfunktionen mit zweitem Client
+- [ ] Unread-Badge erscheint bei neuer Nachricht von anderem User
+- [ ] Ungelesen-Zaehler faellt auf 0 nach Raumwechsel
+- [ ] Read Receipts: Mini-Avatar erscheint wenn anderer User liest
+- [ ] Online-Status Dot bei DM (braucht echten zweiten Client)
+- [ ] Nachrichten von anderem User: Bubble links, Sender-Farbe
+- [ ] Thread-Chip + Side-Panel (braucht Element X fuer Thread-Start)
+- [ ] ReadBy Liste (braucht Read Receipts sichtbar)
+- [ ] Call starten + Overlay (braucht zweites Device)
 
 ### D1. Polls (MSC3381)
 - [ ] "Abstimmung erstellen" Button sichtbar
