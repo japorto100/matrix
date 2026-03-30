@@ -121,6 +121,12 @@ User ← Tuwunel ← Go Appservice
   - NATS Authorization: Python-Trading darf nur `matrix.message.trading` lesen
   - Verhindert dass ein Agent-Service andere Agents' Nachrichten sieht
 
+- [ ] **C4:** Agent Thread-Support
+  - Agent wird im Thread mentioned → Go Appservice erkennt Thread-Kontext
+  - NATS-Message enthaelt threadRootId → Python Agent antwortet im Thread (nicht Hauptchat)
+  - Go Appservice nutzt `client.sendMessage(roomId, threadId, content)` fuer Thread-Reply
+  - Agent-Thread-Strategie: kurze Antwort → Hauptchat, lange Analyse → Thread erstellen
+
 ---
 
 ## Risiken
@@ -153,6 +159,65 @@ User ← Tuwunel ← Go Appservice
 - [ ] **Tuwunel default bleibt `"off"`**: Clients entscheiden pro Raum
 - [ ] **Cross-Signing**: Nur relevant wenn User↔User E2EE aktiviert wird
 - [ ] **Sicherheitsregel**: Agent-Namespace (`@agent-*`) joined nur Agent-Räume (Appservice-Regex), NICHT User↔User DMs
+
+---
+
+## E2EE Sicherheitsmodell — Go Gateway + E2BE (28.03.2026)
+
+### Warum E2EE + Go Gateway sicherer ist als non-E2EE
+
+```
+Non-E2EE:   User → Klartext → Tuwunel (DB hat Klartext) → Go Appservice → Agent
+E2EE + GW:  User → Ciphertext → Tuwunel (DB hat NUR Ciphertext) → Go (entschluesselt im RAM) → Agent
+```
+
+Bei E2EE sieht der Homeserver nie den Klartext. DB-Leak, Backup-Leak, Netzwerk-Sniffer — alles geschuetzt.
+Nur der Go Appservice (selbst betrieben) sieht Klartext — und nur im RAM, nicht persistent.
+
+### Standard-Pattern — kein Sonderweg
+
+Alle Matrix Bridges (mautrix WhatsApp/Telegram/Signal/Discord) nutzen dasselbe Pattern.
+mautrix nennt es **E2BE (End-to-Bridge Encryption)**: Bridge entschluesselt E2EE, verarbeitet, antwortet verschluesselt.
+Klare Aussage von mautrix: "End-to-bridge encryption ≠ end-to-end encryption. Trust your bridge operator."
+Da wir den Bot selbst betreiben → Trust gegeben.
+
+### Key Deletion — Forward Secrecy (zu evaluieren)
+
+**Ohne Key Deletion (aktueller Plan):**
+- Go Appservice entschluesselt Nachricht
+- Megolm Session Key bleibt im Crypto-Store
+- Server-Hack spaeter → alte Nachrichten entschluesselbar
+
+**Mit Key Deletion (E2BE Best Practice):**
+- Go Appservice entschluesselt Nachricht
+- Megolm Session Key wird SOFORT geloescht
+- Server-Hack spaeter → Keys weg → alte Nachrichten geschuetzt
+
+**Evaluation noetig fuer Agent:**
+- Agent braucht History-Kontext um sinnvoll zu antworten
+- Sofortiges Key-Loeschen = Agent kann nach Neustart keine History lesen
+- Option: Keys X Stunden behalten statt sofort loeschen (Kompromiss)
+- Option: Agent-relevanten Kontext in eigenem Store speichern (nicht Megolm Keys)
+- [ ] **TODO:** Key Deletion Strategie fuer Agent evaluieren (Config-Flag `MATRIX_DELETE_KEYS_AFTER_DECRYPT`)
+
+### Agent vs Bridges — getrennte Crypto-Stores
+
+| | Agent (Go Appservice) | Bridges (E2BE fuer WhatsApp/Telegram) |
+|---|---|---|
+| **Key Deletion** | Aus oder verzoegert — Agent braucht Kontext | An — Bridge leitet nur live weiter |
+| **Crypto-Store** | Eigener SQLite Store, Keys bleiben (laenger) | Eigener SQLite Store, Keys sofort loeschen |
+| **Bot-User-IDs** | `@agent-*:domain` | `@whatsapp-*:domain`, `@telegram-*:domain` |
+| **Appservice Reg** | Separate registration.yaml | Separate registration.yaml pro Bridge |
+| **Prozess** | Go Appservice | mautrix Bridge (Python/Go) |
+
+Separate Prozesse, separate Registrierungen, separate Crypto-Stores — kein Konflikt.
+
+### E2BE fuer andere Channels (Zukunft)
+
+- [ ] WhatsApp Bridge (mautrix-whatsapp) mit E2BE evaluieren
+- [ ] Telegram Bridge (mautrix-telegram) mit E2BE evaluieren
+- [ ] Signal Bridge (mautrix-signal) mit E2BE evaluieren
+- Alle nutzen dasselbe Crypto-Pattern, nur andere Remote-Plattform
 
 ---
 

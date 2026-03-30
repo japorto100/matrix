@@ -42,6 +42,12 @@ type Config struct {
 	CryptoDBPath      string // MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3
 	CryptoPickleKey   string // MATRIX_CRYPTO_PICKLE_KEY=<zufälliger Key>
 	KeyBackupPassword string // MATRIX_KEY_BACKUP_PASSWORD — Passphrase für lokales Megolm Key Backup
+
+	// Agent Service (Python, Port 8094)
+	AgentServiceURL string // AGENT_SERVICE_URL=http://127.0.0.1:8094
+
+	// Memory Service (Python, Port 8093)
+	MemoryServiceURL string // MEMORY_SERVICE_URL=http://127.0.0.1:8093
 }
 
 // Load lädt Config aus .env.{environment} + Environment.
@@ -69,6 +75,8 @@ func Load() *Config {
 		CryptoDBPath:     getenv("MATRIX_CRYPTO_DB_PATH", "./data/crypto.sqlite3"),
 		CryptoPickleKey:   getenv("MATRIX_CRYPTO_PICKLE_KEY", "changeme-use-random-32-chars"),
 		KeyBackupPassword: getenv("MATRIX_KEY_BACKUP_PASSWORD", ""),
+		AgentServiceURL:   getenv("AGENT_SERVICE_URL", "http://127.0.0.1:8094"),
+		MemoryServiceURL:  getenv("MEMORY_SERVICE_URL", "http://127.0.0.1:8093"),
 	}
 }
 

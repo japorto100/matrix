@@ -1,0 +1,22 @@
+# LiveKit SFU — Dev Config
+# Starten (Windows): ./tools/livekit-server.exe --config ./homeserver/livekit.yaml
+# Starten (Docker):  docker run -v ./homeserver/livekit.yaml:/etc/livekit.yaml livekit/livekit-server:v1.10.0
+
+port: 7880
+rtc:
+  # UDP Port Range für WebRTC Media
+  port_range_start: 50000
+  port_range_end: 50200
+  # STUN Server für NAT Traversal
+  stun_servers:
+    - stun.cloudflare.com:3478
+    - stun.l.google.com:19302
+  # Für Dev: TCP Fallback aktivieren
+  use_ice_lite: true
+
+# API Keys — lk-jwt-service nutzt diese zum Signieren
+keys:
+  devkey: "your-livekit-secret-change-in-production"
+
+logging:
+  level: info

@@ -2,7 +2,6 @@
 
 import { LogOut, MoreVertical, Star, Trash2 } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
-import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

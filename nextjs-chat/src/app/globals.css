@@ -254,3 +254,24 @@
 @utility bg-status-info {
 	background-color: var(--info);
 }
+
+/* ─── Tiptap WYSIWYG Editor ──────────────────────────────────────────────── */
+
+.tiptap p.is-editor-empty:first-child::before {
+	content: attr(data-placeholder);
+	float: left;
+	color: var(--muted-foreground);
+	pointer-events: none;
+	height: 0;
+}
+
+.tiptap .mention {
+	color: var(--primary);
+	font-weight: 500;
+	text-decoration: none;
+	cursor: default;
+}
+
+.tiptap:focus {
+	outline: none;
+}

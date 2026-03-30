@@ -60,11 +60,11 @@ Set-Content "D:/matrix/nextjs-chat/.env.local" $nextEnv
 Write-Host "`nnextjs-chat/.env.local OK" -ForegroundColor Green
 
 if ($botToken) {
-    $pyEnv = Get-Content "D:/matrix/python-agent-bridge/.env" -Raw
+    $pyEnv = Get-Content "D:/matrix/python-backend/.env" -Raw
     $pyEnv = $pyEnv -replace "MATRIX_BOT_ACCESS_TOKEN=.*", "MATRIX_BOT_ACCESS_TOKEN=$botToken"
     $pyEnv = $pyEnv -replace "MATRIX_BOT_PASSWORD=.*",     "MATRIX_BOT_PASSWORD=$botPass"
-    Set-Content "D:/matrix/python-agent-bridge/.env" $pyEnv
-    Write-Host "python-agent-bridge/.env OK" -ForegroundColor Green
+    Set-Content "D:/matrix/python-backend/.env" $pyEnv
+    Write-Host "python-backend/.env OK" -ForegroundColor Green
 }
 
 Write-Host "`n=== SETUP FERTIG ===" -ForegroundColor Green

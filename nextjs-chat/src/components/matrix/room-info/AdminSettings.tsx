@@ -38,7 +38,7 @@ export function RoleManagement({ members, myUserId, client, roomId }: RoleProps)
 								value={String(member.powerLevel)}
 								onValueChange={(val) => {
 									client
-										.setPowerLevel(roomId, member.userId, Number.parseInt(val))
+										.setPowerLevel(roomId, member.userId, Number.parseInt(val, 10))
 										.catch(() => toast.error("Rolle ändern fehlgeschlagen"));
 								}}
 							>
@@ -88,7 +88,7 @@ export function PermissionsPanel({ powerLevelsContent, client, roomId }: Permiss
 							<Select
 								value={String(currentLevel)}
 								onValueChange={(val) => {
-									const level = Number.parseInt(val);
+									const level = Number.parseInt(val, 10);
 									const newPL = { ...(powerLevelsContent ?? {}), [key]: level };
 									client
 										// biome-ignore lint/suspicious/noExplicitAny: power_levels typing

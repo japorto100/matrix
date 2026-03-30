@@ -424,16 +424,195 @@ Element X zeigt "Video call started" + "Join call" Button inline in der Message-
 - Call-Buttons im Header sind funktional vorhanden
 - **Voraussetzung:** STUN/TURN muss funktionieren (nach Tuwunel-Neustart mit STUN-Config)
 
-### Threads
-- ThreadPanel, useThreadTimeline, ThreadChip existieren
-- Aktuell nutzt "Antworten" `m.in_reply_to` (Inline-Reply), nicht `m.thread`
-- Für echte Threads: Separate "Thread starten" Action nötig die `m.relates_to.rel_type: "m.thread"` setzt
-- Keine Test-Threads in aktuellen Räumen vorhanden
+### Threads (28.03.2026 — erweitert)
 
-### Space erstellen
-- Space-Rail zeigt existierende Spaces, aber kein "+" Button zum Erstellen
-- Braucht: `client.createRoom({ creation_content: { type: "m.space" } })`
-- Low-Priority: Erst relevant bei vielen Räumen
+**Grundlagen:**
+- Threads ≠ Spaces ≠ Sub-Raeume
+- Threads = Nebengespraeche innerhalb eines Raums (wie Slack Threads)
+- Erben E2EE, Rollen, Members vom Hauptraum — keine eigene Mitgliedschaft
+- Alle Room-Members koennen in jedem Thread antworten
+- Spec: `m.thread` Relation (stabil seit Matrix v1.3/v1.4, MSC3440)
+
+**Vorhandener Code:**
+- `ThreadPanel.tsx` — Side-Panel rechts (380px, eigene Timeline + Composer) ✅
+- `useThreadTimeline.ts` — Hook fuer Thread-Events ✅
+- `ThreadChip` in Reactions.tsx — "X Antworten" unter Root-Nachricht ✅
+- `MessageComposer` akzeptiert `threadId` Prop ✅
+- ThreadPanel nutzt dieselben Komponenten wie Hauptchat (Timeline, Composer, Message-Bubbles)
+
+**Thread-Send — SDK korrekt genutzt:**
+- `client.sendMessage(roomId, threadId, content)` ist die offizielle SDK API
+- SDK setzt `m.relates_to` mit `rel_type: "m.thread"` + `is_falling_back` + `m.in_reply_to` intern
+- Kein manuelles Setzen noetig ✅
+
+**UI eingebaut (28.03.2026):**
+- [x] "Thread starten" Action im Message-Hover-Menue (MessageSquare Icon)
+- [x] Thread-Overview-Button im RoomHeader (neben Search, Info)
+- [x] `ThreadOverview.tsx` — Thread-Liste: Root-Msg, Reply-Count, letzte Aktivitaet → Klick oeffnet ThreadPanel
+- [x] Thread-Send nutzt SDK `client.sendMessage(roomId, threadId, content)` korrekt
+
+**Agent Thread-Strategie:**
+- Agent antwortet **im Hauptchat** bei: kurzen Antworten, Alerts, Status-Updates
+- Agent **erstellt Thread** bei: langen Analysen, strukturierten Daten, parallelen User-Fragen
+- Agent **antwortet im Thread** bei: Follow-up Fragen im existierenden Thread
+- Regelbasiert: Antwort > X Zeichen oder enthaelt strukturierte Daten → Thread, sonst Hauptchat
+
+### Verify Gates — Threads
+- [ ] Thread starten: Message hovern → Thread-Button → ThreadPanel oeffnet sich mit Root-Nachricht
+- [ ] Thread antworten: Im ThreadPanel Nachricht schreiben → erscheint im Thread
+- [ ] Thread-Chip: Nach Antwort zeigt Root-Nachricht "X Antworten" Chip
+- [ ] Thread-Overview: RoomHeader Thread-Button → Liste aller aktiven Threads → Klick oeffnet Thread
+- [ ] Thread-Send korrekt: Gesendete Nachricht hat `rel_type: "m.thread"` (pruefen via Element Web/DevTools)
+- Verschoben nach exec-05 Phase C4: Agent in Thread (braucht NATS Pipeline)
+
+### Spaces (28.03.2026 — erweitert)
+
+**Grundlagen:**
+- Spaces = Ordner/Gruppen von Raeumen (wie Slack Workspace, Discord Server)
+- Normale Spaces (Team-uebergreifend) vorerst, persoenliche Spaces spaeter
+- Technisch: `m.space.child` State Events verknuepfen Raeume mit Spaces
+- Ein Raum kann in mehreren Spaces sein
+- Raeume ohne Space-Zugehoerigkeit erscheinen unter Home
+
+**Vorhandener Code:**
+- Space-Rail (SpaceSelector) zeigt existierende Spaces mit shadcn Tooltips ✅
+- `useSpaces.ts` Hook: erkennt Space-Raeume, liest `m.space.child` Events ✅
+- Space-Filter in RoomList: Klick auf Space → nur dessen Raeume sichtbar ✅
+
+**Code-Aenderungen:**
+- [x] **SpaceSelector → `spaces/` Verzeichnis** umziehen (Konsistenz mit message/, room-info/, room-list/)
+- [x] **Home-Button funktional** — `onSelect(null)` bei Klick, Selected-Indicator wenn aktiv
+- [x] **CreateSpaceDialog** gebaut (Name, Avatar, Public/Private mit shadcn Tabs, "+" Button in Rail)
+- [x] **`getRoomHierarchy()`** in useSpaces integriert (fetchHierarchy Callback, zeigt ungejoinete Raeume)
+- [x] **Raum zu Space hinzufuegen/entfernen**
+  - CreateRoomDialog: optionaler `spaceId` Prop → setzt `m.space.child` nach Erstellung
+  - SpaceSettings: Raeume anzeigen (via getRoomHierarchy), hinzufuegen per Room-ID, entfernen per Button
+  - SDK: `client.sendStateEvent(spaceId, "m.space.child", { via }, roomId)` / leerer Content = entfernen
+- [x] **Space-Settings** gebaut (SpaceSettings.tsx)
+  - Name + Avatar aendern (Pencil, Camera wie RoomInfoPanel)
+  - Raeume im Space anzeigen (aus getRoomHierarchy, inkl. ungejoinete mit "Beitreten")
+  - Raum hinzufuegen (Room-ID Eingabe) / entfernen (Trash Button)
+  - Erreichbar als Side-Panel (wie RoomInfoPanel)
+- [x] **Activity Centre** gebaut
+  - `ActivityCentre.tsx` — Side-Panel mit Tabs (Alle, Mentions, Threads, Einladungen)
+  - `useNotifications.ts` Hook — sammelt Mentions, Thread-Antworten, Invites aus allen Raeumen
+  - Bell-Button mit Badge-Count in Space-Rail
+  - Klick auf Notification → springt zu Raum/Thread
+- [x] **Sub-Spaces** unterstuetzt
+  - getRoomHierarchy mit maxDepth=2 erkennt Sub-Spaces (`room_type === "m.space"`)
+  - SpaceChildRoom hat `isSpace` Flag
+  - SpaceInfo hat `parentSpaceId` fuer Verschachtelung
+  - Space-Rail UI fuer verschachtelte Darstellung: TODO bei Bedarf
+
+### Datei-Reorganisation (28.03.2026)
+
+Abgeschlossen:
+- [x] ThreadOverview + ThreadPanel → `threads/` Verzeichnis (Imports in MatrixChat aktualisiert)
+- [x] SpaceSettings verdrahtet: Rechtsklick auf Space-Icon → SpaceSettings Side-Panel
+- [x] CreateRoomDialog `spaceId` durchgereicht: neuer Raum wird automatisch zum aktiven Space hinzugefuegt
+
+Offen (nach Verify Gates):
+- [ ] MatrixAvatar shared Component in alle Dateien einsetzen (erstellt aber noch nicht substituiert — zu viele Dateien fuer blinden Swap, erst nach Live-Test)
+
+### Verify Gates — Spaces
+- [ ] Space-Rail: Existierende Spaces sichtbar mit Tooltips
+- [ ] Home-Button: Klick → alle Raeume sichtbar (kein Space-Filter)
+- [ ] Space-Filter: Klick auf Space → RoomList zeigt nur dessen Raeume
+- [ ] Space erstellen: "+" in Rail → CreateSpaceDialog → Name eingeben → Space erscheint in Rail
+- [ ] Raum in Space: Neuen Raum erstellen mit Space-Zuordnung → erscheint im Space-Filter
+- [ ] Raum zu Space hinzufuegen: Bestehenden Raum einem Space zuweisen → erscheint im Filter
+- [ ] Space-Settings: Space-Icon Rechtsklick → Name/Avatar aendern
+- [ ] getRoomHierarchy: Space mit ungejointem Raum → Raum sichtbar mit "Beitreten" Button
+- [ ] Element X Mobile: Space-Struktur sichtbar in Element X (nach Cloudflare Tunnel Setup)
+
+### Contacts (28.03.2026)
+
+**Grundlagen:**
+- Matrix hat kein klassisches Kontaktbuch — stattdessen DM-Liste + User Directory Search
+- DM-Kontakte aus `m.direct` Account Data = implizite Kontakte
+- Server-Suche via `client.searchUserDirectory({ term, limit })` = findet User auf dem Homeserver
+- MSC4133 Extensible Profiles (Zukunft) = erweiterte Nutzerprofile, Cross-Server Suche
+
+**Gebaut:**
+- [x] `useContacts.ts` Hook — DM-Kontakte laden (sortiert nach Aktivitaet) + `searchUsers()` Server-Suche
+- [x] `ContactPicker.tsx` — Autocomplete-Input mit Avatar + Name + User-ID
+  - DM-Kontakte als "Kontakte" Sektion oben
+  - Server-Suchergebnisse als "Verzeichnis" Sektion darunter
+  - Debounced Suche (300ms)
+  - Click-Outside schliesst Dropdown
+- [x] `InviteDialog.tsx` → nach contacts/ umgezogen, nutzt ContactPicker statt nacktes Input
+- [x] `CreateDMDialog.tsx` → nach contacts/ umgezogen, nutzt ContactPicker statt nacktes Input
+- [x] `contacts/index.ts` — Barrel Export
+
+**Contact-Sortierung:**
+1. DM-Kontakte zuerst (zuletzt aktive oben)
+2. Server-Suchergebnisse darunter (beim Tippen)
+3. Online-Status visuell hervorgehoben (gruener Dot)
+
+**Tuwunel Config — User Directory:**
+- `show_all_local_users_in_user_directory = true` in allen 5 Config-Dateien gesetzt
+- true = geschlossene Team-Instanz (alle App-User sollen sich finden koennen)
+- false = wenn Federation aktiv oder fremde User auf der Instanz (Privacy)
+- Bei Federation-Aktivierung auf false wechseln!
+
+**Zukunft — MSC4133 Extensible Profiles:**
+- Erweiterte Nutzerprofile mit mehr Infos (Bio, Links, etc.)
+- Cross-Server User Directory Suche
+- Noch nicht in stabiler Spec — beobachten und integrieren wenn verfuegbar
+
+### Verify Gates — Contacts
+- [ ] ContactPicker: Tippen → DM-Kontakte werden gefiltert angezeigt
+- [ ] ContactPicker: Tippen → Server-Suche liefert Ergebnisse nach 300ms Debounce
+- [ ] ContactPicker: Klick auf Kontakt → User-ID wird uebernommen
+- [ ] ContactPicker: Online-Dot sichtbar bei aktiven DM-Kontakten
+- [ ] InviteDialog: Oeffnen → Kontakte sichtbar → Klick → User wird eingeladen
+- [ ] CreateDMDialog: Oeffnen → Kontakte sichtbar → Klick → DM wird erstellt
+- [ ] Sortierung: DM-Kontakte vor Server-Ergebnissen, zuletzt aktive zuerst
+
+### MatrixChat.tsx — Inline JSX Dokumentation (28.03.2026)
+
+MatrixChat ist der Layout-Orchestrator (419 LOC). Alle Sub-Komponenten sind extrahiert.
+Folgende kleine inline JSX Bloecke sind bewusst nicht in eigene Dateien extrahiert:
+- Pinned Messages Banner (~15 LOC) — Button der InfoPanel oeffnet
+- Invite View (~35 LOC) — Annehmen/Ablehnen UI bei membership=invite
+- DM Waiting Banner (~10 LOC) — "Warte auf Antwort von X" bei invited DM
+- Sync Status Banner (~8 LOC) — WiFi/Error Indicator bei Reconnect
+- Empty State (~15 LOC) — "Raum auswählen" wenn kein Raum selektiert
+Kein weiterer Extraktionsbedarf — diese Bloecke sind zu klein fuer eigene Dateien.
+
+### LocationContent — TODO (28.03.2026)
+
+LocationContent (`message/content/LocationContent.tsx`) existiert aber hat minimale Funktionalitaet:
+- Aktuell: Nur ein klickbarer OpenStreetMap Link (`geo:lat,lon` → OSM URL)
+- Kein Karten-Preview/Thumbnail im Chat
+- Kein Location-Picker zum Senden (User kann keinen Standort teilen)
+- Matrix Spec: `m.location` mit `geo_uri` Feld
+
+- [ ] **Location-Preview**: Statisches Karten-Bild (OSM Static Map API oder Mapbox) statt nur Text-Link
+- [ ] **Location-Picker**: Button im Composer → Browser Geolocation API → sendet `m.location` Event
+- [ ] Kompatibilitaet pruefen: Wie zeigt Element X Mobile Location-Messages an?
+
+### Client→Server Analyse — TODO (28.03.2026)
+
+Gesamten Matrix Frontend-Code analysieren: was laeuft clientseitig das serverseitig besser waere?
+
+**Bekannte Faelle:**
+- `useRoomMembers.ts`: fetch auf `/_matrix/client/v3/rooms/{roomId}/joined_members` weil
+  Sliding Sync SDK `getJoinedMembers()` nicht alle Members cached → Workaround
+- `useSpaces.ts`: liest `m.space.child` aus lokalem State statt `getRoomHierarchy()` Server-API
+  → zeigt nur gejoinete Raeume, nicht alle im Space
+
+**Zu pruefen:**
+- [ ] Gibt es weitere Stellen wo SDK bei Sliding Sync unvollstaendige Daten liefert?
+- [ ] Room-Liste: `useRooms.ts` nutzt SDK Room-Events — reicht das bei Sliding Sync oder fehlen Raeume?
+- [ ] Read Receipts: Werden die korrekt ueber Sliding Sync synchronisiert?
+- [ ] Typing Indicators: Kommen die zuverlaessig ueber Sliding Sync?
+- [ ] Thread-Liste: `room.getThreads()` — liefert Sliding Sync alle Threads oder nur gesehene?
+- [ ] Search: `SearchPanel.tsx` nutzt `client.searchRoomEvents()` — ist das serverseitig (ja) oder clientseitig?
+- [ ] Power-Levels: Werden die bei Sliding Sync immer korrekt geladen? (required_state konfiguriert in MatrixProvider)
+
+**Ziel:** Alle Stellen identifizieren wo Server-API-Calls noetig sind statt sich auf SDK-Cache zu verlassen.
+Sliding Sync ist performanter aber cached nicht alles — deshalb ist diese Analyse wichtig.
 
 ### Profil-Location bei Portierung
 - Aktuell: Profil-Avatar in Space-Rail (unten)
@@ -455,6 +634,126 @@ Element X zeigt "Video call started" + "Join call" Button inline in der Message-
   (SDK cached nur die die der Client bisher "gesehen" hat). Deshalb holt der Hook Members via REST API
   (`/_matrix/client/v3/rooms/{roomId}/joined_members`) mit SDK-Cache als Fallback. Wenn Sliding Sync
   das irgendwann korrekt cached, kann der fetch weg und `room.getJoinedMembers()` reicht allein.
+
+### Element X Web Feature-Paritaet (28.03.2026)
+
+**2. Virtualisierte Room List:**
+- [x] RoomList mit `@tanstack/react-virtual` virtualisiert (VirtualizedRoomList Komponente in RoomList.tsx)
+- Invites bleiben oben (nicht virtualisiert, wenige), filteredRooms virtualisiert
+- estimateSize 60px, overscan 5
+
+**3. Rich Text Editor (WYSIWYG Composer):**
+- [x] ~~`@vector-im/matrix-wysiwyg`~~ → **Tiptap** (`@tiptap/react` + `starter-kit` + Extensions)
+  - Grund: Element WYSIWYG ist Monorepo-locked (`@vector-im/matrix-wysiwyg-wasm` nicht auf npm)
+  - Tiptap: ProseMirror-basiert, headless, MIT — funktional identisch für unseren Use-Case
+  - WASM Config (`asyncWebAssembly: true`) war bereits für matrix-sdk-crypto vorhanden
+- [x] MessageComposer Textarea durch WysiwygEditor ersetzt (`composer/WysiwygEditor.tsx`)
+- [x] Formatting-Toolbar: Bold, Italic, Strikethrough, Code, Code-Block, Liste, Nummerierte Liste, Quote
+- [x] Senden: `format: "org.matrix.custom.html"` + `formatted_body` (nur wenn HTML-Formatierung vorliegt)
+- [x] **User-Mentions** (`@`): Tiptap Mention Extension mit Room-Members Autocomplete
+  - Pill-Rendering: `<a href="https://matrix.to/#/@user:server">@displayname</a>`
+  - `m.mentions.user_ids` Array wird beim Senden gesetzt (MSC3952)
+- [x] **Agent-Mentions** (`@agent-*`): Visuell unterschieden — lila "AI" Avatar + "Agent" Badge im Dropdown
+  - Nutzt `isAgentUser()` aus resolvers.ts zur Erkennung
+  - Technisch gleicher m.mentions.user_ids Eintrag wie User
+- [x] **@room Mention**: Spezieller Eintrag im @-Dropdown ("Alle benachrichtigen", Megaphone-Icon)
+  - Setzt `m.mentions.room: true` (MSC3952 Room Notification)
+  - Braucht Power-Level (Server-seitig geprüft via `.m.rule.is_room_mention` Push Rule)
+- [x] **Room-Pills** (`#`): Separater Tiptap Mention Extension mit `#`-Trigger
+  - Autocomplete aus gejointen Räumen (non-DM)
+  - Pill: `<a href="https://matrix.to/#/!roomId">#roomname</a>`
+  - Kein m.mentions-Eintrag (nur Permalink, keine Notification)
+- Dateien:
+  - `composer/WysiwygEditor.tsx` — Tiptap Editor + Formatting Toolbar + Ref-API
+  - `composer/MentionList.tsx` — Mention-Dropdown UI (User/Agent/@room/Room-Pill)
+  - `composer/mentionSuggestion.ts` — Suggestion Configs (getrennt für @ und #)
+
+**Verify-Gate Slice 4 Punkt 3 (WYSIWYG):**
+- [ ] Nachricht mit **Bold/Italic/Code** senden → Empfänger sieht formatted_body korrekt in TextContent
+- [ ] **@user** tippen → Dropdown erscheint, Auswahl fügt Pill ein, Empfänger sieht gelbes Mention-Highlight
+- [ ] **@agent-** tippen → Agent erscheint mit lila Badge im Dropdown, Pill wird korrekt gesetzt
+- [ ] **@room** tippen → "Alle benachrichtigen" erscheint, Senden setzt `m.mentions.room: true`
+- [ ] **#room** tippen → Raum-Dropdown erscheint, Auswahl fügt Room-Pill ein (klickbarer Permalink)
+- [ ] **Edit-Modus** → Editor wird mit bestehendem Body befüllt, Senden aktualisiert formatted_body
+- [ ] **Reply + Thread** → formatted_body wird korrekt mit m.relates_to gesendet
+- [ ] **Plain text** (keine Formatierung) → kein `format`/`formatted_body` im Event (Backwards-Compat)
+
+**4. MatrixRTC / LiveKit Calls (Option B — direkte Integration):**
+- **Entscheidung:** Option B (LiveKit SDK direkt + MatrixRTC Signaling)
+  - Option A (iframe Widget) verworfen: Antipattern, kein Styling-Kontrolle, Performance-Overhead
+  - Option C (Legacy VoIP) deprecated in matrix-js-sdk, keine Element X Kompatibilitaet
+- [x] **Backend:**
+  - LiveKit SFU Binary: `tools/livekit-server.exe` (v1.10.0, Windows native)
+  - lk-jwt-service Binary: `tools/lk-jwt-service` (v0.4.1, Linux/WSL)
+  - Config: `homeserver/livekit.yaml` (Port 7880, UDP 50000-50200)
+  - In devstack.ps1 integriert (`-NoLiveKit` Flag zum Deaktivieren)
+- [x] **Tuwunel Config:**
+  - `[[global.well_known.rtc_transports]]` in allen 5 toml-Dateien
+  - Clients entdecken LiveKit SFU automatisch via `.well-known/matrix/client`
+  - `org.matrix.msc4143.rtc_foci` wird von Tuwunel nativ unterstuetzt
+- [x] **Frontend Packages:** `livekit-client@2.18.0` + `@livekit/components-react@2.9.20`
+- [x] **`useMatrixRTCCall.ts`** — neuer Hook (ersetzt deprecated `useCall.ts`):
+  - `matrix-js-sdk` MatrixRTCSession fuer m.rtc.member State Events
+  - OpenID Token → lk-jwt-service → LiveKit JWT Austausch
+  - `joinCall(roomId, "m.voice" | "m.video")` / `leaveCall()`
+- [x] **`CallOverlay.tsx`** — komplett neu mit LiveKit React Components:
+  - `<LiveKitRoom>` + `<VideoConference />` Prefab (Grid, Focus, ScreenShare, Controls)
+  - `<RoomAudioRenderer />` fuer Voice-Only Teilnehmer
+  - Joining-Spinner + Hangup-Button + Teilnehmerzaehler
+- [x] **MatrixChat.tsx** — `useCall()` → `useMatrixRTCCall()` migriert
+- Unterstuetzt: 1:1 Voice, 1:1 Video, Gruppen-Voice, Gruppen-Video, Screen Sharing
+- [x] **Media-E2EE:**
+  - `MatrixKeyProvider.ts` — Brücke: matrix-js-sdk Keys → LiveKit SFrame Encryption
+  - `manageMediaKeys: true` aktiviert — matrix-js-sdk generiert + verteilt Keys via m.rtc.member
+  - `EncryptionKeyChanged` Event → `MatrixKeyProvider.setEncryptionKey()` → LiveKit E2EE Worker
+  - Call-E2EE ist **unabhängig** von Raum-E2EE (Megolm) — Calls sind immer verschlüsselt
+  - Grünes Shield-Icon + "E2EE" Badge in CallOverlay wenn aktiv
+- [x] Legacy `useCall.ts` (deprecated MSC2746) entfernt
+
+**UI-Abdeckung:**
+- [x] **1:1 Voice** — Phone-Button in RoomHeader → `<AudioConference />` (kompaktes Audio-UI)
+- [x] **1:1 Video** — Video-Button in RoomHeader → `<VideoConference />` (Grid + Focus + ScreenShare)
+- [x] **Gruppen-Voice** — Phone-Button auch in Gruppen-Raeumen (LiveKit SFU skaliert)
+- [x] **Gruppen-Video** — Video-Button auch in Gruppen-Raeumen
+- [x] Call-Buttons in RoomHeader fuer DMs UND Gruppen-Raeume (nicht mehr nur DMs)
+- [x] `isVoiceOnly` Flag steuert ob AudioConference oder VideoConference angezeigt wird
+- [x] `video={!isVoiceOnly}` — Kamera wird bei Voice-Calls nicht aktiviert
+
+**Verify-Gate Slice 4 Punkt 4 (MatrixRTC):**
+- [ ] LiveKit SFU + lk-jwt-service starten (devstack.ps1)
+- [ ] Tuwunel `.well-known` liefert `org.matrix.msc4143.rtc_foci` mit LiveKit URL
+- [ ] **Voice Call (1:1)** → AudioConference UI, nur Mic aktiv, kein Video
+- [ ] **Video Call (1:1)** → VideoConference UI, Grid mit Kamera
+- [ ] **Gruppen-Voice** → AudioConference mit mehreren Teilnehmern
+- [ ] **Gruppen-Video** → VideoConference Grid mit Pagination
+- [ ] **E2EE** → Gruenes Shield-Badge sichtbar, Keys via m.rtc.member verteilt
+- [ ] Call beenden → `leaveRoomSession()`, m.rtc.member State geraeumt
+- [ ] Element X Mobile kann dem gleichen Call beitreten (Interop-Test)
+
+**5. Permalinks (matrix.to In-App Navigation):**
+- [x] matrix.to Links in Nachrichten als In-App Navigation (TextContent.tsx linkifyText erweitert)
+  - `parseMatrixPermalink()` erkennt @user, !roomId, $eventId aus matrix.to URLs
+  - Rendert als klickbarer Button statt externem Link
+  - Dispatcht `window.CustomEvent("matrix:navigate")` fuer MatrixChat Navigation
+- [x] MatrixChat Event-Listener fuer `matrix:navigate` implementiert
+  - `type: "room"` → Raum oeffnen (Match via roomId oder Alias-Name)
+  - `type: "user"` → DM oeffnen falls vorhanden
+  - Toast-Fehler wenn Raum nicht gefunden
+
+**6. Keyboard Shortcuts:**
+- [x] `useKeyboardShortcuts.ts` Hook gebaut + in MatrixChat verdrahtet
+- [x] **Pfeil-Oben im leeren Composer** → letzte eigene Nachricht im Edit-Modus (`onEditLastMessage`)
+- [x] **Ctrl+K** → oeffnet Search Panel (kontextabhaengig via `data-matrix-chat` Attribut)
+- [x] **Esc** → schliesst aktives Panel (Thread → Search → Settings → Overview → Activity → SpaceSettings)
+- [x] **Shift+Enter** → neue Zeile (implizit via Textarea)
+- [x] **Pfeiltasten** in RoomList → Raum-Navigation (ArrowUp/Down, scrollToIndex)
+
+**7. SOTA 2026 Package Upgrades (TODO):**
+- [ ] `react-shiki` — VS Code Syntax Highlighting fuer Code-Bloecke in TextContent.tsx
+- [ ] `motion` — framer-motion Successor, Import `motion/react` statt `framer-motion`
+- [ ] `@livekit/track-processors` — Background Blur + Noise Suppression fuer Calls
+- [ ] `@formkit/auto-animate` — zero-config List-Animations (RoomList, Timeline)
+- Packages sind installiert, Umstellung erfolgt in separatem Schritt
 
 ### Audio-Nachricht
 - Recording-UI implementiert (Mic/MicOff, Timer, Send)

@@ -24,16 +24,16 @@ go-appservice/*.exe
 go-appservice/tmp/
 
 # ─── Python ───────────────────────────────────────────────────────────────────
-python-agent-bridge/__pycache__/
-python-agent-bridge/**/__pycache__/
-python-agent-bridge/.venv/
-python-agent-bridge/.ruff_cache/
-python-agent-bridge/.pytest_cache/
-python-agent-bridge/**/*.pyc
-python-agent-bridge/store/
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+python-backend/data/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
-nextjs-chat/node_modules/
+node_modules/
 nextjs-chat/.next/
 nextjs-chat/out/
 nextjs-chat/.turbo/

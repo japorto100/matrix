@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Pin, PinOff, Reply, Share, SmilePlus, Trash2 } from "lucide-react";
+import { MessageSquare, Pencil, Pin, PinOff, Reply, Share, SmilePlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { ResolvedMessage } from "@/lib/matrix/types";
@@ -16,6 +16,7 @@ export interface MessageActionProps {
 	onRedact?: (eventId: string) => void;
 	onForward?: (body: string, senderName: string) => void;
 	onPin?: (eventId: string) => void;
+	onThreadOpen?: (eventId: string) => void;
 	isPinned?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function MessageActions({
 	onRedact,
 	onForward,
 	onPin,
+	onThreadOpen,
 	isPinned,
 }: MessageActionProps) {
 	const [showReactions, setShowReactions] = useState(false);
@@ -94,6 +96,17 @@ export function MessageActions({
 						onClick={() => onForward(message.body, message.senderDisplayName)}
 					>
 						<Share className="h-3.5 w-3.5" />
+					</Button>
+				)}
+				{onThreadOpen && !message.isThreadRoot && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-7 w-7"
+						title="Thread starten"
+						onClick={() => onThreadOpen(message.eventId)}
+					>
+						<MessageSquare className="h-3.5 w-3.5" />
 					</Button>
 				)}
 				{onPin && (

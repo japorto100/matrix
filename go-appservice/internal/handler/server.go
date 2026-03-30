@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"matrix/go-appservice/internal/config"
+	"matrix/go-appservice/internal/connectors/agentservice"
+	memclient "matrix/go-appservice/internal/connectors/memory"
 	"matrix/go-appservice/internal/crypto"
+	agenthttp "matrix/go-appservice/internal/handlers/http"
 	"matrix/go-appservice/internal/intent"
 	"matrix/go-appservice/internal/natsbridge"
 
@@ -61,10 +64,39 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 		slog.Info("E2EE disabled (MATRIX_E2EE_ENABLED=false) — encrypted events will be skipped")
 	}
 
+	// ── Clients für Agent + Memory Service ──────────────────────────────────
+	agentClient := agentservice.NewClient(cfg.AgentServiceURL, 5*time.Second)
+	memoryClient := memclient.NewClient(cfg.MemoryServiceURL, 5*time.Second)
+
 	mux := http.NewServeMux()
+
+	// ── Matrix Appservice Protocol ──────────────────────────────────────────
 	mux.HandleFunc("PUT /_matrix/app/v1/transactions/{txnID}", s.handleTransaction)
 	mux.HandleFunc("GET /_matrix/app/v1/users/{userID}", s.handleUserQuery)
 	mux.HandleFunc("GET /health", s.handleHealth)
+
+	// ── Agent Chat (SSE Proxy → Python Agent) ───────────────────────────────
+	mux.HandleFunc("/api/v1/agent/chat", agenthttp.AgentChatHandler(cfg.AgentServiceURL))
+	mux.HandleFunc("/api/v1/agent/approve", agenthttp.AgentApproveHandler())
+
+	// ── Agent Tool Proxies ──────────────────────────────────────────────────
+	mux.HandleFunc("/api/v1/agent/tools/chart-state", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/tools/chart-state"))
+	mux.HandleFunc("/api/v1/agent/tools/portfolio-summary", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/tools/portfolio-summary"))
+	mux.HandleFunc("/api/v1/agent/tools/set_chart_state", agenthttp.AgentMutationProxyHandler(agentClient, "/api/v1/agent/tools/set_chart_state"))
+
+	// ── Audio STT/TTS Proxy ─────────────────────────────────────────────────
+	mux.HandleFunc("/api/v1/audio/transcribe", agenthttp.AgentAudioTranscribeHandler(cfg.AgentServiceURL))
+	mux.HandleFunc("/api/v1/audio/synthesize", agenthttp.AgentAudioSynthesizeHandler(cfg.AgentServiceURL))
+
+	// ── Memory Service Proxy ────────────────────────────────────────────────
+	mux.HandleFunc("/api/v1/memory/kg/seed", agenthttp.MemoryKGSeedHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/kg/query", agenthttp.MemoryKGQueryHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/kg/nodes", agenthttp.MemoryKGNodesHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/kg/sync", agenthttp.MemoryKGSyncHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/episode", agenthttp.MemoryEpisodePostHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/episodes", agenthttp.MemoryEpisodesGetHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/search", agenthttp.MemorySearchHandler(memoryClient))
+	mux.HandleFunc("/api/v1/memory/health", agenthttp.MemoryHealthHandler(memoryClient))
 
 	s.httpServer = &http.Server{
 		Addr:         ":" + cfg.AppservicePort,

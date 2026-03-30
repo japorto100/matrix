@@ -110,6 +110,7 @@ export function Timeline({
 	}, []);
 
 	// Raumwechsel → nach unten scrollen (mehrfach weil Medien async laden)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: roomId ist intentionaler Trigger für Raumwechsel
 	useEffect(() => {
 		lastLengthRef.current = 0;
 		const scroll = () => {

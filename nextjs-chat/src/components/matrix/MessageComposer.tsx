@@ -2,12 +2,13 @@
 
 import { FileIcon, Mic, MicOff, Paperclip, Pencil, Reply, Send, SmilePlus, X } from "lucide-react";
 import { EventType, type MatrixClient, MsgType, RelationType } from "matrix-js-sdk";
-import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { useRoomMembers } from "@/lib/matrix/hooks/useRoomMembers";
 import { sendTyping } from "@/lib/matrix/hooks/useTyping";
-import { cn } from "@/lib/utils";
+import type { RoomInfo } from "@/lib/matrix/types";
+import { WysiwygEditor, type WysiwygEditorRef } from "./composer/WysiwygEditor";
 import { EmojiPicker } from "./EmojiPicker";
 
 async function compressImage(file: File): Promise<File> {
@@ -110,7 +111,8 @@ export function MessageComposer({
 	onReplyCancel,
 	threadId,
 }: Props) {
-	const [value, setValue] = useState("");
+	const editorRef = useRef<WysiwygEditorRef>(null);
+	const [hasContent, setHasContent] = useState(false);
 	const [isSending, setIsSending] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -126,9 +128,30 @@ export function MessageComposer({
 	const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const audioChunksRef = useRef<Blob[]>([]);
 
-	// Edit-Modus: Textarea mit aktuellem Body füllen
+	// Room-Members für @-Mention-Autocomplete
+	const { members } = useRoomMembers(client, roomId);
+	const myUserId = client.getUserId() ?? "";
+
+	// Joined Rooms für #-Room-Pills (leichtgewichtig, kein Sync-Hook nötig)
+	const joinedRooms = useMemo((): RoomInfo[] => {
+		return (client.getRooms?.() ?? [])
+			.filter((r) => r.getMyMembership() === "join")
+			.map((r) => ({
+				roomId: r.roomId,
+				name: r.name ?? r.roomId,
+				memberCount: r.getInvitedAndJoinedMemberCount(),
+				unreadCount: 0,
+				membership: "join" as const,
+			}));
+	}, [client]);
+
+	// Edit-Modus: Editor mit aktuellem Body füllen
 	useEffect(() => {
-		if (editState) setValue(editState.body);
+		if (editState) {
+			editorRef.current?.setContent(editState.body);
+			editorRef.current?.focus();
+			setHasContent(true);
+		}
 	}, [editState]);
 
 	// Click-Outside schließt den Emoji-Picker
@@ -235,8 +258,15 @@ export function MessageComposer({
 	}, []);
 
 	const send = useCallback(async () => {
-		const text = value.trim();
-		if (!text || isSending) return;
+		const editor = editorRef.current;
+		if (!editor || editor.isEmpty() || isSending) return;
+
+		const text = editor.getText().trim();
+		const html = editor.getHTML();
+		const mentionedUserIds = editor.getMentionedUserIds();
+		const isRoomMention = editor.hasRoomMention();
+		// Nur formatted senden wenn tatsächlich HTML-Formatierung vorliegt
+		const hasFormatting = html !== "" && html !== `<p>${text}</p>`;
 
 		if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
 		sendTyping(client, roomId, false);
@@ -246,10 +276,27 @@ export function MessageComposer({
 		const currentReplyState = replyState;
 
 		setIsSending(true);
-		setValue("");
+		editor.clear();
+		setHasContent(false);
 		// Clear edit/reply immediately so a second Enter can't re-trigger
 		if (currentEditState) onEditCancel?.();
 		if (currentReplyState) onReplyCancel?.();
+
+		// Message-Content aufbauen — mit optionalem formatted_body + m.mentions
+		const msgContent: Record<string, unknown> = {
+			msgtype: MsgType.Text,
+			body: text,
+		};
+		if (hasFormatting) {
+			msgContent.format = "org.matrix.custom.html";
+			msgContent.formatted_body = html;
+		}
+		if (mentionedUserIds.length > 0 || isRoomMention) {
+			const mentions: Record<string, unknown> = {};
+			if (mentionedUserIds.length > 0) mentions.user_ids = mentionedUserIds;
+			if (isRoomMention) mentions.room = true; // MSC3952: @room Notification
+			msgContent["m.mentions"] = mentions;
+		}
 
 		try {
 			if (currentEditState) {
@@ -258,9 +305,9 @@ export function MessageComposer({
 					roomId,
 					EventType.RoomMessage,
 					{
-						msgtype: MsgType.Text,
+						...msgContent,
 						body: `* ${text}`,
-						"m.new_content": { msgtype: MsgType.Text, body: text },
+						"m.new_content": msgContent,
 						"m.relates_to": { rel_type: RelationType.Replace, event_id: currentEditState.eventId },
 					},
 				);
@@ -270,17 +317,23 @@ export function MessageComposer({
 					roomId,
 					EventType.RoomMessage,
 					{
-						msgtype: MsgType.Text,
-						body: text,
+						...msgContent,
 						"m.relates_to": { "m.in_reply_to": { event_id: currentReplyState.eventId } },
 					},
 				);
 			} else if (threadId) {
-				// B-8: Thread-Reply — drei-Argument-Overload mit threadId
+				// B-8: Thread-Reply — SDK sendMessage mit threadId (setzt m.thread Relation intern)
 				await (client.sendMessage as (r: string, t: string, c: unknown) => Promise<unknown>)(
 					roomId,
 					threadId,
-					{ msgtype: MsgType.Text, body: text },
+					msgContent,
+				);
+			} else if (hasFormatting || mentionedUserIds.length > 0 || isRoomMention) {
+				// Formatted/Mention → sendEvent statt sendTextMessage
+				await (client.sendEvent as (r: string, t: string, c: unknown) => Promise<unknown>)(
+					roomId,
+					EventType.RoomMessage,
+					msgContent,
 				);
 			} else {
 				await client.sendTextMessage(roomId, text);
@@ -288,21 +341,12 @@ export function MessageComposer({
 		} catch (err) {
 			console.error("[composer] send failed:", err);
 			toast.error("Nachricht konnte nicht gesendet werden.");
-			setValue(text);
+			editor.setContent(text);
+			setHasContent(true);
 		} finally {
 			setIsSending(false);
 		}
-	}, [
-		client,
-		roomId,
-		value,
-		isSending,
-		editState,
-		onEditCancel,
-		replyState,
-		onReplyCancel,
-		threadId,
-	]);
+	}, [client, roomId, isSending, editState, onEditCancel, replyState, onReplyCancel, threadId]);
 
 	const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -319,13 +363,8 @@ export function MessageComposer({
 		} else {
 			setPendingFilePreview(undefined);
 		}
-		// Fokus zurück auf Textarea damit Enter direkt funktioniert
-		setTimeout(() => {
-			const textarea = document.querySelector<HTMLTextAreaElement>(
-				'textarea[placeholder="Nachricht schreiben..."]',
-			);
-			textarea?.focus();
-		}, 50);
+		// Fokus zurück auf Editor damit Enter direkt funktioniert
+		setTimeout(() => editorRef.current?.focus(), 50);
 	}, []);
 
 	const cancelPendingFile = useCallback(() => {
@@ -336,9 +375,10 @@ export function MessageComposer({
 
 	const sendPendingFile = useCallback(async () => {
 		if (!pendingFile) return;
-		const caption = value.trim();
+		const caption = editorRef.current?.getText().trim() ?? "";
 		setIsUploading(true);
-		setValue("");
+		editorRef.current?.clear();
+		setHasContent(false);
 		try {
 			// 1. Bilder > 5MB komprimieren
 			const fileToUpload = await compressImage(pendingFile);
@@ -379,37 +419,27 @@ export function MessageComposer({
 			setIsUploading(false);
 			setUploadProgress(null);
 		}
-	}, [client, roomId, pendingFile, value, cancelPendingFile]);
+	}, [client, roomId, pendingFile, cancelPendingFile]);
 
-	const handleKeyDown = useCallback(
-		(e: KeyboardEvent<HTMLTextAreaElement>) => {
-			if (e.key === "Enter" && !e.shiftKey) {
-				e.preventDefault();
-				if (pendingFile) {
-					sendPendingFile();
-				} else {
-					send();
-				}
-			} else if (e.key === "Escape" && pendingFile) {
-				cancelPendingFile();
-			} else if (e.key === "Escape" && replyState) {
-				onReplyCancel?.();
-			} else if (e.key === "Escape" && editState) {
-				onEditCancel?.();
-				setValue("");
-			}
-		},
-		[
-			send,
-			editState,
-			onEditCancel,
-			replyState,
-			onReplyCancel,
-			pendingFile,
-			sendPendingFile,
-			cancelPendingFile,
-		],
-	);
+	const handleEditorSubmit = useCallback(() => {
+		if (pendingFile) {
+			sendPendingFile();
+		} else {
+			send();
+		}
+	}, [send, pendingFile, sendPendingFile]);
+
+	const handleEditorEscape = useCallback(() => {
+		if (pendingFile) {
+			cancelPendingFile();
+		} else if (replyState) {
+			onReplyCancel?.();
+		} else if (editState) {
+			onEditCancel?.();
+			editorRef.current?.clear();
+			setHasContent(false);
+		}
+	}, [editState, onEditCancel, replyState, onReplyCancel, pendingFile, cancelPendingFile]);
 
 	const isDisabled = disabled || isSending || isUploading;
 
@@ -447,7 +477,8 @@ export function MessageComposer({
 						className="hover:text-foreground transition-colors"
 						onClick={() => {
 							onEditCancel?.();
-							setValue("");
+							editorRef.current?.clear();
+							setHasContent(false);
 						}}
 						title="Bearbeiten abbrechen (Esc)"
 					>
@@ -563,7 +594,7 @@ export function MessageComposer({
 							<Paperclip className="h-4 w-4" />
 						</Button>
 
-						{/* Input-Feld mit Emoji-Button links (WhatsApp-Style) */}
+						{/* WYSIWYG Editor mit Emoji-Button */}
 						<div className="relative flex-1" ref={emojiPickerRef}>
 							<Button
 								type="button"
@@ -571,40 +602,41 @@ export function MessageComposer({
 								size="icon"
 								onClick={() => setEmojiPickerOpen((v) => !v)}
 								disabled={isDisabled}
-								className="absolute left-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground z-10"
+								className="absolute right-1.5 bottom-1.5 h-7 w-7 text-muted-foreground hover:text-foreground z-10"
 								title="Emoji einfügen"
 							>
 								<SmilePlus className="h-4 w-4" />
 							</Button>
 							{emojiPickerOpen && (
-								<div className="absolute bottom-full left-0 mb-2 z-50">
+								<div className="absolute bottom-full right-0 mb-2 z-50">
 									<EmojiPicker
 										onSelect={(emoji) => {
-											setValue((v) => v + emoji);
+											editorRef.current?.focus();
+											// Emoji in den Editor einfügen (als Text)
+											document.execCommand("insertText", false, emoji);
 											setEmojiPickerOpen(false);
 										}}
 									/>
 								</div>
 							)}
-							<Textarea
-								value={value}
-								onChange={(e) => {
-									setValue(e.target.value);
-									if (e.target.value) handleTyping();
-								}}
-								onKeyDown={handleKeyDown}
+							<WysiwygEditor
+								ref={editorRef}
+								members={members}
+								rooms={joinedRooms}
+								roomId={roomId}
+								myUserId={myUserId}
 								placeholder={isUploading ? "Datei wird hochgeladen…" : "Nachricht schreiben..."}
-								className={cn(
-									"min-h-[40px] max-h-[160px] resize-none text-sm rounded-xl",
-									"bg-muted/30 border-border/50 pl-10",
-									"focus-visible:ring-1 focus-visible:ring-ring",
-								)}
 								disabled={isDisabled}
-								rows={1}
+								onUpdate={(isEmpty) => {
+									setHasContent(!isEmpty);
+									if (!isEmpty) handleTyping();
+								}}
+								onSubmit={handleEditorSubmit}
+								onEscape={handleEditorEscape}
 							/>
 						</div>
 
-						{value.trim() ? (
+						{hasContent ? (
 							<Button
 								size="icon"
 								onClick={send}

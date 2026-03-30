@@ -63,11 +63,11 @@ $nextEnv = (Get-Content "D:/matrix/nextjs-chat/.env.local" -Raw) `
 Set-Content "D:/matrix/nextjs-chat/.env.local" $nextEnv
 Write-Host "nextjs-chat/.env.local OK" -ForegroundColor Green
 
-$pyEnv = (Get-Content "D:/matrix/python-agent-bridge/.env" -Raw) `
+$pyEnv = (Get-Content "D:/matrix/python-backend/.env" -Raw) `
     -replace "MATRIX_BOT_ACCESS_TOKEN=.*", "MATRIX_BOT_ACCESS_TOKEN=$botToken" `
     -replace "MATRIX_BOT_PASSWORD=.*",     "MATRIX_BOT_PASSWORD=$botPass"
-Set-Content "D:/matrix/python-agent-bridge/.env" $pyEnv
-Write-Host "python-agent-bridge/.env OK" -ForegroundColor Green
+Set-Content "D:/matrix/python-backend/.env" $pyEnv
+Write-Host "python-backend/.env OK" -ForegroundColor Green
 
 Write-Host "`n=== FERTIG ===" -ForegroundColor Green
 Write-Host "  @alice:matrix.local          PW: Alice1234!"

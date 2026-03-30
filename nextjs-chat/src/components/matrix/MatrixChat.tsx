@@ -6,15 +6,18 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAutoAcceptInvites } from "@/lib/matrix/hooks/useAutoAcceptInvites";
-import { useCall } from "@/lib/matrix/hooks/useCall";
 import { useCrossSigning } from "@/lib/matrix/hooks/useCrossSigning";
+import { useKeyboardShortcuts } from "@/lib/matrix/hooks/useKeyboardShortcuts";
 import { useMatrixClient } from "@/lib/matrix/hooks/useMatrixClient";
+import { useMatrixRTCCall } from "@/lib/matrix/hooks/useMatrixRTCCall";
 import { useMessageActions } from "@/lib/matrix/hooks/useMessageActions";
+import { useNotifications } from "@/lib/matrix/hooks/useNotifications";
 import { usePinnedMessages } from "@/lib/matrix/hooks/usePinnedMessages";
 import { useRooms } from "@/lib/matrix/hooks/useRooms";
 import { useSpaces } from "@/lib/matrix/hooks/useSpaces";
 import { useTimeline } from "@/lib/matrix/hooks/useTimeline";
 import { useTyping } from "@/lib/matrix/hooks/useTyping";
+import { ActivityCentre } from "./ActivityCentre";
 import { CallOverlay } from "./CallOverlay";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { CrossSigningSetup } from "./CrossSigningSetup";
@@ -25,10 +28,12 @@ import { RoomHeader } from "./RoomHeader";
 import { RoomInfoPanel } from "./room-info/RoomInfoPanel";
 import { RoomList } from "./room-list/RoomList";
 import { SearchPanel } from "./SearchPanel";
-import { SpaceSelector } from "./SpaceSelector";
-import { ThreadPanel } from "./ThreadPanel";
+import { SpaceSelector } from "./spaces/SpaceSelector";
+import { SpaceSettings } from "./spaces/SpaceSettings";
 import { Timeline } from "./Timeline";
 import { TypingIndicator } from "./TypingIndicator";
+import { ThreadOverview } from "./threads/ThreadOverview";
+import { ThreadPanel } from "./threads/ThreadPanel";
 
 export function MatrixChat() {
 	const { client, isReady, error } = useMatrixClient();
@@ -42,11 +47,14 @@ export function MatrixChat() {
 	const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 	const [showRoomSettings, setShowRoomSettings] = useState(false);
 	const [showSearch, setShowSearch] = useState(false);
+	const [showThreadOverview, setShowThreadOverview] = useState(false);
+	const [showActivity, setShowActivity] = useState(false);
+	const [spaceSettingsId, setSpaceSettingsId] = useState<string | null>(null);
 	const [forwardState, setForwardState] = useState<{ body: string; senderName: string } | null>(
 		null,
 	);
 	const [syncStatus, setSyncStatus] = useState<"syncing" | "reconnecting" | "error">("syncing");
-	const callState = useCall();
+	const callState = useMatrixRTCCall(isReady ? client : null);
 	const crossSigning = useCrossSigning(isReady ? client : null);
 	useAutoAcceptInvites(isReady ? client : null);
 
@@ -65,7 +73,8 @@ export function MatrixChat() {
 	}, [client]);
 
 	const rooms = useRooms(isReady ? client : null);
-	const { spaces } = useSpaces(isReady ? client : null);
+	const { spaces, fetchHierarchy } = useSpaces(isReady ? client : null);
+	const { items: activityItems } = useNotifications(isReady ? client : null);
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
 	const { messages, isLoading, canLoadMore, loadMore } = useTimeline(
 		isReady ? client : null,
@@ -82,7 +91,50 @@ export function MatrixChat() {
 		setReplyState(null);
 		setShowRoomSettings(false);
 		setShowSearch(false);
+		setShowThreadOverview(false);
+		setShowActivity(false);
 	}, [selectedRoomId]);
+
+	// Permalink-Navigation: matrix.to Links in Nachrichten → Raum öffnen
+	useEffect(() => {
+		function onNavigate(e: Event) {
+			const detail = (e as CustomEvent).detail as
+				| { type: "user" | "room" | "event"; id: string; eventId?: string }
+				| undefined;
+			if (!detail) return;
+			if (detail.type === "room") {
+				// Raum-ID (!xxx:server) oder Alias (#xxx:server) → Raum öffnen
+				const room = rooms.find(
+					(r) => r.roomId === detail.id || r.name === detail.id.replace(/^#/, "").split(":")[0],
+				);
+				if (room) setSelectedRoomId(room.roomId);
+				else toast.error(`Raum ${detail.id} nicht gefunden`);
+			} else if (detail.type === "user" && client) {
+				// User-Profil → DM öffnen falls vorhanden
+				const dm = rooms.find((r) => r.dmUserId === detail.id);
+				if (dm) setSelectedRoomId(dm.roomId);
+			}
+		}
+		window.addEventListener("matrix:navigate", onNavigate);
+		return () => window.removeEventListener("matrix:navigate", onNavigate);
+	}, [rooms, client]);
+
+	// Keyboard Shortcuts
+	useKeyboardShortcuts({
+		onQuickSwitch: () => setShowSearch(true),
+		onEscape: () => {
+			if (activeThreadId) setActiveThreadId(null);
+			else if (showSearch) setShowSearch(false);
+			else if (showRoomSettings) setShowRoomSettings(false);
+			else if (showThreadOverview) setShowThreadOverview(false);
+			else if (showActivity) setShowActivity(false);
+			else if (spaceSettingsId) setSpaceSettingsId(null);
+		},
+		onEditLastMessage: () => {
+			const lastOwn = [...messages].reverse().find((m) => m.isOwn && m.msgType === "m.text");
+			if (lastOwn) setEditState({ eventId: lastOwn.eventId, body: lastOwn.body });
+		},
+	});
 
 	// Message Actions (React, Redact) via Hook
 	const { handleReact, handleRedact } = useMessageActions(client, selectedRoomId);
@@ -176,13 +228,29 @@ export function MatrixChat() {
 				</div>
 			)}
 
-			<div className="flex h-full overflow-hidden">
+			<div className="flex h-full overflow-hidden" data-matrix-chat>
 				{/* Space-Rail (vertikale Icon-Leiste links) */}
 				{isReady && (
 					<SpaceSelector
 						spaces={spaces}
 						selectedSpaceId={selectedSpaceId}
 						onSelect={setSelectedSpaceId}
+						onActivityOpen={() => {
+							setShowActivity(true);
+							setShowSearch(false);
+							setShowRoomSettings(false);
+							setShowThreadOverview(false);
+							setActiveThreadId(null);
+						}}
+						onSpaceSettings={(spaceId) => {
+							setSpaceSettingsId(spaceId);
+							setShowActivity(false);
+							setShowSearch(false);
+							setShowRoomSettings(false);
+							setShowThreadOverview(false);
+							setActiveThreadId(null);
+						}}
+						activityCount={activityItems.length}
 						client={client}
 					/>
 				)}
@@ -208,11 +276,20 @@ export function MatrixChat() {
 									room={selectedRoom}
 									client={client}
 									roomId={selectedRoomId!}
-									onCall={(withVideo) => callState.placeCall(selectedRoomId!, withVideo)}
+									onCall={(withVideo) =>
+										callState.joinCall(selectedRoomId!, withVideo ? "m.video" : "m.voice")
+									}
 									onSettingsOpen={() => setShowRoomSettings(true)}
 									onSearchOpen={() => {
 										setShowSearch(true);
 										setActiveThreadId(null);
+										setShowRoomSettings(false);
+										setShowThreadOverview(false);
+									}}
+									onThreadsOpen={() => {
+										setShowThreadOverview(true);
+										setActiveThreadId(null);
+										setShowSearch(false);
 										setShowRoomSettings(false);
 									}}
 								/>
@@ -366,6 +443,53 @@ export function MatrixChat() {
 							onClose={() => setActiveThreadId(null)}
 						/>
 					)}
+
+					{/* B-8: Thread Overview */}
+					{showThreadOverview && !activeThreadId && selectedRoom && client && (
+						<ThreadOverview
+							client={client}
+							roomId={selectedRoomId!}
+							onClose={() => setShowThreadOverview(false)}
+							onThreadSelect={(threadRootId) => {
+								setActiveThreadId(threadRootId);
+								setShowThreadOverview(false);
+							}}
+						/>
+					)}
+
+					{/* Activity Centre */}
+					{showActivity && client && (
+						<ActivityCentre
+							client={client}
+							onClose={() => setShowActivity(false)}
+							onRoomSelect={(roomId) => {
+								setSelectedRoomId(roomId);
+								setShowActivity(false);
+							}}
+							onThreadSelect={(roomId, threadRootId) => {
+								setSelectedRoomId(roomId);
+								setActiveThreadId(threadRootId);
+								setShowActivity(false);
+							}}
+						/>
+					)}
+
+					{/* Space Settings */}
+					{spaceSettingsId &&
+						client &&
+						(() => {
+							const space = spaces.find((s) => s.roomId === spaceSettingsId);
+							if (!space) return null;
+							return (
+								<SpaceSettings
+									client={client}
+									space={space}
+									hierarchy={space.hierarchy}
+									onFetchHierarchy={() => fetchHierarchy(spaceSettingsId)}
+									onClose={() => setSpaceSettingsId(null)}
+								/>
+							);
+						})()}
 
 					{/* UI-8: Search Side-Panel */}
 					{showSearch && !activeThreadId && !showRoomSettings && selectedRoom && client && (

@@ -43,6 +43,23 @@ const htmlProcessor = unified()
 	.use(rehypeSanitize, sanitizeSchema)
 	.use(rehypeStringify);
 
+/** Parse matrix.to permalink into type + ID */
+function parseMatrixPermalink(
+	url: string,
+): { type: "user" | "room" | "event"; id: string; eventId?: string } | null {
+	const match = url.match(/^https?:\/\/matrix\.to\/#\/([^?]+)/);
+	if (!match?.[1]) return null;
+	const fragment = decodeURIComponent(match[1]);
+	if (fragment.startsWith("@")) return { type: "user", id: fragment };
+	if (fragment.startsWith("!")) {
+		const parts = fragment.split("/");
+		if (parts[1]?.startsWith("$")) return { type: "event", id: parts[0], eventId: parts[1] };
+		return { type: "room", id: parts[0] };
+	}
+	if (fragment.startsWith("#")) return { type: "room", id: fragment };
+	return null;
+}
+
 function linkifyText(text: string): (string | React.ReactElement)[] {
 	const urlRegex = /https?:\/\/[^\s<>"{}|\\^[\]`]+/g;
 	const parts: (string | React.ReactElement)[] = [];
@@ -50,17 +67,46 @@ function linkifyText(text: string): (string | React.ReactElement)[] {
 	for (const match of text.matchAll(urlRegex)) {
 		const idx = match.index ?? 0;
 		if (idx > lastIndex) parts.push(text.slice(lastIndex, idx));
-		parts.push(
-			<a
-				key={idx}
-				href={match[0]}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="text-blue-400 hover:underline"
-			>
-				{match[0]}
-			</a>,
-		);
+
+		const permalink = parseMatrixPermalink(match[0]);
+		if (permalink) {
+			// Matrix permalink → In-App Navigation
+			const label =
+				permalink.type === "user"
+					? (permalink.id.split(":")[0]?.replace("@", "") ?? permalink.id)
+					: permalink.type === "room"
+						? permalink.id
+						: "Nachricht";
+			parts.push(
+				<button
+					key={idx}
+					type="button"
+					className="text-primary hover:underline font-medium inline"
+					onClick={() => {
+						// Dispatch custom event fuer MatrixChat Navigation
+						window.dispatchEvent(new CustomEvent("matrix:navigate", { detail: permalink }));
+					}}
+				>
+					{permalink.type === "user"
+						? `@${label}`
+						: permalink.type === "room"
+							? permalink.id
+							: `↗ ${label}`}
+				</button>,
+			);
+		} else {
+			parts.push(
+				<a
+					key={idx}
+					href={match[0]}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-blue-400 hover:underline"
+				>
+					{match[0]}
+				</a>,
+			);
+		}
 		lastIndex = idx + match[0].length;
 	}
 	if (lastIndex < text.length) parts.push(text.slice(lastIndex));

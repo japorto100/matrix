@@ -64,11 +64,22 @@ turn_password = "openrelayproject"
 # turn_secret = "your-coturn-shared-secret"
 # turn_ttl = 86400
 
+# ─── User Directory (Contacts / Search) ───────────────────────────────────────
+# true = alle lokalen User in Suche sichtbar (geschlossene Team-Instanz, alle kennen sich)
+# false = nur User in geteilten/oeffentlichen Raeumen (grosse Instanz, Federation, Privacy)
+show_all_local_users_in_user_directory = true
+
 # ─── .well-known ─────────────────────────────────────────────────────────────
 # localhost:8448 — Browser/Mobile greifen über Host-Port zu
 [global.well_known]
 client = "http://localhost:8448"
 server = "localhost:8448"
+
+# ─── MatrixRTC / LiveKit (Voice/Video Calls via SFU) ────────────────────
+# Container-Netzwerk: lk-jwt-service als Service-Name
+[[global.well_known.rtc_transports]]
+type = "livekit"
+livekit_service_url = "http://matrix-rtc-jwt:8081"
 
 # ─── Appservice: Go Appservice ───────────────────────────────────────────────
 # Container-Netzwerk: Service-Name statt 127.0.0.1

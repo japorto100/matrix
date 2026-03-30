@@ -140,9 +140,9 @@ function XlsxContent({ message }: { message: ResolvedMessage }) {
 						aria-describedby={undefined}
 					>
 						<DialogTitle className="sr-only">{message.fileName ?? "Tabelle"}</DialogTitle>
-						{/* biome-ignore lint/security/noDangerouslySetInnerHtml: SheetJS HTML */}
 						<div
 							className="w-full h-[80vh] overflow-auto bg-white p-4 text-black [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-gray-300 [&_td]:px-2 [&_td]:py-1 [&_td]:text-xs [&_th]:border [&_th]:border-gray-300 [&_th]:px-2 [&_th]:py-1 [&_th]:text-xs [&_th]:bg-gray-100 [&_th]:font-semibold"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: SheetJS HTML
 							dangerouslySetInnerHTML={{ __html: tableHtml }}
 						/>
 					</DialogContent>

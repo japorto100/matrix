@@ -18,11 +18,13 @@ import { Input } from "@/components/ui/input";
 interface Props {
 	client: MatrixClient;
 	trigger: React.ReactNode;
+	/** Optional: Raum direkt in einem Space erstellen */
+	spaceId?: string | null;
 }
 
 type RoomType = "private" | "public";
 
-export function CreateRoomDialog({ client, trigger }: Props) {
+export function CreateRoomDialog({ client, trigger, spaceId }: Props) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [topic, setTopic] = useState("");
@@ -69,6 +71,19 @@ export function CreateRoomDialog({ client, trigger }: Props) {
 					)(result.room_id, "m.room.avatar", { url: upload.content_uri }, "");
 				} catch (err) {
 					console.error("[CreateRoomDialog] avatar upload failed:", err);
+				}
+			}
+			// Raum in Space hinzufügen wenn spaceId angegeben
+			if (spaceId && result.room_id) {
+				try {
+					await client.sendStateEvent(
+						spaceId,
+						"m.space.child" as any,
+						{ via: [client.getDomain() ?? "matrix.local"] },
+						result.room_id,
+					);
+				} catch (err) {
+					console.error("[CreateRoomDialog] add to space failed:", err);
 				}
 			}
 			setName("");

@@ -40,9 +40,9 @@ $ErrorActionPreference = "Stop"
 # -- Paths -------------------------------------------------------------------
 $repoRoot    = Resolve-Path (Join-Path $PSScriptRoot "..")
 $goDir       = Join-Path $repoRoot "go-appservice"
-$pyDir       = Join-Path $repoRoot "python-agent-bridge"
+$pyDir       = Join-Path $repoRoot "python-backend"
 $nextDir     = Join-Path $repoRoot "nextjs-chat"
-$mockDir     = Join-Path $repoRoot "llm-mock"
+$mockDir     = Join-Path $repoRoot "python-backend/mock"
 $logsRoot    = Join-Path $repoRoot "logs\dev-stack"
 
 # -- State -------------------------------------------------------------------
@@ -324,7 +324,7 @@ try {
         Register-Service -Name "py-bridge" -Port 8097 -Tier "app" -TimeoutSecs 60 `
             -HealthUrl "http://127.0.0.1:8097/health" -StartAction {
             Start-LoggedProcess -Name "py-bridge" -FilePath $pyExe `
-                -ArgumentList @("-m", "uvicorn", "agent_bridge.app:app",
+                -ArgumentList @("-m", "uvicorn", "bridge.app:app",
                     "--host", "127.0.0.1", "--port", "8097", "--reload") `
                 -WorkingDirectory $pyDir
         }

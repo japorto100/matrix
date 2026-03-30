@@ -1,17 +1,17 @@
 "use client";
 
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { MessageSquarePlus, Plus, Search } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { SpaceInfo } from "@/lib/matrix/hooks/useSpaces";
 import type { RoomInfo } from "@/lib/matrix/types";
-import { cn } from "@/lib/utils";
-import { CreateDMDialog } from "../CreateDMDialog";
 import { CreateRoomDialog } from "../CreateRoomDialog";
+import { CreateDMDialog } from "../contacts/CreateDMDialog";
 import { InviteItem } from "./InviteItem";
 import { RoomItem } from "./RoomItem";
 
@@ -90,6 +90,7 @@ function RoomListRaw({
 						<div className="flex items-center gap-0.5">
 							<CreateRoomDialog
 								client={client}
+								spaceId={selectedSpaceId}
 								trigger={
 									<Button variant="ghost" size="icon" className="h-7 w-7" title="Raum erstellen">
 										<Plus className="h-4 w-4" />
@@ -139,45 +140,124 @@ function RoomListRaw({
 				</Tabs>
 			</div>
 
-			<div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
-				<div className="px-2 pb-2 space-y-0.5">
-					{inviteRooms.length > 0 && (
-						<div className="mb-2">
-							<p className="text-[10px] font-semibold text-primary uppercase tracking-wider px-2.5 py-1">
-								Einladungen ({inviteRooms.length})
-							</p>
-							{inviteRooms.map((room) => (
-								<InviteItem key={room.roomId} room={room} client={client} onSelect={onSelect} />
-							))}
-						</div>
-					)}
-					{filteredRooms.map((room) => (
-						<RoomItem
-							key={room.roomId}
-							room={room}
-							isSelected={room.roomId === selectedRoomId}
-							onSelect={onSelect}
-							client={client}
-						/>
-					))}
-					{filteredRooms.length === 0 && (
-						<p className="text-xs text-muted-foreground text-center py-8 px-4">
-							{search
-								? "Keine Ergebnisse."
-								: filter === "unread"
-									? "Keine ungelesenen Nachrichten."
-									: filter === "favourites"
-										? "Keine Favoriten."
-										: filter === "people"
-											? "Keine Direktnachrichten."
-											: filter === "rooms"
-												? "Keine Räume."
-												: "Keine Chats."}
-						</p>
-					)}
-				</div>
-			</div>
+			<VirtualizedRoomList
+				inviteRooms={inviteRooms}
+				filteredRooms={filteredRooms}
+				selectedRoomId={selectedRoomId}
+				onSelect={onSelect}
+				client={client}
+				search={search}
+				filter={filter}
+			/>
 		</aside>
+	);
+}
+
+function VirtualizedRoomList({
+	inviteRooms,
+	filteredRooms,
+	selectedRoomId,
+	onSelect,
+	client,
+	search,
+	filter,
+}: {
+	inviteRooms: RoomInfo[];
+	filteredRooms: RoomInfo[];
+	selectedRoomId: string | null;
+	onSelect: (roomId: string) => void;
+	client?: MatrixClient | null;
+	search: string;
+	filter: string;
+}) {
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const virtualizer = useVirtualizer({
+		count: filteredRooms.length,
+		getScrollElement: () => scrollRef.current,
+		estimateSize: () => 60,
+		overscan: 5,
+	});
+
+	// Pfeiltasten-Navigation in der RoomList
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+			e.preventDefault();
+			const currentIdx = filteredRooms.findIndex((r) => r.roomId === selectedRoomId);
+			const nextIdx =
+				e.key === "ArrowDown"
+					? Math.min(currentIdx + 1, filteredRooms.length - 1)
+					: Math.max(currentIdx - 1, 0);
+			const nextRoom = filteredRooms[nextIdx];
+			if (nextRoom) {
+				onSelect(nextRoom.roomId);
+				virtualizer.scrollToIndex(nextIdx, { align: "auto" });
+			}
+		},
+		[filteredRooms, selectedRoomId, onSelect, virtualizer],
+	);
+
+	return (
+		<div
+			ref={scrollRef}
+			className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide"
+			onKeyDown={handleKeyDown}
+			tabIndex={0}
+		>
+			<div className="px-2 pb-2">
+				{inviteRooms.length > 0 && (
+					<div className="mb-2">
+						<p className="text-[10px] font-semibold text-primary uppercase tracking-wider px-2.5 py-1">
+							Einladungen ({inviteRooms.length})
+						</p>
+						{inviteRooms.map((room) => (
+							<InviteItem key={room.roomId} room={room} client={client} onSelect={onSelect} />
+						))}
+					</div>
+				)}
+				{filteredRooms.length === 0 ? (
+					<p className="text-xs text-muted-foreground text-center py-8 px-4">
+						{search
+							? "Keine Ergebnisse."
+							: filter === "unread"
+								? "Keine ungelesenen Nachrichten."
+								: filter === "favourites"
+									? "Keine Favoriten."
+									: filter === "people"
+										? "Keine Direktnachrichten."
+										: filter === "rooms"
+											? "Keine Räume."
+											: "Keine Chats."}
+					</p>
+				) : (
+					<div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+						{virtualizer.getVirtualItems().map((virtualRow) => {
+							const room = filteredRooms[virtualRow.index];
+							if (!room) return null;
+							return (
+								<div
+									key={room.roomId}
+									style={{
+										position: "absolute",
+										top: 0,
+										left: 0,
+										width: "100%",
+										transform: `translateY(${virtualRow.start}px)`,
+									}}
+								>
+									<RoomItem
+										room={room}
+										isSelected={room.roomId === selectedRoomId}
+										onSelect={onSelect}
+										client={client}
+									/>
+								</div>
+							);
+						})}
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }
 

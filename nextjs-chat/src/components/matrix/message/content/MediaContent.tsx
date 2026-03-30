@@ -136,8 +136,8 @@ export function AudioContent({ message }: { message: ResolvedMessage }) {
 export function StickerContent({ message }: { message: ResolvedMessage }) {
 	const src = message.thumbnailUrl ?? message.url;
 	if (!src) return null;
-	// biome-ignore lint/performance/noImgElement: Matrix-URLs sind dynamisch
 	return (
+		// biome-ignore lint/performance/noImgElement: Matrix-URLs sind dynamisch
 		<img
 			src={src}
 			alt={message.body}

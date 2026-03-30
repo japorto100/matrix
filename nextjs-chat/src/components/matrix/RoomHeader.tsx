@@ -1,13 +1,12 @@
 "use client";
 
-import { Phone, Search, UserPlus, Users, Video } from "lucide-react";
+import { MessageSquare, Phone, Search, UserPlus, Users, Video } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
-import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { RoomInfo } from "@/lib/matrix/types";
 import { mxcToHttp } from "@/lib/matrix/utils";
-import { InviteDialog } from "./InviteDialog";
+import { InviteDialog } from "./contacts/InviteDialog";
 import { EncryptionBadge } from "./shared/EncryptionBadge";
 
 interface Props {
@@ -17,9 +16,18 @@ interface Props {
 	onCall?: (withVideo: boolean) => void;
 	onSettingsOpen?: () => void;
 	onSearchOpen?: () => void;
+	onThreadsOpen?: () => void;
 }
 
-export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSearchOpen }: Props) {
+export function RoomHeader({
+	room,
+	client,
+	roomId,
+	onCall,
+	onSettingsOpen,
+	onSearchOpen,
+	onThreadsOpen,
+}: Props) {
 	const headerAvatarSrc = room.avatarUrl?.startsWith("mxc://")
 		? mxcToHttp(room.avatarUrl)
 		: room.avatarUrl;
@@ -60,6 +68,19 @@ export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSea
 			</div>
 
 			<div className="flex items-center gap-0.5">
+				{/* B-8: Threads */}
+				{onThreadsOpen && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-8 w-8"
+						title="Threads"
+						onClick={onThreadsOpen}
+					>
+						<MessageSquare className="h-4 w-4" />
+					</Button>
+				)}
+
 				{/* UI-8: Suche */}
 				{onSearchOpen && (
 					<Button
@@ -86,8 +107,8 @@ export function RoomHeader({ room, client, roomId, onCall, onSettingsOpen, onSea
 					/>
 				)}
 
-				{/* B-9: Call-Buttons (nur für DMs) */}
-				{onCall && room.memberCount <= 2 && (
+				{/* MatrixRTC Call-Buttons (DMs + Gruppen-Räume) */}
+				{onCall && (
 					<>
 						<Button
 							variant="ghost"

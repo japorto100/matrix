@@ -47,7 +47,19 @@
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(wc -l /d/matrix/nextjs-chat/src/components/matrix/*.tsx)",
       "Bash(wc -l D:/matrix/nextjs-chat/src/*.tsx D:/matrix/nextjs-chat/src/*.ts)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(find D:/matrix/nextjs-chat/src -name useCall* -o -name *Call*)",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); const deps=p.dependencies||{}; const rtc=Object.keys\\(deps\\).filter\\(k=>/livekit|rtc|call|voip/i.test\\(k\\)\\); console.log\\(''''rtc/call deps:'''', rtc\\); console.log\\(''''first 40 deps:'''', Object.keys\\(deps\\).slice\\(0,40\\)\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); const vers=Object.keys\\(p.versions||{}\\); console.log\\(''''latest:'''', p[''''dist-tags'''']?.latest\\); console.log\\(''''last 5 versions:'''', vers.slice\\(-5\\)\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ try{const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); console.log\\(''''description:'''', p.description\\); }catch\\(e\\){console.log\\(''''parse error, raw:'''', d.slice\\(0,300\\)\\);} }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ try{const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); console.log\\(''''deps:'''', Object.keys\\(p.dependencies||{}\\)\\); }catch\\(e\\){console.log\\(''''raw:'''', d.slice\\(0,300\\)\\);} }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); console.log\\(''''peerDeps:'''', JSON.stringify\\(p.peerDependencies,null,2\\)\\); console.log\\(''''deps:'''', JSON.stringify\\(p.dependencies,null,2\\)\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); console.log\\(''''description:'''', p.description\\); console.log\\(''''deps:'''', Object.keys\\(p.dependencies||{}\\)\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); console.log\\(''''description:'''', p.description\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''version:'''', p.version\\); }\\)\")",
+      "Bash(node -e \"let d=''''''''; process.stdin.on\\(''''data'''',c=>d+=c\\); process.stdin.on\\(''''end'''',\\(\\)=>{ const p=JSON.parse\\(d\\); console.log\\(''''deps:'''', JSON.stringify\\(p.dependencies,null,2\\)\\); console.log\\(''''peerDeps:'''', JSON.stringify\\(p.peerDependencies,null,2\\)\\); console.log\\(''''main:'''', p.main\\); console.log\\(''''exports keys:'''', Object.keys\\(p.exports||{}\\)\\); }\\)\")",
+      "Bash(find /d/matrix -name *.toml -type f)",
+      "Bash(find:*)"
     ]
   }
 }

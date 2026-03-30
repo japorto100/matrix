@@ -70,6 +70,12 @@ turn_password = "openrelayproject"
 # turn_secret = ""   # Nicht nötig bei Static Auth (Metered.ca Open Relay)
 # turn_ttl = 86400   # Nicht nötig bei Static Auth
 
+# ─── User Directory (Contacts / Search) ───────────────────────────────────────
+# Default: nur User in oeffentlichen/geteilten Raeumen sichtbar.
+# Dev: true → alle lokalen User in der Suche sichtbar (z.B. fuer InviteDialog ContactPicker).
+# Prod: false empfohlen (Privacy — User muessen erst in einem geteilten Raum sein).
+show_all_local_users_in_user_directory = true
+
 # ─── RocksDB / Storage ──────────────────────────────────────────────────────
 # Direct I/O: Umgeht OS-Dateisystem-Cache, schreibt direkt auf Disk.
 # - false: Sicher für WSL2+NTFS (/mnt/d/ via 9P) — devstack.ps1 Workflow
@@ -95,6 +101,16 @@ database_backups_to_keep = 3
 [global.well_known]
 client = "http://YOUR_LAN_IP:8448"
 server = "YOUR_LAN_IP:8448"
+
+# ─── MatrixRTC / LiveKit (Voice/Video Calls via SFU) ────────────────────
+# Ersetzt Legacy VoIP (createNewMatrixCall). Kompatibel mit Element X.
+# Tuwunel teilt Clients über .well-known mit wo der LiveKit SFU ist.
+# Braucht: LiveKit SFU (Port 7880) + lk-jwt-service (Port 8080)
+# Starten: ./tools/livekit-server.exe --config ./homeserver/livekit.yaml
+#          wsl ... ./tools/lk-jwt-service  (Linux-Binary, läuft in WSL)
+[[global.well_known.rtc_transports]]
+type = "livekit"
+livekit_service_url = "http://YOUR_LAN_IP:8080"
 
 # ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
 [global.appservice.trading-agent]

@@ -85,6 +85,7 @@ function MessageRaw({
 				onRedact={onRedact}
 				onForward={onForward}
 				onPin={onPin}
+				onThreadOpen={onThreadOpen}
 				isPinned={pinnedEventIds?.includes(message.eventId)}
 			/>
 			{!isGrouped ? (

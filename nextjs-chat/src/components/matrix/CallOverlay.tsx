@@ -1,139 +1,105 @@
 "use client";
 
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from "lucide-react";
+import {
+	AudioConference,
+	LiveKitRoom,
+	RoomAudioRenderer,
+	VideoConference,
+} from "@livekit/components-react";
+import "@livekit/components-styles";
+import type { RoomOptions } from "livekit-client";
+import { PhoneOff, ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import type { UseCallReturn } from "@/lib/matrix/hooks/useCall";
-import { cn } from "@/lib/utils";
+import type { UseMatrixRTCCallReturn } from "@/lib/matrix/hooks/useMatrixRTCCall";
 
 interface Props {
-	call: UseCallReturn;
+	call: UseMatrixRTCCallReturn;
 }
 
 /**
- * B-9: Call-Overlay — Klingeln + aktiver Call (Picture-in-Picture Stil).
- * Wird über dem Chat-Bereich gerendert wenn ein Call aktiv ist.
+ * Call-Overlay — LiveKit-basiertes Video/Audio UI mit E2EE.
+ * Nutzt @livekit/components-react Prefabs für Grid, Controls, Screen Share.
+ * E2EE Keys werden von MatrixKeyProvider (matrix-js-sdk → LiveKit) gespeist.
  */
 export function CallOverlay({ call }: Props) {
 	const {
 		callStatus,
-		callerName,
-		answerCall,
-		rejectCall,
-		hangupCall,
-		toggleMute,
-		toggleCamera,
-		isMuted,
-		isCameraOff,
-		localVideoRef,
-		remoteVideoRef,
+		livekitToken,
+		livekitUrl,
+		leaveCall,
+		participantCount,
+		e2eeKeyProvider,
+		isVoiceOnly,
 	} = call;
 
-	if (callStatus === "idle") return null;
+	// LiveKit RoomOptions mit E2EE — Worker verschlüsselt Audio/Video Frames (SFrame)
+	const roomOptions = useMemo((): RoomOptions | undefined => {
+		if (typeof window === "undefined") return undefined;
+		try {
+			const worker = new Worker(new URL("livekit-client/e2ee-worker", import.meta.url));
+			return {
+				e2ee: { keyProvider: e2eeKeyProvider, worker },
+			};
+		} catch {
+			console.warn("[call] E2EE Worker nicht verfügbar — Calls laufen unverschlüsselt");
+			return undefined;
+		}
+	}, [e2eeKeyProvider]);
 
-	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-			<div className="relative bg-card rounded-2xl shadow-2xl overflow-hidden w-[480px] max-w-[95vw]">
-				{/* Remote Video (groß) */}
-				<div className="relative bg-zinc-900 aspect-video w-full flex items-center justify-center">
-					<video
-						ref={remoteVideoRef}
-						autoPlay
-						playsInline
-						className={cn("w-full h-full object-cover", callStatus !== "connected" && "hidden")}
-					/>
+	const isE2EE = !!roomOptions?.e2ee;
 
-					{/* Status-Text wenn nicht verbunden */}
-					{callStatus !== "connected" && (
-						<div className="flex flex-col items-center gap-3 text-white">
-							<div className="h-20 w-20 rounded-full bg-primary/30 flex items-center justify-center text-3xl font-bold">
-								{callerName?.slice(0, 2).toUpperCase() ?? "??"}
-							</div>
-							<p className="text-lg font-semibold">{callerName ?? "Unbekannt"}</p>
-							<p className="text-sm text-white/70">
-								{callStatus === "incoming" && "Eingehender Anruf…"}
-								{callStatus === "outgoing" && "Wählt…"}
-								{callStatus === "connecting" && "Verbinde…"}
-								{callStatus === "ended" && "Anruf beendet"}
-							</p>
-						</div>
-					)}
+	if (callStatus === "idle" || !livekitToken || !livekitUrl) return null;
 
-					{/* Lokales Video (klein, oben rechts) */}
-					<video
-						ref={localVideoRef}
-						autoPlay
-						playsInline
-						muted
-						className="absolute top-3 right-3 w-28 rounded-lg shadow-lg object-cover aspect-video bg-zinc-800"
-					/>
-				</div>
-
-				{/* Steuerleiste */}
-				<div className="flex items-center justify-center gap-3 p-4 bg-card">
-					{/* Eingehend: Annehmen / Ablehnen */}
-					{callStatus === "incoming" && (
-						<>
-							<Button
-								size="icon"
-								className="h-12 w-12 rounded-full bg-green-600 hover:bg-green-700"
-								onClick={answerCall}
-								title="Annehmen"
-							>
-								<Phone className="h-5 w-5" />
-							</Button>
-							<Button
-								size="icon"
-								variant="destructive"
-								className="h-12 w-12 rounded-full"
-								onClick={rejectCall}
-								title="Ablehnen"
-							>
-								<PhoneOff className="h-5 w-5" />
-							</Button>
-						</>
-					)}
-
-					{/* Aktiver Call: Mute / Kamera / Auflegen */}
-					{(callStatus === "outgoing" ||
-						callStatus === "connecting" ||
-						callStatus === "connected") && (
-						<>
-							<Button
-								size="icon"
-								variant={isMuted ? "destructive" : "secondary"}
-								className="h-10 w-10 rounded-full"
-								onClick={toggleMute}
-								title={isMuted ? "Stummschaltung aufheben" : "Stummschalten"}
-							>
-								{isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-							</Button>
-							<Button
-								size="icon"
-								variant={isCameraOff ? "destructive" : "secondary"}
-								className="h-10 w-10 rounded-full"
-								onClick={toggleCamera}
-								title={isCameraOff ? "Kamera einschalten" : "Kamera ausschalten"}
-							>
-								{isCameraOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-							</Button>
-							<Button
-								size="icon"
-								variant="destructive"
-								className="h-12 w-12 rounded-full"
-								onClick={hangupCall}
-								title="Auflegen"
-							>
-								<PhoneOff className="h-5 w-5" />
-							</Button>
-						</>
-					)}
-
-					{/* Beendet */}
-					{callStatus === "ended" && (
-						<p className="text-sm text-muted-foreground py-2">Anruf beendet</p>
-					)}
+	if (callStatus === "joining") {
+		return (
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+				<div className="bg-card rounded-2xl shadow-2xl p-8 text-center">
+					<div className="h-12 w-12 mx-auto mb-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+					<p className="text-lg font-semibold">Verbinde...</p>
+					<p className="text-sm text-muted-foreground mt-1">MatrixRTC Session wird aufgebaut</p>
 				</div>
 			</div>
+		);
+	}
+
+	return (
+		<div className="fixed inset-0 z-50 bg-black">
+			<LiveKitRoom
+				token={livekitToken}
+				serverUrl={livekitUrl}
+				connect={true}
+				video={!isVoiceOnly}
+				onDisconnected={() => leaveCall()}
+				options={roomOptions}
+				className="h-full w-full"
+			>
+				{/* Voice-only → kompaktes Audio UI, Video → volles Grid mit Screen Share */}
+				{isVoiceOnly ? <AudioConference /> : <VideoConference />}
+				<RoomAudioRenderer />
+
+				{/* Status-Bar: E2EE Badge + Teilnehmer + Hangup */}
+				<div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
+					{isE2EE && (
+						<span className="flex items-center gap-1 text-xs text-green-400 bg-black/40 px-2 py-1 rounded">
+							<ShieldCheck className="h-3 w-3" />
+							E2EE
+						</span>
+					)}
+					<span className="text-xs text-white/60 bg-black/40 px-2 py-1 rounded">
+						{participantCount} Teilnehmer
+					</span>
+					<Button
+						variant="destructive"
+						size="icon"
+						className="h-12 w-12 rounded-full shadow-lg"
+						onClick={() => leaveCall()}
+						title="Auflegen"
+					>
+						<PhoneOff className="h-5 w-5" />
+					</Button>
+				</div>
+			</LiveKitRoom>
 		</div>
 	);
 }

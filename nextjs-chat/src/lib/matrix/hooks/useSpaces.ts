@@ -2,18 +2,32 @@
 
 import type { MatrixClient } from "matrix-js-sdk";
 import { ClientEvent, RoomEvent, RoomMemberEvent } from "matrix-js-sdk";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+export interface SpaceChildRoom {
+	roomId: string;
+	name: string;
+	memberCount: number;
+	isJoined: boolean;
+	/** true wenn dieses Kind selbst ein Space ist (Sub-Space) */
+	isSpace?: boolean;
+}
 
 export interface SpaceInfo {
 	roomId: string;
 	name: string;
 	childRoomIds: string[];
+	/** Server-seitige Hierarchie (inkl. ungejoinete Raeume). Nur gefuellt nach fetchHierarchy(). */
+	hierarchy?: SpaceChildRoom[];
+	/** Parent Space ID falls Sub-Space */
+	parentSpaceId?: string;
 }
 
 /** Reaktive Space-Liste — aktualisiert sich bei Matrix-Events. */
 export function useSpaces(client: MatrixClient | null): {
 	spaces: SpaceInfo[];
 	isLoading: boolean;
+	fetchHierarchy: (spaceId: string) => Promise<void>;
 } {
 	const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -29,25 +43,21 @@ export function useSpaces(client: MatrixClient | null): {
 			if (!client) return;
 			const joined = client.getRooms().filter((r) => r.getMyMembership() === "join");
 			const spaceRooms = joined.filter((r) => {
-				// Prüfe ob der Raum ein Space ist
 				try {
 					if (typeof r.isSpaceRoom === "function") return r.isSpaceRoom();
 				} catch {
 					// fallback
 				}
-				// Fallback: room type prüfen
 				const createEvent = r.currentState.getStateEvents("m.room.create", "");
 				const roomType = createEvent?.getContent()?.type;
 				return roomType === "m.space";
 			});
 
 			const resolved: SpaceInfo[] = spaceRooms.map((space) => {
-				// Child-Rooms aus m.space.child State Events
 				const childEvents = space.currentState.getStateEvents("m.space.child");
 				const childRoomIds = (Array.isArray(childEvents) ? childEvents : [])
 					.filter((ev) => {
 						const c = ev.getContent();
-						// Ein leerer Content bedeutet dass das Kind entfernt wurde
 						return c && Object.keys(c).length > 0;
 					})
 					.map((ev) => ev.getStateKey())
@@ -60,7 +70,13 @@ export function useSpaces(client: MatrixClient | null): {
 				};
 			});
 
-			setSpaces(resolved.sort((a, b) => a.name.localeCompare(b.name)));
+			setSpaces((prev) => {
+				// Behalte existierende hierarchy Daten bei refresh
+				const hierarchyMap = new Map(prev.map((s) => [s.roomId, s.hierarchy]));
+				return resolved
+					.map((s) => ({ ...s, hierarchy: hierarchyMap.get(s.roomId) }))
+					.sort((a, b) => a.name.localeCompare(b.name));
+			});
 			setIsLoading(false);
 		}
 
@@ -79,5 +95,41 @@ export function useSpaces(client: MatrixClient | null): {
 		};
 	}, [client]);
 
-	return { spaces, isLoading };
+	/**
+	 * Server-seitige Hierarchie laden (getRoomHierarchy).
+	 * Zeigt auch Raeume die der User noch nicht gejoint hat.
+	 */
+	const fetchHierarchy = useCallback(
+		async (spaceId: string) => {
+			if (!client) return;
+			try {
+				// maxDepth=2 um Sub-Spaces zu erkennen
+				const result = await client.getRoomHierarchy(spaceId, 50, 2, false);
+				const joinedRoomIds = new Set(
+					client
+						.getRooms()
+						.filter((r) => r.getMyMembership() === "join")
+						.map((r) => r.roomId),
+				);
+				const children: SpaceChildRoom[] = (result.rooms ?? [])
+					.filter((r) => r.room_id !== spaceId)
+					.map((r) => ({
+						roomId: r.room_id,
+						name: r.name ?? r.room_id,
+						memberCount: r.num_joined_members ?? 0,
+						isJoined: joinedRoomIds.has(r.room_id),
+						isSpace: r.room_type === "m.space",
+					}));
+
+				setSpaces((prev) =>
+					prev.map((s) => (s.roomId === spaceId ? { ...s, hierarchy: children } : s)),
+				);
+			} catch (err) {
+				console.warn("[useSpaces] getRoomHierarchy failed:", err);
+			}
+		},
+		[client],
+	);
+
+	return { spaces, isLoading, fetchHierarchy };
 }

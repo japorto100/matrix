@@ -144,12 +144,12 @@ if ($botLogin) {
   Write-OK "Bot Token: $botToken"
   Write-OK "Bot Passwort (speichern!): $botPass"
 
-  $pyEnvPath = Join-Path $RootDir "python-agent-bridge\.env"
+  $pyEnvPath = Join-Path $RootDir "python-backend\.env"
   $pyContent = Get-Content $pyEnvPath -Raw
   $pyContent = $pyContent -replace "MATRIX_BOT_ACCESS_TOKEN=.*", "MATRIX_BOT_ACCESS_TOKEN=$botToken"
   $pyContent = $pyContent -replace "MATRIX_BOT_PASSWORD=.*",     "MATRIX_BOT_PASSWORD=$botPass"
   Set-Content $pyEnvPath $pyContent
-  Write-OK "python-agent-bridge/.env aktualisiert"
+  Write-OK "python-backend/.env aktualisiert"
 }
 
 # ─── Test-Raum erstellen ──────────────────────────────────────────────────────
