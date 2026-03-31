@@ -41,10 +41,13 @@
   - LangGraph `interrupt()` fuer human-in-the-loop
   - Prueft needs_approval() pro Tool
 
-- [ ] **1.7:** loop.py Refactoring
-  - `run_agent_loop()` nutzt Graph statt while-Loop
-  - Fallback: `_legacy_loop()` via ENV `AGENT_USE_LANGGRAPH=false`
-  - SSE Streaming aus Graph Events
+- [x] **1.7:** loop.py Refactoring ✅ (31.03.2026)
+  - `run_agent_loop()` routet zu LangGraph Graph oder Legacy Loop
+  - `_loop_langgraph()`: Graph erstellen, ausfuehren, Events als SSE streamen
+  - `_loop_legacy()`: bestehender while-Loop (Anthropic/OpenAI/LiteLLM)
+  - Skill Injection: `load_skills(user_id)` → `format_skills_for_prompt()` → System-Prompt
+  - ENV: `AGENT_USE_LANGGRAPH=true` (default) vs `false` (legacy fallback)
+  - LiteLLM weiterhin unterstuetzt in beiden Pfaden
 
 ---
 
@@ -110,8 +113,11 @@
     - `AGENT_RL_MIN_SAMPLES=50`
     - `AGENT_IDLE_THRESHOLD_MIN=30`
 
-- [ ] **3.5:** Temporal Context
-  - Agent bekommt zeitbasierten Kontext aus Working Memory M5
+- [x] **3.5:** Temporal Context ✅ (31.03.2026)
+  - `agent/temporal_context.py` — `get_temporal_context(user_id, lookback_hours=24)`
+  - Liest letzte Trajectories aus `.trajectories/` Logs
+  - Formatiert als "## Recent Activity" Abschnitt fuer System-Prompt
+  - In `loop.py` neben Skills injiziert (beide optional, kein Fehler bei Failure)
 
 ---
 
@@ -155,11 +161,50 @@ MetaClaw ist fuer CLI-Agents konzipiert (OpenClaw/CoPaw). Unsere Web-App Anpassu
   - HTTP+JSON Transport (vereinfacht, kein gRPC)
   - SSE Response parsing
 
-- [ ] **4.3:** Inter-Agent Delegation
-  - Orchestrator delegiert an Remote-Agents via A2A
-  - Lokal: Sub-Graph. Remote: A2A Protocol.
+- [x] **4.3:** Inter-Agent Delegation ✅ (31.03.2026)
+  - `agent/graph/nodes/a2a_node.py` — A2A Delegation Node
+  - Remote-Agent URLs via ENV: `AGENT_REMOTE_{ROLE}=http://host:port`
+  - Orchestrator kann lokal (Sub-Graph) oder remote (A2A) delegieren
+  - A2A Client ruft Remote-Agent auf → SSE Response → State Update
 
-- [ ] **4.4:** ACP Memory Sharing (IBM) evaluieren
+- [x] **4.4:** ACP Memory Sharing evaluiert ✅ (31.03.2026)
+  - ACP (IBM) ist seit Sept 2025 in A2A (Google) aufgegangen → Linux Foundation
+  - "ACP Memory Sharing" war Missverstaendnis — ACP/A2A ist Message-Passing, nicht Memory-Sharing
+  - Memory-Sharing zwischen Agents abgedeckt durch:
+    - LangGraph shared AgentGraphState (lokal)
+    - Supermemory (exec-11, zentraler Memory Store)
+    - Working Memory M5 (Redis, session-basiert)
+  - Kein separates Protokoll noetig
+
+---
+
+## Phase 5: deer-flow Patterns (zusaetzlich)
+
+- [ ] **5.1:** Middleware Chain (deer-flow Pattern)
+  - Ordered pipeline fuer Cross-Cutting Concerns
+  - Kandidaten: Summarization, Guardrail, TodoList, DanglingToolCall
+  - deer-flow hat 10+ Middlewares, wir uebernehmen selektiv
+  - Ref: `_ref/deer-flow/backend/packages/harness/deerflow/agents/lead_agent/agent.py:208-270`
+
+- [ ] **5.2:** Skill Management REST API
+  - `POST /api/v1/skills/install` — Skill installieren
+  - `PUT /api/v1/skills/{name}` — Skill enable/disable
+  - `GET /api/v1/skills` — Alle Skills listen (mit Tier + Status)
+  - deer-flow Pattern: `_ref/deer-flow/backend/app/gateway/routers/skills.py`
+
+- [ ] **5.3:** SkillsMP Import evaluieren
+  - Community Marketplace mit 66K+ Skills (skillsmp.com)
+  - SKILL.md Format kompatibel mit unserem Loader
+  - Import-Script: GitHub Repo → agent/skills/global/
+
+- [ ] **5.4:** Skill .skill ZIP Archive Support
+  - deer-flow Pattern: ZIP mit SKILL.md + Scripts + Assets
+  - Install via API oder CLI
+
+- [ ] **5.5:** Context Summarization Middleware
+  - Wenn Context-Window voll → aeltere Messages zusammenfassen
+  - deer-flow: SummarizationMiddleware (auto-trigger bei Token-Limit)
+  - Wichtig fuer lange Multi-Agent Sessions
 
 ---
 
@@ -219,7 +264,9 @@ agent/skills/global/market-research/SKILL.md    — NEU: Market Research Skill
 agent/skills/team/                              — NEU: Team-shared Skills (leer)
 agent/skills/personal/                          — NEU: Per-User Skills (auto-generated)
 
+agent/temporal_context.py                — NEU: Zeitbasierter Kontext (3.5)
 agent/a2a/__init__.py                   — NEU
 agent/a2a/agent_card.py                 — NEU: Agent Cards (A2A Protocol)
 agent/a2a/client.py                     — NEU: A2A HTTP Client
+agent/graph/nodes/a2a_node.py           — NEU: A2A Delegation Node (4.3)
 ```

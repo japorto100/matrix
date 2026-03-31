@@ -73,15 +73,128 @@ async def run_agent_loop(
     messages: list[dict],
 ) -> AsyncGenerator[str, None]:
     """
-    LLM-agnostic agent loop — routes to Anthropic or OpenAI-compatible backend.
+    LLM-agnostic agent loop — routes to LangGraph or legacy backend.
     Yields SSE strings (Vercel AI Data Stream Protocol).
-    Provider is read from AGENT_PROVIDER env var (default: anthropic).
+
+    exec-10: LangGraph as primary (AGENT_USE_LANGGRAPH=true, default).
+    Legacy: manual while-loop (AGENT_USE_LANGGRAPH=false).
     """
-    provider = os.environ.get("AGENT_PROVIDER", "anthropic").lower()
-    use_litellm = os.environ.get("AGENT_USE_LITELLM", "false").lower() == "true"
+    use_langgraph = os.environ.get("AGENT_USE_LANGGRAPH", "true").lower() == "true"
 
     # ACR-G7: thread-id as first event
     yield sse(ThreadIdPacket(threadId=ctx.thread_id))
+
+    # exec-10: Skill Injection — Skills ins System-Prompt laden
+    system_prompt = ctx.system_prompt
+    try:
+        from agent.skills.loader import load_skills, format_skills_for_prompt
+        skills = load_skills(user_id=ctx.user_id)
+        skills_text = format_skills_for_prompt(skills)
+        if skills_text:
+            system_prompt = f"{system_prompt}\n\n{skills_text}"
+    except Exception:
+        pass  # Skills sind optional
+
+    # exec-10 Phase 3.5: Temporal Context — letzte Interaktionen als Kontext
+    try:
+        from agent.temporal_context import get_temporal_context
+        temporal = get_temporal_context(user_id=ctx.user_id)
+        if temporal:
+            system_prompt = f"{system_prompt}\n\n{temporal}"
+    except Exception:
+        pass  # Temporal Context ist optional
+
+    if use_langgraph:
+        async for chunk in _loop_langgraph(ctx, messages, system_prompt):
+            yield chunk
+    else:
+        async for chunk in _loop_legacy(ctx, messages):
+            yield chunk
+
+
+async def _loop_langgraph(
+    ctx: AgentExecutionContext,
+    messages: list[dict],
+    system_prompt: str,
+) -> AsyncGenerator[str, None]:
+    """LangGraph-based agent loop (exec-10).
+
+    Nutzt den Agent Graph (StateGraph) statt manuellem while-Loop.
+    Streamt Graph-Events als SSE Packets.
+    """
+    try:
+        from agent.graph.agent_graph import create_agent_graph
+        from agent.graph.state import AgentGraphState
+    except ImportError as e:
+        yield sse(ErrorPacket(error=f"LangGraph import error: {e}"))
+        return
+
+    provider = os.environ.get("AGENT_PROVIDER", "anthropic").lower()
+    use_litellm = os.environ.get("AGENT_USE_LITELLM", "false").lower() == "true"
+    if use_litellm:
+        provider = "litellm"
+
+    graph = create_agent_graph()
+
+    initial_state: AgentGraphState = {
+        "messages": messages,
+        "tool_calls": [],
+        "tool_results": [],
+        "iteration": 0,
+        "max_iterations": MAX_ITERATIONS,
+        "current_role": "default",
+        "system_prompt": system_prompt,
+        "model": ctx.model,
+        "provider": provider,
+        "reasoning_effort": ctx.reasoning_effort,
+        "final_response": "",
+        "done": False,
+        "thread_id": ctx.thread_id,
+        "user_id": ctx.user_id,
+    }
+
+    config = {"configurable": {"thread_id": ctx.thread_id}}
+
+    try:
+        # Graph ausfuehren und Events streamen
+        text_id = "t1"
+        yield sse(TextStartPacket(id=text_id))
+
+        result = await graph.ainvoke(initial_state, config=config)
+
+        final = result.get("final_response", "")
+        if final:
+            yield sse(TextDeltaPacket(id=text_id, text=final))
+
+        # Tool Results als SSE Events
+        for tr in result.get("tool_results", []):
+            yield sse(ToolStartPacket(tool_name=tr["tool_name"], tool_call_id=tr["tool_call_id"]))
+            if tr.get("error"):
+                yield sse(ToolErrorPacket(tool_call_id=tr["tool_call_id"], error=tr["error"]))
+            else:
+                yield sse(ToolResultPacket(tool_call_id=tr["tool_call_id"], result=tr["result"]))
+
+        yield sse(TextEndPacket(id=text_id))
+
+        # Usage metadata
+        yield sse(MessageMetaPacket(metadata={
+            "threadId": ctx.thread_id,
+            "promptTokens": 0,  # TODO: extract from graph result
+            "completionTokens": 0,
+        }))
+        yield sse(FinishPacket(finishReason="stop"))
+
+    except Exception as e:
+        yield sse(ErrorPacket(error=f"LangGraph error: {e}"))
+
+
+async def _loop_legacy(
+    ctx: AgentExecutionContext,
+    messages: list[dict],
+) -> AsyncGenerator[str, None]:
+    """Legacy agent loop — manual while-loop (pre-exec-10 fallback)."""
+    provider = os.environ.get("AGENT_PROVIDER", "anthropic").lower()
+    use_litellm = os.environ.get("AGENT_USE_LITELLM", "false").lower() == "true"
 
     if use_litellm:
         async for chunk in _loop_litellm(ctx, messages):

@@ -63,7 +63,8 @@
       "Bash(grep -v \"^#$\")",
       "WebFetch(domain:arxiv.org)",
       "Bash(pip show:*)",
-      "Bash(uv sync:*)"
+      "Bash(uv sync:*)",
+      "WebFetch(domain:supermemory.ai)"
     ]
   }
 }
