@@ -96,7 +96,7 @@ func (c *Client) postJSON(ctx context.Context, path string, payload any) (int, [
 	if err != nil {
 		return 0, nil, fmt.Errorf("memory POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	respBody, _ := io.ReadAll(resp.Body)
 	return resp.StatusCode, respBody, nil
 }
@@ -112,7 +112,7 @@ func (c *Client) get(ctx context.Context, path string) (int, []byte, error) {
 	if err != nil {
 		return 0, nil, fmt.Errorf("memory GET %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	respBody, _ := io.ReadAll(resp.Body)
 	return resp.StatusCode, respBody, nil
 }

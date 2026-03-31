@@ -20,6 +20,12 @@ type agentAttachment struct {
 	Name     string `json:"name"`
 }
 
+type browserToolDef struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	InputSchema map[string]any `json:"input_schema"`
+}
+
 type agentChatRequestBody struct {
 	Message         string            `json:"message"`
 	ThreadID        string            `json:"threadId,omitempty"`
@@ -28,6 +34,7 @@ type agentChatRequestBody struct {
 	Model           string            `json:"model,omitempty"`
 	Attachments     []agentAttachment `json:"attachments,omitempty"`
 	ReasoningEffort string            `json:"reasoningEffort,omitempty"`
+	BrowserTools    []browserToolDef  `json:"browserTools,omitempty"`
 }
 
 type agentApproveRequest struct {
@@ -81,7 +88,7 @@ func AgentChatHandler(agentServiceBaseURL string) http.HandlerFunc {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("agent service unreachable: %v", err)})
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Vercel AI Data Stream Protocol — ai SDK v6 parst diesen Header
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -108,7 +115,7 @@ func AgentChatHandler(agentServiceBaseURL string) http.HandlerFunc {
 			}
 			if readErr != nil {
 				if readErr != io.EOF {
-					fmt.Fprintf(w, "event: error\ndata: {\"errorText\": \"stream interrupted\"}\n\n")
+					_, _ = fmt.Fprintf(w, "event: error\ndata: {\"errorText\": \"stream interrupted\"}\n\n")
 					flusher.Flush()
 				}
 				return

@@ -61,7 +61,9 @@
       "Bash(find /d/matrix -name *.toml -type f)",
       "Bash(find:*)",
       "Bash(grep -v \"^#$\")",
-      "WebFetch(domain:arxiv.org)"
+      "WebFetch(domain:arxiv.org)",
+      "Bash(pip show:*)",
+      "Bash(uv sync:*)"
     ]
   }
 }

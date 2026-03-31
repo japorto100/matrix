@@ -31,6 +31,9 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 python-backend/data/
+python-backend/agent/skills/personal/
+python-backend/agent/skills/team/
+python-backend/agent/skills/.trajectories/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
 node_modules/
@@ -38,6 +41,8 @@ nextjs-chat/.next/
 nextjs-chat/out/
 nextjs-chat/.turbo/
 nextjs-chat/.cache/
+agent-chat/.next/
+agent-chat/out/
 
 # ─── Homeserver ───────────────────────────────────────────────────────────────
 homeserver/tuwunel
@@ -49,6 +54,9 @@ homeserver/registration.yaml
 homeserver/data/
 homeserver/*.pem
 !homeserver/tuwunel.example.toml
+
+# ─── Reference Repos (exec-10+) ──────────────────────────────────────────────
+_ref/
 
 # ─── Tools ───────────────────────────────────────────────────────────────────
 tools/dendrite-src/

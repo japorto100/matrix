@@ -11,7 +11,7 @@ import logging
 
 import httpx
 
-from agent_bridge.config import Config
+from bridge.config import Config
 
 logger = logging.getLogger(__name__)
 

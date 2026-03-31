@@ -33,6 +33,10 @@ type Server struct {
 	nats       *natsbridge.Bridge
 	agent      *intent.AgentSender
 	crypto     *crypto.Machine // nil wenn E2EE deaktiviert
+
+	// roomMembers trackt Raum-Mitglieder für Mention-Filter (DM vs. Gruppe).
+	// Wird von handleMembership() aktualisiert, unabhängig von E2EE.
+	roomMembers map[id.RoomID]map[id.UserID]bool
 }
 
 // NewServer erstellt und konfiguriert den Appservice-Server.
@@ -46,10 +50,11 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	agentSender := intent.New(client, cfg.ServerName)
 
 	s := &Server{
-		cfg:    cfg,
-		client: client,
-		nats:   natsBridge,
-		agent:  agentSender,
+		cfg:         cfg,
+		client:      client,
+		nats:        natsBridge,
+		agent:       agentSender,
+		roomMembers: make(map[id.RoomID]map[id.UserID]bool),
 	}
 
 	// E2EE initialisieren (nur wenn aktiviert)
@@ -83,6 +88,9 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	mux.HandleFunc("/api/v1/agent/tools/chart-state", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/tools/chart-state"))
 	mux.HandleFunc("/api/v1/agent/tools/portfolio-summary", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/tools/portfolio-summary"))
 	mux.HandleFunc("/api/v1/agent/tools/set_chart_state", agenthttp.AgentMutationProxyHandler(agentClient, "/api/v1/agent/tools/set_chart_state"))
+
+	// ── MCP Server Proxy (exec-09) ──────────────────────────────────────────
+	mux.HandleFunc("/api/v1/mcp/", agenthttp.McpProxyHandler(cfg.MCPServiceURL))
 
 	// ── Audio STT/TTS Proxy ─────────────────────────────────────────────────
 	mux.HandleFunc("/api/v1/audio/transcribe", agenthttp.AgentAudioTranscribeHandler(cfg.AgentServiceURL))
@@ -326,6 +334,14 @@ func (s *Server) handleMessage(ctx context.Context, ev *event.Event) {
 		return
 	}
 
+	// Mention-Filter: In Gruppenräumen nur Messages weiterleiten die den Agent betreffen.
+	// DMs (≤2 Member) werden immer weitergeleitet.
+	if s.cfg.MentionOnlyInGroups && !s.shouldForwardToAgent(ev.RoomID, content) {
+		slog.Debug("message filtered (no agent mention in group room)",
+			"room", ev.RoomID, "sender", ev.Sender)
+		return
+	}
+
 	slog.Info("matrix message received",
 		"room", ev.RoomID,
 		"sender", ev.Sender,
@@ -363,6 +379,19 @@ func (s *Server) handleMembership(ctx context.Context, ev *event.Event) {
 	}
 
 	memberUserID := id.UserID(ev.GetStateKey())
+
+	// Raum-Mitglieder tracken (für Mention-Filter: DM vs. Gruppe)
+	switch content.Membership {
+	case event.MembershipJoin:
+		if s.roomMembers[ev.RoomID] == nil {
+			s.roomMembers[ev.RoomID] = make(map[id.UserID]bool)
+		}
+		s.roomMembers[ev.RoomID][memberUserID] = true
+	case event.MembershipLeave, event.MembershipBan:
+		delete(s.roomMembers[ev.RoomID], memberUserID)
+	case event.MembershipInvite, event.MembershipKnock:
+		// Noch kein Raum-Mitglied — kein Tracking nötig
+	}
 
 	// E2EE StateStore aktuell halten
 	if s.crypto != nil {
@@ -461,6 +490,43 @@ func (s *Server) sendEncryptedReply(ctx context.Context, agentUserID id.UserID, 
 
 	slog.Debug("E2EE: encrypted message sent", "agent", agentUserID, "room", roomID)
 	return nil
+}
+
+// shouldForwardToAgent entscheidet ob eine Nachricht an den Agent weitergeleitet werden soll.
+// DMs (≤2 Member): immer weiterleiten.
+// Gruppenräume: nur bei @agent-Mention, Reply auf Agent, oder Trigger-Wörtern.
+func (s *Server) shouldForwardToAgent(roomID id.RoomID, content *event.MessageEventContent) bool {
+	// DM-Erkennung: Räume mit ≤2 Mitgliedern sind DMs → immer weiterleiten
+	members := s.roomMembers[roomID]
+	if len(members) <= 2 {
+		return true
+	}
+
+	body := strings.ToLower(content.Body)
+	prefix := "@" + s.cfg.AgentPrefix
+
+	// @agent-* Mention im Body (z.B. "@agent-trading")
+	if strings.Contains(strings.ToLower(content.Body), prefix) {
+		return true
+	}
+
+	// Reply auf eine Agent-Message
+	if content.RelatesTo != nil && content.RelatesTo.InReplyTo != nil {
+		// Wir können den Sender der Reply-Target-Message nicht direkt prüfen,
+		// aber das Vorhandensein einer Reply ist ein starker Indikator.
+		// TODO: Event-ID lookup für exakte Prüfung
+		return true
+	}
+
+	// Trigger-Wörter (wie in der ehemaligen Python Bridge)
+	triggers := []string{"agent,", "hey agent", "bot,", "hey bot"}
+	for _, t := range triggers {
+		if strings.HasPrefix(body, t) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // isAgentUser prüft ob eine User-ID aus dem Agent-Namespace kommt.

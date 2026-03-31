@@ -49,7 +49,7 @@ func (c *Client) Post(ctx context.Context, path string, body []byte) (int, []byt
 	if err != nil {
 		return 0, nil, fmt.Errorf("agentservice POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	respBody, _ := io.ReadAll(resp.Body)
 	return resp.StatusCode, respBody, nil
 }
@@ -69,7 +69,7 @@ func (c *Client) Get(ctx context.Context, path string) (int, []byte, error) {
 	if err != nil {
 		return 0, nil, fmt.Errorf("agentservice GET %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	respBody, _ := io.ReadAll(resp.Body)
 	return resp.StatusCode, respBody, nil
 }

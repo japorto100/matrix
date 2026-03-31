@@ -60,7 +60,7 @@ func agentAudioProxyHandler(agentServiceBaseURL string, upstreamPath string) htt
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("agent audio service unreachable: %v", err)})
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// Forward Content-Type (audio/mpeg for TTS, application/json for STT)
 		ct := resp.Header.Get("Content-Type")
@@ -68,6 +68,6 @@ func agentAudioProxyHandler(agentServiceBaseURL string, upstreamPath string) htt
 			w.Header().Set("Content-Type", ct)
 		}
 		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
+		_, _ = io.Copy(w, resp.Body)
 	}
 }

@@ -48,12 +48,12 @@ export async function getMatrixClient(opts: MatrixClientOptions): Promise<Matrix
 	// Fallback: E2EE deaktiviert wenn WASM nicht verfügbar
 	try {
 		await _client.initRustCrypto();
-		// C-3 / MSC4153: Nicht-verifizierte Geräte NICHT blocken.
-		// Unser Go Appservice ist kein cross-signing-verifiziertes Gerät (Phase 1/2).
-		// globalBlacklistUnverifiedDevices = false → Keys an alle Geräte senden (inkl. Bot).
+		// MSC4153: In Prod nur an cross-signed-verifizierte Geräte senden.
+		// Dev: false (Bot muss nicht verifiziert sein). Prod: true (Bot ist cross-signed).
+		const blacklist = process.env.NEXT_PUBLIC_E2EE_BLACKLIST_UNVERIFIED === "true";
 		const crypto = _client.getCrypto();
-		if (crypto) crypto.globalBlacklistUnverifiedDevices = false;
-		console.info("[matrix] Rust crypto initialized (E2EE enabled, blacklist=off)");
+		if (crypto) crypto.globalBlacklistUnverifiedDevices = blacklist;
+		console.info(`[matrix] Rust crypto initialized (E2EE enabled, blacklist=${blacklist ? "on" : "off"})`);
 	} catch (err) {
 		console.warn("[matrix] Rust crypto init failed — E2EE disabled:", err);
 	}

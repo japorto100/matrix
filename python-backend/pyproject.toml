@@ -32,13 +32,19 @@ dependencies = [
     # Structured LLM Output: Pydantic Wrapper fuer Tool-Call Parsing
     "instructor>=1.3.0",
 
-    # ── Matrix Client (Bridge) ──────────────────────────────────────────────
-    # matrix-nio: async, sans-I/O
-    # kein [e2e] — Go Appservice uebernimmt E2EE (Option C)
-    "matrix-nio>=0.24.0",
-
     # ── Message Queue (NATS — Go Appservice Koordination) ──────────────────
+    # Bridge empfängt Matrix-Messages von Go Appservice via NATS (E2BE-Pattern).
+    # matrix-nio entfernt — Go ist einziger Matrix-Endpunkt (exec-05).
     "nats-py>=2.7.0",
+
+    # ── MCP Server (Model Context Protocol — exec-09) ──────────────────────
+    # FastMCP Server exponiert TradingTools als standardisierte MCP Tools
+    "mcp>=1.26.0",
+
+    # ── LangGraph (Multi-Agent Orchestrierung — exec-10) ──────────────────
+    # StateGraph, Sub-Graphs, Checkpointing, Human-in-the-Loop
+    "langgraph>=0.4.0",
+    "langchain-core>=0.3.0",
 
     # ── Cache / State ───────────────────────────────────────────────────────
     "redis>=5.0.0",

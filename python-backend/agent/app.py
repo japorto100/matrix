@@ -35,6 +35,11 @@ from agent.tools.portfolio import get_portfolio_summary  # noqa: E402
 
 app = create_service_app("agent-service")
 
+# exec-09: MCP Server als Sub-App mounten (gleicher Port wie Agent Service)
+from agent.mcp_server import create_mcp_server  # noqa: E402
+_mcp = create_mcp_server()
+app.mount("/mcp", _mcp.streamable_http_app())
+
 # ABP.2c: close shared httpx client on shutdown to release connections cleanly.
 from agent.http_client import close_client as _close_http_client  # noqa: E402
 app.add_event_handler("shutdown", _close_http_client)
@@ -72,6 +77,12 @@ class ImageAttachment(BaseModel):
     name: str = ""
 
 
+class BrowserToolDef(BaseModel):
+    name: str
+    description: str
+    input_schema: dict = {}
+
+
 class AgentChatRequest(BaseModel):
     message: str
     threadId: str | None = None
@@ -80,6 +91,7 @@ class AgentChatRequest(BaseModel):
     model: str | None = None  # AC107: override AGENT_MODEL env var
     attachments: list[ImageAttachment] | None = None  # AC56: multimodal images
     reasoningEffort: str | None = None  # AC108: low/medium/high
+    browserTools: list[BrowserToolDef] | None = None  # exec-09: WebMCP Browser-Tools
 
 
 class AudioTranscribeRequest(BaseModel):
@@ -404,6 +416,13 @@ async def _stream_agent_loop(req: AgentChatRequest, system_prompt: str, thread_i
     model = req.model or os.environ.get("AGENT_MODEL", default_model)
 
     registry = ToolRegistry.load()
+
+    # exec-09: Browser-Tools via WebMCP hinzufuegen (dynamisch je nach Page)
+    if req.browserTools:
+        from agent.tools.browser_tool import BrowserToolProxy
+        for bt in req.browserTools:
+            registry.register(BrowserToolProxy(bt.name, bt.description, bt.input_schema))
+
     ctx = AgentExecutionContext(
         user_id="default",  # Go Gateway forwards X-Auth-User-Id; future: read from header
         thread_id=thread_id,

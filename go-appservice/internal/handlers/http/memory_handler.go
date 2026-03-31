@@ -18,7 +18,10 @@ func MemoryKGSeedHandler(client *memory.Client) http.HandlerFunc {
 			return
 		}
 		var req memory.KGSeedRequest
-		decodeJSONBody(r, &req)
+		if err := decodeJSONBody(r, &req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("invalid request: %v", err)})
+			return
+		}
 		status, body, err := client.PostKGSeed(r.Context(), req)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("kg seed failed: %v", err)})
@@ -26,7 +29,7 @@ func MemoryKGSeedHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -48,7 +51,7 @@ func MemoryKGQueryHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -66,7 +69,7 @@ func MemoryKGNodesHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -83,7 +86,7 @@ func MemoryKGSyncHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -107,7 +110,7 @@ func MemoryEpisodePostHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -130,7 +133,7 @@ func MemoryEpisodesGetHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -154,7 +157,7 @@ func MemorySearchHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 
@@ -169,7 +172,7 @@ func MemoryHealthHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		w.Write(body)
+		_, _ = w.Write(body)
 	}
 }
 

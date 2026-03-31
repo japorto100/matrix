@@ -27,11 +27,25 @@ class ToolRegistry:
     def all(self) -> list[TradingTool]:
         return list(self._tools.values())
 
+    def filter_by_names(self, allowed: set[str]) -> "ToolRegistry":
+        """Gibt eine neue Registry zurueck die nur die erlaubten Tools enthaelt (exec-10)."""
+        filtered = ToolRegistry()
+        for name, tool in self._tools.items():
+            if name in allowed:
+                filtered.register(tool)
+        return filtered
+
     @classmethod
     def load(cls, ctx: "AgentExecutionContext | None" = None) -> "ToolRegistry":
         """Build the default registry with all standard trading tools.
         ctx is optional — passed through for future context-aware tool selection.
         """
+        from agent.tools.canvas import (
+            CreateCanvasShapeTool,
+            CreateNovelBlockTool,
+            DeleteCanvasShapeTool,
+            UpdateCanvasShapeTool,
+        )
         from agent.tools.chart_state import GetChartStateTool, SetChartStateTool
         from agent.tools.geomap import GetGeomapFocusTool
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
@@ -44,4 +58,9 @@ class ToolRegistry:
         registry.register(GetGeomapFocusTool())
         registry.register(SaveMemoryTool())
         registry.register(LoadMemoryTool())
+        # Canvas Tools (exec-09 Phase 3)
+        registry.register(CreateCanvasShapeTool())
+        registry.register(CreateNovelBlockTool())
+        registry.register(UpdateCanvasShapeTool())
+        registry.register(DeleteCanvasShapeTool())
         return registry

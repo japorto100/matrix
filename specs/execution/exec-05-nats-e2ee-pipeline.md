@@ -1,7 +1,7 @@
 # exec-05: NATS E2EE Pipeline — Go Appservice als Crypto-Gateway
 
-**Datum:** 26.03.2026
-**Status:** Geplant
+**Datum:** 26.03.2026 (Review 30.03.2026, Implementation 30.03.2026)
+**Status:** Phase A+B implementiert — E2E-Test (A4) ausstehend
 
 ---
 
@@ -65,21 +65,35 @@ User ← Tuwunel ← Go Appservice
 
 ### Phase A: NATS-Pfad aktivieren
 
-- [ ] **A1:** Python Bridge — NATS Subscriber implementieren
-  - `nats_url` Config ist vorhanden, Client-Code fehlt
-  - Subscribe auf `matrix.message.>` (oder spezifischeres Subject)
-  - Eingehende NATS-Message parsen → Agent Service aufrufen
-  - Antwort zurück auf NATS Reply-Subject publishen
+- [x] **A1:** Python Bridge — NATS Subscriber implementieren ✅ (30.03.2026)
+  - `bridge/nats_handler.py` erstellt — NATSHandler Klasse
+  - Subscribe auf `matrix.message.inbound`, Agent-Call via HTTP SSE, Reply auf `matrix.message.reply`
+  - Reconnect-Handling, Graceful Drain, Error-Logging
+  - `bridge/app.py` — Lifespan: NATS-Handler statt MatrixBotClient
+  - `bridge/config.py` — Vereinfacht: nur NATS + Agent + Service Config, `agent_user_id` neu
 
-- [ ] **A2:** Go Appservice — NATS Reply-Handler
-  - `SubscribeReplies` Code existiert (`natsbridge/bridge.go`)
+- [x] **A2:** Go Appservice — NATS Publisher + Reply-Handler ✅
+  - `PublishInbound()` auf `matrix.message.inbound` implementiert (`natsbridge/bridge.go:63-78`)
+  - `SubscribeReplies()` auf `matrix.message.reply` implementiert (`natsbridge/bridge.go:80-95`)
+  - `handleAgentReply()` Callback in `server.go:391-424`
   - Reply von Python empfangen → als Matrix-Nachricht senden (via Agent-Intent)
-  - Prüfen ob der Agent-User im Raum ist, ggf. joinen
+  - Auto-Join für Agent-User bei Invite (`handleMembership()`)
 
-- [ ] **A3:** Python Bridge — matrix-nio Sync entfernen
-  - Matrix-Client-Login und Sync-Loop rauswerfen
-  - Nur noch NATS + HTTP Agent bleiben
-  - `/health` Endpoint beibehalten
+- [x] **A3:** Python Bridge — matrix-nio Sync entfernen ✅ (30.03.2026)
+  - `bridge/matrix_client.py` geloescht
+  - `matrix-nio` aus `pyproject.toml` entfernt, `uv sync` clean
+  - Imports korrigiert: `agent_bridge.` → `bridge.`
+  - `/health` Endpoint zeigt jetzt NATS-Status statt Matrix-Bot-Status
+  - Python Bridge ist jetzt reiner NATS-Consumer + HTTP-Agent-Client
+
+- [x] **A3b:** Go Appservice — Message-Filter vor NATS-Publish ✅ (30.03.2026)
+  - `shouldForwardToAgent()` in `server.go` — DMs (≤2 Member) immer, Gruppen nur bei:
+    - `@agent-*` Mention im Body
+    - Reply auf eine Nachricht (RelatesTo InReplyTo)
+    - Trigger-Woerter: "agent,", "hey agent", "bot,", "hey bot"
+  - `roomMembers` Map im Server-Struct (unabhaengig von E2EE)
+  - `MentionOnlyInGroups` Config (ENV `MENTION_ONLY_IN_GROUPS`, default `true`)
+  - golangci-lint: 0 Issues (+ 9 pre-existing errcheck in anderen Dateien mitgefixt)
 
 - [ ] **A4:** End-to-End Test
   - User sendet Nachricht in unverschlüsseltem Raum
@@ -88,23 +102,25 @@ User ← Tuwunel ← Go Appservice
 
 ### Phase B: E2EE aktivieren
 
-- [ ] **B1:** Go Appservice — `MATRIX_E2EE_ENABLED=true` setzen
-  - OlmMachine initialisiert sich, Device-Keys werden hochgeladen
-  - `handleEncrypted()` in `server.go` entschlüsselt Events
-  - Cross-Signing Seeds generieren + hochladen
+- [x] **B1:** Go Appservice — E2EE Code implementiert ✅
+  - OlmMachine mit goolm (Pure-Go, kein CGO) (`crypto/machine.go`)
+  - `handleEncrypted()` in `server.go:276-297` entschlüsselt Events
+  - SQLite Crypto-Store (`modernc.org/sqlite`, kein CGO)
 
-- [ ] **B2:** Verschlüsselten Raum testen
-  - User sendet in E2EE-Raum → Go entschlüsselt → NATS → Python → LLM Mock → Antwort
-  - Antwort kommt verschlüsselt zurück beim User an
+- [x] **B2:** E2EE im Dev-Stack aktiviert ✅ (30.03.2026)
+  - `MATRIX_E2EE_ENABLED=true` in `.env.development` gesetzt
+  - ⚠️ Manueller E2E-Test steht noch aus (A4)
 
-- [ ] **B3:** Cross-Signing für Bot
-  - Bot-Device cross-signen (Admin-API oder manuell)
-  - Browser verifiziert Bot → grünes Shield
+- [x] **B3:** Cross-Signing für Bot ✅
+  - `ensureCrossSigning()` implementiert (`machine.go:111-178`)
+  - MSK/SSK/USK generiert, Seeds persistiert in `cross_signing_seeds.json`
+  - MSC4153-kompatibel (IdentityBasedStrategy für Element X)
 
-- [ ] **B4:** Key Backup
-  - `MATRIX_KEY_BACKUP_PASSWORD` setzen
-  - Megolm-Keys werden bei Stop exportiert, bei Start importiert
-  - Frisches Deployment mit vorhandenem Backup → alte Nachrichten lesbar
+- [x] **B4:** Key Backup ✅
+  - `ExportKeyBackup()` implementiert (`machine.go:180-206`)
+  - `importKeyBackup()` bei Start (`machine.go:208-229`)
+  - Pfad: `<dbDir>/megolm_keys_backup.bin`, Passphrase-verschlüsselt
+  - `MATRIX_KEY_BACKUP_PASSWORD` konfigurierbar
 
 ### Phase C: Agent-Isolation (Optional)
 
@@ -149,7 +165,12 @@ User ← Tuwunel ← Go Appservice
 - CreateRoomDialog: "Privater Raum" = invite + E2EE, "Offener Raum" = public + kein E2EE
 - Header: Lock-Icon grün (verschlüsselt) / rot (nicht verschlüsselt), kein gelbes Shield
 
-### Nach exec-05 zu ändern
+### Nach exec-05 geaendert (30.03.2026)
+- [x] **E2EE Blacklist**: `NEXT_PUBLIC_E2EE_BLACKLIST_UNVERIFIED` ENV eingefuehrt
+  - Dev (`.env.local`): `false` — Keys an alle Devices (Bot muss nicht verified sein)
+  - Prod (`.env.production`): `true` — Keys nur an cross-signed Devices (MSC4153)
+  - Go Bot muss einmal laufen + Cross-Signing Keys hochladen bevor Prod-Blacklist aktiv
+- [x] **Go `.env.production`**: `MENTION_ONLY_IN_GROUPS` + `AGENT_SERVICE_URL` + `MEMORY_SERVICE_URL` ergaenzt
 - [ ] **User↔User DMs**: Optional E2EE an (Checkbox im CreateDMDialog, default aus)
 - [ ] **Agent-DMs**: Dev = unverschlüsselt (einfacher), Prod = E2EE empfohlen
   - Dev: Go liest Klartext direkt, kein OlmMachine nötig
@@ -212,12 +233,116 @@ Da wir den Bot selbst betreiben → Trust gegeben.
 
 Separate Prozesse, separate Registrierungen, separate Crypto-Stores — kein Konflikt.
 
-### E2BE fuer andere Channels (Zukunft)
+### E2BE fuer andere Channels
 
-- [ ] WhatsApp Bridge (mautrix-whatsapp) mit E2BE evaluieren
-- [ ] Telegram Bridge (mautrix-telegram) mit E2BE evaluieren
-- [ ] Signal Bridge (mautrix-signal) mit E2BE evaluieren
-- Alle nutzen dasselbe Crypto-Pattern, nur andere Remote-Plattform
+Ausgelagert nach **exec-05b-messaging-bridges.md**:
+- mautrix-whatsapp, mautrix-signal (P1)
+- mautrix-telegram, mautrix-meta (P2)
+- mautrix-discord (P3)
+- Alle nutzen dasselbe E2BE Crypto-Pattern, eigener Prozess + Crypto-Store pro Bridge
+
+---
+
+## Seit exec-05 hinzugekommene Realitäten (30.03.2026)
+
+### Go Gateway ist jetzt mehr als NATS-Bridge
+- Go Appservice ist SSE-Proxy für Agent-Chat (`/api/v1/agent/chat` → Python 8094)
+- Audio STT/TTS Proxy, Memory Service Proxy, Agent Tools Proxy — alles über HTTP
+- Agent-Chat-UI (19 Komponenten) spricht direkt via BFF → Go → Python (kein NATS-Pfad)
+- NATS ist nur für den Matrix-Event-Pfad relevant, nicht für Agent-Chat-UI
+
+### DevStack
+- `scripts/devstack2.ps1` ist der aktuelle Dev-Stack (nicht docker-compose)
+- docker-compose.yml ist veraltet (zeigt auf `./python-agent-bridge`, existiert nicht mehr)
+
+### vodozemac-python existiert (v0.9.0, Juli 2025)
+- Python Bindings für vodozemac: `matrix-nio/vodozemac-python` auf GitHub
+- Prebuilt wheels für Python 3.14
+- matrix-nio selbst nutzt noch python-olm (libolm) für E2EE — Migration zu vodozemac unklar
+- Soatok Feb 2026: Crypto-Issues in vodozemac gemeldet (Matrix: "nicht praktisch exploitbar")
+
+---
+
+## Architektur-Entscheidung: E2EE bei Multi-Agent Skalierung (OFFEN)
+
+### Kontext
+Bei 1000 Usern mit jeweils eigenen Agents: Soll Go zentral entschlüsseln (E2BE)
+oder jeder Agent seine eigene E2EE-Identität haben?
+
+### Option A: Zentrales Go Gateway (aktueller Plan)
+```
+1000 User → Tuwunel → 1 Go Appservice (entschlüsselt ALLE) → NATS → N Agent-Harnesses
+```
+- **Pro:** Ein Crypto-Store, ein Device, Standard E2BE (wie alle mautrix Bridges)
+- **Contra:** Single Point of Trust, alle Agents sehen theoretisch alles über NATS
+
+### Option B: Per-Agent E2EE (matrix-nio + vodozemac pro Agent)
+```
+1000 User → Tuwunel → Go (Routing) → Agent-Harness (eigenes E2EE, eigener Crypto-Store)
+```
+- **Pro:** Isolation (kompromittierter Agent = nur dessen Räume), horizontal skalierbar
+- **Contra:** N Devices, N Cross-Signing Setups, matrix-nio E2EE fragil
+
+### Option C: Hybrid (empfohlen zur Evaluation)
+```
+User → Tuwunel → Go (Routing + Fallback-Decrypt)
+                     ↓
+          NATS (Ciphertext ODER Klartext je nach Agent-Capability)
+                     ↓
+          Agent-Harness (eigenes E2EE ODER reiner NATS-Consumer)
+```
+- Einfache Agents: Go entschlüsselt, Agent bekommt Klartext
+- Privilegierte Agents: Eigener Matrix-Client mit vodozemac
+
+### Option D: Web-Client Keys an Agent weitergeben
+- MSC4268 (Successor zu MSC3061): Keys als verschlüsselter Blob bei Room-Invite
+- `m.forwarded_room_key`: User-Client kann Megolm-Keys an verified Bot forwarden
+- **Voraussetzung:** Bot-Device muss cross-signed verified sein
+- **Risiko:** Forwarded Keys haben geringeren Trust-Level (UI zeigt Warnung)
+- **Vorteil:** Kein eigener Sync nötig, Bot bekommt History-Keys
+- **Status:** MSC4268 in Element Web + Element X implementiert
+
+### NATS vs HTTP für Voice/Agent-Chat
+- NATS: Gut für async Matrix-Events (fan-out, buffering, agent-routing)
+- HTTP/SSE: Besser für synchrone Agent-Chat-Responses (Token-Streaming)
+- Voice/Audio: LiveKit (WebRTC), nicht NATS — Sub-20ms Latenz nötig
+- **Empfehlung:** NATS für Matrix-Events, HTTP für Agent-Chat, LiveKit für Voice
+
+### TODO
+- [ ] Architektur-Entscheidung A/B/C/D treffen
+- [ ] vodozemac-python evaluieren (Reife, Kompatibilität mit matrix-nio)
+- [ ] Key-Deletion-Strategie für Agents evaluieren (`MATRIX_DELETE_KEYS_AFTER_DECRYPT`)
+- [ ] JetStream Persistence für `matrix.message.*` konfigurieren (Prod)
+- [ ] NATS TLS für Prod
+
+---
+
+## Verify Gates
+
+### Gate 1: NATS-Pfad funktioniert (Phase A)
+- [ ] Python Bridge subscribed auf `matrix.message.inbound`
+- [ ] Go Appservice empfängt Reply auf `matrix.message.reply`
+- [ ] matrix-nio Sync-Loop entfernt (nur noch NATS)
+- [ ] End-to-End: User → Matrix → Go → NATS → Python → LLM → NATS → Go → Matrix
+- [ ] Keine doppelte Tuwunel-Verbindung mehr
+
+### Gate 2: E2EE funktioniert (Phase B)
+- [ ] `MATRIX_E2EE_ENABLED=true` im Dev-Stack aktiv
+- [ ] Go entschlüsselt m.room.encrypted Events erfolgreich (Log-Check)
+- [ ] Go verschlüsselt Antworten in E2EE-Räumen (MSC4381 Privacy)
+- [ ] Cross-Signing: Bot-Device hat SSK-Signatur
+- [ ] Element X / Next.js Client sendet Keys an Bot (MSC4153)
+- [ ] Key Backup: Restart → alte Messages noch lesbar
+
+### Gate 3: Agent-Isolation (Phase C)
+- [ ] NATS-Subjects pro Agent partitioniert
+- [ ] Agent-Routing im Go Appservice (Mention → Subject)
+- [ ] NATS Authorization Rules (Agent darf nur eigenes Subject lesen)
+
+### Gate 4: Crypto-Library Entscheidung
+- [ ] goolm vs vodozemac evaluiert (PQXDH-Bedarf? CGO-Akzeptanz?)
+- [ ] vodozemac-python getestet (falls Option B/C gewählt)
+- [ ] Soatok Feb 2026 Issues bewertet (all-zero X25519, truncated MACs)
 
 ---
 
@@ -226,4 +351,5 @@ Separate Prozesse, separate Registrierungen, separate Crypto-Stores — kein Kon
 - Go Appservice muss korrekt als Appservice bei Tuwunel registriert sein (registration.yaml)
 - NATS JetStream muss laufen
 - LLM Mock oder echter Agent Service muss auf :8094 erreichbar sein
-- Für Phase B: libolm/goolm muss im Go Build funktionieren (`-tags goolm`)
+- Für Phase B: goolm im Go Build (`-tags goolm`) — bereits funktional
+- Für Option B/C: vodozemac-python oder matrix-rust-sdk-crypto Python Bindings

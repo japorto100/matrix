@@ -43,6 +43,12 @@ type Config struct {
 	CryptoPickleKey   string // MATRIX_CRYPTO_PICKLE_KEY=<zufälliger Key>
 	KeyBackupPassword string // MATRIX_KEY_BACKUP_PASSWORD — Passphrase für lokales Megolm Key Backup
 
+	// Mention-Filter: In Gruppenräumen nur Messages weiterleiten die den Agent betreffen
+	MentionOnlyInGroups bool // MENTION_ONLY_IN_GROUPS=true
+
+	// MCP Server (gemountet im Agent Service unter /mcp)
+	MCPServiceURL string // MCP_SERVICE_URL=http://127.0.0.1:8094
+
 	// Agent Service (Python, Port 8094)
 	AgentServiceURL string // AGENT_SERVICE_URL=http://127.0.0.1:8094
 
@@ -75,7 +81,9 @@ func Load() *Config {
 		CryptoDBPath:     getenv("MATRIX_CRYPTO_DB_PATH", "./data/crypto.sqlite3"),
 		CryptoPickleKey:   getenv("MATRIX_CRYPTO_PICKLE_KEY", "changeme-use-random-32-chars"),
 		KeyBackupPassword: getenv("MATRIX_KEY_BACKUP_PASSWORD", ""),
-		AgentServiceURL:   getenv("AGENT_SERVICE_URL", "http://127.0.0.1:8094"),
+		MentionOnlyInGroups: getenv("MENTION_ONLY_IN_GROUPS", "true") == "true",
+		MCPServiceURL:       getenv("MCP_SERVICE_URL", "http://127.0.0.1:8094"),
+		AgentServiceURL:     getenv("AGENT_SERVICE_URL", "http://127.0.0.1:8094"),
 		MemoryServiceURL:  getenv("MEMORY_SERVICE_URL", "http://127.0.0.1:8093"),
 	}
 }
