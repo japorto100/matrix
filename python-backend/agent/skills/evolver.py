@@ -1,4 +1,4 @@
-"""Skill Evolver — Auto-Skill-Generation aus Failures (exec-10 + MetaClaw Insights).
+"""Skill Evolver — Auto-Skill-Generation (exec-10 + MetaClaw + Trace2Skill Hybrid).
 
 3-Tier Skill Storage:
   - Global: von uns erstellt (manuell)
@@ -95,26 +95,15 @@ class SkillEvolver:
             return None
 
         try:
-            from anthropic import AsyncAnthropic
+            from agent.llm_helper import extract_json, llm_call
 
-            client = AsyncAnthropic()
             prompt = EVOLUTION_PROMPT.format(
                 user_request=user_request,
                 agent_response=agent_response,
                 failure_reason=failure_reason,
             )
-
-            response = await client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=2048,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            text = response.content[0].text if response.content else ""
-            # JSON extrahieren (auch wenn in Markdown Code-Block)
-            if "```" in text:
-                text = text.split("```")[1].removeprefix("json").strip()
-            skill_data = json.loads(text)
+            text = await llm_call(prompt, max_tokens=2048)
+            skill_data = extract_json(text)
 
             name = skill_data["name"]
             generation = self._get_generation(user_id) + 1

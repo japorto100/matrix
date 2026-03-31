@@ -14,13 +14,12 @@
 from __future__ import annotations
 
 import base64
-import json
 import os
 import tempfile
 import uuid
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
-from pydantic import BaseModel  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
 from shared import create_service_app  # noqa: E402
 from agent.roles import AgentRole  # noqa: E402
 from agent.context_assembler import assemble_context  # noqa: E402
@@ -80,11 +79,11 @@ class ImageAttachment(BaseModel):
 class BrowserToolDef(BaseModel):
     name: str
     description: str
-    input_schema: dict = {}
+    input_schema: dict = Field(default_factory=dict)
 
 
 class AgentChatRequest(BaseModel):
-    message: str
+    message: str = Field(max_length=50000)  # Prevent excessive token costs
     threadId: str | None = None
     agentId: str | None = None
     context: str | None = None
@@ -111,6 +110,83 @@ class AudioSynthesizeRequest(BaseModel):
 @app.get("/health")
 async def health():
     return {"ok": True, "service": "agent-service", "roles": [r.value for r in AgentRole]}
+
+
+# ── Skill Management API (exec-10 Phase 5.2) ────────────────────────────────
+
+@app.get("/api/v1/skills")
+async def list_skills(category: str | None = None, user_id: str | None = None, team_id: str | None = None):
+    """List all available skills (global + team + personal)."""
+    from agent.skills.loader import load_skills
+    skills = load_skills(user_id=user_id, team_id=team_id, category=category)
+    return {
+        "skills": [
+            {
+                "name": s.name,
+                "description": s.description,
+                "category": s.category,
+                "tier": s.tier,
+                "owner": s.owner,
+                "generation": s.generation,
+                "enabled": s.enabled,
+            }
+            for s in skills
+        ]
+    }
+
+
+class SkillUpdateRequest(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/v1/skills/{skill_name}")
+async def update_skill(skill_name: str, req: SkillUpdateRequest):
+    """Enable/disable a skill by name."""
+    from agent.skills.loader import load_skills
+    skills = load_skills()
+    skill = next((s for s in skills if s.name == skill_name), None)
+    if skill is None:
+        return JSONResponse(status_code=404, content={"error": f"Skill '{skill_name}' not found"})
+    skill.enabled = req.enabled
+    return {"name": skill.name, "enabled": skill.enabled}
+
+
+class SkillImportRequest(BaseModel):
+    repo_url: str  # GitHub URL
+    tier: str = "global"
+    owner: str | None = None
+
+
+@app.post("/api/v1/skills/import")
+async def import_skills(req: SkillImportRequest):
+    """Import skills from a GitHub repository (exec-10 Phase 5.3)."""
+    from agent.skills.importer import import_from_github
+    try:
+        imported = await import_from_github(req.repo_url, req.tier, req.owner)
+        return {"success": True, "imported": imported, "count": len(imported)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+class SkillInstallRequest(BaseModel):
+    path: str  # Path to .skill ZIP file
+    tier: str = "global"
+    owner: str | None = None
+
+
+@app.post("/api/v1/skills/install")
+async def install_skill_archive(req: SkillInstallRequest):
+    """Install a skill from .skill ZIP archive (exec-10 Phase 5.4)."""
+    from pathlib import Path
+    from agent.skills.importer import install_from_archive
+    # Security: restrict to allowed upload directory
+    allowed_base = Path(os.environ.get("SKILL_UPLOAD_DIR", "/tmp/skill-uploads")).resolve()
+    resolved = Path(req.path).resolve()
+    if not str(resolved).startswith(str(allowed_base)):
+        return JSONResponse(status_code=400, content={"error": "path not within allowed upload directory"})
+    result = install_from_archive(req.path, req.tier, req.owner)
+    status = 200 if result["success"] else 400
+    return JSONResponse(status_code=status, content=result)
 
 
 @app.post("/api/v1/agent/context")
@@ -216,10 +292,6 @@ def _build_system_prompt(context: str | None) -> str:
     return "\n".join(parts)
 
 
-def _sse(event: dict) -> str:
-    return f"data: {json.dumps(event)}\n\n"
-
-
 def _build_user_content(req: "AgentChatRequest") -> list | str:
     """AC56: Build Anthropic user content — text + optional image blocks."""
     if not req.attachments:
@@ -236,140 +308,6 @@ def _build_user_content(req: "AgentChatRequest") -> list | str:
         })
     content.append({"type": "text", "text": req.message})
     return content
-
-
-_REASONING_BUDGET: dict[str, int] = {
-    "low": 1024,
-    "medium": 4096,
-    "high": 16384,
-}
-
-
-async def _stream_anthropic(req: AgentChatRequest, system_prompt: str, thread_id: str):
-    """Stream via Anthropic SDK — emits Vercel AI Data Stream Protocol events.
-    AC56: multimodal content blocks. AC108: extended thinking via reasoningEffort.
-    ACR-G5: emits message-metadata with token usage. ACR-G7: emits thread-id."""
-    try:
-        from anthropic import AsyncAnthropic, APIError, APIStatusError
-    except ImportError:
-        yield _sse({"type": "error", "error": "anthropic package not installed"})
-        return
-
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        yield _sse({"type": "error", "error": "ANTHROPIC_API_KEY not configured"})
-        return
-
-    model = req.model or os.environ.get("AGENT_MODEL", "claude-sonnet-4-6")
-    client = AsyncAnthropic(api_key=api_key)
-    text_id = "t1"
-
-    # AC108: reasoning/thinking budget
-    thinking_param: dict | None = None
-    if req.reasoningEffort and req.reasoningEffort in _REASONING_BUDGET:
-        budget = _REASONING_BUDGET[req.reasoningEffort]
-        thinking_param = {"type": "enabled", "budget_tokens": budget}
-
-    user_content = _build_user_content(req)
-    stream_kwargs: dict = {
-        "model": model,
-        "max_tokens": 8192 if thinking_param else 4096,
-        "system": system_prompt,
-        "messages": [{"role": "user", "content": user_content}],
-    }
-    if thinking_param:
-        stream_kwargs["thinking"] = thinking_param
-
-    try:
-        # ACR-G7: thread-id as first event so frontend can update threadIdRef
-        yield _sse({"type": "thread-id", "threadId": thread_id})
-        yield _sse({"type": "text-start", "id": text_id})
-        async with client.messages.stream(**stream_kwargs) as stream:
-            async for text in stream.text_stream:
-                yield _sse({"type": "text-delta", "id": text_id, "delta": text})
-            final = await stream.get_final_message()
-            prompt_tokens = final.usage.input_tokens
-            completion_tokens = final.usage.output_tokens
-        yield _sse({"type": "text-end", "id": text_id})
-        # ACR-G5: message-metadata → message.metadata in Vercel AI SDK onFinish
-        yield _sse({"type": "message-metadata", "metadata": {
-            "promptTokens": prompt_tokens,
-            "completionTokens": completion_tokens,
-            "threadId": thread_id,
-        }})
-        yield _sse({"type": "finish", "finishReason": "stop"})
-    except APIStatusError as e:
-        yield _sse({"type": "error", "error": f"Anthropic API error {e.status_code}: {e.message}"})
-    except APIError as e:
-        yield _sse({"type": "error", "error": f"Anthropic API error: {e.message}"})
-    except Exception as e:
-        yield _sse({"type": "error", "error": str(e)})
-
-
-async def _stream_openai(req: AgentChatRequest, system_prompt: str, thread_id: str):
-    """Stream via OpenAI SDK — covers OpenAI, OpenRouter, Ollama, vLLM, Azure.
-    Set OPENAI_BASE_URL to target any OpenAI-compatible endpoint.
-    ACR-G5: emits message-metadata with token usage. ACR-G7: emits thread-id."""
-    try:
-        from openai import AsyncOpenAI, APIError, APIStatusError
-    except ImportError:
-        yield _sse({"type": "error", "error": "openai package not installed"})
-        return
-
-    api_key = os.environ.get("OPENAI_API_KEY", "not-set")
-    base_url = os.environ.get("OPENAI_BASE_URL")  # None = default OpenAI
-    model = req.model or os.environ.get("AGENT_MODEL", "gpt-4o")
-    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    text_id = "t1"
-    try:
-        # ACR-G7: thread-id as first event so frontend can update threadIdRef
-        yield _sse({"type": "thread-id", "threadId": thread_id})
-        yield _sse({"type": "text-start", "id": text_id})
-        prompt_tokens = 0
-        completion_tokens = 0
-        # AC56: build OpenAI-compatible multimodal content
-        if req.attachments:
-            user_parts: list = []
-            for att in req.attachments:
-                user_parts.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{att.mime_type};base64,{att.base64}"},
-                })
-            user_parts.append({"type": "text", "text": req.message})
-            user_content_oa: list | str = user_parts
-        else:
-            user_content_oa = req.message
-
-        stream = await client.chat.completions.create(
-            model=model,
-            max_tokens=4096,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content_oa},
-            ],
-            stream=True,
-            stream_options={"include_usage": True},
-        )
-        async for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                yield _sse({"type": "text-delta", "id": text_id, "delta": chunk.choices[0].delta.content})
-            if chunk.usage:
-                prompt_tokens = chunk.usage.prompt_tokens or 0
-                completion_tokens = chunk.usage.completion_tokens or 0
-        yield _sse({"type": "text-end", "id": text_id})
-        # ACR-G5: message-metadata → message.metadata in Vercel AI SDK onFinish
-        yield _sse({"type": "message-metadata", "metadata": {
-            "promptTokens": prompt_tokens,
-            "completionTokens": completion_tokens,
-            "threadId": thread_id,
-        }})
-        yield _sse({"type": "finish", "finishReason": "stop"})
-    except APIStatusError as e:
-        yield _sse({"type": "error", "error": f"OpenAI API error {e.status_code}: {e.message}"})
-    except APIError as e:
-        yield _sse({"type": "error", "error": f"OpenAI API error: {e.message}"})
-    except Exception as e:
-        yield _sse({"type": "error", "error": str(e)})
 
 
 @app.post("/api/v1/agent/chat")
@@ -403,7 +341,7 @@ async def _stream_agent_loop(req: AgentChatRequest, system_prompt: str, thread_i
     Builds AgentExecutionContext, loads ToolRegistry, runs run_agent_loop()."""
     try:
         from agent.context import AgentExecutionContext
-        from agent.loop import run_agent_loop
+        from agent.graph.runner import run_agent_loop
         from agent.tools.registry import ToolRegistry
     except ImportError as e:
         from agent.streaming import ErrorPacket, sse

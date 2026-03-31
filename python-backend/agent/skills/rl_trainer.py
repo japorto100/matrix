@@ -72,26 +72,16 @@ Success: {success}
             return {"score": -1, "reasoning": "PRM disabled", "failure_category": None}
 
         try:
-            from anthropic import AsyncAnthropic
+            from agent.llm_helper import extract_json, llm_call
 
-            client = AsyncAnthropic()
             prompt = self.PRM_PROMPT.format(
                 user_request=user_request,
-                agent_response=agent_response[:2000],  # Token-Budget
+                agent_response=agent_response[:2000],
                 tool_calls=json.dumps(tool_calls[:5], default=str),
                 success=success,
             )
-
-            response = await client.messages.create(
-                model="claude-haiku-4-5",  # Schnell + guenstig
-                max_tokens=512,
-                messages=[{"role": "user", "content": prompt}],
-            )
-
-            text = response.content[0].text if response.content else "{}"
-            if "```" in text:
-                text = text.split("```")[1].removeprefix("json").strip()
-            return json.loads(text)
+            text = await llm_call(prompt, max_tokens=512)
+            return extract_json(text)
 
         except Exception as e:
             logger.warning("PRM scoring failed: %s", e)

@@ -1,11 +1,12 @@
 # dev-stack2.ps1 -- Matrix Dev Stack (v2)
-# Usage: .\scripts\dev-stack2.ps1 [-SkipMock] [-Tunnel] [-SkipHomeserver] [-SkipNats] ...
+# Usage: .\scripts\dev-stack2.ps1 [-SkipMock] [-Tunnel] [-SkipHomeserver] [-SkipNats] [-SkipPostgres] ...
 # By default opens its own PowerShell window. Use -Inline to run in current terminal.
 # Design: 3 phases (Prepare -> Register+Start -> Watch)
 
 param(
     [switch]$SkipHomeserver,
     [switch]$SkipNats,
+    [switch]$SkipPostgres,
     [switch]$SkipGoAppservice,
     [switch]$SkipPython,
     [switch]$SkipFrontend,
@@ -296,6 +297,23 @@ try {
         }
     }
 
+    # -- PostgreSQL + pgvector (exec-11 Memory Engine) --
+    # Setup once: .\scripts\setup-postgres.ps1
+
+    if (-not $SkipPostgres) {
+        $pgCtl = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
+        $pgDataDir = Join-Path $repoRoot "tools\pgsql-data"
+        if (Test-Path $pgCtl) {
+            Register-Service -Name "postgres" -Port 5433 -Tier "infra" -TimeoutSecs 20 -StartAction {
+                Start-LoggedProcess -Name "postgres" -FilePath $pgCtl `
+                    -ArgumentList @("start", "-D", $pgDataDir, "-l", (Join-Path $repoRoot "logs\dev-stack\postgres.log"), "-w") `
+                    -WorkingDirectory $repoRoot
+            }
+        } else {
+            Write-Host "[postgres] Not installed. Run: .\scripts\setup-postgres.ps1" -ForegroundColor Yellow
+        }
+    }
+
     # -- Tier: app --
 
     if (-not $SkipGoAppservice) {
@@ -440,6 +458,7 @@ try {
         Write-Host "    Homeserver:      http://127.0.0.1:8448"
     }
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }
+    if ($script:services["postgres"])      { Write-Host "    PostgreSQL:      postgresql://postgres@localhost:5433/hindsight_dev (pgvector)" }
     if ($script:services["tunnel"])        { Write-Host "    Tunnel:          see logs/dev-stack/tunnel.stdout.log" -ForegroundColor DarkCyan }
     if ($script:services["voice-worker"])  { Write-Host "    Voice Worker:    LiveKit Agent (-WithVoice)" -ForegroundColor DarkYellow }
     if ($script:services["ai-devtools"])   { Write-Host "    AI DevTools:     http://127.0.0.1:4983  (-DevTools)" -ForegroundColor DarkYellow }

@@ -174,37 +174,50 @@ MetaClaw ist fuer CLI-Agents konzipiert (OpenClaw/CoPaw). Unsere Web-App Anpassu
     - LangGraph shared AgentGraphState (lokal)
     - Supermemory (exec-11, zentraler Memory Store)
     - Working Memory M5 (Redis, session-basiert)
+      - Refactored zu Per-Entry Keys (exec-12 Code Review #16):
+        Jeder Entry eigener Cache Key (`tradeview:m5:session:{sid}:entry:{eid}`),
+        eliminiert Read-Modify-Write Race Condition bei parallelen Sub-Agents.
+        Neuer `working_memory_get_entry()` fuer O(1) Einzelzugriff.
   - Kein separates Protokoll noetig
 
 ---
 
 ## Phase 5: deer-flow Patterns (zusaetzlich)
 
-- [ ] **5.1:** Middleware Chain (deer-flow Pattern)
-  - Ordered pipeline fuer Cross-Cutting Concerns
-  - Kandidaten: Summarization, Guardrail, TodoList, DanglingToolCall
-  - deer-flow hat 10+ Middlewares, wir uebernehmen selektiv
-  - Ref: `_ref/deer-flow/backend/packages/harness/deerflow/agents/lead_agent/agent.py:208-270`
+- [x] **5.1:** Middleware Chain ✅ (31.03.2026)
+  - `agent/middleware/` Package erstellt mit 4 Middlewares:
+    - `loop_detection.py` — LoopDetector: Hash-basiert, Warn@3, HardStop@5 (deer-flow Pattern)
+    - `dangling_tool_call.py` — Patcht verwaiste Tool-Calls mit Placeholder (deer-flow Pattern)
+    - `guardrails.py` — AllowlistProvider + RoleBasedProvider (deer-flow + LangChain Pattern)
+    - `summarization.py` — 3-Stufen Context-Management (siehe 5.5)
+  - Dangling + Summarization in loop.py eingebunden
 
-- [ ] **5.2:** Skill Management REST API
-  - `POST /api/v1/skills/install` — Skill installieren
+- [x] **5.2:** Skill Management REST API ✅ (31.03.2026)
+  - `GET /api/v1/skills` — Alle Skills listen (3-Tier, Filter: category/user/team)
   - `PUT /api/v1/skills/{name}` — Skill enable/disable
-  - `GET /api/v1/skills` — Alle Skills listen (mit Tier + Status)
-  - deer-flow Pattern: `_ref/deer-flow/backend/app/gateway/routers/skills.py`
+  - In agent/app.py registriert
 
-- [ ] **5.3:** SkillsMP Import evaluieren
-  - Community Marketplace mit 66K+ Skills (skillsmp.com)
-  - SKILL.md Format kompatibel mit unserem Loader
-  - Import-Script: GitHub Repo → agent/skills/global/
+- [x] **5.3:** GitHub / SkillsMP Import ✅ (31.03.2026)
+  - `agent/skills/importer.py` — `import_from_github(repo_url, tier, owner)`
+  - Shallow clone → SKILL.md suchen → in Tier-Verzeichnis kopieren
+  - API: `POST /api/v1/skills/import` mit repo_url + tier + owner
+  - Kompatibel mit: anthropics/skills, microsoft/skills, SkillsMP Repos
+  - SKILL.md ist offener Standard (agentskills.io, 30+ Tools adoptiert)
 
-- [ ] **5.4:** Skill .skill ZIP Archive Support
-  - deer-flow Pattern: ZIP mit SKILL.md + Scripts + Assets
-  - Install via API oder CLI
+- [x] **5.4:** Skill .skill ZIP Archive Support ✅ (31.03.2026)
+  - `agent/skills/importer.py` — `install_from_archive(path, tier, owner)`
+  - Sicherheits-Checks (deer-flow Pattern): Path Traversal, Symlinks, Size 50MB, Max 100 Files
+  - API: `POST /api/v1/skills/install` mit path + tier + owner
+  - Validiert SKILL.md Frontmatter im Archive
 
-- [ ] **5.5:** Context Summarization Middleware
-  - Wenn Context-Window voll → aeltere Messages zusammenfassen
-  - deer-flow: SummarizationMiddleware (auto-trigger bei Token-Limit)
-  - Wichtig fuer lange Multi-Agent Sessions
+- [x] **5.5:** Context Summarization Middleware ✅ (31.03.2026)
+  - `agent/middleware/summarization.py` — 3-Stufen SOTA Pattern ("Deep Agents"):
+    - Stufe 1: Offload — grosse Tool-Results kuerzen (>500 chars)
+    - Stufe 2: Summarize — aeltere Messages via LLM zusammenfassen (keep=20)
+    - Stufe 3: Truncate — Hard-Fallback wenn immer noch zu gross
+  - Trigger: 70% Context-Window (konfigurierbar via AGENT_SUMMARIZE_THRESHOLD)
+  - In loop.py eingebunden (vor LangGraph + Legacy Loop)
+  - ENV: AGENT_SUMMARIZE_THRESHOLD, AGENT_SUMMARIZE_KEEP_MESSAGES, AGENT_SUMMARIZE_MODEL
 
 ---
 
@@ -225,14 +238,108 @@ MetaClaw ist fuer CLI-Agents konzipiert (OpenClaw/CoPaw). Unsere Web-App Anpassu
 
 ### Gate 3: Skills
 - [ ] 3 SKILL.md Files geladen (trading-analysis, risk-assessment, market-research)
-- [ ] Skills ins System-Prompt injiziert
-- [ ] Auto-Skill-Generation: Failure → neuer SKILL.md in auto-generated/
+- [ ] Skills ins System-Prompt injiziert (format_skills_for_prompt)
+- [ ] 3-Tier Loading: Global → Team → Personal (Override-Semantik)
+- [ ] Auto-Skill-Generation: Failure → neuer SKILL.md in personal/{user_id}/
 - [ ] Generierter Skill wird beim naechsten Run geladen
+- [ ] Skill Deduplication: gleicher Failure generiert keinen doppelten Skill
+- [ ] Temporal Context: letzte 24h Aktivitaet im System-Prompt sichtbar
 
 ### Gate 4: A2A
 - [ ] Agent Cards als JSON serialisierbar
 - [ ] A2A Client: send_message an lokalen Agent → Response
-- [ ] Inter-Agent Delegation via Orchestrator
+- [ ] Inter-Agent Delegation via Orchestrator + a2a_node
+
+### Gate 5: Middleware (Phase 5)
+- [ ] Context Summarization: bei 70% Context-Window werden alte Messages zusammengefasst
+- [ ] Offload: Tool-Results ueber 500 chars werden gekuerzt
+- [ ] Loop Detection: Warning nach 3x gleiche Tool-Calls, Hard-Stop nach 5x
+- [ ] Dangling Tool Calls: verwaiste Tool-Calls bekommen Placeholder-Response
+- [ ] Guardrails: AllowlistProvider blockiert unerlaubte Tools
+- [ ] RoleBasedProvider: Fundamentals-Agent kann kein set_chart_state aufrufen
+
+### Gate 6: Skill Management API
+- [ ] GET /api/v1/skills listet alle Skills (3-Tier + Filter)
+- [ ] PUT /api/v1/skills/{name} enabled/disabled
+- [ ] POST /api/v1/skills/import klont GitHub Repo → installiert SKILL.md Files
+- [ ] POST /api/v1/skills/install extrahiert .skill ZIP Archive sicher
+
+### Gate 7: RL Infrastructure (deaktiviert, nur Infra-Check)
+- [ ] PRM: ProcessRewardModel instanziierbar (AGENT_PRM_ENABLED=false)
+- [ ] LoRA: LoRATrainer instanziierbar (AGENT_RL_ENABLED=false)
+- [ ] OMLS: IdleWindowDetector erkennt Inaktivitaet korrekt
+- [ ] TrajectoryLogger: schreibt .json Files in .trajectories/
+
+---
+
+## Paper-Insights + Implementation
+
+### Paper 1: MetaClaw (https://arxiv.org/html/2603.17187)
+- Continual Meta-Learning: Skill-Driven Fast Adaptation + Opportunistic RL
+- Per-User Skill Learning, Federated Sharing als Zukunftsvision
+- Skill Generation Versioning, OMLS Idle-Window Detection
+- **Status:** Production-ready (Proxy-Pattern, kein GPU noetig)
+- **Limitation:** Sequentielle Skill-Generierung (kein Batch), Idle-Detection user-konfiguriert
+- **Bei uns implementiert:** SkillEvolver, 3-Tier Skills, TrajectoryLogger, PRM, LoRA, OMLS (✅)
+
+### Paper 2: Trace2Skill (https://arxiv.org/html/2603.25158v2)
+- Parallele Skill-Generierung aus Trajectory-Pools (statt sequentiell wie MetaClaw)
+- Hierarchische Konsolidierung: idiosynkratische Patches rausfiltern, generalisierbare behalten
+- Skills transferieren zwischen Models (+57.65% cross-model transfer)
+- **Status:** Research-only, kein Code veroeffentlicht, "work in progress"
+- **Limitation:** Kein kausales Tracking, kein automatisches Pruning
+- **Hybrid-Ansatz:** MetaClaw sofort (single-failure) + Trace2Skill periodisch (batch nightly)
+
+### Paper 3: Natural-Language Agent Harnesses / NLAH (https://arxiv.org/html/2603.25723v1)
+- Agent-Orchestrierung als editierbare NL-Specs statt Code
+- File-backed State: Artifacts auf Disk → Recovery bei Crashes
+- Explicit Contracts: Structured Output + Completion Gates pro Rolle
+- **Status:** Theoretisch/experimentell, kein Code, GPT-5.4 + Codex CLI
+- **Limitation:** NL weniger praezise als Code, Runtime-Contamination moeglich
+- **Was wir uebernehmen:** Completion Gates, File-backed State (funktioniert, rest ist Theorie)
+
+---
+
+## Phase 6: Paper-Insights Implementation
+
+### 6.1 Trace2Skill Hybrid (Paper 2)
+- [x] **6.1a:** Batch-Consolidation als LangGraph Sub-Graph ✅ (31.03.2026)
+  - `agent/graph/subgraphs/consolidation_graph.py`
+  - 3 Nodes: Error-Analyst → Success-Analyst (parallel) → Consolidator
+  - Alle LLM-Calls via `agent/llm_helper.py` (provider-agnostisch)
+  - Speichert konsolidierten Skill in `personal/{user_id}/consolidated-{name}/`
+  - `references/patterns.md` Subdirectory fuer identifizierte Patterns
+  - Confidence-Schwelle (0.5): nur generalisierbare Skills werden gespeichert
+- [x] **6.1b:** Skill-Hierarchie ✅
+  - SKILL.md Hauptdokument + `references/` Subdirectory
+  - Consolidation Graph erzeugt references/patterns.md automatisch
+
+### 6.2 NLAH Patterns (Paper 3 — nur was funktioniert)
+- [x] **6.2a:** Completion Gates pro Trading-Rolle ✅ (31.03.2026)
+  - `agent/middleware/completion_gates.py` — LLM-as-Judge Validation
+  - `TRADING_ROLE_CONTRACTS` in `agent/roles.py`
+  - Researcher MUSS Bull + Bear, Trader MUSS Entry/Exit/Stop, RiskManager MUSS Approval
+  - Nutzt `llm_helper.py` (provider-agnostisch)
+- [x] **6.2b:** File-backed State ✅ (31.03.2026)
+  - `agent/state_store.py` — FileBackedState Klasse
+  - Pattern: `agent/state/{thread_id}/{role}_output.json`
+  - save/load/has_checkpoint Methoden
+
+### 6.3 LLM-Call Refactoring
+- [x] **6.3:** Shared LLM Helper ✅ (31.03.2026)
+  - `agent/llm_helper.py` — einziger Ort fuer Utility-LLM-Calls
+  - Provider-Routing via ENV: AGENT_PROVIDER / AGENT_USE_LITELLM / OPENAI_BASE_URL
+  - `llm_call(prompt, model, max_tokens, system)` → Text
+  - `extract_json(text)` → dict (Code-Block aware)
+  - Alle Utility-Calls refactored: evolver, rl_trainer, summarization, completion_gates, consolidation
+  - Tool-Calling Nodes (`llm_node.py`, Legacy Loop) nutzen weiterhin SDKs direkt (provider-spezifisch)
+
+---
+
+## Verify Gate 8: Paper-Insights
+- [ ] Batch-Consolidation: 5 Trajectories → 1 konsolidierter Skill (nicht 5 einzelne)
+- [ ] Completion Gate: Researcher ohne Bull/Bear Argumente wird abgelehnt
+- [ ] File-backed State: Zwischen-Ergebnis auf Disk, Recovery nach Restart moeglich
 
 ---
 
@@ -269,4 +376,36 @@ agent/a2a/__init__.py                   — NEU
 agent/a2a/agent_card.py                 — NEU: Agent Cards (A2A Protocol)
 agent/a2a/client.py                     — NEU: A2A HTTP Client
 agent/graph/nodes/a2a_node.py           — NEU: A2A Delegation Node (4.3)
+
+agent/middleware/__init__.py             — NEU: Middleware Package
+agent/middleware/summarization.py        — NEU: 3-Stufen Context-Management (5.5)
+agent/middleware/loop_detection.py       — NEU: Loop Detection (5.1)
+agent/middleware/dangling_tool_call.py   — NEU: Dangling Tool Call Patcher (5.1)
+agent/middleware/guardrails.py           — NEU: Allowlist + RoleBased Provider (5.1)
+agent/skills/importer.py                — NEU: GitHub Import + ZIP Install (5.3 + 5.4)
+agent/loop.py                           — GEAENDERT: +Summarization, +Dangling, +Skills, +Temporal
+agent/app.py                            — GEAENDERT: +Skill API Endpoints, +Field(max_length), +path restriction
+
+# Phase 6: Paper-Insights + Refactoring
+agent/llm_helper.py                     — NEU: Shared provider-agnostischer LLM Helper
+agent/state_store.py                    — NEU: File-backed State (NLAH Pattern)
+agent/middleware/completion_gates.py     — NEU: Rollen-Contract Validation (NLAH Pattern)
+agent/graph/subgraphs/__init__.py       — NEU
+agent/graph/subgraphs/consolidation_graph.py — NEU: Trace2Skill LangGraph (Error+Success+Merge)
+agent/roles.py                          — ERWEITERT: +TRADING_ROLE_CONTRACTS
+agent/skills/evolver.py                 — REFACTORED: BatchConsolidator raus, llm_helper statt hardcoded
+agent/skills/rl_trainer.py              — REFACTORED: llm_helper statt hardcoded AsyncAnthropic
+agent/middleware/summarization.py        — REFACTORED: llm_helper statt hardcoded
+agent/validators/trading.py             — GEAENDERT: needs_approval ctx optional
+agent/a2a/client.py                     — GEAENDERT: text-delta packet type fix
+agent/graph/nodes/tool_node.py          — GEAENDERT: TOOL_TIMEOUT_SEC from ENV
+agent/graph/agent_graph.py              — GEAENDERT: MAX_ITERATIONS from ENV
+agent/skills/importer.py                — GEAENDERT: URL host validation (SSRF prevention)
+.env                                    — AKTUALISIERT: alle exec-10 ENV vars
+.env.example                            — AKTUALISIERT: alle exec-10 ENV vars dokumentiert
+.gitignore                              — GEAENDERT: +agent/state/
 ```
+
+## Code Review (31.03.2026)
+
+32 Issues gefunden, 8 gefixt in exec-10. Offene Issues verteilt auf exec-11/12.

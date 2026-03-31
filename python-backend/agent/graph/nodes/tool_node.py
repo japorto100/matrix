@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from typing import Any
 
 import anyio
@@ -19,7 +20,14 @@ from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
-TOOL_TIMEOUT_SEC = 30
+def _get_tool_timeout() -> float:
+    try:
+        from agent.consent.config import get_consent_config
+        return get_consent_config().rate_limits.get_tool_timeout()
+    except Exception:
+        return float(os.environ.get("AGENT_TOOL_TIMEOUT_SEC", "30"))
+
+TOOL_TIMEOUT_SEC = _get_tool_timeout()
 
 
 async def tool_node(state: AgentGraphState) -> dict[str, Any]:
@@ -43,6 +51,12 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
     # Parallel execution
     tasks = [_execute_single(tc, registry, ctx) for tc in tool_calls]
     results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Record tool calls in rate limiter
+    from agent.consent.rate_limiter import get_rate_limiter
+    limiter = get_rate_limiter()
+    for tc in tool_calls:
+        limiter.record_tool_call(ctx.thread_id, tc["tool_name"])
 
     tool_results: list[ToolResult] = []
     tool_messages: list[dict[str, Any]] = []
@@ -79,15 +93,34 @@ async def _execute_single(
     registry: ToolRegistry,
     ctx: AgentExecutionContext,
 ) -> ToolResult:
-    """Fuehrt ein einzelnes Tool mit Timeout aus."""
+    """Fuehrt ein einzelnes Tool mit Timeout aus. Audit-logged."""
+    from agent.audit.logger import AuditAction, audit_log, audit_timer, audit_duration
+
     tool = registry.lookup(tc["tool_name"])
     if not tool:
+        await audit_log(
+            action=AuditAction.TOOL_RESULT,
+            thread_id=ctx.thread_id,
+            tool_name=tc["tool_name"],
+            input_data=tc["tool_input"],
+            success=False,
+            output_data={"error": f"Unknown tool: {tc['tool_name']}"},
+        )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
             tool_name=tc["tool_name"],
             result={},
             error=f"Unknown tool: {tc['tool_name']}",
         )
+
+    start = audit_timer()
+    await audit_log(
+        action=AuditAction.TOOL_CALL,
+        thread_id=ctx.thread_id,
+        agent_id=ctx.user_id,
+        tool_name=tc["tool_name"],
+        input_data=tc["tool_input"],
+    )
 
     try:
         # Validation
@@ -97,6 +130,18 @@ async def _execute_single(
         with anyio.fail_after(TOOL_TIMEOUT_SEC):
             result = await tool.execute(tc["tool_input"], ctx)
 
+        elapsed = audit_duration(start)
+        await audit_log(
+            action=AuditAction.TOOL_RESULT,
+            thread_id=ctx.thread_id,
+            agent_id=ctx.user_id,
+            tool_name=tc["tool_name"],
+            input_data=tc["tool_input"],
+            output_data=result,
+            duration_ms=elapsed,
+            success=True,
+        )
+
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
             tool_name=tc["tool_name"],
@@ -104,6 +149,17 @@ async def _execute_single(
             error=None,
         )
     except TimeoutError:
+        elapsed = audit_duration(start)
+        await audit_log(
+            action=AuditAction.TOOL_RESULT,
+            thread_id=ctx.thread_id,
+            agent_id=ctx.user_id,
+            tool_name=tc["tool_name"],
+            input_data=tc["tool_input"],
+            duration_ms=elapsed,
+            success=False,
+            output_data={"error": f"timeout after {TOOL_TIMEOUT_SEC}s"},
+        )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
             tool_name=tc["tool_name"],
@@ -111,6 +167,17 @@ async def _execute_single(
             error=f"Tool '{tc['tool_name']}' timed out after {TOOL_TIMEOUT_SEC}s",
         )
     except Exception as e:
+        elapsed = audit_duration(start)
+        await audit_log(
+            action=AuditAction.TOOL_RESULT,
+            thread_id=ctx.thread_id,
+            agent_id=ctx.user_id,
+            tool_name=tc["tool_name"],
+            input_data=tc["tool_input"],
+            duration_ms=elapsed,
+            success=False,
+            output_data={"error": str(e)},
+        )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
             tool_name=tc["tool_name"],

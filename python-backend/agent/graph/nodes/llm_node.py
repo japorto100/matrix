@@ -19,24 +19,62 @@ logger = logging.getLogger(__name__)
 
 async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     """Ruft das LLM auf und gibt tool_calls oder finale Antwort zurueck."""
+    from agent.audit.logger import AuditAction, audit_log, audit_timer, audit_duration
+
     provider = state["provider"]
     model = state["model"]
     messages = state["messages"]
     system_prompt = state["system_prompt"]
     reasoning_effort = state.get("reasoning_effort")
+    thread_id = state.get("thread_id", "")
+    iteration = state.get("iteration", 0)
 
     # Tools laden
     registry = ToolRegistry.load()
     tool_defs = [t.definition() for t in registry.all()]
 
+    start = audit_timer()
+    await audit_log(
+        action=AuditAction.LLM_REQUEST,
+        thread_id=thread_id,
+        iteration=iteration,
+        metadata={"provider": provider, "model": model, "tool_count": len(tool_defs)},
+    )
+
     if provider == "anthropic":
-        return await _call_anthropic(model, system_prompt, messages, tool_defs, reasoning_effort)
+        result = await _call_anthropic(model, system_prompt, messages, tool_defs, reasoning_effort)
     elif provider in ("openai", "openai-compatible"):
-        return await _call_openai(model, system_prompt, messages, tool_defs, reasoning_effort, provider)
+        result = await _call_openai(model, system_prompt, messages, tool_defs, reasoning_effort, provider)
     elif provider == "litellm":
-        return await _call_litellm(model, system_prompt, messages, tool_defs, reasoning_effort)
+        result = await _call_litellm(model, system_prompt, messages, tool_defs, reasoning_effort)
     else:
-        return {"final_response": f"Unknown provider: {provider}", "done": True, "tool_calls": []}
+        result = {"final_response": f"Unknown provider: {provider}", "done": True, "tool_calls": [], "token_usage": 0}
+
+    elapsed = audit_duration(start)
+    tool_calls = result.get("tool_calls", [])
+    token_usage = result.get("token_usage", 0)
+
+    # RL-2: Record token usage in rate limiter
+    if token_usage > 0 and thread_id:
+        from agent.consent.rate_limiter import get_rate_limiter
+        get_rate_limiter().record_tokens(thread_id, token_usage)
+
+    await audit_log(
+        action=AuditAction.LLM_RESPONSE,
+        thread_id=thread_id,
+        iteration=iteration,
+        duration_ms=elapsed,
+        success=True,
+        metadata={
+            "provider": provider,
+            "model": model,
+            "done": result.get("done", False),
+            "tool_calls_count": len(tool_calls),
+            "token_usage": token_usage,
+        },
+    )
+
+    return result
 
 
 async def _call_anthropic(
@@ -68,6 +106,9 @@ async def _call_anthropic(
 
     response = await client.messages.create(**kwargs)
 
+    # AL-1: Extract token counts
+    token_usage = response.usage.input_tokens + response.usage.output_tokens
+
     # Parse response
     tool_calls: list[ToolCall] = []
     text_parts: list[str] = []
@@ -84,7 +125,7 @@ async def _call_anthropic(
                 )
             )
 
-    result: dict[str, Any] = {"tool_calls": tool_calls, "iteration": 1}
+    result: dict[str, Any] = {"tool_calls": tool_calls, "iteration": 1, "token_usage": token_usage}
 
     if tool_calls:
         # Add assistant message with tool_use blocks to history
@@ -136,6 +177,11 @@ async def _call_openai(
     response = await client.chat.completions.create(**kwargs)
     choice = response.choices[0]
 
+    # AL-1: Extract token counts
+    token_usage = 0
+    if response.usage:
+        token_usage = (response.usage.prompt_tokens or 0) + (response.usage.completion_tokens or 0)
+
     tool_calls: list[ToolCall] = []
     if choice.message.tool_calls:
         for tc in choice.message.tool_calls:
@@ -147,7 +193,7 @@ async def _call_openai(
                 )
             )
 
-    result: dict[str, Any] = {"tool_calls": tool_calls, "iteration": 1}
+    result: dict[str, Any] = {"tool_calls": tool_calls, "iteration": 1, "token_usage": token_usage}
 
     if tool_calls:
         result["messages"] = [{"role": "assistant", "content": choice.message.content or "", "tool_calls": choice.message.tool_calls}]

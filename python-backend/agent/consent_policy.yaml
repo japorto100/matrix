@@ -1,0 +1,130 @@
+# Consent Policy — exec-12 Phase 2.2
+# Single source of truth for tool authorization.
+# Replaces hardcoded validators/trading.py domain blocks.
+#
+# Levels:
+#   none    — auto-allow, no user interaction
+#   inform  — log but don't block (future: show notification in UI)
+#   confirm — require explicit user consent via interrupt()
+#   deny    — hard block, no way around it
+#
+# Roles:
+#   Empty [] = applies to all agent roles.
+#   ["advisory"] = only applies to advisory agents.
+#
+# Provider:
+#   use: module.path:ClassName (deer-flow dynamic import pattern)
+#   Built-in: agent.consent.provider:YamlPolicyProvider (default)
+#             agent.consent.provider:AllowlistProvider
+
+defaults:
+  level: none
+  severity: medium
+
+fail_closed: true
+
+provider:
+  use: agent.consent.provider:YamlPolicyProvider
+
+tools:
+  # ── Hard Blocks (migrated from validators/trading.py) ────────────────
+  place_order:
+    level: deny
+    severity: critical
+    reason: "Advisory agents duerfen keine Orders platzieren"
+    roles: [advisory]
+
+  cancel_order:
+    level: deny
+    severity: critical
+    reason: "Advisory agents duerfen keine Orders stornieren"
+    roles: [advisory]
+
+  modify_position:
+    level: deny
+    severity: critical
+    reason: "Advisory agents duerfen keine Positionen aendern"
+    roles: [advisory]
+
+  # ── Mutations (existing) ──────────────────────────────────────────────
+  set_chart_state:
+    level: confirm
+    severity: medium
+    reason: "Aendert den aktiven Chart im Frontend"
+    allow_session_cache: true
+
+  # ── Sandbox Execution (exec-12 Phase 1, future) ──────────────────────
+  sandbox_execute:
+    level: confirm
+    severity: high
+    reason: "Fuehrt Code in isolierter Sandbox aus"
+    allow_session_cache: false
+
+  sandbox_browser:
+    level: confirm
+    severity: high
+    reason: "Oeffnet Browser-Automation in Sandbox"
+    allow_session_cache: false
+
+  # ── File Operations (future) ─────────────────────────────────────────
+  file_write:
+    level: confirm
+    severity: high
+    reason: "Schreibt Dateien auf das System"
+    allow_session_cache: true
+
+  file_delete:
+    level: confirm
+    severity: critical
+    reason: "Loescht Dateien vom System"
+    allow_session_cache: false
+
+  # ── Network (future) ─────────────────────────────────────────────────
+  http_request:
+    level: inform
+    severity: low
+    reason: "Sendet HTTP Request an externe URL"
+    allow_session_cache: true
+
+categories:
+  mutation:
+    level: confirm
+    severity: medium
+  read_only:
+    level: none
+
+# ── Rate Limits (exec-12 Phase 2.3) ──────────────────────────────────────
+# Zentralisiert: ersetzt AGENT_MAX_ITERATIONS, AGENT_TOOL_TIMEOUT_SEC ENV,
+# und hardcoded Werte in loop_detection.py.
+# ENV-Werte sind Fallback wenn hier nicht gesetzt.
+
+rate_limits:
+  # Per-Session Limits
+  max_iterations: 10            # ENV Fallback: AGENT_MAX_ITERATIONS
+  max_tool_calls_total: 50      # Alle Tools zusammen pro Session
+  max_tokens_per_session: 100000  # Input+Output Token Budget (0 = unbegrenzt)
+  tool_timeout_sec: 30          # ENV Fallback: AGENT_TOOL_TIMEOUT_SEC
+
+  # Grace Termination (pentagi Pattern)
+  grace_iterations: 3           # Warnung N Iterationen vor Hard-Stop
+
+  # Loop Detection (deer-flow Pattern, sliding window)
+  loop_detection:
+    warn_threshold: 3
+    hard_limit: 5
+    window_size: 20
+
+  # Per-Tool Call Limits (0 = unbegrenzt)
+  per_tool:
+    sandbox_execute:
+      max_calls: 5
+    sandbox_browser:
+      max_calls: 3
+    http_request:
+      max_calls: 20
+    save_memory:
+      max_calls: 10
+    file_write:
+      max_calls: 10
+    file_delete:
+      max_calls: 3

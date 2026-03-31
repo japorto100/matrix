@@ -79,3 +79,6 @@ class AgentGraphState(TypedDict):
 
     # User ID
     user_id: str
+
+    # Agent class (advisory/executor) — used by consent system
+    agent_class: str

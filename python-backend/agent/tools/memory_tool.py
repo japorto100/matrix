@@ -70,8 +70,8 @@ class LoadMemoryTool(TradingTool):
         }
 
     async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
-        from agent.working_memory import working_memory_get
+        from agent.working_memory import working_memory_get_entry
         params = LoadMemoryInput(**tool_input)
-        data = await working_memory_get(ctx.thread_id)
-        content = data.get(params.key)
-        return {"ok": True, "key": params.key, "content": content, "found": content is not None}
+        entry = await working_memory_get_entry(ctx.thread_id, params.key)
+        content = entry.get("content") if isinstance(entry, dict) else entry
+        return {"ok": True, "key": params.key, "content": content, "found": entry is not None}

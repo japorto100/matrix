@@ -80,3 +80,22 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
     TradingRole.TRADER: {"get_chart_state", "set_chart_state", "get_portfolio_summary", "save_memory", "load_memory"},
     TradingRole.RISK_MANAGER: {"get_portfolio_summary", "save_memory", "load_memory"},
 }
+
+# Completion Gate Contracts pro Rolle (NLAH Paper Pattern)
+# Jeder Contract definiert was der Agent-Output ENTHALTEN MUSS.
+TRADING_ROLE_CONTRACTS: dict[TradingRole, list[str]] = {
+    TradingRole.RESEARCHER: [
+        "Must include bull arguments",
+        "Must include bear arguments",
+        "Must state confidence level",
+    ],
+    TradingRole.TRADER: [
+        "Must define entry point",
+        "Must define exit/target",
+        "Must define stop loss",
+    ],
+    TradingRole.RISK_MANAGER: [
+        "Must state approval or rejection",
+        "Must provide risk score",
+    ],
+}

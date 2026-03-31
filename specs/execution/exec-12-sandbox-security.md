@@ -31,22 +31,64 @@
 
 ## Phase 2: Security Hardening (pentagi Patterns)
 
-- [ ] **2.1:** Structured Audit Logs
-  - Jede Agent-Action (Tool-Call, LLM-Request, Sandbox-Execution) wird geloggt
-  - Format: `{ timestamp, agentId, action, input, output, duration, success }`
-  - Storage: Append-only Log (File oder DB)
-- [ ] **2.2:** Consent Flows
-  - Sensitive Tools (File Write, Network Access, Payment) brauchen User-Consent
-  - Consent-Request als UI-Element im Chat (wie Tool-Approval, aber expliziter)
-  - Configurable: welche Tools brauchen Consent (YAML Config)
-- [ ] **2.3:** Rate-Limiting pro Tool/Agent/Session
-  - Max N Calls pro Tool pro Session (deer-flow/Tambo `maxCalls` Pattern)
-  - Max Token-Budget pro Session (Cost-Cap)
-  - Configurable per Agent-Rolle
+- [x] **2.1:** Structured Audit Logs ✅ (31.03.2026, Alembic-Update 31.03.2026)
+  - `agent/audit/` Package: `logger.py` (structured events), `store.py` (PG + JSON Lines)
+  - AuditAction Enum: LLM_REQUEST/RESPONSE, TOOL_CALL/RESULT, APPROVAL_REQUEST/DECISION, etc.
+  - LangGraph Nodes instrumentiert: `llm_node.py`, `tool_node.py`, `approval_node.py`
+  - **Alembic-managed** (exec-11): `agent.audit_events` Tabelle im `agent` Schema
+    - Columns: user_id, thread_id, agent_class, agent_role, tool_name, input/output JSON
+    - Indices: user_id, thread_id, action, timestamp
+    - Raw DDL (`CREATE TABLE IF NOT EXISTS`) entfernt → `uv run alembic upgrade head`
+  - Multi-User + Multi-Agent: user_id + agent_role Columns
+  - Fallback: JSON Lines in `data/audit/` (kein PG konfiguriert)
+  - Grafana-ready: PG als Datasource
+- [x] **2.2:** Consent Flows ✅ (31.03.2026)
+  - `agent/consent/` Package: Plugin-based Consent System (deer-flow GuardrailProvider Pattern)
+  - 4 Levels: `none` (auto-allow), `inform` (log), `confirm` (interrupt), `deny` (hard block)
+  - `consent_policy.yaml` — Single Source of Truth fuer Tool-Authorization
+  - `ConsentProvider` Protocol (`@runtime_checkable`) mit Dynamic Class Import (`module:ClassName`)
+  - Built-in Providers: `YamlPolicyProvider` (default), `AllowlistProvider`
+  - `SessionConsentCache` — per thread_id + tool_name (ahead of SOTA, kein Framework hat das)
+  - User-Decisions: `allow_once`, `allow_session`, `deny`, `deny_session`
+  - Role-based Policies: `roles: [advisory]` beschraenkt Rules auf bestimmte Agent-Rollen
+  - Domain Hardblocks (place_order, cancel_order, modify_position) aus `validators/trading.py`
+    nach `consent_policy.yaml` migriert (level: deny, roles: [advisory])
+  - `validators/trading.py` + `validators/` Package geloescht (komplett durch Consent-System ersetzt)
+  - `approval_node.py` refactored auf Consent-System
+  - `agent_class` zu `AgentGraphState` hinzugefuegt
+  - Legacy-Loop (`loop.py`) auf Consent-System umgestellt
+  - Audit-Integration: CONSENT_REQUEST + CONSENT_DECISION Events
+- [x] **2.3:** Rate-Limiting pro Tool/Agent/Session ✅ (31.03.2026)
+  - `consent_policy.yaml` erweitert um `rate_limits` Section — Single Source of Truth
+  - `consent/rate_limiter.py` — `SessionRateLimiter` mit per-tool counter + session token budget
+  - Per-Tool Call Limits: `per_tool: { sandbox_execute: { max_calls: 5 } }`
+  - Per-Session Total: `max_tool_calls_total: 50`, `max_tokens_per_session: 100000`
+  - Grace Termination (pentagi): Warnung N Iterationen vor Hard-Stop
+  - Rate Limiter in `check_consent()` eingehaengt (vor Provider-Check)
+  - `tool_node.py` recorded Tool-Calls im Rate Limiter nach Execution
+  - **Konsolidierung bestehender Config:**
+    - `MAX_ITERATIONS` (agent_graph.py) → YAML mit ENV-Fallback
+    - `TOOL_TIMEOUT_SEC` (tool_node.py) → YAML mit ENV-Fallback
+    - Loop Detection Thresholds (loop_detection.py) → YAML mit hardcoded Fallback
+    - `middleware/guardrails.py` geloescht (redundant mit consent/)
 - [ ] **2.4:** Input/Output Sanitization
   - Agent-Outputs auf Injection-Versuche pruefen
   - Tool-Inputs validieren bevor Execution
   - Prompt-Injection Detection (regelbasiert + LLM-basiert)
+- [ ] **2.5:** Prompt Template Validation (pentagi Pattern)
+  - Agent-generierte Prompts auf erlaubte Variablen pruefen (AST-Parse)
+  - Verhindert Template Injection via nicht-deklarierte Variablen
+  - Ref: `_ref/pentagi/backend/pkg/templates/validator/validator.go`
+- [ ] **2.6:** RBAC Privilege System (pentagi Pattern)
+  - User-basierte Berechtigungen: wer darf welchen Agent/Flow/Tool nutzen
+  - Privilege Namespace: `flows.view`, `tools.admin`, `agents.create` etc.
+  - Fuer Multi-User Szenarien (1000+ User mit eigenen Agents)
+  - Admin-Rolle bypassed Ownership-Filter
+  - Ref: `_ref/pentagi/backend/pkg/server/services/flows.go`
+- [ ] **2.7:** Installer Hardening (pentagi Pattern)
+  - Default-Credentials beim ersten Start durch kryptographisch sichere Werte ersetzen
+  - `.env` Secrets auto-generieren wenn noch Default-Werte
+  - Ref: `_ref/pentagi/backend/cmd/installer/hardening/hardening.go`
 
 ## Phase 3: Computer Use
 
@@ -87,6 +129,21 @@
   - Python Data-Analysis, File-Processing, API Calls
   - Results als Artifacts im Chat (Charts, Tables, Files)
 
+## Phase 5: PDDL Formale Plan-Validierung (Optional)
+
+Ref: `pddl_phase22b_delta.md` (aus Hauptprojekt)
+
+- [ ] **5.1:** PDDL/ADL als optionale Validierungsschicht fuer Agent-Workflows
+  - Pattern: `Plan → Validate → Execute/Replan`
+  - Fuer komplexe Multi-Step Workflows mit harten Constraints
+  - Ergaenzt LangGraph (Ausfuehrung), ersetzt es nicht
+- [ ] **5.2:** Pilot: "Morning Research Run" Workflow
+  - PDDL Domain + Problem Definition
+  - Solver-gestuetzte Validierung vor Ausfuehrung
+- [ ] **5.3:** Integration mit LangGraph
+  - Validation-Node der PDDL-Solver aufruft bevor Graph weiterlaeuft
+  - Bei Constraint-Verletzung: Replan statt Execute
+
 ---
 
 ## Verify-Gates
@@ -99,3 +156,25 @@
 - [ ] Rate Limit: Agent wird nach N Tool-Calls pro Session gestoppt
 - [ ] Playwright: Agent navigiert Website, extrahiert Daten, alles in Sandbox
 - [ ] Artifacts: Agent-generierter Code rendert als Preview im Chat
+
+---
+
+## Code Review Fixes (aus exec-10 uebertragen)
+
+Offene Security-Issues aus dem Python Backend Code Review (31.03.2026):
+
+- [x] **#1 Low (downgraded):** Credentials in `.env` — nur lokale Dev-Tokens
+  - Kein Security-Issue: `.env` in `.gitignore`, Tokens nur fuer lokalen Synapse Dev-Server
+- [x] **#5/#11 Medium:** Dead Code in `agent/app.py` entfernen
+  - `_stream_anthropic()`, `_stream_openai()`, `_REASONING_BUDGET`, `_sse()` entfernt (~130 LOC)
+  - Unbenutzter `json` Import entfernt
+- [x] **#16 Medium:** Working Memory Race Condition
+  - Option C implementiert: Per-Entry Keys statt monolithisches Dict
+  - Jeder Entry bekommt eigenen Cache Key (`tradeview:m5:session:{sid}:entry:{eid}`)
+  - Neuer Index-Key trackt Entry-IDs fuer Enumeration
+  - `working_memory_get_entry()` fuer O(1) Einzelzugriff (LoadMemoryTool nutzt es)
+  - Kein Read-Modify-Write mehr bei `working_memory_set` — Multi-Agent safe
+- [x] **#19 Low:** Mutable Default auf Pydantic Model
+  - `BrowserToolDef.input_schema: dict = {}` → `Field(default_factory=dict)`
+- [x] **#20 Low:** `bridge/config.py` .env Pfad relativ zum CWD
+  - Fix: `Path(__file__).resolve().parents[1] / ".env"`

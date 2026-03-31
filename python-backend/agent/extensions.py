@@ -72,3 +72,34 @@ _registry = ExtensionRegistry()
 
 def get_extension_registry() -> ExtensionRegistry:
     return _registry
+
+
+# ── exec-12: Audit Logger Hooks (Legacy-Loop Fallback) ─────────────────────
+
+def _register_audit_hooks() -> None:
+    """Register audit logging hooks for the legacy agent loop."""
+    from agent.audit.logger import AuditAction, audit_log
+
+    async def _on_tool_before(thread_id: str, tool_name: str, tool_input: dict) -> None:
+        await audit_log(
+            action=AuditAction.TOOL_CALL,
+            thread_id=thread_id,
+            tool_name=tool_name,
+            input_data=tool_input,
+        )
+
+    async def _on_tool_after(thread_id: str, tool_name: str, tool_input: dict, result: dict) -> None:
+        await audit_log(
+            action=AuditAction.TOOL_RESULT,
+            thread_id=thread_id,
+            tool_name=tool_name,
+            input_data=tool_input,
+            output_data=result,
+            success=True,
+        )
+
+    _registry.register_on_tool_before(_on_tool_before)
+    _registry.register_on_tool_after(_on_tool_after)
+
+
+_register_audit_hooks()

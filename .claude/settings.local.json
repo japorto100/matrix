@@ -64,7 +64,9 @@
       "WebFetch(domain:arxiv.org)",
       "Bash(pip show:*)",
       "Bash(uv sync:*)",
-      "WebFetch(domain:supermemory.ai)"
+      "WebFetch(domain:supermemory.ai)",
+      "Bash(xargs cat:*)",
+      "Bash(wc -l /d/matrix/_ref/hindsight/hindsight-api-slim/hindsight_api/engine/*.py)"
     ]
   }
 }

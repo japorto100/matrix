@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
+
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 
 def _load_env() -> None:
     """Lädt .env falls vorhanden. Shell-Env hat Vorrang."""
-    load_dotenv(dotenv_path=".env", override=False)
+    load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 
 @dataclass

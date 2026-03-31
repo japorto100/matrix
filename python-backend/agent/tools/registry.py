@@ -47,6 +47,7 @@ class ToolRegistry:
             UpdateCanvasShapeTool,
         )
         from agent.tools.chart_state import GetChartStateTool, SetChartStateTool
+        from agent.tools.memory_hindsight import MemoryAddTool, MemorySearchTool
         from agent.tools.geomap import GetGeomapFocusTool
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
         from agent.tools.portfolio import GetPortfolioSummaryTool
@@ -58,6 +59,9 @@ class ToolRegistry:
         registry.register(GetGeomapFocusTool())
         registry.register(SaveMemoryTool())
         registry.register(LoadMemoryTool())
+        # Memory Tools (exec-11 Hindsight)
+        registry.register(MemorySearchTool())
+        registry.register(MemoryAddTool())
         # Canvas Tools (exec-09 Phase 3)
         registry.register(CreateCanvasShapeTool())
         registry.register(CreateNovelBlockTool())
