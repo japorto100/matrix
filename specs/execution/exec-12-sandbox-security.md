@@ -9,25 +9,108 @@
 
 ## Phase 1: OpenSandbox (Alibaba)
 
-- [ ] **1.1:** OpenSandbox SDK installieren
-  - `pip install opensandbox-sdk` in `python-backend/pyproject.toml`
-  - Docker muss auf dem Host verfuegbar sein
+**Repo:** github.com/alibaba/OpenSandbox | **Lizenz:** Apache 2.0 | **Status:** Aktiv (925 commits, CNCF Landscape)
+**Docs:** open-sandbox.ai | **PyPI:** `opensandbox`, `opensandbox-code-interpreter`
+
+### Grundregel: Wann Sandbox, wann nicht?
+
+| Code-Quelle | Wo ausfuehren | Beispiel |
+|:---|:---|:---|
+| **Eigener Code** (Rust/Go/Python Backend) | Direkt im Backend | Indikatoren, Portfolio-API, Memory |
+| **LLM-generierter Code** | Immer Sandbox | Data Analysis, Backtesting, Plots |
+| **User-eingegebener Code** | Immer Sandbox | Custom Indicators, Scripts |
+| **Tool-Ergebnisse** (API-Calls) | Backend (kein Code) | get_chart_state, get_portfolio |
+
+Sandbox ist fuer **untrusted Code Execution**, nicht fuer interne API-Calls.
+Deterministische Analyse (Rust-Indikatoren, Go-Gateway) braucht keine Sandbox.
+Sandbox = Escape-Hatch fuer alles was die deterministische Pipeline nicht abdeckt.
+
+### Konkrete Use-Cases (Bezug Hauptprojekt tradeview-fusion)
+
+1. **Custom Data Analysis** — User: "Analysiere BTC/USD Sharpe Ratio ueber 90 Tage"
+   Agent generiert pandas/numpy Code → Sandbox fuehrt aus → Chart + Zahlen zurueck
+2. **Custom Indicators** — User will eigenen Indikator der nicht in Rust existiert
+   Agent schreibt pandas-ta Code → Sandbox → Result als Artifact im Chat
+3. **Backtesting** — User: "Teste meine Strategie auf historischen Daten"
+   Lang laufender Code → Sandbox mit erhoehtem Timeout (30min)
+4. **File Upload Analyse** — User laedt CSV/Excel hoch
+   Flow: Backend empfaengt File → Kopie in Sandbox → Agent analysiert → Result zurueck → Sandbox destroyed
+   Original-File beruehrt nie den Agent-Prozess. Backend speichert Result, nicht Sandbox.
+5. **Browser Research** — Agent scrapt News/Research von JS-heavy Seiten
+   Playwright in Sandbox-Container, isoliert vom Host-Browser
+6. **Beliebiger LLM-generierter Code** — Python, JS, Shell, SQL
+   Alles was das LLM generiert und ausfuehren will → Sandbox
+
+### Windows Dev-Setup
+
+OpenSandbox benoetigt Docker (Linux-Container). Optionen:
+- **Docker Desktop + WSL2** — empfohlen, OpenSandbox Server laeuft in WSL2 oder als Container
+- **Docker in WSL2 ohne Desktop** — leichtgewichtiger, gleiche Funktionalitaet
+- **Natives Windows** — nicht moeglich (OpenSandbox Server ist Python/Linux, execd ist Go/Linux)
+- **WSL1** — nicht moeglich (kein echter Linux-Kernel, Docker braucht WSL2)
+
+Fuer Dev: docker-compose Service `opensandbox-server` (siehe unten).
+
+### Architektur (4 Layer)
+
+```
+SDK (Python) → Specs (OpenAPI) → Runtime (FastAPI Server) → Sandbox Instances
+                                  Docker Runtime (dev)        Container + execd + Jupyter
+                                  K8s Runtime (prod)          + Egress Sidecar
+```
+
+**execd** = Go-Daemon in jedem Container: Code via Jupyter Kernels, Shell via SSE, Filesystem CRUD.
+**Defaults pro Sandbox:** 1 CPU, 2 GB RAM, 10 Min TTL (alles konfigurierbar).
+**System-Requirements (Server):** 4 CPU, 8 GB RAM, 50 GB Disk.
+
+### Implementation Steps
+
+- [ ] **1.1:** OpenSandbox Server + SDK
+  - `uv pip install opensandbox opensandbox-code-interpreter` in python-backend
+  - `opensandbox-server` als docker-compose Service (siehe unten)
+  - Docker Image: `opensandbox/code-interpreter:v1.0.2`
+  - Custom Image mit Trading-Packages: pandas, numpy, matplotlib, pandas-ta, httpx
 - [ ] **1.2:** Sandbox-Manager in `python-backend/agent/sandbox/`
-  - Container pro Code-Execution erstellen
   - Lifecycle: Create → Execute → Collect Result → Destroy
-  - Timeout-Enforcement (Default: 30s)
-- [ ] **1.3:** Code Interpreter Integration
-  - Agent generiert Python/JS Code → OpenSandbox fuehrt aus
-  - Result (stdout, files, plots) zurueck an Agent
-  - Fehler werden strukturiert zurueckgemeldet
-- [ ] **1.4:** Browser Automation via Sandbox
-  - Chrome/Playwright in Sandbox-Container
-  - Agent kann Websites bedienen (Screenshot, Click, Extract)
-  - Isoliert vom Host-Netzwerk
-- [ ] **1.5:** Filesystem-Isolation
-  - Jeder Sandbox-Container bekommt eigenes Temp-Filesystem
-  - Agent kann Dateien erstellen/lesen innerhalb der Sandbox
-  - Kein Zugriff auf Host-Filesystem
+  - Timeout: 10min default, 30min fuer Backtesting
+  - Resource Limits: `{"cpu": "1", "memory": "2Gi"}` default
+  - Egress Policy: nur erlaubte Domains (Exchange-APIs, keine beliebigen URLs)
+- [ ] **1.3:** `code_execute` LangGraph Tool
+  - Agent generiert Code → Tool schickt an Sandbox → Result zurueck
+  - Unterstuetzte Sprachen: Python, JavaScript, Bash
+  - Consent: `level: confirm` in consent_policy.yaml (User muss Code-Execution bestaetigen)
+  - Result: stdout, stderr, files (Charts als Base64), execution_time
+- [ ] **1.4:** File Upload Pipeline
+  - Backend empfaengt File → `sandbox.files.write_files()` kopiert rein
+  - Agent analysiert in Sandbox → Result zurueck ans Backend
+  - Backend speichert Result im Hauptprojekt-Filesystem
+  - Sandbox wird destroyed → File-Kopie ist weg
+- [ ] **1.5:** Playwright Browser Sandbox (→ exec-13 Phase 5 nutzt das)
+  - Custom Image mit Chromium + Playwright
+  - Isoliert vom Host-Browser und Host-Netzwerk
+  - Fuer JS-heavy Seiten, Research Reports, News Scraping
+
+### docker-compose Service
+
+```yaml
+  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
+  opensandbox:
+    image: opensandbox/server:latest
+    container_name: opensandbox
+    ports:
+      - "8100:8100"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./sandbox-config.toml:/etc/opensandbox/config.toml:ro
+    environment:
+      - OPEN_SANDBOX_API_KEY=dev-sandbox-key
+    restart: unless-stopped
+    profiles:
+      - sandbox
+```
+
+Starten: `docker-compose --profile sandbox up opensandbox`
+Braucht Docker Socket Mount fuer Container-in-Container Lifecycle.
 
 ## Phase 2: Security Hardening (pentagi Patterns)
 
@@ -165,9 +248,15 @@ Ref: `pddl_phase22b_delta.md` (aus Hauptprojekt)
 ## Verify-Gates
 
 ### Phase 1: OpenSandbox
-- [ ] OpenSandbox: Agent fuehrt Python-Code in isoliertem Container aus
-- [ ] Timeout: Code-Execution wird nach 30s abgebrochen
+- [ ] OpenSandbox Server laeuft als docker-compose Service
+- [ ] `code_execute` Tool: Agent generiert Python-Code → Sandbox fuehrt aus → Result zurueck
+- [ ] Consent: User muss Code-Execution bestaetigen (level: confirm)
+- [ ] Timeout: Sandbox wird nach TTL automatisch destroyed
+- [ ] Resource Limits: CPU/Memory pro Sandbox enforced
 - [ ] Filesystem-Isolation: Agent kann nur innerhalb Sandbox-Container Dateien erstellen
+- [ ] Egress Policy: nur erlaubte Domains erreichbar
+- [ ] File Upload: Backend kopiert File in Sandbox, holt Result, Sandbox destroyed
+- [ ] Custom Docker Image: Trading-Packages (pandas, numpy, matplotlib, pandas-ta) vorinstalliert
 
 ### Phase 2: Security Hardening
 - [x] Audit Log: Jede Agent-Action ist nachvollziehbar geloggt (2.1) ✅
