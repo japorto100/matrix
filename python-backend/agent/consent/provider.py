@@ -13,6 +13,7 @@ from agent.consent.config import (
     ConsentSeverity,
     ToolConsentConfig,
     get_consent_config,
+    role_meets_minimum,
 )
 
 # Sentinel for hard-blocked decisions (deny level — no interrupt, just block)
@@ -30,6 +31,7 @@ class ConsentRequest:
     thread_id: str = ""
     agent_id: str = "default"
     agent_class: str = "advisory"
+    user_role: str = "viewer"  # Forwarded from Go Gateway (viewer/analyst/trader/admin)
 
 
 @dataclass
@@ -133,7 +135,18 @@ class YamlPolicyProvider:
     def _from_tool_config(self, request: ConsentRequest, cfg: ToolConsentConfig) -> ConsentDecision:
         tool_name = request.tool_name
 
-        # Role filter: if roles are specified, only apply to those roles
+        # min_role check: deny if user role is insufficient
+        if cfg.min_role and not role_meets_minimum(request.user_role, cfg.min_role):
+            return ConsentDecision(
+                needs_consent=True,
+                level=ConsentLevel.DENY,
+                severity=ConsentSeverity.HIGH,
+                reason=f"Tool '{tool_name}' requires role '{cfg.min_role}', user has '{request.user_role}'",
+                allow_session_cache=False,
+                policy_id=f"yaml:tool:{tool_name}:role_denied",
+            )
+
+        # Agent class filter: if roles are specified, only apply to those agent classes
         if cfg.roles and request.agent_class not in cfg.roles:
             return ConsentDecision(needs_consent=False, policy_id=f"yaml:tool:{tool_name}:role_skip")
 

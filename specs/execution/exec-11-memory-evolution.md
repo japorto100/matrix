@@ -138,34 +138,12 @@ Hindsight's `recall_async()` macht automatisch:
 
 ---
 
-## Phase 2: Graphiti / Cognee als Extension (spaeter)
+## Phase 2: Graphiti / Cognee — ausgelagert nach exec-13
 
-Hindsight hat eigenen Knowledge Graph in PostgreSQL (entity_links, memory_links).
-Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension Points:
-
-### 2.1 Graphiti als Custom GraphRetriever
-- [ ] `GraphitiRetriever(GraphRetriever)` implementieren
-  - Hindsight's `GraphRetriever(ABC)` als Basis
-  - Graphiti's temporale Graph-API als Backend
-  - Registrieren als zusaetzliche Retrieval-Strategie
-  - Cognee hat kuerzlich Graphiti Integration bekommen (temporale Graphs)
-
-### 2.2 Cognee als Structured Knowledge Layer
-- [ ] Cognee parallel zu Hindsight evaluieren
-  - Cognee nutzt KuzuDB + LanceDB (kompatibel mit unserem bestehenden memory_engine/)
-  - Plugin-basiert: `DataPoint` extends Pydantic → Graph/Vector Store Adapter
-  - Ergaenzend: Cognee fuer strukturierte Fakten, Hindsight fuer episodisches Memory
-
-### 2.3 Unified Search API
-- [ ] Fusion-Layer der alle Memory-Backends abfragt:
-  ```
-  Agent Query → Unified Search
-                  ├── Hindsight (Retain/Recall) → 4-Weg Retrieval
-                  ├── Graphiti (optional) → Temporal Graph Queries
-                  └── Cognee (optional) → Structured KG Queries
-                → RRF Fusion → Reranked Results
-  ```
-- [ ] Reciprocal Rank Fusion (RRF) ueber alle Backends
+Siehe `exec-13-ui-kg-extensions.md` fuer:
+- Graphiti als Custom GraphRetriever (Hindsight Extension Point)
+- Cognee als Structured Knowledge Layer
+- Unified Search API (RRF Fusion ueber alle Backends)
 
 ---
 
@@ -183,16 +161,32 @@ Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension 
 - [x] In ToolRegistry registriert → automatisch als MCP Tools exponiert (exec-09)
 - [x] `agent/skills/global/memory-usage/SKILL.md` — Skill erklaert wann Agent Memory nutzen soll
 
-### 3.3 Memory Sharing zwischen Agents
-- [ ] Shared Memory Store: alle Trading-Rollen nutzen gleiche Bank pro User
-- [ ] Read/Write Permissions per Agent-Rolle (Tag-basiert via Hindsight Tags)
-- [ ] Agent A findet RSI-Anomalie → speichert → Agent B findet es via Search
+### 3.3 Memory Sharing zwischen Agents ✅ (31.03.2026, SOTA-Update 01.04.2026)
+- [x] Alle Rollen teilen gleiche Bank pro User (`user_{user_id}`)
+- [x] Retain: Memories getaggt mit Rolle (`tags=["fundamentals_analyst"]`)
+- [x] Recall: Tag-Filter via zentrale Config (`TRADING_ROLE_MEMORY` in `roles.py`)
+- [x] Read/Write Permissions: Risk Manager read-only (`memory_write: False`)
+- [x] Kein hardcoded Config — alles zentralisiert in `agent/roles.py`
+- [x] **SOTA Paper-Patterns implementiert:**
+  - Governed Memory: Quality Gates (Hindsight built-in), Entity Isolation (Tags), Progressive Context (`_injected_context` trackt injizierte Memory-IDs)
+  - Full Hindsight API: `include_entities`, `question_date`, `observation` fact_type, `event_date`, `metadata`, `document_id` bei Retain
+  - runner.py: Memory Recall auch im Legacy-Loop Pfad
+- [x] **Cache Coherence (Paper 2):** ✅
+  - `agent/memory/coherence.py` — Write-Ahead Log + Conflict Detection
+  - MemoryCoherenceManager: write_ahead() → detect_conflicts() → resolve_latest_wins()
+  - Eingebunden in memory_retain_node (loggt Konflikte, retains trotzdem)
+  - Aktuell: latest_wins Strategie. Spaeter: LLM-basierte Fusion
+- [x] **Nicht implementiert (bewusst):**
+  - Separate Graphs (Paper 5): Hindsight's 4 Link-Typen + RRF Fusion reicht → Phase 2 Graphiti
 
-### 3.4 Memory Graph Visualisierung
-- [ ] Memory-Graph in tldraw Canvas oder eigenes Panel
-- [ ] Supermemory `memory-graph` React Component als UI-Referenz (`_ref/supermemory/packages/memory-graph/`)
-- [ ] Nodes = Memories, Edges = Links (temporal/semantic/entity)
-- [ ] User kann Memory-Graph explorieren, Memories pinnen/loeschen
+#### SOTA Referenzen (01.04.2026)
+- [Governed Memory: A Production Architecture for Multi-Agent Workflows](https://arxiv.org/html/2603.17787) — 4-Layer Architektur, Quality Gates, Entity Isolation, Progressive Context, 99.6% Fact Recall
+- [Multi-Agent Memory from a Computer Architecture Perspective](https://arxiv.org/html/2603.10062v1) — 3-Layer Hierarchy, Cache Coherence, 36.9% Failures durch Interagent Misalignment
+- [MAGMA: A Multi-Graph based Agentic Memory Architecture](https://arxiv.org/html/2601.03236v1) — Orthogonale Semantic/Temporal/Causal/Entity Graphs, Cross-Graph Fusion
+
+### 3.4 Memory Graph Visualisierung — ausgelagert nach exec-13
+
+Siehe `exec-13-ui-kg-extensions.md`.
 
 ---
 
@@ -204,16 +198,26 @@ Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension 
 - [x] Trajectory Logging + PRM Scoring
 - [x] RL Infrastructure (deaktiviert)
 
-### Noch zu integrieren:
-- [ ] **4.1:** Hindsight Consolidation als Skill-Quelle
-  - Consolidierte Memories → generieren neue Skills automatisch
-  - "User macht immer den gleichen Fehler bei Stop-Loss" → Skill
-- [ ] **4.2:** Memory-basiertes Skill Retrieval
-  - Statt nur Task-Description → auch Memory-Context fuer Skill-Matching
-  - Agent erinnert sich an aehnliche Situationen → passende Skills
-- [ ] **4.3:** User-Profile als Skill-Filter
-  - User-Profil (Hindsight Opinion Network) → filtert relevante Skills
-  - Swing-Trader bekommt andere Skills als Scalper
+### Hindsight ↔ Skills Bridge ✅ (01.04.2026)
+`agent/memory/observation_skills.py`:
+- [x] **4.1:** `observations_to_skills(user_id)` — Observations → SKILL.md
+  - Holt konsolidierte Observations aus Hindsight
+  - LLM prueft ob skill-worthy (recurring pattern, not one-time event)
+  - Generiert Personal Skills in `skills/personal/{user_id}/auto-obs-{name}/`
+- [x] **4.2:** `memory_enriched_skill_retrieval(user_id, task)` — Memory-Context fuer Skills
+  - Holt relevante Memories (experience + observation)
+  - Reichert Task-Description mit Memory-Context an
+  - Skill-Matching nutzt angereicherte Description
+- [x] **4.3:** `get_user_profile_tags(user_id)` — User-Profile als Skill-Filter
+  - Holt Opinions aus Hindsight (User-Preferences)
+  - LLM extrahiert Tags ("swing-trader", "risk-averse", "forex-focused")
+  - Tags koennen fuer Skill-Filtering genutzt werden
+
+### Consolidation Worker ✅ (01.04.2026)
+- [x] devstack2: `memory-worker` Service (hindsight_api.worker.main)
+  - Verarbeitet async Consolidation Tasks (Facts → Observations)
+  - Startet automatisch wenn PostgreSQL verfuegbar
+- [x] `engine.py`: `HINDSIGHT_SYNC_TASKS=true` → SyncTaskBackend (Fallback ohne Worker)
 
 ---
 
@@ -240,8 +244,9 @@ Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension 
 
 ### Gate 3: Agent Integration
 - [x] Memory Nodes im LangGraph (recall vor LLM, retain nach LLM)
-- [x] memory_search + memory_add Tools registriert
-- [x] Memory Skill geladen
+- [x] memory_search + memory_add Tools registriert (12 Tools gesamt)
+- [x] Memory Skill geladen (memory-usage SKILL.md)
+- [x] runner.py: Memory Recall auch im Legacy-Loop Pfad
 - [ ] End-to-End: User fragt → Agent recalled Memories → antwortet → retains neue Fakten
 
 ### Gate 4: Audit + Alembic ✅
@@ -249,9 +254,28 @@ Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension 
 - [x] `agent.audit_events` Tabelle erstellt (user_id + agent_role fuer Multi-User/Agent)
 - [x] PostgresAuditStore nutzt Alembic-managed Tabelle (kein raw DDL)
 
-### Gate 5: Visualisierung
-- [ ] Memory Graph im UI sichtbar (Nodes + Edges)
-- [ ] User kann Memories pinnen/loeschen
+### Gate 5: Memory Sharing (SOTA)
+- [x] Alle Rollen teilen Bank pro User
+- [x] Tag-basierte Sichtbarkeit (TRADING_ROLE_MEMORY in roles.py)
+- [x] Risk Manager read-only
+- [ ] Orchestrator: Fundamentals retained → Researcher recalled es im naechsten Schritt
+- [ ] Memory Sharing E2E: Agent A speichert Fakt → Agent B findet es via Recall
+
+### Gate 6: SOTA Paper-Patterns
+- [x] Progressive Context: injizierte Memory-IDs getrackt, keine Duplikate
+- [x] Full Hindsight API: include_entities, question_date, observation fact_type, metadata, document_id
+- [x] Cache Coherence: Write-Ahead Log + Conflict Detection (latest_wins)
+- [ ] Progressive Context E2E: 6 Rollen nacheinander → Token-Ersparnis messbar
+- [ ] Conflict Detection E2E: 2 parallele Writes → Konflikt geloggt
+- [ ] Entity Observations: Agent erhaelt Entity-Kontext ("Alice arbeitet bei Google") im Prompt
+
+### Gate 7: Self-Evolution (Phase 4)
+- [ ] Observation → Skill: Hindsight Observation wird zu SKILL.md konvertiert
+- [ ] Memory-enriched Skill Retrieval: Angereicherte Task-Description verbessert Skill-Matching
+- [ ] User-Profile Tags: Opinions → Tags ("swing-trader") extrahiert
+- [ ] Consolidation Worker: hindsight-worker laeuft in devstack2, verarbeitet Tasks
+
+### Gate 8: Visualisierung → exec-13
 
 ---
 
@@ -259,58 +283,29 @@ Graphiti/Cognee sind **ergaenzend**, nicht ersetzend. Integration via Extension 
 
 Offene Issues aus dem Python Backend Code Review (31.03.2026):
 
-- [ ] **#2 Critical:** Cypher injection in `memory_engine/kg_store.py`
-  - `seed()` baut Cypher via String-Formatting mit `.replace("'", "\\'")`
-  - Fix: Parameterized Queries nutzen
+- [x] **#2 Critical:** Cypher injection in `memory_engine/kg_store.py` ✅ (31.03.2026)
+  - `_sanitize_cypher_value()` statt `.replace("'", "\\'")`
 - [x] **#4 Critical:** `shared.cache_adapter` ✅ (31.03.2026)
   - `cache_adapter.py` vom Hauptprojekt kopiert nach `shared/`
-  - `shared/__init__.py` updated: exportiert `create_cache_adapter`, `TTL_INDICATOR`, `TTL_SNAPSHOT`
-  - `working_memory.py` und `memory/app.py` importieren fehlerfrei
-- [ ] **#9 High:** LanceDB `delete()` interpoliert doc_id in Filter-String
-  - `memory_engine/vector_store.py:501`
-  - Fix: Parameterized Delete oder ID sanitizen
-- [ ] **#10 High:** `SQLiteKGStore.query()` akzeptiert Raw SQL von HTTP Endpoint
-  - `memory/app.py:136` leitet `request.query` direkt durch
-  - Fix: Query-Allowlist oder Endpoint entfernen
-- [ ] **#13 Medium:** `MemorySaver` in LangGraph = in-memory only
-  - Alle 3 Graphs nutzen MemorySaver → State verloren bei Restart
-  - Fix: Persistent Checkpointer (PostgreSQL/Redis) fuer Prod
-- [ ] **#17 Medium:** `EpisodicStore` nutzt sqlite3 ohne Thread-Safety
-  - `check_same_thread=False` aber keine Locks
-  - Fix: `aiosqlite` oder `asyncio.Lock` fuer Writes
+- [x] **#9 High:** LanceDB `delete()` ✅ (31.03.2026)
+  - `doc_id.replace("'", "''")` vor Filter-Interpolation
+- [x] **#10 High:** `SQLiteKGStore.query()` ✅ (31.03.2026)
+  - Query-Allowlist: nur SELECT auf kg_nodes/kg_edges erlaubt
+- [x] **#13 Medium:** `MemorySaver` → PostgreSQL Checkpointer ✅ (31.03.2026)
+  - `langgraph-checkpoint-postgres` installiert
+  - `agent_graph.py`: nutzt `AsyncPostgresSaver` wenn `HINDSIGHT_DB_URL` gesetzt, sonst MemorySaver Fallback
+- [x] **#17 Medium:** `EpisodicStore` Thread-Safety ✅ (31.03.2026)
+  - `threading.Lock()` fuer `create()` und `prune_expired()` Writes
 
 ---
 
-## Phase 5: Evaluierung — Hauptprojekt Integration + UI
+## Phase 5: Evaluierung — ausgelagert nach exec-13
 
-### 5.1 Supermemory UI evaluieren
-- [ ] `_ref/supermemory/packages/memory-graph/` React Component analysieren
-- [ ] Passt die Graph-Visualisierung zu unserem tldraw Canvas?
-- [ ] Oder eigenes Memory-Panel (wie Supermemory Dashboard)?
-- [ ] Memory-Graph Interaktionen: Zoom, Filter, Pin, Delete
-
-### 5.2 Hauptprojekt Control Panel uebernehmen
-- [ ] Control Panel aus `tradeview-fusion/` evaluieren
-  - Settings, Agent Config, Skill Management UI
-  - `/control` Route im Hauptprojekt
-- [ ] Relevant fuer: Skill enable/disable, Memory Inspector, Agent-Rollen Config
-- [ ] Was uebernehmen, was neu bauen?
-
-### 5.3 Hauptprojekt Filesystem / File Execution
-- [ ] File Execution Slices aus Hauptprojekt evaluieren
-  - Code Execution (OpenSandbox, exec-12)
-  - File Upload/Download Pipeline
-  - Workspace/Project Filesystem
-- [ ] Wie integriert sich File-Kontext mit Memory Engine?
-  - Uploaded PDFs → Memory Engine (Retain → Chunks → Vector Store)
-  - Code-Outputs → Experience Network
-- [ ] Was muss von `tradeview-fusion/` uebernommen werden?
-
-### 5.4 Memory + Content Ingestion (exec-05b Verbindung)
-- [ ] Email/YouTube/RSS Ingestion (exec-05b) → Memory Engine als Storage
-- [ ] Doomberg Newsletter → Retain → World Network
-- [ ] YouTube Transcripts → Retain → Experience Network
-- [ ] Unified Ingestion → Memory statt nur Vector DB
+Siehe `exec-13-ui-kg-extensions.md` fuer:
+- Supermemory UI / Memory Graph Visualisierung
+- Hauptprojekt Control Panel
+- Hauptprojekt Filesystem / File Execution
+- Content Ingestion (exec-05b) → Memory Engine
 
 ---
 

@@ -357,6 +357,17 @@ try {
         }
     }
 
+    # -- Hindsight Memory Worker (exec-11, runs consolidation tasks) --
+    if (-not $SkipPostgres) {
+        $pgCtl2 = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
+        if (Test-Path $pgCtl2) {
+            Register-Service -Name "memory-worker" -Port 9999 -Tier "app" -TimeoutSecs 30 -StartAction {
+                Start-LoggedProcess -Name "memory-worker" -FilePath $pyExe `
+                    -ArgumentList @("-m", "hindsight_api.worker.main") -WorkingDirectory $pyDir
+            }
+        }
+    }
+
     # -- Voice AI Worker (optional, -WithVoice Flag) --
     if ($WithVoice) {
         Register-Service -Name "voice-worker" -Port 0 -Tier "app" -TimeoutSecs 30 -StartAction {

@@ -1,4 +1,4 @@
-"""Knowledge Graph store abstraction.
+"""Knowledge Graph store abstraction (Legacy — Hindsight replaces this in exec-11).
 
 Node tables: Stratagem, Regime, BTEMarker, TransmissionChannel, Asset, Institution
 Edge tables: causes, inhibits, activates, precedes, transmits, signals
@@ -7,15 +7,33 @@ Providers:
     - kuzu     (current local default when available)
     - sqlite   (fallback / forced local path)
     - falkor   (prepared path, opt-in via KG_PROVIDER=falkor)
+
+Security fixes (Code Review 31.03.2026):
+    - #2: FalkorDB Cypher injection — _sanitize_cypher_value()
+    - #10: SQLiteKGStore.query() — allowlisted queries only
 """
 from __future__ import annotations
 
 import hashlib
+import re
 import json
 import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Protocol
+
+def _sanitize_cypher_value(val: str) -> str:
+    """Sanitize a string value for Cypher queries (#2 injection fix)."""
+    return val.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
+
+
+# Allowlisted SQL patterns for SQLiteKGStore.query() (#10 fix)
+_ALLOWED_QUERY_PATTERNS = [
+    re.compile(r"^SELECT\s+.+\s+FROM\s+kg_nodes", re.IGNORECASE),
+    re.compile(r"^SELECT\s+.+\s+FROM\s+kg_edges", re.IGNORECASE),
+    re.compile(r"^SELECT\s+COUNT", re.IGNORECASE),
+]
+
 
 from memory_engine.seed_data import (
     INSTITUTIONS,
@@ -273,6 +291,9 @@ class SQLiteKGStore:
         return {"seeded": True, "node_count": self.node_count()}
 
     def query(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        # #10 fix: only allow SELECT queries on known tables
+        if not any(p.match(query.strip()) for p in _ALLOWED_QUERY_PATTERNS):
+            raise ValueError(f"Query not allowed (only SELECT on kg_nodes/kg_edges): {query[:80]}")
         cur = self._conn.execute(query, parameters or {})
         cols = [d[0] for d in cur.description] if cur.description else []
         return [dict(zip(cols, row)) for row in cur.fetchall()]
@@ -355,10 +376,10 @@ class FalkorKGStore:
                     "SET n.name = '%s', n.category = '%s', n.market_bias = '%s', n.confidence_base = %s"
                 )
                 % (
-                    str(s["id"]).replace("'", "\\'"),
-                    str(s["name"]).replace("'", "\\'"),
-                    str(s["category"]).replace("'", "\\'"),
-                    str(s["market_bias"]).replace("'", "\\'"),
+                    _sanitize_cypher_value(str(s["id"])),
+                    _sanitize_cypher_value(str(s["name"])),
+                    _sanitize_cypher_value(str(s["category"])),
+                    _sanitize_cypher_value(str(s["market_bias"])),
                     float(s["confidence_base"]),
                 ),
                 "--compact",
@@ -372,9 +393,9 @@ class FalkorKGStore:
                     "SET n.name = '%s', n.description = '%s', n.typical_duration_days = %s"
                 )
                 % (
-                    str(r["id"]).replace("'", "\\'"),
-                    str(r["name"]).replace("'", "\\'"),
-                    str(r["description"]).replace("'", "\\'"),
+                    _sanitize_cypher_value(str(r["id"])),
+                    _sanitize_cypher_value(str(r["name"])),
+                    _sanitize_cypher_value(str(r["description"])),
                     int(r["typical_duration_days"]),
                 ),
                 "--compact",

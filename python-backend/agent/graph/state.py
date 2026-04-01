@@ -82,3 +82,6 @@ class AgentGraphState(TypedDict):
 
     # Agent class (advisory/executor) — used by consent system
     agent_class: str
+
+    # User role from Go Gateway (viewer/analyst/trader/admin)
+    user_role: str

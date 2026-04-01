@@ -81,6 +81,18 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
     TradingRole.RISK_MANAGER: {"get_portfolio_summary", "save_memory", "load_memory"},
 }
 
+# Memory Sharing Permissions pro Rolle (exec-11 Phase 3.3)
+# memory_write: darf Memories retainen (False = read-only)
+# memory_recall_tags: None = alle sehen, Liste = nur diese Tags
+TRADING_ROLE_MEMORY: dict[TradingRole, dict] = {
+    TradingRole.FUNDAMENTALS: {"memory_write": True, "memory_recall_tags": None},
+    TradingRole.SENTIMENT: {"memory_write": True, "memory_recall_tags": None},
+    TradingRole.TECHNICAL: {"memory_write": True, "memory_recall_tags": None},
+    TradingRole.RESEARCHER: {"memory_write": True, "memory_recall_tags": None},
+    TradingRole.TRADER: {"memory_write": True, "memory_recall_tags": None},
+    TradingRole.RISK_MANAGER: {"memory_write": False, "memory_recall_tags": None},  # read-only
+}
+
 # Completion Gate Contracts pro Rolle (NLAH Paper Pattern)
 # Jeder Contract definiert was der Agent-Output ENTHALTEN MUSS.
 TRADING_ROLE_CONTRACTS: dict[TradingRole, list[str]] = {

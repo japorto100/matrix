@@ -42,6 +42,25 @@ class ToolConsentConfig(BaseModel):
     reason: str = ""
     allow_session_cache: bool = True
     roles: list[str] = []  # Empty = applies to all roles. ["advisory"] = only advisory.
+    min_role: str = ""  # Minimum user role required (viewer/analyst/trader/admin). Empty = no check.
+
+
+# Role hierarchy level for min_role checks (matches tradeview-fusion proxy.ts)
+ROLE_HIERARCHY: dict[str, int] = {
+    "viewer": 1,
+    "analyst": 2,
+    "trader": 3,
+    "admin": 4,
+}
+
+
+def role_meets_minimum(user_role: str, min_role: str) -> bool:
+    """Check if user_role meets the min_role requirement."""
+    if not min_role:
+        return True
+    user_level = ROLE_HIERARCHY.get(user_role, 0)
+    min_level = ROLE_HIERARCHY.get(min_role, 0)
+    return user_level >= min_level
 
 
 class CategoryConsentConfig(BaseModel):

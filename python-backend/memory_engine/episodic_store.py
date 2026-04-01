@@ -18,10 +18,12 @@ _DEFAULT_DB_PATH = str(Path(__file__).resolve().parents[3] / "data" / "episodic.
 
 class EpisodicStore:
     def __init__(self, db_path: str | None = None) -> None:
+        import threading
         self._path = db_path or _DEFAULT_DB_PATH
         Path(self._path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        self._write_lock = threading.Lock()  # #17 fix: serialize concurrent writes
         self._init_schema()
 
     def _init_schema(self) -> None:
@@ -64,20 +66,21 @@ class EpisodicStore:
         ep_id = f"ep_{uuid.uuid4().hex[:12]}"
         now = datetime.now(timezone.utc).isoformat()
         retain_until = (datetime.now(timezone.utc) + timedelta(days=retain_days)).isoformat()
-        self._conn.execute(
-            """INSERT INTO agent_episodes
-               (id, session_id, agent_role, input_json, output_json, tools_used,
-                duration_ms, token_count, confidence, tags_json, metadata_json,
-                retain_until, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (
-                ep_id, session_id, agent_role, input_json, output_json,
-                json.dumps(tools_used or []), duration_ms, token_count, confidence,
-                json.dumps(tags or []), json.dumps(metadata or {}),
-                retain_until, now,
-            ),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                """INSERT INTO agent_episodes
+                   (id, session_id, agent_role, input_json, output_json, tools_used,
+                    duration_ms, token_count, confidence, tags_json, metadata_json,
+                    retain_until, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    ep_id, session_id, agent_role, input_json, output_json,
+                    json.dumps(tools_used or []), duration_ms, token_count, confidence,
+                    json.dumps(tags or []), json.dumps(metadata or {}),
+                    retain_until, now,
+                ),
+            )
+            self._conn.commit()
         return {"id": ep_id, "created_at": now}
 
     def list_episodes(
@@ -107,10 +110,11 @@ class EpisodicStore:
 
     def prune_expired(self) -> int:
         now = datetime.now(timezone.utc).isoformat()
-        cur = self._conn.execute(
-            "DELETE FROM agent_episodes WHERE retain_until < ?", (now,)
-        )
-        self._conn.commit()
+        with self._write_lock:
+            cur = self._conn.execute(
+                "DELETE FROM agent_episodes WHERE retain_until < ?", (now,)
+            )
+            self._conn.commit()
         return cur.rowcount
 
     def count(self) -> int:

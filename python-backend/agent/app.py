@@ -17,7 +17,7 @@ import base64
 import os
 import tempfile
 import uuid
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 from shared import create_service_app  # noqa: E402
@@ -311,7 +311,7 @@ def _build_user_content(req: "AgentChatRequest") -> list | str:
 
 
 @app.post("/api/v1/agent/chat")
-async def agent_chat(req: AgentChatRequest):
+async def agent_chat(req: AgentChatRequest, request: Request):
     """Agent chat endpoint — Vercel AI Data Stream Protocol SSE.
     Routes through run_agent_loop (LLM-agnostic, tool-capable, Phase 22g).
     Provider: AGENT_PROVIDER=anthropic (default) | openai | openai-compatible
@@ -324,7 +324,11 @@ async def agent_chat(req: AgentChatRequest):
     system_prompt = _build_system_prompt(req.context)
     thread_id = req.threadId or str(uuid.uuid4())
 
-    generator = _stream_agent_loop(req, system_prompt, thread_id)
+    # exec-12 Phase 2.6: Read user role + id from Go Gateway headers
+    user_role = request.headers.get("x-user-role", "viewer").lower()
+    user_id = request.headers.get("x-auth-user", "default")
+
+    generator = _stream_agent_loop(req, system_prompt, thread_id, user_role=user_role, user_id=user_id)
     return StreamingResponse(
         generator,
         media_type="text/event-stream",
@@ -336,7 +340,10 @@ async def agent_chat(req: AgentChatRequest):
     )
 
 
-async def _stream_agent_loop(req: AgentChatRequest, system_prompt: str, thread_id: str):
+async def _stream_agent_loop(
+    req: AgentChatRequest, system_prompt: str, thread_id: str,
+    *, user_role: str = "viewer", user_id: str = "default",
+):
     """Phase 22g: LLM-agnostic loop — Anthropic + OpenAI-compatible (OpenRouter, Ollama, vLLM).
     Builds AgentExecutionContext, loads ToolRegistry, runs run_agent_loop()."""
     try:
@@ -362,13 +369,14 @@ async def _stream_agent_loop(req: AgentChatRequest, system_prompt: str, thread_i
             registry.register(BrowserToolProxy(bt.name, bt.description, bt.input_schema))
 
     ctx = AgentExecutionContext(
-        user_id="default",  # Go Gateway forwards X-Auth-User-Id; future: read from header
+        user_id=user_id,
         thread_id=thread_id,
         model=model,
         system_prompt=system_prompt,
         tools=tuple(registry.all()),
         reasoning_effort=req.reasoningEffort,
         agent_class="advisory",
+        user_role=user_role,
     )
 
     # Build messages — AC56: multimodal content blocks for Anthropic

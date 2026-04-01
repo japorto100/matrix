@@ -58,6 +58,7 @@ async def check_consent(
     thread_id: str = "",
     agent_id: str = "default",
     agent_class: str = "advisory",
+    user_role: str = "viewer",
 ) -> ConsentDecision:
     """Check if a tool call needs user consent.
 
@@ -119,6 +120,7 @@ async def check_consent(
         thread_id=thread_id,
         agent_id=agent_id,
         agent_class=agent_class,
+        user_role=user_role,
     )
 
     try:

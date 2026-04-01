@@ -28,6 +28,9 @@ class AgentExecutionContext:
     reasoning_effort: str | None = None
     # Agent capability class — used by CapabilityEnvelope checks (ASR2)
     agent_class: str = "advisory"
+    # User role forwarded from Go Gateway (X-User-Role header)
+    # Values: viewer, analyst, trader, admin (matches tradeview-fusion RBAC)
+    user_role: str = "viewer"
     # Request-level metadata (forwarded from Go)
     request_id: str | None = None
 

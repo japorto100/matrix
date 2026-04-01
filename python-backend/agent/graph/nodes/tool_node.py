@@ -58,6 +58,9 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
     for tc in tool_calls:
         limiter.record_tool_call(ctx.thread_id, tc["tool_name"])
 
+    # P0-P2: Sanitize tool outputs before they reach LLM
+    from agent.middleware.sanitizer import sanitize_input
+
     tool_results: list[ToolResult] = []
     tool_messages: list[dict[str, Any]] = []
 
@@ -74,11 +77,24 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
 
         tool_results.append(tr)
 
-        # Add tool result as message for LLM context
+        # Sanitize before sending to LLM (P0: XML tags, P1: regex, P2: PromptGuard)
+        if tr["error"]:
+            llm_content = json.dumps({"error": tr["error"]})
+        else:
+            raw_content = json.dumps(tr["result"]) if isinstance(tr["result"], dict) else str(tr["result"])
+            san = sanitize_input(tc["tool_name"], raw_content)
+            if san.blocked:
+                llm_content = san.content
+                logger.warning("Tool output blocked by sanitizer: %s %s", tc["tool_name"], san.audit_metadata)
+            else:
+                llm_content = san.content
+                if san.p1_detections:
+                    logger.info("Sanitizer detections for %s: %s", tc["tool_name"], san.p1_detections)
+
         tool_messages.append({
             "role": "tool",
             "tool_use_id": tc["tool_call_id"],
-            "content": json.dumps(tr["result"]) if not tr["error"] else json.dumps({"error": tr["error"]}),
+            "content": llm_content,
         })
 
     return {

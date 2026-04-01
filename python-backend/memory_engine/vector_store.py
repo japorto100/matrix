@@ -498,7 +498,9 @@ class _LanceDBVectorStore:
         assert self._db is not None
         if self._table_name not in self._db.table_names():
             return
-        self._db.open_table(self._table_name).delete(f"id = '{doc_id}'")
+        # #9 fix: sanitize doc_id to prevent filter injection
+        safe_id = doc_id.replace("'", "''")
+        self._db.open_table(self._table_name).delete(f"id = '{safe_id}'")
 
     def seed_from_kg(self, stratagems: list[dict[str, Any]]) -> int:
         count = 0

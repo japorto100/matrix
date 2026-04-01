@@ -83,7 +83,16 @@ async def get_memory_engine():
 
         from hindsight_api.engine.memory_engine import MemoryEngine
 
-        _engine = MemoryEngine(db_url=db_url)
+        # Task Backend: BrokerTaskBackend (default, braucht hindsight-worker Prozess)
+        # oder SyncTaskBackend (inline, fuer Dev ohne Worker)
+        task_backend = None
+        use_sync = os.environ.get("HINDSIGHT_SYNC_TASKS", "").lower() == "true"
+        if use_sync:
+            from hindsight_api.engine.task_backend import SyncTaskBackend
+            task_backend = SyncTaskBackend()
+            logger.info("Hindsight: using SyncTaskBackend (consolidation inline, no worker needed)")
+
+        _engine = MemoryEngine(db_url=db_url, task_backend=task_backend)
         await _engine.initialize()
         logger.info("Hindsight Memory Engine initialized (db=%s)", db_url.split("@")[-1])
         return _engine

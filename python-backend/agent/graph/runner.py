@@ -46,8 +46,10 @@ async def run_agent_loop(
 
 
 async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
-    """Enrich system prompt with skills and temporal context."""
-    system_prompt = ctx.system_prompt
+    """Enrich system prompt with skills, temporal context, and security instructions."""
+    from agent.middleware.sanitizer import SYSTEM_PROMPT_INJECTION
+
+    system_prompt = ctx.system_prompt + SYSTEM_PROMPT_INJECTION
 
     # exec-10: Skill Injection
     try:
@@ -65,6 +67,36 @@ async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
         temporal = get_temporal_context(user_id=ctx.user_id)
         if temporal:
             system_prompt = f"{system_prompt}\n\n{temporal}"
+    except Exception:
+        pass
+
+    # exec-11: Hindsight Memory Recall (pre-LLM context enrichment)
+    # Note: agent_graph.py also has memory_recall_node, but runner.py
+    # enriches the system prompt BEFORE graph execution for legacy loop compatibility.
+    try:
+        from agent.memory.engine import get_bank_id, get_memory_engine
+        engine = await get_memory_engine()
+        if engine:
+            from hindsight_api.engine.memory_engine import Budget
+            from hindsight_api.models import RequestContext
+            bank_id = get_bank_id(ctx.user_id)
+            # Use last user message as query
+            user_query = ""
+            for msg in reversed(getattr(ctx, '_messages', [])):
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    user_query = str(msg.get("content", ""))[:300]
+                    break
+            if not user_query:
+                user_query = ctx.system_prompt[:200]  # Fallback
+            result = await engine.recall_async(
+                bank_id=bank_id, query=user_query,
+                fact_type=["world", "experience", "observation"],
+                budget=Budget.MID, max_tokens=1500,
+                request_context=RequestContext(),
+            )
+            if result.results:
+                mem_lines = [f"- {f.text}" for f in result.results[:8]]
+                system_prompt = f"{system_prompt}\n\n## Relevant Memories\n" + "\n".join(mem_lines)
     except Exception:
         pass
 
@@ -120,6 +152,7 @@ async def _run_graph(
         "thread_id": ctx.thread_id,
         "user_id": ctx.user_id,
         "agent_class": getattr(ctx, "agent_class", "advisory"),
+        "user_role": getattr(ctx, "user_role", "viewer"),
     }
 
     config = {"configurable": {"thread_id": ctx.thread_id}}
@@ -132,6 +165,14 @@ async def _run_graph(
 
         final = result.get("final_response", "")
         if final:
+            # P3: Scan agent output for exfiltration anomalies
+            from agent.middleware.sanitizer import scan_output_anomalies
+            anomaly = scan_output_anomalies(final)
+            if not anomaly.clean:
+                import logging as _log
+                _log.getLogger(__name__).warning(
+                    "Output anomalies in agent response: %s", anomaly.anomalies,
+                )
             yield sse(TextDeltaPacket(id=text_id, text=final))
 
         for tr in result.get("tool_results", []):
