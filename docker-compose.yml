@@ -117,6 +117,29 @@ services:
     profiles:
       - dev
 
+  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
+  # Isolierte Code-Execution fuer LLM-generierten Code (Data Analysis, Backtesting).
+  # Starten: docker-compose --profile sandbox up opensandbox-server
+  # Braucht Docker Socket Mount fuer Container-in-Container Lifecycle.
+  opensandbox-server:
+    image: opensandbox/opensandbox-server:latest
+    container_name: opensandbox-server
+    volumes:
+      - ./python-backend/agent/sandbox/sandbox-config.toml:/etc/opensandbox/config.toml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+    environment:
+      - OPEN_SANDBOX_API_KEY=dev-sandbox-key
+    restart: unless-stopped
+    profiles:
+      - sandbox
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # ── TURN Server (Voice/Video Call Relay) ────────────────────────────────
   # Ohne TURN scheitern Calls wenn beide Peers hinter striktem NAT sitzen
   # (z.B. Mobilfunk ↔ Mobilfunk). STUN allein reicht dafür nicht.

@@ -73,10 +73,10 @@ TRADING_ROLE_PROMPTS: dict[TradingRole, str] = {
 
 # Tools pro Rolle (Name → erlaubte Tool-Namen)
 TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
-    TradingRole.FUNDAMENTALS: {"get_portfolio_summary", "get_chart_state", "save_memory", "load_memory"},
+    TradingRole.FUNDAMENTALS: {"get_portfolio_summary", "get_chart_state", "save_memory", "load_memory", "sandbox_execute"},
     TradingRole.SENTIMENT: {"get_chart_state", "save_memory", "load_memory"},
-    TradingRole.TECHNICAL: {"get_chart_state", "save_memory", "load_memory"},
-    TradingRole.RESEARCHER: {"get_chart_state", "get_portfolio_summary", "save_memory", "load_memory"},
+    TradingRole.TECHNICAL: {"get_chart_state", "save_memory", "load_memory", "sandbox_execute"},
+    TradingRole.RESEARCHER: {"get_chart_state", "get_portfolio_summary", "save_memory", "load_memory", "sandbox_execute", "sandbox_browser"},
     TradingRole.TRADER: {"get_chart_state", "set_chart_state", "get_portfolio_summary", "save_memory", "load_memory"},
     TradingRole.RISK_MANAGER: {"get_portfolio_summary", "save_memory", "load_memory"},
 }

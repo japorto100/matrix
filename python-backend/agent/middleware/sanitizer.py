@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Tools whose output contains untrusted external content
 HIGH_RISK_TOOLS: set[str] = {
     "web_search", "http_request", "browser_navigate", "browser_extract",
-    "sandbox_browser", "email_read", "rss_feed", "scrape_url",
+    "sandbox_execute", "sandbox_browser", "email_read", "rss_feed", "scrape_url",
 }
 
 # Tools whose output is deterministic / internal-only

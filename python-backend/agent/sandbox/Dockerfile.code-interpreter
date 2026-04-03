@@ -1,0 +1,11 @@
+# Custom Code Interpreter Image mit Trading-Packages (exec-12 Phase 1.1)
+# Build: docker build -f Dockerfile.code-interpreter -t tradeview/sandbox-code-interpreter:v1 .
+
+FROM opensandbox/code-interpreter:v1.0.2
+
+RUN pip install --no-cache-dir \
+    pandas==2.2.* \
+    numpy==2.1.* \
+    matplotlib==3.9.* \
+    pandas-ta==0.3.* \
+    httpx==0.28.*

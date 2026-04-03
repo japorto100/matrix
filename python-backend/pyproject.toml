@@ -71,6 +71,11 @@ dependencies = [
     "livekit-plugins-openai>=1.0.0",
     "sentence-transformers>=5.3.0",
     "langgraph-checkpoint-postgres>=3.0.5",
+    # ── Sandbox Code Execution (exec-12 Phase 1) ──────────────────────────
+    # OpenSandbox: Alibaba, Apache 2.0, CNCF Landscape
+    # Isolierte Code-Execution fuer LLM-generierten Code (Data Analysis, Backtesting)
+    "opensandbox>=0.1.6",
+    "opensandbox-code-interpreter>=0.1.2",
 ]
 
 [dependency-groups]

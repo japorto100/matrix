@@ -29,6 +29,10 @@ def _get_tool_timeout() -> float:
 
 TOOL_TIMEOUT_SEC = _get_tool_timeout()
 
+# Sandbox tools need much longer timeouts (up to 30min for backtesting)
+SANDBOX_TOOL_TIMEOUT_SEC = float(os.environ.get("SANDBOX_TOOL_TIMEOUT_SEC", "1800"))
+SANDBOX_TOOLS = {"sandbox_execute", "sandbox_browser"}
+
 
 async def tool_node(state: AgentGraphState) -> dict[str, Any]:
     """Fuehrt alle pending tool_calls parallel aus."""
@@ -142,8 +146,9 @@ async def _execute_single(
         # Validation
         tool.validate(tc["tool_input"], ctx)
 
-        # Execute with timeout
-        with anyio.fail_after(TOOL_TIMEOUT_SEC):
+        # Execute with timeout (sandbox tools get extended timeout)
+        timeout = SANDBOX_TOOL_TIMEOUT_SEC if tc["tool_name"] in SANDBOX_TOOLS else TOOL_TIMEOUT_SEC
+        with anyio.fail_after(timeout):
             result = await tool.execute(tc["tool_input"], ctx)
 
         elapsed = audit_duration(start)
@@ -166,6 +171,7 @@ async def _execute_single(
         )
     except TimeoutError:
         elapsed = audit_duration(start)
+        effective_timeout = SANDBOX_TOOL_TIMEOUT_SEC if tc["tool_name"] in SANDBOX_TOOLS else TOOL_TIMEOUT_SEC
         await audit_log(
             action=AuditAction.TOOL_RESULT,
             thread_id=ctx.thread_id,
@@ -174,13 +180,13 @@ async def _execute_single(
             input_data=tc["tool_input"],
             duration_ms=elapsed,
             success=False,
-            output_data={"error": f"timeout after {TOOL_TIMEOUT_SEC}s"},
+            output_data={"error": f"timeout after {effective_timeout}s"},
         )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
             tool_name=tc["tool_name"],
             result={},
-            error=f"Tool '{tc['tool_name']}' timed out after {TOOL_TIMEOUT_SEC}s",
+            error=f"Tool '{tc['tool_name']}' timed out after {effective_timeout}s",
         )
     except Exception as e:
         elapsed = audit_duration(start)

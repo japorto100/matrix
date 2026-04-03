@@ -1,0 +1,11 @@
+# Custom Browser Sandbox Image mit Chromium + Playwright (exec-12 Phase 1.5)
+# Build: docker build -f Dockerfile.browser -t tradeview/sandbox-browser:v1 .
+
+FROM opensandbox/code-interpreter:v1.0.2
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir playwright==1.* \
+    && python -m playwright install chromium --with-deps

@@ -1,7 +1,7 @@
 # exec-12: Sandbox + Security (OpenSandbox + pentagi Patterns + Computer Use)
 
 **Datum:** 30.03.2026
-**Status:** Geplant
+**Status:** Phase 1 + 2 implementiert (03.04.2026)
 **Abhaengig von:** exec-10 (Multi-Agent), exec-08 (Python Backend)
 **Spec:** `specs/agent-ui/06-protocols-roadmap.md`
 
@@ -65,48 +65,67 @@ SDK (Python) → Specs (OpenAPI) → Runtime (FastAPI Server) → Sandbox Instan
 
 ### Implementation Steps
 
-- [ ] **1.1:** OpenSandbox Server + SDK
-  - `uv pip install opensandbox opensandbox-code-interpreter` in python-backend
-  - `opensandbox-server` als docker-compose Service (siehe unten)
+- [x] **1.1:** OpenSandbox Server + SDK ✅ (03.04.2026)
+  - `opensandbox>=0.1.6` + `opensandbox-code-interpreter>=0.1.2` in pyproject.toml
+  - `opensandbox-server` als docker-compose Service (profile: sandbox, Port 8080)
   - Docker Image: `opensandbox/code-interpreter:v1.0.2`
-  - Custom Image mit Trading-Packages: pandas, numpy, matplotlib, pandas-ta, httpx
-- [ ] **1.2:** Sandbox-Manager in `python-backend/agent/sandbox/`
-  - Lifecycle: Create → Execute → Collect Result → Destroy
-  - Timeout: 10min default, 30min fuer Backtesting
-  - Resource Limits: `{"cpu": "1", "memory": "2Gi"}` default
-  - Egress Policy: nur erlaubte Domains (Exchange-APIs, keine beliebigen URLs)
-- [ ] **1.3:** `code_execute` LangGraph Tool
-  - Agent generiert Code → Tool schickt an Sandbox → Result zurueck
+  - Custom Image `Dockerfile.code-interpreter` mit Trading-Packages: pandas, numpy, matplotlib, pandas-ta, httpx
+  - Server Config: `agent/sandbox/sandbox-config.toml` (network_mode=none, pids_limit=512)
+- [x] **1.2:** Sandbox-Manager in `python-backend/agent/sandbox/` ✅ (03.04.2026)
+  - `SandboxManager` Klasse: `execute_code()` + `execute_browser()` Methoden
+  - Lifecycle: Create → Upload Files → Execute → Collect → Destroy (finally-Block)
+  - Timeout: 10min default (CODE_SANDBOX), 30min fuer Backtesting (BACKTEST_SANDBOX)
+  - Resource Limits: `{"cpu": "1", "memory": "2Gi"}` default, `{"cpu": "2", "memory": "4Gi"}` Backtest
+  - Egress Policy: `allowed_domains` tuple in SandboxConfig (leer = kein Netzwerk)
+  - Graceful Degradation: ConnectionError → CriticalError mit Startanleitung
+  - Audit: `SANDBOX_EXEC` Events fuer alle Operationen
+- [x] **1.3:** `sandbox_execute` LangGraph Tool ✅ (03.04.2026)
+  - `SandboxExecuteTool(TradingTool)` in `agent/tools/sandbox_tool.py`
   - Unterstuetzte Sprachen: Python, JavaScript, Bash
-  - Consent: `level: confirm` in consent_policy.yaml (User muss Code-Execution bestaetigen)
-  - Result: stdout, stderr, files (Charts als Base64), execution_time
-- [ ] **1.4:** File Upload Pipeline
-  - Backend empfaengt File → `sandbox.files.write_files()` kopiert rein
+  - Consent: `level: confirm` in consent_policy.yaml (bereits konfiguriert)
+  - Rate Limit: max 5 Calls/Session (bereits konfiguriert)
+  - Result: stdout, stderr, files (Charts als Base64), execution_time_ms
+  - `to_model_output()`: stdout auf 2000 chars gekuerzt, base64 files gestripped
+  - Per-Tool Timeout: 1800s (30min) in tool_node.py statt globalem 30s
+  - Registriert in ToolRegistry, ADVISORY_ENVELOPE, Trading-Rollen (TECHNICAL, RESEARCHER, FUNDAMENTALS)
+  - HIGH_RISK_TOOL in sanitizer.py (P0/P1/P2 Sanitization)
+- [x] **1.4:** File Upload Pipeline ✅ (03.04.2026)
+  - `CodeExecuteInput.files` Feld: `[{"name": "data.csv", "content_b64": "..."}]`
+  - `SandboxManager._upload_files()` → `sandbox.files.write_files()` nach `/tmp/uploads/`
   - Agent analysiert in Sandbox → Result zurueck ans Backend
-  - Backend speichert Result im Hauptprojekt-Filesystem
-  - Sandbox wird destroyed → File-Kopie ist weg
-- [ ] **1.5:** Playwright Browser Sandbox (→ exec-13 Phase 5 nutzt das)
-  - Custom Image mit Chromium + Playwright
+  - Sandbox wird destroyed → File-Kopie ist weg (finally-Block)
+- [x] **1.5:** Playwright Browser Sandbox (→ exec-13 Phase 5 nutzt das) ✅ (03.04.2026)
+  - `SandboxBrowserTool(TradingTool)` in `agent/tools/sandbox_browser_tool.py`
+  - Custom Image `Dockerfile.browser` mit Chromium + Playwright
+  - `BROWSER_SANDBOX` Config: allowed_domains fuer Finanz-News-Seiten
   - Isoliert vom Host-Browser und Host-Netzwerk
-  - Fuer JS-heavy Seiten, Research Reports, News Scraping
+  - Screenshots als base64 in result.files
+  - HIGH_RISK_TOOL (bereits in sanitizer.py): P0/P1/P2 Sanitization
+  - Consent: level=confirm, max 3 Calls/Session
+  - Registriert in ADVISORY_ENVELOPE + RESEARCHER Trading-Rolle
 
 ### docker-compose Service
 
 ```yaml
   # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
-  opensandbox:
-    image: opensandbox/server:latest
-    container_name: opensandbox
+  opensandbox-server:
+    image: opensandbox/opensandbox-server:latest
+    container_name: opensandbox-server
     ports:
-      - "8100:8100"
+      - "8080:8080"
     volumes:
+      - ./python-backend/agent/sandbox/sandbox-config.toml:/etc/opensandbox/config.toml:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./sandbox-config.toml:/etc/opensandbox/config.toml:ro
     environment:
       - OPEN_SANDBOX_API_KEY=dev-sandbox-key
     restart: unless-stopped
     profiles:
       - sandbox
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 ```
 
 Starten: `docker-compose --profile sandbox up opensandbox`
@@ -248,15 +267,20 @@ Ref: `pddl_phase22b_delta.md` (aus Hauptprojekt)
 ## Verify-Gates
 
 ### Phase 1: OpenSandbox
-- [ ] OpenSandbox Server laeuft als docker-compose Service
-- [ ] `code_execute` Tool: Agent generiert Python-Code → Sandbox fuehrt aus → Result zurueck
-- [ ] Consent: User muss Code-Execution bestaetigen (level: confirm)
-- [ ] Timeout: Sandbox wird nach TTL automatisch destroyed
-- [ ] Resource Limits: CPU/Memory pro Sandbox enforced
-- [ ] Filesystem-Isolation: Agent kann nur innerhalb Sandbox-Container Dateien erstellen
-- [ ] Egress Policy: nur erlaubte Domains erreichbar
-- [ ] File Upload: Backend kopiert File in Sandbox, holt Result, Sandbox destroyed
-- [ ] Custom Docker Image: Trading-Packages (pandas, numpy, matplotlib, pandas-ta) vorinstalliert
+- [x] OpenSandbox Server laeuft als docker-compose Service (profile: sandbox, Port 8080) ✅
+- [x] `sandbox_execute` Tool: Agent generiert Code → Sandbox fuehrt aus → Result zurueck ✅
+- [x] `sandbox_browser` Tool: Browser-Automation in isolierter Sandbox ✅
+- [x] Consent: User muss Code-Execution bestaetigen (level: confirm) ✅
+- [x] Timeout: Sandbox wird nach TTL automatisch destroyed (finally-Block) ✅
+- [x] Resource Limits: CPU/Memory pro Sandbox enforced (SandboxConfig) ✅
+- [x] Filesystem-Isolation: Agent kann nur innerhalb Sandbox-Container Dateien erstellen ✅
+- [x] Egress Policy: allowed_domains in SandboxConfig (leer = kein Netzwerk) ✅
+- [x] File Upload: Backend kopiert File in Sandbox, holt Result, Sandbox destroyed ✅
+- [x] Custom Docker Image: Trading-Packages (pandas, numpy, matplotlib, pandas-ta) vorinstalliert ✅
+- [x] Per-Tool Timeout: 1800s fuer Sandbox-Tools in tool_node.py ✅
+- [x] Sanitization: sandbox_execute + sandbox_browser als HIGH_RISK_TOOLS ✅
+- [x] Trading-Rollen: sandbox_execute fuer TECHNICAL, RESEARCHER, FUNDAMENTALS ✅
+- [x] Graceful Degradation: CriticalError wenn Server nicht erreichbar ✅
 
 ### Phase 2: Security Hardening
 - [x] Audit Log: Jede Agent-Action ist nachvollziehbar geloggt (2.1) ✅

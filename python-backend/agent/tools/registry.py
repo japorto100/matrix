@@ -51,6 +51,8 @@ class ToolRegistry:
         from agent.tools.geomap import GetGeomapFocusTool
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
         from agent.tools.portfolio import GetPortfolioSummaryTool
+        from agent.tools.sandbox_tool import SandboxExecuteTool
+        from agent.tools.sandbox_browser_tool import SandboxBrowserTool
 
         registry = cls()
         registry.register(GetChartStateTool())
@@ -67,4 +69,7 @@ class ToolRegistry:
         registry.register(CreateNovelBlockTool())
         registry.register(UpdateCanvasShapeTool())
         registry.register(DeleteCanvasShapeTool())
+        # Sandbox Tools (exec-12 Phase 1)
+        registry.register(SandboxExecuteTool())
+        registry.register(SandboxBrowserTool())
         return registry
