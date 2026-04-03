@@ -1,0 +1,36 @@
+[submodule "_ref/A2A"]
+	path = _ref/A2A
+	url = https://github.com/google/A2A.git
+[submodule "_ref/MetaClaw"]
+	path = _ref/MetaClaw
+	url = https://github.com/aiming-lab/MetaClaw.git
+[submodule "_ref/OpenSandbox"]
+	path = _ref/OpenSandbox
+	url = https://github.com/alibaba/OpenSandbox.git
+[submodule "_ref/TradingAgents"]
+	path = _ref/TradingAgents
+	url = https://github.com/TauricResearch/TradingAgents.git
+[submodule "_ref/deer-flow"]
+	path = _ref/deer-flow
+	url = https://github.com/bytedance/deer-flow.git
+[submodule "_ref/hindsight"]
+	path = _ref/hindsight
+	url = https://github.com/vectorize-io/hindsight.git
+[submodule "_ref/pentagi"]
+	path = _ref/pentagi
+	url = https://github.com/vxcontrol/pentagi.git
+[submodule "_ref/supermemory"]
+	path = _ref/supermemory
+	url = https://github.com/supermemoryai/supermemory.git
+[submodule "_ref/claude_code/claw-code"]
+	path = _ref/claude_code/claw-code
+	url = https://github.com/instructkr/claw-code.git
+[submodule "_ref/claude_code/claurst"]
+	path = _ref/claude_code/claurst
+	url = https://github.com/Kuberwastaken/claurst.git
+[submodule "_ref/TREK"]
+	path = _ref/TREK
+	url = https://github.com/mauriceboe/TREK.git
+[submodule "_ref/autoresearch"]
+	path = _ref/autoresearch
+	url = https://github.com/karpathy/autoresearch.git

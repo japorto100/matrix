@@ -69,8 +69,8 @@ class SetChartStateRequest(BaseModel):
     timeframe: str
 
 
-class ImageAttachment(BaseModel):
-    """AC56: multimodal image attachment — base64 + mime_type."""
+class FileAttachment(BaseModel):
+    """AC56+exec-12: multimodal image or file attachment — base64 + mime_type."""
     base64: str
     mime_type: str = "image/jpeg"
     name: str = ""
@@ -88,7 +88,7 @@ class AgentChatRequest(BaseModel):
     agentId: str | None = None
     context: str | None = None
     model: str | None = None  # AC107: override AGENT_MODEL env var
-    attachments: list[ImageAttachment] | None = None  # AC56: multimodal images
+    attachments: list[FileAttachment] | None = None  # AC56+exec-12: images + files
     reasoningEffort: str | None = None  # AC108: low/medium/high
     browserTools: list[BrowserToolDef] | None = None  # exec-09: WebMCP Browser-Tools
 
@@ -292,22 +292,81 @@ def _build_system_prompt(context: str | None) -> str:
     return "\n".join(parts)
 
 
-def _build_user_content(req: "AgentChatRequest") -> list | str:
-    """AC56: Build Anthropic user content — text + optional image blocks."""
+# MIME types that go directly to the LLM as multimodal/text content
+_LLM_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+_LLM_DOCUMENT_TYPES = {"application/pdf"}
+_LLM_TEXT_TYPES = {"text/plain"}
+# MIME types that go to sandbox via file_analyze tool
+_SANDBOX_TYPES = {
+    "text/csv",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+    "application/x-parquet",
+    "text/x-python",
+    "application/javascript",
+    "text/javascript",
+}
+_JSON_LLM_MAX_BYTES = 50_000  # JSON < 50KB goes to LLM, >= 50KB to sandbox
+
+
+def _build_user_content(req: AgentChatRequest) -> list | str:
+    """AC56+exec-12: Build user content — images/text to LLM, data files to sandbox."""
     if not req.attachments:
         return req.message
     content: list = []
     for att in req.attachments:
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": att.mime_type,
-                "data": att.base64,
-            },
-        })
+        if att.mime_type in _LLM_IMAGE_TYPES:
+            content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": att.mime_type,
+                    "data": att.base64,
+                },
+            })
+        elif att.mime_type in _LLM_DOCUMENT_TYPES:
+            content.append({
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": att.mime_type,
+                    "data": att.base64,
+                },
+            })
+        elif att.mime_type in _LLM_TEXT_TYPES:
+            text_data = base64.b64decode(att.base64).decode("utf-8", errors="replace")
+            content.append({"type": "text", "text": f"[File: {att.name}]\n{text_data}"})
+        elif att.mime_type == "application/json" and len(att.base64) < _JSON_LLM_MAX_BYTES:
+            json_data = base64.b64decode(att.base64).decode("utf-8", errors="replace")
+            content.append({"type": "text", "text": f"[File: {att.name}]\n{json_data}"})
+        else:
+            # Sandbox file — don't send to LLM, just notify
+            content.append({
+                "type": "text",
+                "text": (
+                    f"[File uploaded: {att.name} ({att.mime_type}). "
+                    f"Use the file_analyze tool with file_ref='file:{att.name}' to analyze it.]"
+                ),
+            })
     content.append({"type": "text", "text": req.message})
     return content
+
+
+async def _store_file_attachments(
+    attachments: list[FileAttachment], thread_id: str
+) -> None:
+    """Store sandbox-bound file attachments in working memory for file_analyze tool."""
+    for att in attachments:
+        if att.mime_type in _LLM_IMAGE_TYPES | _LLM_DOCUMENT_TYPES | _LLM_TEXT_TYPES:
+            continue
+        if att.mime_type == "application/json" and len(att.base64) < _JSON_LLM_MAX_BYTES:
+            continue
+        # This file goes to sandbox — store in working memory
+        await working_memory_set(thread_id, f"file:{att.name}", {
+            "base64": att.base64,
+            "name": att.name,
+            "mime_type": att.mime_type,
+        })
 
 
 @app.post("/api/v1/agent/chat")
@@ -327,6 +386,10 @@ async def agent_chat(req: AgentChatRequest, request: Request):
     # exec-12 Phase 2.6: Read user role + id from Go Gateway headers
     user_role = request.headers.get("x-user-role", "viewer").lower()
     user_id = request.headers.get("x-auth-user", "default")
+
+    # exec-12 Phase 1.4: Store sandbox-bound file attachments in working memory
+    if req.attachments:
+        await _store_file_attachments(req.attachments, thread_id)
 
     generator = _stream_agent_loop(req, system_prompt, thread_id, user_role=user_role, user_id=user_id)
     return StreamingResponse(

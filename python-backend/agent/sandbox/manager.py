@@ -23,7 +23,13 @@ logger = logging.getLogger(__name__)
 _LANGUAGE_MAP: dict[str, str] = {
     "python": "PYTHON",
     "javascript": "TYPESCRIPT",  # OpenSandbox uses TS runtime for JS
+    "js": "TYPESCRIPT",
+    "typescript": "TYPESCRIPT",
+    "ts": "TYPESCRIPT",
     "bash": "PYTHON",  # Bash executed via Python subprocess wrapper
+    "shell": "PYTHON",
+    "go": "GO",
+    "java": "JAVA",
 }
 
 # Maximum output sizes (bytes) to prevent memory issues
@@ -384,6 +390,20 @@ class SandboxManager:
             logger.debug("No output files collected: %s", e)
 
         return files
+
+
+    async def health_check(self) -> bool:
+        """Check if OpenSandbox server is reachable."""
+        try:
+            import httpx
+
+            async with httpx.AsyncClient() as client:
+                r = await client.get(
+                    f"{get_sandbox_server_url()}/health", timeout=5.0
+                )
+                return r.status_code == 200
+        except Exception:
+            return False
 
 
 def _build_playwright_script(

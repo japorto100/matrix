@@ -2687,6 +2687,8 @@ dependencies = [
     { name = "mcp" },
     { name = "nats-py" },
     { name = "openai" },
+    { name = "opensandbox" },
+    { name = "opensandbox-code-interpreter" },
     { name = "piper-tts" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
@@ -2723,6 +2725,8 @@ requires-dist = [
     { name = "mcp", specifier = ">=1.26.0" },
     { name = "nats-py", specifier = ">=2.7.0" },
     { name = "openai", specifier = ">=1.50.0" },
+    { name = "opensandbox", specifier = ">=0.1.6" },
+    { name = "opensandbox-code-interpreter", specifier = ">=0.1.2" },
     { name = "piper-tts", specifier = ">=1.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.0" },
     { name = "pydantic", specifier = ">=2.0" },
@@ -3326,6 +3330,34 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
+]
+
+[[package]]
+name = "opensandbox"
+version = "0.1.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/81/68/493e98dfc5be745cc2d199259d79af49b89f7973619a9b7e36d0d43d74b8/opensandbox-0.1.6.tar.gz", hash = "sha256:6a69c690342f3d28820154b4f7f27ce33fd4cf42e3982016535f6fc9de344324", size = 112275, upload-time = "2026-03-27T03:51:09.155Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0c/12/5454ec8eb63de9a4d73ad26cf1adad9cd760aba62dadd4dbb18eee5765d9/opensandbox-0.1.6-py3-none-any.whl", hash = "sha256:a8f7eeb124eddcf97c691230f55ef77413b9b727ede346e6e9219d8d56c61c43", size = 281317, upload-time = "2026-03-27T03:51:07.695Z" },
+]
+
+[[package]]
+name = "opensandbox-code-interpreter"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opensandbox" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9b/8d/dc1b3a5eaa89a5780678b91bec2beee3d11d00ed24a5edb0f8dbb4b26a99/opensandbox_code_interpreter-0.1.2.tar.gz", hash = "sha256:046bd3a3a045f9d30ee6691fdd63f4e81db06fd64a8f045d2981ebbc1ebbb244", size = 24156, upload-time = "2026-03-27T04:37:24.409Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6f/0a/e20c6eec6f3ac22b3edb59c1cf5ba9327a99933e9071806f54b48a274805/opensandbox_code_interpreter-0.1.2-py3-none-any.whl", hash = "sha256:bea53fb0032f13fae517ac1fed36d972f7f660304029dc3d5eef18a0dac2b916", size = 39981, upload-time = "2026-03-27T04:37:23.142Z" },
 ]
 
 [[package]]

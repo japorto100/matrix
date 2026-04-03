@@ -27,7 +27,7 @@ class ToolRegistry:
     def all(self) -> list[TradingTool]:
         return list(self._tools.values())
 
-    def filter_by_names(self, allowed: set[str]) -> "ToolRegistry":
+    def filter_by_names(self, allowed: set[str]) -> ToolRegistry:
         """Gibt eine neue Registry zurueck die nur die erlaubten Tools enthaelt (exec-10)."""
         filtered = ToolRegistry()
         for name, tool in self._tools.items():
@@ -36,7 +36,7 @@ class ToolRegistry:
         return filtered
 
     @classmethod
-    def load(cls, ctx: "AgentExecutionContext | None" = None) -> "ToolRegistry":
+    def load(cls, ctx: AgentExecutionContext | None = None) -> ToolRegistry:
         """Build the default registry with all standard trading tools.
         ctx is optional — passed through for future context-aware tool selection.
         """
@@ -47,12 +47,13 @@ class ToolRegistry:
             UpdateCanvasShapeTool,
         )
         from agent.tools.chart_state import GetChartStateTool, SetChartStateTool
-        from agent.tools.memory_hindsight import MemoryAddTool, MemorySearchTool
+        from agent.tools.file_analyze import FileAnalyzeTool
         from agent.tools.geomap import GetGeomapFocusTool
+        from agent.tools.memory_hindsight import MemoryAddTool, MemorySearchTool
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
         from agent.tools.portfolio import GetPortfolioSummaryTool
-        from agent.tools.sandbox_tool import SandboxExecuteTool
         from agent.tools.sandbox_browser_tool import SandboxBrowserTool
+        from agent.tools.sandbox_tool import SandboxExecuteTool
 
         registry = cls()
         registry.register(GetChartStateTool())
@@ -72,4 +73,5 @@ class ToolRegistry:
         # Sandbox Tools (exec-12 Phase 1)
         registry.register(SandboxExecuteTool())
         registry.register(SandboxBrowserTool())
+        registry.register(FileAnalyzeTool())
         return registry

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -30,13 +30,13 @@ class TradingTool(ABC):
         ...
 
     @abstractmethod
-    def definition(self) -> dict:
+    def definition(self) -> dict[str, Any]:
         """Return Anthropic tool definition dict:
         {"name": ..., "description": ..., "input_schema": {"type": "object", ...}}
         """
         ...
 
-    def validate(self, tool_input: dict, ctx: "AgentExecutionContext") -> None:
+    def validate(self, tool_input: dict[str, Any], ctx: AgentExecutionContext) -> None:
         """Policy/schema validation before execute().
         Default: validates against input_model if set (auto-JSON-Schema, ABP.2b).
         Raise ToolValidationError to surface as error result to the LLM.
@@ -50,11 +50,11 @@ class TradingTool(ABC):
                 raise ToolValidationError(self.name, str(e))
 
     @abstractmethod
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict[str, Any], ctx: AgentExecutionContext) -> dict[str, Any]:
         """Execute the tool and return a JSON-serialisable result dict."""
         ...
 
-    def to_model_output(self, result: dict) -> dict | str:
+    def to_model_output(self, result: dict[str, Any]) -> dict[str, Any] | str:
         """Transform tool result before sending it back to the LLM.
 
         Override this to reduce token usage for tools that return large outputs

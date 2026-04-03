@@ -19,7 +19,18 @@ export interface RequestAttachment {
 	name: string;
 }
 
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+const ALLOWED_TYPES = new Set([
+	// Images — go to LLM multimodal
+	"image/jpeg", "image/png", "image/gif", "image/webp",
+	// Documents — go to LLM
+	"application/pdf", "text/plain",
+	// Data files — go to sandbox for analysis
+	"text/csv", "application/json",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	"application/vnd.ms-excel",
+	// Code files — go to sandbox
+	"text/x-python", "application/javascript", "text/javascript",
+]);
 const MAX_FILES = 5;
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 

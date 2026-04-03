@@ -66,7 +66,29 @@
       "Bash(uv sync:*)",
       "WebFetch(domain:supermemory.ai)",
       "Bash(xargs cat:*)",
-      "Bash(wc -l /d/matrix/_ref/hindsight/hindsight-api-slim/hindsight_api/engine/*.py)"
+      "Bash(wc -l /d/matrix/_ref/hindsight/hindsight-api-slim/hindsight_api/engine/*.py)",
+      "WebFetch(domain:www.marktechpost.com)",
+      "WebFetch(domain:northflank.com)",
+      "WebFetch(domain:open-sandbox.ai)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(py --version)",
+      "Bash(py -c ':*)",
+      "WebFetch(domain:icaps26.icaps-conference.org)",
+      "WebFetch(domain:unified-planning.readthedocs.io)",
+      "mcp__gitnexus__list_repos",
+      "Bash(npx gitnexus:*)",
+      "Bash(node:*)",
+      "Read(//d/DevCache/**)",
+      "Read(//d/DevCache/npm/global/node_modules/gitnexus/**)",
+      "Bash(where python:*)",
+      "Bash(mkdir -p D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/onnx)",
+      "Bash(cp -L D:/huggingface-cache/hub/models--Snowflake--snowflake-arctic-embed-xs/snapshots/d8c86521100d3556476a063fc2342036d45c106f/config.json D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/)",
+      "Bash(cp -L D:/huggingface-cache/hub/models--Snowflake--snowflake-arctic-embed-xs/snapshots/d8c86521100d3556476a063fc2342036d45c106f/tokenizer.json D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/)",
+      "Bash(cp -L D:/huggingface-cache/hub/models--Snowflake--snowflake-arctic-embed-xs/snapshots/d8c86521100d3556476a063fc2342036d45c106f/tokenizer_config.json D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/)",
+      "Bash(cp -L D:/huggingface-cache/hub/models--Snowflake--snowflake-arctic-embed-xs/snapshots/d8c86521100d3556476a063fc2342036d45c106f/special_tokens_map.json D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/)",
+      "WebFetch(domain:neo4j.com)",
+      "WebFetch(domain:falkordb.com)",
+      "WebFetch(domain:turingdb.ai)"
     ]
   }
 }

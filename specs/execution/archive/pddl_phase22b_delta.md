@@ -1,10 +1,7 @@
 # Execution Delta -- Phase 22b Formal Planning (PDDL / ADL)
 
-> **SUPERSEDED** — Konsolidiert in `specs/execution/exec-14-pddl-formal-planning.md` (01.04.2026)
-> Archiv-Kopie: `specs/execution/archive/pddl_phase22b_delta.md`
-
 > **Stand:** 16. Maerz 2026 (Rev. 3)
-> **Status:** SUPERSEDED → exec-14
+> **Status:** PLANNED (gated pilot)
 > **Owner:** Agent Runtime / Orchestration
 > **Zweck:** Operativer Delta-Plan fuer formale Plan-Validierung in Agent-Workflows
 > mit temporalen/numerischen Constraints.

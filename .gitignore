@@ -3,9 +3,10 @@
 Thumbs.db
 desktop.ini
 
-# ─── Editor ───────────────────────────────────────────────────────────────────
+# ─── Editor / Tools ───────────────────────────────────────────────────────────
 .vscode/settings.json
 .idea/
+.claude/settings.local.json
 *.swp
 *.swo
 
@@ -57,7 +58,8 @@ homeserver/*.pem
 !homeserver/tuwunel.example.toml
 
 # ─── Reference Repos (exec-10+) ──────────────────────────────────────────────
-_ref/
+# _ref/ Repos sind als git submodules getrackt (.gitmodules)
+# Git trackt nur die SHA-Referenzen, nicht den Code selbst
 
 # ─── Tools ───────────────────────────────────────────────────────────────────
 tools/dendrite-src/
@@ -71,3 +73,4 @@ logs/
 
 # ─── Build Artifacts ─────────────────────────────────────────────────────────
 go-appservice/tmp/
+.gitnexus

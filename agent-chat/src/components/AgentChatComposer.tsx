@@ -172,17 +172,17 @@ export const AgentChatComposer = forwardRef<AgentChatComposerRef, AgentChatCompo
 			[addFiles],
 		);
 
-		// AC53: Clipboard paste
+		// AC53: Clipboard paste (images + files)
 		const handlePaste = useCallback(
 			(e: React.ClipboardEvent<HTMLTextAreaElement>) => {
 				const items = Array.from(e.clipboardData.items);
-				const imageFiles = items
-					.filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+				const pastedFiles = items
+					.filter((item) => item.kind === "file")
 					.map((item) => item.getAsFile())
 					.filter((f): f is File => f !== null);
-				if (imageFiles.length) {
+				if (pastedFiles.length) {
 					e.preventDefault();
-					addFiles(imageFiles);
+					addFiles(pastedFiles);
 				}
 			},
 			[addFiles],
@@ -263,7 +263,7 @@ export const AgentChatComposer = forwardRef<AgentChatComposerRef, AgentChatCompo
 						className="relative h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
 						onClick={() => fileInputRef.current?.click()}
 						disabled={isStreaming}
-						title="Attach image"
+						title="Attach file"
 					>
 						<Paperclip className="h-4 w-4" />
 						{attachments.length > 0 && (
@@ -275,7 +275,7 @@ export const AgentChatComposer = forwardRef<AgentChatComposerRef, AgentChatCompo
 					<input
 						ref={fileInputRef}
 						type="file"
-						accept="image/jpeg,image/png,image/gif,image/webp"
+						accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,application/json,.xlsx,.xls,.py,.js"
 						multiple
 						className="hidden"
 						onChange={handleFileInputChange}

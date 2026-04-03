@@ -26,8 +26,8 @@ class CodeExecuteInput(BaseModel):
     )
     language: str = Field(
         default="python",
-        pattern=r"^(python|javascript|bash)$",
-        description="Programming language: python | javascript | bash",
+        pattern=r"^(python|javascript|js|typescript|ts|bash|shell|go|java)$",
+        description="Programming language: python | javascript | typescript | bash | go | java",
     )
     timeout_minutes: int = Field(
         default=10,
@@ -66,7 +66,7 @@ class SandboxExecuteTool(TradingTool):
             "description": (
                 "Execute code in an isolated sandbox environment. "
                 "Supports Python (with pandas, numpy, matplotlib, pandas-ta), "
-                "JavaScript, and Bash. Returns stdout, stderr, and any generated files "
+                "JavaScript, TypeScript, Bash, Go, and Java. Returns stdout, stderr, and any generated files "
                 "(charts as base64 images). Use for data analysis, backtesting, "
                 "custom indicators, and computation that requires code execution. "
                 "Save charts/plots to /tmp/output/ for automatic collection."

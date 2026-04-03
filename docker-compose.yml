@@ -155,6 +155,31 @@ services:
     profiles:
       - prod
 
+  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
+  # Alibaba OpenSandbox: isolierte Sandbox fuer LLM/User-generierten Code
+  # Braucht Container-Socket Mount fuer Container-in-Container Lifecycle
+  # Podman: podman-compose --profile sandbox up opensandbox
+  # Docker: docker-compose --profile sandbox up opensandbox
+  opensandbox:
+    image: opensandbox/server:latest
+    container_name: opensandbox
+    ports:
+      - "8100:8100"
+    volumes:
+      # Podman: /run/podman/podman.sock oder Symlink auf /var/run/docker.sock
+      # Docker: /var/run/docker.sock direkt
+      - ${CONTAINER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
+    environment:
+      - OPEN_SANDBOX_API_KEY=${OPEN_SANDBOX_API_KEY:-E1HuYmSjtDAR1VDBPCWms3Sap62nWML3j7uAf3ohD9g}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8100/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - sandbox
+
 volumes:
   tuwunel-data:
   postgres-data:

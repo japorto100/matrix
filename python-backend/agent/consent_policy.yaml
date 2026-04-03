@@ -53,12 +53,20 @@ tools:
     reason: "Aendert den aktiven Chart im Frontend"
     allow_session_cache: true
 
-  # ── Sandbox Execution (exec-12 Phase 1, future) ──────────────────────
+  # ── Sandbox Execution (exec-12 Phase 1) ──────────────────────────────
   sandbox_execute:
     level: confirm
     severity: high
     reason: "Fuehrt Code in isolierter Sandbox aus"
     allow_session_cache: false
+    min_role: analyst
+
+  file_analyze:
+    level: confirm
+    severity: high
+    reason: "Analysiert hochgeladene Datei in isolierter Sandbox"
+    allow_session_cache: false
+    min_role: analyst
 
   sandbox_browser:
     level: confirm
@@ -117,6 +125,8 @@ rate_limits:
   # Per-Tool Call Limits (0 = unbegrenzt)
   per_tool:
     sandbox_execute:
+      max_calls: 5
+    file_analyze:
       max_calls: 5
     sandbox_browser:
       max_calls: 3

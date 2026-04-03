@@ -142,6 +142,28 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
   - Playwright laeuft innerhalb OpenSandbox Container (`Dockerfile.browser`)
   - Isoliert vom Host-Browser, allowed_domains fuer Egress-Kontrolle
 
+### 5.1b Pilot MCP (Alternative zu @playwright/mcp) — Evaluation
+
+> Siehe `PILOT_MCP_ANALYSIS.md` im Root fuer vollstaendige Analyse.
+
+- [ ] **5.1b.1:** Evaluieren als Alternative/Ergaenzung zu Playwright MCP
+  - Repo: https://github.com/TacosyHorchata/Pilot (MIT, npm: `pilot-mcp`)
+  - **Kernvorteil:** Agent steuert echten Chrome-Tab (bereits eingeloggt, kein Bot-Fingerprint)
+  - **69x weniger Token-Verbrauch** als @playwright/mcp pro Navigation
+  - 61 Tools vs 22 bei @playwright/mcp
+  - CAPTCHA-Handoff: Agent pausiert → Mensch loest → Agent weiter
+  - Broker/Client Multiplexer fuer parallele Agent-Sessions
+- [ ] **5.1b.2:** Use-Case-Abgrenzung
+  - **Pilot:** Authentifizierte Webseiten, OSINT-Recherche, Cloudflare-geschuetzte Seiten
+  - **@playwright/mcp:** CI/CD, headless Testing, Multi-Browser (Firefox/WebKit)
+  - **MolmoWeb (4B/8B):** Vollautonome Web-Agents ohne LLM-API-Kosten (GPU noetig)
+    - Siehe `MOLMOWEB_ANALYSIS.md` im Root
+- [ ] **5.1b.3:** Risikobewertung
+  - Projekt ist 8 Tage alt (v0.4.x), ein Hauptentwickler
+  - Cookie-Decryption = maechtig aber Security-Surface
+  - Kein Windows Cookie-Import (nur macOS/Linux)
+  - Nur stdio Transport (kein HTTP/SSE)
+
 ### 5.2 WebMCP
 
 - [ ] **5.2.1:** WebMCP Spec beobachten

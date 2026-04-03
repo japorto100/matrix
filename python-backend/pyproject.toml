@@ -96,7 +96,7 @@ exclude = [".venv", ".venv/**", "data/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]
+ignore = ["E501", "N999"]  # N999: false positive wegen Verzeichnisname python-backend
 
 # ─── Environment Variables ──────────────────────────────────────────────────
 #

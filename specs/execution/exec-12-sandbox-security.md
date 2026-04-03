@@ -40,16 +40,41 @@ Sandbox = Escape-Hatch fuer alles was die deterministische Pipeline nicht abdeck
    Playwright in Sandbox-Container, isoliert vom Host-Browser
 6. **Beliebiger LLM-generierter Code** — Python, JS, Shell, SQL
    Alles was das LLM generiert und ausfuehren will → Sandbox
+7. **Feature Preview / Live-Review** — User: "Baue mir ein Portfolio-Dashboard"
+   Agent generiert Frontend + Backend Code → Sandbox deployed beides als Live-App
+   → User testet im Browser (Sandbox-URL) → Entscheidung: einbauen oder verwerfen
+   Bei "einbauen": Code wird in isolierten Branch/Repo exportiert, User merged manuell
+   Vorteil: User sieht laufende App statt nur Diffs — deutlich bessere Evaluation
+   Sandbox hat Zugriff auf Mock-Daten oder Read-Only Kopie der echten Daten
+   Erhoehter Timeout (60min), erhoehte Resources (2 CPU, 4 GB RAM)
+8. **Agent Skill Evaluation** — rl_trainer.py / evolver.py testen generierte Skills
+   Skill-Code wird in Sandbox ausgefuehrt statt im Backend-Prozess
+   Reward-Funktionen laufen isoliert → kein Risiko fuer Backend-Stabilitaet
+   Spaeter relevant wenn Skill-System reifer ist (abhaengig von skills/ Entwicklung)
 
-### Windows Dev-Setup
+### Windows Dev-Setup (Podman)
 
-OpenSandbox benoetigt Docker (Linux-Container). Optionen:
-- **Docker Desktop + WSL2** — empfohlen, OpenSandbox Server laeuft in WSL2 oder als Container
-- **Docker in WSL2 ohne Desktop** — leichtgewichtiger, gleiche Funktionalitaet
+OpenSandbox benoetigt einen Container-Runtime mit Docker-kompatiblem Socket.
+Das Projekt nutzt **Podman Compose** (siehe docker-compose.yml Header).
+
+- **Podman Desktop + WSL2** — empfohlen
+  - Podman stellt Docker-kompatiblen Socket bereit (`podman machine init --rootful`)
+  - Socket-Pfad: `/run/podman/podman.sock` (statt `/var/run/docker.sock`)
+  - docker-compose Volume Mount anpassen oder `DOCKER_HOST` ENV setzen
+  - `podman-compose --profile sandbox up opensandbox`
+- **Docker Desktop + WSL2** — Alternative falls Podman Probleme macht
 - **Natives Windows** — nicht moeglich (OpenSandbox Server ist Python/Linux, execd ist Go/Linux)
-- **WSL1** — nicht moeglich (kein echter Linux-Kernel, Docker braucht WSL2)
+- **WSL1** — nicht moeglich (kein echter Linux-Kernel)
 
-Fuer Dev: docker-compose Service `opensandbox-server` (siehe unten).
+**Podman Socket fuer OpenSandbox:**
+```bash
+# In WSL2: Podman Socket aktivieren
+systemctl --user enable --now podman.socket
+# Symlink fuer Docker-Kompatibilitaet
+sudo ln -sf /run/user/$(id -u)/podman/podman.sock /var/run/docker.sock
+```
+
+Fuer Dev: podman-compose Service `opensandbox` (siehe unten).
 
 ### Architektur (4 Layer)
 
@@ -72,13 +97,15 @@ SDK (Python) → Specs (OpenAPI) → Runtime (FastAPI Server) → Sandbox Instan
   - Custom Image `Dockerfile.code-interpreter` mit Trading-Packages: pandas, numpy, matplotlib, pandas-ta, httpx
   - Server Config: `agent/sandbox/sandbox-config.toml` (network_mode=none, pids_limit=512)
 - [x] **1.2:** Sandbox-Manager in `python-backend/agent/sandbox/` ✅ (03.04.2026)
-  - `SandboxManager` Klasse: `execute_code()` + `execute_browser()` Methoden
+  - `SandboxManager` Klasse: `execute_code()` + `execute_browser()` + `health_check()` Methoden
   - Lifecycle: Create → Upload Files → Execute → Collect → Destroy (finally-Block)
   - Timeout: 10min default (CODE_SANDBOX), 30min fuer Backtesting (BACKTEST_SANDBOX)
   - Resource Limits: `{"cpu": "1", "memory": "2Gi"}` default, `{"cpu": "2", "memory": "4Gi"}` Backtest
   - Egress Policy: `allowed_domains` tuple in SandboxConfig (leer = kein Netzwerk)
   - Graceful Degradation: ConnectionError → CriticalError mit Startanleitung
   - Audit: `SANDBOX_EXEC` Events fuer alle Operationen
+  - Output Limits: MAX_STDOUT=50KB, MAX_STDERR=10KB, MAX_FILE_SIZE=5MB
+  - Sprachen: Python, JavaScript, Bash (+ Go, Java, TypeScript via Language Map Erweiterung)
 - [x] **1.3:** `sandbox_execute` LangGraph Tool ✅ (03.04.2026)
   - `SandboxExecuteTool(TradingTool)` in `agent/tools/sandbox_tool.py`
   - Unterstuetzte Sprachen: Python, JavaScript, Bash
@@ -90,10 +117,13 @@ SDK (Python) → Specs (OpenAPI) → Runtime (FastAPI Server) → Sandbox Instan
   - Registriert in ToolRegistry, ADVISORY_ENVELOPE, Trading-Rollen (TECHNICAL, RESEARCHER, FUNDAMENTALS)
   - HIGH_RISK_TOOL in sanitizer.py (P0/P1/P2 Sanitization)
 - [x] **1.4:** File Upload Pipeline ✅ (03.04.2026)
+  - `FileAnalyzeTool(TradingTool)` in `agent/tools/file_analyze.py`
   - `CodeExecuteInput.files` Feld: `[{"name": "data.csv", "content_b64": "..."}]`
   - `SandboxManager._upload_files()` → `sandbox.files.write_files()` nach `/tmp/uploads/`
-  - Agent analysiert in Sandbox → Result zurueck ans Backend
-  - Sandbox wird destroyed → File-Kopie ist weg (finally-Block)
+  - File-Type Routing in `app.py`: Bilder→LLM, CSV/Excel/Code→Sandbox
+  - UI: `useAttachments.ts` erweitert um CSV, Excel, JSON, PDF, Python, JS
+  - UI: `AttachmentPreviewStrip.tsx` zeigt File-Icons (FileSpreadsheet, FileCode, FileText)
+  - Consent: `level: confirm`, `min_role: analyst`, Rate Limit 5 Calls
 - [x] **1.5:** Playwright Browser Sandbox (→ exec-13 Phase 5 nutzt das) ✅ (03.04.2026)
   - `SandboxBrowserTool(TradingTool)` in `agent/tools/sandbox_browser_tool.py`
   - Custom Image `Dockerfile.browser` mit Chromium + Playwright
@@ -103,6 +133,23 @@ SDK (Python) → Specs (OpenAPI) → Runtime (FastAPI Server) → Sandbox Instan
   - HIGH_RISK_TOOL (bereits in sanitizer.py): P0/P1/P2 Sanitization
   - Consent: level=confirm, max 3 Calls/Session
   - Registriert in ADVISORY_ENVELOPE + RESEARCHER Trading-Rolle
+
+### SDK API Erkenntnisse (01.04.2026)
+
+Verifizierung gegen installiertes opensandbox 0.1.6 SDK ergab Abweichungen zur Doku:
+
+| Thema | Urspruengliche Annahme | Tatsaechliche API |
+|:---|:---|:---|
+| Code Interpreter Import | `from opensandbox_code_interpreter import ...` | `from code_interpreter import ...` |
+| Sandbox.create() Auth | `api_key=`, `server_url=` Parameter | `connection_config=ConnectionConfig(api_key=, domain=, protocol=)` |
+| Resource Limits | `resources={}` (Plural) | `resource={}` (Singular) |
+| Egress Policy | Nicht genutzt | `network_policy=NetworkPolicy(default_action="deny", egress=[...])` |
+| CodeInterpreter.create() | Sync | `async` — braucht `await` |
+| codes.run() Language | `SupportedLanguage.PYTHON` (Enum) | `"python"` (String) |
+| Execution.logs.stdout | `str` | `list[OutputMessage]` — `.text` pro Message extrahieren |
+| Execution.result | Einzelwert | `list[ExecutionResult]` — `.text` pro Entry |
+| execution_time_ms | Attribut auf Execution | Nicht vorhanden — manuell messen |
+| File Upload | `write_files([WriteEntry(...)])` | `write_file(path, data)` (Singular fuer Einzelfile) |
 
 ### docker-compose Service
 
@@ -210,7 +257,7 @@ Braucht Docker Socket Mount fuer Container-in-Container Lifecycle.
     - `runner.py` → `scan_output_anomalies()` auf finale Agent-Antwort
     - `runner.py` → Security-Instruktion im System-Prompt
   - **Tool Risk Classification:**
-    - HIGH_RISK: web_search, http_request, browser_*, email_read, rss_feed, scrape_url
+    - HIGH_RISK: web_search, http_request, browser_*, email_read, rss_feed, scrape_url, sandbox_execute, sandbox_browser
     - LOW_RISK: memory_*, list_tools, get_portfolio (trusted internal, P1/P2 skipped)
   - OWASP LLM01:2025 konform: Privilege Min ✅, HITL ✅, Structural Separation ✅, Content Tagging ✅, Filtering ✅
 - [x] **2.5:** Prompt Template Validation ✅ (01.04.2026)
@@ -247,20 +294,11 @@ Playwright MCP, WebMCP, Anthropic Computer Use und Artifacts UI wurden nach
 [exec-13-ui-kg-extensions.md](exec-13-ui-kg-extensions.md) verschoben (01.04.2026).
 Diese Features gehoeren thematisch zu UI/Extensions, nicht zu Sandbox/Security.
 
-## Phase 5: PDDL Formale Plan-Validierung (Optional)
+## Phase 5: PDDL Formale Plan-Validierung → exec-14
 
+Verschoben nach [exec-14-pddl-formal-planning.md](exec-14-pddl-formal-planning.md) (01.04.2026).
+Eigener Slice wegen Umfang (16 Deltas, 10 Verify-Gates, eigene Research-Basis).
 Ref: `pddl_phase22b_delta.md` (aus Hauptprojekt)
-
-- [ ] **5.1:** PDDL/ADL als optionale Validierungsschicht fuer Agent-Workflows
-  - Pattern: `Plan → Validate → Execute/Replan`
-  - Fuer komplexe Multi-Step Workflows mit harten Constraints
-  - Ergaenzt LangGraph (Ausfuehrung), ersetzt es nicht
-- [ ] **5.2:** Pilot: "Morning Research Run" Workflow
-  - PDDL Domain + Problem Definition
-  - Solver-gestuetzte Validierung vor Ausfuehrung
-- [ ] **5.3:** Integration mit LangGraph
-  - Validation-Node der PDDL-Solver aufruft bevor Graph weiterlaeuft
-  - Bei Constraint-Verletzung: Replan statt Execute
 
 ---
 

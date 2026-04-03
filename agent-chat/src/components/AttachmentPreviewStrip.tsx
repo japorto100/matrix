@@ -1,14 +1,29 @@
 "use client";
 
-// AC52: AttachmentPreviewStrip — horizontal scroll strip of staged image thumbnails
+// AC52+exec-12: AttachmentPreviewStrip — thumbnails for images, icons for data/code files
 
-import { X } from "lucide-react";
+import { FileCode, FileSpreadsheet, FileText, X } from "lucide-react";
 import type { StagedAttachment } from "../hooks/useAttachments";
 
 interface AttachmentPreviewStripProps {
 	attachments: StagedAttachment[];
 	onRemove: (id: string) => void;
 	onPreview: (attachment: StagedAttachment) => void;
+}
+
+function isImageType(mime: string): boolean {
+	return mime.startsWith("image/");
+}
+
+function FileIcon({ mime, name }: { mime: string; name: string }) {
+	const ext = name.split(".").pop()?.toLowerCase() ?? "";
+	if (mime === "text/csv" || ext === "xlsx" || ext === "xls" || mime.includes("spreadsheet") || mime.includes("ms-excel")) {
+		return <FileSpreadsheet className="h-6 w-6 text-emerald-500" />;
+	}
+	if (ext === "py" || ext === "js" || ext === "ts" || mime.includes("python") || mime.includes("javascript")) {
+		return <FileCode className="h-6 w-6 text-blue-500" />;
+	}
+	return <FileText className="h-6 w-6 text-muted-foreground" />;
 }
 
 export function AttachmentPreviewStrip({
@@ -25,11 +40,20 @@ export function AttachmentPreviewStrip({
 					<button
 						type="button"
 						onClick={() => onPreview(att)}
-						className="block h-14 w-14 rounded border border-border overflow-hidden hover:opacity-80 transition-opacity"
+						className="flex items-center justify-center h-14 w-14 rounded border border-border overflow-hidden hover:opacity-80 transition-opacity"
 						title={att.name}
 					>
-						{/* biome-ignore lint/performance/noImgElement: previewUrl is a blob: URL from URL.createObjectURL — Next.js <Image> cannot optimize blob: URLs */}
-						<img src={att.previewUrl} alt={att.name} className="h-full w-full object-cover" />
+						{isImageType(att.file.type) ? (
+							/* biome-ignore lint/performance/noImgElement: previewUrl is a blob: URL — Next.js <Image> cannot optimize blob: URLs */
+							<img src={att.previewUrl} alt={att.name} className="h-full w-full object-cover" />
+						) : (
+							<div className="flex flex-col items-center gap-0.5 px-1">
+								<FileIcon mime={att.file.type} name={att.name} />
+								<span className="text-[8px] text-muted-foreground truncate max-w-[50px]">
+									{att.name.split(".").pop()}
+								</span>
+							</div>
+						)}
 					</button>
 					<button
 						type="button"
