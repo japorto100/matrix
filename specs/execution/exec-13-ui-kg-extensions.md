@@ -2,7 +2,7 @@
 
 **Datum:** 30.03.2026
 **Status:** Geplant
-**Abhaengig von:** exec-11 (Hindsight Memory Engine) ✅, exec-09 (MCP/Generative UI) ✅
+**Abhaengig von:** exec-11 (Hindsight Memory Engine) ✅, exec-09 (MCP/Generative UI) ✅, exec-12 Phase 1 (OpenSandbox) ✅
 **Referenz-Repos:** `_ref/hindsight`, `_ref/supermemory` (UI-Referenz), `_ref/graphiti`, `_ref/cognee`
 
 ---
@@ -82,8 +82,10 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
 
 ## Phase 4: Content Ingestion
 
+> **Voraussetzung:** exec-12 Phase 1.4 (File Upload Pipeline) ✅ — SandboxManager._upload_files() implementiert (03.04.2026)
+
 ### 4.1 Filesystem Integration
-- [ ] Hauptprojekt: File Upload → Agent verarbeitet
+- [ ] Hauptprojekt: File Upload → Agent verarbeitet (nutzt `sandbox_execute` mit `files` Parameter)
 - [ ] Unterstuetzte Formate: PDF, Markdown, CSV, JSON, Code
 - [ ] Chunking-Strategie: Semantic Splitting (nicht fixed-size)
 
@@ -125,6 +127,8 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
 
 ## Phase 5: Computer Use (verschoben aus exec-12, 01.04.2026)
 
+> **Voraussetzung:** exec-12 Phase 1 (OpenSandbox) ✅ — SandboxBrowserTool + Dockerfile.browser implementiert (03.04.2026)
+
 ### 5.1 Playwright MCP (Browser Automation)
 
 - [ ] **5.1.1:** Playwright MCP Server im Agent-Stack
@@ -133,9 +137,10 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
 - [ ] **5.1.2:** Playwright CLI als Alternative (4x weniger Tokens)
   - Fuer wiederholbare Flows (CI/CD, Testing)
   - MCP fuer explorative Tasks
-- [ ] **5.1.3:** Integration in Sandbox (exec-12 Phase 1)
-  - Playwright laeuft innerhalb OpenSandbox Container
-  - Isoliert vom Host-Browser
+- [x] **5.1.3:** Integration in Sandbox (exec-12 Phase 1) ✅ (03.04.2026)
+  - `SandboxBrowserTool` in `agent/tools/sandbox_browser_tool.py`
+  - Playwright laeuft innerhalb OpenSandbox Container (`Dockerfile.browser`)
+  - Isoliert vom Host-Browser, allowed_domains fuer Egress-Kontrolle
 
 ### 5.2 WebMCP
 
@@ -152,15 +157,18 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
 
 ## Phase 6: Artifacts UI (verschoben aus exec-12, 01.04.2026)
 
+> **Voraussetzung:** exec-12 Phase 1 (OpenSandbox) ✅ — SandboxExecuteTool implementiert (03.04.2026)
+
 - [ ] **6.1:** E2B Fragments als UI-Inspiration
   - Artifacts-Style: Agent generiert Code → Preview im Chat
   - Split-View: Code links, Output rechts
 - [ ] **6.2:** Sandpack fuer leichtgewichtige Browser-Previews
   - Kein Server noetig, laeuft komplett im Browser
   - React/JS Code-Previews direkt im Chat
-- [ ] **6.3:** OpenSandbox fuer schwere Execution
+- [ ] **6.3:** OpenSandbox fuer schwere Execution ← nutzt `sandbox_execute` Tool
   - Python Data-Analysis, File-Processing, API Calls
   - Results als Artifacts im Chat (Charts, Tables, Files)
+  - Backend: `SandboxExecuteTool` liefert stdout + files (base64 Charts)
 
 ---
 
