@@ -1,6 +1,9 @@
 # Matrix Homeserver — Privacy & Metadata-Minimierung
 
-## Übersicht
+**Status:** Aktiv
+**Stand:** 06.04.2026 — Tuwunel Privacy hardened, Dendrite/Zendrite Fallback fuer Windows
+
+## Uebersicht
 
 Matrix-Server speichern und verarbeiten potentiell sensitive Metadaten:
 - Wer mit wem kommuniziert (Raumteilnehmer)
@@ -38,21 +41,26 @@ Diese Spec dokumentiert alle verfügbaren Konfigurationsoptionen zur Minimierung
 log = "warn"
 ```
 
-### URL Preview — Deaktiviert
+### URL Preview — Deaktiviert (SSRF-Schutz)
 ```toml
-# URL-Vorschau schickt URLs an den Server → Privacy-Leak
-# ACHTUNG: leere Arrays deaktivieren NICHT — Denylist mit "*" nutzen!
-url_preview_domain_explicit_denylist = ["*"]   # alle Domains blockieren
+# URL-Vorschau schickt URLs an den Server → Privacy + SSRF-Risiko
+# Aktive Config in tuwunel.toml: leere Allowlist (= alles blockiert)
+url_preview_domain_contains_allowlist = []
 ```
+Detail zu SSRF-Risiken siehe `16-security.md`.
 
-### Presence — Deaktiviert
+### Presence — Lokal aktiv, Federation deaktiviert
 ```toml
-# Presence verrät wann User online/zuletzt aktiv war
-# ACHTUNG: flache Keys in [global], KEIN [global.presence] Abschnitt!
-allow_local_presence    = false   # keine lokalen Presence-Updates
+# Aktuelle Config (B-6 in 04-nextjs-chat): lokale Presence aktiv
+# fuer UI-Anzeige (gruener Punkt in RoomList), aber keine Federation
+allow_local_presence    = true    # erlaubt lokale Presence-Updates
 allow_incoming_presence = false   # keine eingehenden von anderen Servern
 allow_outgoing_presence = false   # eigenen Status nicht weitersenden
 ```
+
+> **Hinweis:** Wenn vollstaendige Presence-Deaktivierung gewuenscht ist (z.B. fuer
+> Production mit hoeheren Privacy-Anforderungen), `allow_local_presence = false`
+> setzen. Das deaktiviert dann auch die UI-Indikatoren.
 
 ### Read Receipts
 Tuwunel v1.5.1 leitet **private Read Receipts** nicht mehr an die Federation weiter — nur noch öffentliche. Kein extra Config-Key nötig.
@@ -135,10 +143,11 @@ global:
 
 ### Wenn Privacy wichtig ist → Tuwunel
 1. `allow_federation = false` (lokale Isolation)
-2. `url_preview_*_allowlist = []` (URL Preview deaktiviert)
-3. `[global.presence] allow_inbound/outbound = false`
-4. `log = "warn,tuwunel=warn"`
-5. Reverse Proxy (Nginx/Caddy) für TLS — keine direkten Client-IPs im Tuwunel-Log
+2. `url_preview_domain_contains_allowlist = []` (URL Preview deaktiviert)
+3. `allow_incoming_presence = false`, `allow_outgoing_presence = false`
+4. Optional: `allow_local_presence = false` (deaktiviert auch UI-Indikatoren)
+5. `log = "warn"`
+6. Reverse Proxy (Nginx/Caddy) fuer TLS — keine direkten Client-IPs im Tuwunel-Log
 
 ### Wenn Windows-Dev → Dendrite (Fallback)
 1. `metrics.enabled: false`

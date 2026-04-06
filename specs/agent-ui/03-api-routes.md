@@ -1,8 +1,9 @@
 # Agent Chat UI — API Routes (BFF Layer)
 
-> Stand: 29.03.2026
+**Status:** Aktiv
+**Stand:** 06.04.2026
 
-## Übersicht
+## Uebersicht
 
 Next.js API Routes als BFF (Backend-for-Frontend) Proxy zwischen Browser und Go Gateway.
 Browser spricht nie direkt mit Go/Python — alle Requests laufen über `/api/agent/*` und `/api/audio/*`.
@@ -122,7 +123,7 @@ STT Proxy zum Go Gateway → Python Agent (Whisper).
 ## Dateien
 
 ```
-agent-chat/api/
+agent-chat/src/app/api/
 ├── agent/
 │   ├── chat/route.ts         ← SSE Streaming Proxy
 │   ├── approve/route.ts      ← Tool Approval
@@ -132,4 +133,25 @@ agent-chat/api/
     └── transcribe/route.ts   ← STT
 ```
 
-Bei Integration in nextjs-chat werden diese nach `nextjs-chat/src/app/api/` kopiert.
+Bei Integration in nextjs-chat werden diese nach `nextjs-chat/src/app/api/agent/`
+und `nextjs-chat/src/app/api/audio/` kopiert (exec-06).
+
+---
+
+## Backend Endpoints (Go Appservice + Python Agent)
+
+Vollstaendige Endpoint-Liste:
+
+| Frontend BFF | Go Appservice (Proxy) | Python Agent (Backend) |
+|---|---|---|
+| `/api/agent/chat` | `:8090/api/v1/agent/chat` | `:8094/api/v1/agent/chat` |
+| `/api/agent/approve` | `:8090/api/v1/agent/approve` | `:8094/api/v1/agent/approve` |
+| `/api/agent/completion` | `:8090/api/v1/agent/completion` | `:8094/api/v1/agent/completion` |
+| `/api/audio/synthesize` | `:8090/api/v1/audio/synthesize` | `:8094/api/v1/audio/synthesize` |
+| `/api/audio/transcribe` | `:8090/api/v1/audio/transcribe` | `:8094/api/v1/audio/transcribe` |
+| — | `:8090/api/v1/agent/tools/*` | `:8094/api/v1/agent/tools/*` |
+| — | `:8090/api/v1/mcp/*` | `:8094/mcp/*` (mounted sub-app) |
+| — | `:8090/api/v1/memory/kg/*` | `:8093/api/v1/memory/kg/*` |
+| — | `:8090/api/v1/memory/episode*` | `:8093/api/v1/memory/episode*` |
+
+Header durchgereicht: `x-user-role`, `x-auth-user`, `x-request-id`.

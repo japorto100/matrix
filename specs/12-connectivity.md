@@ -1,6 +1,9 @@
 # Connectivity — Tunnel, VPS, IPv6, Production-Erreichbarkeit
 
-## Übersicht
+**Status:** Aktiv (Referenz-Doku fuer Tunnel-Optionen)
+**Stand:** 06.04.2026
+
+## Uebersicht
 
 Dieses Dokument beschreibt alle Optionen um den Matrix-Homeserver von außen
 erreichbar zu machen — für Mobile-Tests, für Freunde und für Production.

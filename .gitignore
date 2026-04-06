@@ -67,6 +67,14 @@ tools/zendrite-src/
 tools/pgsql/
 tools/pgsql-data/
 
+# ─── control/ Extraction Binaries (zu gross fuer GitHub) ─────────────────────
+control/storage/tools/seaweedfs/weed.exe
+control/storage/tools/seaweedfs/data/
+control/storage/tools/garage/garage
+control/storage/tools/garage/data/
+*.exe
+!homeserver/tuwunel.exe
+
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 logs/

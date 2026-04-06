@@ -1,5 +1,11 @@
 # bore — Open-Source Reverse Tunnel
 
+**Status:** Aktiv (Dev-Tunnel-Option)
+**Stand:** 06.04.2026 — Element X erfordert HTTPS, fuer Mobile-Tests Cloudflare Tunnel oder ngrok bevorzugt
+
+> Diese Spec dokumentiert das **bore**-spezifische Setup. Vollstaendige
+> Tunnel-/Connectivity-Strategie inklusive Production-Optionen siehe `12-connectivity.md`.
+
 ## Was ist bore?
 
 bore ist ein minimaler Reverse-Tunnel in Rust. Ein Befehl, kein Account, kein Setup.

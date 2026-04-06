@@ -88,7 +88,10 @@
       "Bash(cp -L D:/huggingface-cache/hub/models--Snowflake--snowflake-arctic-embed-xs/snapshots/d8c86521100d3556476a063fc2342036d45c106f/special_tokens_map.json D:/huggingface-cache/transformers-cache/Snowflake/snowflake-arctic-embed-xs/)",
       "WebFetch(domain:neo4j.com)",
       "WebFetch(domain:falkordb.com)",
-      "WebFetch(domain:turingdb.ai)"
+      "WebFetch(domain:turingdb.ai)",
+      "Bash(git:*)",
+      "Bash(wc -l /d/matrix/homeserver/data/db/*)",
+      "Bash(xargs wc:*)"
     ]
   }
 }

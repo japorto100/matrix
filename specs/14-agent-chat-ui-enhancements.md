@@ -1,64 +1,43 @@
-# Agent Chat UI — Mögliche Erweiterungen
+# Agent Chat UI — Erweiterungen
 
-**Datum:** 26.03.2026
-**Status:** Ideen / Noch nicht geplant
-**Kontext:** Für das Hauptprojekt (tradeview-fusion) Agent Chat UI, nicht für das Matrix-Isolationsprojekt.
+**Status:** Verschoben → `FUTURE_IDEAS.md`
+**Stand:** 06.04.2026
 
----
+Die ursprueglich hier gesammelten Ideen (Sandpack interaktive Code-Blocks, PPTX/PDF/Excel
+Generierung, Spectacle Presentation Mode) sind nicht aktiv im Matrix-Projekt — sie waren
+Vorschlaege fuer das Hauptprojekt (tradeview-fusion).
 
-## Code-Rendering im Agent Chat
-
-### Syntax Highlighting
-- `shiki` oder `prism-react-renderer` für statisches Code-Highlighting
-- `react-markdown` + `rehype-highlight` bereits im Matrix-Chat vorhanden — kann 1:1 übernommen werden
-
-### Interaktive Code-Blöcke
-- **`sandpack`** (CodeSandbox): Interaktive Code-Ausführung direkt im Chat
-  - Agent liefert Code → User kann ihn editieren und ausführen
-  - Unterstützt React, Vue, Vanilla JS, TypeScript
-  - Sandboxed Execution (sicher)
-
-### Markdown-Rendering
-- `react-markdown` + `remark-gfm` (GitHub Flavored Markdown) bereits vorhanden
-- Tabellen, Checklisten, Footnotes funktionieren
+Sie wurden nach `FUTURE_IDEAS.md` (Section "Frontend / UI") umgezogen und werden dort
+gesammelt mit anderen nicht-eingeplanten Ideen.
 
 ---
 
-## Agent-generierte Dateien
+## Was im Agent-Chat tatsaechlich umgesetzt ist
 
-### PowerPoint-Generierung
-- **`pptxgenjs`** — Agent kann PowerPoint-Präsentationen generieren
-  - Use Case: "Erstelle eine Zusammenfassung als Präsentation"
-  - Agent generiert .pptx → sendet als `m.file` im Chat
-  - User kann herunterladen und in PowerPoint/Google Slides öffnen
+Stand 06.04.2026 ist der Agent-Chat (`agent-chat/`) bereits ein vollwertiges Feature-Modul:
 
-### Excel-Generierung
-- **`xlsx` (SheetJS)** — bereits installiert, kann auch zum Erstellen genutzt werden
-  - Use Case: "Exportiere die Handelsdaten als Excel"
-  - Agent generiert .xlsx → sendet als `m.file`
+| Feature | Status | Details |
+|---|---|---|
+| Syntax Highlighting | ✅ | `react-shiki` (VS Code Engine) in nextjs-chat + agent-chat |
+| Markdown Rendering | ✅ | `react-markdown` + `remark-gfm` + `rehype-sanitize` |
+| Streaming SSE | ✅ | AI SDK v6 (`ai`, `@ai-sdk/react`) |
+| AssistantUI | ✅ | `@assistant-ui/react` Radix-style Primitives |
+| Tambo Generative UI | ✅ | ChartWidget, PortfolioCard, Schema-driven |
+| CopilotKit AG-UI | ✅ | Frontend-State Mutations (set_chart_symbol, navigate, ...) |
+| MCP + WebMCP | ✅ | `use-mcp`, `@mcp-b/global`, Browser-Tool Discovery |
+| tldraw Canvas | ✅ | Infinite Canvas v4.0 mit Novel Editor Shape |
+| Novel Editor | ✅ | Tiptap-based Rich Editor + Slash Commands + AI Autocomplete |
+| Voice I/O | ✅ | useSpeechInput, useMediaRecorderInput, TTS Button |
+| Tool Approval | ✅ | approveToolCall, denyToolCall |
+| Multimodal Images | ✅ | Attachments mit base64 + mime_type |
+| Reasoning Effort | ✅ | low/medium/high Toggle |
 
-### PDF-Generierung
-- Diverse Libraries (jsPDF, @react-pdf/renderer)
-  - Use Case: "Erstelle einen Report als PDF"
-
----
-
-## Presentation-Mode (Spectacle)
-
-- **`spectacle`** (Formidable Labs) — React Presentation Library
-  - Slide-artige Agent-Antworten mit Animationen
-  - Use Case: Agent liefert mehrseitige Analyse als navigierbare Slides
-  - Overkill für normalen Chat — nur sinnvoll für spezifische Agent-Antwortformate
-  - Alternative: Einfache Tabs/Accordion für mehrteilige Antworten
+Details: `agent-ui/02-features.md`, `agent-ui/04-frontend-tools.md`.
 
 ---
 
-## Priorität
+## Verwandte Specs
 
-| Feature | Nutzen | Aufwand | Empfehlung |
-|---------|--------|---------|-----------|
-| Syntax Highlighting | Hoch | Niedrig (haben wir schon) | Bei Portierung mitnehmen |
-| Sandpack (interaktiv) | Mittel | Mittel | Nice-to-have |
-| PptxGenJS | Mittel | Niedrig | Agent-Capability |
-| Excel-Export | Hoch | Niedrig (SheetJS da) | Agent-Capability |
-| Spectacle | Niedrig | Hoch | Nicht empfohlen |
+- `agent-ui/01-architektur.md` — Agent-UI Architektur
+- `agent-ui/02-features.md` — Feature-Status
+- `FUTURE_IDEAS.md` — Verschobene Ideen

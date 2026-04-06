@@ -12,7 +12,9 @@ Werden abgearbeitet und als Referenz behalten.
 | exec-10-multi-agent.md | Multi-Agent Orchestrierung (Trading Roles) | ✅ Implementiert |
 | exec-11-memory-evolution.md | Hindsight Memory Engine (4 Networks) | ✅ Phase 1 implementiert |
 | exec-12-sandbox-security.md | OpenSandbox + Security Hardening | ✅ Phase 1+2 implementiert (03.04.2026) |
-| exec-13-ui-kg-extensions.md | UI + Knowledge Graph Extensions | Geplant |
+| exec-13-ui-kg-extensions.md | KG Backend (Graphiti/Cognee) + Computer Use + Artifacts UI | Geplant |
+| exec-14-pddl-formal-planning.md | PDDL Formale Plan-Validierung | Geplant |
+| exec-15-memory-control-ui.md | Memory & Control UI (Frontend Surfaces, KG Viz, Settings) | Geplant |
 | exec2-01-matrix-chat-core.md | Matrix Chat Core (restructured) | Referenz |
 | exec2-02-protocol-infra.md | Protocol Infrastructure | Referenz |
 | exec2-03-ui-rework-sota.md | UI Rework + SOTA Packages | Referenz |

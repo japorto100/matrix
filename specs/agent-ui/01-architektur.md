@@ -1,10 +1,13 @@
 # Agent Chat UI — Architektur
 
-> Stand: 29.03.2026
+**Status:** Aktiv
+**Stand:** 06.04.2026 — Feature-Modul `agent-chat/` aktiv, Integration in nextjs-chat via exec-06
 
 ## Konzept
 
-Produktive Agent-Chat-Oberfläche für LLM-gestützte Interaktion (Trading-Analyse, Tool-Ausführung, Recherche). Gebaut als Feature-Modul (`agent-chat/`), wird in `nextjs-chat` integriert (exec-06).
+Produktive Agent-Chat-Oberflaeche fuer LLM-gestuetzte Interaktion (Trading-Analyse,
+Tool-Ausfuehrung, Recherche). Gebaut als Feature-Modul (`agent-chat/`), wird in
+`nextjs-chat` integriert (exec-06).
 
 Ursprung: `tradeview-fusion/src/features/agent-chat/` (Rev. 31, 100+ ACs abgearbeitet).
 
@@ -91,10 +94,11 @@ setChatContext(`Symbol: AAPL, Timeframe: 1D, RSI: 72.3`);
 User tippt → AgentChatComposer
   → useChatSession.send(text, attachments)
     → DefaultChatTransport.prepareSendMessagesRequest()
-      → POST /api/agent/chat (BFF)
-        → Go Gateway /api/v1/agent/chat (SSE)
-          → Python agent-service run_agent_loop()
-            → Anthropic/OpenAI API
+      → POST /api/agent/chat (Next.js BFF)
+        → Go Appservice (Port 8090) /api/v1/agent/chat (SSE Proxy)
+          → Python Agent Service (Port 8094) /api/v1/agent/chat
+            → LangGraph run_agent_loop() (memory_recall → llm_call → approval → tool_execute)
+              → Anthropic/OpenAI/OpenRouter/Ollama API
           ← SSE Frames: text-delta, tool-call, message-metadata, error
         ← UIMessage Stream (x-vercel-ai-ui-message-stream: v1)
       ← useChat() aktualisiert messages[]

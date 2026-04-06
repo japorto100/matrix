@@ -1,53 +1,46 @@
 # Dokument-Preview — Evaluation
 
-**Datum:** 26.03.2026
-**Status:** Zu evaluieren
+**Status:** Aktiv (Client-seitig umgesetzt, Backend-Konvertierung in `FUTURE_IDEAS.md`)
+**Stand:** 06.04.2026
 
 ---
 
-## Aktueller Stand
+## Aktueller Stand (Ist)
 
-| Dateityp | Preview | Library |
-|----------|---------|---------|
-| PDF | iframe Dialog | Browser-nativ |
-| Word (.docx) | HTML-Render Dialog | `docx-preview` |
-| Excel (.xlsx/.csv) | Tabellen-Dialog | `xlsx` (SheetJS) |
-| PowerPoint (.pptx) | HTML/CSS/SVG Render | `pptxjs` / `react-pptx-preview` (einzurichten) |
-| Andere | Download-Link | — |
+| Dateityp | Preview | Library | Status |
+|----------|---------|---------|---|
+| PDF | iframe / `react-pdf` | `react-pdf` 10.4 | ✅ in nextjs-chat |
+| Word (.docx) | HTML-Render Dialog | `docx-preview` 0.3.7 | ✅ in nextjs-chat |
+| Excel (.xlsx/.csv) | Tabellen-Dialog / Export | `xlsx` (SheetJS) | ✅ in nextjs-chat |
+| Markdown / Text | inline | `react-markdown` + `rehype-sanitize` | ✅ |
+| Code | Syntax Highlighting | `react-shiki` (VS Code Engine) | ✅ |
+| PowerPoint (.pptx) | — | `pptxjs` / `react-pptx-preview` | ❌ siehe FUTURE_IDEAS |
+| Andere | Download-Link | — | ✅ Fallback |
 
 ---
 
-## PowerPoint Preview
+## Backend-Konvertierung (Optional, FUTURE_IDEAS)
 
-### Aktuell: pptxjs / react-pptx-preview (Client-seitig)
-- Parse .pptx (ZIP/XML) → HTML/CSS/SVG im Browser
-- Offline-fähig, keine Daten verlassen den Client
-- ~80% originalgetreu (komplexe Animationen/3D-Effekte können abweichen)
-- **Status:** Einzurichten
+Statt Client-seitiger Parsing-Libraries koennte ein Backend-Service wie **Gotenberg**
+(Docker, LibreOffice basiert) alle Office-Formate auf PDF konvertieren und der Browser
+nutzt nur einen einzigen `react-pdf` Viewer. Vor- und Nachteile:
 
-### Zu evaluieren: Backend PDF-Konvertierung
-- **Gotenberg** (Docker-Container) oder **LibreOffice** als Konvertierungs-Backend
-- Go-Backend ruft Gotenberg auf → .pptx → PDF → an Client → `react-pdf` zeigt an
-- ~95% originalgetreu
-- Braucht zusätzlichen Service (Docker)
-- **Vorteil:** Funktioniert für ALLE Office-Formate (Word, Excel, PPT) mit einem Ansatz
-- **Nachteil:** Nicht offline, zusätzliche Infrastruktur
-- **Relevanz:** Erst bei Prod-Deployment evaluieren
-
-### Entscheidungsmatrix
-
-| Kriterium | pptxjs (Client) | Gotenberg (Backend) |
+| Kriterium | Client (aktuell) | Backend (Gotenberg) |
 |-----------|----------------|-------------------|
-| Qualität | 80% | 95% |
+| Qualitaet | ~80% | ~95% |
 | Offline | Ja | Nein |
 | Infrastruktur | Keine | Docker-Container |
-| Alle Formate | Nur PPT | Word, Excel, PPT, alles |
+| Alle Formate | Pro Format eine Library | Eine Pipeline fuer alles |
 | Aufwand | Niedrig | Mittel (Go-Integration) |
 | Latenz | Sofort | ~1-3s Konvertierung |
 
-### Empfehlung
-- **Dev/MVP:** pptxjs client-seitig (aktueller Ansatz)
-- **Prod:** Gotenberg evaluieren — ein Backend-Service für alle Office-Formate
-  - Würde `docx-preview` und `xlsx` Viewer ersetzen können
-  - Einheitliche Qualität für alle Dokumenttypen
-  - Go-Backend Route: `POST /api/convert` → Gotenberg → PDF → Response
+**Status:** Verschoben nach `FUTURE_IDEAS.md` — sinnvoll erst bei Prod-Deployment.
+PowerPoint Preview hat aktuell keine Prioritaet, da der Use-Case (Trading-Dokumente)
+ueberwiegend PDF + Excel ist.
+
+---
+
+## Verwandte Specs
+
+- `04-nextjs-chat.md` — Document Preview Komponenten
+- `FUTURE_IDEAS.md` — Backend-Konvertierung via Gotenberg

@@ -1,0 +1,521 @@
+// ============================================================================
+// SQLite-Modus aktiv (statt PostgreSQL).
+// Grund: Kein externer DB-Server noetig, alles lokal als Datei (dev.db).
+// Enums sind auskommentiert, da SQLite keine nativen Enums unterstuetzt.
+// Die Enum-Felder in den Models wurden durch String ersetzt.
+// Siehe docs/SQLITE_MIGRATION.md fuer Details und Rueckbau-Anleitung.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  username       String?         @unique
+  name           String?
+  email          String?         @unique
+  emailVerified  DateTime?
+  image          String?
+  role           String          @default("viewer")
+  passwordHash   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+  authenticators Authenticator[]
+  refreshTokens  RefreshToken[]
+  totpDevices    TotpDevice[]
+  recoveryCodes  RecoveryCode[]
+  consent        UserConsent?
+
+  @@index([role])
+}
+
+model Account {
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  refresh_token_expires_in Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @id
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@index([expires])
+}
+
+model Authenticator {
+  id                   String   @id @default(cuid())
+  userId               String
+  providerAccountId    String   @unique
+  credentialID         String   @unique
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+  name                 String?
+  createdAt            DateTime @default(now())
+  lastUsedAt           DateTime?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id                String   @id @default(cuid())
+  userId            String
+  tokenHash         String   @unique
+  familyId          String?
+  expiresAt         DateTime
+  usedAt            DateTime?
+  revokedAt         DateTime?
+  replacedByTokenId String?
+  createdByIp       String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([familyId])
+}
+
+model TotpDevice {
+  id           String   @id @default(cuid())
+  userId       String
+  label        String
+  secretEnc    String
+  isPrimary    Boolean  @default(false)
+  lastUsedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+}
+
+model RecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@index([userId, usedAt])
+}
+
+model UserConsent {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  llmProcessing      Boolean  @default(false)
+  analyticsEnabled   Boolean  @default(false)
+  marketingEnabled   Boolean  @default(false)
+  privacyVersion     String   @default("v1")
+  consentedAt        DateTime?
+  withdrawnAt        DateTime?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Enums (not supported by SQLite, replaced with String in models) ---
+// enum AlertCondition {
+//   above | below | crosses_up | crosses_down | rsi_overbought | rsi_oversold
+// }
+// enum LayoutMode {
+//   single | two_horizontal | two_vertical | four
+// }
+// enum OrderSide {
+//   buy | sell
+// }
+// enum OrderType {
+//   market | limit | stop | stop_limit
+// }
+// enum OrderStatus {
+//   open | filled | cancelled
+// }
+// enum GeoEventStatus {
+//   candidate | confirmed | persistent | archived
+// }
+// enum GeoCandidateState {
+//   open | accepted | rejected | snoozed | expired
+// }
+// enum GeoCandidateTriggerType {
+//   hard_signal | news_cluster | manual_import
+// }
+// enum GeoDrawingType {
+//   line | polygon | text
+// }
+
+model UserProfile {
+  id                String             @id @default(cuid())
+  profileKey        String             @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  watchlists        Watchlist[]
+  alerts            PriceAlertRecord[]
+  orders            PaperOrderRecord[]
+  portfolioSnapshots PortfolioSnapshotRecord[]
+  tradeJournalEntries TradeJournalRecord[]
+  layoutPreference  LayoutPreference?
+}
+
+model Watchlist {
+  id         String          @id @default(cuid())
+  profileId  String
+  name       String
+  isDefault  Boolean         @default(false)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  profile    UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items      WatchlistItem[]
+
+  @@index([profileId])
+  @@unique([profileId, name])
+}
+
+model WatchlistItem {
+  id          String    @id @default(cuid())
+  watchlistId String
+  symbol      String
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  watchlist   Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@index([watchlistId])
+  @@unique([watchlistId, symbol])
+}
+
+model PriceAlertRecord {
+  id          String         @id @default(cuid())
+  profileId   String
+  symbol      String
+  // condition   AlertCondition
+  condition   String
+  targetValue Float
+  enabled     Boolean        @default(true)
+  triggered   Boolean        @default(false)
+  triggeredAt DateTime?
+  message     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  profile     UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, symbol, enabled])
+}
+
+model LayoutPreference {
+  id              String      @id @default(cuid())
+  profileId       String      @unique
+  // layoutMode      LayoutMode  @default(single)
+  layoutMode      String      @default("single")
+  sidebarOpen     Boolean     @default(true)
+  showDrawingTool Boolean     @default(false)
+  darkMode        Boolean     @default(true)
+  updatedAt       DateTime    @updatedAt
+  profile         UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model PaperOrderRecord {
+  id          String      @id @default(cuid())
+  profileId   String
+  symbol      String
+  // side        OrderSide
+  side        String
+  // type        OrderType
+  type        String
+  quantity    Float
+  entryPrice  Float
+  stopLoss    Float?
+  takeProfit  Float?
+  // status      OrderStatus @default(open)
+  status      String      @default("open")
+  filledPrice Float?
+  executedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, symbol, status])
+  @@index([symbol, status])
+}
+
+model PortfolioSnapshotRecord {
+  id          String      @id @default(cuid())
+  profileId   String
+  generatedAt DateTime    @default(now())
+  snapshot    Json
+  createdAt   DateTime    @default(now())
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, generatedAt])
+}
+
+model TradeJournalRecord {
+  id            String      @id @default(cuid())
+  profileId     String
+  symbol        String
+  orderId       String?
+  note          String
+  tags          Json?
+  context       Json?
+  screenshotUrl String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  profile       UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, symbol, createdAt])
+  @@index([orderId])
+}
+
+model GeoEventRecord {
+  id          String         @id @default(cuid())
+  title       String
+  symbol      String
+  category    String
+  subcategory String?
+  // status      GeoEventStatus
+  status      String
+  severity    Int
+  confidence  Int
+  countryCodes Json
+  regionIds   Json
+  hotspotIds  Json?
+  coordinates Json?
+  summary     String?
+  analystNote String?
+  sources     Json
+  assets      Json
+  validFrom   DateTime?
+  validTo     DateTime?
+  createdBy   String
+  updatedBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  timelines   GeoTimelineRecord[]
+
+  @@index([status, severity, confidence])
+  @@index([category, updatedAt])
+}
+
+model GeoCandidateRecord {
+  id              String                 @id @default(cuid())
+  generatedAt     DateTime               @default(now())
+  // triggerType     GeoCandidateTriggerType
+  triggerType     String
+  confidence      Float
+  severityHint    Int
+  headline        String
+  regionHint      String?
+  countryHints    Json?
+  sourceRefs      Json
+  mergedIntoEventId String?
+  // state           GeoCandidateState      @default(open)
+  state           String                 @default("open")
+  reviewNote      String?
+  symbol          String?
+  category        String?
+  hotspotIds      Json?
+
+  @@index([state, generatedAt])
+  @@index([regionHint, state])
+}
+
+model GeoTimelineRecord {
+  id          String   @id @default(cuid())
+  eventId     String?
+  action      String
+  actor       String
+  at          DateTime @default(now())
+  diffSummary String
+  event       GeoEventRecord? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, at])
+  @@index([at])
+}
+
+model GeoDrawingRecord {
+  id        String         @id @default(cuid())
+  // type      GeoDrawingType
+  type      String
+  label     String?
+  points    Json
+  color     String?
+  eventId   String?
+  createdBy String
+  updatedBy String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([eventId, updatedAt])
+}
+
+// --- Phase 6: Memory Architecture ---
+
+model AgentEpisode {
+  id           String   @id @default(cuid())
+  sessionId    String
+  agentRole    String
+  inputJson    String
+  outputJson   String
+  toolsUsed    String   @default("[]")
+  durationMs   Int
+  tokenCount   Int      @default(0)
+  confidence   Float    @default(0.0)
+  tagsJson     String   @default("[]")
+  metadataJson String   @default("{}")
+  retainUntil  DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([agentRole])
+  @@index([createdAt])
+}
+
+model AnalysisSnapshot {
+  id           String   @id @default(cuid())
+  symbol       String?
+  region       String?
+  analysisType String
+  inputJson    String
+  outputJson   String
+  confidence   Float    @default(0.0)
+  modelId      String
+  retainUntil  DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([symbol])
+  @@index([analysisType])
+  @@index([createdAt])
+}
+
+model MemorySyncCheckpoint {
+  id         String   @id @default(cuid())
+  layerType  String
+  lastSyncAt DateTime
+  checksum   String   @default("")
+  metaJson   String   @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([layerType])
+}
+
+// --- Phase 22b: Files Surface ---
+
+// DocumentRecord — metadata sidecar for every managed file.
+// Primary store is Object Storage (R2/S3); this record tracks indexing state.
+// Strings instead of enums (SQLite mode).
+model DocumentRecord {
+  id          String   @id @default(cuid())
+  storageKey  String   @unique
+  name        String
+  // type: pdf | docx | html | xlsx | csv | mp3 | wav | opus | mp4 | webm | hls | png | jpg | jpeg | svg | avif | webp | parquet | json | other
+  type        String
+  // subtype: e.g. "earnings-call" | "10-K" | "research-note" | "chart" | ""
+  subtype     String?
+  ticker      String?
+  // status: pending | indexed | failed
+  status      String   @default("pending")
+  chunkCount  Int?
+  durationSec Float?
+  sizeBytes   Int?
+  mimeType    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  auditLogs   FileAuditLog[]
+
+  @@index([status])
+  @@index([ticker])
+  @@index([type, status])
+}
+
+// FileAuditLog — immutable audit trail for all file mutations.
+// Conforms to AGENT_SECURITY.md action-class schema.
+// actionClass: read-only | bounded-write | approval-write
+// action: upload | delete | reindex | download
+model FileAuditLog {
+  id          String          @id @default(cuid())
+  documentId  String?
+  action      String
+  actionClass String
+  actorUserId String?
+  actorRole   String?
+  requestId   String
+  target      String
+  // status: ok | failed
+  status      String          @default("ok")
+  errorCode   String?
+  // expiresAt used for approval-write nonce tracking
+  expiresAt   DateTime?
+  createdAt   DateTime        @default(now())
+  document    DocumentRecord? @relation(fields: [documentId], references: [id])
+
+  @@index([documentId])
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+// ControlAuditLog — immutable audit trail for Control Surface mutations (AC20).
+// Written by BFF routes for every bounded-write / approval-write control action.
+// Never throws — audit failure must not break primary request.
+model ControlAuditLog {
+  id          String   @id @default(cuid())
+  action      String   // kill-session | pause-session | resume-session | purge-memory
+  actionClass String   // bounded-write | approval-write
+  actorUserId String?
+  actorRole   String?
+  requestId   String
+  target      String   // sessionId or resource identifier
+  status      String   @default("ok") // ok | failed
+  errorCode   String?
+  // expiresAt: nonce window for approval-write actions (30s)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([target, createdAt])
+}

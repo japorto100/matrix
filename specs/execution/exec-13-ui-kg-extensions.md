@@ -1,19 +1,28 @@
-# exec-13: UI + Knowledge Graph Extensions
+# exec-13: KG Backend Extensions + Computer Use + Artifacts
 
 **Datum:** 30.03.2026
 **Status:** Geplant
+**Stand:** 06.04.2026 — Phase 2/3/4 nach exec-15 (Memory & Control UI) verschoben
 **Abhaengig von:** exec-11 (Hindsight Memory Engine) ✅, exec-09 (MCP/Generative UI) ✅, exec-12 Phase 1 (OpenSandbox) ✅
-**Referenz-Repos:** `_ref/hindsight`, `_ref/supermemory` (UI-Referenz), `_ref/graphiti`, `_ref/cognee`
+**Referenz-Repos:** `_ref/hindsight`, `_ref/graphiti`, `_ref/cognee`
 
 ---
 
 ## Kontext
 
-Aus exec-11 ausgelagerte Features die ueber die Core-Memory-Engine hinausgehen:
-- **Graphiti/Cognee:** Knowledge Graph Layer als Hindsight Extension
-- **Memory Graph Visualisierung:** Interaktive Graph-UI (Supermemory-Referenz)
-- **Control Panel:** Hauptprojekt-Settings, Memory-Dashboard, Agent-Config
-- **Content Ingestion:** Dokumente/Files → Memory Engine Pipeline
+Aus exec-11 ausgelagerte Backend-Erweiterungen + aus exec-12 verschobene Tool-/UI-Themen:
+- **Graphiti/Cognee:** Knowledge Graph Layer als Hindsight Extension (Backend, Phase 1)
+- **Computer Use:** Playwright MCP, WebMCP, Anthropic Computer Use (Tool-Layer, Phase 5)
+- **Artifacts UI:** E2B Fragments / Sandpack / OpenSandbox Artifacts (Phase 6)
+
+> **HINWEIS — Verschoben nach exec-15:**
+> - **Phase 2 (Memory Graph Visualisierung)** → exec-15 Phase 3
+> - **Phase 3 (Control Panel)** → exec-15 Phasen 1, 2, 4, 6
+> - **Phase 4 (Content Ingestion)** → exec-15 Phase 5
+>
+> Begruendung: Diese Phasen bilden ein eigenstaendiges, groesseres UI-Paket
+> ("Memory & Control UI") und nutzen die `D:/matrix/control/` Codex-Extraktion
+> als Foundation. Siehe `exec-15-memory-control-ui.md`.
 
 ---
 
@@ -40,88 +49,38 @@ Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
 
 ---
 
-## Phase 2: Memory Graph Visualisierung
+## Phase 2 — VERSCHOBEN nach exec-15
 
-### 2.1 Graph Component (Supermemory-Referenz)
-`_ref/supermemory/packages/memory-graph/` als UI-Referenz:
-- [ ] React Force-Graph oder react-flow fuer Memory-Graph Darstellung
-- [ ] Nodes: Facts, Entities, Observations, Skills
-- [ ] Edges: Temporal, Semantic, Entity, Causal Links
-- [ ] Zoom/Pan/Filter (nach Zeitraum, Memory-Typ, Rolle)
+Memory Graph Visualisierung → siehe `exec-15-memory-control-ui.md` Phase 3
+(Knowledge Graph Visualization).
 
-### 2.2 Memory Timeline
-- [ ] Chronologische Ansicht aller Memories pro User
-- [ ] Consolidation-History: Fakt → Observation → Skill Kette sichtbar
-- [ ] Memory-Qualitaet Indikatoren (Confidence, Freshness, Relevance)
+## Phase 3 — VERSCHOBEN nach exec-15
 
-### 2.3 Agent-Chat Integration
-- [ ] Memory-Panel im AgentChatPanel (neben tldraw Canvas)
-- [ ] Inline Memory-Referenzen in Agent-Responses (klickbar)
-- [ ] "Warum weisst du das?" → zeigt Memory-Source
+Control Panel (Agent Config UI, Memory Dashboard, Project Settings) → siehe
+`exec-15-memory-control-ui.md` Phasen 1, 2, 4, 6.
+
+## Phase 4 — VERSCHOBEN nach exec-15
+
+Content Ingestion (File Upload Pipeline, Document → Memory, NATS Bridge UI) → siehe
+`exec-15-memory-control-ui.md` Phase 5.
 
 ---
 
-## Phase 3: Control Panel
+## Verify-Gates (verbleibend)
 
-### 3.1 Agent Configuration UI
-- [ ] Rollen-Konfiguration (Trading Roles) — UI fuer `roles.py` Einstellungen
-- [ ] Skill-Management: Skills aktivieren/deaktivieren, Personal Skills bearbeiten
-- [ ] Memory-Settings: Retain an/aus, Recall-Budget, Tag-Filter
-
-### 3.2 Memory Dashboard
-- [ ] Memory-Statistiken: Anzahl Facts, Observations, Entities pro User
-- [ ] Consolidation-Status: Pending Tasks, Worker Health
-- [ ] Memory-Suche mit Facetten (Typ, Rolle, Zeitraum, Entitaet)
-
-### 3.3 Project Settings
-- [ ] ENV-Variablen Editor (read-only Anzeige + sichere Aenderungen)
-- [ ] Service-Status: PostgreSQL, NATS, LiveKit, Agent, Bridge
-- [ ] Log-Viewer mit Filter
-
----
-
-## Phase 4: Content Ingestion
-
-> **Voraussetzung:** exec-12 Phase 1.4 (File Upload Pipeline) ✅ — SandboxManager._upload_files() implementiert (03.04.2026)
-
-### 4.1 Filesystem Integration
-- [ ] Hauptprojekt: File Upload → Agent verarbeitet (nutzt `sandbox_execute` mit `files` Parameter)
-- [ ] Unterstuetzte Formate: PDF, Markdown, CSV, JSON, Code
-- [ ] Chunking-Strategie: Semantic Splitting (nicht fixed-size)
-
-### 4.2 Document → Memory Pipeline
-- [ ] Upload → Cognee Extraction → Hindsight Retain
-- [ ] Metadata: Dateiname, Upload-Datum, User-ID als Tags
-- [ ] Deduplizierung: document_id basiert auf Content-Hash
-
-### 4.3 exec-05b Bridge (Messaging → Memory)
-- [ ] NATS Messages → Memory Engine (selektiv, nicht alle)
-- [ ] Filter: nur Agent-relevante Conversations retainen
-- [ ] Bridge-Config: welche Rooms/Channels → Memory
-
----
-
-## Verify-Gates
-
-### Gate 1: Graphiti/Cognee
+### Gate 1: Graphiti/Cognee (Phase 1)
 - [ ] GraphitiRetriever registriert und liefert Ergebnisse
 - [ ] Cognee Document-Pipeline: PDF → Facts in Hindsight
 - [ ] Unified Search: Query liefert Ergebnisse aus allen Backends
 
-### Gate 2: Visualisierung
-- [ ] Memory Graph rendert im Browser (>50 Nodes fluessig)
-- [ ] Timeline zeigt Memories chronologisch
-- [ ] Klick auf Memory-Node zeigt Details + Source
+### Gate 5: Computer Use (Phase 5)
+- [ ] Playwright MCP Tools registriert und nutzbar
+- [ ] Pilot MCP evaluiert (Entscheidung dokumentiert)
+- [ ] WebMCP Polyfill in Frontend aktiv
 
-### Gate 3: Control Panel
-- [ ] Agent-Rollen konfigurierbar via UI
-- [ ] Memory-Dashboard zeigt aktuelle Statistiken
-- [ ] Service-Status korrekt angezeigt
-
-### Gate 4: Content Ingestion
-- [ ] File Upload → Fakten in Memory (E2E)
-- [ ] Deduplizierung: gleiche Datei zweimal hochladen → keine Duplikate
-- [ ] NATS Bridge: Agent-Messages → Memory (selektiv)
+### Gate 6: Artifacts UI (Phase 6)
+- [ ] Sandpack Browser-Preview im Agent-Chat
+- [ ] OpenSandbox Artifacts (Charts, Tables) inline gerendert
 
 ---
 

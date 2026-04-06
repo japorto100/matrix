@@ -1,6 +1,9 @@
 # Mobile — Element X, FluffyChat, Syphon, Beeper
 
-## App-Auswahl (Stand März 2026)
+**Status:** Aktiv
+**Stand:** 06.04.2026 — TURN aktiv (metered.ca), MatrixRTC + LiveKit fuer Calls (siehe `04-nextjs-chat.md`)
+
+## App-Auswahl (Stand Maerz 2026)
 
 Alle vier Apps können: DMs, Gruppen-Räume, Bot als normaler Kontakt, E2EE.
 Kein Custom APK nötig — offizielle Apps + Custom Homeserver URL eintragen.
@@ -112,26 +115,27 @@ Für Production: Option 2 (ntfy + UnifiedPush) — Open Source, kein Google, F-D
 brauchen einen TURN-Server um NAT zu traversieren. STUN allein reicht nicht bei striktem NAT.
 
 **Ist-Zustand:**
-- tuwunel.toml hat STUN konfiguriert: `stun:stun.cloudflare.com:3478` + `stun:stun.l.google.com:19302`
-- TURN ist auskommentiert (`turn_secret`, `turn_ttl`)
-- `homeserver/turnserver.conf` existiert (coturn Config-Template)
-- coturn Service in `docker-compose.yml` vorhanden (profile: prod)
-- **Calls im gleichen LAN funktionieren** (STUN reicht)
-- **Calls über Internet funktionieren NICHT** (TURN fehlt)
+- `tuwunel.toml` konfiguriert STUN + TURN:
+  ```toml
+  turn_uris = [
+      "stun:stun.cloudflare.com:3478",
+      "turn:a.relay.metered.ca:443?transport=tcp",
+  ]
+  turn_username = "openrelayproject"
+  turn_password = "openrelayproject"
+  ```
+- coturn Service in `docker-compose.yml` (profile: prod) vorhanden
+- **Voice/Video Calls** laufen ueber **MatrixRTC + LiveKit** (`well_known.rtc_transports`),
+  nicht ueber klassische `m.call.*` Events. Siehe `04-nextjs-chat.md` und
+  `13-e2ee-agent-architecture.md`.
 
-**Optionen:**
+**Optionen falls eigener TURN benoetigt:**
 
 | Option | Aufwand | Kosten | Empfehlung |
 |---|---|---|---|
-| **coturn self-hosted** | Mittel | Server mit Public IP nötig | Production |
-| **Cloudflare TURN** | Niedrig | Free Tier verfügbar | Dev + Production |
-| **Metered TURN** | Sehr niedrig | Free Tier (50 GB/Monat) | Schnellster Start |
-| Kein TURN | Keiner | Kostenlos | Nur LAN-Calls |
-
-**TODO:**
-- [ ] Cloudflare TURN oder Metered.ca Free Tier evaluieren
-- [ ] tuwunel.toml: `turn_uris` + `turn_secret` konfigurieren
-- [ ] Cross-Network Call testen (Mobile 4G ↔ Desktop)
+| **metered.ca openrelayproject (aktuell)** | Trivial | Free | Dev — bereits aktiv |
+| **coturn self-hosted** | Mittel | Server mit Public IP noetig | Production |
+| **Cloudflare TURN** | Niedrig | Free Tier verfuegbar | Dev + Production |
 
 ---
 
@@ -156,12 +160,13 @@ Kein Handlungsbedarf.
 |---|---|---|---|
 | 1 | **Simplified Sliding Sync (MSC4186)** | ✅ | Tuwunel hat nativ. Element X hat alten MSC3575 Jan 2026 eingestellt |
 | 2 | **`.well-known/matrix/client`** | ✅ | Vorhanden |
-| 3 | **HTTPS mit gültigem TLS-Zertifikat** | ⚠️ Cloudflare Tunnel | Self-signed geht NICHT. Cloudflare Tunnel gibt automatisch gültiges TLS |
-| 4 | **Push Notifications** | ⚠️ | Play Store → Elements Sygnal automatisch. F-Droid → ntfy nötig (siehe oben) |
-| 5 | **TURN Server** | ❌ fehlt | Nur STUN konfiguriert → Cross-Network Calls gehen nicht (siehe oben) |
+| 3 | **HTTPS mit gueltigem TLS-Zertifikat** | ⚠️ Cloudflare Tunnel | Self-signed geht NICHT. Cloudflare Tunnel gibt automatisch gueltiges TLS |
+| 4 | **Push Notifications** | ⚠️ | Play Store → Elements Sygnal automatisch. F-Droid → ntfy noetig (siehe oben) |
+| 5 | **TURN Server** | ✅ | metered.ca openrelayproject in `tuwunel.toml` aktiv |
 | 6 | **Authenticated Media (MSC3916)** | ✅ | Tuwunel aktiv, Next.js Proxy vorhanden, Element X nutzt nativ |
 | 7 | **Cross-Signing / Device Verification** | ✅ | Web-Client hat Verify-Button mit QR-Code → Element X scannt |
-| 8 | **MAS / OIDC** | ❌ nicht nötig | Element X unterstützt klassisches Passwort-Login weiterhin |
+| 8 | **MAS / OIDC** | ❌ nicht noetig | Element X unterstuetzt klassisches Passwort-Login weiterhin |
+| 9 | **MatrixRTC + LiveKit (Voice/Video)** | ✅ | `well_known.rtc_transports` in tuwunel.toml |
 
 ---
 

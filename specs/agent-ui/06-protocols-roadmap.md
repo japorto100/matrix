@@ -1,7 +1,23 @@
 # Agent Chat UI — Protokolle, Frameworks & SOTA Roadmap
 
-> Stand: 30.03.2026
-> Scope: Agent Chat UI + Backend im Matrix-Isolationsprojekt (Trading-App Use-Case)
+**Status:** Uebergreifende Roadmap (Referenz fuer Execution Slices)
+**Stand:** 06.04.2026
+**Scope:** Agent Chat UI + Backend im Matrix-Isolationsprojekt (Trading-App Use-Case)
+
+> Diese Datei ist eine **Roadmap-Uebersicht** ueber Protokolle, Frameworks und SOTA-Trends.
+> Konkrete Umsetzung lebt in den Execution Slices (`specs/execution/exec-*.md`):
+>
+> | Bereich | Execution Slice | Status |
+> |---|---|---|
+> | MCP Server + Generative UI + A2A | exec-09 | ✅ |
+> | Multi-Agent + Trading Roles + Skills | exec-10 | ✅ |
+> | Hindsight Memory Engine | exec-11 | ✅ Phase 1 |
+> | OpenSandbox + Security Hardening | exec-12 | ✅ Phase 1+2 |
+> | UI + Knowledge Graph Extensions | exec-13 | Geplant |
+> | PDDL Formale Plan-Validierung | exec-14 | Geplant |
+>
+> Diese Datei wird **nicht** mit Status-Updates pro Feature gepflegt — sie liefert
+> die ueberblickende Begruendung warum welches Pattern uebernommen wurde.
 
 ---
 

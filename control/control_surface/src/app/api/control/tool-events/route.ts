@@ -1,0 +1,63 @@
+// GET /api/control/tool-events — read-only, no-store (AC7, AC11)
+// Degraded fallback: empty events list with degraded_reasons.
+
+import { randomUUID } from "node:crypto";
+import type { NextRequest } from "next/server";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
+import { getErrorMessage } from "@/lib/utils";
+
+const DEGRADED_FALLBACK = {
+	events: [],
+	total: 0,
+	degraded: true,
+};
+
+function jsonResponse(body: unknown, requestId: string, status = 200) {
+	return new Response(JSON.stringify(body), {
+		status,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+			"X-Request-ID": requestId,
+		},
+	});
+}
+
+export async function GET(request: NextRequest) {
+	const requestId = request.headers.get("x-request-id")?.trim() ?? randomUUID();
+	const userRole = request.headers.get("x-user-role")?.trim() ?? "";
+
+	try {
+		const res = await fetch(`${getGatewayBaseURL()}/api/v1/control/tool-events`, {
+			headers: {
+				Accept: "application/json",
+				"X-Request-ID": requestId,
+				...(userRole ? { "X-User-Role": userRole } : {}),
+			},
+			cache: "no-store",
+			signal: AbortSignal.timeout(5000),
+		});
+
+		if (!res.ok) {
+			return jsonResponse(
+				{ ...DEGRADED_FALLBACK, degraded_reasons: [`GATEWAY_HTTP_${res.status}`], requestId },
+				requestId,
+			);
+		}
+
+		const body: unknown = await res.json();
+		return jsonResponse({ ...(body as object), requestId }, requestId);
+	} catch (err) {
+		const reason =
+			err instanceof Error && err.name === "TimeoutError" ? "GATEWAY_TIMEOUT" : "GATEWAY_ERROR";
+		return jsonResponse(
+			{
+				...DEGRADED_FALLBACK,
+				degraded_reasons: [reason],
+				message: getErrorMessage(err),
+				requestId,
+			},
+			requestId,
+		);
+	}
+}

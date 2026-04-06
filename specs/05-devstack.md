@@ -1,9 +1,16 @@
-# Dev Stack — Lokales Setup ohne Docker
+# Dev Stack — Lokales Setup (Native + podman-compose)
 
-## Übersicht
+**Status:** Aktiv
+**Stand:** 06.04.2026 — python-backend konsolidiert (agent + bridge + voice + mock), podman-compose Profile aktiv
 
-Da Docker nicht verfügbar ist, läuft der gesamte Stack über PowerShell-Jobs.
-`scripts/devstack.ps1` erkennt automatisch welcher Homeserver verfügbar ist.
+## Zwei Setup-Varianten
+
+| Variante | Fuer wen | Vorteil |
+|:---|:---|:---|
+| **A) Native PowerShell-Jobs** | Windows-Dev ohne Container | Schnell, kein Docker noetig, Hot-Reload |
+| **B) podman-compose / docker-compose** | Linux-Dev oder Sandbox-Tests | Reproduzierbar, OpenSandbox einfacher zu starten |
+
+Beide nutzen dieselben ENV-Dateien.
 
 ---
 
@@ -12,127 +19,144 @@ Da Docker nicht verfügbar ist, läuft der gesamte Stack über PowerShell-Jobs.
 ```powershell
 go version           # Go 1.26+
 uv --version         # uv (Python Package Manager)
-bun --version        # Bun (Next.js Runtime)
-# NATS: tools/nats-server.exe (kein PATH-Eintrag nötig)
-```
-
-### Tools-Binaries in tools/
-
-Alle Binaries liegen in `D:\matrix\tools\` (nicht im PATH nötig):
-
-| Binary | Zweck | Größe |
-|---|---|---|
-| `tuwunel` | Linux Homeserver v1.5.1 (via WSL1) | 87 MB |
-| `dendrite.exe` | Windows Homeserver v0.13.8 (Fallback) | 77 MB |
-| `nats-server.exe` | NATS Message Bus | 16 MB |
-| `ngrok.exe` | Tunnel mit Account | 31 MB |
-| `cloudflared.exe` | Cloudflare Tunnel (kein Account) | 63 MB |
-| `bore.exe` | Open-Source Tunnel (kein Account) | 2 MB |
-| `genkey.go` | Dendrite ED25519 Key Generator | - |
-
-**Download:**
-```powershell
-# nats-server.exe
-Invoke-WebRequest 'https://github.com/nats-io/nats-server/releases/download/v2.10.27/nats-server-v2.10.27-windows-amd64.zip' -OutFile tools/nats-server.zip -UseBasicParsing
-Expand-Archive tools/nats-server.zip -DestinationPath tools/nats-tmp -Force
-Move-Item tools/nats-tmp/nats-server-v2.10.27-windows-amd64/nats-server.exe tools/nats-server.exe
-Remove-Item -Recurse tools/nats-tmp, tools/nats-server.zip
-
-# cloudflared.exe (kein Account)
-Invoke-WebRequest 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile tools/cloudflared.exe -UseBasicParsing
-
-# bore.exe (kein Account)
-Invoke-WebRequest 'https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-pc-windows-msvc.zip' -OutFile tools/bore.zip -UseBasicParsing
-Expand-Archive tools/bore.zip -DestinationPath tools/bore-tmp -Force
-Move-Item tools/bore-tmp/bore.exe tools/bore.exe
-Remove-Item -Recurse tools/bore-tmp, tools/bore.zip
-
-# ngrok.exe (Account nötig: ngrok.com)
-Invoke-WebRequest 'https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip' -OutFile tools/ngrok.zip -UseBasicParsing
-Expand-Archive tools/ngrok.zip -DestinationPath tools/ -Force
-Remove-Item tools/ngrok.zip
-```
-
-### Homeserver-Binary
-
-`devstack.ps1` prüft in dieser Reihenfolge:
-1. `tools/tuwunel` → Tuwunel (Linux binary, via WSL1) — **bevorzugt**
-2. `tools/dendrite.exe` → Dendrite (Windows native, Fallback)
-
-**Dendrite builden** (einmalig, Go muss installiert sein):
-```powershell
-cd D:\matrix\tools\dendrite-src
-go build -o ../dendrite.exe ./cmd/dendrite/
-
-# Key generieren:
-cd D:\matrix\tools && go run genkey.go
-```
-
-**Tuwunel herunterladen** (einmalig, WSL1 muss laufen):
-```powershell
-curl -L "https://github.com/matrix-construct/tuwunel/releases/download/v1.5.1/v1.5.1-release-all-x86_64-v2-linux-gnu-tuwunel.zst" -o tools/tuwunel.zst
-zstd -d tools/tuwunel.zst -o tools/tuwunel
-rm tools/tuwunel.zst
+bun --version        # Bun (Next.js Runtime, alternativ pnpm/npm)
+# NATS: tools/nats-server.exe (kein PATH-Eintrag noetig)
+# Optional: podman/docker fuer Variante B
 ```
 
 ---
 
-## Erster Start (Reihenfolge)
+## Tools-Binaries in `tools/`
+
+Alle Binaries liegen in `D:\matrix\tools\` (gitignored, nicht im PATH noetig):
+
+| Binary | Zweck | Groesse |
+|---|---|---|
+| `tuwunel` | Linux Homeserver v1.5.1 (via WSL1 / Docker) | ~87 MB |
+| `dendrite.exe` / `zendrite.exe` | Windows Homeserver Fallback | ~77 MB |
+| `nats-server.exe` | NATS Message Bus v2.10.27 | ~16 MB |
+| `ngrok.exe` | Tunnel mit Account | ~31 MB |
+| `cloudflared.exe` | Cloudflare Tunnel (kein Account) | ~63 MB |
+| `bore.exe` | Open-Source Tunnel (kein Account) | ~2 MB |
+| `genkey.go` | Dendrite ED25519 Key Generator | - |
+
+**Download-Befehle siehe `08-tooling.md`.**
+
+---
+
+## Variante A: Native PowerShell-Jobs
+
+### Service-Liste
+
+| Service | Port | Start |
+|---|---|---|
+| Homeserver | 8448 | Tuwunel via WSL1 oder Dendrite/Zendrite Native |
+| Go Appservice | 8090 | `go run -tags goolm ./cmd/appservice/...` |
+| Python Agent Service | 8094 | `uv run uvicorn agent.app:app --port 8094` |
+| Python Bridge | 8097 | `uv run uvicorn bridge.app:app --port 8097` |
+| Voice Worker | — | `uv run python -m voice.worker` (optional) |
+| Mock Agent | 8094 | `uv run python -m mock.mock_agent` (statt agent) |
+| NATS | 4222 | `tools/nats-server.exe` |
+| Next.js | 3000 | `cd nextjs-chat && bun run dev` |
+| LiveKit | 7880/8080 | externer LiveKit Server (siehe `13-e2ee-agent-architecture.md`) |
+| Memory Service | 8093 | `uv run uvicorn memory.app:app --port 8093` (optional) |
+| MCP Server (standalone) | 8095 | `uv run python -m agent.mcp_server` (mounted in Agent default) |
+
+### Erster Start (Reihenfolge)
 
 ```powershell
 # 1. Go Appservice — registration.yaml generieren (einmalig)
-cd go-appservice && go run ./cmd/appservice/... --generate-registration
+cd go-appservice
+go run -tags goolm ./cmd/appservice/... --generate-registration
 
 # 2. Homeserver starten (im Hintergrund halten)
-# Entweder via devstack.ps1 oder manuell:
+# Tuwunel via WSL1:
+wsl ./tools/tuwunel --config ./homeserver/tuwunel.toml
+# ODER Dendrite native:
 D:\matrix\tools\dendrite.exe --config D:\matrix\homeserver\dendrite.yaml -really-enable-open-registration
 
 # 3. Testuser + Bot registrieren (einmalig, Homeserver muss laufen)
 .\scripts\setup-users.ps1
-# → erstellt @alice:matrix.local + @trading-agent:matrix.local
-# → schreibt Access-Tokens direkt in nextjs-chat/.env.local und python-agent-bridge/.env
+# → erstellt @alice:matrix.local + @agent-trading:matrix.local
+# → schreibt Access-Tokens in nextjs-chat/.env.local und python-backend/.env
 
-# 4. Stack vollständig starten
+# 4. Python Backend Migrations (einmalig)
+cd python-backend
+uv run alembic upgrade head
+
+# 5. Stack vollstaendig starten
 .\scripts\devstack.ps1
 ```
 
----
+### scripts/devstack.ps1
 
-## scripts/devstack.ps1
-
-### Flags
+**Flags** (existierende — bitte mit Skript-Stand abgleichen):
 
 | Flag | Beschreibung |
 |---|---|
-| `-NoHomeserver` | Homeserver nicht starten (läuft extern) |
+| `-NoHomeserver` | Homeserver nicht starten (laeuft extern) |
 | `-NoNATS` | NATS nicht starten |
 | `-SkipGoAppservice` | Go Appservice nicht starten |
-| `-AgentOnly` | Nur Python Agent Bridge |
+| `-AgentOnly` | Nur Python Agent + Bridge |
 | `-FrontendOnly` | Nur Next.js |
+| `-MockAgent` | Mock Agent statt echtes LLM (kein API Key noetig) |
 
-### Beispiele
+**Beispiele:**
 
 ```powershell
 .\scripts\devstack.ps1                    # Alles starten
-.\scripts\devstack.ps1 -NoHomeserver      # Homeserver läuft bereits
+.\scripts\devstack.ps1 -NoHomeserver      # Homeserver laeuft bereits
 .\scripts\devstack.ps1 -FrontendOnly      # Nur UI entwickeln
-.\scripts\devstack.ps1 -AgentOnly         # Nur Bot testen
+.\scripts\devstack.ps1 -MockAgent         # CI / Tests ohne API Keys
 ```
 
-### Service-Erkennung
+**Service-Erkennung:**
 
 ```
 tools/dendrite.exe vorhanden?
   → Ja: Dendrite mit -really-enable-open-registration starten
-  → Nein: tools/tuwunel via WSL1 starten (wsl bash -c "cd ... && ./tools/tuwunel ...")
+  → Nein: tools/tuwunel via WSL1 starten
   → Beides fehlt: Warnung ausgeben
 ```
 
 ---
 
+## Variante B: podman-compose / docker-compose
+
+`docker-compose.yml` im Repo-Root definiert alle Services in **Profilen**:
+
+| Profile | Services |
+|---|---|
+| **default** | tuwunel, nats, go-appservice, python-bridge, nextjs-chat |
+| **dev** | + llm-mock (Mock Agent statt echtes LLM) |
+| **sandbox** | + opensandbox-server (exec-12 Code Execution) |
+| **prod** | + coturn (TURN Relay) |
+
+**Beispiele:**
+
+```bash
+# Default Stack (Tuwunel + Bridge + Frontend, kein Sandbox)
+podman-compose up
+
+# + Mock Agent (kein API Key noetig)
+podman-compose --profile dev up
+
+# + OpenSandbox Server (Code Execution Tests)
+podman-compose --profile sandbox up
+
+# + Coturn TURN Relay (Production-aehnlich)
+podman-compose --profile prod up
+```
+
+**OpenSandbox Setup auf Windows:** Siehe Hinweis im docker-compose.yml Header
+und in `specs/execution/exec-12-sandbox-security.md`. Podman braucht
+`/run/podman/podman.sock` statt `/var/run/docker.sock`.
+
+---
+
 ## scripts/setup-users.ps1
 
-Einmalig nach erstem Homeserver-Start ausführen:
+Einmalig nach erstem Homeserver-Start ausfuehren:
 
 ```powershell
 .\scripts\setup-users.ps1
@@ -142,33 +166,40 @@ Einmalig nach erstem Homeserver-Start ausführen:
 1. Admin-Login (fragt nach Credentials)
 2. Registration-Token erstellen
 3. `@alice:matrix.local` registrieren + einloggen
-4. `@trading-agent:matrix.local` registrieren + einloggen
+4. `@agent-trading:matrix.local` registrieren + einloggen
 5. Test-Raum `#general:matrix.local` erstellen
 6. Access-Tokens automatisch in .env Dateien schreiben:
-   - `nextjs-chat/.env.local` → MATRIX_ACCESS_TOKEN, MATRIX_DEVICE_ID
-   - `python-agent-bridge/.env` → MATRIX_BOT_ACCESS_TOKEN, MATRIX_BOT_PASSWORD
+   - `nextjs-chat/.env.local` → `MATRIX_ACCESS_TOKEN`, `MATRIX_DEVICE_ID`
+   - `python-backend/.env` → `MATRIX_BOT_ACCESS_TOKEN`, `MATRIX_BOT_PASSWORD`
 
 ---
 
-## Port-Map
+## scripts/harden-env.py (exec-12 Phase 2.7)
 
-| Service | Port | Binary/Framework |
-|---|---|---|
-| Homeserver | 8448 | Dendrite.exe oder Tuwunel (WSL1) |
-| Go Appservice | 8090 | go run ./cmd/appservice/... |
-| Python Agent Bridge | 8097 | uv run uvicorn agent_bridge.app:app |
-| NATS | 4222 | nats-server |
-| Next.js | 3000 | bun run dev |
+Ersetzt Default-Credentials in den `.env`-Dateien durch zufaellige Tokens:
+
+```bash
+# Dry-Run (zeigt Aenderungen ohne zu schreiben)
+uv run python scripts/harden-env.py --dry-run
+
+# Aktiv (Backup nach .env.bak, dann ersetzen)
+uv run python scripts/harden-env.py
+```
+
+Idempotent — nur bekannte Defaults (`devkey`, `changeme` etc.) werden ersetzt.
+Betrifft: `LIVEKIT_API_KEY/SECRET`, `MATRIX_BOT_PASSWORD`, etc.
 
 ---
 
-## .env Übersicht
+## .env Uebersicht
 
-| Datei | Wann befüllen |
+| Datei | Wann befuellen |
 |---|---|
-| `go-appservice/.env` | Bereits befüllt (Tokens auto-generiert) |
-| `python-agent-bridge/.env` | Nach `setup-users.ps1` (Bot-Token) |
+| `go-appservice/.env.development` | Vor erstem Start (Tokens generieren) |
+| `python-backend/.env` | Nach `setup-users.ps1` (Bot-Tokens) + manuell (LLM API Keys) |
 | `nextjs-chat/.env.local` | Nach `setup-users.ps1` (Alice-Token) |
+
+Vollstaendige Schema-Referenz in `00-overview.md` und `agent-ui/05-backend-abhaengigkeiten.md`.
 
 ---
 
@@ -181,8 +212,14 @@ curl http://localhost:8448/_matrix/client/versions
 # Go Appservice?
 curl http://localhost:8090/health
 
+# Python Agent Service?
+curl http://localhost:8094/health
+
 # Python Bridge?
 curl http://localhost:8097/health
+
+# Memory Service (optional)?
+curl http://localhost:8093/health
 
 # Next.js?
 curl http://localhost:3000/matrix
@@ -192,11 +229,16 @@ curl http://localhost:3000/matrix
 
 ## Bekannte Probleme
 
-| Problem | Lösung |
+| Problem | Loesung |
 |---|---|
 | WSL2 VHD-Mount-Fehler (`ERROR_PATH_NOT_FOUND`) | WSL1 nutzen: `wsl --set-default-version 1` |
 | WSL OOBE Fehler (`LxInitOobeResult / Broken pipe`) | Ubuntu deinstallieren + neu installieren, oder Dendrite als Fallback |
 | Dendrite: "open registration" Warning | `-really-enable-open-registration` Flag (nur Dev!) |
-| Dendrite: `keyBlock is nil` | `go run tools/genkey.go` ausführen (MATRIX PRIVATE KEY Format) |
+| Dendrite: `keyBlock is nil` | `go run tools/genkey.go` ausfuehren (MATRIX PRIVATE KEY Format) |
 | NATS nicht im PATH | Manuell herunterladen: https://nats.io/download/ |
 | Go Appservice: `missing go.sum` | `cd go-appservice && go mod tidy` |
+| Go Appservice: `cgo errors` | Build mit `-tags goolm` (kein libolm-Build) |
+| Turbopack: `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` | Webpack-Build ohne Turbopack-Config nutzen |
+| Podman Sandbox: `/var/run/docker.sock not found` | Symlink `sudo ln -sf /run/user/$(id -u)/podman/podman.sock /var/run/docker.sock` |
+| Python: `No module named 'opensandbox'` | `cd python-backend && uv sync` |
+| Alembic: `Target database is not up to date` | `cd python-backend && uv run alembic upgrade head` |

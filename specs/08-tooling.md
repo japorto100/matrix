@@ -1,9 +1,12 @@
 # Tooling — Lint, Format, Typecheck
 
-## Übersicht
+**Status:** Aktiv
+**Stand:** 06.04.2026 — Konsolidiertes python-backend, golangci-lint v2, biome 2.3, ruff + basedpyright
 
-Alle Tooling-Konfigurationen werden 1:1 aus dem Hauptprojekt übernommen,
-um minimale Anpassungen beim späteren Portieren zu gewährleisten.
+## Uebersicht
+
+Alle Tooling-Konfigurationen werden 1:1 aus dem Hauptprojekt uebernommen,
+um minimale Anpassungen beim spaeteren Portieren zu gewaehrleisten.
 
 ---
 
@@ -263,29 +266,27 @@ Identisch mit Hauptprojekt. Datei kommt unter `nextjs-chat/tsconfig.json`.
 
 ---
 
-## Python — pyproject.toml (Root + Agent Bridge)
+## Python — pyproject.toml (`python-backend/`)
 
-Angepasst aus dem Hauptprojekt. Nur was für die Matrix-Integration relevant ist.
+Konsolidierter `python-backend/pyproject.toml` enthaelt alle Subpackages
+(agent, bridge, voice, mock, memory_engine, context, shared).
+Vollstaendige Dependency-Liste siehe `agent-ui/05-backend-abhaengigkeiten.md`
+und `03-python-agent-bridge.md` (NATS Consumer).
 
-### python-agent-bridge/pyproject.toml
-
-Vollständiger Inhalt in `specs/03-python-agent-bridge.md`.
-
-### Ruff Config (aus Hauptprojekt)
+### Ruff Config (`python-backend/pyproject.toml`)
 
 ```toml
 [tool.ruff]
-exclude = [".venv", ".venv/**"]
+exclude = [".venv", ".venv/**", "data/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]  # Line length — Biome/Black übernimmt
+ignore = ["E501", "N999"]  # E501: line length, N999: false positive (verzeichnis-name)
 ```
 
-### Typecheck (basedpyright / ty)
+### Typecheck (basedpyright)
 
 ```toml
-# pyproject.toml Root
 [dependency-groups]
 dev = [
     "ruff>=0.13.0",
@@ -296,7 +297,7 @@ dev = [
 ```
 
 ```powershell
-cd python-agent-bridge
+cd python-backend
 uv run ruff check .         # Lint
 uv run ruff format .        # Format
 uv run basedpyright .       # Typecheck
@@ -329,17 +330,18 @@ Analog zum Hauptprojekt:
 
 ---
 
-## .gitignore
+## .gitignore (Auszug — siehe `.gitignore` im Repo-Root)
 
 ```gitignore
 # Go
 go-appservice/bin/
 go-appservice/*.exe
+go-appservice/data/
 
 # Python
-python-agent-bridge/.venv/
-python-agent-bridge/__pycache__/
-python-agent-bridge/data/
+python-backend/.venv/
+python-backend/__pycache__/
+python-backend/data/
 **/__pycache__/
 **/*.pyc
 
@@ -347,11 +349,19 @@ python-agent-bridge/data/
 nextjs-chat/.next/
 nextjs-chat/node_modules/
 nextjs-chat/.env.local
+agent-chat/.next/
+agent-chat/node_modules/
 
 # Homeserver
 homeserver/data/
 homeserver/tuwunel
 homeserver/tuwunel.exe
+
+# Tools (binaries)
+tools/*.exe
+tools/tuwunel
+tools/dendrite-src/
+tools/zendrite-src/
 
 # Secrets — niemals committen
 **/.env
@@ -365,34 +375,73 @@ logs/
 
 ---
 
-## CI (lokal, kein GitHub Actions für diese Phase)
+## CI (lokal, kein GitHub Actions fuer diese Phase)
 
 ```powershell
 # Alle Checks in einem Schritt
 function Invoke-AllChecks {
     Write-Host "── Go ─────────────────────────────────────" -ForegroundColor Blue
     Push-Location go-appservice
-    go vet ./...
-    golangci-lint run ./...
-    go test ./...
+    go vet -tags goolm ./...
+    golangci-lint run --build-tags goolm ./...
+    go test -tags goolm ./...
     Pop-Location
 
     Write-Host "── Python ──────────────────────────────────" -ForegroundColor Green
-    Push-Location python-agent-bridge
+    Push-Location python-backend
     uv run ruff check .
     uv run basedpyright .
     uv run pytest
     Pop-Location
 
-    Write-Host "── Next.js ─────────────────────────────────" -ForegroundColor Magenta
+    Write-Host "── Next.js (matrix-chat) ───────────────────" -ForegroundColor Magenta
     Push-Location nextjs-chat
     bun run typecheck
     bun run lint:ci
     bun run test:unit
     Pop-Location
 
-    Write-Host "✅ All checks passed" -ForegroundColor Green
+    Write-Host "── Next.js (agent-chat) ────────────────────" -ForegroundColor Cyan
+    Push-Location agent-chat
+    bun run typecheck
+    bun run lint:ci
+    Pop-Location
+
+    Write-Host "All checks passed" -ForegroundColor Green
 }
 
 Invoke-AllChecks
+```
+
+---
+
+## Tools-Binaries (Download-Befehle)
+
+Alle Binaries liegen in `D:\matrix\tools\` (gitignored). Download-Befehle:
+
+```powershell
+# nats-server.exe
+Invoke-WebRequest 'https://github.com/nats-io/nats-server/releases/download/v2.10.27/nats-server-v2.10.27-windows-amd64.zip' -OutFile tools/nats-server.zip -UseBasicParsing
+Expand-Archive tools/nats-server.zip -DestinationPath tools/nats-tmp -Force
+Move-Item tools/nats-tmp/nats-server-v2.10.27-windows-amd64/nats-server.exe tools/nats-server.exe
+Remove-Item -Recurse tools/nats-tmp, tools/nats-server.zip
+
+# cloudflared.exe (kein Account)
+Invoke-WebRequest 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile tools/cloudflared.exe -UseBasicParsing
+
+# bore.exe (kein Account)
+Invoke-WebRequest 'https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-pc-windows-msvc.zip' -OutFile tools/bore.zip -UseBasicParsing
+Expand-Archive tools/bore.zip -DestinationPath tools/bore-tmp -Force
+Move-Item tools/bore-tmp/bore.exe tools/bore.exe
+Remove-Item -Recurse tools/bore-tmp, tools/bore.zip
+
+# ngrok.exe (Account noetig: ngrok.com)
+Invoke-WebRequest 'https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip' -OutFile tools/ngrok.zip -UseBasicParsing
+Expand-Archive tools/ngrok.zip -DestinationPath tools/ -Force
+Remove-Item tools/ngrok.zip
+
+# Tuwunel v1.5.1 (Linux Binary, in WSL1 nutzen)
+curl -L "https://github.com/matrix-construct/tuwunel/releases/download/v1.5.1/v1.5.1-release-all-x86_64-v2-linux-gnu-tuwunel.zst" -o tools/tuwunel.zst
+zstd -d tools/tuwunel.zst -o tools/tuwunel
+rm tools/tuwunel.zst
 ```

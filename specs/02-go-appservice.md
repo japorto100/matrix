@@ -1,45 +1,57 @@
 # Go Matrix Appservice — mautrix-go
 
-> Stand: 24.03.2026 — C-3 implementiert (Cross-Signing Bootstrap aktiv)
+**Status:** Aktiv
+**Stand:** 06.04.2026 — E2EE + Cross-Signing aktiv, NATS Bridge zu Python Backend, HTTP Proxy fuer Agent Service
 
 ## Was ist ein Appservice?
 
 Ein Matrix Application Service (Appservice) ist ein registrierter HTTP-Server, der:
 - Einen **Namespace virtueller User-IDs** bei Tuwunel beansprucht (`@agent-*:domain`)
-- Matrix-Events für diese User via HTTP-Webhook **empfängt**
+- Matrix-Events fuer diese User via HTTP-Webhook **empfaengt**
 - Als diese virtuellen User **sendet** (via `?user_id=` Query-Parameter)
-- Ermöglicht: Orchestrator-Agent + optionale Sub-Agents haben eigene Matrix-Identitäten
+- Ermoeglicht: Orchestrator-Agent + optionale Sub-Agents haben eigene Matrix-Identitaeten
 
-**mautrix-go** abstrahiert das alles — Intent API, State Storage, E2EE.
+Im Matrix-Projekt uebernimmt der Go Appservice zusaetzlich **drei weitere Rollen**:
+
+1. **E2BE-Endpunkt** — Go ist der einzige Matrix-Endpunkt mit Crypto. Python Bridge sieht
+   nur Klartext via NATS. matrix-nio wurde in exec-05 entfernt.
+2. **HTTP Proxy** — bridged das Frontend (nextjs-chat / agent-chat) zum Python Backend
+   (Agent Service Port 8094, Memory Service Port 8093) inkl. SSE Streaming.
+3. **NATS Producer/Consumer** — published Matrix-Messages auf `matrix.message.inbound`,
+   subscribed `matrix.message.reply`.
+
+**mautrix-go** abstrahiert Matrix Protocol — Intent API, State Storage, E2EE.
 
 - Repo: https://github.com/mautrix/go
 - Package: `maunium.net/go/mautrix`
-- Letzte Aktivität: März 2026
+- Verwendete Version: **v0.22.0**
 
 ---
 
-## go.mod (Go Appservice)
+## Stack & Versionen
 
 ```go
+// go.mod (Auszug)
 module matrix/go-appservice
 
 go 1.26
 
 require (
-    maunium.net/go/mautrix v0.22.0
-    github.com/nats-io/nats.go v1.49.0
-    github.com/redis/go-redis/v9 v9.17.0
-    github.com/jackc/pgx/v5 v5.8.0
-    github.com/golang-jwt/jwt/v5 v5.3.1
-    go.opentelemetry.io/otel v1.41.0
-    go.opentelemetry.io/otel/trace v1.41.0
-    gopkg.in/yaml.v3 v3.0.1
-    golang.org/x/sync v0.20.0
+    maunium.net/go/mautrix v0.22.0          // Matrix Client + Crypto
+    github.com/nats-io/nats.go v1.49.0      // Message Queue
+    modernc.org/sqlite v1.34.4               // Pure-Go SQLite (Crypto Store)
+    github.com/rs/zerolog v1.33.0            // Strukturiertes Logging
+    gopkg.in/yaml.v3 v3.0.1                  // registration.yaml Parsing
+    github.com/joho/godotenv v1.5.1          // .env Loader
+    golang.org/x/crypto v0.46.0              // (indirekt via mautrix)
 )
 ```
 
-> Viele Versionen direkt aus dem Haupt-`go.mod` übernommen.
-> mautrix-go bringt eigene Crypto-Deps (libolm/vodozemac via CGO oder pure-Go).
+**Crypto-Variante:** `goolm` Build-Tag → Pure-Go Olm Implementation (kein CGO, kein libolm).
+
+```bash
+go run -tags goolm ./cmd/appservice/...
+```
 
 ---
 
@@ -47,499 +59,246 @@ require (
 
 ```
 go-appservice/
-├── go.mod
-├── go.sum
-├── .golangci.yml          # identisch mit Hauptprojekt
+├── go.mod / go.sum
+├── .env.example / .env.development / .env.production
 ├── cmd/
 │   └── appservice/
-│       └── main.go        # Einstiegspunkt
+│       └── main.go                      # Einstiegspunkt (CLI Flags fuer --generate-registration)
 ├── internal/
 │   ├── config/
-│   │   └── config.go      # Config-Struct + Env-Loading
-│   ├── crypto/
-│   │   ├── machine.go     # OlmMachine Setup + ensureCrossSigning()
-│   │   └── statestore.go  # In-Memory StateStore
+│   │   └── config.go                    # ENV Loader, Config Struct
 │   ├── handler/
-│   │   └── events.go      # Matrix Event Handler (Messages, Membership, etc.)
+│   │   └── server.go                    # HTTP Server, Event Processing, Intent Coordinator
+│   ├── handlers/http/                   # HTTP Proxies (siehe naechste Sektion)
+│   │   ├── agent_chat_handler.go        # SSE Proxy zu Python Agent Service (Port 8094)
+│   │   ├── agent_tool_proxy_handler.go  # Tool-Calls bridging
+│   │   ├── agent_audio_handler.go       # STT/TTS Proxy
+│   │   ├── mcp_proxy_handler.go         # MCP Server Proxy
+│   │   ├── memory_handler.go            # Knowledge Graph / Episode Store Proxy
+│   │   └── helpers.go
 │   ├── intent/
-│   │   └── agent.go       # Agent Intent-Wrapper (senden als @agent-*:domain)
-│   ├── nats/
-│   │   └── bridge.go      # NATS: Matrix Events → Agent-Service weiterleiten
+│   │   └── agent.go                     # AgentSender API — virtuelle Agent-User-IDs
+│   ├── natsbridge/
+│   │   └── bridge.go                    # NATS Pub/Sub: matrix.message.inbound / .reply
+│   ├── crypto/
+│   │   ├── machine.go                   # OlmMachine Wrapper (E2EE, goolm)
+│   │   └── statestore.go                # Encryption State + Room Members Cache
+│   ├── connectors/
+│   │   ├── agentservice/
+│   │   │   └── client.go                # HTTP Client zu Agent Service
+│   │   └── memory/
+│   │       └── client.go                # HTTP Client zu Memory Service
 │   └── registration/
-│       └── generate.go    # registration.yaml generieren
-├── data/
-│   ├── crypto.sqlite3          # SQLite Crypto Store (gitignore)
-│   └── cross_signing_seeds.json # Cross-Signing Seeds (gitignore, 0o600)
-└── registration.yaml.tmpl # Template für Appservice-Registration
+│       └── generate.go                  # registration.yaml Generator
+└── data/
+    ├── crypto.sqlite3                   # SQLite Crypto Store (gitignored)
+    ├── cross_signing_seeds.json         # MSK/SSK/USK Seeds (gitignored, 0o600)
+    └── megolm_keys_backup.bin           # Megolm Room Key Backup (gitignored)
 ```
 
 ---
 
-## cmd/appservice/main.go
+## HTTP Endpoints
 
-```go
-package main
+| Endpoint | Method | Zweck |
+|---|---|---|
+| `/_matrix/app/v1/transactions/{txnID}` | PUT | Receive Room Events vom Homeserver |
+| `/_matrix/app/v1/users/{userID}` | GET | User Existence Check (Agent-Namespace) |
+| `/health` | GET | Health Check (E2EE Status reported) |
+| `/api/v1/agent/chat` | POST | SSE Chat Streaming Proxy zu Python Agent |
+| `/api/v1/agent/approve` | POST | Tool Call Approval Proxy |
+| `/api/v1/agent/tools/*` | GET/POST | Tool State Queries + Mutations |
+| `/api/v1/mcp/*` | * | MCP Server Proxy (exec-09) |
+| `/api/v1/audio/transcribe` | POST | STT Proxy (audio → text) |
+| `/api/v1/audio/synthesize` | POST | TTS Proxy (text → audio) |
+| `/api/v1/memory/kg/*` | * | Knowledge Graph Endpoints |
+| `/api/v1/memory/episode*` | * | Episode Storage Endpoints |
 
-import (
-    "context"
-    "log/slog"
-    "os"
-    "os/signal"
-    "syscall"
-
-    "matrix/go-appservice/internal/config"
-    "matrix/go-appservice/internal/handler"
-    "matrix/go-appservice/internal/nats"
-    "maunium.net/go/mautrix"
-    "maunium.net/go/mautrix/appservice"
-)
-
-func main() {
-    cfg := config.Load()
-
-    logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-        Level: slog.LevelInfo,
-    }))
-    slog.SetDefault(logger)
-
-    // Appservice initialisieren
-    as, err := appservice.Create()
-    if err != nil {
-        slog.Error("appservice.Create failed", "error", err)
-        os.Exit(1)
-    }
-
-    as.HomeserverURL = cfg.HomeserverURL   // http://localhost:8448
-    as.HomeserverDomain = cfg.ServerName   // matrix.local
-    as.Registration = &appservice.Registration{
-        ID:          "trading-agent-appservice",
-        URL:         cfg.AppserviceURL,    // http://localhost:29318
-        AppToken:    cfg.ASToken,
-        ServerToken: cfg.HSToken,
-        SenderLocalpart: "appservice-bot",
-    }
-
-    // NATS Bridge für Event-Weiterleitung an Python Agents
-    natsBridge, err := nats.NewBridge(cfg.NATSUrl)
-    if err != nil {
-        slog.Error("NATS connect failed", "error", err)
-        os.Exit(1)
-    }
-
-    // Event Handler registrieren
-    h := handler.New(as, natsBridge, cfg)
-    as.Router.HandleFunc("/_matrix/app/v1/transactions/{txnID}", h.HandleTransaction)
-
-    // Matrix Client für den Haupt-Bot erstellen
-    client, err := as.NewExternalMautrixClient(cfg.BotUserID, "", cfg.HomeserverURL)
-    if err != nil {
-        slog.Error("matrix client init failed", "error", err)
-        os.Exit(1)
-    }
-    _ = client
-
-    ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-    defer cancel()
-
-    slog.Info("Appservice starting", "url", cfg.AppserviceURL, "server", cfg.ServerName)
-
-    if err := as.Start(ctx); err != nil {
-        slog.Error("appservice start failed", "error", err)
-        os.Exit(1)
-    }
-
-    <-ctx.Done()
-    slog.Info("Appservice shutting down")
-    as.Stop()
-}
-```
+**Pattern:** Frontend ruft Go Appservice (Port 8090), Go proxied weiter zu Python Backend
+(Port 8094 / 8093). Vorteil: einheitlicher TLS-/Auth-Endpunkt, Frontend braucht keinen
+direkten Python-Zugriff. Header durchgereicht: `x-user-role`, `x-auth-user`, `x-request-id`.
 
 ---
 
-## internal/config/config.go
+## Matrix Event Handling
 
-```go
-package config
+**Behandelte Event-Typen** (in `internal/handler/server.go`):
 
-import (
-    "os"
-)
+| Event Type | Handler | Verhalten |
+|---|---|---|
+| `m.room.message` | `handleMessage()` | Text extrahieren, Mention-Filter, NATS publish |
+| `m.room.encrypted` | `handleEncrypted()` | Decrypt via OlmMachine, dann reprocess |
+| `m.room.member` | `handleMembership()` | Track room members, auto-join Agents auf Invite |
+| `m.room.encryption` | `handleEncryptionState()` | Crypto State Store update |
 
-type Config struct {
-    HomeserverURL  string
-    ServerName     string
-    AppserviceURL  string
-    AppservicePort string
-    ASToken        string
-    HSToken        string
-    BotUserID      string
-    NATSUrl        string
-    LogLevel       string
-}
-
-func Load() *Config {
-    return &Config{
-        HomeserverURL:  getenv("MATRIX_HOMESERVER_URL", "http://localhost:8448"),
-        ServerName:     getenv("MATRIX_SERVER_NAME", "matrix.local"),
-        AppserviceURL:  getenv("MATRIX_APPSERVICE_URL", "http://localhost:29318"),
-        AppservicePort: getenv("MATRIX_APPSERVICE_PORT", "29318"),
-        ASToken:        mustenv("MATRIX_AS_TOKEN"),
-        HSToken:        mustenv("MATRIX_HS_TOKEN"),
-        BotUserID:      getenv("MATRIX_BOT_USER_ID", "@appservice-bot:matrix.local"),
-        NATSUrl:        getenv("NATS_URL", "nats://localhost:4222"),
-        LogLevel:       getenv("LOG_LEVEL", "info"),
-    }
-}
-
-func getenv(key, fallback string) string {
-    if v := os.Getenv(key); v != "" {
-        return v
-    }
-    return fallback
-}
-
-func mustenv(key string) string {
-    v := os.Getenv(key)
-    if v == "" {
-        panic("required env var not set: " + key)
-    }
-    return v
-}
-```
+**Mention-Filter (`MENTION_ONLY_IN_GROUPS=true`):**
+- DMs (≤2 Members): Immer forwarden
+- Group rooms: Nur wenn `@agent-` Prefix erwaehnt, Reply auf Agent-Message, oder Trigger-Word
 
 ---
 
-## internal/handler/events.go
+## Intent API & Virtuelle Agent-User-IDs
+
+**Implementation:** `internal/intent/agent.go`
 
 ```go
-package handler
-
-import (
-    "encoding/json"
-    "log/slog"
-    "net/http"
-
-    "matrix/go-appservice/internal/nats"
-    "maunium.net/go/mautrix/appservice"
-    "maunium.net/go/mautrix/event"
-)
-
-type Handler struct {
-    as          *appservice.AppService
-    natsBridge  *nats.Bridge
-    cfg         interface{ GetServerName() string }
-}
-
-func New(as *appservice.AppService, natsBridge *nats.Bridge, cfg interface{ GetServerName() string }) *Handler {
-    return &Handler{as: as, natsBridge: natsBridge, cfg: cfg}
-}
-
-// HandleTransaction empfängt Events vom Homeserver
-func (h *Handler) HandleTransaction(w http.ResponseWriter, r *http.Request) {
-    var txn struct {
-        Events []*event.Event `json:"events"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&txn); err != nil {
-        http.Error(w, "bad request", http.StatusBadRequest)
-        return
-    }
-
-    for _, ev := range txn.Events {
-        h.processEvent(r.Context(), ev)
-    }
-
-    w.WriteHeader(http.StatusOK)
-    _, _ = w.Write([]byte("{}"))
-}
-
-func (h *Handler) processEvent(ctx context.Context, ev *event.Event) {
-    switch ev.Type {
-    case event.EventMessage:
-        h.handleMessage(ctx, ev)
-    case event.StateMember:
-        h.handleMembership(ctx, ev)
-    default:
-        slog.Debug("unhandled event type", "type", ev.Type)
-    }
-}
-
-func (h *Handler) handleMessage(ctx context.Context, ev *event.Event) {
-    content, ok := ev.Content.Parsed.(*event.MessageEventContent)
-    if !ok {
-        return
-    }
-
-    // Nur Text-Nachrichten an Agent weiterleiten
-    if content.MsgType != event.MsgText {
-        return
-    }
-
-    // Nicht auf eigene Bot-Nachrichten reagieren
-    // (Sender ist eine @agent-* ID → ignorieren)
-    if isAgentUser(ev.Sender.String()) {
-        return
-    }
-
-    slog.Info("message received",
-        "room", ev.RoomID,
-        "sender", ev.Sender,
-        "body", content.Body,
-    )
-
-    // Via NATS an Python Agent weiterleiten
-    if err := h.natsBridge.PublishMatrixMessage(ctx, ev, content); err != nil {
-        slog.Error("NATS publish failed", "error", err, "room", ev.RoomID)
-    }
-}
-
-func (h *Handler) handleMembership(ctx context.Context, ev *event.Event) {
-    // Agent auto-joinт Räume wenn er eingeladen wird
-    content, ok := ev.Content.Parsed.(*event.MemberEventContent)
-    if !ok {
-        return
-    }
-    if content.Membership == event.MembershipInvite {
-        // Agent nimmt Einladung an
-        agentIntent := h.as.Intent(ev.GetStateKey())
-        if err := agentIntent.JoinRoom(ctx, ev.RoomID.String(), nil); err != nil {
-            slog.Error("join room failed", "error", err, "room", ev.RoomID)
-        }
-    }
-}
-
-func isAgentUser(userID string) bool {
-    // Prüft ob User-ID aus dem Agent-Namespace kommt
-    // Pattern: @agent-*:domain
-    return len(userID) > 7 && userID[1:7] == "agent-"
-}
+sender.UserID("trading")          // → @agent-trading:matrix.local
+sender.SendText(agentID, roomID, text)
+sender.SetTyping(agentID, roomID, true)
+sender.JoinRoom(agentID, roomID)
+sender.EnsureProfile(agentID, "Trading Agent")
 ```
+
+**Mechanismus:**
+- Alle Requests nutzen `?user_id={agentID}` Query-Parameter (Appservice-Privileg)
+- Accounts werden bei erster Message automatisch erstellt (Homeserver-Verhalten)
+- Profil-Updates via `EnsureProfile()` setzt displayName
+
+**Namespace-Kontrolle:**
+- registration.yaml regex: `@agent-.*:matrix\.local` (exclusive)
+- Nur Appservice darf User in diesem Pattern erstellen
+- Validation in `isAgentUser()` Helper
 
 ---
 
-## internal/intent/agent.go — Als Agent senden
+## NATS Bridge
 
-```go
-package intent
+**Subjects:**
 
-import (
-    "context"
-
-    "maunium.net/go/mautrix/appservice"
-    "maunium.net/go/mautrix/event"
-    "maunium.net/go/mautrix/id"
-)
-
-// AgentSender sendet Nachrichten als virtueller Agent-User
-type AgentSender struct {
-    as *appservice.AppService
-}
-
-func NewAgentSender(as *appservice.AppService) *AgentSender {
-    return &AgentSender{as: as}
-}
-
-// SendMessage sendet eine Nachricht als spezifischer Agent
-func (s *AgentSender) SendMessage(ctx context.Context, agentUserID id.UserID, roomID id.RoomID, text string) error {
-    intent := s.as.Intent(agentUserID)
-
-    // Display Name setzen (einmalig pro Agent)
-    _ = intent.SetDisplayName(ctx, "Trading Agent 🤖")
-
-    // Nachricht senden
-    _, err := intent.SendMessageEvent(ctx, roomID, event.EventMessage, &event.MessageEventContent{
-        MsgType: event.MsgText,
-        Body:    text,
-    })
-    return err
-}
-
-// SendTyping — Tipp-Indikator während Agent "denkt"
-func (s *AgentSender) SendTyping(ctx context.Context, agentUserID id.UserID, roomID id.RoomID, typing bool) error {
-    intent := s.as.Intent(agentUserID)
-    return intent.UserTyping(ctx, roomID, typing, 30000) // 30s timeout
-}
 ```
+matrix.message.inbound  → InboundMessage{room_id, sender, body, event_id, thread_id}
+matrix.message.reply    ← ReplyMessage{room_id, agent_user_id, text, is_streaming}
+```
+
+**Flow:**
+
+```
+Matrix Event (Tuwunel)
+    ↓ HTTP /transactions/
+Go Appservice handleMessage()
+    ↓ NATS publish (matrix.message.inbound)
+Python Bridge (Port 8097)  → NATS Consumer
+    ↓ HTTP SSE
+Python Agent Service (Port 8094)
+    ↓ NATS publish (matrix.message.reply)
+Go Appservice SubscribeReplies()
+    ↓ sendEncryptedReply() oder agent.SendText()
+Tuwunel → Matrix Room
+```
+
+**Direct Connectivity:**
+- Go Appservice ↔ NATS ↔ Python Bridge — kein gRPC, kein direkter HTTP-Call
+- Go Appservice → HTTP → Agent Service (Port 8094) fuer SSE Streaming Chat (Frontend Path)
+- Go Appservice → HTTP → Memory Service (Port 8093, optional) fuer KG Operations
 
 ---
 
-## internal/nats/bridge.go
+## E2EE Stack — Option C (Go Handles Crypto)
 
-```go
-package nats
+**Trust Model:** Go Appservice ist einziger Matrix-Endpunkt mit Crypto. Python Bridge
+sieht nur Klartext via NATS. Vorteile:
+- Ein einziger Cross-Signing-Account, eine OlmMachine
+- Python kann Stateless bleiben (keine Schluesselverwaltung)
+- Keine `matrix-nio` Dependency in Python
 
-import (
-    "context"
-    "encoding/json"
+**Komponenten:**
 
-    "github.com/nats-io/nats.go"
-    "maunium.net/go/mautrix/event"
-    "maunium.net/go/mautrix/event"
-)
+| Komponente | Implementation |
+|---|---|
+| **OlmMachine** | `crypto.NewOlmMachine` (goolm via mautrix-go) |
+| **Crypto Store** | `SQLCryptoStore` (modernc.org/sqlite, Pure Go) |
+| **State Store** | Custom `StateStore` (in-memory cache + Homeserver Fallback) |
+| **Device Keys** | Upload bei Init via `ShareKeys()` |
+| **Cross-Signing** | MSC4153 Bootstrap (MSK/SSK/USK), persistiert in `seeds.json` |
+| **Room Keys** | `ExportKeyBackup()` bei Megolm Session Creation |
+| **Decryption** | `crypto.Decrypt()` auf `m.room.encrypted` Events |
+| **Encryption** | `crypto.Encrypt()` fuer `sendEncryptedReply()` |
 
-const (
-    SubjectMatrixMessage = "matrix.message.inbound"
-    SubjectAgentReply    = "matrix.message.reply"
-)
+**Key Management:**
+- Cross-Signing Seeds: `./data/cross_signing_seeds.json` (persistent, 0o600)
+- Room Key Backups: `./data/megolm_keys_backup.bin` (passphrase-encrypted)
+- Device ID: statisch `"APPSERVICE"` (fuer Olm State erforderlich)
 
-type Bridge struct {
-    nc *nats.Conn
-}
+**Privacy Feature (C-10 / MSC4381):**
+- `sender_key` und `device_id` werden NICHT mitgesendet (deprecated, Privacy)
+- Empfaenger identifiziert Sender via Megolm Session
 
-type MatrixMessageEvent struct {
-    RoomID   string `json:"room_id"`
-    Sender   string `json:"sender"`
-    Body     string `json:"body"`
-    EventID  string `json:"event_id"`
-    ThreadID string `json:"thread_id,omitempty"`
-}
-
-type AgentReplyEvent struct {
-    RoomID      string `json:"room_id"`
-    AgentUserID string `json:"agent_user_id"`
-    Text        string `json:"text"`
-    IsStreaming bool   `json:"is_streaming"`
-}
-
-func NewBridge(natsURL string) (*Bridge, error) {
-    nc, err := nats.Connect(natsURL)
-    if err != nil {
-        return nil, err
-    }
-    return &Bridge{nc: nc}, nil
-}
-
-func (b *Bridge) PublishMatrixMessage(ctx context.Context, ev *event.Event, content *event.MessageEventContent) error {
-    msg := MatrixMessageEvent{
-        RoomID:  ev.RoomID.String(),
-        Sender:  ev.Sender.String(),
-        Body:    content.Body,
-        EventID: ev.ID.String(),
-    }
-    data, err := json.Marshal(msg)
-    if err != nil {
-        return err
-    }
-    return b.nc.Publish(SubjectMatrixMessage, data)
-}
-
-// SubscribeAgentReplies empfängt Antworten vom Python Agent und sendet sie in Matrix
-func (b *Bridge) SubscribeAgentReplies(handler func(AgentReplyEvent)) error {
-    _, err := b.nc.Subscribe(SubjectAgentReply, func(msg *nats.Msg) {
-        var reply AgentReplyEvent
-        if err := json.Unmarshal(msg.Data, &reply); err != nil {
-            return
-        }
-        handler(reply)
-    })
-    return err
-}
-
-func (b *Bridge) Close() {
-    b.nc.Drain()
-}
-```
+**Cross-Signing Bootstrap (`ensureCrossSigning()`):**
+- **Erster Start:** `GenerateAndUploadCrossSigningKeys()` → `SignOwnDevice()` →
+  `SignOwnMasterKey()` → Seeds in `seeds.json` schreiben (0o600)
+- **Neustart:** `seeds.json` lesen → `ImportCrossSigningKeys()` → Signaturen erneuern (idempotent)
+- Verlust der Seeds = Verlust der Identitaet (alle Verifikationen muessen neu durchgefuehrt werden)
 
 ---
 
-## internal/crypto/machine.go — E2EE + Cross-Signing Bootstrap
+## Configuration (ENV)
 
-### OlmMachine Setup
-
-```go
-// goolm Build-Tag aktiviert Pure-Go Crypto
-olmMachine := crypto.NewOlmMachine(client, &zlog, cryptoStore, stateStore)
-olmMachine.SendKeysMinTrust = id.TrustStateUnset  // sendet Megolm-Keys an alle Geräte
-olmMachine.Load(ctx)
-olmMachine.ShareKeys(ctx, -1)
-
-// Cross-Signing Bootstrap (C-3)
-if err := ensureCrossSigning(ctx, olmMachine, dbDir); err != nil {
-    slog.Error("cross-signing bootstrap failed", "error", err)
-}
-```
-
-**`SendKeysMinTrust = TrustStateUnset`:** Standardmäßig sendet OlmMachine Megolm-Keys
-nur an Geräte mit mindestens einem bestimmten Trust-Level. `TrustStateUnset` deaktiviert
-diese Einschränkung — der Go Appservice sendet Keys an alle Geräte im Raum.
-Nötig, weil der Appservice nicht aktiv alle Peer-Geräte verifiziert.
-
-### ensureCrossSigning()
-
-Wird einmalig nach `olmMachine.Load()` aufgerufen. Persistiert Cross-Signing-Seeds
-damit die Identität über Neustarts erhalten bleibt.
-
-**Erster Start (Seeds-Datei fehlt):**
-```go
-// 1. Keys generieren und auf den Homeserver hochladen
-err := olmMachine.GenerateAndUploadCrossSigningKeys(ctx, nil, "")
-
-// 2. Eigenes Gerät (Appservice Device) mit Self-Signing Key signieren
-err = olmMachine.SignOwnDevice(ctx)
-
-// 3. Master Key mit User-Signing Key signieren
-err = olmMachine.SignOwnMasterKey(ctx)
-
-// 4. Seeds für Persistenz sichern (0o600)
-seeds := extractSeeds(olmMachine)
-writeJSONFile(seedsPath, seeds, 0o600)
-```
-
-**Neustart (Seeds-Datei vorhanden):**
-```go
-// 1. Seeds laden
-seeds := readJSONFile(seedsPath)
-
-// 2. Cross-Signing-Keys aus Seeds importieren (keine neuen Keys → gleiche Identität)
-err := olmMachine.ImportCrossSigningKeys(seeds)
-
-// 3. Signaturen erneuern (idempotent)
-err = olmMachine.SignOwnDevice(ctx)
-err = olmMachine.SignOwnMasterKey(ctx)
-```
-
-### Seeds-Datei
-
-```
-Pfad:         <dbDir>/cross_signing_seeds.json
-Rechte:       0o600 (nur Owner lesbar, nie committen)
-Inhalt:       { "master_key": "<base64>", "self_signing_key": "<base64>", "user_signing_key": "<base64>" }
-```
-
-Die Seeds sind die privaten Anteile der drei Cross-Signing-Schlüssel (Master, Self-Signing, User-Signing).
-Verlust der Seeds bedeutet Verlust der Cross-Signing-Identität — alle Verifikationen müssen neu durchgeführt werden.
-
----
-
-## .env (Go Appservice)
-
+**Critical:**
 ```env
-MATRIX_HOMESERVER_URL=http://localhost:8448
+MATRIX_HOMESERVER_URL=http://127.0.0.1:8448
 MATRIX_SERVER_NAME=matrix.local
-MATRIX_APPSERVICE_URL=http://localhost:29318
-MATRIX_APPSERVICE_PORT=29318
-MATRIX_AS_TOKEN=<zufälliger_hex_token>
-MATRIX_HS_TOKEN=<zufälliger_hex_token>
-MATRIX_BOT_USER_ID=@appservice-bot:matrix.local
-NATS_URL=nats://localhost:4222
-LOG_LEVEL=info
+MATRIX_APPSERVICE_URL=http://127.0.0.1:8090
+MATRIX_APPSERVICE_PORT=8090
+MATRIX_AS_TOKEN=<32-byte hex>
+MATRIX_HS_TOKEN=<32-byte hex>
+NATS_URL=nats://127.0.0.1:4222
 ```
+
+**Optional:**
+```env
+MATRIX_BOT_USER_ID=@appservice-bot:matrix.local
+MATRIX_AGENT_PREFIX=agent-
+LOG_LEVEL=info
+REGISTRATION_PATH=../homeserver/registration.yaml
+MENTION_ONLY_IN_GROUPS=true
+AGENT_SERVICE_URL=http://127.0.0.1:8094
+MEMORY_SERVICE_URL=http://127.0.0.1:8093
+MCP_SERVICE_URL=http://127.0.0.1:8094
+```
+
+**E2EE:**
+```env
+MATRIX_E2EE_ENABLED=true
+MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3
+MATRIX_CRYPTO_PICKLE_KEY=<32-byte hex>
+MATRIX_KEY_BACKUP_PASSWORD=<passphrase>
+```
+
+**ENV Files:**
+- `.env.example` — Template mit allen Defaults
+- `.env.development` — Aktive Dev-Config (Tokens, E2EE enabled)
+- `.env.production` — Production Template
 
 ---
 
-## Token generieren
+## Token-Generierung
 
 ```bash
-# Zufällige Tokens für AS/HS
+# Zufaellige Tokens fuer AS/HS
 openssl rand -hex 32
-# oder in PowerShell:
+```
+
+```powershell
+# PowerShell Variante
 [System.Convert]::ToHexString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)).ToLower()
 ```
 
 ---
 
+## Registration generieren
+
+```bash
+go run -tags goolm ./cmd/appservice/... --generate-registration
+# → schreibt ../homeserver/registration.yaml mit generierten Tokens
+```
+
+Format siehe `01-homeserver.md`.
+
+---
+
 ## Portierung ins Hauptprojekt
 
-Im Hauptprojekt nutzt Go → Python **gRPC-IPC** (nicht NATS) für direkte Agent-Aufrufe:
+Im Hauptprojekt nutzt Go → Python **gRPC-IPC** (nicht NATS) fuer direkte Agent-Aufrufe:
 
 ```
 Matrix-Projekt:    Go Appservice → NATS → Python Bridge → Agent Service
@@ -548,12 +307,12 @@ Hauptprojekt:      Go Appservice → ipc/client.go → Python Agent Service (gRP
 
 **Warum unterschiedlich:**
 - Matrix: Event-driven, async — NATS Pub/Sub passt
-- Hauptprojekt: SSE-Streaming für Frontend — gRPC/HTTP direkt besser
+- Hauptprojekt: SSE-Streaming fuers Frontend — gRPC/HTTP direkt besser
 
 **Beim Portieren:**
 1. `natsbridge/` durch IPC-Client aus `go-backend/internal/connectors/ipc/client.go` ersetzen
-2. Python Agent Bridge entfällt — Go ruft bestehenden `python-agent` Service direkt
+2. Python Bridge entfaellt — Go ruft bestehenden Python Agent Service direkt
 3. NATS Subjects isoliert halten: `matrix.event.*` (kein Konflikt mit `market.*`)
-4. `internal/crypto/machine.go` + `ensureCrossSigning()` direkt übernehmen — keine Anpassungen nötig
+4. `internal/crypto/machine.go` + `ensureCrossSigning()` direkt uebernehmen
 
-Siehe `specs/10-portierung.md` für vollständigen Portierungsplan.
+Siehe `specs/10-portierung.md` fuer vollstaendigen Portierungsplan.

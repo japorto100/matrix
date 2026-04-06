@@ -1,6 +1,7 @@
 # Agent Chat UI — Frontend Tool Registry
 
-> Stand: 29.03.2026
+**Status:** Aktiv
+**Stand:** 06.04.2026 — 4 Frontend-Tools aktiv, MCP/WebMCP Bridge laeuft parallel
 
 ## Konzept
 
@@ -76,4 +77,19 @@ Die Callbacks werden von der Host-Seite (z.B. `trading/page.tsx`) bereitgestellt
 
 ## Datei
 
-`agent-chat/lib/frontend-tools.ts`
+`agent-chat/src/lib/frontend-tools.ts`
+
+---
+
+## Verwandte Bridges
+
+| Bridge | Datei | Zweck |
+|---|---|---|
+| MCP Tools | `agent-chat/src/hooks/useMcpTools.ts` | Standard MCP Tool Discovery via `use-mcp` |
+| WebMCP Bridge | `agent-chat/src/hooks/useWebMcpBridge.ts` | Browser-Tools → Backend-Agent Bridge |
+| WebMCP Tools | `agent-chat/src/hooks/useWebMcpTools.ts` | WebMCP Tool Definitions |
+| WebMCP Polyfill | `agent-chat/src/lib/webmcp-polyfill.ts` | `navigator.modelContext` Polyfill |
+
+Frontend-Tools (`frontend-tools.ts`) sind die **lokale, immediate** Variante.
+MCP/WebMCP sind die **standardisierte, discovery-basierte** Variante. Beide leben
+parallel und decken unterschiedliche Use-Cases ab.

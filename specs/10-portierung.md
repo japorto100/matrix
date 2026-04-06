@@ -1,9 +1,12 @@
 # Portierung ins Hauptprojekt (tradeview-fusion)
 
-> **Status: Zu evaluieren.** Diese Spec wurde im isolierten Matrix-Testprojekt erstellt,
-> zwar bereits mit Bezug auf die tradeview-fusion Fullstack-App, aber die Vorschläge
-> sollten bei der tatsächlichen Portierung kritisch hinterfragt werden. Architektur,
-> Infrastruktur und Anforderungen des Hauptprojekts können von den Annahmen hier abweichen.
+**Status:** Aktiv (Phase A — Test laeuft)
+**Stand:** 06.04.2026 — python-backend konsolidiert, NATS Bridge abgeschlossen
+
+> **Hinweis:** Diese Spec wurde im isolierten Matrix-Testprojekt erstellt, mit Bezug
+> auf die tradeview-fusion Fullstack-App. Die Vorschlaege sollten bei der tatsaechlichen
+> Portierung kritisch hinterfragt werden — Architektur, Infrastruktur und Anforderungen
+> des Hauptprojekts koennen von den Annahmen hier abweichen.
 
 ## Ziel
 
@@ -18,40 +21,44 @@ Hauptprojekt (`D:\tradingview-clones\tradeview-fusion`) portiert.
 
 | | Matrix-Projekt | Hauptprojekt |
 |---|---|---|
-| Mechanismus | NATS Pub/Sub | gRPC-IPC (HTTP Fallback) |
+| Mechanismus | NATS Pub/Sub fuer Matrix-Events + HTTP fuer SSE | gRPC-IPC (HTTP Fallback) |
 | Warum | Event-driven, async, entkoppelt | Request-Response mit SSE Streaming |
-| Go→Python | Publish auf `matrix.message.*` | `ipc/client.go` ForwardRequest() |
-| Python→Go | Subscribe + Reply auf NATS | HTTP Response / gRPC Response |
+| Go→Python (NATS) | Publish auf `matrix.message.inbound` | nicht genutzt |
+| Go→Python (HTTP SSE) | `/api/v1/agent/chat` direkt | `ipc/client.go` ForwardRequest() |
+| Python→Go (NATS) | Publish auf `matrix.message.reply` | nicht genutzt |
 | gRPC Port | nicht genutzt | HTTP_Port + 1000 (z.B. 8094→9094) |
 
 **Beim Portieren:**
 - Go Appservice nutzt statt NATS den bestehenden `ipc/client.go`
-- Python Agent Bridge wird NOT portiert — Go ruft direkt den bestehenden `python-agent` Service
-- NATS bleibt für Marktdaten (market.*.tick etc.) — nicht für Matrix-Events
+- `python-backend/bridge/` (NATS Consumer) wird NICHT portiert — Go ruft den bestehenden
+  `python-agent` Service direkt
+- NATS bleibt fuer Marktdaten (market.*.tick etc.) — nicht fuer Matrix-Events
 
 ### Port-Mapping
 
 | Service | Matrix-Projekt | Hauptprojekt |
 |---|---|---|
 | Go Gateway | 8090 (Appservice) | 9060 |
-| Python Agent | 8097 (Bridge) | 8094 (HTTP) / 9094 (gRPC) |
+| Python Agent | 8094 (HTTP/SSE) | 8094 (HTTP) / 9094 (gRPC) |
+| Python Bridge (NATS) | 8097 | entfaellt |
 | NATS | 4222 | 4222 (gleich) |
 | Homeserver | 8448 | 8448 (gleich) |
 
 ---
 
-## Was direkt übernommen wird
+## Was direkt uebernommen wird
 
-| Komponente | Wo | Änderungen |
+| Komponente | Wo | Aenderungen |
 |---|---|---|
-| `homeserver/tuwunel.toml` | Homeserver-Config bleibt | Production-Anpassungen (TLS, server_name) |
-| `go-appservice/` | Appservice-Logik | IPC-Client statt NATS für Agent-Calls |
-| Matrix Event-Handling | `handler/events.go` | Bleibt identisch |
-| Auto-Join Logik | `handler/events.go` | Bleibt identisch |
+| `homeserver/tuwunel.toml` | Homeserver-Config | Production-Anpassungen (TLS, server_name, OIDC) |
+| `go-appservice/internal/crypto/` | E2EE Stack (OlmMachine, Cross-Signing) | direkt uebernehmen |
+| `go-appservice/internal/handler/` | Matrix Event-Handling, Auto-Join, Mention-Filter | direkt uebernehmen |
+| `go-appservice/internal/intent/` | AgentSender API (virtuelle @agent-* User) | direkt uebernehmen |
+| `go-appservice/internal/handlers/http/` | HTTP Proxy zu Agent Service | IPC-Client statt HTTP-Direct |
 | Namespace-Regex | `registration.yaml` | Anpassen auf prod server_name |
-| Python mention-only Logik | `matrix_client.py` | Direkt übernehmen |
-| `nextjs-chat/` Komponenten | `src/components/matrix/` | 1:1 ins Hauptprojekt |
-| Matrix Hooks | `src/lib/matrix/hooks/` | 1:1 ins Hauptprojekt |
+| `nextjs-chat/src/components/matrix/` | 45+ Matrix-Komponenten | 1:1 ins Hauptprojekt |
+| `nextjs-chat/src/lib/matrix/hooks/` | 18 Custom Hooks | 1:1 ins Hauptprojekt |
+| `agent-chat/` Feature-Modul | AssistantUI + Tambo + tldraw + Novel | 1:1 als Submodul |
 
 ---
 
@@ -59,10 +66,11 @@ Hauptprojekt (`D:\tradingview-clones\tradeview-fusion`) portiert.
 
 | Was | Warum |
 |---|---|
-| `python-agent-bridge/` (eigenständig) | Hauptprojekt hat bereits `python-agent` Service |
+| `python-backend/bridge/` (NATS Consumer) | Hauptprojekt hat IPC-Client direkt zwischen Go ↔ python-agent |
+| `python-backend/mock/` | Nur fuer Tests im Isolations-Setup |
 | `scripts/setup-users.ps1` | Hauptprojekt hat eigene User-Verwaltung (DB + Auth) |
-| Dendrite | Nur Windows-Dev-Fallback, nicht für Production |
-| `tools/dendrite.exe` | Hauptprojekt nutzt Tuwunel direkt |
+| Dendrite/Zendrite | Nur Windows-Dev-Fallback, nicht fuer Production |
+| `tools/dendrite.exe` / `tools/zendrite.exe` | Hauptprojekt nutzt Tuwunel direkt |
 
 ---
 
@@ -74,16 +82,20 @@ Hauptprojekt (`D:\tradingview-clones\tradeview-fusion`) portiert.
 tradeview-fusion/
 └── go-backend/
     └── internal/
-        └── matrix/               ← NEU
-            ├── appservice.go     ← aus go-appservice/cmd/appservice/main.go
-            ├── handler.go        ← aus go-appservice/internal/handler/events.go
-            └── agent_bridge.go   ← NATS ersetzen durch ipc/client.go Call
+        └── matrix/                    ← NEU
+            ├── appservice.go          ← aus go-appservice/cmd/appservice/main.go
+            ├── handler/server.go      ← aus go-appservice/internal/handler/
+            ├── crypto/                ← aus go-appservice/internal/crypto/
+            ├── intent/                ← aus go-appservice/internal/intent/
+            ├── handlers/http/         ← aus go-appservice/internal/handlers/http/
+            │                            (HTTP→IPC anpassen)
+            └── matrix_bridge.go       ← NATS ersetzen durch ipc/client.go Call
 ```
 
-`agent_bridge.go` — Anpassung:
+`matrix_bridge.go` — Anpassung:
 ```go
 // Matrix-Projekt: via NATS
-natsPub.Publish("matrix.message.agent", payload)
+natsPub.Publish("matrix.message.inbound", payload)
 
 // Hauptprojekt: via IPC direkt
 reply, err := agentServiceClient.Chat(ctx, matrixMessage)

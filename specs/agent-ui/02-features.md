@@ -1,6 +1,7 @@
 # Agent Chat UI — Feature-Katalog
 
-> Stand: 29.03.2026
+**Status:** Aktiv
+**Stand:** 06.04.2026 — Tambo + Canvas + WebMCP zusaetzlich aktiv (exec-09 Phase 3)
 
 ## Implementierter Feature-Stand
 
@@ -95,13 +96,26 @@
 | Badge Count | Proaktive Notification am Bot-Icon | ✅ |
 | Ask AI Menu | Rechtsklick Context Menu "Ask AI about this" | ✅ |
 
+### Generative UI (exec-09 Phase 3)
+
+| Feature | Beschreibung | Status |
+|---------|-------------|--------|
+| Tambo Components | Component Registry mit Schema-driven Props (ChartWidget, PortfolioCard) | ✅ |
+| tldraw Canvas | Infinite Canvas v4.0 mit Agent-platziertem Output | ✅ |
+| Novel Editor | Tiptap-based Rich Editor + Slash Commands + AI Autocomplete | ✅ |
+| Canvas Tools | Agent kann Shapes/Text/Widgets via Tool-Results platzieren | ✅ |
+| MCP Tools | `use-mcp` Hook fuer Standard-Tool Discovery | ✅ |
+| WebMCP Bridge | Browser-Tools → Backend-Agent Bridge | ✅ |
+| CopilotKit AG-UI | Frontend-State Mutations (set_chart_symbol, navigate_to, ...) | ✅ |
+
 ---
 
-## Offene Features
+## Offene Features (Verschoben → `FUTURE_IDEAS.md` oder Execution Slices)
 
-| Feature | Beschreibung | Abhängigkeit |
-|---------|-------------|-------------|
-| Thread-Persistenz | Chat-Verlauf speichern/laden (AgentEpisode) | Go + Python Backend |
-| Stop/Resume Policy | Interruption-Semantik bei laufenden Tool-Chains | Backend-Design |
-| Pause-Loop / Resume-Loop | Agent-Loop pausieren und fortsetzen | Architektur-Eval |
-| Backend Live-Test | Verify-Gates V36-V55 gegen echten Stack | Go Gateway + Python |
+| Feature | Beschreibung | Status |
+|---------|-------------|---|
+| Thread-Persistenz | Chat-Verlauf speichern/laden via Hindsight Episodic Store | exec-13 |
+| Stop/Resume Policy | Interruption-Semantik bei laufenden Tool-Chains | FUTURE_IDEAS |
+| Pause-Loop / Resume-Loop | Agent-Loop pausieren und fortsetzen | FUTURE_IDEAS |
+| Memory Graph Visualisierung | Interaktive Graph-UI ueber Hindsight Memories | exec-13 Phase 2 |
+| Control Panel | Settings UI fuer Agent-Config, Memory, Skills | exec-13 Phase 3 |

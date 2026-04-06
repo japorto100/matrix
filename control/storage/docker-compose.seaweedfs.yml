@@ -1,0 +1,44 @@
+# SeaweedFS — optional local object-storage stack for artifact-path validation.
+# Host-native remains the preferred default for this repo; this compose file
+# exists as a secondary reproducible local path next to docker-compose.nats.yml.
+#
+# Usage:
+#   docker compose -f docker-compose.seaweedfs.yml up -d
+#   aws --endpoint-url http://127.0.0.1:8333 s3 ls
+#
+# Go Gateway switch:
+#   ARTIFACT_STORAGE_PROVIDER=seaweedfs
+#   ARTIFACT_STORAGE_S3_ENDPOINT=http://127.0.0.1:8333
+#   ARTIFACT_STORAGE_S3_BUCKET=tradeview-artifacts
+#   ARTIFACT_STORAGE_S3_ACCESS_KEY_ID=seaweedfs
+#   ARTIFACT_STORAGE_S3_SECRET_ACCESS_KEY=seaweedfs-secret
+
+version: "3.9"
+services:
+  seaweedfs:
+    build:
+      context: .
+      dockerfile: tools/seaweedfs/Dockerfile
+    container_name: tradeview-seaweedfs
+    command:
+      - "server"
+      - "-dir=/data"
+      - "-s3"
+      - "-s3.config=/etc/seaweedfs/s3.json"
+      - "-ip=0.0.0.0"
+      - "-master.port=9333"
+      - "-volume.port=18080"
+      - "-filer.port=8888"
+      - "-s3.port=8333"
+    ports:
+      - "9333:9333"
+      - "18080:18080"
+      - "8888:8888"
+      - "8333:8333"
+    volumes:
+      - seaweedfs_data:/data
+      - ./tools/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    restart: unless-stopped
+
+volumes:
+  seaweedfs_data:

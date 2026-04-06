@@ -1,137 +1,178 @@
 # E2EE Agent Architecture — Ist-Zustand
 
-## Übersicht
+**Status:** Aktiv
+**Stand:** 06.04.2026 — Phase 3 (Go als einziger E2EE-Endpunkt, NATS aktiv, matrix-nio entfernt)
 
-Dieses Dokument beschreibt den aktuellen Zustand der Verschlüsselungs- und Nachrichtenfluss-Architektur
-zwischen User, Homeserver, Go Appservice, Python Agent Bridge und LLM.
+## Uebersicht
+
+Dieses Dokument beschreibt den aktuellen Zustand der Verschluesselungs- und
+Nachrichtenfluss-Architektur zwischen User, Homeserver, Go Appservice, Python Backend
+und LLM. Fuer das Trust-Modell siehe `06-e2ee.md`.
 
 ---
 
-## Nachrichtenfluss (Ist-Zustand)
+## Architektur (Ist-Zustand seit exec-05)
 
 ```
-┌──────────┐      ┌───────────┐      ┌────────────────┐      ┌──────────────┐      ┌───────────┐
-│  Browser  │─────►│  Tuwunel  │─────►│ Python Bridge  │─────►│  LLM Mock /  │─────►│  Antwort  │
-│ (Next.js) │ E2EE │(Homeserver)│Sync │ (matrix-nio)   │ HTTP │  Agent Svc   │      │  zurück   │
-└──────────┘      └───────────┘      └────────────────┘      └──────────────┘      └───────────┘
-                                            │
-                                     ┌──────┴──────┐
-                                     │ Go Appservice│  ← Empfängt Events, aber leitet
-                                     │ (mautrix-go) │     NICHT an Python weiter (NATS
-                                     └─────────────┘     nicht connected)
-                                            │
-                                     ┌──────┴──────┐
-                                     │    NATS     │  ← Läuft, aber wird von Python
-                                     │  (JetStream)│     Bridge NICHT genutzt
-                                     └─────────────┘
+┌──────────┐  E2EE  ┌──────────┐  E2EE  ┌──────────────────────┐
+│ Browser  │───────►│ Tuwunel  │───────►│  Go Appservice       │
+│(Next.js) │        │(Homesvr) │        │  (mautrix-go +       │
+│ vodozemac│        │ RocksDB  │        │   goolm + Cross-     │
+│ Rust WASM│        │          │        │   Signing)           │
+└──────────┘        └──────────┘        └──────────┬───────────┘
+                                                    │ decrypted
+                                                    │ Klartext
+                                                    ▼
+                                        ┌──────────────────────┐
+                                        │  NATS (port 4222)    │
+                                        │  matrix.message.     │
+                                        │    inbound / reply   │
+                                        └──────────┬───────────┘
+                                                    │
+                                                    ▼
+                                        ┌──────────────────────┐
+                                        │  Python Bridge       │
+                                        │  (NATS Consumer,     │
+                                        │   Port 8097)         │
+                                        └──────────┬───────────┘
+                                                    │ HTTP SSE
+                                                    ▼
+                                        ┌──────────────────────┐
+                                        │  Python Agent (8094) │
+                                        │  LangGraph + Tools + │
+                                        │  Memory + Sandbox    │
+                                        └──────────────────────┘
 ```
+
+**Encrypted Backend, Bridged Endpoints (E2BE)** — Go Appservice ist die einzige
+Komponente mit Crypto. Python sieht nur Klartext via NATS. Browser hat eigene
+unabhaengige E2EE-Schicht (vodozemac WASM) fuer User-zu-User Nachrichten.
 
 ---
 
 ## Komponenten-Status
 
 ### Browser (Next.js Chat)
-- Eingeloggt als `@alice:matrix.local` mit Device `ALICE01`
-- matrix-js-sdk mit Rust Crypto (WASM) für E2EE
-- Verschlüsselt/entschlüsselt Nachrichten client-seitig
-- Cross-Signing: Gerät nicht verifiziert (gelbes Shield)
+- Eingeloggt mit Device-spezifischem Token
+- matrix-js-sdk v41 mit Rust Crypto (vodozemac → WASM)
+- `initRustCrypto()` aktiv → IndexedDB Key Store
+- Cross-Signing via `useCrossSigning` Hook + `CrossSigningSetup`-Komponente
+- QR-Code + SAS-Emoji Verification
+- Phase 3 abgeschlossen — Phase 4 Production Hardening in `FUTURE_IDEAS.md`
 
 ### Tuwunel (Homeserver)
-- `encryption_enabled_by_default_for_room_type = "invite"` → Invite-Räume automatisch verschlüsselt
-- Speichert verschlüsselte Events (kann nicht mitlesen)
-- STUN-Server konfiguriert (Cloudflare + Google)
+- `encryption_enabled_by_default_for_room_type = "off"` (Client entscheidet pro Raum)
+- Speichert ausschliesslich verschluesselte Events (kann nicht mitlesen)
+- TURN/STUN konfiguriert (metered.ca + Cloudflare)
+- LiveKit als RTC Transport (well_known.rtc_transports)
 
 ### Go Appservice
-- Läuft auf :8090, verbunden mit Tuwunel via Appservice-Protokoll
-- `MATRIX_E2EE_ENABLED=false` → empfängt verschlüsselte Events aber kann sie nicht lesen
+- Laeuft auf :8090, verbunden mit Tuwunel via Appservice-Protokoll
+- `MATRIX_E2EE_ENABLED=true` → kann verschluesselte Events lesen und senden
+- OlmMachine + goolm (Pure-Go, kein CGO)
+- `ensureCrossSigning()` Bootstrap → Seeds in `data/cross_signing_seeds.json` (0o600)
 - Bot-User: `@appservice-bot:matrix.local`
-- Agent-Namespace: `@agent-*:matrix.local`
-- NATS-Publisher: Code vorhanden (`natsbridge.PublishInbound`), aber Python Bridge subscribed nicht
-- Crypto-Code: OlmMachine vorhanden, aber deaktiviert
+- Agent-Namespace (exklusiv): `@agent-*:matrix.local`
+- NATS Producer: `matrix.message.inbound` (decrypted Klartext)
+- NATS Subscriber: `matrix.message.reply` → encrypted reply zurueck nach Tuwunel
+- HTTP Proxy zu Agent Service (Port 8094) fuer SSE Chat (Frontend Path)
 
-### Python Agent Bridge
-- Läuft auf :8097 als eigenständiger Matrix-Client (matrix-nio)
-- Bot-User: Eingeloggt mit eigenem Account (NICHT als Appservice-Ghost)
-- Empfängt Events direkt via Matrix Sync (NICHT via NATS)
-- `nats_url` in Config vorhanden aber **nicht genutzt**
-- Filterung:
-  - Eigene Nachrichten ignoriert
-  - Homeserver-Whitelist (`matrix.local`)
-  - Mention-Only in Gruppenchats (>2 User)
-- Leitet Nachrichtentext per HTTP an LLM Mock/Agent Service weiter
-- Kann verschlüsselte Räume **nicht lesen** (kein E2EE Support in matrix-nio ohne libolm)
+### Python Bridge (`python-backend/bridge/`)
+- Laeuft auf :8097
+- Reiner NATS Consumer — **keine Matrix Dependency mehr**
+- matrix-nio wurde in exec-05 vollstaendig entfernt
+- Subscribe `matrix.message.inbound` → HTTP SSE Call zu Agent Service → Publish `matrix.message.reply`
+- Stateless, keine Schluesselverwaltung
 
-### LLM Mock Agent
-- Läuft auf :8094
-- Einfacher HTTP-Service mit SSE-Streaming
-- Empfängt Klartext, antwortet mit Mock-Antworten
-- Kein Matrix-Wissen, kein E2EE
+### Python Agent Service (`python-backend/agent/`)
+- Laeuft auf :8094
+- LangGraph StateGraph mit 6 Nodes (memory_recall → llm_call → approval → tool_execute → loop → memory_retain)
+- 15 Tools registriert (chart, portfolio, memory, sandbox, canvas, file_analyze, ...)
+- 6 Trading Rollen (FUNDAMENTALS, TECHNICAL, SENTIMENT, RESEARCHER, TRADER, RISK_MANAGER)
+- Hindsight Memory Engine (4 Networks: Retain/Recall/Reflect/Consolidate)
+- exec-12 Phase 2: Audit, Consent, Sanitizer, Template Validator, Rate Limiter
 
-### NATS
-- Läuft auf :4222 mit JetStream
-- Go Appservice published Events → aber niemand subscribed
-- Effektiv ungenutzt im aktuellen Flow
+### NATS (port 4222)
+- Aktiv genutzt fuer Matrix-Bridge
+- Subjects: `matrix.message.inbound`, `matrix.message.reply`
+- Spaeter erweiterbar fuer Multi-Source Bridges (exec-05b)
 
 ---
 
 ## E2EE-Status pro Raum
 
-| Raum | Verschlüsselt | Grund |
+| Raum-Typ | Verschluesselt | Grund |
 |---|---|---|
-| Empty room (1) | ✅ Ja | Invite-Raum, Tuwunel-Default |
-| Empty room (2) | ✅ Ja | Invite-Raum, Tuwunel-Default |
-| test | ✅ Ja | Invite-Raum, Tuwunel-Default |
-| General | ❌ Nein | Public/Join-Raum |
-| matrix.local Admin Room | ❌ Nein | Admin-Raum |
-
----
-
-## Probleme im Ist-Zustand
-
-### 1. NATS ist Infrastruktur-Overhead ohne Nutzen
-NATS läuft, Go Appservice published, aber Python Bridge subscribed nicht.
-Der gesamte NATS-Pfad ist toter Code.
-
-### 2. Python Bridge kann E2EE-Räume nicht bedienen
-matrix-nio ohne `[e2e]` Extra kann nicht entschlüsseln.
-In verschlüsselten Räumen (die Tuwunel automatisch erstellt) funktioniert der Bot nicht.
-
-### 3. Doppelte Matrix-Verbindungen
-Go Appservice UND Python Bridge sind beide als Matrix-Clients verbunden.
-Beide empfangen dieselben Events. Redundant.
-
-### 4. Keine Agent-Isolation
-Wenn E2EE im Go Appservice aktiviert wird, entschlüsselt EIN Bot ALLES.
-Alle Agents teilen denselben NATS-Kanal — keine Isolation.
-
-### 5. Cross-Signing nicht abgeschlossen
-Browser-Device nicht verifiziert → andere E2EE-Clients vertrauen unseren Keys nicht.
-Bot-Device ebenfalls nicht cross-signed.
+| DM (`is_direct: true`) | ✅ Client kann aktivieren | Default in Element X |
+| Private Group | ✅ Client kann aktivieren | Default-Empfehlung |
+| Public Room (`#general`) | ❌ | Nicht sinnvoll fuer offene Raeume |
+| Admin Room | ❌ | Server-Admin Operationen |
 
 ---
 
 ## Konfiguration
 
-### Go Appservice (.env.development)
-```
-MATRIX_E2EE_ENABLED=false
+### Go Appservice (`go-appservice/.env.development`)
+```env
+MATRIX_E2EE_ENABLED=true
 MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3
+MATRIX_CRYPTO_PICKLE_KEY=<32-byte hex>
+MATRIX_KEY_BACKUP_PASSWORD=<passphrase>
 MATRIX_BOT_USER_ID=@appservice-bot:matrix.local
 MATRIX_AGENT_PREFIX=agent-
+MATRIX_AGENT_USER_ID=@agent-trading:matrix.local
 NATS_URL=nats://127.0.0.1:4222
-```
-
-### Python Bridge (.env)
-```
-BOT_USER_ID=@appservice-bot:matrix.local  (oder eigener Bot-Account)
-AGENT_SERVICE_URL=http://127.0.0.1:8094
-NATS_URL=nats://127.0.0.1:4222  (konfiguriert aber ungenutzt)
 MENTION_ONLY_IN_GROUPS=true
-ALLOWED_HOMESERVERS=matrix.local
 ```
 
-### Tuwunel (tuwunel.toml)
-```toml
-encryption_enabled_by_default_for_room_type = "invite"
-turn_uris = ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"]
+### Python Backend (`python-backend/.env`)
+```env
+NATS_URL=nats://127.0.0.1:4222
+AGENT_SERVICE_URL=http://127.0.0.1:8094
+AGENT_TIMEOUT_SEC=120
+AGENT_USER_ID=@agent-trading:matrix.local
+BRIDGE_HOST=127.0.0.1
+BRIDGE_PORT=8097
 ```
+
+### Tuwunel (`homeserver/tuwunel.toml`)
+```toml
+[global]
+default_room_version = "12"
+encryption_enabled_by_default_for_room_type = "off"  # Client entscheidet
+allow_federation = false
+
+# MatrixRTC + LiveKit
+[[global.well_known.rtc_transports]]
+type = "livekit"
+livekit_service_url = "http://192.168.1.34:8080"
+
+# TURN
+turn_uris = [
+    "stun:stun.cloudflare.com:3478",
+    "turn:a.relay.metered.ca:443?transport=tcp",
+]
+```
+
+---
+
+## Vergleich: Vorher (exec-04) vs. Jetzt (exec-05+)
+
+| Aspekt | Vorher | Jetzt |
+|---|---|---|
+| Matrix Endpunkte | 2 (Go + Python matrix-nio) | 1 (Go only) |
+| Crypto Stores | 2 (Go + matrix-nio[e2e]) | 1 (Go SQLite) |
+| Cross-Signing | Keine | Aktiv (`ensureCrossSigning`) |
+| NATS | Tot (kein Subscriber) | Aktiv (Bridge subscribed) |
+| Python Dependencies | matrix-nio[e2e], libolm | nats-py (pure Python) |
+| Code-Komplexitaet Bridge | ~300 LoC | ~80 LoC |
+
+---
+
+## Trust-Modell
+
+Siehe `06-e2ee.md` fuer Details. Kurz:
+- Go Appservice ist **die** vertrauenswuerdige Identitaet (Master/Self-Signing/User-Signing Keys)
+- Browser-Geraete vertrauen Go via Cross-Signing Verifikation (QR + SAS)
+- Python Bridge braucht **keine** Crypto-Identitaet — Klartext via NATS
+- Andere User-Geraete verifizieren mit Go-Identitaet via Standard Matrix Verification Flow
