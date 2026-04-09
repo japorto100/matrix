@@ -27,6 +27,34 @@
 | **Slice 6** System Observability | ✅ Frontend + Backend wired + Session Kill (Dev) + Audit Export (K8, K9) | **Frontend:** SystemTab, AuditTab, SessionsTab, McpTab, A2aTab. **Backend Slice 7 Phase D (08.04):** `agent/control/system.py` (concurrent health pings), `audit.py` (filtered query mit date range), `sessions.py` (raw SQL auf langgraph_checkpoint_postgres), `mcp.py` (FastMCP introspection), `a2a.py` (queries a2a_delegations table). Alembic migrations 006 + 007. **K8 (Phase K, 08.04.2026):** SessionsTab now shows Kill button per session row **only when `useControlMode().isDev`** (Dev Mode gate). Click → AlertDialog confirmation → `useKillSession` → DELETE `/api/control/sessions/{thread_id}` → invalidate sessions + audit + overview queries. **K9 (Phase K, 08.04.2026):** AuditTab Export button now a DropdownMenu with "Export as CSV" / "Export as JSON" actions. Pure client-side via Blob + anchor-click download — no backend needed, exports already-fetched filtered events. CSV escaper handles quotes/commas/newlines properly (RFC 4180). |
 | **Slice 7** Two-Tier UI + Full Backend + Hash Reindex | ✅ DONE | **Frontend:** `useControlMode` hook (URL param + localStorage, D20), `ModeToggle`, `OverviewTab` (TT1), `SecurityTab` (TT8), `ApiModelsTab` (fused ENV + LLM providers + Model Routing + Utility Models), `ControlTopNav` mode-filtered (7 User Mode tabs + 6 Dev Mode tabs). **Backend:** `agent/control/overview.py`, `security.py` (4-pillar posture + event type mapping), `models.py` (providers + routing + utility + env). **56 total control routes** registered (added /kg/graph in K4). **Go Proxy:** `ControlProxyHandler` + `/api/v1/control/*` catch-all (D21, lint 0 issues). **Hash reindex (Phase E, D23):** `ingestion/tracking/dedup.hash_chunk`, `jobs.save_chunk_hashes`, `pipelines/document.smart_reindex()`, `hindsight_sink.delete_by_hashes()`, `worker.py /reindex`, `alembic/003_chunk_hashes.py`. **Frontend BFF (D21):** catch-all `/api/control/[...path]/route.ts` + `/api/memory/[...path]/route.ts` mit path mapping, `lib/server/control-proxy.ts`, `lib/queries/control.ts` + `hooks.ts` (now **27+ typed hooks** after Phase K mutations). Alle 13 Control Tabs + MemoryPage + EpisodesGrid + MemoryHealthCards auf useQuery + mock fallback (D22). **Phase J Code Review Fixes:** TradingRole enum aligned (fundamentals_analyst/sentiment_analyst/technical_analyst/researcher/trader/risk_manager), memory.health returns array shape, Session type optional fields, SecurityEventType mapping, permissions cache thread-safety, formatRelative null guard. **Phase K Code Gaps Closed (08.04.2026):** K1-K10 — all UI elements now fully wired, no more disabled buttons or "coming soon" placeholders. **TODO:** Devstack E2E run (Phase I) |
 
+---
+
+## Lightweight-by-default Setup (Cloud + weak local PCs)
+
+Ziel: **alles funktioniert out-of-the-box ohne schwere ML/OCR/Vision Modelle**. Heavy Komponenten bleiben **opt-in** via ENV + explizite Download-Skripte.
+
+### Lightweight Defaults (Code)
+
+- ✅ **Ingestion embedder**: `EMBEDDER_PROVIDER=deterministic` moeglich (kein HF download, CPU-only). Default bleibt `sentence_transformer`, aber kann fuer schwache Maschinen auf deterministic gestellt werden.
+- ✅ **Vector store**: `VECTOR_STORE_MOCK=true` erzwingt **keinen** sentence-transformers Download (deterministic embeddings). Das verhindert “first-run” surprise downloads in Chroma.
+- ✅ **KG Pipeline**: bleibt **disabled** (`KG_PIPELINE_ENABLED=false`) bis Phase 2 aktiv.
+- ✅ **Extraction Layout Worker**: bleibt skeleton (503) bis Phase 2 aktiv.
+- ✅ **PromptGuard**: bleibt optional; wird nur genutzt wenn Modell explizit runtergeladen wurde.
+
+### Opt-in Download Scripts (manual)
+
+- `scripts/download-embedding-minilm.py` — cached `sentence-transformers/all-MiniLM-L6-v2` (CPU).
+- `scripts/download-promptguard.py` — cached PromptGuard (CPU).
+- `scripts/download-spacy-en-core-web-sm.sh` — spaCy small English model (CPU).
+- `scripts/download-relik-glirel-cpu.md` — Notizen fuer CPU-only KG stack (Phase 2; heavy).
+
+### Verify Gate — Lightweight Defaults
+
+- [ ] `VECTOR_STORE_MOCK=true` → agent start + memory features ohne HF download.
+- [ ] `EMBEDDER_PROVIDER=deterministic` (ingestion-worker) → ingest note/document laeuft ohne HF download.
+- [ ] `KG_PIPELINE_ENABLED=false` → ingestion laeuft weiter (kg_sink skip).
+- [ ] `extraction_layout/worker.py` bleibt 503; registry nutzt `pymupdf4llm` fuer PDFs.
+
 ### Verify Status (08.04.2026 — Phase K complete)
 
 - **TypeScript (control-ui):** `bun run typecheck` → exit 0, **0 errors** (verified after K1-K10)

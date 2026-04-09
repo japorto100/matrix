@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ingestion.embedders.base import Embedder
+from ingestion.embedders.deterministic import DeterministicEmbedder
 from ingestion.embedders.sentence_transformer import SentenceTransformerEmbedder
 
 
@@ -12,6 +13,7 @@ class EmbedderRegistry:
     def __init__(self, default_model: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
         self._embedders: dict[str, Embedder] = {
             "sentence_transformer": SentenceTransformerEmbedder(model_name=default_model),
+            "deterministic": DeterministicEmbedder(),
         }
 
     def get(self, name: str) -> Embedder:
