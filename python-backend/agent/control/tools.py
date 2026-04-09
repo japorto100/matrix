@@ -18,8 +18,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from agent.control.request_scope import RequestScope, resolve_scope
 
 logger = logging.getLogger(__name__)
 
@@ -168,9 +170,12 @@ async def get_tool(tool_id: str) -> dict[str, Any]:
 
 @router.post("/tools/import")
 async def import_tool_from_url(
-    req: ImportToolRequest, user_id: str = "local", updated_by: str = "local"
+    req: ImportToolRequest,
+    scope: RequestScope = Depends(resolve_scope),
 ) -> dict[str, Any]:
     """Queue bounded-write import of a tool from URL (Phase 1 scaffold)."""
+    user_id = scope.user_id
+    updated_by = scope.actor
     if not (req.url.startswith("http://") or req.url.startswith("https://")):
         raise HTTPException(status_code=400, detail="url must start with http:// or https://")
     now = datetime.now(timezone.utc)

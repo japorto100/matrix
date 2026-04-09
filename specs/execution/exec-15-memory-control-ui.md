@@ -2232,10 +2232,28 @@ Code-level gates (no devstack needed — verified after Phase K closes):
 ### User Mode Items die noch nicht implementiert sind (Slice 7)
 
 - [ ] **TT1.1** `OverviewTab.tsx` — AI Health Indicator (online/degraded/offline), aktive Tasks-Zusammenfassung, letzter Agent-Fehler, recent activity ticker. Keine raw Infrastruktur-Metriken.
-- [ ] **TT3.1** Tools Tab erweitern: "Add Tool from URL" Button (marketplace pattern, ChatGPT plugin style). Bei Click → Dialog mit URL Input + Security-Scan Preview + Approval Gate (bounded-write).
-- [ ] **TT6.1** Skills Tab erweitern: "Import Skill from GitHub URL" Button. Bei Click → Dialog mit URL + Sandbox Preview + Approval Gate.
+- [x] **TT3.1** Tools Tab erweitert: "Add Tool from URL" Button + Dialog (bounded-write scaffold; backend `POST /api/v1/control/tools/import` schreibt Audit Event `TOOL_IMPORT_REQUESTED`).
+- [x] **TT6.1** Skills Tab erweitert: "Import Skill from GitHub URL" Button + Dialog (bounded-write scaffold; backend `POST /api/v1/control/skills/import` schreibt Audit Event `SKILL_IMPORT_REQUESTED`).
 - [ ] **TT7.1** Agents Tab erweitern: simpler View im User Mode (kein System Prompt Editor, nur "Active/Inactive" Toggle + Per-Agent Permission Matrix Link).
 - [ ] **TT8.1** `SecurityTab.tsx` — Posture-Score (4 Pillars: Auth, Encryption, Audit, Network), Recent Security Events (login attempts, role changes, sensitive tool calls), Access List (welche IPs/Sessions waren heute aktiv).
+
+---
+
+## Identity / Scope / Persistence (Addendum, 09.04.2026)
+
+Diese Punkte muessen fuer Phase 1–3 sauber sein, bevor wir E2E ernsthaft fahren:
+
+- [x] **S1** Header-first Identity fuer Control-Endpoints eingefuehrt (`x-auth-user`, optional `x-auth-team`, optional `x-auth-actor`), Query `user_id` nur noch als Dev-Fallback (neu: `agent/control/request_scope.py`).
+- [x] **S2** Skills Toggle ist **persistiert pro user_id** (neu: `agent.skills_state` via Alembic `008_skills_state.py`; `PATCH /api/v1/control/skills/{id}` schreibt DB + Audit `SKILL_TOGGLE`).
+- [x] **S3** Memory Highlights sind nicht mehr Frontend-only Mock: neues Backend `GET /api/v1/control/memory/highlights` + MemoryPage wired (fallback = empty).
+- [ ] **S4** Team-Scoped Skills (Tier `team/{team_id}`) im Loader + APIs aktiv nutzen (derzeit `team_id=None` in loader calls).
+- [ ] **S5** Spoofing-Hardening: `user_id` nicht mehr via Query fuer prod erlauben; Scope muss aus Auth kommen (nur Dev flag erlaubt Query override).
+- [ ] **S6** Daten-Loeschung/Lifecycle: definieren was bei User-Loeschung passiert (skills_state, role_overrides, consent_overrides, audit retention, memory banks).
+
+### Verify (Scope)
+- [ ] **VS1** Aufruf ohne Header: Control-Endpoints verwenden `user_id=local` (Dev) und funktionieren.
+- [ ] **VS2** Aufruf mit Header `x-auth-user=alice`: Skills/Overlays/Highlights sind getrennt von `local`.
+- [ ] **VS3** Versuch `?user_id=bob` bei gesetztem Header `x-auth-user=alice` wird ignoriert (Header gewinnt).
 
 ---
 

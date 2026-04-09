@@ -9,9 +9,10 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from agent.memory.engine import get_bank_id, get_memory_engine
+from agent.control.request_scope import effective_user_id
 
 router = APIRouter(tags=["control", "highlights"])
 
@@ -56,6 +57,7 @@ def _to_item(unit: dict[str, Any], idx: int) -> dict[str, Any]:
 
 @router.get("/memory/highlights")
 async def get_memory_highlights(
+    request: Request,
     user_id: str = "local",
     limit: int = 3,
 ) -> dict[str, Any]:
@@ -64,7 +66,8 @@ async def get_memory_highlights(
     if engine is None:
         return {"items": [], "total": 0}
 
-    bank_id = get_bank_id(user_id)
+    scoped_user_id = effective_user_id(request, user_id)
+    bank_id = get_bank_id(scoped_user_id)
     req_limit = max(1, min(limit * 6, 60))
 
     try:

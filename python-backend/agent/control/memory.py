@@ -10,9 +10,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from agent.memory.engine import get_bank_id, get_memory_engine
+from agent.control.request_scope import get_effective_scope
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def _health_to_frontend(health_str: str) -> str:
 
 
 @router.get("/memory/health")
-async def get_memory_health(user_id: str = "local") -> dict[str, Any]:
+async def get_memory_health(request: Request, user_id: str = "local") -> dict[str, Any]:
     """Memory layer health for control-ui MemoryHealthCards.
 
     Returns the frontend `MemoryOverviewResponse` shape:
@@ -41,7 +42,8 @@ async def get_memory_health(user_id: str = "local") -> dict[str, Any]:
     - kg: Trading KG via memory_engine/kg_store.py (Kuzu, Trading domain)
     - vector: pgvector (Hindsight backend, same store)
     """
-    bank_id = get_bank_id(user_id)
+    scope = get_effective_scope(request, user_id=user_id)
+    bank_id = get_bank_id(scope.user_id)
     layers: list[dict[str, Any]] = []
 
     # ─── Episodic + Vector (both from Hindsight) ────────────────────────────
@@ -107,23 +109,25 @@ async def get_memory_health(user_id: str = "local") -> dict[str, Any]:
 
     return {
         "layers": layers,
-        "user_id": user_id,
+        "user_id": scope.user_id,
         "bank_id": bank_id,
     }
 
 
 @router.get("/memory/banks")
-async def list_memory_banks(user_id: str = "local") -> dict[str, Any]:
+async def list_memory_banks(request: Request, user_id: str = "local") -> dict[str, Any]:
     """List memory banks for this user (usually one: user_{user_id})."""
     engine = await get_memory_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="Memory engine disabled")
 
+    scope = get_effective_scope(request, user_id=user_id)
     try:
         from hindsight_api.models import RequestContext
 
         req_ctx = RequestContext()
         banks = await engine.list_banks(request_context=req_ctx)
+        banks = [b for b in banks if isinstance(b, dict) and b.get("bank_id") == get_bank_id(scope.user_id)]
         return {"banks": banks, "total": len(banks) if isinstance(banks, list) else 0}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"list_banks failed: {e}") from e

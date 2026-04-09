@@ -13,9 +13,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from agent.control.request_scope import RequestScope, resolve_scope
 from agent.skills.loader import load_skills
 
 logger = logging.getLogger(__name__)
@@ -63,17 +64,17 @@ def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
 @router.get("/skills")
 async def list_skills_endpoint(
     tier: str | None = None,
-    user_id: str = "local",
+    scope: RequestScope = Depends(resolve_scope),
 ) -> dict[str, Any]:
     """List all skills (or filter by tier)."""
     try:
-        skills = load_skills(user_id=user_id, team_id=None)
+        skills = load_skills(user_id=scope.user_id, team_id=scope.team_id)
     except Exception as e:  # noqa: BLE001
         logger.warning("load_skills failed: %s", e)
         skills = []
 
     items = [_skill_to_dict(s, i) for i, s in enumerate(skills)]
-    overrides = _load_enabled_overrides(user_id)
+    overrides = _load_enabled_overrides(scope.user_id)
     for item in items:
         if item["id"] in overrides:
             item["enabled"] = overrides[item["id"]]
@@ -116,11 +117,14 @@ class ImportSkillRequest(BaseModel):
 
 @router.patch("/skills/{skill_id}")
 async def patch_skill(
-    skill_id: str, req: PatchSkillRequest, user_id: str = "local", updated_by: str = "local"
+    skill_id: str,
+    req: PatchSkillRequest,
+    request: Request,
+    scope: RequestScope = Depends(resolve_scope),
 ) -> dict[str, Any]:
     """Enable/disable a skill (bounded-write, persisted to DB)."""
     try:
-        skills = load_skills(user_id=user_id, team_id=None)
+        skills = load_skills(user_id=scope.user_id, team_id=scope.team_id)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"load_skills: {e}") from e
 
@@ -141,7 +145,7 @@ async def patch_skill(
                     updated_by = EXCLUDED.updated_by,
                     updated_at = EXCLUDED.updated_at
                 """,
-                (skill_id, user_id, req.enabled, updated_by, now),
+                (skill_id, scope.user_id, req.enabled, scope.actor, now),
             )
             conn.execute(
                 """
@@ -152,9 +156,17 @@ async def patch_skill(
                 (
                     now,
                     "SKILL_TOGGLE",
-                    user_id,
+                    scope.user_id,
                     True,
-                    json.dumps({"skill_id": skill_id, "enabled": req.enabled, "updated_by": updated_by}),
+                    json.dumps(
+                        {
+                            "skill_id": skill_id,
+                            "enabled": req.enabled,
+                            "updated_by": scope.actor,
+                            "team_id": scope.team_id,
+                            "tenant_id": scope.tenant_id,
+                        }
+                    ),
                 ),
             )
     except Exception as e:  # noqa: BLE001
@@ -165,14 +177,16 @@ async def patch_skill(
         "status": "updated",
         "skill_id": skill_id,
         "enabled": req.enabled,
-        "updated_by": updated_by,
+        "updated_by": scope.actor,
         "updated_at": now.isoformat(),
     }
 
 
 @router.post("/skills/import")
 async def import_skill_from_github(
-    req: ImportSkillRequest, user_id: str = "local", updated_by: str = "local"
+    req: ImportSkillRequest,
+    request: Request,
+    scope: RequestScope = Depends(resolve_scope),
 ) -> dict[str, Any]:
     """Persist an import request for later worker-based onboarding."""
     if not req.github_url.startswith(("https://github.com/", "http://github.com/")):
@@ -195,7 +209,7 @@ async def import_skill_from_github(
                 (
                     now,
                     "SKILL_IMPORT_REQUESTED",
-                    user_id,
+                    scope.user_id,
                     True,
                     json.dumps(
                         {
@@ -204,7 +218,9 @@ async def import_skill_from_github(
                             "tier": req.tier,
                             "name": req.name,
                             "description": req.description,
-                            "updated_by": updated_by,
+                            "updated_by": scope.actor,
+                            "team_id": scope.team_id,
+                            "tenant_id": scope.tenant_id,
                         }
                     ),
                 ),

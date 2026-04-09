@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from agent.roles import (
@@ -24,6 +24,7 @@ from agent.roles import (
     TRADING_ROLE_TOOLS,
     TradingRole,
 )
+from agent.control.request_scope import get_request_scope
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +119,10 @@ class PatchRoleRequest(BaseModel):
 
 
 @router.get("/agents")
-async def list_agents(user_id: str = "local") -> dict[str, Any]:
+async def list_agents(request: Request) -> dict[str, Any]:
     """List all trading roles with overrides merged."""
+    scope = get_request_scope(request)
+    user_id = scope.user_id
     overlays = _load_overlays(user_id)
     items: list[dict[str, Any]] = []
     for role in TradingRole:
@@ -131,22 +134,26 @@ async def list_agents(user_id: str = "local") -> dict[str, Any]:
 
 
 @router.get("/agents/{role_id}")
-async def get_agent(role_id: str, user_id: str = "local") -> dict[str, Any]:
+async def get_agent(role_id: str, request: Request) -> dict[str, Any]:
     default = _default_role(role_id)
     if default is None:
         raise HTTPException(status_code=404, detail="Unknown role")
+    scope = get_request_scope(request)
+    user_id = scope.user_id
     overlays = _load_overlays(user_id)
     return _merge(default, overlays.get(role_id))
 
 
 @router.patch("/agents/{role_id}")
 async def patch_agent(
-    role_id: str, req: PatchRoleRequest, user_id: str = "local"
+    role_id: str, req: PatchRoleRequest, request: Request
 ) -> dict[str, Any]:
     """UPSERT role overlay fields (bounded-write)."""
     default = _default_role(role_id)
     if default is None:
         raise HTTPException(status_code=404, detail="Unknown role")
+    scope = get_request_scope(request)
+    user_id = scope.user_id
 
     updates: list[tuple[str, Any]] = []
     if req.system_prompt is not None:
@@ -196,11 +203,13 @@ async def patch_agent(
 
 @router.delete("/agents/{role_id}/overrides/{field}")
 async def reset_agent_field(
-    role_id: str, field: str, user_id: str = "local"
+    role_id: str, field: str, request: Request
 ) -> dict[str, Any]:
     """Reset a single overridden field to its default."""
     if field not in OVERLAY_FIELDS:
         raise HTTPException(status_code=400, detail=f"Unknown field. Allowed: {sorted(OVERLAY_FIELDS)}")
+    scope = get_request_scope(request)
+    user_id = scope.user_id
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             cur = conn.execute(
