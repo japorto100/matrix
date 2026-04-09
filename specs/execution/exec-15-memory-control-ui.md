@@ -35,11 +35,12 @@ Ziel: **alles funktioniert out-of-the-box ohne schwere ML/OCR/Vision Modelle**. 
 
 ### Lightweight Defaults (Code)
 
-- ✅ **Ingestion embedder**: `EMBEDDER_PROVIDER=deterministic` moeglich (kein HF download, CPU-only). Default bleibt `sentence_transformer`, aber kann fuer schwache Maschinen auf deterministic gestellt werden.
+- ✅ **Ingestion embedder**: `EMBEDDER_PROVIDER=deterministic` moeglich (kein HF download, CPU-only). **Default: deterministic** in `python-backend/ingestion/.env.example` fuer weak-PC friendly setup.
 - ✅ **Vector store**: `VECTOR_STORE_MOCK=true` erzwingt **keinen** sentence-transformers Download (deterministic embeddings). Das verhindert “first-run” surprise downloads in Chroma.
 - ✅ **KG Pipeline**: bleibt **disabled** (`KG_PIPELINE_ENABLED=false`) bis Phase 2 aktiv.
 - ✅ **Extraction Layout Worker**: bleibt skeleton (503) bis Phase 2 aktiv.
 - ✅ **PromptGuard**: bleibt optional; wird nur genutzt wenn Modell explizit runtergeladen wurde.
+  - **Hard opt-in:** `AGENT_PROMPT_GUARD_ENABLED=true` (default false).
 
 ### Opt-in Download Scripts (manual)
 
@@ -52,6 +53,7 @@ Ziel: **alles funktioniert out-of-the-box ohne schwere ML/OCR/Vision Modelle**. 
 
 - [ ] `VECTOR_STORE_MOCK=true` → agent start + memory features ohne HF download.
 - [ ] `EMBEDDER_PROVIDER=deterministic` (ingestion-worker) → ingest note/document laeuft ohne HF download.
+- [ ] `AGENT_PROMPT_GUARD_ENABLED=false` → sanitizer startet ohne transformers/torch model load attempts.
 - [ ] `KG_PIPELINE_ENABLED=false` → ingestion laeuft weiter (kg_sink skip).
 - [ ] `extraction_layout/worker.py` bleibt 503; registry nutzt `pymupdf4llm` fuer PDFs.
 
