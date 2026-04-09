@@ -23,6 +23,9 @@ type InboundMessage struct {
 	Sender   string `json:"sender"`
 	Body     string `json:"body"`
 	EventID  string `json:"event_id"`
+	// ThreadID: thread context identifier.
+	// For now this is best-effort and may contain the parent event id for replies (incl. thread replies).
+	// Empty when not a reply.
 	ThreadID string `json:"thread_id,omitempty"`
 }
 

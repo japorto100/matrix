@@ -396,12 +396,20 @@ func (s *Server) handleMessage(ctx context.Context, ev *event.Event) {
 	)
 
 	// An Python Agent via NATS weiterleiten
+	//
+	// Thread handling:
+	// - mautrix event.MessageEventContent exposes RelatesTo.InReplyTo for reply events.
+	// - Full MSC3440 thread-root extraction would require relation parsing and/or event lookup.
+	var threadRootEventID string
+	if content.RelatesTo != nil && content.RelatesTo.InReplyTo != nil {
+		threadRootEventID = content.RelatesTo.InReplyTo.EventID
+	}
 	msg := natsbridge.InboundMessage{
-		RoomID:   ev.RoomID.String(),
-		Sender:   ev.Sender.String(),
-		Body:     content.Body,
-		EventID:  ev.ID.String(),
-		ThreadID: ev.RoomID.String(),
+		RoomID:           ev.RoomID.String(),
+		Sender:           ev.Sender.String(),
+		Body:             content.Body,
+		EventID:          ev.ID.String(),
+		ThreadRootEventID: threadRootEventID,
 	}
 
 	if err := s.nats.PublishInbound(ctx, msg); err != nil {

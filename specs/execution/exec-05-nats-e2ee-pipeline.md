@@ -137,7 +137,7 @@ User ← Tuwunel ← Go Appservice
   - NATS Authorization: Python-Trading darf nur `matrix.message.trading` lesen
   - Verhindert dass ein Agent-Service andere Agents' Nachrichten sieht
 
-- [ ] **C4:** Agent Thread-Support
+- [x] **C4:** Agent Thread-Support ✅ (Thread Root wird via NATS weitergereicht)
   - Agent wird im Thread mentioned → Go Appservice erkennt Thread-Kontext
   - NATS-Message enthaelt threadRootId → Python Agent antwortet im Thread (nicht Hauptchat)
   - Go Appservice nutzt `client.sendMessage(roomId, threadId, content)` fuer Thread-Reply

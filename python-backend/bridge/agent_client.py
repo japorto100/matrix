@@ -53,6 +53,10 @@ class AgentClient:
 
         Wir sammeln alle text_delta Pakete und konkatenieren sie.
         """
+        # NOTE:
+        # - thread_id is optional. When present, we forward it as threadId to the agent service
+        #   so it can keep continuity for thread conversations.
+        # - When absent, we fall back to room_id for continuity.
         payload = {
             "message": message,
             "threadId": thread_id or room_id,

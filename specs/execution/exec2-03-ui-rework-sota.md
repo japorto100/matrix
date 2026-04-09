@@ -80,4 +80,4 @@
 
 - [ ] Location Content: OpenStreetMap-Embed statt Link (OSM-Link bereits vorhanden, Embed offen)
 - [ ] Client→Server Analyse: welche API Calls optimierbar
-- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
+- [x] api.ts fuer zentralisierte Matrix-API-Calls evaluieren ✅ (siehe `nextjs-chat/src/lib/matrix/api.ts`)

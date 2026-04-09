@@ -17,7 +17,7 @@
 - [x] auto-animate in Matrix RoomList/Timeline einbauen
 - [x] Location Content: OpenStreetMap-Embed statt Link
 - [ ] Client→Server Analyse: welche API Calls optimierbar
-- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
+- [x] api.ts fuer zentralisierte Matrix-API-Calls evaluiert/angelegt
 
 ### Federation + Security (Backlog — erst bei Prod-Deployment)
 - Siehe: `exec-eval.md` (Prod/Deployment-abhängige Verify-Gates)

@@ -67,7 +67,7 @@ class NATSHandler:
         room_id = data.get("room_id", "")
         sender = data.get("sender", "")
         body = data.get("body", "")
-        thread_id = data.get("thread_id")
+        thread_id = data.get("thread_root_event_id")
 
         if not body:
             return
@@ -92,6 +92,8 @@ class NATSHandler:
             "text": reply_text,
             "is_streaming": False,
         }
+        if thread_id:
+            reply["thread_root_event_id"] = thread_id
 
         if self._nc and not self._nc.is_closed:
             await self._nc.publish(SUBJECT_REPLY, json.dumps(reply).encode())

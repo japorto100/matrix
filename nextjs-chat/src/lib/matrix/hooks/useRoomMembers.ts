@@ -42,13 +42,11 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 
 		(async () => {
 			try {
-				const token = client.getAccessToken();
-				const res = await fetch(
-					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`,
-					{ headers: { Authorization: `Bearer ${token}` } },
+				const { matrixGetJson } = await import("@/lib/matrix/api");
+				const data = await matrixGetJson(
+					client,
+					`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`,
 				);
-				if (!res.ok) throw new Error("members fetch failed");
-				const data = await res.json();
 				const joined =
 					(data.joined as Record<string, { display_name?: string; avatar_url?: string }>) ?? {};
 				const memberList: MemberInfo[] = Object.entries(joined).map(([userId, info]) => ({
