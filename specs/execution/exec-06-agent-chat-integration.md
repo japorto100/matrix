@@ -82,7 +82,7 @@ nicht den ganzen Viewport bedecken. Matrix Chat bekommt eine eigene Route (`/cha
 
 ### API Routes (aus exec-08 Task 2.5)
 
-- [ ] **2.1:** `agent-chat/api/` Routes nach `nextjs-chat/src/app/api/` kopieren
+- [x] **2.1:** `agent-chat/api/` Routes nach `nextjs-chat/src/app/api/` kopieren ✅
   - `api/agent/chat/route.ts` — SSE Streaming Proxy (BFF → Go Gateway :8090)
   - `api/agent/approve/route.ts` — Tool Approval
   - `api/agent/completion/route.ts` — One-Shot Completion
