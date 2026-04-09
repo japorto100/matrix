@@ -2,6 +2,7 @@
 
 import { Camera } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
+import { Visibility } from "matrix-js-sdk";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,7 +26,7 @@ interface Props {
 
 export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 	const [name, setName] = useState("");
-	const [visibility, setVisibility] = useState<"private" | "public">("private");
+	const [visibility, setVisibility] = useState<Visibility>(Visibility.Private);
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
 	const [avatarFile, setAvatarFile] = useState<File | null>(null);
 	const [isCreating, setIsCreating] = useState(false);
@@ -56,7 +57,7 @@ export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 			// Space erstellen (m.space Room-Typ)
 			await client.createRoom({
 				name: trimmed,
-				visibility: visibility === "public" ? "public" : "private",
+				visibility,
 				creation_content: { type: "m.space" },
 				initial_state: avatarUrl
 					? [{ type: "m.room.avatar", state_key: "", content: { url: avatarUrl } }]
@@ -71,7 +72,7 @@ export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 			toast.success(`Space "${trimmed}" erstellt.`);
 			onOpenChange(false);
 			setName("");
-			setVisibility("private");
+			setVisibility(Visibility.Private);
 			setAvatarPreview(undefined);
 			setAvatarFile(null);
 		} catch (err) {
@@ -132,20 +133,22 @@ export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 						<Label>Sichtbarkeit</Label>
 						<Tabs
 							value={visibility}
-							onValueChange={(v) => setVisibility(v as "private" | "public")}
+							onValueChange={(v) =>
+								setVisibility(v === Visibility.Public ? Visibility.Public : Visibility.Private)
+							}
 							className="w-full"
 						>
 							<TabsList className="w-full">
-								<TabsTrigger value="private" className="flex-1">
+								<TabsTrigger value={Visibility.Private} className="flex-1">
 									Privat
 								</TabsTrigger>
-								<TabsTrigger value="public" className="flex-1">
+								<TabsTrigger value={Visibility.Public} className="flex-1">
 									Öffentlich
 								</TabsTrigger>
 							</TabsList>
 						</Tabs>
 						<p className="text-[10px] text-muted-foreground">
-							{visibility === "private"
+							{visibility === Visibility.Private
 								? "Nur eingeladene Mitglieder können diesen Space sehen."
 								: "Jeder kann diesen Space finden und beitreten."}
 						</p>

@@ -1,7 +1,6 @@
-"use client";
-
 import type { MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
+import { getJoinedMembers } from "@/lib/matrix/api";
 import { mxcToHttp } from "@/lib/matrix/utils";
 
 export interface MemberInfo {
@@ -42,11 +41,7 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 
 		(async () => {
 			try {
-				const { matrixGetJson } = await import("@/lib/matrix/api");
-				const data = await matrixGetJson(
-					client,
-					`/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`,
-				);
+				const data = await getJoinedMembers(client, roomId);
 				const joined =
 					(data.joined as Record<string, { display_name?: string; avatar_url?: string }>) ?? {};
 				const memberList: MemberInfo[] = Object.entries(joined).map(([userId, info]) => ({

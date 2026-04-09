@@ -1,7 +1,7 @@
 "use client";
 
 import { Camera, Pencil, Plus, Trash2, X } from "lucide-react";
-import type { MatrixClient } from "matrix-js-sdk";
+import { EventType, type MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,7 +73,7 @@ export function SpaceSettings({ client, space, hierarchy, onFetchHierarchy, onCl
 		try {
 			await client.sendStateEvent(
 				space.roomId,
-				"m.space.child",
+				EventType.SpaceChild,
 				{ via: [client.getDomain() ?? "matrix.local"] },
 				trimmed,
 			);
@@ -89,7 +89,7 @@ export function SpaceSettings({ client, space, hierarchy, onFetchHierarchy, onCl
 		async (roomId: string) => {
 			try {
 				// Leerer Content = Kind entfernt
-				await client.sendStateEvent(space.roomId, "m.space.child", {}, roomId);
+				await client.sendStateEvent(space.roomId, EventType.SpaceChild, {}, roomId);
 				toast.success("Raum aus Space entfernt.");
 				onFetchHierarchy();
 			} catch {

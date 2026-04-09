@@ -188,7 +188,7 @@ export function MatrixChat() {
 		for (const t of notifTypes) roomWithUnread.setUnreadNotificationCount?.(t, 0);
 		// ClientEvent.Room triggert useRooms refresh
 		setTimeout(() => {
-			client.emit("Room", room);
+			client.emit(ClientEvent.Room, room);
 		}, 100);
 	}, [client, selectedRoomId, lastEventId]);
 

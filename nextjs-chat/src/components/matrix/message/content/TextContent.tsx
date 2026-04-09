@@ -54,8 +54,9 @@ function parseMatrixPermalink(
 	if (fragment.startsWith("@")) return { type: "user", id: fragment };
 	if (fragment.startsWith("!")) {
 		const parts = fragment.split("/");
-		if (parts[1]?.startsWith("$")) return { type: "event", id: parts[0], eventId: parts[1] };
-		return { type: "room", id: parts[0] };
+		const eventId = parts[1];
+		if (eventId?.startsWith("$")) return { type: "event", id: parts[0] ?? fragment, eventId };
+		return { type: "room", id: parts[0] ?? fragment };
 	}
 	if (fragment.startsWith("#")) return { type: "room", id: fragment };
 	return null;

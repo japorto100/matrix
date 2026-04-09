@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
+import { ClientEvent, type MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { mxcToHttp } from "@/lib/matrix/utils";
 
@@ -79,9 +79,9 @@ export function useContacts(client: MatrixClient | null) {
 
 		// Refresh bei neuen DMs
 		const onAccountData = () => loadDmContacts();
-		client.on("accountData", onAccountData);
+		client.on(ClientEvent.AccountData, onAccountData);
 		return () => {
-			client.off("accountData", onAccountData);
+			client.off(ClientEvent.AccountData, onAccountData);
 		};
 	}, [client]);
 
