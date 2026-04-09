@@ -68,6 +68,11 @@ Ziel: **alles funktioniert out-of-the-box ohne schwere ML/OCR/Vision Modelle**. 
 - **Visual smoke test:** noch nicht durchgefuehrt
 - **Devstack E2E:** noch nicht durchgefuehrt (Phase I)
 
+### Lightweight-by-default (09.04.2026 — weak PC friendly)
+
+- **Default posture:** Heavy ML/OCR/Vision workers stay **disabled** unless explicitly enabled via ENV.
+- **PromptGuard (optional local security model):** `AGENT_PROMPT_GUARD_ENABLED=false` by default. When disabled, sanitizer skips PromptGuard even if `transformers/torch` are installed (no accidental model downloads).
+
 ---
 
 ## Kontext
