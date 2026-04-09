@@ -4,19 +4,25 @@
 // Pattern adapted from _ref/supermemory/apps/web/components/memories-grid.tsx
 // Uses `masonic` for performant masonry rendering.
 
-import { Masonry } from "masonic";
+import type { MasonryProps, RenderComponentProps } from "masonic";
+import dynamic from "next/dynamic";
 import { useCallback } from "react";
 import { useEpisodes } from "@/lib/queries/hooks";
 import { mockEpisodes } from "../mock-data";
 import type { Episode } from "../types";
 import { EpisodeCard } from "./EpisodeCard";
 
+// masonic touches ResizeObserver during module initialization in some builds.
+// In Next App Router this can break server rendering for pages that import it.
+// Load it client-only to avoid `ReferenceError: ResizeObserver is not defined`.
+const Masonry = dynamic(() => import("masonic").then((m) => m.Masonry), {
+	ssr: false,
+}) as unknown as <T>(
+	props: MasonryProps<T> & { render: React.ComponentType<RenderComponentProps<T>> },
+) => React.ReactElement | null;
+
 interface EpisodesGridProps {
 	onEpisodeClick?: (episode: Episode) => void;
-}
-
-interface MasonryItemProps {
-	data: Episode;
 }
 
 export function EpisodesGrid({ onEpisodeClick }: EpisodesGridProps) {
@@ -25,7 +31,9 @@ export function EpisodesGrid({ onEpisodeClick }: EpisodesGridProps) {
 	const episodes = (query.data?.items as Episode[] | undefined) ?? mockEpisodes;
 
 	const renderItem = useCallback(
-		({ data }: MasonryItemProps) => <EpisodeCard episode={data} onClick={onEpisodeClick} />,
+		({ data }: RenderComponentProps<Episode>) => (
+			<EpisodeCard episode={data} onClick={onEpisodeClick} />
+		),
 		[onEpisodeClick],
 	);
 
@@ -43,7 +51,7 @@ export function EpisodesGrid({ onEpisodeClick }: EpisodesGridProps) {
 			<Masonry
 				key={episodes.length}
 				items={episodes}
-				render={renderItem}
+				render={renderItem as MasonryProps<Episode>["render"]}
 				columnGutter={12}
 				rowGutter={12}
 				columnWidth={280}

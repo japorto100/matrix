@@ -74,20 +74,9 @@ export function useGraphTheme(overrides?: Partial<GraphThemeColors>): GraphTheme
 		};
 	}, []);
 
-	// Serialize overrides to a stable string key so useMemo only recomputes
-	// when the actual override values change, not on every render.
-	const overrideKey = overrides
-		? Object.entries(overrides)
-				.sort(([a], [b]) => a.localeCompare(b))
-				.map(([k, v]) => `${k}:${v}`)
-				.join(",")
-		: "";
-
-	// Include `overrides` to satisfy exhaustive-deps. `overrideKey` keeps recompute stable
-	// even when callers pass a new object identity with the same values.
 	const merged = useMemo(
 		() => (overrides ? { ...colors, ...overrides } : colors),
-		[colors, overrideKey, overrides],
+		[colors, overrides],
 	);
 
 	return merged;
