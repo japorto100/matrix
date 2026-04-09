@@ -9,9 +9,11 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"matrix/go-appservice/internal/app"
 	"matrix/go-appservice/internal/config"
 	"matrix/go-appservice/internal/connectors/agentservice"
 	memclient "matrix/go-appservice/internal/connectors/memory"
@@ -19,6 +21,7 @@ import (
 	agenthttp "matrix/go-appservice/internal/handlers/http"
 	"matrix/go-appservice/internal/intent"
 	"matrix/go-appservice/internal/natsbridge"
+	"matrix/go-appservice/internal/storage"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -27,12 +30,13 @@ import (
 
 // Server ist der HTTP-Server des Appservice.
 type Server struct {
-	cfg        *config.Config
-	httpServer *http.Server
-	client     *mautrix.Client
-	nats       *natsbridge.Bridge
-	agent      *intent.AgentSender
-	crypto     *crypto.Machine // nil wenn E2EE deaktiviert
+	cfg           *config.Config
+	httpServer    *http.Server
+	client        *mautrix.Client
+	nats          *natsbridge.Bridge
+	agent         *intent.AgentSender
+	crypto        *crypto.Machine               // nil wenn E2EE deaktiviert
+	artifactStore storage.ArtifactMetadataStore // nil wenn Artifact Storage deaktiviert
 
 	// roomMembers trackt Raum-Mitglieder für Mention-Filter (DM vs. Gruppe).
 	// Wird von handleMembership() aktualisiert, unabhängig von E2EE.
@@ -92,6 +96,13 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	// ── MCP Server Proxy (exec-09) ──────────────────────────────────────────
 	mux.HandleFunc("/api/v1/mcp/", agenthttp.McpProxyHandler(cfg.MCPServiceURL))
 
+	// ── Control Surface Proxy (exec-15 Slice 7) ────────────────────────────
+	// Forward all /api/v1/control/* requests to Python Agent Service (:8094).
+	// Python side: agent/control/router.py exposes 54 routes (memory, episodes,
+	// kg, agents, permissions, skills, tools, sandbox, system, audit, sessions,
+	// mcp, a2a, overview, security, models).
+	mux.HandleFunc("/api/v1/control/", agenthttp.ControlProxyHandler(cfg.AgentServiceURL))
+
 	// ── Audio STT/TTS Proxy ─────────────────────────────────────────────────
 	mux.HandleFunc("/api/v1/audio/transcribe", agenthttp.AgentAudioTranscribeHandler(cfg.AgentServiceURL))
 	mux.HandleFunc("/api/v1/audio/synthesize", agenthttp.AgentAudioSynthesizeHandler(cfg.AgentServiceURL))
@@ -105,6 +116,35 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	mux.HandleFunc("/api/v1/memory/episodes", agenthttp.MemoryEpisodesGetHandler(memoryClient))
 	mux.HandleFunc("/api/v1/memory/search", agenthttp.MemorySearchHandler(memoryClient))
 	mux.HandleFunc("/api/v1/memory/health", agenthttp.MemoryHealthHandler(memoryClient))
+
+	// ── Artifact Storage (exec-15 Slice 1, capability-based via signed URLs) ─
+	// Adopted from tradeview-fusion main project. Optional: only mounted if
+	// ARTIFACT_STORAGE_SIGNING_SECRET (or AUTH_SECRET fallback in dev) is set
+	// AND ARTIFACT_STORAGE_PROVIDER is set. Failure during init is logged
+	// but does NOT block server startup (matrix-bridge can run without storage).
+	host := strings.TrimPrefix(strings.TrimPrefix(cfg.AppserviceURL, "http://"), "https://")
+	if idx := strings.Index(host, ":"); idx > 0 {
+		host = host[:idx]
+	}
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	artifactCfg, artifactErr := app.BuildArtifactService(host, cfg.AppservicePort)
+	if artifactErr != nil {
+		slog.Warn("Artifact Storage disabled — set ARTIFACT_STORAGE_* env vars to enable",
+			"error", artifactErr)
+	} else {
+		s.artifactStore = artifactCfg.Store
+		mux.HandleFunc("/api/v1/storage/artifacts/upload-url",
+			agenthttp.ArtifactUploadURLHandler(artifactCfg.Service, artifactCfg.GatewayBaseURL))
+		mux.HandleFunc("/api/v1/storage/artifacts/upload/",
+			agenthttp.ArtifactUploadHandler(artifactCfg.Service))
+		mux.HandleFunc("/api/v1/storage/artifacts/",
+			agenthttp.ArtifactMetadataHandler(artifactCfg.Service))
+		slog.Info("Artifact Storage active",
+			"provider", os.Getenv("ARTIFACT_STORAGE_PROVIDER"),
+			"gateway_base_url", artifactCfg.GatewayBaseURL)
+	}
 
 	s.httpServer = &http.Server{
 		Addr:         ":" + cfg.AppservicePort,
@@ -139,6 +179,13 @@ func (s *Server) Stop() {
 	if s.crypto != nil {
 		if err := s.crypto.ExportKeyBackup(context.Background()); err != nil {
 			slog.Warn("E2EE: key backup export on shutdown failed", "error", err)
+		}
+	}
+
+	// exec-15 Slice 1: close artifact metadata store (Postgres connections)
+	if s.artifactStore != nil {
+		if err := s.artifactStore.Close(); err != nil {
+			slog.Warn("Artifact metadata store close failed", "error", err)
 		}
 	}
 

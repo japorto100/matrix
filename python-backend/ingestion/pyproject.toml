@@ -1,0 +1,118 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# The project root IS the `ingestion` package (no nested ingestion/ingestion/ folder).
+# package-dir = {"ingestion" = ""} tells setuptools that the python module
+# `ingestion` lives at the project root itself, and subpackages map to subdirs.
+[tool.setuptools]
+package-dir = {"ingestion" = ""}
+packages = [
+    "ingestion",
+    "ingestion.core",
+    "ingestion.detectors",
+    "ingestion.loaders",
+    "ingestion.clients",
+    "ingestion.extractors",
+    "ingestion.normalizers",
+    "ingestion.chunkers",
+    "ingestion.embedders",
+    "ingestion.sinks",
+    "ingestion.tracking",
+    "ingestion.pipelines",
+]
+
+[project]
+name = "matrix-ingestion"
+version = "0.1.0"
+description = "Matrix Ingestion Pipeline — extraction + chunking + embedding + sinks (Venv 2)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # ── Web Framework (eigener FastAPI Service auf Port 8098) ──────────────
+    "fastapi>=0.120.3",
+    "uvicorn>=0.38.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.1.0",
+    # ── HTTP Client (Go Storage Client + KG Pipeline Client) ───────────────
+    "httpx==0.28.1",
+    # ── PDF Extraction (paperwatcher Default Backend) ──────────────────────
+    # PyMuPDF4LLM = primary (CPU, schnell, Markdown output)
+    "pymupdf4llm>=0.0.17",
+    # ── Chunking ───────────────────────────────────────────────────────────
+    "langchain-text-splitters>=0.2.0",
+    # ── Embeddings ─────────────────────────────────────────────────────────
+    # all-MiniLM-L6-v2 default (CPU, lazy load)
+    "sentence-transformers>=3.0.0",
+    # ── HTML Parsing (html_ext.py) ─────────────────────────────────────────
+    "beautifulsoup4>=4.12.0",
+    # ── MIME Detection (detectors/magic.py) ────────────────────────────────
+    "python-magic-bin>=0.4.14; sys_platform == 'win32'",
+    "python-magic>=0.4.27; sys_platform != 'win32'",
+    # ── Database (tracking/jobs.py + audit.py) ─────────────────────────────
+    "psycopg[binary]>=3.2.0",
+    # ── Hindsight Memory Engine (sinks/hindsight_sink.py) ──────────────────
+    # Same package as main agent runtime, shared Postgres backend
+    "hindsight-api-slim>=0.4.17",
+    # ── Logging ────────────────────────────────────────────────────────────
+    "loguru>=0.7.3",
+]
+
+[project.optional-dependencies]
+# NOTE: heavy extractors (docling, marker-pdf, spacy-layout) live in
+# python-backend/extraction_layout/ as a separate venv (Venv 3) to avoid
+# pillow/torch conflicts with hindsight-api-slim. They're called via HTTP.
+# Phase 2: cloud embeddings
+cloud-embed = [
+    "voyageai>=0.3.7",
+    "openai>=1.50.0",
+]
+dev = [
+    "ruff>=0.13.0",
+    "basedpyright>=1.34.0",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.uv]
+cache-dir = "../../.uv-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# ─── Decoupling Rules (D17) ─────────────────────────────────────────────────
+#
+# This package is INTENTIONALLY decoupled from python-backend/agent/*.
+# - May import: memory_engine.* (shared data layer, verified 0 agent imports)
+# - May import: own ingestion.* modules
+# - MUST NOT import: agent.*
+# - MUST NOT import: bridge.* / voice.* / mock.*
+#
+# Communication with main agent runtime is via HTTP only:
+#   agent/control/ingestion.py → httpx → http://127.0.0.1:8098 (this worker)
+#
+# Verification: bash scripts/check_ingestion_decoupling.sh
+#
+# ─── Environment Variables ──────────────────────────────────────────────────
+#
+# INGESTION_DB_URL          = postgresql://postgres@localhost:5433/hindsight_dev
+# ARTIFACT_GATEWAY_BASE_URL = http://127.0.0.1:8090 (Go Appservice)
+# KG_PIPELINE_URL           = http://127.0.0.1:8099 (Phase 2)
+# EMBEDDER_MODEL            = sentence-transformers/all-MiniLM-L6-v2
+# CHUNKER_SIZE              = 500 (chars)
+# CHUNKER_OVERLAP           = 50  (chars)
+# LOG_LEVEL                 = INFO
+#
+# ─── Start ──────────────────────────────────────────────────────────────────
+#
+# uv venv
+# uv sync
+# uv run uvicorn ingestion.worker:app --host 127.0.0.1 --port 8098

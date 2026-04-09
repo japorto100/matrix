@@ -128,6 +128,24 @@ genug Trajectory-Daten. Sinnvoll erst nach Produktivnutzung mit echten Usern.
 **Warum verschoben:** Dev-Setup laeuft mit relaxten Security-Defaults. Production
 Hardening kommt im Portierungs-Slice.
 
+### Tuwunel Media Store ↔ SeaweedFS Bridge
+**Aus:** `exec-15-memory-control-ui.md` (Storage Architektur Diskussion 07.04.2026)
+**Was:** NATS subscriber auf `matrix.message.inbound` der bei `m.file` / `m.image`
+Events das mxc-File aus Tuwunel herunterlaedt → zu SeaweedFS Artifact Store kopiert
+→ Ingest Pipeline triggert (Document → Hindsight Memory). Damit waere alles was je in
+Matrix Rooms geteilt wurde im Memory durchsuchbar.
+**Warum verschoben:** Heute sind Tuwunel Media Store (RocksDB, Matrix Protocol Media)
+und SeaweedFS (control-ui /files + Ingest) bewusst getrennt. Beide Systeme funktionieren
+unabhaengig. Ein Bridge ist aber praktisch wenn der Agent "alle Files die je in Matrix
+Rooms geteilt wurden" durchsuchen koennen soll. Pattern waere:
+1. Bridge hoert auf NATS `matrix.message.inbound`
+2. Filtert auf `msgtype: m.file | m.image | m.video | m.audio`
+3. Downloadet via Tuwunel `/_matrix/client/v1/media/download/<server>/<id>` mit Bot-Token
+4. Uploadet zu SeaweedFS via Go Appservice signed URL
+5. Triggert `/api/v1/control/ingest/document` (Slice 2)
+**Wo:** Koennte als 5te Bridge in `python-backend/bridge/` (Sibling zu NATS Consumer)
+gebaut werden, oder als Sub-Module in `python-backend/ingestion/bridges/matrix_media.py`.
+
 ---
 
 ## Mobile

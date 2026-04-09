@@ -1,6 +1,16 @@
 {
+  "//": "Matrix project-specific MCP servers. Global MCPs (chrome-devtools, next-devtools-mcp, gitnexus, etc.) belong in ~/.claude/mcp.json, NOT here.",
+  "//2": "Only add servers that need matrix-specific URLs/env. Each OpenAPI spec below is a live endpoint on the local devstack.",
   "mcpServers": {
-    "matrix-agent-bridge": {
+    "matrix-agent-openapi": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "mcp-openapi"],
+      "env": {
+        "OPENAPI_SPEC_URL": "http://127.0.0.1:8094/openapi.json"
+      }
+    },
+    "matrix-bridge-openapi": {
       "type": "stdio",
       "command": "cmd",
       "args": ["/c", "npx", "-y", "mcp-openapi"],
@@ -8,12 +18,12 @@
         "OPENAPI_SPEC_URL": "http://127.0.0.1:8097/openapi.json"
       }
     },
-    "matrix-next": {
+    "matrix-ingestion-openapi": {
       "type": "stdio",
-      "command": "D:/DevCache/bun/bin/next-devtools-mcp",
-      "args": [],
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "mcp-openapi"],
       "env": {
-        "NEXTJS_URL": "http://localhost:3000"
+        "OPENAPI_SPEC_URL": "http://127.0.0.1:8098/openapi.json"
       }
     }
   }

@@ -1,7 +1,12 @@
 # dev-stack2.ps1 -- Matrix Dev Stack (v2)
-# Usage: .\scripts\dev-stack2.ps1 [-SkipMock] [-Tunnel] [-SkipHomeserver] [-SkipNats] [-SkipPostgres] ...
+# Usage: .\scripts\dev-stack2.ps1 [-UseMock] [-Tunnel] [-SkipHomeserver] [-SkipNats] [-SkipPostgres] ...
 # By default opens its own PowerShell window. Use -Inline to run in current terminal.
 # Design: 3 phases (Prepare -> Register+Start -> Watch)
+#
+# Port 8094 behavior (changed 08.04.2026 for Slice 7):
+#   Default:   Real agent-service (agent.app:app) with all /api/v1/control/* routes
+#   -UseMock:  LLM Mock Agent (only /api/v1/agent/chat + /health, no control API)
+#   -SkipAgentService: neither starts (port 8094 free for manual runs)
 
 param(
     [switch]$SkipHomeserver,
@@ -10,7 +15,11 @@ param(
     [switch]$SkipGoAppservice,
     [switch]$SkipPython,
     [switch]$SkipFrontend,
-    [switch]$SkipMock,
+    [switch]$UseMock,            # Slice 7: opt-in — use LLM mock on :8094 instead of real agent-service
+    [switch]$SkipAgentService,   # Skip the real Python agent service (:8094) — main runtime
+    [switch]$SkipControlUi,
+    [switch]$SkipStorage,
+    [switch]$SkipIngestion,
     [switch]$DevTools,
     [switch]$WithVoice,
     [switch]$Tunnel,
@@ -45,8 +54,12 @@ $repoRoot    = Resolve-Path (Join-Path $PSScriptRoot "..")
 $goDir       = Join-Path $repoRoot "go-appservice"
 $pyDir       = Join-Path $repoRoot "python-backend"
 $nextDir     = Join-Path $repoRoot "nextjs-chat"
+$controlUiDir = Join-Path $repoRoot "control-ui"
+$ingestionDir = Join-Path $repoRoot "python-backend/ingestion"
 $mockDir     = Join-Path $repoRoot "python-backend/mock"
 $logsRoot    = Join-Path $repoRoot "logs\dev-stack"
+$seaweedExe  = Join-Path $repoRoot "tools\seaweedfs\weed.exe"
+$seaweedDataDir = Join-Path $repoRoot "tools\seaweedfs\data"
 
 # -- State -------------------------------------------------------------------
 $script:services       = [ordered]@{}
@@ -330,17 +343,32 @@ try {
         }
     }
 
-    if (-not $SkipMock) {
+    # Resolve Python exe once for all Python services
+    $pyVenv = Join-Path $pyDir ".venv\Scripts\python.exe"
+    $pyExe = if (Test-Path $pyVenv) { $pyVenv } else { "python" }
+
+    # -- Agent Service (Port 8094) — main Python runtime with /api/v1/control/* --
+    # Slice 7: Real agent service is DEFAULT. Opt-in mock via -UseMock.
+    # Go appservice ControlProxyHandler forwards /api/v1/control/* to :8094
+    # which must be the REAL agent.app (mock-agent only has /api/v1/agent/chat).
+    if ($UseMock) {
         Register-Service -Name "mock-agent" -Port 8094 -Tier "app" -TimeoutSecs 20 `
             -HealthUrl "http://127.0.0.1:8094/health" -StartAction {
             Start-LoggedProcess -Name "mock-agent" -FilePath "uv" `
                 -ArgumentList @("run", "mock_agent.py") -WorkingDirectory $mockDir
         }
+    } elseif (-not $SkipAgentService) {
+        Register-Service -Name "agent-service" -Port 8094 -Tier "app" -TimeoutSecs 90 `
+            -HealthUrl "http://127.0.0.1:8094/health" -StartAction {
+            Start-LoggedProcess -Name "agent-service" -FilePath $pyExe `
+                -ArgumentList @("-m", "uvicorn", "agent.app:app",
+                    "--host", "127.0.0.1", "--port", "8094", "--reload") `
+                -WorkingDirectory $pyDir
+        }
     }
 
+    # -- Python Bridge (Port 8097) — NATS consumer for Matrix events --
     if (-not $SkipPython) {
-        $pyVenv = Join-Path $pyDir ".venv\Scripts\python.exe"
-        $pyExe = if (Test-Path $pyVenv) { $pyVenv } else { "python" }
         Register-Service -Name "py-bridge" -Port 8097 -Tier "app" -TimeoutSecs 60 `
             -HealthUrl "http://127.0.0.1:8097/health" -StartAction {
             Start-LoggedProcess -Name "py-bridge" -FilePath $pyExe `
@@ -355,6 +383,42 @@ try {
             Start-LoggedProcess -Name "nextjs" -FilePath "bun" `
                 -ArgumentList @("run", "dev") -WorkingDirectory $nextDir
         }
+    }
+
+    # -- control-ui (Memory & Control UI, exec-15, Port 3001) --
+    if (-not $SkipControlUi -and (Test-Path $controlUiDir)) {
+        Register-Service -Name "control-ui" -Port 3001 -Tier "app" -TimeoutSecs 120 -StartAction {
+            Start-LoggedProcess -Name "control-ui" -FilePath "bun" `
+                -ArgumentList @("run", "dev") -WorkingDirectory $controlUiDir
+        }
+    }
+
+    # -- SeaweedFS (S3-compatible object storage, exec-15 Slice 1, Port 8333/9333) --
+    # On by default. Use -SkipStorage to disable.
+    if (-not $SkipStorage -and (Test-Path $seaweedExe)) {
+        if (-not (Test-Path $seaweedDataDir)) {
+            New-Item -ItemType Directory -Path $seaweedDataDir -Force | Out-Null
+        }
+        Register-Service -Name "seaweedfs" -Port 8333 -Tier "infra" -TimeoutSecs 30 -StartAction {
+            Start-LoggedProcess -Name "seaweedfs" -FilePath $seaweedExe `
+                -ArgumentList @("server", "-dir=$seaweedDataDir", "-s3", "-s3.config=$($repoRoot)\tools\seaweedfs\s3.json") `
+                -WorkingDirectory $repoRoot
+        }
+    } elseif (-not $SkipStorage -and -not (Test-Path $seaweedExe)) {
+        Write-Host "[seaweedfs] weed.exe not found at $seaweedExe - download from https://github.com/seaweedfs/seaweedfs/releases" -ForegroundColor Yellow
+    }
+
+    # -- Ingestion Worker (exec-15 Slice 2, Venv 2 — Port 8098) --
+    # Decoupled extraction pipeline. agent/control/ingestion.py is a thin
+    # httpx proxy. See exec-15 §5.2 + D13-D17.
+    if (-not $SkipIngestion -and (Test-Path $ingestionDir)) {
+        Register-Service -Name "ingestion-worker" -Port 8098 -Tier "app" -TimeoutSecs 60 -StartAction {
+            Start-LoggedProcess -Name "ingestion-worker" -FilePath "uv" `
+                -ArgumentList @("run", "--project", $ingestionDir, "uvicorn", "ingestion.worker:app", "--host", "127.0.0.1", "--port", "8098") `
+                -WorkingDirectory $ingestionDir
+        }
+    } elseif (-not $SkipIngestion -and -not (Test-Path $ingestionDir)) {
+        Write-Host "[ingestion-worker] $ingestionDir not found - skipping" -ForegroundColor Yellow
     }
 
     # -- Hindsight Memory Worker (exec-11, runs consolidation tasks) --
@@ -457,14 +521,23 @@ try {
     Write-Host "============================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Frontend" -ForegroundColor Cyan
-    if ($script:services["nextjs"])        { Write-Host "    Next.js Chat:  http://localhost:3000/matrix" }
+    if ($script:services["nextjs"])        { Write-Host "    Next.js Chat:    http://localhost:3000/matrix" }
+    if ($script:services["control-ui"])    { Write-Host "    Control UI:      http://localhost:3001" }
     Write-Host ""
     Write-Host "  Backend" -ForegroundColor Cyan
-    if ($script:services["go-appservice"]) { Write-Host "    Go Appservice:   http://127.0.0.1:8090" }
-    if ($script:services["py-bridge"])     { Write-Host "    Python Bridge:   http://127.0.0.1:8097" }
-    if ($script:services["mock-agent"])    { Write-Host "    LLM Mock Agent:  http://127.0.0.1:8094" }
+    if ($script:services["go-appservice"])    { Write-Host "    Go Appservice:       http://127.0.0.1:8090 (Matrix bridge + Control Proxy → :8094)" }
+    if ($script:services["agent-service"])    { Write-Host "    Agent Service:       http://127.0.0.1:8094 (54 /api/v1/control/* routes)" }
+    if ($script:services["mock-agent"])       { Write-Host "    LLM Mock Agent:      http://127.0.0.1:8094 (MOCK — only /chat + /health)" -ForegroundColor DarkYellow }
+    if ($script:services["py-bridge"])        { Write-Host "    Python Bridge:       http://127.0.0.1:8097 (NATS consumer)" }
+    if ($script:services["ingestion-worker"]) { Write-Host "    Ingestion Worker:    http://127.0.0.1:8098 (Venv 2, Slice 2)" }
+    if ($script:services["memory-worker"])    { Write-Host "    Hindsight Worker:    (consolidation tasks)" }
     Write-Host ""
     Write-Host "  Infrastructure" -ForegroundColor Cyan
+    if ($script:services["seaweedfs"]) {
+        Write-Host "    SeaweedFS Master: http://127.0.0.1:9333"
+        Write-Host "    SeaweedFS S3:     http://127.0.0.1:8333"
+        Write-Host "    SeaweedFS Filer:  http://127.0.0.1:8888"
+    }
     if ($script:services["tuwunel"] -or $script:services["zendrite"]) {
         Write-Host "    Homeserver:      http://127.0.0.1:8448"
     }

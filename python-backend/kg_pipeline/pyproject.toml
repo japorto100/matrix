@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kg_pipeline*"]
+
+[project]
+name = "matrix-kg-pipeline"
+version = "0.1.0"
+description = "Matrix KG Extraction Pipeline (Venv 3, Phase 2 — torch==2.3.1 pinned)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # ── KG Extraction (paperwatcher kg-module pattern) ─────────────────────
+    # ReLiK (Entity Linking) pins torch==2.3.1 — that's why this needs its own venv
+    "torch==2.3.1",
+    "relik>=1.0.7,<1.1",
+    "glirel>=1.2.1",
+    "gliner==0.2.22",
+    "spacy>=3.7,<4",
+    "scikit-learn>=1.5,<1.6",
+    "sentence-transformers>=3.0,<4",
+    # ── Web Framework ──────────────────────────────────────────────────────
+    "fastapi>=0.120",
+    "uvicorn>=0.38",
+    "pydantic>=2.0",
+    "httpx==0.28.1",
+    # ── Database ───────────────────────────────────────────────────────────
+    "psycopg[binary]>=3.2.0",
+    # ── Logging ────────────────────────────────────────────────────────────
+    "loguru>=0.7.3",
+]
+
+[project.optional-dependencies]
+neo4j = ["neo4j>=5.28,<6"]
+falkordb = ["falkordb>=1.2.0"]
+dev = [
+    "ruff>=0.13.0",
+    "basedpyright>=1.34.0",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.uv]
+cache-dir = "../../.uv-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+# ─── PHASE 2 ACTIVATION ─────────────────────────────────────────────────────
+#
+# This package is currently a SKELETON. Code is stubbed (raise NotImplementedError).
+# To activate Phase 2:
+#
+# 1. cd python-backend/kg_pipeline
+# 2. uv venv
+# 3. uv sync                  # downloads ~2 GB (torch, relik, spacy models)
+# 4. python -m spacy download en_core_web_sm
+# 5. Set KG_PIPELINE_ENABLED=true in python-backend/ingestion/.env
+# 6. Adopt code from D:/matrix/paperwatcher/kg-module/kg_module/{extraction,
+#    text_pipeline, predicate_mapper, schema, config}.py — see exec-15 §5.7
+# 7. Start: uv run uvicorn kg_pipeline.server:app --port 8099
+# 8. The ingestion sinks/kg_sink.py now forwards every chunk to this worker.
+#
+# ─── Decoupling (D17) ───────────────────────────────────────────────────────
+# Same rules as ingestion: may import memory_engine.* (for Kuzu sink),
+# MUST NOT import agent.*. Communication via HTTP only.

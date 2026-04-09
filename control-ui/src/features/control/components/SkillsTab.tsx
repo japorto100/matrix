@@ -1,0 +1,212 @@
+"use client";
+
+// SkillsTab — 3-tier skills (Global / Team / Personal) from exec-10
+// Slice 5.3: Skills Management
+// K7 (Slice 5): enable/disable toggle wired via usePatchSkill
+//              (backend skills.py PATCH returns pending_phase2 stub)
+
+import { Calendar, ExternalLink, HardDrive, Package, Plus, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import { usePatchSkill, useSkills } from "@/lib/queries/hooks";
+import { cn } from "@/lib/utils";
+import { mockSkills } from "../mock-data";
+import type { Skill, SkillTier } from "../types";
+
+const TIER_LABEL: Record<SkillTier, string> = {
+	global: "Global",
+	team: "Team",
+	personal: "Personal",
+};
+
+const TIER_DESC: Record<SkillTier, string> = {
+	global: "Built-in shared across all agents",
+	team: "Adopted from external sources (GitHub, etc.)",
+	personal: "Local custom skills (your own)",
+};
+
+function SourceIcon({ source }: { source: Skill["source"] }) {
+	if (source === "builtin") return <Package className="h-3 w-3" />;
+	if (source === "github") return <ExternalLink className="h-3 w-3" />;
+	return <HardDrive className="h-3 w-3" />;
+}
+
+export function SkillsTab() {
+	const [selected, setSelected] = useState<Skill | null>(null);
+	const patchSkill = usePatchSkill();
+
+	// Slice 7 Phase H: real backend with mock fallback
+	const query = useSkills();
+	const skills = (query.data?.items as Skill[] | undefined) ?? mockSkills;
+
+	const handleToggle = async (skill: Skill, next: boolean) => {
+		try {
+			const result = await patchSkill.mutateAsync({ id: skill.id, enabled: next });
+			if (result.status === "pending_phase2") {
+				toast.warning(
+					`Skill toggle queued — Phase 2 backend will persist (${skill.name} → ${next ? "on" : "off"})`,
+				);
+			} else {
+				toast.success(`${skill.name} → ${next ? "enabled" : "disabled"}`);
+			}
+		} catch (err) {
+			toast.error(`Toggle failed: ${err instanceof Error ? err.message : "unknown"}`);
+		}
+	};
+
+	const grouped = useMemo(() => {
+		const g: Record<SkillTier, Skill[]> = { global: [], team: [], personal: [] };
+		for (const s of skills) g[s.tier].push(s);
+		return g;
+	}, [skills]);
+
+	const enabled = skills.filter((s) => s.enabled).length;
+
+	return (
+		<div className="px-6 py-4 space-y-6">
+			<header className="flex items-baseline justify-between">
+				<div>
+					<h2 className="text-base font-semibold">Skills Library</h2>
+					<p className="text-xs text-muted-foreground">
+						{skills.length} skills · {enabled} enabled · 3-tier hierarchy
+					</p>
+				</div>
+				<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" disabled>
+					<Plus className="h-3 w-3" />
+					Import from GitHub
+				</Button>
+			</header>
+
+			{(["global", "team", "personal"] as SkillTier[]).map((tier) => (
+				<section key={tier} className="space-y-2">
+					<div className="flex items-baseline justify-between border-b border-border pb-1">
+						<div className="flex items-baseline gap-2">
+							<h3 className="text-sm font-semibold">{TIER_LABEL[tier]}</h3>
+							<span className="text-[10px] text-muted-foreground">{TIER_DESC[tier]}</span>
+						</div>
+						<Badge variant="outline" className="text-[10px]">
+							{grouped[tier].length}
+						</Badge>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+						{grouped[tier].map((skill) => (
+							<Card
+								key={skill.id}
+								className={cn(
+									"cursor-pointer hover:border-accent transition-colors",
+									!skill.enabled && "opacity-60",
+								)}
+							>
+								<CardHeader className="pb-2">
+									<div className="flex items-start justify-between gap-2">
+										<div onClick={() => setSelected(skill)} className="flex-1 min-w-0">
+											<CardTitle className="text-sm font-mono leading-tight truncate">
+												{skill.name}
+											</CardTitle>
+											<div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
+												<SourceIcon source={skill.source} />
+												<span>{skill.source}</span>
+												<span>·</span>
+												<Sparkles className="h-2.5 w-2.5" />
+												<span>gen {skill.generation}</span>
+											</div>
+										</div>
+										<Switch
+											checked={skill.enabled}
+											className="shrink-0"
+											onClick={(e) => e.stopPropagation()}
+											onCheckedChange={(next) => handleToggle(skill, next)}
+											disabled={patchSkill.isPending}
+										/>
+									</div>
+								</CardHeader>
+								<CardContent className="pt-0" onClick={() => setSelected(skill)}>
+									<p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+										{skill.description}
+									</p>
+									{skill.last_used_at && (
+										<div className="flex items-center gap-1 mt-2 text-[10px] text-muted-foreground">
+											<Calendar className="h-2.5 w-2.5" />
+											last used {new Date(skill.last_used_at).toLocaleDateString()}
+										</div>
+									)}
+								</CardContent>
+							</Card>
+						))}
+					</div>
+				</section>
+			))}
+
+			<Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+				<SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+					{selected && (
+						<>
+							<SheetHeader>
+								<SheetTitle className="font-mono">{selected.name}</SheetTitle>
+								<SheetDescription>{selected.description}</SheetDescription>
+							</SheetHeader>
+							<div className="space-y-4 py-4">
+								<div className="flex flex-wrap gap-1.5">
+									<Badge variant="secondary" className="text-[10px] capitalize">
+										{selected.tier}
+									</Badge>
+									<Badge variant="secondary" className="text-[10px]">
+										generation {selected.generation}
+									</Badge>
+									<Badge variant="secondary" className="text-[10px] gap-1">
+										<SourceIcon source={selected.source} />
+										{selected.source}
+									</Badge>
+									{selected.enabled ? (
+										<Badge
+											variant="outline"
+											className="text-[10px] border-emerald-500/50 text-emerald-400"
+										>
+											enabled
+										</Badge>
+									) : (
+										<Badge variant="outline" className="text-[10px] border-muted-foreground/50">
+											disabled
+										</Badge>
+									)}
+								</div>
+
+								{selected.github_url && (
+									<a
+										href={selected.github_url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex items-center gap-1.5 text-xs text-sky-400 hover:underline"
+									>
+										<ExternalLink className="h-3 w-3" />
+										{selected.github_url}
+									</a>
+								)}
+
+								<div>
+									<h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+										Body Preview
+									</h3>
+									<div className="rounded-lg border border-border bg-card/40 p-3 text-xs leading-relaxed font-mono whitespace-pre-wrap">
+										{selected.body_preview}
+									</div>
+								</div>
+							</div>
+						</>
+					)}
+				</SheetContent>
+			</Sheet>
+		</div>
+	);
+}

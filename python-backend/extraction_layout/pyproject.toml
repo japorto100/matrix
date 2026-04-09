@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["extraction_layout*"]
+
+[project]
+name = "matrix-extraction-layout"
+version = "0.1.0"
+description = "Matrix Heavy Extractors (Venv 3 — docling/marker/spacy-layout, isolated from hindsight pillow conflicts)"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # ── Heavy PDF extractors (paperwatcher layout-module pattern) ──────────
+    # These pull in torch/pillow versions that conflict with hindsight-api-slim,
+    # so they live in their own venv and are called via HTTP from ingestion-worker.
+    "docling>=2.73.0",
+    "marker-pdf>=1.7.0",
+    "spacy-layout>=0.0.12",
+    "pymupdf>=1.24.14",
+    "pymupdf4llm>=0.0.17",
+    # ── Web Framework ──────────────────────────────────────────────────────
+    "fastapi>=0.120",
+    "uvicorn>=0.38",
+    "pydantic>=2.0",
+    # ── Logging ────────────────────────────────────────────────────────────
+    "loguru>=0.7.3",
+]
+
+[project.optional-dependencies]
+colpali = ["colpali-engine>=0.3.7"]
+mineru = ["magic-pdf[full]>=1.3.0"]
+dev = [
+    "ruff>=0.13.0",
+    "pytest>=8.3",
+]
+
+[tool.uv]
+cache-dir = "../../.uv-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+# ─── PHASE 2 ACTIVATION ─────────────────────────────────────────────────────
+#
+# This package is currently a SKELETON. It exists so we can adopt the
+# heavy extractors (marker-pdf etc.) without polluting the ingestion venv.
+#
+# Why a separate venv?
+#   - marker-pdf pins pillow<11 (hindsight-api-slim wants pillow>=12)
+#   - docling pulls in heavy torch dependencies
+#   - mineru/colpali pull in VLM models (~2.5 GB each)
+# Solution: same pattern as paperwatcher layout-module — isolated venv +
+# HTTP /extract endpoint called from the ingestion-worker.
+#
+# To activate Phase 2:
+#   1. cd python-backend/extraction_layout
+#   2. uv venv
+#   3. uv sync                       # ~1-2 GB models
+#   4. python -m spacy download en_core_web_sm
+#   5. Set EXTRACTION_LAYOUT_URL=http://127.0.0.1:8101 in ingestion/.env
+#   6. Adopt code from D:/matrix/paperwatcher/paperwatcher/core/doc_extractor/{
+#      docling_ext, marker_ext, mineru_ext}.py
+#   7. uv run uvicorn extraction_layout.worker:app --host 127.0.0.1 --port 8101
+#   8. ingestion/extractors/registry.py routes pdf mime via http to this worker
+#
+# ─── Decoupling (D17) ───────────────────────────────────────────────────────
+# Same rules as ingestion + kg_pipeline:
+#   - May import: own modules + memory_engine.* (if needed for sinks)
+#   - MUST NOT import: agent.*, ingestion.*, retrieval.*, kg_pipeline.*
+#   - Communication: HTTP only (called by ingestion-worker /extract route)

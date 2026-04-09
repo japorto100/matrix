@@ -27,6 +27,32 @@ def _sanitize_cypher_value(val: str) -> str:
     return val.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
 
 
+# Allowed node types for CRUD operations (Slice 4 backend — agent/control/kg_crud.py)
+# Adding a new node type here also requires a schema extension in _init_schema().
+ALLOWED_NODE_TYPES: frozenset[str] = frozenset(
+    {"Stratagem", "Regime", "BTEMarker", "TransmissionChannel", "Asset", "Institution"}
+)
+ALLOWED_EDGE_TYPES: frozenset[str] = frozenset(
+    {"causes", "inhibits", "activates", "precedes", "transmits", "signals"}
+)
+
+
+def _validate_node_type(node_type: str) -> str:
+    if node_type not in ALLOWED_NODE_TYPES:
+        raise ValueError(
+            f"Unknown node type '{node_type}'. Allowed: {sorted(ALLOWED_NODE_TYPES)}"
+        )
+    return node_type
+
+
+def _validate_edge_type(edge_type: str) -> str:
+    if edge_type not in ALLOWED_EDGE_TYPES:
+        raise ValueError(
+            f"Unknown edge type '{edge_type}'. Allowed: {sorted(ALLOWED_EDGE_TYPES)}"
+        )
+    return edge_type
+
+
 # Allowlisted SQL patterns for SQLiteKGStore.query() (#10 fix)
 _ALLOWED_QUERY_PATTERNS = [
     re.compile(r"^SELECT\s+.+\s+FROM\s+kg_nodes", re.IGNORECASE),
@@ -219,6 +245,181 @@ class KuzuKGStore:
             return "ready"
         except Exception:
             return "degraded"
+
+    # ─── CRUD (Slice 4 backend — agent/control/kg_crud.py) ─────────────────
+    #
+    # All mutation methods validate node_type / edge_type against ALLOWED_*
+    # whitelists (Cypher injection protection from Code Review #2).
+
+    def get_node(self, node_id: str) -> dict[str, Any] | None:
+        """Fetch single node by id across all known node types."""
+        safe_id = _sanitize_cypher_value(node_id)
+        for node_type in ALLOWED_NODE_TYPES:
+            try:
+                result: Any = self._conn.execute(
+                    f"MATCH (n:{node_type}) WHERE n.id = '{safe_id}' RETURN n LIMIT 1"
+                )
+                if result.has_next():
+                    row: Any = result.get_next()
+                    return {"type": node_type, "node": str(row[0])}
+            except Exception:
+                continue
+        return None
+
+    def create_node(self, node_type: str, props: dict[str, Any]) -> str:
+        """Create a new node. Returns the generated id (from props or uuid4)."""
+        import uuid
+
+        _validate_node_type(node_type)
+        node_id = str(props.get("id") or uuid.uuid4())
+        props = {**props, "id": node_id}
+
+        # Build SET clauses from props (only primitives, strings sanitized)
+        set_parts: list[str] = []
+        for key, val in props.items():
+            if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
+                continue  # drop invalid property name
+            if isinstance(val, str):
+                set_parts.append(f"n.{key} = '{_sanitize_cypher_value(val)}'")
+            elif isinstance(val, (int, float, bool)):
+                set_parts.append(f"n.{key} = {val}")
+            # skip None / list / dict for now
+        set_clause = ", ".join(set_parts)
+
+        self._conn.execute(f"CREATE (n:{node_type}) SET {set_clause}")
+        return node_id
+
+    def update_node(
+        self, node_id: str, props: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Patch node properties. Returns updated node or None if not found."""
+        existing = self.get_node(node_id)
+        if existing is None:
+            return None
+        node_type = existing["type"]
+        safe_id = _sanitize_cypher_value(node_id)
+
+        set_parts: list[str] = []
+        for key, val in props.items():
+            if key == "id":
+                continue  # never overwrite id
+            if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
+                continue
+            if isinstance(val, str):
+                set_parts.append(f"n.{key} = '{_sanitize_cypher_value(val)}'")
+            elif isinstance(val, (int, float, bool)):
+                set_parts.append(f"n.{key} = {val}")
+
+        if not set_parts:
+            return existing
+
+        set_clause = ", ".join(set_parts)
+        self._conn.execute(
+            f"MATCH (n:{node_type}) WHERE n.id = '{safe_id}' SET {set_clause}"
+        )
+        return self.get_node(node_id)
+
+    def delete_node(self, node_id: str) -> bool:
+        """Delete node + attached edges. Returns True if deleted."""
+        existing = self.get_node(node_id)
+        if existing is None:
+            return False
+        node_type = existing["type"]
+        safe_id = _sanitize_cypher_value(node_id)
+        self._conn.execute(
+            f"MATCH (n:{node_type}) WHERE n.id = '{safe_id}' DETACH DELETE n"
+        )
+        return True
+
+    def list_edges(
+        self,
+        *,
+        from_id: str | None = None,
+        to_id: str | None = None,
+        edge_type: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List edges, optionally filtered."""
+        clauses: list[str] = []
+        if from_id:
+            clauses.append(f"a.id = '{_sanitize_cypher_value(from_id)}'")
+        if to_id:
+            clauses.append(f"b.id = '{_sanitize_cypher_value(to_id)}'")
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        edge_pattern = (
+            f"[r:{_validate_edge_type(edge_type)}]" if edge_type else "[r]"
+        )
+        try:
+            result: Any = self._conn.execute(
+                f"MATCH (a)-{edge_pattern}->(b) {where} "
+                f"RETURN a.id, b.id, type(r) AS edge_type LIMIT {int(limit)}"
+            )
+            edges: list[dict[str, Any]] = []
+            while result.has_next():
+                row: Any = result.get_next()
+                edges.append({"from": row[0], "to": row[1], "type": row[2]})
+            return edges
+        except Exception:
+            return []
+
+    def create_edge(
+        self,
+        from_id: str,
+        to_id: str,
+        edge_type: str,
+        props: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Create edge between two existing nodes."""
+        _validate_edge_type(edge_type)
+        safe_from = _sanitize_cypher_value(from_id)
+        safe_to = _sanitize_cypher_value(to_id)
+
+        # Build props SET clause for the edge
+        set_parts: list[str] = []
+        if props:
+            for key, val in props.items():
+                if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
+                    continue
+                if isinstance(val, str):
+                    set_parts.append(f"r.{key} = '{_sanitize_cypher_value(val)}'")
+                elif isinstance(val, (int, float, bool)):
+                    set_parts.append(f"r.{key} = {val}")
+        set_clause = f" SET {', '.join(set_parts)}" if set_parts else ""
+
+        self._conn.execute(
+            f"MATCH (a), (b) WHERE a.id = '{safe_from}' AND b.id = '{safe_to}' "
+            f"CREATE (a)-[r:{edge_type}]->(b){set_clause}"
+        )
+        return {"from": from_id, "to": to_id, "type": edge_type, "props": props or {}}
+
+    def delete_edge(self, from_id: str, to_id: str, edge_type: str) -> bool:
+        """Delete a specific edge between two nodes."""
+        _validate_edge_type(edge_type)
+        safe_from = _sanitize_cypher_value(from_id)
+        safe_to = _sanitize_cypher_value(to_id)
+        try:
+            self._conn.execute(
+                f"MATCH (a)-[r:{edge_type}]->(b) "
+                f"WHERE a.id = '{safe_from}' AND b.id = '{safe_to}' "
+                f"DELETE r"
+            )
+            return True
+        except Exception:
+            return False
+
+    def node_count_by_type(self) -> dict[str, int]:
+        """Count nodes per type (used by memory layer health)."""
+        counts: dict[str, int] = {}
+        for node_type in ALLOWED_NODE_TYPES:
+            try:
+                result: Any = self._conn.execute(
+                    f"MATCH (n:{node_type}) RETURN COUNT(n)"
+                )
+                if result.has_next():
+                    counts[node_type] = int(result.get_next()[0])
+            except Exception:
+                counts[node_type] = 0
+        return counts
 
 
 # ---------------------------------------------------------------------------

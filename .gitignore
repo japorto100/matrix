@@ -7,6 +7,7 @@ desktop.ini
 .vscode/settings.json
 .idea/
 .claude/settings.local.json
+.specstory/
 *.swp
 *.swo
 
@@ -61,6 +62,16 @@ homeserver/*.pem
 # _ref/ Repos sind als git submodules getrackt (.gitmodules)
 # Git trackt nur die SHA-Referenzen, nicht den Code selbst
 
+# paperwatcher/ ist ein separat geklontes Repo (eigenes git), nicht im matrix git tracken
+# Dient als Source fuer python-backend/ingestion/ + kg_pipeline/ Adoption
+paperwatcher/
+
+# Sub-venvs der entkoppelten Python Packages (D13/D17)
+python-backend/ingestion/.venv/
+python-backend/kg_pipeline/.venv/
+python-backend/extraction_layout/.venv/
+python-backend/retrieval/.venv/
+
 # ─── Tools ───────────────────────────────────────────────────────────────────
 tools/dendrite-src/
 tools/zendrite-src/
@@ -72,8 +83,18 @@ control/storage/tools/seaweedfs/weed.exe
 control/storage/tools/seaweedfs/data/
 control/storage/tools/garage/garage
 control/storage/tools/garage/data/
+tools/seaweedfs/weed.exe
+tools/seaweedfs/data/
 *.exe
 !homeserver/tuwunel.exe
+
+# ─── control-ui (Memory & Control UI app, exec-15) ──────────────────────────
+control-ui/.next/
+control-ui/out/
+control-ui/.turbo/
+control-ui/.cache/
+control-ui/node_modules/
+control-ui/.env.local
 
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log

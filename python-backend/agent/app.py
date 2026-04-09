@@ -43,6 +43,10 @@ app.mount("/mcp", _mcp.streamable_http_app())
 from agent.http_client import close_client as _close_http_client  # noqa: E402
 app.add_event_handler("shutdown", _close_http_client)
 
+# exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
+from agent.control import router as _control_router  # noqa: E402
+app.include_router(_control_router)
+
 
 class ContextRequest(BaseModel):
     query: str
