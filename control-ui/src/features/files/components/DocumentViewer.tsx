@@ -183,16 +183,19 @@ export function DocumentViewer() {
 						>
 							{numPages && (
 								<div className="flex flex-col items-center gap-4 py-4 w-full">
-									{Array.from({ length: numPages }, (_, index) => (
-										<Page
-											key={`page_${index + 1}`}
-											pageNumber={index + 1}
-											renderTextLayer
-											renderAnnotationLayer
-											className="shadow-lg"
-											width={760}
-										/>
-									))}
+									{Array.from({ length: numPages }, (_, index) => {
+										const pageNumber = index + 1;
+										return (
+											<Page
+												key={`page_${pageNumber}`}
+												pageNumber={pageNumber}
+												renderTextLayer
+												renderAnnotationLayer
+												className="shadow-lg"
+												width={760}
+											/>
+										);
+									})}
 								</div>
 							)}
 						</Document>

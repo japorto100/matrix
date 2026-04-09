@@ -108,14 +108,12 @@ export const skillsQueries = {
 		patch: { enabled?: boolean },
 	): Promise<{ status: string; enabled: boolean }> =>
 		apiPatch(`/api/control/skills/${encodeURIComponent(id)}`, patch),
-	importFromGithub: async (
-		input: {
-			github_url: string;
-			name?: string;
-			description?: string;
-			tier?: "team" | "personal";
-		},
-	): Promise<{ status: string; skill_id: string }> => apiPost("/api/control/skills/import", input),
+	importFromGithub: async (input: {
+		github_url: string;
+		name?: string;
+		description?: string;
+		tier?: "team" | "personal";
+	}): Promise<{ status: string; skill_id: string }> => apiPost("/api/control/skills/import", input),
 };
 
 // ─── Tools ─────────────────────────────────────────────────────────────────
@@ -137,14 +135,12 @@ export const toolsQueries = {
 		const qs = params.toString();
 		return apiGet(`/api/control/tools${qs ? `?${qs}` : ""}`);
 	},
-	addFromUrl: async (
-		input: {
-			url: string;
-			name?: string;
-			description?: string;
-			category?: string;
-		},
-	): Promise<{ status: string; tool_id: string }> => apiPost("/api/control/tools/import", input),
+	addFromUrl: async (input: {
+		url: string;
+		name?: string;
+		description?: string;
+		category?: string;
+	}): Promise<{ status: string; tool_id: string }> => apiPost("/api/control/tools/import", input),
 };
 
 // ─── Sandbox ───────────────────────────────────────────────────────────────

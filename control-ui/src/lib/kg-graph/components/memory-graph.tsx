@@ -388,7 +388,6 @@ export function MemoryGraph({
 	const onSlideshowNodeChangeRef = useRef(onSlideshowNodeChange);
 	onSlideshowNodeChangeRef.current = onSlideshowNodeChange;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reads from refs to avoid resetting interval on resize/node changes
 	useEffect(() => {
 		if (!isSlideshowActive || nodes.length === 0) {
 			if (!isSlideshowActive) {

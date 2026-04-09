@@ -83,10 +83,11 @@ export function useGraphTheme(overrides?: Partial<GraphThemeColors>): GraphTheme
 				.join(",")
 		: "";
 
+	// Include `overrides` to satisfy exhaustive-deps. `overrideKey` keeps recompute stable
+	// even when callers pass a new object identity with the same values.
 	const merged = useMemo(
 		() => (overrides ? { ...colors, ...overrides } : colors),
-		// biome-ignore lint/correctness/useExhaustiveDependencies: overrideKey tracks overrides by value
-		[colors, overrideKey],
+		[colors, overrideKey, overrides],
 	);
 
 	return merged;

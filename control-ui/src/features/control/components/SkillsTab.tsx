@@ -11,14 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
-import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
@@ -28,6 +20,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useImportSkillFromGithub, usePatchSkill, useSkills } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export function SkillsTab() {
 
 	const handleToggle = async (skill: Skill, next: boolean) => {
 		try {
-			const result = await patchSkill.mutateAsync({ id: skill.id, enabled: next });
+			await patchSkill.mutateAsync({ id: skill.id, enabled: next });
 			toast.success(`${skill.name} → ${next ? "enabled" : "disabled"}`);
 		} catch (err) {
 			toast.error(`Toggle failed: ${err instanceof Error ? err.message : "unknown"}`);
@@ -283,10 +283,7 @@ export function SkillsTab() {
 						<Button variant="outline" onClick={() => setImportOpen(false)}>
 							Cancel
 						</Button>
-						<Button
-							onClick={handleImport}
-							disabled={!githubUrl.trim() || importSkill.isPending}
-						>
+						<Button onClick={handleImport} disabled={!githubUrl.trim() || importSkill.isPending}>
 							{importSkill.isPending ? "Importing..." : "Import"}
 						</Button>
 					</DialogFooter>

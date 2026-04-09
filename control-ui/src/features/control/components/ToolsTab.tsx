@@ -5,6 +5,7 @@
 
 import { Network, Package, Plus, Sparkles, Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +31,6 @@ import { useAddToolFromUrl, useTools } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockTools } from "../mock-data";
 import type { ToolDefinition, ToolType } from "../types";
-import { toast } from "sonner";
 
 const TYPE_ICON: Record<ToolType, React.ReactNode> = {
 	builtin: <Package className="h-3 w-3" />,
