@@ -3,7 +3,6 @@
 // SkillsTab — 3-tier skills (Global / Team / Personal) from exec-10
 // Slice 5.3: Skills Management
 // K7 (Slice 5): enable/disable toggle wired via usePatchSkill
-//              (backend skills.py PATCH returns pending_phase2 stub)
 
 import { Calendar, ExternalLink, HardDrive, Package, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -19,7 +18,18 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { usePatchSkill, useSkills } from "@/lib/queries/hooks";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useImportSkillFromGithub, usePatchSkill, useSkills } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockSkills } from "../mock-data";
 import type { Skill, SkillTier } from "../types";
@@ -44,7 +54,12 @@ function SourceIcon({ source }: { source: Skill["source"] }) {
 
 export function SkillsTab() {
 	const [selected, setSelected] = useState<Skill | null>(null);
+	const [importOpen, setImportOpen] = useState(false);
+	const [githubUrl, setGithubUrl] = useState("");
+	const [importName, setImportName] = useState("");
+	const [importDescription, setImportDescription] = useState("");
 	const patchSkill = usePatchSkill();
+	const importSkill = useImportSkillFromGithub();
 
 	// Slice 7 Phase H: real backend with mock fallback
 	const query = useSkills();
@@ -53,15 +68,28 @@ export function SkillsTab() {
 	const handleToggle = async (skill: Skill, next: boolean) => {
 		try {
 			const result = await patchSkill.mutateAsync({ id: skill.id, enabled: next });
-			if (result.status === "pending_phase2") {
-				toast.warning(
-					`Skill toggle queued — Phase 2 backend will persist (${skill.name} → ${next ? "on" : "off"})`,
-				);
-			} else {
-				toast.success(`${skill.name} → ${next ? "enabled" : "disabled"}`);
-			}
+			toast.success(`${skill.name} → ${next ? "enabled" : "disabled"}`);
 		} catch (err) {
 			toast.error(`Toggle failed: ${err instanceof Error ? err.message : "unknown"}`);
+		}
+	};
+
+	const handleImport = async () => {
+		if (!githubUrl.trim()) return;
+		try {
+			const result = await importSkill.mutateAsync({
+				github_url: githubUrl.trim(),
+				name: importName.trim() || undefined,
+				description: importDescription.trim() || undefined,
+				tier: "team",
+			});
+			toast.success(`Skill imported: ${result.skill_id}`);
+			setImportOpen(false);
+			setGithubUrl("");
+			setImportName("");
+			setImportDescription("");
+		} catch (err) {
+			toast.error(`Import failed: ${err instanceof Error ? err.message : "unknown"}`);
 		}
 	};
 
@@ -82,7 +110,12 @@ export function SkillsTab() {
 						{skills.length} skills · {enabled} enabled · 3-tier hierarchy
 					</p>
 				</div>
-				<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" disabled>
+				<Button
+					variant="outline"
+					size="sm"
+					className="h-8 gap-1.5 text-xs"
+					onClick={() => setImportOpen(true)}
+				>
 					<Plus className="h-3 w-3" />
 					Import from GitHub
 				</Button>
@@ -207,6 +240,58 @@ export function SkillsTab() {
 					)}
 				</SheetContent>
 			</Sheet>
+
+			<Dialog open={importOpen} onOpenChange={setImportOpen}>
+				<DialogContent className="sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Import Skill from GitHub URL</DialogTitle>
+						<DialogDescription>
+							Add a team-level skill from a remote GitHub source.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="space-y-1.5">
+							<Label htmlFor="skill-github-url">GitHub URL</Label>
+							<Input
+								id="skill-github-url"
+								placeholder="https://github.com/org/repo/blob/main/skills/alpha.md"
+								value={githubUrl}
+								onChange={(e) => setGithubUrl(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-1.5">
+							<Label htmlFor="skill-name">Name (optional)</Label>
+							<Input
+								id="skill-name"
+								placeholder="momentum-breakout-skill"
+								value={importName}
+								onChange={(e) => setImportName(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-1.5">
+							<Label htmlFor="skill-desc">Description (optional)</Label>
+							<Textarea
+								id="skill-desc"
+								className="min-h-[80px]"
+								placeholder="Brief summary of what this skill does..."
+								value={importDescription}
+								onChange={(e) => setImportDescription(e.target.value)}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setImportOpen(false)}>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleImport}
+							disabled={!githubUrl.trim() || importSkill.isPending}
+						>
+							{importSkill.isPending ? "Importing..." : "Import"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

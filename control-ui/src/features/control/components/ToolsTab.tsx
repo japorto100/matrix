@@ -3,10 +3,20 @@
 // ToolsTab — registry of all tools (builtin + MCP + skills + A2A)
 // Slice 5.5 (NEU coverage gap): Tools Registry Browser
 
-import { Network, Package, Sparkles, Workflow } from "lucide-react";
+import { Network, Package, Plus, Sparkles, Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -15,10 +25,12 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { useTools } from "@/lib/queries/hooks";
+import { Textarea } from "@/components/ui/textarea";
+import { useAddToolFromUrl, useTools } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockTools } from "../mock-data";
 import type { ToolDefinition, ToolType } from "../types";
+import { toast } from "sonner";
 
 const TYPE_ICON: Record<ToolType, React.ReactNode> = {
 	builtin: <Package className="h-3 w-3" />,
@@ -37,6 +49,12 @@ const TYPE_COLOR: Record<ToolType, string> = {
 export function ToolsTab() {
 	const [filter, setFilter] = useState("");
 	const [typeFilter, setTypeFilter] = useState<ToolType | "all">("all");
+	const [addOpen, setAddOpen] = useState(false);
+	const [toolUrl, setToolUrl] = useState("");
+	const [toolName, setToolName] = useState("");
+	const [toolDescription, setToolDescription] = useState("");
+	const [toolCategory, setToolCategory] = useState("");
+	const addTool = useAddToolFromUrl();
 
 	// Slice 7 Phase H: real backend with mock fallback
 	const query = useTools();
@@ -58,6 +76,26 @@ export function ToolsTab() {
 		{ builtin: 0, mcp: 0, skill: 0, a2a: 0 },
 	);
 
+	const handleAddTool = async () => {
+		if (!toolUrl.trim()) return;
+		try {
+			const result = await addTool.mutateAsync({
+				url: toolUrl.trim(),
+				name: toolName.trim() || undefined,
+				description: toolDescription.trim() || undefined,
+				category: toolCategory.trim() || undefined,
+			});
+			toast.success(`Tool added: ${result.tool_id}`);
+			setAddOpen(false);
+			setToolUrl("");
+			setToolName("");
+			setToolDescription("");
+			setToolCategory("");
+		} catch (err) {
+			toast.error(`Add tool failed: ${err instanceof Error ? err.message : "unknown"}`);
+		}
+	};
+
 	return (
 		<div className="px-6 py-4 space-y-4">
 			<header className="flex items-baseline justify-between">
@@ -69,6 +107,15 @@ export function ToolsTab() {
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-8 gap-1.5 text-xs"
+						onClick={() => setAddOpen(true)}
+					>
+						<Plus className="h-3 w-3" />
+						Add Tool from URL
+					</Button>
 					<Input
 						placeholder="Search tools..."
 						value={filter}
@@ -154,6 +201,66 @@ export function ToolsTab() {
 					No tools match filters
 				</div>
 			)}
+
+			<Dialog open={addOpen} onOpenChange={setAddOpen}>
+				<DialogContent className="sm:max-w-lg">
+					<DialogHeader>
+						<DialogTitle>Add Tool from URL</DialogTitle>
+						<DialogDescription>
+							Register a new URL-based tool for discovery and governance.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						<div className="space-y-1.5">
+							<Label htmlFor="tool-url">Tool URL</Label>
+							<Input
+								id="tool-url"
+								placeholder="https://example.com/mcp/tool-manifest.json"
+								value={toolUrl}
+								onChange={(e) => setToolUrl(e.target.value)}
+							/>
+						</div>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+							<div className="space-y-1.5">
+								<Label htmlFor="tool-name">Name (optional)</Label>
+								<Input
+									id="tool-name"
+									placeholder="my-tool"
+									value={toolName}
+									onChange={(e) => setToolName(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor="tool-category">Category (optional)</Label>
+								<Input
+									id="tool-category"
+									placeholder="market_data"
+									value={toolCategory}
+									onChange={(e) => setToolCategory(e.target.value)}
+								/>
+							</div>
+						</div>
+						<div className="space-y-1.5">
+							<Label htmlFor="tool-description">Description (optional)</Label>
+							<Textarea
+								id="tool-description"
+								className="min-h-[80px]"
+								placeholder="What does this tool do?"
+								value={toolDescription}
+								onChange={(e) => setToolDescription(e.target.value)}
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setAddOpen(false)}>
+							Cancel
+						</Button>
+						<Button onClick={handleAddTool} disabled={!toolUrl.trim() || addTool.isPending}>
+							{addTool.isPending ? "Adding..." : "Add Tool"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

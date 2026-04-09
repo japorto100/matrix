@@ -103,8 +103,19 @@ export const skillsQueries = {
 		apiGet(`/api/control/skills${tier ? `?tier=${encodeURIComponent(tier)}` : ""}`),
 	get: async (id: string): Promise<Skill & { body?: string }> =>
 		apiGet(`/api/control/skills/${encodeURIComponent(id)}`),
-	patch: async (id: string, patch: { enabled?: boolean }): Promise<{ status: string }> =>
+	patch: async (
+		id: string,
+		patch: { enabled?: boolean },
+	): Promise<{ status: string; enabled: boolean }> =>
 		apiPatch(`/api/control/skills/${encodeURIComponent(id)}`, patch),
+	importFromGithub: async (
+		input: {
+			github_url: string;
+			name?: string;
+			description?: string;
+			tier?: "team" | "personal";
+		},
+	): Promise<{ status: string; skill_id: string }> => apiPost("/api/control/skills/import", input),
 };
 
 // ─── Tools ─────────────────────────────────────────────────────────────────
@@ -126,6 +137,14 @@ export const toolsQueries = {
 		const qs = params.toString();
 		return apiGet(`/api/control/tools${qs ? `?${qs}` : ""}`);
 	},
+	addFromUrl: async (
+		input: {
+			url: string;
+			name?: string;
+			description?: string;
+			category?: string;
+		},
+	): Promise<{ status: string; tool_id: string }> => apiPost("/api/control/tools/import", input),
 };
 
 // ─── Sandbox ───────────────────────────────────────────────────────────────
@@ -388,6 +407,17 @@ export const memoryQueries = {
 	},
 	getEpisode: async (id: string): Promise<unknown> =>
 		apiGet(`/api/memory/episodes/${encodeURIComponent(id)}`),
+	highlights: async (): Promise<{
+		items: Array<{
+			id: string;
+			title: string;
+			content: string;
+			format: "paragraph" | "bullets" | "quote" | "one_liner";
+			query: string;
+			source_episode_ids: string[];
+		}>;
+		total: number;
+	}> => apiGet("/api/memory/highlights"),
 	deleteEpisode: async (id: string): Promise<{ status: string }> =>
 		apiDelete(`/api/memory/episodes/${encodeURIComponent(id)}`),
 };

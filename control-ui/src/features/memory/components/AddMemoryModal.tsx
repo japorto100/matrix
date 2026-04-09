@@ -246,7 +246,7 @@ function BridgeTab() {
 			icon: Radio,
 			status: "planned",
 			subject: "slack.message.inbound",
-			description: "exec-05b — coming soon",
+			description: "Planned in exec-05b messaging-bridges slice",
 		},
 		{
 			id: "discord",
@@ -254,7 +254,7 @@ function BridgeTab() {
 			icon: Radio,
 			status: "planned",
 			subject: "discord.message.inbound",
-			description: "exec-05b — coming soon",
+			description: "Planned in exec-05b messaging-bridges slice",
 		},
 		{
 			id: "telegram",
@@ -262,7 +262,7 @@ function BridgeTab() {
 			icon: Radio,
 			status: "planned",
 			subject: "telegram.message.inbound",
-			description: "exec-05b — coming soon",
+			description: "Planned in exec-05b messaging-bridges slice",
 		},
 	];
 
