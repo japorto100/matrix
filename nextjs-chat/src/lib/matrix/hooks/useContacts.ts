@@ -79,9 +79,9 @@ export function useContacts(client: MatrixClient | null) {
 
 		// Refresh bei neuen DMs
 		const onAccountData = () => loadDmContacts();
-		client.on("accountData" as any, onAccountData);
+		client.on("accountData", onAccountData);
 		return () => {
-			client.off("accountData" as any, onAccountData);
+			client.off("accountData", onAccountData);
 		};
 	}, [client]);
 

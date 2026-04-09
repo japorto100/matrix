@@ -140,7 +140,9 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>["components
 		);
 	},
 	pre({ children }) {
-		return <div className="my-2 rounded-md border border-border/50 overflow-hidden">{children}</div>;
+		return (
+			<div className="my-2 rounded-md border border-border/50 overflow-hidden">{children}</div>
+		);
 	},
 };
 

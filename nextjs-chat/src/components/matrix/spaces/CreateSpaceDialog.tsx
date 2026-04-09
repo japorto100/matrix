@@ -56,7 +56,7 @@ export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 			// Space erstellen (m.space Room-Typ)
 			await client.createRoom({
 				name: trimmed,
-				visibility: visibility === "public" ? ("public" as any) : ("private" as any),
+				visibility: visibility === "public" ? "public" : "private",
 				creation_content: { type: "m.space" },
 				initial_state: avatarUrl
 					? [{ type: "m.room.avatar", state_key: "", content: { url: avatarUrl } }]

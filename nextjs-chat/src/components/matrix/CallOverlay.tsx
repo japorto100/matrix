@@ -7,7 +7,7 @@ import {
 	VideoConference,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { BackgroundBlur, type BackgroundOptions } from "@livekit/track-processors";
+import { BackgroundBlur } from "@livekit/track-processors";
 import type { RoomOptions } from "livekit-client";
 import { PhoneOff, ShieldCheck } from "lucide-react";
 import { useMemo } from "react";

@@ -76,9 +76,15 @@ export function CreateRoomDialog({ client, trigger, spaceId }: Props) {
 			// Raum in Space hinzufügen wenn spaceId angegeben
 			if (spaceId && result.room_id) {
 				try {
-					await client.sendStateEvent(
+					type SendStateEvent = (
+						roomId: string,
+						eventType: string,
+						content: unknown,
+						stateKey: string,
+					) => Promise<unknown>;
+					await (client.sendStateEvent as unknown as SendStateEvent)(
 						spaceId,
-						"m.space.child" as any,
+						"m.space.child",
 						{ via: [client.getDomain() ?? "matrix.local"] },
 						result.room_id,
 					);

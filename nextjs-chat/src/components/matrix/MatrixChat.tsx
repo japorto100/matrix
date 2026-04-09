@@ -181,12 +181,14 @@ export function MatrixChat() {
 		}
 		// Sliding Sync aktualisiert den Count nicht sofort — lokal zurücksetzen + UI refresh
 		const notifTypes = ["total", "highlight"] as const;
-		for (const t of notifTypes) {
-			(room as any).setUnreadNotificationCount?.(t, 0);
-		}
+		type UnreadNotificationCountType = (typeof notifTypes)[number];
+		const roomWithUnread = room as typeof room & {
+			setUnreadNotificationCount?: (type: UnreadNotificationCountType, count: number) => void;
+		};
+		for (const t of notifTypes) roomWithUnread.setUnreadNotificationCount?.(t, 0);
 		// ClientEvent.Room triggert useRooms refresh
 		setTimeout(() => {
-			client.emit("Room" as any, room);
+			client.emit("Room", room);
 		}, 100);
 	}, [client, selectedRoomId, lastEventId]);
 

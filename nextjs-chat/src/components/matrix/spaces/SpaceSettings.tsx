@@ -73,7 +73,7 @@ export function SpaceSettings({ client, space, hierarchy, onFetchHierarchy, onCl
 		try {
 			await client.sendStateEvent(
 				space.roomId,
-				"m.space.child" as any,
+				"m.space.child",
 				{ via: [client.getDomain() ?? "matrix.local"] },
 				trimmed,
 			);
@@ -89,7 +89,7 @@ export function SpaceSettings({ client, space, hierarchy, onFetchHierarchy, onCl
 		async (roomId: string) => {
 			try {
 				// Leerer Content = Kind entfernt
-				await client.sendStateEvent(space.roomId, "m.space.child" as any, {}, roomId);
+				await client.sendStateEvent(space.roomId, "m.space.child", {}, roomId);
 				toast.success("Raum aus Space entfernt.");
 				onFetchHierarchy();
 			} catch {

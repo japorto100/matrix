@@ -30,9 +30,9 @@ export function usePinnedMessages(client: MatrixClient | null, roomId: string | 
 		const handler = (_event: unknown, _room: unknown, type: string) => {
 			if (type === EventType.RoomPinnedEvents) readPinned();
 		};
-		client.on(RoomStateEvent.Events, handler as any);
+		client.on(RoomStateEvent.Events, handler);
 		return () => {
-			client.off(RoomStateEvent.Events, handler as any);
+			client.off(RoomStateEvent.Events, handler);
 		};
 	}, [client, room]);
 
