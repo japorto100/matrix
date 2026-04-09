@@ -346,6 +346,16 @@ User → Tuwunel → Go (Routing + Fallback-Decrypt)
 
 ---
 
+## Hinweis: Infra-/Eval-/Blocking-Sammlung
+
+Einige Punkte dieses Slices sind absichtlich **infra-/umgebungsabhängig** oder **strategisch blockiert**
+und werden gesammelt in:
+
+- `exec-eval.md` (infra/umgebung/verify-runbooks, z.B. JetStream/TLS)
+- `exec-blocking.md` (extern blockiert, z.B. Crypto-Library Entscheidung / Provider)
+
+---
+
 ## Abhängigkeiten
 
 - Go Appservice muss korrekt als Appservice bei Tuwunel registriert sein (registration.yaml)

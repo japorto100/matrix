@@ -9,8 +9,7 @@
 ## Offene Tasks (aus exec2-01/02/03 + exec-04)
 
 ### Extern blockiert (kein Action moeglich)
-- [ ] Encrypted State Events (MSC3414/MSC4362) — wartet auf Tuwunel-Support
-- [ ] OIDC/MAS Auth — Tuwunel Legacy SSO, MAS nicht kompatibel, spaetere Portierung
+- Siehe: `exec-blocking.md` (Matrix-Protokoll-Blocker)
 
 ### Code-Tasks (Matrix Chat)
 - [x] react-shiki in Matrix TextContent.tsx umstellen (Syntax Highlighting)
@@ -21,15 +20,7 @@
 - [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
 
 ### Federation + Security (Backlog — erst bei Prod-Deployment)
-- [ ] `allow_federation = true` in Tuwunel setzen
-- [ ] DNS: `_matrix._tcp` SRV Record oder `.well-known/matrix/server`
-- [ ] HTTPS + echte Domain (Cloudflare Tunnel oder eigene)
-- [ ] Draupnir/Mjolnir Bot deployen (Spam-Schutz)
-- [ ] Server ACLs konfigurieren (Blacklist fuer bekannte Spam-Server)
-- [ ] `block_non_admin_invites` evaluieren
-- [ ] Auto-Accept auf interne User beschraenken
-- [ ] Public Room Directory versteckt lassen
-- [ ] Testen: Externer User kann Alice/Bob nicht finden aber eingeladen werden
+- Siehe: `exec-eval.md` (Prod/Deployment-abhängige Verify-Gates)
 
 ---
 
