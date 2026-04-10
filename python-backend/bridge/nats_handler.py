@@ -77,12 +77,21 @@ class NATSHandler:
             room_id, sender, len(body),
         )
 
+        # exec-16: User-Settings fuer Matrix Mention (sender → model + api_key)
+        model: str | None = None
+        try:
+            from agent.security.credentials import get_user_default_model
+            model = await get_user_default_model(sender)
+        except Exception:
+            pass  # DB nicht verfuegbar → kein User-Model, Agent nutzt Fallback
+
         # Agent aufrufen (HTTP SSE, wie bisher)
         reply_text = await self._agent.send_message(
             message=body,
             room_id=room_id,
             sender=sender,
             thread_id=thread_id,
+            model=model,
         )
 
         # Reply an Go Appservice zurück senden

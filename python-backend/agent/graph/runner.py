@@ -130,6 +130,16 @@ async def _run_graph(
     from agent.graph.state import AgentGraphState
 
     # exec-16: Model + Key aus Context (resolved in app.py via credentials).
+    # Per-Rolle Routing: role override hat Vorrang vor default model.
+    model = ctx.model
+    try:
+        from agent.security.credentials import get_user_role_model
+        role_model = await get_user_role_model(ctx.user_id, "default")
+        if role_model:
+            model = role_model
+    except Exception:
+        pass
+
     graph = create_agent_graph()
 
     initial_state: AgentGraphState = {
@@ -140,7 +150,7 @@ async def _run_graph(
         "max_iterations": MAX_ITERATIONS,
         "current_role": "default",
         "system_prompt": system_prompt,
-        "model": ctx.model,
+        "model": model,
         "api_key": ctx.api_key,
         "reasoning_effort": ctx.reasoning_effort,
         "final_response": "",

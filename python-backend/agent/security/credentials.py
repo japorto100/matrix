@@ -65,6 +65,33 @@ async def get_user_default_model(user_id: str) -> str | None:
     return None
 
 
+async def get_user_role_model(user_id: str, role: str) -> str | None:
+    """Holt per-role Model Override aus DB. None wenn kein Override."""
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return None
+
+    try:
+        import psycopg
+        async with await psycopg.AsyncConnection.connect(db_url) as conn:
+            row = await (await conn.execute(
+                "SELECT per_role_overrides FROM agent.user_llm_settings WHERE user_id = %s",
+                (user_id,),
+            )).fetchone()
+
+            if row and row[0] and isinstance(row[0], dict):
+                return row[0].get(role)
+    except Exception as e:
+        logger.warning("get_user_role_model failed for %s/%s: %s", user_id, role, e)
+
+    return None
+
+
+def get_env_default_model() -> str:
+    """Fallback: AGENT_DEFAULT_UTILITY_MODEL aus ENV."""
+    return os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
+
+
 def provider_from_model(model: str) -> str:
     """Extrahiert Provider aus Model-Name. 'anthropic/claude-sonnet-4-6' -> 'anthropic'."""
     if "/" in model:

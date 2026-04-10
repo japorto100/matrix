@@ -28,6 +28,7 @@ import {
 	useEnvVars,
 	useModelRouting,
 	useSetDefaultModel,
+	useSetRoleOverrides,
 	useUserLlmSettings,
 	useUtilityModels,
 } from "@/lib/queries/hooks";
@@ -60,6 +61,7 @@ export function ApiModelsTab() {
 	const utilityQuery = useUtilityModels();
 	const envQuery = useEnvVars();
 	const setDefaultModel = useSetDefaultModel();
+	const setRoleOverrides = useSetRoleOverrides();
 	const deleteKey = useDeleteApiKey();
 
 	// Data with mock fallback
@@ -273,7 +275,7 @@ export function ApiModelsTab() {
 						Model Routing
 					</h3>
 					<span className="text-[10px] text-muted-foreground">
-						Per Trading Role
+						Per Trading Role — select model override
 					</span>
 				</div>
 				<div className="rounded-lg border border-border overflow-hidden">
@@ -281,43 +283,66 @@ export function ApiModelsTab() {
 						<thead className="bg-card/40">
 							<tr className="text-left">
 								<th className="py-2 px-3 font-semibold">Role</th>
-								<th className="py-2 px-3 font-semibold">Provider</th>
-								<th className="py-2 px-3 font-semibold">Model</th>
-								<th className="py-2 px-3 font-semibold w-20 text-center">Default</th>
+								<th className="py-2 px-3 font-semibold">Model Override</th>
+								<th className="py-2 px-3 font-semibold w-20 text-center">Status</th>
 							</tr>
 						</thead>
 						<tbody>
-							{routing.map((r) => {
-								const role = mockAgentRoles.find((ar) => ar.id === r.role_id);
-								const provider = providerById[r.provider_id];
+							{mockAgentRoles.map((role) => {
+								const currentRouting = routing.find((r) => r.role_id === role.id);
+								const currentModel = currentRouting?.model_id ?? defaultModel ?? "";
 								return (
-									<tr key={r.role_id} className="border-t border-border hover:bg-card/20">
+									<tr key={role.id} className="border-t border-border hover:bg-card/20">
 										<td className="py-2 px-3">
-											<div className="font-medium">{role?.display_name ?? r.role_id}</div>
-											<code className="text-[10px] text-muted-foreground">{r.role_id}</code>
+											<div className="font-medium">{role.display_name}</div>
+											<code className="text-[10px] text-muted-foreground">{role.id}</code>
 										</td>
 										<td className="py-2 px-3">
-											<div className="flex items-center gap-1.5">
-												{provider?.type === "cloud" ? (
-													<Cloud className="h-3 w-3 text-sky-400" />
-												) : (
-													<HardDrive className="h-3 w-3 text-amber-400" />
-												)}
-												<span>{provider?.display_name ?? r.provider_id}</span>
-											</div>
+											<select
+												className="w-full bg-transparent border border-border rounded px-2 py-1 text-[11px] font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+												value={currentModel}
+												onChange={async (e) => {
+													const newModel = e.target.value;
+													const overrides: Record<string, string> = {};
+													for (const r of mockAgentRoles) {
+														const existing = routing.find((rt) => rt.role_id === r.id);
+														if (r.id === role.id) {
+															if (newModel && newModel !== (defaultModel ?? "")) {
+																overrides[r.id] = newModel;
+															}
+														} else if (existing && !existing.is_default) {
+															overrides[r.id] = existing.model_id;
+														}
+													}
+													try {
+														await setRoleOverrides.mutateAsync(overrides);
+														toast.success(`${role.display_name} → ${newModel || "default"}`);
+													} catch {
+														toast.error("Failed to update routing");
+													}
+												}}
+											>
+												<option value="">
+													(default: {defaultModel ?? "none"})
+												</option>
+												{allModels.map(({ model }) => (
+													<option key={model} value={model}>
+														{model}
+													</option>
+												))}
+											</select>
 										</td>
-										<td className="py-2 px-3 font-mono text-[11px]">{r.model_id}</td>
 										<td className="py-2 px-3 text-center">
-											{r.is_default ? (
-												<Badge variant="outline" className="text-[9px] h-4 px-1.5">
-													default
-												</Badge>
-											) : (
+											{currentRouting && !currentRouting.is_default ? (
 												<Badge
 													variant="outline"
 													className="text-[9px] h-4 px-1.5 border-amber-500/50 text-amber-400"
 												>
 													override
+												</Badge>
+											) : (
+												<Badge variant="outline" className="text-[9px] h-4 px-1.5">
+													default
 												</Badge>
 											)}
 										</td>

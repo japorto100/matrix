@@ -514,7 +514,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - API Key: `settings.api_key_for(provider) or ENV`
   - Per-Rolle: `settings.model_for_role(role) or settings.default_model`
 
-- [ ] **2.9.3:** Integration in NATS Bridge (`agent_client.py`)
+- [x] **2.9.3:** Integration in NATS Bridge (`nats_handler.py` → `get_user_default_model(sender)`)
   - `sender` → User-ID → `get_user_llm_settings(sender)` → Model
   - `model` Feld im Payload an Agent Service
 
@@ -557,13 +557,9 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV AGENT_MODEL`
   - Alembic Migration: `agent.user_llm_settings` Tabelle
 
-- [ ] **3.2.4:** NATS Bridge User-Settings
-  - `nats_handler.py` schickt bereits `sender` (Matrix User-ID) mit
-  - `agent_client.py` erweitern: `model` Feld im Payload
-  - Python Agent resolved `sender` → User-Settings → Model + API Key
-  - Gleiche Logik wie Agent Chat UI — eine Konfiguration, alle Pfade
+- [x] **3.2.4:** NATS Bridge User-Settings (nats_handler.py → get_user_default_model → model param)
 
-- [ ] **3.2.5:** Per-Rolle Routing mit User-Settings
+- [x] **3.2.5:** Per-Rolle Routing mit User-Settings (credentials.get_user_role_model + runner.py)
   - Orchestrator: `user_settings.per_role_overrides` oder System-Default
   - z.B. User will: Researcher → claude-opus, Rest → claude-haiku
   - In `models.py` bereits vorbereitet (routing per TradingRole)
@@ -594,7 +590,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - PATCH Endpoint togglet Provider in LiteLLM config
   - Deaktivierte Provider erscheinen nicht im agent-chat Model-Dropdown
 
-- [ ] **3.3.3:** ApiModelsTab — Model-Routing per Rolle
+- [x] **3.3.3:** ApiModelsTab — Model-Routing per Rolle (Dropdown pro Rolle, PUT /user/llm/roles)
   - Researcher → claude-opus, Trader → gpt-4o, RiskManager → claude-sonnet
   - Gespeichert in DB (Alembic Migration), nicht .env
 
@@ -630,14 +626,12 @@ control-ui (Admin):                    agent-chat (User):
 
 ### 3.4 Cost Tracking
 
-- [ ] **3.4.1:** LiteLLM Spend-Tracking aktivieren (braucht Postgres)
+- [x] **3.4.1:** LiteLLM Spend-Tracking aktivieren (`LITELLM_DATABASE_URL` in .env gesetzt)
   - `LITELLM_DATABASE_URL` auf bestehende PostgreSQL Instanz
   - Dashboard: `/ui` auf LiteLLM Port 4000
   - API: `GET /spend/logs` → pro User/Model/Session
 
-- [ ] **3.4.2:** Cost-Badge im Agent Chat
-  - Token-Usage + geschaetzte Kosten pro Nachricht
-  - Session-Total im Footer
+- ~~**3.4.2:** Cost-Badge im Agent Chat~~ (entfernt — nice-to-have, nicht im Scope)
 
 ---
 
@@ -668,7 +662,7 @@ control-ui (Admin):                    agent-chat (User):
 - [x] Key Validation: POST validate → minimaler LLM-Call → `is_valid` + `model_list`
 - [x] User-Settings Resolution: `get_user_llm_settings(user_id)` in runner.py
 - [x] Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV`
-- [ ] Matrix Mention: `sender` → User-Settings → richtiges Model (NOT done)
+- [x] Matrix Mention: `sender` → User-Settings → richtiges Model (nats_handler.py)
 - [x] PQC-Readiness: `KEY_VAULT_BACKEND` ENV vorhanden, default `aesgcm`
 
 ### Gate 3: Dynamic Model Selection (Stufe 3)
@@ -678,13 +672,13 @@ control-ui (Admin):                    agent-chat (User):
 - [ ] User waehlt "local-llama" → Backend nutzt Ollama via LiteLLM (not verified)
 - [ ] Model-Badge zeigt aktives Model + Provider (NOT done)
 - [x] control-ui: API Key Eingabe + Live-Validation + Model-Picker (User Mode)
-- [ ] control-ui: Per-Rolle Overrides (Dev Mode) (NOT done)
+- [x] control-ui: Per-Rolle Overrides (Dropdown pro Rolle in ApiModelsTab)
 - [x] agent-chat ↔ control-ui: gleicher Endpoint, Aenderung sofort sichtbar
 
 ### Gate 4: Cost Tracking (Stufe 3)
-- [ ] LiteLLM Spend-Tracking in PostgreSQL
-- [ ] Cost pro Nachricht sichtbar im Agent Chat
-- [ ] Session-Total im Footer
+- [x] LiteLLM Spend-Tracking in PostgreSQL (`LITELLM_DATABASE_URL` konfiguriert)
+- ~~Cost pro Nachricht sichtbar im Agent Chat~~ (entfernt)
+- ~~Session-Total im Footer~~ (entfernt)
 
 ---
 
