@@ -35,7 +35,7 @@ class SinkError(IngestionError):
     """Failed to write to a sink (Hindsight, Vector, Storage, KG)."""
 
 
-class DedupSkip(IngestionError):
+class DedupSkipError(IngestionError):
     """Document already exists (sha256 match) — not an error, just signaled."""
 
     def __init__(self, document_hash: str, existing_job_id: str):

@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * WebMCP Bridge — exec-09 Phase 4
  *
@@ -20,8 +22,6 @@ interface ModelContext {
 	>;
 	callTool?: (name: string, input: Record<string, unknown>) => Promise<unknown>;
 }
-
-("use client");
 
 import { useCallback, useEffect, useRef, useState } from "react";
 

@@ -1,0 +1,62 @@
+# exec-17: OpenTelemetry + OpenObserve (Docker mode — prod/staging/fan-out)
+#
+# DEV without Docker:  dev-stack2.ps1
+#   → openobserve.exe auto-downloaded to tools/openobserve/
+#   → Services send DIRECTLY to OpenObserve gRPC :5081 (auth via OPENOBSERVE_USER/PASSWORD)
+#   → OTEL_EXPORTER_OTLP_ENDPOINT=localhost:5081 in python-backend .env
+#
+# DOCKER mode (this file):
+#   → OTel Collector sits between services and OpenObserve
+#   → Services send to Collector :4317 (no auth needed)
+#   → Collector forwards to OpenObserve :5081 with Basic auth injected
+#   → Change OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 when using Docker
+#
+# Usage:
+#   docker compose -f docker-compose.otel.yml up -d
+#   # Set OTEL_ENABLED=true and OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 in env files
+#
+# Ports:
+#   OpenObserve UI:    http://localhost:5080  (root@example.com / Complexpass#123)
+#   OTel Collector:    localhost:4317 (gRPC, no auth) ← services point here in Docker mode
+#   OpenObserve gRPC:  localhost:5081 (internal, auth via Collector)
+#
+# Fan-out to Langfuse: uncomment the langfuse exporter block in otel-collector.yaml
+
+services:
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: matrix_openobserve
+    restart: unless-stopped
+    environment:
+      ZO_ROOT_USER_EMAIL: root@example.com
+      ZO_ROOT_USER_PASSWORD: Complexpass#123
+      ZO_DATA_DIR: /data
+      ZO_GRPC_PORT: "5081"
+    ports:
+      - "5080:5080"   # HTTP UI + OTLP/HTTP
+      - "5081:5081"   # OTLP/gRPC
+    volumes:
+      - matrix_openobserve_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: matrix_otel_collector
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP/gRPC ← all services send here (no auth needed)
+      - "4318:4318"   # OTLP/HTTP (alternative)
+    depends_on:
+      openobserve:
+        condition: service_healthy
+
+volumes:
+  matrix_openobserve_data:

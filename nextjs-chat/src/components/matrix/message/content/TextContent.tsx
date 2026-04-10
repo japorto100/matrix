@@ -54,8 +54,8 @@ function parseMatrixPermalink(
 	if (fragment.startsWith("@")) return { type: "user", id: fragment };
 	if (fragment.startsWith("!")) {
 		const parts = fragment.split("/");
-		if (parts[1]?.startsWith("$")) return { type: "event", id: parts[0], eventId: parts[1] };
-		return { type: "room", id: parts[0] };
+		if (parts[1]?.startsWith("$")) return { type: "event", id: parts[0]!, eventId: parts[1] };
+		return { type: "room", id: parts[0]! };
 	}
 	if (fragment.startsWith("#")) return { type: "room", id: fragment };
 	return null;
@@ -140,7 +140,9 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>["components
 		);
 	},
 	pre({ children }) {
-		return <div className="my-2 rounded-md border border-border/50 overflow-hidden">{children}</div>;
+		return (
+			<div className="my-2 rounded-md border border-border/50 overflow-hidden">{children}</div>
+		);
 	},
 };
 

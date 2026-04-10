@@ -1,10 +1,10 @@
 "use client";
 
 import { MapPin } from "lucide-react";
+import { osmUrl, parseGeoUri } from "@/lib/matrix/geo";
 import type { ResolvedMessage } from "@/lib/matrix/types";
+import { LocationEmbed } from "./LocationEmbed";
 import { TextContent } from "./TextContent";
-import { parseGeoUri, osmUrl } from "@shared/geo";
-import { LocationEmbed } from "@shared/location";
 
 export function LocationContent({ message }: { message: ResolvedMessage }) {
 	if (!message.location) return <TextContent message={message} />;
@@ -27,12 +27,6 @@ export function LocationContent({ message }: { message: ResolvedMessage }) {
 	}
 
 	return (
-		<LocationEmbed
-			lat={coords.lat}
-			lon={coords.lon}
-			zoom={15}
-			height={180}
-			className="max-w-sm"
-		/>
+		<LocationEmbed lat={coords.lat} lon={coords.lon} zoom={15} height={180} className="max-w-sm" />
 	);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
+import { EventType, type MatrixClient } from "matrix-js-sdk";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,14 +39,12 @@ export function CreateDMDialog({ client, trigger }: Props) {
 
 			// m.direct Account-Data setzen damit der Raum als DM erkannt wird
 			try {
-				// biome-ignore lint/suspicious/noExplicitAny: m.direct nicht in SDK-Typen
-				const directEvent = (client.getAccountData as any)("m.direct");
+				const directEvent = client.getAccountData(EventType.Direct);
 				const directMap: Record<string, string[]> = directEvent?.getContent() ?? {};
 				const existing = directMap[trimmedId] ?? [];
 				if (!existing.includes(result.room_id)) {
 					directMap[trimmedId] = [...existing, result.room_id];
-					// biome-ignore lint/suspicious/noExplicitAny: m.direct nicht in SDK-Typen
-					await (client.setAccountData as any)("m.direct", directMap);
+					await client.setAccountData(EventType.Direct, directMap);
 				}
 			} catch {
 				// m.direct setzen ist optional

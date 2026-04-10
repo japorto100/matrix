@@ -1,7 +1,7 @@
 "use client";
 
 import { Camera } from "lucide-react";
-import type { MatrixClient } from "matrix-js-sdk";
+import { EventType, type MatrixClient } from "matrix-js-sdk";
 import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,7 @@ export function CreateRoomDialog({ client, trigger, spaceId }: Props) {
 				try {
 					await client.sendStateEvent(
 						spaceId,
-						"m.space.child" as any,
+						EventType.SpaceChild,
 						{ via: [client.getDomain() ?? "matrix.local"] },
 						result.room_id,
 					);

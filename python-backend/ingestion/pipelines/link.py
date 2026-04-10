@@ -6,7 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from ingestion.core.exceptions import DedupSkip, IngestionError
+from ingestion.core.exceptions import DedupSkipError, IngestionError
 from ingestion.core.types import Job, JobStatus, PipelineKind
 from ingestion.pipelines.base import Pipeline
 
@@ -27,7 +27,12 @@ class LinkPipeline(Pipeline):
         job = ctx.tracker.start(
             pipeline=PipelineKind.LINK,
             user_id=user_id,
-            metadata={"tags": tags or [], "title": title, "url": url, "sinks": ["hindsight"]},
+            metadata={
+                "tags": tags or [],
+                "title": title,
+                "url": url,
+                "sinks": ["hindsight"],
+            },
         )
 
         try:
@@ -48,9 +53,11 @@ class LinkPipeline(Pipeline):
                     target_id=url,
                     metadata={"existing_job_id": existing["id"]},
                 )
-                ctx.tracker.update(job, status=JobStatus.SKIPPED_DEDUP, document_hash=doc_hash)
+                ctx.tracker.update(
+                    job, status=JobStatus.SKIPPED_DEDUP, document_hash=doc_hash
+                )
                 ctx.tracker.complete(job)
-                raise DedupSkip(doc_hash, existing["id"])
+                raise DedupSkipError(doc_hash, existing["id"])
             ctx.tracker.update(job, document_hash=doc_hash)
 
             # Detect (likely text/html)
@@ -78,7 +85,9 @@ class LinkPipeline(Pipeline):
             ctx.tracker.update(job, status=JobStatus.CHUNKING)
             chunker = ctx.chunkers.get(ctx.config.chunker_name)
             chunks = chunker.chunk(doc)
-            ctx.tracker.update(job, chunks_total=len(chunks), status=JobStatus.EMBEDDING)
+            ctx.tracker.update(
+                job, chunks_total=len(chunks), status=JobStatus.EMBEDDING
+            )
 
             if not chunks:
                 ctx.tracker.complete(job)
@@ -104,7 +113,7 @@ class LinkPipeline(Pipeline):
             )
             return job
 
-        except DedupSkip:
+        except DedupSkipError:
             raise
         except Exception as e:  # noqa: BLE001
             ctx.tracker.fail(job, str(e))

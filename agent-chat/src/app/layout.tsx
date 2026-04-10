@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import "@/lib/webmcp-polyfill";
 import { Toaster } from "sonner";
@@ -16,7 +17,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className="dark antialiased bg-background text-foreground">
-				{children}
+				<NuqsAdapter>{children}</NuqsAdapter>
 				<Toaster />
 			</body>
 		</html>

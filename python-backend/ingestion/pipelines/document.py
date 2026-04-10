@@ -7,7 +7,7 @@ from uuid import UUID
 
 from loguru import logger
 
-from ingestion.core.exceptions import DedupSkip, IngestionError
+from ingestion.core.exceptions import DedupSkipError, IngestionError
 from ingestion.core.types import Job, JobStatus, PipelineKind
 from ingestion.pipelines.base import Pipeline
 
@@ -62,14 +62,12 @@ class DocumentPipeline(Pipeline):
                     document_hash=doc_hash,
                 )
                 ctx.tracker.complete(job)
-                raise DedupSkip(doc_hash, existing["id"])
+                raise DedupSkipError(doc_hash, existing["id"])
             ctx.tracker.update(job, document_hash=doc_hash)
 
             # Detect mime
             ctx.tracker.update(job, status=JobStatus.DETECTING)
-            detection = ctx.detectors.detect(
-                data=loaded.data, filename=loaded.filename
-            )
+            detection = ctx.detectors.detect(data=loaded.data, filename=loaded.filename)
             logger.info("detected mime={} for {}", detection.mime_type, file_id)
 
             # Phase 3: extract
@@ -122,7 +120,10 @@ class DocumentPipeline(Pipeline):
                 result = await sink.write_batch(doc, chunks, embeddings, job)
                 logger.info(
                     "sink {}: written={} skipped={} failed={}",
-                    sink_name, result.written, result.skipped, result.failed,
+                    sink_name,
+                    result.written,
+                    result.skipped,
+                    result.failed,
                 )
 
             # Increment chunks_done in one shot
@@ -143,7 +144,7 @@ class DocumentPipeline(Pipeline):
             )
             return job
 
-        except DedupSkip:
+        except DedupSkipError:
             raise
         except Exception as e:  # noqa: BLE001
             ctx.tracker.fail(job, str(e))
@@ -225,7 +226,9 @@ class DocumentPipeline(Pipeline):
             old_hash_set = set(old_hashes_by_id.values())
 
             unchanged = new_hash_set & old_hash_set
-            new_only_chunks = [c for c in new_chunks if new_hashes_by_id[c.id] not in unchanged]
+            new_only_chunks = [
+                c for c in new_chunks if new_hashes_by_id[c.id] not in unchanged
+            ]
             deleted_hashes = old_hash_set - new_hash_set
 
             ctx.tracker.update(
@@ -247,12 +250,15 @@ class DocumentPipeline(Pipeline):
 
             # Delete removed chunks from Hindsight (best-effort)
             if deleted_hashes:
-                hindsight_sink = ctx.sinks.get("hindsight") if ctx.sinks.has("hindsight") else None
+                hindsight_sink = (
+                    ctx.sinks.get("hindsight") if ctx.sinks.has("hindsight") else None
+                )
                 if hindsight_sink and hasattr(hindsight_sink, "delete_by_hashes"):
                     try:
                         await hindsight_sink.delete_by_hashes(deleted_hashes)
                     except Exception as e:  # noqa: BLE001
                         from loguru import logger as _log
+
                         _log.warning("delete_by_hashes failed: {}", e)
 
             # Persist new manifest (replace old)
@@ -260,10 +266,7 @@ class DocumentPipeline(Pipeline):
             ctx.tracker.save_chunk_hashes(
                 job.id,
                 doc_id,
-                [
-                    (c.id, new_hashes_by_id[c.id], c.section or None)
-                    for c in new_chunks
-                ],
+                [(c.id, new_hashes_by_id[c.id], c.section or None) for c in new_chunks],
             )
 
             ctx.tracker.update(job, chunks_done=len(new_only_chunks))

@@ -1,7 +1,6 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
-import { EventType, RoomStateEvent } from "matrix-js-sdk";
+import { EventType, type MatrixClient, type MatrixEvent, RoomStateEvent } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,12 +26,12 @@ export function usePinnedMessages(client: MatrixClient | null, roomId: string | 
 			setPinnedIds(pinned);
 		};
 		readPinned();
-		const handler = (_event: unknown, _room: unknown, type: string) => {
-			if (type === EventType.RoomPinnedEvents) readPinned();
+		const handler = (event: MatrixEvent) => {
+			if (event.getType() === EventType.RoomPinnedEvents) readPinned();
 		};
-		client.on(RoomStateEvent.Events, handler as any);
+		client.on(RoomStateEvent.Events, handler);
 		return () => {
-			client.off(RoomStateEvent.Events, handler as any);
+			client.off(RoomStateEvent.Events, handler);
 		};
 	}, [client, room]);
 

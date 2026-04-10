@@ -12,15 +12,13 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
-from uuid import UUID, uuid4
-
-from loguru import logger
+from uuid import uuid4
 
 from ingestion.core.config import get_config
-from ingestion.core.types import JobStatus, PipelineKind
 from ingestion.pipelines.base import PipelineContext
 from ingestion.pipelines.document import DocumentPipeline
 from ingestion.pipelines.note import NotePipeline
+from loguru import logger
 
 
 async def cmd_ingest_note(args: argparse.Namespace) -> int:
@@ -50,8 +48,8 @@ async def cmd_ingest_file(args: argparse.Namespace) -> int:
     ctx = PipelineContext.from_config(get_config())
 
     # Build a Job from local file (no SeaweedFS)
-    file_id = uuid4()
-    pipeline = DocumentPipeline(ctx)
+    _ = uuid4()  # reserved for future SeaweedFS integration
+    _ = DocumentPipeline(ctx)  # reserved for future SeaweedFS integration
     logger.warning(
         "CLI ingest-file requires SeaweedFS upload first — use the worker /ingest/document API"
     )

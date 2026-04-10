@@ -21,6 +21,7 @@ param(
     [switch]$SkipStorage,
     [switch]$SkipIngestion,
     [switch]$SkipLiteLLM,
+    [switch]$SkipObservability,
     [switch]$DevTools,
     [switch]$WithVoice,
     [switch]$Tunnel,
@@ -409,6 +410,34 @@ try {
         Write-Host "[seaweedfs] weed.exe not found at $seaweedExe - download from https://github.com/seaweedfs/seaweedfs/releases" -ForegroundColor Yellow
     }
 
+    # -- OpenObserve (exec-17, Observability — Port 5080) --
+    # OTel traces/metrics/logs backend. Services send directly to gRPC :5081.
+    if (-not $SkipObservability) {
+        $ooDir = Join-Path $repoRoot "tools\openobserve"
+        $ooExe = Join-Path $ooDir "openobserve.exe"
+        if (-not (Test-Path $ooExe)) {
+            $ooExe = Ensure-ToolAvailable -Name "openobserve" -ExePath $ooExe `
+                -Url "https://github.com/openobserve/openobserve/releases/download/v0.14.7/openobserve-v0.14.7-windows-amd64.zip" `
+                -Dir $ooDir -Filter "*.exe"
+        }
+        $ooDataDir = Join-Path $ooDir "data"
+        if (-not (Test-Path $ooDataDir)) { New-Item -ItemType Directory -Path $ooDataDir -Force | Out-Null }
+        $ooUser = if ($env:OPENOBSERVE_USER) { $env:OPENOBSERVE_USER } else { "root@example.com" }
+        $ooPass = if ($env:OPENOBSERVE_PASSWORD) { $env:OPENOBSERVE_PASSWORD } else { "Complexpass#123" }
+        foreach ($kv in @(
+            @("ZO_ROOT_USER_EMAIL", $ooUser), @("ZO_ROOT_USER_PASSWORD", $ooPass),
+            @("ZO_DATA_DIR", $ooDataDir), @("ZO_GRPC_PORT", "5081"), @("ZO_DISK_CACHE_ENABLED", "false")
+        )) { [Environment]::SetEnvironmentVariable($kv[0], $kv[1], "Process") }
+        # Set OTel env vars for downstream services
+        [Environment]::SetEnvironmentVariable("OTEL_ENABLED", "true", "Process")
+        [Environment]::SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:5081", "Process")
+        [Environment]::SetEnvironmentVariable("OPENOBSERVE_USER", $ooUser, "Process")
+        [Environment]::SetEnvironmentVariable("OPENOBSERVE_PASSWORD", $ooPass, "Process")
+        Register-Service -Name "openobserve" -Port 5080 -Tier "infra" -TimeoutSecs 60 -StartAction {
+            Start-LoggedProcess -Name "openobserve" -FilePath $ooExe -ArgumentList @() -WorkingDirectory $ooDir
+        }
+    }
+
     # -- Ingestion Worker (exec-15 Slice 2, Venv 2 — Port 8098) --
     # Decoupled extraction pipeline. agent/control/ingestion.py is a thin
     # httpx proxy. See exec-15 §5.2 + D13-D17.
@@ -561,6 +590,7 @@ try {
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }
     if ($script:services["postgres"])      { Write-Host "    PostgreSQL:      postgresql://postgres@localhost:5433/hindsight_dev (pgvector)" }
     if ($script:services["tunnel"])        { Write-Host "    Tunnel:          see logs/dev-stack/tunnel.stdout.log" -ForegroundColor DarkCyan }
+    if ($script:services["openobserve"])   { Write-Host "    OpenObserve:     http://localhost:5080  (Traces/Logs/Metrics)" -ForegroundColor Cyan }
     if ($script:services["voice-worker"])  { Write-Host "    Voice Worker:    LiveKit Agent (-WithVoice)" -ForegroundColor DarkYellow }
     if ($script:services["ai-devtools"])   { Write-Host "    AI DevTools:     http://127.0.0.1:4983  (-DevTools)" -ForegroundColor DarkYellow }
     Write-Host ""

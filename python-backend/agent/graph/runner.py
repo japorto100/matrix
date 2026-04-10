@@ -47,66 +47,78 @@ async def run_agent_loop(
 async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
     """Enrich system prompt with skills, temporal context, and security instructions."""
     from agent.middleware.sanitizer import SYSTEM_PROMPT_INJECTION
+    from agent.tracing import turn_span
 
-    system_prompt = ctx.system_prompt + SYSTEM_PROMPT_INJECTION
+    with turn_span("prepare_system_prompt", "", 0) as span:
+        system_prompt = ctx.system_prompt + SYSTEM_PROMPT_INJECTION
 
-    # exec-10: Skill Injection
-    try:
-        from agent.skills.loader import format_skills_for_prompt, load_skills
-        skills = load_skills(user_id=ctx.user_id)
-        skills_text = format_skills_for_prompt(skills)
-        if skills_text:
-            system_prompt = f"{system_prompt}\n\n{skills_text}"
-    except Exception:
-        pass
+        # exec-10: Skill Injection
+        try:
+            from agent.skills.loader import format_skills_for_prompt, load_skills
 
-    # exec-10 Phase 3.5: Temporal Context
-    try:
-        from agent.temporal_context import get_temporal_context
-        temporal = get_temporal_context(user_id=ctx.user_id)
-        if temporal:
-            system_prompt = f"{system_prompt}\n\n{temporal}"
-    except Exception:
-        pass
+            skills = load_skills(user_id=ctx.user_id)
+            skills_text = format_skills_for_prompt(skills)
+            if skills_text:
+                system_prompt = f"{system_prompt}\n\n{skills_text}"
+        except Exception:
+            pass
 
-    # exec-11: Hindsight Memory Recall (pre-LLM context enrichment)
-    # Note: agent_graph.py also has memory_recall_node, but runner.py
-    # enriches the system prompt BEFORE graph execution for legacy loop compatibility.
-    try:
-        from agent.memory.engine import get_bank_id, get_memory_engine
-        engine = await get_memory_engine()
-        if engine:
-            from hindsight_api.engine.memory_engine import Budget
-            from hindsight_api.models import RequestContext
-            bank_id = get_bank_id(ctx.user_id)
-            # Use last user message as query
-            user_query = ""
-            for msg in reversed(getattr(ctx, '_messages', [])):
-                if isinstance(msg, dict) and msg.get("role") == "user":
-                    user_query = str(msg.get("content", ""))[:300]
-                    break
-            if not user_query:
-                user_query = ctx.system_prompt[:200]  # Fallback
-            result = await engine.recall_async(
-                bank_id=bank_id, query=user_query,
-                fact_type=["world", "experience", "observation"],
-                budget=Budget.MID, max_tokens=1500,
-                request_context=RequestContext(),
-            )
-            if result.results:
-                mem_lines = [f"- {f.text}" for f in result.results[:8]]
-                system_prompt = f"{system_prompt}\n\n## Relevant Memories\n" + "\n".join(mem_lines)
-    except Exception:
-        pass
+        # exec-10 Phase 3.5: Temporal Context
+        try:
+            from agent.temporal_context import get_temporal_context
 
-    return system_prompt
+            temporal = get_temporal_context(user_id=ctx.user_id)
+            if temporal:
+                system_prompt = f"{system_prompt}\n\n{temporal}"
+        except Exception:
+            pass
+
+        # exec-11: Hindsight Memory Recall (pre-LLM context enrichment)
+        try:
+            from agent.memory.engine import get_bank_id, get_memory_engine
+
+            engine = await get_memory_engine()
+            if engine:
+                from hindsight_api.engine.memory_engine import Budget
+                from hindsight_api.models import RequestContext
+
+                bank_id = get_bank_id(ctx.user_id)
+                user_query = ""
+                for msg in reversed(getattr(ctx, "_messages", [])):
+                    if isinstance(msg, dict) and msg.get("role") == "user":
+                        user_query = str(msg.get("content", ""))[:300]
+                        break
+                if not user_query:
+                    user_query = ctx.system_prompt[:200]
+                result = await engine.recall_async(
+                    bank_id=bank_id,
+                    query=user_query,
+                    fact_type=["world", "experience", "observation"],
+                    budget=Budget.MID,
+                    max_tokens=1500,
+                    request_context=RequestContext(),
+                )
+                if result.results:
+                    mem_lines = [f"- {f.text}" for f in result.results[:8]]
+                    system_prompt = (
+                        f"{system_prompt}\n\n## Relevant Memories\n"
+                        + "\n".join(mem_lines)
+                    )
+        except Exception:
+            pass
+
+        span.set_attribute("prompt.length", len(system_prompt))
+        return system_prompt
 
 
-async def _prepare_messages(messages: list[dict], ctx: AgentExecutionContext) -> list[dict]:
+async def _prepare_messages(
+    messages: list[dict], ctx: AgentExecutionContext
+) -> list[dict]:
     """Apply middleware to messages before graph execution."""
     # exec-10 Phase 5.5: Context Summarization
     try:
         from agent.middleware.summarization import apply_context_management
+
         messages = await apply_context_management(messages, model=ctx.model)
     except Exception:
         pass
@@ -114,6 +126,7 @@ async def _prepare_messages(messages: list[dict], ctx: AgentExecutionContext) ->
     # exec-10 Phase 5.1: Dangling Tool Calls patchen
     try:
         from agent.middleware.dangling_tool_call import patch_dangling_tool_calls
+
         messages = patch_dangling_tool_calls(messages)
     except Exception:
         pass
@@ -134,6 +147,7 @@ async def _run_graph(
     model = ctx.model
     try:
         from agent.security.credentials import get_user_role_model
+
         role_model = await get_user_role_model(ctx.user_id, "default")
         if role_model:
             model = role_model
@@ -163,38 +177,69 @@ async def _run_graph(
 
     config = {"configurable": {"thread_id": ctx.thread_id}}
 
-    try:
-        text_id = "t1"
-        yield sse(TextStartPacket(id=text_id))
+    from agent.tracing import session_span, set_session_summary
 
-        result = await graph.ainvoke(initial_state, config=config)
+    with session_span(
+        ctx.thread_id, ctx.user_id, "agent_chat", "default"
+    ) as _session_span:
+        try:
+            text_id = "t1"
+            yield sse(TextStartPacket(id=text_id))
 
-        final = result.get("final_response", "")
-        if final:
-            # P3: Scan agent output for exfiltration anomalies
-            from agent.middleware.sanitizer import scan_output_anomalies
-            anomaly = scan_output_anomalies(final)
-            if not anomaly.clean:
-                import logging as _log
-                _log.getLogger(__name__).warning(
-                    "Output anomalies in agent response: %s", anomaly.anomalies,
+            result = await graph.ainvoke(initial_state, config=config)
+
+            final = result.get("final_response", "")
+            if final:
+                # P3: Scan agent output for exfiltration anomalies
+                from agent.middleware.sanitizer import scan_output_anomalies
+
+                anomaly = scan_output_anomalies(final)
+                if not anomaly.clean:
+                    import logging as _log
+
+                    _log.getLogger(__name__).warning(
+                        "Output anomalies in agent response: %s",
+                        anomaly.anomalies,
+                    )
+                yield sse(TextDeltaPacket(id=text_id, text=final))
+
+            for tr in result.get("tool_results", []):
+                yield sse(
+                    ToolStartPacket(
+                        tool_name=tr["tool_name"], tool_call_id=tr["tool_call_id"]
+                    )
                 )
-            yield sse(TextDeltaPacket(id=text_id, text=final))
+                if tr.get("error"):
+                    yield sse(
+                        ToolErrorPacket(
+                            tool_call_id=tr["tool_call_id"], error=tr["error"]
+                        )
+                    )
+                else:
+                    yield sse(
+                        ToolResultPacket(
+                            tool_call_id=tr["tool_call_id"], result=tr["result"]
+                        )
+                    )
 
-        for tr in result.get("tool_results", []):
-            yield sse(ToolStartPacket(tool_name=tr["tool_name"], tool_call_id=tr["tool_call_id"]))
-            if tr.get("error"):
-                yield sse(ToolErrorPacket(tool_call_id=tr["tool_call_id"], error=tr["error"]))
-            else:
-                yield sse(ToolResultPacket(tool_call_id=tr["tool_call_id"], result=tr["result"]))
+            yield sse(TextEndPacket(id=text_id))
+            yield sse(
+                MessageMetaPacket(
+                    metadata={
+                        "threadId": ctx.thread_id,
+                        "promptTokens": 0,  # TODO: extract from graph result
+                        "completionTokens": 0,
+                    }
+                )
+            )
+            set_session_summary(
+                _session_span,
+                total_turns=result.get("iteration", 0),
+                total_tokens=result.get("token_usage", 0),
+                outcome="completed",
+            )
+            yield sse(FinishPacket(finish_reason="stop"))
 
-        yield sse(TextEndPacket(id=text_id))
-        yield sse(MessageMetaPacket(metadata={
-            "threadId": ctx.thread_id,
-            "promptTokens": 0,  # TODO: extract from graph result
-            "completionTokens": 0,
-        }))
-        yield sse(FinishPacket(finish_reason="stop"))
-
-    except Exception as e:
-        yield sse(ErrorPacket(error=f"LangGraph error: {e}"))
+        except Exception as e:
+            set_session_summary(_session_span, outcome="error")
+            yield sse(ErrorPacket(error=f"LangGraph error: {e}"))

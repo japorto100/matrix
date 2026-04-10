@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, BarChart2, Loader2, MessageCircle, Pin, WifiOff } from "lucide-react";
-import { ClientEvent, SyncState } from "matrix-js-sdk";
+import { ClientEvent, NotificationCountType, SyncState } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -180,13 +180,12 @@ export function MatrixChat() {
 			client.setRoomReadMarkers(selectedRoomId, lastEv.getId()!).catch(() => {});
 		}
 		// Sliding Sync aktualisiert den Count nicht sofort — lokal zurücksetzen + UI refresh
-		const notifTypes = ["total", "highlight"] as const;
-		for (const t of notifTypes) {
-			(room as any).setUnreadNotificationCount?.(t, 0);
+		for (const t of [NotificationCountType.Total, NotificationCountType.Highlight]) {
+			room.setUnreadNotificationCount(t, 0);
 		}
 		// ClientEvent.Room triggert useRooms refresh
 		setTimeout(() => {
-			client.emit("Room" as any, room);
+			client.emit(ClientEvent.Room, room);
 		}, 100);
 	}, [client, selectedRoomId, lastEventId]);
 

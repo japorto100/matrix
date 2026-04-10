@@ -1,7 +1,7 @@
 "use client";
 
 import { Shield } from "lucide-react";
-import type { MatrixClient } from "matrix-js-sdk";
+import { EventType, type MatrixClient } from "matrix-js-sdk";
 import { toast } from "sonner";
 import {
 	Select,
@@ -91,8 +91,7 @@ export function PermissionsPanel({ powerLevelsContent, client, roomId }: Permiss
 									const level = Number.parseInt(val, 10);
 									const newPL = { ...(powerLevelsContent ?? {}), [key]: level };
 									client
-										// biome-ignore lint/suspicious/noExplicitAny: power_levels typing
-										.sendStateEvent(roomId, "m.room.power_levels" as any, newPL, "")
+										.sendStateEvent(roomId, EventType.RoomPowerLevels, newPL, "")
 										.catch(() => toast.error("Berechtigung ändern fehlgeschlagen"));
 								}}
 							>

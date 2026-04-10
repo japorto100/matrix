@@ -13,7 +13,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from ingestion.core.config import get_config
-from ingestion.core.exceptions import DedupSkip
+from ingestion.core.exceptions import DedupSkipError
 from ingestion.core.types import JobStatus
 from ingestion.pipelines.base import PipelineContext
 from ingestion.pipelines.document import DocumentPipeline
@@ -29,7 +29,10 @@ async def lifespan(app: FastAPI):
     global _ctx
     config = get_config()
     logger.info("ingestion-worker starting (port {})", config.port)
-    logger.info("  db_url={}", config.db_url.split("@")[-1] if "@" in config.db_url else config.db_url)
+    logger.info(
+        "  db_url={}",
+        config.db_url.split("@")[-1] if "@" in config.db_url else config.db_url,
+    )
     logger.info("  artifact_gateway={}", config.artifact_gateway_base_url)
     logger.info("  kg_pipeline_enabled={}", config.kg_pipeline_enabled)
     logger.info("  embedder={}", config.embedder_model)
@@ -120,7 +123,7 @@ async def ingest_document(
                 tags=req.tags,
                 sinks_active=req.sinks,
             )
-        except DedupSkip as e:
+        except DedupSkipError as e:
             logger.info("dedup skip: {}", e)
         except Exception as e:  # noqa: BLE001
             logger.exception("document pipeline failed: {}", e)
@@ -145,7 +148,7 @@ async def ingest_note(req: IngestNoteRequest) -> dict:
             "chunks": job.chunks_done,
             "job_status": job.status.value,
         }
-    except DedupSkip as e:
+    except DedupSkipError as e:
         return {"status": "dedup_skip", "existing_job_id": e.existing_job_id}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -163,7 +166,7 @@ async def ingest_link(req: IngestLinkRequest, background: BackgroundTasks) -> di
             await pipeline.run(
                 url=req.url, user_id=req.user_id, tags=req.tags, title=req.title
             )
-        except DedupSkip as e:
+        except DedupSkipError as e:
             logger.info("dedup skip: {}", e)
         except Exception as e:  # noqa: BLE001
             logger.exception("link pipeline failed: {}", e)
@@ -187,8 +190,16 @@ async def status() -> dict:
         "running": sum(
             v
             for k, v in counts.items()
-            if k in ("detecting", "loading", "extracting", "normalizing",
-                     "chunking", "embedding", "storing")
+            if k
+            in (
+                "detecting",
+                "loading",
+                "extracting",
+                "normalizing",
+                "chunking",
+                "embedding",
+                "storing",
+            )
         ),
         "skipped_dedup": counts.get("skipped_dedup", 0),
     }

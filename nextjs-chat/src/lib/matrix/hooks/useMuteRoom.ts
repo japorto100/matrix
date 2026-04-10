@@ -1,6 +1,12 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
+import {
+	ConditionKind,
+	EventType,
+	type MatrixClient,
+	PushRuleActionName,
+	PushRuleKind,
+} from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,8 +20,7 @@ export function useMuteRoom(client: MatrixClient | null, roomId: string | null) 
 	useEffect(() => {
 		if (!client || !roomId) return;
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: push_rules nicht typisiert
-			const pushRules = (client.getAccountData as any)("m.push_rules")?.getContent();
+			const pushRules = client.getAccountData(EventType.PushRules)?.getContent();
 			const overrides =
 				(pushRules?.global as { override?: Array<{ rule_id: string; enabled: boolean }> })
 					?.override ?? [];
@@ -29,13 +34,11 @@ export function useMuteRoom(client: MatrixClient | null, roomId: string | null) 
 		if (!client || !roomId) return;
 		try {
 			if (isMuted) {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
-				await (client.deletePushRule as any)("global", "override", roomId);
+				await client.deletePushRule("global", PushRuleKind.Override, roomId);
 			} else {
-				// biome-ignore lint/suspicious/noExplicitAny: PushRuleKind nicht typisiert
-				await (client.addPushRule as any)("global", "override", roomId, {
-					conditions: [{ kind: "event_match", key: "room_id", pattern: roomId }],
-					actions: ["dont_notify"],
+				await client.addPushRule("global", PushRuleKind.Override, roomId, {
+					conditions: [{ kind: ConditionKind.EventMatch, key: "room_id", pattern: roomId }],
+					actions: [PushRuleActionName.DontNotify],
 				});
 			}
 			setIsMuted(!isMuted);

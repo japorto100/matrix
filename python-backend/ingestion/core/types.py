@@ -8,15 +8,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from uuid import UUID, uuid4
-
 
 # ─── Pipeline Job Tracking ──────────────────────────────────────────────────
 
 
-class PipelineKind(str, Enum):
+class PipelineKind(StrEnum):
     """Which pipeline composer handled this job."""
 
     DOCUMENT = "document"
@@ -25,7 +24,7 @@ class PipelineKind(str, Enum):
     BATCH = "batch"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Pipeline job lifecycle states."""
 
     PENDING = "pending"

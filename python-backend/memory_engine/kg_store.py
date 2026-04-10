@@ -12,15 +12,17 @@ Security fixes (Code Review 31.03.2026):
     - #2: FalkorDB Cypher injection — _sanitize_cypher_value()
     - #10: SQLiteKGStore.query() — allowlisted queries only
 """
+
 from __future__ import annotations
 
 import hashlib
-import re
 import json
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any, Protocol
+
 
 def _sanitize_cypher_value(val: str) -> str:
     """Sanitize a string value for Cypher queries (#2 injection fix)."""
@@ -60,8 +62,7 @@ _ALLOWED_QUERY_PATTERNS = [
     re.compile(r"^SELECT\s+COUNT", re.IGNORECASE),
 ]
 
-
-from memory_engine.seed_data import (
+from memory_engine.seed_data import (  # noqa: E402
     INSTITUTIONS,
     REGIMES,
     STRATAGEMS,
@@ -71,6 +72,7 @@ from memory_engine.seed_data import (
 _KUZU_AVAILABLE = False
 try:
     import kuzu as _kuzu_probe  # noqa: F401  — import-probe only; real import inside KuzuKGStore
+
     _KUZU_AVAILABLE = True
 except ImportError:
     pass
@@ -81,7 +83,9 @@ _FORCE_SQLITE = os.getenv("KG_FORCE_SQLITE", "false").strip().lower() == "true"
 class KGStore(Protocol):
     def node_count(self) -> int: ...
     def seed(self, force: bool = False) -> dict[str, Any]: ...
-    def query(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]: ...
+    def query(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]: ...
     def get_nodes(self, node_type: str, limit: int = 100) -> list[dict[str, Any]]: ...
     def sync_snapshot(self) -> dict[str, Any]: ...
     def status(self) -> str: ...
@@ -95,13 +99,16 @@ def _normalize_provider(value: str | None) -> str:
         return provider
     return "kuzu"
 
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
+
 def _default_kuzu_path() -> str:
     base = Path(__file__).resolve().parents[2]  # python-backend/
     return str(base / "data" / "kuzu.db")
+
 
 def _default_sqlite_path() -> str:
     base = Path(__file__).resolve().parents[2]
@@ -112,9 +119,11 @@ def _default_sqlite_path() -> str:
 # KuzuDB store
 # ---------------------------------------------------------------------------
 
+
 class KuzuKGStore:
     def __init__(self, db_path: str | None = None) -> None:
         import kuzu  # type: ignore[import-untyped]  — available: factory only creates this when _KUZU_AVAILABLE
+
         configured = db_path or os.getenv("KG_KUZU_PATH", _default_kuzu_path())
         path = Path(configured)
         # Kuzu Python binding expects a file path on this runtime.
@@ -149,7 +158,14 @@ class KuzuKGStore:
 
     def node_count(self) -> int:
         total = 0
-        for table in ("Stratagem", "Regime", "BTEMarker", "TransmissionChannel", "Asset", "Institution"):
+        for table in (
+            "Stratagem",
+            "Regime",
+            "BTEMarker",
+            "TransmissionChannel",
+            "Asset",
+            "Institution",
+        ):
             try:
                 result: Any = self._conn.execute(f"MATCH (n:{table}) RETURN count(n)")
                 row: Any = result.get_next()
@@ -169,7 +185,13 @@ class KuzuKGStore:
             try:
                 self._conn.execute(
                     "MERGE (n:Stratagem {id: $id}) SET n.name=$name, n.category=$cat, n.market_bias=$mb, n.confidence_base=$cb",
-                    {"id": s["id"], "name": s["name"], "cat": s["category"], "mb": s["market_bias"], "cb": s["confidence_base"]},
+                    {
+                        "id": s["id"],
+                        "name": s["name"],
+                        "cat": s["category"],
+                        "mb": s["market_bias"],
+                        "cb": s["confidence_base"],
+                    },
                 )
             except Exception:
                 pass
@@ -179,7 +201,12 @@ class KuzuKGStore:
             try:
                 self._conn.execute(
                     "MERGE (n:Regime {id: $id}) SET n.name=$name, n.description=$desc, n.typical_duration_days=$dur",
-                    {"id": r["id"], "name": r["name"], "desc": r["description"], "dur": r["typical_duration_days"]},
+                    {
+                        "id": r["id"],
+                        "name": r["name"],
+                        "desc": r["description"],
+                        "dur": r["typical_duration_days"],
+                    },
                 )
             except Exception:
                 pass
@@ -189,7 +216,12 @@ class KuzuKGStore:
             try:
                 self._conn.execute(
                     "MERGE (n:TransmissionChannel {id: $id}) SET n.name=$name, n.direction=$dir, n.lag_days=$lag",
-                    {"id": tc["id"], "name": tc["id"], "dir": tc["direction"], "lag": tc["lag_days"]},
+                    {
+                        "id": tc["id"],
+                        "name": tc["id"],
+                        "dir": tc["direction"],
+                        "lag": tc["lag_days"],
+                    },
                 )
             except Exception:
                 pass
@@ -199,7 +231,13 @@ class KuzuKGStore:
             try:
                 self._conn.execute(
                     "MERGE (n:Institution {id: $id}) SET n.name=$name, n.type=$type, n.currency=$cur, n.influence_score=$inf",
-                    {"id": inst["id"], "name": inst["name"], "type": inst["type"], "cur": inst["currency"], "inf": inst["influence_score"]},
+                    {
+                        "id": inst["id"],
+                        "name": inst["name"],
+                        "type": inst["type"],
+                        "cur": inst["currency"],
+                        "inf": inst["influence_score"],
+                    },
                 )
             except Exception:
                 pass
@@ -207,7 +245,9 @@ class KuzuKGStore:
         total = self.node_count()
         return {"seeded": True, "node_count": total}
 
-    def query(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def query(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         result: Any = self._conn.execute(query, parameters or {})
         rows = []
         while result.has_next():
@@ -216,10 +256,19 @@ class KuzuKGStore:
         return rows
 
     def get_nodes(self, node_type: str, limit: int = 100) -> list[dict[str, Any]]:
-        allowed = {"Stratagem", "Regime", "BTEMarker", "TransmissionChannel", "Asset", "Institution"}
+        allowed = {
+            "Stratagem",
+            "Regime",
+            "BTEMarker",
+            "TransmissionChannel",
+            "Asset",
+            "Institution",
+        }
         if node_type not in allowed:
             return []
-        result: Any = self._conn.execute(f"MATCH (n:{node_type}) RETURN n LIMIT {limit}")
+        result: Any = self._conn.execute(
+            f"MATCH (n:{node_type}) RETURN n LIMIT {limit}"
+        )
         nodes = []
         while result.has_next():
             row: Any = result.get_next()
@@ -229,10 +278,20 @@ class KuzuKGStore:
     def sync_snapshot(self) -> dict[str, Any]:
         snapshot: dict[str, Any] = {"stratagems": [], "regimes": [], "institutions": []}
         try:
-            r: Any = self._conn.execute("MATCH (n:Stratagem) RETURN n.id, n.name, n.category, n.market_bias, n.confidence_base")
+            r: Any = self._conn.execute(
+                "MATCH (n:Stratagem) RETURN n.id, n.name, n.category, n.market_bias, n.confidence_base"
+            )
             while r.has_next():
                 row: Any = r.get_next()
-                snapshot["stratagems"].append({"id": row[0], "name": row[1], "category": row[2], "market_bias": row[3], "confidence_base": row[4]})
+                snapshot["stratagems"].append(
+                    {
+                        "id": row[0],
+                        "name": row[1],
+                        "category": row[2],
+                        "market_bias": row[3],
+                        "confidence_base": row[4],
+                    }
+                )
         except Exception:
             pass
         raw = json.dumps(snapshot, sort_keys=True)
@@ -289,9 +348,7 @@ class KuzuKGStore:
         self._conn.execute(f"CREATE (n:{node_type}) SET {set_clause}")
         return node_id
 
-    def update_node(
-        self, node_id: str, props: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def update_node(self, node_id: str, props: dict[str, Any]) -> dict[str, Any] | None:
         """Patch node properties. Returns updated node or None if not found."""
         existing = self.get_node(node_id)
         if existing is None:
@@ -346,9 +403,7 @@ class KuzuKGStore:
         if to_id:
             clauses.append(f"b.id = '{_sanitize_cypher_value(to_id)}'")
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-        edge_pattern = (
-            f"[r:{_validate_edge_type(edge_type)}]" if edge_type else "[r]"
-        )
+        edge_pattern = f"[r:{_validate_edge_type(edge_type)}]" if edge_type else "[r]"
         try:
             result: Any = self._conn.execute(
                 f"MATCH (a)-{edge_pattern}->(b) {where} "
@@ -426,6 +481,7 @@ class KuzuKGStore:
 # SQLite fallback KG store
 # ---------------------------------------------------------------------------
 
+
 class SQLiteKGStore:
     """Fallback when KuzuDB is not available. Uses SQLite with 3 tables."""
 
@@ -491,10 +547,14 @@ class SQLiteKGStore:
         self._conn.commit()
         return {"seeded": True, "node_count": self.node_count()}
 
-    def query(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def query(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         # #10 fix: only allow SELECT queries on known tables
         if not any(p.match(query.strip()) for p in _ALLOWED_QUERY_PATTERNS):
-            raise ValueError(f"Query not allowed (only SELECT on kg_nodes/kg_edges): {query[:80]}")
+            raise ValueError(
+                f"Query not allowed (only SELECT on kg_nodes/kg_edges): {query[:80]}"
+            )
         cur = self._conn.execute(query, parameters or {})
         cols = [d[0] for d in cur.description] if cur.description else []
         return [dict(zip(cols, row)) for row in cur.fetchall()]
@@ -528,7 +588,9 @@ class SQLiteKGStore:
 class FalkorKGStore:
     def __init__(self, url: str | None = None, graph_name: str | None = None) -> None:
         self._url = (url or os.getenv("KG_FALKORDB_URL", "")).strip()
-        self._graph_name = (graph_name or os.getenv("KG_FALKORDB_GRAPH", "tradeviewfusion")).strip() or "tradeviewfusion"
+        self._graph_name = (
+            graph_name or os.getenv("KG_FALKORDB_GRAPH", "tradeviewfusion")
+        ).strip() or "tradeviewfusion"
 
     def _connect(self):
         if not self._url:
@@ -539,7 +601,9 @@ class FalkorKGStore:
 
     def _query_rows(self, cypher: str) -> list[list[Any]]:
         client = self._connect()
-        response = client.execute_command("GRAPH.QUERY", self._graph_name, cypher, "--compact")
+        response = client.execute_command(
+            "GRAPH.QUERY", self._graph_name, cypher, "--compact"
+        )
         if not isinstance(response, list) or len(response) < 2:
             return []
         rows = response[1]
@@ -572,11 +636,8 @@ class FalkorKGStore:
             client.execute_command(
                 "GRAPH.QUERY",
                 self._graph_name,
-                (
-                    "MERGE (n:Stratagem {id: '%s'}) "
-                    "SET n.name = '%s', n.category = '%s', n.market_bias = '%s', n.confidence_base = %s"
-                )
-                % (
+                "MERGE (n:Stratagem {{id: '{}'}}) "
+                "SET n.name = '{}', n.category = '{}', n.market_bias = '{}', n.confidence_base = {}".format(
                     _sanitize_cypher_value(str(s["id"])),
                     _sanitize_cypher_value(str(s["name"])),
                     _sanitize_cypher_value(str(s["category"])),
@@ -589,11 +650,8 @@ class FalkorKGStore:
             client.execute_command(
                 "GRAPH.QUERY",
                 self._graph_name,
-                (
-                    "MERGE (n:Regime {id: '%s'}) "
-                    "SET n.name = '%s', n.description = '%s', n.typical_duration_days = %s"
-                )
-                % (
+                "MERGE (n:Regime {{id: '{}'}}) "
+                "SET n.name = '{}', n.description = '{}', n.typical_duration_days = {}".format(
                     _sanitize_cypher_value(str(r["id"])),
                     _sanitize_cypher_value(str(r["name"])),
                     _sanitize_cypher_value(str(r["description"])),
@@ -605,11 +663,8 @@ class FalkorKGStore:
             client.execute_command(
                 "GRAPH.QUERY",
                 self._graph_name,
-                (
-                    "MERGE (n:TransmissionChannel {id: '%s'}) "
-                    "SET n.name = '%s', n.direction = '%s', n.lag_days = %s"
-                )
-                % (
+                "MERGE (n:TransmissionChannel {{id: '{}'}}) "
+                "SET n.name = '{}', n.direction = '{}', n.lag_days = {}".format(
                     str(tc["id"]).replace("'", "\\'"),
                     str(tc["id"]).replace("'", "\\'"),
                     str(tc["direction"]).replace("'", "\\'"),
@@ -621,11 +676,8 @@ class FalkorKGStore:
             client.execute_command(
                 "GRAPH.QUERY",
                 self._graph_name,
-                (
-                    "MERGE (n:Institution {id: '%s'}) "
-                    "SET n.name = '%s', n.type = '%s', n.currency = '%s', n.influence_score = %s"
-                )
-                % (
+                "MERGE (n:Institution {{id: '{}'}}) "
+                "SET n.name = '{}', n.type = '{}', n.currency = '{}', n.influence_score = {}".format(
                     str(inst["id"]).replace("'", "\\'"),
                     str(inst["name"]).replace("'", "\\'"),
                     str(inst["type"]).replace("'", "\\'"),
@@ -637,26 +689,45 @@ class FalkorKGStore:
         total = self.node_count()
         return {"seeded": True, "node_count": total}
 
-    def query(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    def query(
+        self, query: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         if parameters:
             raise ValueError("FalkorKGStore.query does not yet support parameter maps")
         rows = self._query_rows(query)
         return [{"values": list(row)} for row in rows]
 
     def get_nodes(self, node_type: str, limit: int = 100) -> list[dict[str, Any]]:
-        allowed = {"Stratagem", "Regime", "BTEMarker", "TransmissionChannel", "Asset", "Institution"}
+        allowed = {
+            "Stratagem",
+            "Regime",
+            "BTEMarker",
+            "TransmissionChannel",
+            "Asset",
+            "Institution",
+        }
         if node_type not in allowed:
             return []
         rows = self._query_rows(
             f"MATCH (n:{node_type}) RETURN n.id, n.name LIMIT {max(1, min(limit, 500))}"
         )
-        return [{"id": row[0], "name": row[1], "node_type": node_type} for row in rows if len(row) >= 2]
+        return [
+            {"id": row[0], "name": row[1], "node_type": node_type}
+            for row in rows
+            if len(row) >= 2
+        ]
 
     def sync_snapshot(self) -> dict[str, Any]:
         snapshot: dict[str, Any] = {"stratagems": [], "regimes": [], "institutions": []}
-        for label, key in (("Stratagem", "stratagems"), ("Regime", "regimes"), ("Institution", "institutions")):
+        for label, key in (
+            ("Stratagem", "stratagems"),
+            ("Regime", "regimes"),
+            ("Institution", "institutions"),
+        ):
             rows = self._query_rows(f"MATCH (n:{label}) RETURN n.id, n.name LIMIT 200")
-            snapshot[key] = [{"id": row[0], "name": row[1]} for row in rows if len(row) >= 2]
+            snapshot[key] = [
+                {"id": row[0], "name": row[1]} for row in rows if len(row) >= 2
+            ]
         raw = json.dumps(snapshot, sort_keys=True)
         checksum = hashlib.sha256(raw.encode()).hexdigest()[:16]
         return {"snapshot": snapshot, "checksum": checksum}
@@ -674,6 +745,7 @@ class FalkorKGStore:
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def create_kg_store(db_path: str | None = None) -> KGStore:
     # Read at call-time so tests can override via monkeypatch.setenv.

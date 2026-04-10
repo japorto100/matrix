@@ -80,6 +80,16 @@ dependencies = [
     # Isolierte Code-Execution fuer LLM-generierten Code (Data Analysis, Backtesting)
     "opensandbox>=0.1.6",
     "opensandbox-code-interpreter>=0.1.2",
+    # ── OpenTelemetry (exec-17: Observability) ──────────────────────────────
+    # Opt-in via OTEL_ENABLED=true — see shared/app_factory.py
+    "opentelemetry-api>=1.25.0",
+    "opentelemetry-sdk>=1.25.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.25.0",
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "opentelemetry-instrumentation-httpx>=0.46b0",
+    # ── Langfuse (exec-17 Phase 3: LLM Observability) ──────────────────────
+    # Opt-in via LANGFUSE_ENABLED=true — see agent/langfuse_tracker.py
+    "langfuse>=2.40.0",
 ]
 
 [dependency-groups]

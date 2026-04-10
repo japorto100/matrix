@@ -36,15 +36,14 @@ export function SearchPanel({ client, roomId, onClose }: Props) {
 				filter: { rooms: [roomId] },
 				term: trimmed,
 			});
-			// biome-ignore lint/suspicious/noExplicitAny: ISearchResults Struktur ist komplex
-			const mapped: SearchResult[] = ((response as any).results ?? []).map((r: any) => {
-				const ev = r.result ?? r.context?.ourEvent ?? r;
-				const content = ev?.getContent?.() ?? ev?.content ?? {};
+			const mapped: SearchResult[] = (response.results ?? []).map((r) => {
+				const ev = r.context.ourEvent;
+				const content = ev.getContent();
 				return {
-					eventId: ev?.getId?.() ?? ev?.event_id ?? "",
-					sender: (ev?.getSender?.() ?? ev?.sender ?? "").split(":")[0]?.replace("@", "") ?? "",
+					eventId: ev.getId() ?? "",
+					sender: (ev.getSender() ?? "").split(":")[0]?.replace("@", "") ?? "",
 					body: (content.body as string) ?? "",
-					timestamp: ev?.getTs?.() ?? ev?.origin_server_ts ?? 0,
+					timestamp: ev.getTs(),
 				};
 			});
 			setResults(mapped);

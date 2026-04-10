@@ -1,0 +1,36 @@
+{
+  "description": "Representative evaluation queries for harness optimization (exec-17 Phase 5). Meta-Harness paper uses ~250 search-set queries. Start small, expand as needed.",
+  "queries": [
+    {
+      "id": "q001",
+      "message": "What is the current market sentiment for AAPL?",
+      "expected_tools": ["market_data_fetch"],
+      "category": "simple_query"
+    },
+    {
+      "id": "q002",
+      "message": "Analyze the BTE divergence pattern for EUR/USD and suggest entry points",
+      "expected_tools": ["market_data_fetch", "chart_analysis"],
+      "category": "multi_tool"
+    },
+    {
+      "id": "q003",
+      "message": "What did we discuss about gold prices last week?",
+      "expected_tools": [],
+      "expected_memory": true,
+      "category": "memory_recall"
+    },
+    {
+      "id": "q004",
+      "message": "Compare the risk profiles of MSFT and GOOGL based on recent earnings",
+      "expected_tools": ["market_data_fetch"],
+      "category": "analysis"
+    },
+    {
+      "id": "q005",
+      "message": "Hello, what can you help me with?",
+      "expected_tools": [],
+      "category": "simple_chat"
+    }
+  ]
+}

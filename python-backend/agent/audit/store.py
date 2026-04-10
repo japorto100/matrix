@@ -26,10 +26,10 @@ TABLE = "agent.audit_events"
 
 # ── Abstract base ──────────────────────────────────────────────────────────
 
+
 class AuditStore(ABC):
     @abstractmethod
-    async def append(self, entry: dict[str, Any]) -> None:
-        ...
+    async def append(self, entry: dict[str, Any]) -> None: ...
 
     @abstractmethod
     async def query(
@@ -39,11 +39,11 @@ class AuditStore(ABC):
         session_id: str | None = None,
         action: str | None = None,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
-        ...
+    ) -> list[dict[str, Any]]: ...
 
 
 # ── JSON Lines (dev default, zero dependencies) ───────────────────────────
+
 
 class JsonLinesAuditStore(AuditStore):
     """Append-only JSON Lines file store. One file per day."""
@@ -97,6 +97,7 @@ class JsonLinesAuditStore(AuditStore):
 
 # ── PostgreSQL (production, Grafana-ready) ─────────────────────────────────
 
+
 class PostgresAuditStore(AuditStore):
     """PostgreSQL audit store using psycopg3.
 
@@ -110,17 +111,18 @@ class PostgresAuditStore(AuditStore):
     async def append(self, entry: dict[str, Any]) -> None:
         try:
             import psycopg
+
             with psycopg.connect(self._dsn) as conn:
                 conn.execute(
                     f"""
                     INSERT INTO {TABLE}
                         (timestamp, action, user_id, thread_id, agent_class,
                          agent_role, tool_name, input, output, duration_ms,
-                         success, error, metadata)
+                         success, error, metadata, iteration)
                     VALUES
                         (%(timestamp)s, %(action)s, %(user_id)s, %(thread_id)s, %(agent_class)s,
                          %(agent_role)s, %(tool_name)s, %(input)s, %(output)s, %(duration_ms)s,
-                         %(success)s, %(error)s, %(metadata)s)
+                         %(success)s, %(error)s, %(metadata)s, %(iteration)s)
                     """,
                     {
                         "timestamp": entry.get("timestamp"),
@@ -130,12 +132,19 @@ class PostgresAuditStore(AuditStore):
                         "agent_class": entry.get("agentClass", "advisory"),
                         "agent_role": entry.get("agentRole"),
                         "tool_name": entry.get("toolName"),
-                        "input": json.dumps(entry.get("input")) if entry.get("input") else None,
-                        "output": json.dumps(entry.get("output")) if entry.get("output") else None,
+                        "input": json.dumps(entry.get("input"))
+                        if entry.get("input")
+                        else None,
+                        "output": json.dumps(entry.get("output"))
+                        if entry.get("output")
+                        else None,
                         "duration_ms": entry.get("duration_ms"),
                         "success": entry.get("success", True),
                         "error": entry.get("error"),
-                        "metadata": json.dumps(entry.get("metadata")) if entry.get("metadata") else None,
+                        "metadata": json.dumps(entry.get("metadata"))
+                        if entry.get("metadata")
+                        else None,
+                        "iteration": entry.get("iteration"),
                     },
                 )
                 conn.commit()
@@ -166,6 +175,7 @@ class PostgresAuditStore(AuditStore):
         try:
             import psycopg
             from psycopg.rows import dict_row
+
             with psycopg.connect(self._dsn, row_factory=dict_row) as conn:
                 rows = conn.execute(sql, params).fetchall()
             return [dict(row) for row in rows]
@@ -175,6 +185,7 @@ class PostgresAuditStore(AuditStore):
 
 
 # ── Factory ────────────────────────────────────────────────────────────────
+
 
 def get_audit_store() -> AuditStore:
     """Get or create the singleton audit store.
@@ -186,7 +197,10 @@ def get_audit_store() -> AuditStore:
         db_url = os.environ.get("AUDIT_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
         if db_url:
             _store_instance = PostgresAuditStore(db_url)
-            logger.info("Audit store: PostgreSQL (%s)", db_url.split("@")[-1] if "@" in db_url else "local")
+            logger.info(
+                "Audit store: PostgreSQL (%s)",
+                db_url.split("@")[-1] if "@" in db_url else "local",
+            )
         else:
             base_dir = os.environ.get(
                 "AUDIT_LOG_DIR",

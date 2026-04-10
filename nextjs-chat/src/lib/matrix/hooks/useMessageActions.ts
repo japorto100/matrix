@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
+import { EventType, type MatrixClient, RelationType } from "matrix-js-sdk";
 import { useCallback } from "react";
 
 /**
@@ -31,9 +31,8 @@ export function useMessageActions(client: MatrixClient | null, roomId: string | 
 
 			// Neue Reaction senden
 			try {
-				// biome-ignore lint/suspicious/noExplicitAny: m.reaction nicht in SDK EventType
-				await client.sendEvent(roomId, "m.reaction" as any, {
-					"m.relates_to": { rel_type: "m.annotation", event_id: eventId, key: emoji },
+				await client.sendEvent(roomId, EventType.Reaction, {
+					"m.relates_to": { rel_type: RelationType.Annotation, event_id: eventId, key: emoji },
 				});
 			} catch (err) {
 				console.error("[react] send failed:", err);

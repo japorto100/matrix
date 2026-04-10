@@ -1,7 +1,7 @@
 "use client";
 
 import { Camera } from "lucide-react";
-import type { MatrixClient } from "matrix-js-sdk";
+import { type MatrixClient, Visibility } from "matrix-js-sdk";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,7 +56,7 @@ export function CreateSpaceDialog({ client, open, onOpenChange }: Props) {
 			// Space erstellen (m.space Room-Typ)
 			await client.createRoom({
 				name: trimmed,
-				visibility: visibility === "public" ? ("public" as any) : ("private" as any),
+				visibility: visibility === "public" ? Visibility.Public : Visibility.Private,
 				creation_content: { type: "m.space" },
 				initial_state: avatarUrl
 					? [{ type: "m.room.avatar", state_key: "", content: { url: avatarUrl } }]

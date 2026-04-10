@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+from fastapi import Query
 from fastapi.responses import JSONResponse
-from shared import create_service_app  # noqa: E402
-from shared.cache_adapter import create_cache_adapter, TTL_INDICATOR, TTL_SNAPSHOT  # noqa: E402
+
+from memory_engine.episodic_store import EpisodicStore  # noqa: E402
+from memory_engine.kg_store import create_kg_store  # noqa: E402
 from memory_engine.models import (  # noqa: E402
     EpisodeCreateRequest,
     EpisodeResponse,
@@ -23,8 +25,12 @@ from memory_engine.models import (  # noqa: E402
     VectorSearchResponse,
     VectorSearchResult,
 )
-from memory_engine.kg_store import create_kg_store  # noqa: E402
-from memory_engine.episodic_store import EpisodicStore  # noqa: E402
+from shared import create_service_app  # noqa: E402
+from shared.cache_adapter import (  # noqa: E402
+    TTL_INDICATOR,
+    TTL_SNAPSHOT,
+    create_cache_adapter,
+)
 
 # Optional vector store — imported lazily to avoid hard dep at startup
 _vector_store_instance = None
@@ -35,6 +41,7 @@ def _get_vector_store():
     if _vector_store_instance is None:
         try:
             from memory_engine.vector_store import VectorStore  # noqa: F401
+
             _vector_store_instance = VectorStore()
         except Exception:
             _vector_store_instance = None
@@ -78,6 +85,7 @@ def _cache():
 # Health
 # ---------------------------------------------------------------------------
 
+
 @app.get("/health", response_model=MemoryHealthResponse)
 async def health() -> MemoryHealthResponse:
     kg_status = "unavailable"
@@ -119,6 +127,7 @@ async def health() -> MemoryHealthResponse:
 # KG endpoints
 # ---------------------------------------------------------------------------
 
+
 @app.post("/api/v1/memory/kg/seed", response_model=KGSeedResponse)
 async def kg_seed(request: KGSeedRequest) -> KGSeedResponse:
     result = _kg().seed(force=request.force)
@@ -127,7 +136,9 @@ async def kg_seed(request: KGSeedRequest) -> KGSeedResponse:
         ok=True,
         seeded=result["seeded"],
         node_count=result["node_count"],
-        message="seeded" if result["seeded"] else "already seeded, use force=true to re-seed",
+        message="seeded"
+        if result["seeded"]
+        else "already seeded, use force=true to re-seed",
     )
 
 
@@ -138,13 +149,15 @@ async def kg_query(request: KGQueryRequest) -> KGQueryResponse:
 
 
 @app.get("/api/v1/memory/kg/nodes", response_model=KGNodesResponse)
-async def kg_nodes(nodeType: str = "Stratagem", limit: int = 100) -> Any:
+async def kg_nodes(
+    node_type: str = Query("Stratagem", alias="nodeType"), limit: int = 100
+) -> Any:
     safe_limit = min(limit, 500)
-    ck = f"tradeview:memory:kg:nodes:{nodeType}:{safe_limit}"
+    ck = f"tradeview:memory:kg:nodes:{node_type}:{safe_limit}"
     hit = await _cache().get(ck)
     if hit is not None:
         return JSONResponse(hit)
-    nodes = _kg().get_nodes(nodeType, safe_limit)
+    nodes = _kg().get_nodes(node_type, safe_limit)
     result_data = {"ok": True, "nodes": nodes, "total": len(nodes)}
     await _cache().set(ck, result_data, ttl_seconds=TTL_INDICATOR)
     return JSONResponse(result_data)
@@ -161,7 +174,7 @@ async def kg_sync() -> Any:
         "ok": True,
         "snapshot": result["snapshot"],
         "checksum": result["checksum"],
-        "synced_at": datetime.now(timezone.utc).isoformat(),
+        "synced_at": datetime.now(UTC).isoformat(),
     }
     await _cache().set(ck, result_data, ttl_seconds=TTL_SNAPSHOT)
     return JSONResponse(result_data)
@@ -170,6 +183,7 @@ async def kg_sync() -> Any:
 # ---------------------------------------------------------------------------
 # Episode endpoints
 # ---------------------------------------------------------------------------
+
 
 @app.post("/api/v1/memory/episode", response_model=EpisodeResponse)
 async def episode_create(request: EpisodeCreateRequest) -> EpisodeResponse:
@@ -190,15 +204,18 @@ async def episode_create(request: EpisodeCreateRequest) -> EpisodeResponse:
 
 
 @app.get("/api/v1/memory/episodes", response_model=EpisodesListResponse)
-async def episodes_list(agentRole: str = "", limit: int = 100) -> EpisodesListResponse:
+async def episodes_list(
+    agent_role: str = Query("", alias="agentRole"), limit: int = 100
+) -> EpisodesListResponse:
     safe_limit = min(max(1, limit), 1000)
-    episodes = _ep().list_episodes(agentRole or None, safe_limit)
+    episodes = _ep().list_episodes(agent_role or None, safe_limit)
     return EpisodesListResponse(ok=True, episodes=episodes, total=len(episodes))
 
 
 # ---------------------------------------------------------------------------
 # Vector search endpoints
 # ---------------------------------------------------------------------------
+
 
 @app.post("/api/v1/memory/search", response_model=VectorSearchResponse)
 async def vector_search(request: VectorSearchRequest) -> VectorSearchResponse:

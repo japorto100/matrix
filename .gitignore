@@ -77,6 +77,7 @@ tools/dendrite-src/
 tools/zendrite-src/
 tools/pgsql/
 tools/pgsql-data/
+tools/openobserve/data/
 
 # ─── control/ Extraction Binaries (zu gross fuer GitHub) ─────────────────────
 control/storage/tools/seaweedfs/weed.exe

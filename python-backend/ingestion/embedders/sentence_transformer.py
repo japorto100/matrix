@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from loguru import logger
 
 from ingestion.core.exceptions import EmbeddingError
@@ -17,7 +19,9 @@ class SentenceTransformerEmbedder(Embedder):
 
     name = "sentence_transformer"
 
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
+    def __init__(
+        self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    ) -> None:
         self.model_name = model_name
         self._model = None  # lazy
         self.dim = 384  # known for MiniLM-L6-v2; updated after load
@@ -25,7 +29,11 @@ class SentenceTransformerEmbedder(Embedder):
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        if os.getenv("EMBEDDER_ALLOW_MODEL_DOWNLOAD", "true").lower() not in ("1", "true", "yes"):
+        if os.getenv("EMBEDDER_ALLOW_MODEL_DOWNLOAD", "true").lower() not in (
+            "1",
+            "true",
+            "yes",
+        ):
             raise EmbeddingError(
                 "Model download disabled (EMBEDDER_ALLOW_MODEL_DOWNLOAD=false). "
                 f"Pre-download '{self.model_name}' or enable downloads."

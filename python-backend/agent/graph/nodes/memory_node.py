@@ -63,76 +63,113 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
     if not user_msg:
         return {}
 
-    try:
-        from hindsight_api.engine.memory_engine import Budget
-        from hindsight_api.models import RequestContext
+    from agent.tracing import memory_span
 
-        bank_id = get_bank_id(state.get("user_id", "default"))
-        role = state.get("current_role", "default")
-        thread_id = state.get("thread_id", "")
-        mem_config = _get_memory_config(role)
-        recall_tags = mem_config.get("memory_recall_tags")
+    with memory_span("hindsight_recall", user_msg[:200]) as span:
+        try:
+            from hindsight_api.engine.memory_engine import Budget
+            from hindsight_api.models import RequestContext
 
-        kwargs: dict[str, Any] = {
-            "bank_id": bank_id,
-            "query": user_msg[:500],
-            "fact_type": ["world", "experience", "observation"],
-            "budget": Budget.MID,
-            "max_tokens": 2000,
-            "include_entities": True,
-            "max_entity_tokens": 500,
-            "question_date": datetime.now(UTC),
-            "request_context": RequestContext(),
-        }
-        if recall_tags is not None:
-            kwargs["tags"] = recall_tags
+            bank_id = get_bank_id(state.get("user_id", "default"))
+            role = state.get("current_role", "default")
+            thread_id = state.get("thread_id", "")
+            mem_config = _get_memory_config(role)
+            recall_tags = mem_config.get("memory_recall_tags")
 
-        result = await engine.recall_async(**kwargs)
+            kwargs: dict[str, Any] = {
+                "bank_id": bank_id,
+                "query": user_msg[:500],
+                "fact_type": ["world", "experience", "observation"],
+                "budget": Budget.MID,
+                "max_tokens": 2000,
+                "include_entities": True,
+                "max_entity_tokens": 500,
+                "question_date": datetime.now(UTC),
+                "request_context": RequestContext(),
+            }
+            if recall_tags is not None:
+                kwargs["tags"] = recall_tags
 
-        if not result.results:
+            result = await engine.recall_async(**kwargs)
+
+            if not result.results:
+                span.set_attribute("memory.results", 0)
+                return {}
+
+            # Progressive Context: nur neue Memories injizieren (Paper 3 Pattern)
+            thread_key = f"{thread_id}:{role}"
+            already_seen = _injected_context.get(thread_key, set())
+
+            memory_lines = []
+            new_ids = set()
+            for fact in result.results[:10]:
+                if fact.id in already_seen:
+                    continue
+                new_ids.add(fact.id)
+                entities = f" [{', '.join(fact.entities)}]" if fact.entities else ""
+                tags_str = f" #{','.join(fact.tags)}" if fact.tags else ""
+                type_badge = (
+                    f"[{fact.fact_type}] " if fact.fact_type == "observation" else ""
+                )
+                memory_lines.append(f"- {type_badge}{fact.text}{entities}{tags_str}")
+
+            # Entity observations
+            if result.entities:
+                for name, entity_state in list(result.entities.items())[:5]:
+                    if (
+                        hasattr(entity_state, "observations")
+                        and entity_state.observations
+                    ):
+                        for obs in entity_state.observations[:2]:
+                            memory_lines.append(f"- [entity:{name}] {obs.text}")
+
+            # Track injected IDs (Progressive Context)
+            _injected_context[thread_key] = already_seen | new_ids
+
+            if not memory_lines:
+                span.set_attribute("memory.results", 0)
+                return {}
+
+            memory_text = "\n".join(memory_lines)
+            current_prompt = state.get("system_prompt", "")
+
+            span.set_attribute("memory.results", len(new_ids))
+            span.set_attribute(
+                "memory.entities", len(result.entities) if result.entities else 0
+            )
+            span.set_attribute("memory.tokens_used", len(memory_text))
+
+            from agent.audit.logger import AuditAction, audit_log
+
+            await audit_log(
+                action=AuditAction.MEMORY_RECALL,
+                thread_id=thread_id,
+                output_data=memory_text[:2000],
+                success=True,
+                metadata={
+                    "bank_id": bank_id,
+                    "role": role,
+                    "facts_recalled": len(new_ids),
+                    "entities": len(result.entities) if result.entities else 0,
+                    "tokens_used": len(memory_text),
+                },
+            )
+
+            logger.info(
+                "Recalled %d new memories + %d entities for %s (role=%s, %d skipped as already injected)",
+                len(new_ids),
+                len(result.entities) if result.entities else 0,
+                bank_id,
+                role,
+                len(already_seen & {f.id for f in result.results[:10]}),
+            )
+            return {
+                "system_prompt": f"{current_prompt}\n\n## Relevant Memories\n{memory_text}"
+            }
+
+        except Exception as e:
+            logger.debug("Memory recall skipped: %s", e)
             return {}
-
-        # Progressive Context: nur neue Memories injizieren (Paper 3 Pattern)
-        thread_key = f"{thread_id}:{role}"
-        already_seen = _injected_context.get(thread_key, set())
-
-        memory_lines = []
-        new_ids = set()
-        for fact in result.results[:10]:
-            if fact.id in already_seen:
-                continue
-            new_ids.add(fact.id)
-            entities = f" [{', '.join(fact.entities)}]" if fact.entities else ""
-            tags_str = f" #{','.join(fact.tags)}" if fact.tags else ""
-            type_badge = f"[{fact.fact_type}] " if fact.fact_type == "observation" else ""
-            memory_lines.append(f"- {type_badge}{fact.text}{entities}{tags_str}")
-
-        # Entity observations
-        if result.entities:
-            for name, entity_state in list(result.entities.items())[:5]:
-                if hasattr(entity_state, 'observations') and entity_state.observations:
-                    for obs in entity_state.observations[:2]:
-                        memory_lines.append(f"- [entity:{name}] {obs.text}")
-
-        # Track injected IDs (Progressive Context)
-        _injected_context[thread_key] = already_seen | new_ids
-
-        if not memory_lines:
-            return {}
-
-        memory_text = "\n".join(memory_lines)
-        current_prompt = state.get("system_prompt", "")
-
-        logger.info("Recalled %d new memories + %d entities for %s (role=%s, %d skipped as already injected)",
-                    len(new_ids),
-                    len(result.entities) if result.entities else 0,
-                    bank_id, role,
-                    len(already_seen & {f.id for f in result.results[:10]}))
-        return {"system_prompt": f"{current_prompt}\n\n## Relevant Memories\n{memory_text}"}
-
-    except Exception as e:
-        logger.debug("Memory recall skipped: %s", e)
-        return {}
 
 
 async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
@@ -149,6 +186,7 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
     Read-only Rollen retainen nicht.
     """
     from agent.memory.engine import get_bank_id, get_memory_engine
+    from agent.tracing import memory_span
 
     engine = await get_memory_engine()
     if engine is None:
@@ -173,45 +211,77 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 user_msg = content[:500]
                 break
 
-    try:
-        from hindsight_api.models import RequestContext
+    with memory_span("hindsight_retain", user_msg[:200]) as span:
+        try:
+            from hindsight_api.models import RequestContext
 
-        from agent.memory.coherence import get_coherence_manager
+            from agent.memory.coherence import get_coherence_manager
 
-        bank_id = get_bank_id(state.get("user_id", "default"))
-        thread_id = state.get("thread_id", "")
-        now = datetime.now(UTC)
-        content = f"User asked: {user_msg}\nAgent responded: {response[:2000]}"
+            bank_id = get_bank_id(state.get("user_id", "default"))
+            thread_id = state.get("thread_id", "")
+            now = datetime.now(UTC)
+            content = f"User asked: {user_msg}\nAgent responded: {response[:2000]}"
 
-        # Cache Coherence: Write-Ahead Log + Conflict Detection
-        coherence = get_coherence_manager()
-        await coherence.write_ahead(bank_id, role, content, tags=[role] if role != "default" else [])
-        conflict = await coherence.detect_conflicts(bank_id)
-        if conflict.has_conflict:
-            logger.info("Memory conflict detected: %d entries from %d roles in bank %s",
-                       len(conflict.entries), len({e.role for e in conflict.entries}), bank_id)
+            # Cache Coherence: Write-Ahead Log + Conflict Detection
+            coherence = get_coherence_manager()
+            await coherence.write_ahead(
+                bank_id, role, content, tags=[role] if role != "default" else []
+            )
+            conflict = await coherence.detect_conflicts(bank_id)
+            if conflict.has_conflict:
+                span.set_attribute("memory.conflict", True)
+                logger.info(
+                    "Memory conflict detected: %d entries from %d roles in bank %s",
+                    len(conflict.entries),
+                    len({e.role for e in conflict.entries}),
+                    bank_id,
+                )
 
-        await engine.retain_batch_async(
-            bank_id=bank_id,
-            contents=[{
-                "content": content,
-                "context": f"thread:{thread_id} role:{role}",
-                "event_date": now,
-                "tags": [role] if role != "default" else [],
-                "metadata": {
-                    "thread_id": thread_id,
+            await engine.retain_batch_async(
+                bank_id=bank_id,
+                contents=[
+                    {
+                        "content": content,
+                        "context": f"thread:{thread_id} role:{role}",
+                        "event_date": now,
+                        "tags": [role] if role != "default" else [],
+                        "metadata": {
+                            "thread_id": thread_id,
+                            "role": role,
+                            "agent_class": state.get("agent_class", "advisory"),
+                        },
+                        "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
+                    }
+                ],
+                request_context=RequestContext(),
+                document_tags=[role] if role != "default" else [],
+            )
+
+            span.set_attribute("memory.content_length", len(content))
+
+            from agent.audit.logger import AuditAction, audit_log
+
+            await audit_log(
+                action=AuditAction.MEMORY_RETAIN,
+                thread_id=thread_id,
+                input_data=content[:2000],
+                success=True,
+                metadata={
+                    "bank_id": bank_id,
                     "role": role,
-                    "agent_class": state.get("agent_class", "advisory"),
+                    "content_length": len(content),
+                    "conflict": conflict.has_conflict if conflict else False,
                 },
-                "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
-            }],
-            request_context=RequestContext(),
-            document_tags=[role] if role != "default" else [],
-        )
+            )
 
-        logger.info("Retained conversation for %s (role=%s, thread=%s)", bank_id, role, thread_id)
+            logger.info(
+                "Retained conversation for %s (role=%s, thread=%s)",
+                bank_id,
+                role,
+                thread_id,
+            )
 
-    except Exception as e:
-        logger.debug("Memory retain skipped: %s", e)
+        except Exception as e:
+            logger.debug("Memory retain skipped: %s", e)
 
     return {}

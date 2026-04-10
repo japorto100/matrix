@@ -1,0 +1,62 @@
+# OTel Collector config for matrix dev setup (exec-17).
+# Services → Collector (4317, no auth) → OpenObserve (5081, Basic auth).
+#
+# To also fan-out to Langfuse (LLM observability), uncomment the langfuse exporter block.
+
+extensions:
+  basicauth/openobserve:
+    client_auth:
+      username: root@example.com
+      password: Complexpass#123
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: http://openobserve:5080/api/default
+    auth:
+      authenticator: basicauth/openobserve
+    headers:
+      stream-name: default
+    tls:
+      insecure: true
+
+  # Optional: fan-out to Langfuse for LLM/agent-specific observability (exec-17 Phase 3)
+  # Uncomment + set your Langfuse public/secret keys:
+  # otlphttp/langfuse:
+  #   endpoint: https://cloud.langfuse.com/api/public/otel
+  #   headers:
+  #     Authorization: "Basic <base64(publicKey:secretKey)>"
+
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [basicauth/openobserve]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/openobserve, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/openobserve]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/openobserve]

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from loguru import logger
 
-from ingestion.core.exceptions import DedupSkip, IngestionError
+from ingestion.core.exceptions import DedupSkipError, IngestionError
 from ingestion.core.types import Job, JobStatus, PipelineKind
 from ingestion.extractors.note_ext import NoteExtractor
 from ingestion.pipelines.base import Pipeline
@@ -43,11 +43,16 @@ class NotePipeline(Pipeline):
                     user_id=user_id,
                     target_type="note",
                     target_id=str(job.id),
-                    metadata={"document_hash": doc_hash, "existing_job_id": existing["id"]},
+                    metadata={
+                        "document_hash": doc_hash,
+                        "existing_job_id": existing["id"],
+                    },
                 )
-                ctx.tracker.update(job, status=JobStatus.SKIPPED_DEDUP, document_hash=doc_hash)
+                ctx.tracker.update(
+                    job, status=JobStatus.SKIPPED_DEDUP, document_hash=doc_hash
+                )
                 ctx.tracker.complete(job)
-                raise DedupSkip(doc_hash, existing["id"])
+                raise DedupSkipError(doc_hash, existing["id"])
             ctx.tracker.update(job, document_hash=doc_hash)
 
             # Phase 3 (inline): NoteExtractor passthrough
@@ -60,7 +65,9 @@ class NotePipeline(Pipeline):
             ctx.tracker.update(job, status=JobStatus.CHUNKING)
             chunker = ctx.chunkers.get(ctx.config.chunker_name)
             chunks = chunker.chunk(doc)
-            ctx.tracker.update(job, chunks_total=len(chunks), status=JobStatus.EMBEDDING)
+            ctx.tracker.update(
+                job, chunks_total=len(chunks), status=JobStatus.EMBEDDING
+            )
             logger.info("note {} → {} chunks", job.id, len(chunks))
 
             if not chunks:
@@ -87,7 +94,7 @@ class NotePipeline(Pipeline):
             )
             return job
 
-        except DedupSkip:
+        except DedupSkipError:
             raise
         except Exception as e:  # noqa: BLE001
             ctx.tracker.fail(job, str(e))

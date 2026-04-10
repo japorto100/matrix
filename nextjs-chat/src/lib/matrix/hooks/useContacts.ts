@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatrixClient } from "matrix-js-sdk";
+import { ClientEvent, EventType, type MatrixClient } from "matrix-js-sdk";
 import { useCallback, useEffect, useState } from "react";
 import { mxcToHttp } from "@/lib/matrix/utils";
 
@@ -30,8 +30,7 @@ export function useContacts(client: MatrixClient | null) {
 
 		function loadDmContacts() {
 			if (!client) return;
-			// biome-ignore lint/suspicious/noExplicitAny: m.direct nicht in SDK-Typen
-			const directEvent = (client.getAccountData as any)("m.direct");
+			const directEvent = client.getAccountData(EventType.Direct);
 			const directMap: Record<string, string[]> = directEvent?.getContent() ?? {};
 			const myUserId = client.getUserId() ?? "";
 
@@ -79,9 +78,9 @@ export function useContacts(client: MatrixClient | null) {
 
 		// Refresh bei neuen DMs
 		const onAccountData = () => loadDmContacts();
-		client.on("accountData" as any, onAccountData);
+		client.on(ClientEvent.AccountData, onAccountData);
 		return () => {
-			client.off("accountData" as any, onAccountData);
+			client.off(ClientEvent.AccountData, onAccountData);
 		};
 	}, [client]);
 

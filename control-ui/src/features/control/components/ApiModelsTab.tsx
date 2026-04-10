@@ -33,12 +33,7 @@ import {
 	useUtilityModels,
 } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
-import {
-	mockAgentRoles,
-	mockEnvVars,
-	mockModelRouting,
-	mockUtilityModels,
-} from "../mock-data";
+import { mockAgentRoles, mockEnvVars, mockModelRouting, mockUtilityModels } from "../mock-data";
 import type { EnvVar, LlmProvider, ModelRouting, UtilityModel, UtilityPurpose } from "../types";
 import { EditApiKeyModal } from "./EditApiKeyModal";
 
@@ -322,9 +317,7 @@ export function ApiModelsTab() {
 													}
 												}}
 											>
-												<option value="">
-													(default: {defaultModel ?? "none"})
-												</option>
+												<option value="">(default: {defaultModel ?? "none"})</option>
 												{allModels.map(({ model }) => (
 													<option key={model} value={model}>
 														{model}
@@ -334,12 +327,19 @@ export function ApiModelsTab() {
 										</td>
 										<td className="py-2 px-3 text-center">
 											{currentRouting && !currentRouting.is_default ? (
-												<Badge
-													variant="outline"
-													className="text-[9px] h-4 px-1.5 border-amber-500/50 text-amber-400"
-												>
-													override
-												</Badge>
+												<div className="flex flex-col items-center gap-0.5">
+													<Badge
+														variant="outline"
+														className="text-[9px] h-4 px-1.5 border-amber-500/50 text-amber-400"
+													>
+														override
+													</Badge>
+													{providerById[currentRouting.provider_id] && (
+														<span className="text-[9px] text-muted-foreground">
+															{providerById[currentRouting.provider_id].display_name}
+														</span>
+													)}
+												</div>
 											) : (
 												<Badge variant="outline" className="text-[9px] h-4 px-1.5">
 													default
@@ -409,9 +409,7 @@ export function ApiModelsTab() {
 						Environment Variables
 					</h3>
 					<div className="flex items-center gap-2">
-						<span className="text-[10px] text-muted-foreground">
-							{sensitiveCount} sensitive
-						</span>
+						<span className="text-[10px] text-muted-foreground">{sensitiveCount} sensitive</span>
 						<div className="relative">
 							<Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
 							<Input

@@ -38,9 +38,14 @@ app = create_service_app("agent-service")
 
 # exec-09: MCP Server als Sub-App mounten (gleicher Port wie Agent Service)
 from agent.mcp_server import create_mcp_server  # noqa: E402
+from agent.mcp_traces import create_trace_mcp_server  # noqa: E402
 
 _mcp = create_mcp_server()
 app.mount("/mcp", _mcp.streamable_http_app())
+
+# exec-17: MCP Trace Server for Claude Code trace inspection
+_trace_mcp = create_trace_mcp_server()
+app.mount("/mcp-traces", _trace_mcp.streamable_http_app())
 
 # ABP.2c: close shared httpx client on shutdown to release connections cleanly.
 from agent.http_client import close_client as _close_http_client  # noqa: E402
@@ -80,6 +85,7 @@ class SetChartStateRequest(BaseModel):
 
 class FileAttachment(BaseModel):
     """AC56+exec-12: multimodal image or file attachment — base64 + mime_type."""
+
     base64: str
     mime_type: str = "image/jpeg"
     name: str = ""
@@ -106,6 +112,7 @@ class AgentChatRequest(BaseModel):
 
 class AudioTranscribeRequest(BaseModel):
     """ACR-A1: base64-encoded audio → transcript text."""
+
     audio_base64: str
     mime_type: str = "audio/webm"
     language: str | None = None
@@ -113,6 +120,7 @@ class AudioTranscribeRequest(BaseModel):
 
 class AudioSynthesizeRequest(BaseModel):
     """ACR-A5: text → audio bytes (mp3)."""
+
     text: str
     voice: str = "alloy"  # openai voices: alloy/echo/fable/onyx/nova/shimmer
     model: str | None = None  # override AGENT_TTS_MODEL env var
@@ -120,15 +128,23 @@ class AudioSynthesizeRequest(BaseModel):
 
 @app.get("/health")
 async def health():
-    return {"ok": True, "service": "agent-service", "roles": [r.value for r in AgentRole]}
+    return {
+        "ok": True,
+        "service": "agent-service",
+        "roles": [r.value for r in AgentRole],
+    }
 
 
 # ── Skill Management API (exec-10 Phase 5.2) ────────────────────────────────
 
+
 @app.get("/api/v1/skills")
-async def list_skills(category: str | None = None, user_id: str | None = None, team_id: str | None = None):
+async def list_skills(
+    category: str | None = None, user_id: str | None = None, team_id: str | None = None
+):
     """List all available skills (global + team + personal)."""
     from agent.skills.loader import load_skills
+
     skills = load_skills(user_id=user_id, team_id=team_id, category=category)
     return {
         "skills": [
@@ -154,10 +170,13 @@ class SkillUpdateRequest(BaseModel):
 async def update_skill(skill_name: str, req: SkillUpdateRequest):
     """Enable/disable a skill by name."""
     from agent.skills.loader import load_skills
+
     skills = load_skills()
     skill = next((s for s in skills if s.name == skill_name), None)
     if skill is None:
-        return JSONResponse(status_code=404, content={"error": f"Skill '{skill_name}' not found"})
+        return JSONResponse(
+            status_code=404, content={"error": f"Skill '{skill_name}' not found"}
+        )
     skill.enabled = req.enabled
     return {"name": skill.name, "enabled": skill.enabled}
 
@@ -172,6 +191,7 @@ class SkillImportRequest(BaseModel):
 async def import_skills(req: SkillImportRequest):
     """Import skills from a GitHub repository (exec-10 Phase 5.3)."""
     from agent.skills.importer import import_from_github
+
     try:
         imported = await import_from_github(req.repo_url, req.tier, req.owner)
         return {"success": True, "imported": imported, "count": len(imported)}
@@ -191,11 +211,17 @@ async def install_skill_archive(req: SkillInstallRequest):
     from pathlib import Path
 
     from agent.skills.importer import install_from_archive
+
     # Security: restrict to allowed upload directory
-    allowed_base = Path(os.environ.get("SKILL_UPLOAD_DIR", "/tmp/skill-uploads")).resolve()
+    allowed_base = Path(
+        os.environ.get("SKILL_UPLOAD_DIR", "/tmp/skill-uploads")
+    ).resolve()
     resolved = Path(req.path).resolve()
     if not str(resolved).startswith(str(allowed_base)):
-        return JSONResponse(status_code=400, content={"error": "path not within allowed upload directory"})
+        return JSONResponse(
+            status_code=400,
+            content={"error": "path not within allowed upload directory"},
+        )
     result = install_from_archive(req.path, req.tier, req.owner)
     status = 200 if result["success"] else 400
     return JSONResponse(status_code=status, content=result)
@@ -218,7 +244,9 @@ async def agent_context(req: ContextRequest):
                 {
                     "source": f.source,
                     "relevance": f.relevance,
-                    "content_preview": str(f.content)[:200] if isinstance(f.content, (str, dict)) else str(f.content)[:200],
+                    "content_preview": str(f.content)[:200]
+                    if isinstance(f.content, (str, dict))
+                    else str(f.content)[:200],
                 }
                 for f in fragments
             ],
@@ -228,7 +256,11 @@ async def agent_context(req: ContextRequest):
     except Exception as e:
         return JSONResponse(
             status_code=502,
-            content={"ok": False, "error": str(e), "flags": ["CONTEXT_ASSEMBLY_FAILED"]},
+            content={
+                "ok": False,
+                "error": str(e),
+                "flags": ["CONTEXT_ASSEMBLY_FAILED"],
+            },
         )
 
 
@@ -277,13 +309,17 @@ async def tool_set_chart_state(req: SetChartStateRequest):
     Stores pending mutation — frontend must confirm before applying."""
     try:
         result = await set_chart_state(req.symbol, req.timeframe)
-        await working_memory_set("global", f"mutation:{result['mutation_id']}", {
-            "type": "set_chart_state",
-            "symbol": req.symbol,
-            "timeframe": req.timeframe,
-            "mutation_id": result["mutation_id"],
-            "status": "pending_confirm",
-        })
+        await working_memory_set(
+            "global",
+            f"mutation:{result['mutation_id']}",
+            {
+                "type": "set_chart_state",
+                "symbol": req.symbol,
+                "timeframe": req.timeframe,
+                "mutation_id": result["mutation_id"],
+                "status": "pending_confirm",
+            },
+        )
         return result
     except Exception as e:
         return JSONResponse(
@@ -328,38 +364,47 @@ def _build_user_content(req: AgentChatRequest) -> list | str:
     content: list = []
     for att in req.attachments:
         if att.mime_type in _LLM_IMAGE_TYPES:
-            content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": att.mime_type,
-                    "data": att.base64,
-                },
-            })
+            content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": att.mime_type,
+                        "data": att.base64,
+                    },
+                }
+            )
         elif att.mime_type in _LLM_DOCUMENT_TYPES:
-            content.append({
-                "type": "document",
-                "source": {
-                    "type": "base64",
-                    "media_type": att.mime_type,
-                    "data": att.base64,
-                },
-            })
+            content.append(
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": att.mime_type,
+                        "data": att.base64,
+                    },
+                }
+            )
         elif att.mime_type in _LLM_TEXT_TYPES:
             text_data = base64.b64decode(att.base64).decode("utf-8", errors="replace")
             content.append({"type": "text", "text": f"[File: {att.name}]\n{text_data}"})
-        elif att.mime_type == "application/json" and len(att.base64) < _JSON_LLM_MAX_BYTES:
+        elif (
+            att.mime_type == "application/json"
+            and len(att.base64) < _JSON_LLM_MAX_BYTES
+        ):
             json_data = base64.b64decode(att.base64).decode("utf-8", errors="replace")
             content.append({"type": "text", "text": f"[File: {att.name}]\n{json_data}"})
         else:
             # Sandbox file — don't send to LLM, just notify
-            content.append({
-                "type": "text",
-                "text": (
-                    f"[File uploaded: {att.name} ({att.mime_type}). "
-                    f"Use the file_analyze tool with file_ref='file:{att.name}' to analyze it.]"
-                ),
-            })
+            content.append(
+                {
+                    "type": "text",
+                    "text": (
+                        f"[File uploaded: {att.name} ({att.mime_type}). "
+                        f"Use the file_analyze tool with file_ref='file:{att.name}' to analyze it.]"
+                    ),
+                }
+            )
     content.append({"type": "text", "text": req.message})
     return content
 
@@ -371,14 +416,21 @@ async def _store_file_attachments(
     for att in attachments:
         if att.mime_type in _LLM_IMAGE_TYPES | _LLM_DOCUMENT_TYPES | _LLM_TEXT_TYPES:
             continue
-        if att.mime_type == "application/json" and len(att.base64) < _JSON_LLM_MAX_BYTES:
+        if (
+            att.mime_type == "application/json"
+            and len(att.base64) < _JSON_LLM_MAX_BYTES
+        ):
             continue
         # This file goes to sandbox — store in working memory
-        await working_memory_set(thread_id, f"file:{att.name}", {
-            "base64": att.base64,
-            "name": att.name,
-            "mime_type": att.mime_type,
-        })
+        await working_memory_set(
+            thread_id,
+            f"file:{att.name}",
+            {
+                "base64": att.base64,
+                "name": att.name,
+                "mime_type": att.mime_type,
+            },
+        )
 
 
 @app.post("/api/v1/agent/chat")
@@ -403,7 +455,9 @@ async def agent_chat(req: AgentChatRequest, request: Request):
     if req.attachments:
         await _store_file_attachments(req.attachments, thread_id)
 
-    generator = _stream_agent_loop(req, system_prompt, thread_id, user_role=user_role, user_id=user_id)
+    generator = _stream_agent_loop(
+        req, system_prompt, thread_id, user_role=user_role, user_id=user_id
+    )
     return StreamingResponse(
         generator,
         media_type="text/event-stream",
@@ -416,8 +470,12 @@ async def agent_chat(req: AgentChatRequest, request: Request):
 
 
 async def _stream_agent_loop(
-    req: AgentChatRequest, system_prompt: str, thread_id: str,
-    *, user_role: str = "viewer", user_id: str = "default",
+    req: AgentChatRequest,
+    system_prompt: str,
+    thread_id: str,
+    *,
+    user_role: str = "viewer",
+    user_id: str = "default",
 ):
     """Phase 22g: LLM-agnostic loop — Anthropic + OpenAI-compatible (OpenRouter, Ollama, vLLM).
     Builds AgentExecutionContext, loads ToolRegistry, runs run_agent_loop()."""
@@ -427,6 +485,7 @@ async def _stream_agent_loop(
         from agent.tools.registry import ToolRegistry
     except ImportError as e:
         from agent.streaming import ErrorPacket, sse
+
         yield sse(ErrorPacket(error=f"Agent loop import error: {e}"))
         return
 
@@ -440,7 +499,12 @@ async def _stream_agent_loop(
     model = req.model or await get_user_default_model(user_id) or ""
     if not model:
         from agent.streaming import ErrorPacket, sse
-        yield sse(ErrorPacket(error="Kein Model konfiguriert. Bitte in control-ui ein Model waehlen."))
+
+        yield sse(
+            ErrorPacket(
+                error="Kein Model konfiguriert. Bitte in control-ui ein Model waehlen."
+            )
+        )
         return
 
     api_key = await get_user_api_key(user_id, provider_from_model(model))
@@ -450,8 +514,11 @@ async def _stream_agent_loop(
     # exec-09: Browser-Tools via WebMCP hinzufuegen (dynamisch je nach Page)
     if req.browser_tools:
         from agent.tools.browser_tool import BrowserToolProxy
+
         for bt in req.browser_tools:
-            registry.register(BrowserToolProxy(bt.name, bt.description, bt.input_schema))
+            registry.register(
+                BrowserToolProxy(bt.name, bt.description, bt.input_schema)
+            )
 
     ctx = AgentExecutionContext(
         user_id=user_id,
@@ -493,13 +560,18 @@ async def audio_transcribe(req: AudioTranscribeRequest):
     try:
         from openai import AsyncOpenAI
     except ImportError:
-        return JSONResponse(status_code=502, content={"ok": False, "error": "openai package not installed"})
+        return JSONResponse(
+            status_code=502,
+            content={"ok": False, "error": "openai package not installed"},
+        )
 
     audio_bytes = base64.b64decode(req.audio_base64)
     ext = _AUDIO_MIME_EXT.get(req.mime_type, ".webm")
     api_key = os.environ.get("OPENAI_API_KEY", "not-set")
     # whisper-local: point at self-hosted endpoint (WhisperLiveKit on Port 8095)
-    base_url = os.environ.get("OPENAI_BASE_URL") if provider == "whisper-local" else None
+    base_url = (
+        os.environ.get("OPENAI_BASE_URL") if provider == "whisper-local" else None
+    )
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     tmp_path: str | None = None
@@ -536,11 +608,18 @@ async def audio_synthesize(req: AudioSynthesizeRequest):
     try:
         from openai import AsyncOpenAI
     except ImportError:
-        return JSONResponse(status_code=502, content={"ok": False, "error": "openai package not installed"})
+        return JSONResponse(
+            status_code=502,
+            content={"ok": False, "error": "openai package not installed"},
+        )
 
     api_key = os.environ.get("OPENAI_API_KEY", "not-set")
     # Kokoro / self-hosted: AGENT_TTS_BASE_URL overrides default OpenAI endpoint
-    base_url = os.environ.get("AGENT_TTS_BASE_URL") if provider in ("kokoro", "openai-compatible") else None
+    base_url = (
+        os.environ.get("AGENT_TTS_BASE_URL")
+        if provider in ("kokoro", "openai-compatible")
+        else None
+    )
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
     tts_model = req.model or os.environ.get("AGENT_TTS_MODEL", "tts-1")
 
@@ -569,7 +648,11 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             # Placeholder: echo back with role info
             await websocket.send_json(
-                {"received": data, "roles": [r.value for r in AgentRole], "status": "scaffold"}
+                {
+                    "received": data,
+                    "roles": [r.value for r in AgentRole],
+                    "status": "scaffold",
+                }
             )
     except WebSocketDisconnect:
         pass

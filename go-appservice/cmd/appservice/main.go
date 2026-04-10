@@ -24,10 +24,18 @@ import (
 	"matrix/go-appservice/internal/handler"
 	"matrix/go-appservice/internal/natsbridge"
 	"matrix/go-appservice/internal/registration"
+	"matrix/go-appservice/internal/telemetry"
 )
 
 func main() {
 	os.Exit(run())
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 // run enthält die eigentliche Logik — defer-Aufrufe werden garantiert ausgeführt.
@@ -41,6 +49,30 @@ func run() int {
 	slog.SetDefault(logger)
 
 	cfg := config.Load()
+
+	// exec-17: OTel Observability (opt-in via OTEL_ENABLED=true)
+	if os.Getenv("OTEL_ENABLED") == "true" {
+		ctx := context.Background()
+		svcName := envOrDefault("OTEL_SERVICE_NAME", "matrix-appservice")
+		endpoint := envOrDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:5081")
+
+		if tp, err := telemetry.InitTracerProvider(ctx, svcName, endpoint); err != nil {
+			slog.Warn("OTel tracer init failed", "error", err)
+		} else {
+			defer func() { _ = tp.Shutdown(ctx) }()
+		}
+		if mp, err := telemetry.InitMeterProvider(ctx, svcName, endpoint); err != nil {
+			slog.Warn("OTel meter init failed", "error", err)
+		} else {
+			defer func() { _ = mp.Shutdown(ctx) }()
+		}
+		if lp, err := telemetry.InitLogProvider(ctx, svcName, endpoint); err != nil {
+			slog.Warn("OTel log init failed", "error", err)
+		} else {
+			defer func() { _ = lp.Shutdown(ctx) }()
+		}
+		slog.Info("OTel initialized", "service", svcName, "endpoint", endpoint)
+	}
 
 	if *generateReg {
 		if err := registration.Generate(cfg); err != nil {

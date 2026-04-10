@@ -3,7 +3,7 @@
  * Extracted from types.ts (Phase 1, exec-07).
  */
 
-import type { MatrixEvent, Room } from "matrix-js-sdk";
+import { EventType, type MatrixClient, type MatrixEvent, type Room } from "matrix-js-sdk";
 import type { ResolvedMessage, RoomInfo } from "./types";
 import { mxcToHttp, mxcToThumbnail } from "./utils";
 
@@ -233,7 +233,7 @@ export function resolveMessage(
 // ─── resolveRoom ─────────────────────────────────────────────────────────────
 
 /** Konvertiert einen Room in RoomInfo. SDK-Methoden fuer Name, DM-Erkennung, Avatar. */
-export function resolveRoom(room: Room, client?: import("matrix-js-sdk").MatrixClient): RoomInfo {
+export function resolveRoom(room: Room, client?: MatrixClient): RoomInfo {
 	const membership = room.getMyMembership() as "join" | "invite" | "leave";
 	const lastEvent = room.getLastLiveEvent();
 	const lastContent = lastEvent?.getContent() as Record<string, unknown> | undefined;
@@ -242,8 +242,7 @@ export function resolveRoom(room: Room, client?: import("matrix-js-sdk").MatrixC
 	// DM-Erkennung: m.direct Account-Data — einzige zuverlaessige Quelle
 	let dmUserId: string | undefined;
 	if (client) {
-		// biome-ignore lint/suspicious/noExplicitAny: m.direct nicht in SDK-Typen
-		const directEvent = (client.getAccountData as any)("m.direct");
+		const directEvent = client.getAccountData(EventType.Direct);
 		const directMap: Record<string, string[]> = directEvent?.getContent() ?? {};
 		for (const [userId, roomIds] of Object.entries(directMap)) {
 			if (roomIds.includes(room.roomId)) {

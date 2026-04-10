@@ -4,6 +4,9 @@
 	"private": true,
 	"description": "Agent Chat UI — Feature-Modul. Wird in nextjs-chat integriert (exec-06).",
 	"scripts": {
+		"dev": "next dev -p 3002",
+		"build": "next build",
+		"start": "next start -p 3002",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check src/"
 	},

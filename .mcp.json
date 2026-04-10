@@ -25,6 +25,10 @@
       "env": {
         "OPENAPI_SPEC_URL": "http://127.0.0.1:8098/openapi.json"
       }
+    },
+    "matrix-traces": {
+      "type": "url",
+      "url": "http://127.0.0.1:8094/mcp-traces/mcp"
     }
   }
 }
