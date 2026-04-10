@@ -102,6 +102,27 @@ services:
   #     timeout: 5s
   #     retries: 3
 
+  # ── LiteLLM Gateway (exec-16, Port 4000) ──────────────────────────────
+  # Unified LLM proxy: model-name prefix routes to provider.
+  # Starten: docker-compose --profile litellm up
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./python-backend/litellm-gateway/config.yaml:/app/config.yaml:ro
+    env_file: ./python-backend/.env
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - litellm
+
   # ── LLM Mock Agent (Dev only) ───────────────────────────────────────────
   llm-mock:
     image: python:3.13-slim

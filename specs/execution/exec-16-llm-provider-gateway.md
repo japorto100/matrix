@@ -586,15 +586,15 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
     - Self-Hosted (1 User): User = Admin, kein Gate noetig
     - Multi-User: jeder nutzt eigenen OpenRouter/Anthropic Account
 
-- [ ] **3.3.2:** ApiModelsTab — Provider aktivieren/deaktivieren
-  - PATCH Endpoint togglet Provider in LiteLLM config
-  - Deaktivierte Provider erscheinen nicht im agent-chat Model-Dropdown
+- [x] **3.3.2:** Provider aktiv/inaktiv = Key vorhanden/nicht vorhanden (Set Key / Remove Key Buttons)
+  - Kein separater Toggle noetig — Key-Praesenz bestimmt Provider-Status
+  - agent-chat zeigt nur Models von aktiven Providern (is_active = bool(key))
 
 - [x] **3.3.3:** ApiModelsTab — Model-Routing per Rolle (Dropdown pro Rolle, PUT /user/llm/roles)
   - Researcher → claude-opus, Trader → gpt-4o, RiskManager → claude-sonnet
   - Gespeichert in DB (Alembic Migration), nicht .env
 
-- [ ] **3.3.4:** LiteLLM Health + Dashboard in SystemTab
+- [x] **3.3.4:** LiteLLM Health in SystemTab (ping /health, Dashboard unter :4000/ui)
   - `GET http://localhost:4000/health` → LiteLLM Status
   - Active Models, Provider Status, Request-Count
   - Link zu LiteLLM Built-in Dashboard (`/ui` auf Port 4000)

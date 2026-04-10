@@ -91,6 +91,7 @@ async def get_system_health() -> dict[str, Any]:
     extraction_layout_url = os.environ.get("EXTRACTION_LAYOUT_URL", "http://127.0.0.1:8101")
     go_url = os.environ.get("GO_GATEWAY_BASE_URL", "http://127.0.0.1:8090")
     open_sandbox_url = os.environ.get("OPEN_SANDBOX_URL", "http://127.0.0.1:8100")
+    litellm_url = os.environ.get("LITELLM_BASE_URL", "http://127.0.0.1:4000")
     seaweedfs_url = "http://127.0.0.1:8333"
     tuwunel_url = os.environ.get("MATRIX_HOMESERVER_URL", "http://127.0.0.1:8448")
 
@@ -98,6 +99,7 @@ async def get_system_health() -> dict[str, Any]:
         _ping_postgres(),
         _ping_http("seaweedfs", seaweedfs_url, "infra"),
         _ping_http("tuwunel", f"{tuwunel_url}/_matrix/client/versions", "infra"),
+        _ping_http("litellm", f"{litellm_url}/health", "app"),
         _ping_http("go-appservice", f"{go_url}/health", "app"),
         _ping_http("ingestion-worker", f"{ingestion_url}/health", "app"),
         _ping_http("kg-pipeline", f"{kg_pipeline_url}/health", "app"),
