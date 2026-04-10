@@ -1,7 +1,7 @@
 # Dev Stack — Lokales Setup (Native + podman-compose)
 
 **Status:** Aktiv
-**Stand:** 06.04.2026 — python-backend konsolidiert (agent + bridge + voice + mock), podman-compose Profile aktiv
+**Stand:** 10.04.2026 — dev-stack2.ps1, LiteLLM Gateway (exec-16), control-ui, Ingestion Worker
 
 ## Zwei Setup-Varianten
 
@@ -50,15 +50,18 @@ Alle Binaries liegen in `D:\matrix\tools\` (gitignored, nicht im PATH noetig):
 
 | Service | Port | Start |
 |---|---|---|
-| Homeserver | 8448 | Tuwunel via WSL1 oder Dendrite/Zendrite Native |
+| Homeserver | 8448 | Tuwunel via WSL1 oder Zendrite Native |
 | Go Appservice | 8090 | `go run -tags goolm ./cmd/appservice/...` |
 | Python Agent Service | 8094 | `uv run uvicorn agent.app:app --port 8094` |
 | Python Bridge | 8097 | `uv run uvicorn bridge.app:app --port 8097` |
+| LiteLLM Gateway | 4000 | `cd litellm-gateway && uv run litellm --config config.yaml --port 4000` |
 | Voice Worker | — | `uv run python -m voice.worker` (optional) |
 | Mock Agent | 8094 | `uv run python -m mock.mock_agent` (statt agent) |
 | NATS | 4222 | `tools/nats-server.exe` |
 | Next.js | 3000 | `cd nextjs-chat && bun run dev` |
+| control-ui | 3001 | `cd control-ui && bun run dev` |
 | LiveKit | 7880/8080 | externer LiveKit Server (siehe `13-e2ee-agent-architecture.md`) |
+| Ingestion Worker | 8098 | `cd ingestion && uv run uvicorn ingestion.worker:app --port 8098` |
 | Memory Service | 8093 | `uv run uvicorn memory.app:app --port 8093` (optional) |
 | MCP Server (standalone) | 8095 | `uv run python -m agent.mcp_server` (mounted in Agent default) |
 
@@ -85,29 +88,34 @@ cd python-backend
 uv run alembic upgrade head
 
 # 5. Stack vollstaendig starten
-.\scripts\devstack.ps1
+.\scripts\dev-stack2.ps1
 ```
 
-### scripts/devstack.ps1
+### scripts/dev-stack2.ps1
 
 **Flags** (existierende — bitte mit Skript-Stand abgleichen):
 
 | Flag | Beschreibung |
 |---|---|
-| `-NoHomeserver` | Homeserver nicht starten (laeuft extern) |
-| `-NoNATS` | NATS nicht starten |
+| `-SkipHomeserver` | Homeserver nicht starten (laeuft extern) |
+| `-SkipNats` | NATS nicht starten |
 | `-SkipGoAppservice` | Go Appservice nicht starten |
+| `-SkipLiteLLM` | LiteLLM Gateway nicht starten (direkter Provider-Zugriff) |
+| `-SkipControlUi` | control-ui nicht starten |
+| `-SkipIngestion` | Ingestion Worker nicht starten |
 | `-AgentOnly` | Nur Python Agent + Bridge |
-| `-FrontendOnly` | Nur Next.js |
-| `-MockAgent` | Mock Agent statt echtes LLM (kein API Key noetig) |
+| `-FrontendOnly` | Nur Next.js + control-ui |
+| `-UseMock` | Mock Agent statt echtes LLM (kein API Key noetig) |
+| `-WithVoice` | Voice Worker starten (LiveKit) |
+| `-DevTools` | AI SDK DevTools starten |
 
 **Beispiele:**
 
 ```powershell
-.\scripts\devstack.ps1                    # Alles starten
-.\scripts\devstack.ps1 -NoHomeserver      # Homeserver laeuft bereits
-.\scripts\devstack.ps1 -FrontendOnly      # Nur UI entwickeln
-.\scripts\devstack.ps1 -MockAgent         # CI / Tests ohne API Keys
+.\scripts\dev-stack2.ps1                    # Alles starten
+.\scripts\dev-stack2.ps1 -NoHomeserver      # Homeserver laeuft bereits
+.\scripts\dev-stack2.ps1 -FrontendOnly      # Nur UI entwickeln
+.\scripts\dev-stack2.ps1 -MockAgent         # CI / Tests ohne API Keys
 ```
 
 **Service-Erkennung:**
@@ -217,6 +225,9 @@ curl http://localhost:8094/health
 
 # Python Bridge?
 curl http://localhost:8097/health
+
+# LiteLLM Gateway (exec-16)?
+curl http://localhost:4000/health
 
 # Memory Service (optional)?
 curl http://localhost:8093/health

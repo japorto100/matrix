@@ -20,6 +20,7 @@ param(
     [switch]$SkipControlUi,
     [switch]$SkipStorage,
     [switch]$SkipIngestion,
+    [switch]$SkipLiteLLM,
     [switch]$DevTools,
     [switch]$WithVoice,
     [switch]$Tunnel,
@@ -421,6 +422,21 @@ try {
         Write-Host "[ingestion-worker] $ingestionDir not found - skipping" -ForegroundColor Yellow
     }
 
+    # -- LiteLLM Gateway (exec-16, Venv 5 — Port 4000) --
+    # Unified LLM proxy: model-name prefix routes to provider automatically.
+    # All provider API keys read from python-backend/.env.
+    $litellmDir = Join-Path $repoRoot "python-backend\litellm-gateway"
+    if (-not $SkipLiteLLM -and (Test-Path $litellmDir)) {
+        Register-Service -Name "litellm" -Port 4000 -Tier "app" -TimeoutSecs 60 `
+            -HealthUrl "http://127.0.0.1:4000/health" -StartAction {
+            Start-LoggedProcess -Name "litellm" -FilePath "uv" `
+                -ArgumentList @("run", "--project", $litellmDir, "litellm", "--config", (Join-Path $litellmDir "config.yaml"), "--port", "4000") `
+                -WorkingDirectory $litellmDir
+        }
+    } elseif (-not $SkipLiteLLM -and -not (Test-Path $litellmDir)) {
+        Write-Host "[litellm] $litellmDir not found - run: cd python-backend/litellm-gateway && uv sync" -ForegroundColor Yellow
+    }
+
     # -- Hindsight Memory Worker (exec-11, runs consolidation tasks) --
     if (-not $SkipPostgres) {
         $pgCtl2 = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
@@ -530,6 +546,7 @@ try {
     if ($script:services["mock-agent"])       { Write-Host "    LLM Mock Agent:      http://127.0.0.1:8094 (MOCK — only /chat + /health)" -ForegroundColor DarkYellow }
     if ($script:services["py-bridge"])        { Write-Host "    Python Bridge:       http://127.0.0.1:8097 (NATS consumer)" }
     if ($script:services["ingestion-worker"]) { Write-Host "    Ingestion Worker:    http://127.0.0.1:8098 (Venv 2, Slice 2)" }
+    if ($script:services["litellm"])          { Write-Host "    LiteLLM Gateway:     http://127.0.0.1:4000 (Venv 5, exec-16)" }
     if ($script:services["memory-worker"])    { Write-Host "    Hindsight Worker:    (consolidation tasks)" }
     Write-Host ""
     Write-Host "  Infrastructure" -ForegroundColor Cyan

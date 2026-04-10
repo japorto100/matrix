@@ -1,7 +1,7 @@
 # exec-16: LLM Provider Gateway (LiteLLM + Multi-Provider Routing)
 
 **Datum:** 10.04.2026
-**Status:** Geplant
+**Status:** In Progress
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-15 (control-ui ApiModelsTab)
 **Referenzen:**
 - OpenRouter API: https://openrouter.ai/docs (Models, Pricing, Provider Routing)
@@ -32,12 +32,13 @@ und Neustart. Kein Fallback, kein Cost-Tracking, keine User-Level Model-Auswahl.
 |---------|--------|
 | `AGENT_PROVIDER` ENV Routing (anthropic/openai/openai-compatible/litellm) | ✅ In `llm_node.py` |
 | `req.model` Override im Request-Body | ✅ In `app.py` (AC107) |
-| `llm_helper.py` fuer Utility-Calls | ✅ Provider-agnostisch |
-| control-ui ApiModelsTab (7 Provider gelistet) | ✅ Frontend + Backend |
+| `llm_helper.py` fuer Utility-Calls | ✅ Provider-agnostisch, LiteLLM endpoint |
+| control-ui ApiModelsTab (7 Provider gelistet) | ✅ Rewritten mit EditApiKeyModal |
 | Model-Routing per Trading-Rolle | ✅ `models.py` (alle auf Default) |
-| OpenRouter als Provider | ❌ Gelistet aber nicht verdrahtet |
-| LiteLLM Proxy | ❌ Nicht installiert |
-| Dynamic Model Selection (UI → Backend) | ❌ Nur ENV-basiert |
+| OpenRouter als Provider | ✅ Via LiteLLM config.yaml (wildcard routing) |
+| LiteLLM Proxy | ✅ Installiert (`litellm-gateway/`, Port 4000) |
+| Dynamic Model Selection (UI → Backend) | 🔶 Model-Dropdown + User-Settings (teilweise) |
+| User LLM Settings (DB + KeyVault) | ✅ Alembic 009, AES-256-GCM, CRUD API |
 | Fallback/Retry | ❌ Kein Fallback |
 | Cost Tracking | ❌ Nicht vorhanden |
 
@@ -110,7 +111,7 @@ Fuer sofortiges Verify-Testing ohne LiteLLM Setup.
 
 - [x] **1.1:** OpenRouter Account + API Key ✅ (10.04.2026)
 
-- [ ] **1.2:** `.env` Konfiguration fuer OpenRouter
+- [x] **1.2:** `.env` Konfiguration fuer OpenRouter (via LiteLLM, not AGENT_PROVIDER=openai-compatible pattern)
   ```env
   AGENT_PROVIDER=openai-compatible
   OPENAI_API_KEY=sk-or-v1-<dein-key>
@@ -139,7 +140,7 @@ Fuer sofortiges Verify-Testing ohne LiteLLM Setup.
 
 LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
-- [ ] **2.1.1:** Eigene Venv fuer LiteLLM Gateway
+- [x] **2.1.1:** Eigene Venv fuer LiteLLM Gateway
   ```
   python-backend/litellm-gateway/
     pyproject.toml          # litellm[proxy] dependency
@@ -148,7 +149,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
     start.ps1               # Startscript fuer devstack2
   ```
 
-- [ ] **2.1.2:** `pyproject.toml`
+- [x] **2.1.2:** `pyproject.toml`
   ```toml
   [project]
   name = "litellm-gateway"
@@ -159,20 +160,20 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   managed = true
   ```
 
-- [ ] **2.1.3:** Installation
+- [x] **2.1.3:** Installation
   ```bash
   cd python-backend/litellm-gateway
   uv sync
   ```
 
-- [ ] **2.1.4:** Start
+- [x] **2.1.4:** Start
   ```bash
   uv run litellm --config config.yaml --port 4000
   ```
 
 ### 2.2 config.yaml
 
-- [ ] **2.2.1:** Basis-Config mit allen Providern
+- [x] **2.2.1:** Basis-Config mit allen Providern (wildcard routing)
   ```yaml
   model_list:
     # ── Anthropic (direkt) ──
@@ -264,7 +265,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 2.3 Python Agent Umstellung
 
-- [ ] **2.3.1:** Agent `.env` auf LiteLLM umstellen
+- [x] **2.3.1:** Agent `.env` auf LiteLLM umstellen (LITELLM_BASE_URL=http://localhost:4000, llm_client.py is sole OpenAI client)
   ```env
   # Vorher:
   # AGENT_PROVIDER=anthropic
@@ -277,17 +278,17 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   AGENT_MODEL=claude-sonnet
   ```
 
-- [ ] **2.3.2:** `llm_helper.py` auf LiteLLM Endpoint umstellen
+- [x] **2.3.2:** `llm_helper.py` auf LiteLLM Endpoint umstellen (uses shared llm_client)
   - Gleiche Logik, nur `OPENAI_BASE_URL` zeigt auf LiteLLM statt direkt Provider
   - Utility-Calls (Summarization, Skills) nutzen gleichen Endpoint
 
-- [ ] **2.3.3:** Hindsight Memory Engine
+- [x] **2.3.3:** Hindsight Memory Engine (bridges to LiteLLM via ENV)
   - Hindsight nutzt eigene LLM-Config (`engine.py` setzt ENV vars)
   - Umstellen auf LiteLLM Endpoint fuer Retain/Recall LLM-Calls
 
 ### 2.4 DevStack Integration
 
-- [ ] **2.4.1:** `devstack2.ps1` — LiteLLM als Service hinzufuegen
+- [x] **2.4.1:** `dev-stack2.ps1` — LiteLLM als Service (`-SkipLiteLLM` Flag, Port 4000)
   ```powershell
   # LiteLLM Gateway (Port 4000)
   if (-not $SkipLiteLLM) {
@@ -311,7 +312,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 2.5 .env Master-Template
 
-- [ ] **2.5.1:** Alle Provider-Keys in einer `.env` Datei
+- [x] **2.5.1:** Alle Provider-Keys in einer `.env` Datei (.env + .env.example updated)
   ```env
   # ─── LLM Provider API Keys ───────────────────────────────────────
   # Setze nur die Keys fuer Provider die du nutzen willst.
@@ -345,7 +346,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 2.6 Alembic Migration: `agent.user_llm_settings`
 
-- [ ] **2.6.1:** Migration erstellen
+- [x] **2.6.1:** Migration erstellen (Alembic 009: user_llm_settings + user_credentials tables)
   ```sql
   CREATE TABLE agent.user_llm_settings (
     id            SERIAL PRIMARY KEY,
@@ -374,7 +375,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 > Go braucht Keys fuer Exchanges, Datenquellen, Storage. Python braucht Keys fuer LLM Provider.
 > Beide muessen die gleiche DB-Tabelle lesen/schreiben → **identisches AES-256-GCM Format**.
 
-- [ ] **2.7.1:** Python KeyVault (`agent/security/key_vault.py`)
+- [x] **2.7.1:** Python KeyVault (`agent/security/key_vault.py`) — AES-256-GCM with 0x01 prefix
   - AES-256-GCM via `cryptography` Package (bereits in Dependencies)
   - Server-Secret aus ENV: `KEY_ENCRYPTION_SECRET` (32 Bytes, hex-encoded)
   - Modulares Backend-Interface fuer spaetere PQC-Erweiterung:
@@ -388,7 +389,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
     ```
   - Format: `[12-byte nonce][ciphertext][16-byte GCM tag]` — identisch in Go + Python
 
-- [ ] **2.7.2:** Go KeyVault (`internal/security/keyvault.go`)
+- [x] **2.7.2:** Go KeyVault (`internal/keyvault/keyvault.go`) — AES-256-GCM same format
   - AES-256-GCM via Go stdlib (`crypto/aes` + `crypto/cipher`)
   - Gleicher ENV: `KEY_ENCRYPTION_SECRET`
   - Gleiches Byte-Format wie Python (cross-language kompatibel)
@@ -430,7 +431,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - Go braucht das fuer: Exchange API Keys, Datenquellen-Credentials, Storage Secrets
   - Wird bei Portierung ins Hauptprojekt 1:1 uebernommen
 
-- [ ] **2.7.3:** PQC-Readiness (Hybrid, spaeter aktivierbar)
+- [x] **2.7.3:** Go HPKE (`internal/keyvault/hpke.go`) — crypto/hpke with 0x02 prefix, auto-detect
   - **Python:** `pqcrypto` oder `liboqs-python` fuer ML-KEM Key-Wrap
     - Hybrid = ML-KEM kapselt den AES-256 Key → AES-256-GCM verschluesselt Daten
     - `KEY_VAULT_BACKEND=hybrid-pqc` ENV aktiviert PQC
@@ -448,7 +449,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - **Kein Breaking Change:** AES-GCM bleibt Default, HPKE-MLKEM ist opt-in
   - **Portierung:** Go KeyVault wird 1:1 ins Hauptprojekt uebernommen
 
-- [ ] **2.7.4:** Sicherheitsregeln (Go + Python)
+- [x] **2.7.4:** Sicherheitsregeln (Go + Python) — masked preview, BYTEA, KEY_ENCRYPTION_SECRET required
   - API Keys nie in Logs (auch nicht teilweise)
   - API Keys nie in API Responses (nur `is_set: true/false` + masked Preview)
   - DB-Spalte ist BYTEA (verschluesselt), nicht TEXT
@@ -460,7 +461,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 > Nicht nur LLM Keys — auch Exchange Keys, Datenquellen usw.
 > Eine Tabelle, beide Sprachen (Go + Python) lesen/schreiben.
 
-- [ ] **2.7b.1:** Generische Credentials-Tabelle (erweitert `user_api_keys`)
+- [x] **2.7b.1:** Generische Credentials-Tabelle (user_credentials with category field)
   ```sql
   CREATE TABLE agent.user_credentials (
     id            SERIAL PRIMARY KEY,
@@ -482,7 +483,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 2.8 CRUD Endpoints fuer User-Settings
 
-- [ ] **2.8.1:** `agent/control/user_llm.py` — neuer Router
+- [x] **2.8.1:** `agent/control/user_llm.py` — CRUD Router with all 6 endpoints
   ```
   GET    /api/v1/control/user/llm           → User-Settings + Provider-Status (masked keys)
   PUT    /api/v1/control/user/llm/model     → Default-Model setzen
@@ -492,7 +493,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   POST   /api/v1/control/user/llm/key/{provider}/validate → Key testen (LLM-Call mit minimal Prompt)
   ```
 
-- [ ] **2.8.2:** Key Validation Endpoint
+- [x] **2.8.2:** Key Validation Endpoint (LLM call + model fetching)
   - Macht einen minimalen LLM-Call (`"Hi"` → pruefen ob Response kommt)
   - Speichert `is_valid` + `validated_at` in DB
   - Gibt `{ valid: true, model_list: [...] }` zurueck
@@ -500,14 +501,14 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 2.9 Python Agent: User-Settings Resolution
 
-- [ ] **2.9.1:** `agent/user_settings.py` — Settings Loader
+- [x] **2.9.1:** `agent/control/credentials.py` — Settings Loader (get_user_api_key, get_user_default_model, provider_from_model)
   ```python
   async def get_user_llm_settings(user_id: str) -> UserLLMSettings:
       # DB Lookup → Fallback auf ENV
       # Returns: default_model, per_role_overrides, decrypted api_keys
   ```
 
-- [ ] **2.9.2:** Integration in `app.py` + `runner.py`
+- [x] **2.9.2:** Integration in `app.py` + `runner.py` (user settings resolution)
   - Vor LangGraph-Start: `settings = await get_user_llm_settings(user_id)`
   - Model: `req.model or settings.default_model or ENV`
   - API Key: `settings.api_key_for(provider) or ENV`
@@ -523,12 +524,12 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 3.1 Agent Chat UI: Model-Dropdown
 
-- [ ] **3.1.1:** Model-Picker im AgentChatComposer
+- [x] **3.1.1:** Model-Picker in AgentChatToolbar (dynamic, grouped cloud/local)
   - Dropdown/Popover mit verfuegbaren Models
   - Grouped: Cloud (Claude, GPT, Gemini) | Local (Ollama, vLLM) | Free (OpenRouter Free)
   - Selected Model wird im Request mitgeschickt: `{ model: "claude-sonnet" }`
 
-- [ ] **3.1.2:** `useAvailableModels()` Hook
+- [x] **3.1.2:** `useAvailableModels()` Hook
   - Fetcht `GET /api/v1/control/user/llm` (User-Settings inkl. verfuegbare Models)
   - Zeigt nur Models wo User einen **gueltigen** API Key hat (`is_valid: true`)
   - Grouped: Cloud (Claude, GPT, Gemini) | Aggregator (OpenRouter) | Local (Ollama)
@@ -540,16 +541,16 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ### 3.2 Request-Body + User-Settings Resolution
 
-- [ ] **3.2.1:** `AgentChatRequest.model` (bereits vorhanden in `app.py:94`)
+- [x] **3.2.1:** `AgentChatRequest.model` — resolves model from user settings
   - Aktuell: `req.model or os.environ.get("AGENT_MODEL", default)`
   - Aenderung: `req.model or user_settings.default_model or ENV`
   - Model-Name wird 1:1 an LiteLLM durchgereicht
 
-- [ ] **3.2.2:** Go Gateway durchreichen
+- [x] **3.2.2:** Go Gateway durchreichen
   - `agent_chat_handler.go` leitet `model` Feld bereits im Request-Body durch ✅
   - Keine Go-Aenderungen noetig
 
-- [ ] **3.2.3:** User-Settings Resolution im Python Agent
+- [x] **3.2.3:** User-Settings Resolution im Python Agent
   - `sender` (Matrix User-ID) oder `X-Auth-User` Header → User-ID
   - `user_settings = get_user_llm_settings(user_id)` aus DB
   - Settings: `default_model`, `api_keys`, `per_role_overrides`
@@ -578,7 +579,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 > **User Mode:** API Keys setzen, Model auswaehlen, Cost einsehen
 > **Dev Mode:** Provider aktivieren/deaktivieren, Fallback-Config, System Health, Routing per Rolle
 
-- [ ] **3.3.1:** ApiModelsTab erweitern — Provider Keys via UI (alle User, nicht nur Admin)
+- [x] **3.3.1:** ApiModelsTab rewritten with EditApiKeyModal for setting/testing keys
   - "Set API Key" Button pro Provider → verschluesselt in LiteLLM DB
   - Flow: control-ui → Python Backend → LiteLLM Admin API → Hot-Reload
   - Kein .env-Neustart noetig
@@ -619,7 +620,7 @@ control-ui (Admin):                    agent-chat (User):
                                        LiteLLM → richtiger Provider
 ```
 
-- [ ] **3.3b.1:** `GET /api/v1/control/models/available` — liefert nur aktive Models
+- [x] **3.3b.1:** `GET /api/v1/control/user/llm` returns dynamic models from provider APIs
   - Wird von agent-chat Model-Dropdown und control-ui gemeinsam genutzt
   - Filtert auf: Provider aktiv + API Key gesetzt + Model in config.yaml
 
@@ -658,27 +659,27 @@ control-ui (Admin):                    agent-chat (User):
 - [ ] devstack2.ps1 startet LiteLLM als Service
 
 ### Gate 2.5: User LLM Settings + Key Security (Stufe 2.5)
-- [ ] Alembic Migration: `agent.user_llm_settings` + `agent.user_credentials` Tabellen
-- [ ] Python KeyVault: AES-256-GCM encrypt/decrypt via `cryptography`
-- [ ] Go KeyVault: AES-256-GCM encrypt/decrypt via stdlib `crypto/aes`
-- [ ] Cross-language: Python-verschluesselt → Go-entschluesselbar (gleiches Byte-Format)
-- [ ] `KEY_ENCRYPTION_SECRET` ENV gesetzt, Fehler wenn fehlend (Go + Python)
-- [ ] CRUD: PUT Key → AES-256-GCM verschluesselt → GET zeigt nur masked Preview
-- [ ] Key Validation: POST validate → minimaler LLM-Call → `is_valid` + `model_list`
-- [ ] User-Settings Resolution: `get_user_llm_settings(user_id)` in runner.py
-- [ ] Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV`
-- [ ] Matrix Mention: `sender` → User-Settings → richtiges Model
-- [ ] PQC-Readiness: `KEY_VAULT_BACKEND` ENV vorhanden, default `aesgcm`
+- [x] Alembic Migration: `agent.user_llm_settings` + `agent.user_credentials` Tabellen
+- [x] Python KeyVault: AES-256-GCM encrypt/decrypt via `cryptography`
+- [x] Go KeyVault: AES-256-GCM encrypt/decrypt via stdlib `crypto/aes`
+- [x] Cross-language: Python-verschluesselt → Go-entschluesselbar (gleiches Byte-Format)
+- [x] `KEY_ENCRYPTION_SECRET` ENV gesetzt, Fehler wenn fehlend (Go + Python)
+- [x] CRUD: PUT Key → AES-256-GCM verschluesselt → GET zeigt nur masked Preview
+- [x] Key Validation: POST validate → minimaler LLM-Call → `is_valid` + `model_list`
+- [x] User-Settings Resolution: `get_user_llm_settings(user_id)` in runner.py
+- [x] Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV`
+- [ ] Matrix Mention: `sender` → User-Settings → richtiges Model (NOT done)
+- [x] PQC-Readiness: `KEY_VAULT_BACKEND` ENV vorhanden, default `aesgcm`
 
 ### Gate 3: Dynamic Model Selection (Stufe 3)
-- [ ] Model-Dropdown im AgentChatComposer (nur Models mit gueltigem Key)
-- [ ] User waehlt "gpt-4o" → Backend nutzt OpenAI via LiteLLM
-- [ ] User waehlt "claude-sonnet" → Backend nutzt Anthropic via LiteLLM
-- [ ] User waehlt "local-llama" → Backend nutzt Ollama via LiteLLM
-- [ ] Model-Badge zeigt aktives Model + Provider
-- [ ] control-ui: API Key Eingabe + Live-Validation + Model-Picker (User Mode)
-- [ ] control-ui: Per-Rolle Overrides (Dev Mode)
-- [ ] agent-chat ↔ control-ui: gleicher Endpoint, Aenderung sofort sichtbar
+- [x] Model-Dropdown in AgentChatToolbar (dynamic, grouped cloud/local)
+- [ ] User waehlt "gpt-4o" → Backend nutzt OpenAI via LiteLLM (not verified)
+- [ ] User waehlt "claude-sonnet" → Backend nutzt Anthropic via LiteLLM (not verified)
+- [ ] User waehlt "local-llama" → Backend nutzt Ollama via LiteLLM (not verified)
+- [ ] Model-Badge zeigt aktives Model + Provider (NOT done)
+- [x] control-ui: API Key Eingabe + Live-Validation + Model-Picker (User Mode)
+- [ ] control-ui: Per-Rolle Overrides (Dev Mode) (NOT done)
+- [x] agent-chat ↔ control-ui: gleicher Endpoint, Aenderung sofort sichtbar
 
 ### Gate 4: Cost Tracking (Stufe 3)
 - [ ] LiteLLM Spend-Tracking in PostgreSQL
