@@ -3,6 +3,10 @@
 	"version": "0.2.0",
 	"private": true,
 	"description": "Agent Chat UI — Feature-Modul. Wird in nextjs-chat integriert (exec-06).",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check src/"
+	},
 	"dependencies": {
 		"@ai-sdk/devtools": "^0.0.15",
 		"@ai-sdk/react": "^3.0.136",

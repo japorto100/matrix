@@ -1,9 +1,9 @@
 "use client";
 
-// AC71: Agent toolbar — model selector (static list) + context reset + thread options
+// AC71: Agent toolbar — model selector + context reset + thread options
 // AC107: Controlled model selector — selectedModel + onModelChange from parent.
 // AC108: Reasoning-Effort toggle — low/medium/high passed through BFF → Go → Python.
-// Static model list (no backend required); dynamic model-list needs /api/agent/models endpoint.
+// exec-16: Dynamic model list from /api/agent/models (grouped cloud/local).
 
 import {
 	BrainCircuit,
@@ -20,15 +20,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAvailableModels } from "../hooks/useAvailableModels";
 import { useGlobalChat } from "../stores/globalChatStore";
-
-export const AGENT_MODELS = [
-	{ id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
-	{ id: "claude-opus-4-6", label: "Opus 4.6" },
-	{ id: "claude-haiku-4-5", label: "Haiku 4.5" },
-] as const;
-
-export type AgentModelId = (typeof AGENT_MODELS)[number]["id"];
 
 export type ReasoningEffort = "low" | "medium" | "high";
 
@@ -74,9 +67,15 @@ export function AgentChatToolbar({
 }: AgentChatToolbarProps) {
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const { mode, toggleMode } = useGlobalChat();
+	const { cloudModels, localModels } = useAvailableModels();
 	const activeReasoningEffort: ReasoningEffort = reasoningEffort ?? "medium";
 
-	const currentLabel = AGENT_MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel;
+	// Short label: strip provider prefix, show last part
+	const shortLabel = (id: string) => {
+		const parts = id.split("/");
+		return parts[parts.length - 1] ?? id;
+	};
+	const currentLabel = shortLabel(selectedModel);
 
 	function cycleEffort() {
 		const order: ReasoningEffort[] = ["low", "medium", "high"];
@@ -98,22 +97,55 @@ export function AgentChatToolbar({
 					<ChevronDown className="h-2.5 w-2.5" />
 				</button>
 				{pickerOpen && (
-					<div className="absolute top-full left-0 z-50 mt-1 min-w-[140px] rounded-md border border-border bg-popover shadow-md">
-						{AGENT_MODELS.map((m) => (
-							<button
-								key={m.id}
-								type="button"
-								onClick={() => {
-									onModelChange?.(m.id);
-									setPickerOpen(false);
-								}}
-								className={`flex w-full items-center px-3 py-1.5 text-[11px] hover:bg-muted/60 transition-colors ${
-									m.id === selectedModel ? "text-foreground font-medium" : "text-muted-foreground"
-								}`}
-							>
-								{m.label}
-							</button>
-						))}
+					<div className="absolute top-full left-0 z-50 mt-1 min-w-[180px] max-h-[320px] overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+						{cloudModels.length > 0 && (
+							<>
+								<div className="px-3 py-1 text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+									Cloud
+								</div>
+								{cloudModels.map((m) => (
+									<button
+										key={m.id}
+										type="button"
+										onClick={() => {
+											onModelChange?.(m.id);
+											setPickerOpen(false);
+										}}
+										className={`flex w-full items-center px-3 py-1.5 text-[11px] hover:bg-muted/60 transition-colors ${
+											m.id === selectedModel
+												? "text-foreground font-medium"
+												: "text-muted-foreground"
+										}`}
+									>
+										{shortLabel(m.id)}
+									</button>
+								))}
+							</>
+						)}
+						{localModels.length > 0 && (
+							<>
+								<div className="px-3 py-1 text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider border-t border-border mt-1 pt-1">
+									Local
+								</div>
+								{localModels.map((m) => (
+									<button
+										key={m.id}
+										type="button"
+										onClick={() => {
+											onModelChange?.(m.id);
+											setPickerOpen(false);
+										}}
+										className={`flex w-full items-center px-3 py-1.5 text-[11px] hover:bg-muted/60 transition-colors ${
+											m.id === selectedModel
+												? "text-foreground font-medium"
+												: "text-muted-foreground"
+										}`}
+									>
+										{shortLabel(m.id)}
+									</button>
+								))}
+							</>
+						)}
 					</div>
 				)}
 			</div>

@@ -1,7 +1,7 @@
 "use client";
 
-// ApiModelsTab — Slice 7 (Dev Mode only)
-// Fused: LLM Providers + Model Routing + Utility Models + ENV Variables
+// ApiModelsTab — exec-16: Interactive LLM provider config
+// Provider cards with key management, dynamic model discovery, default model picker
 
 import {
 	Box,
@@ -9,32 +9,37 @@ import {
 	HardDrive,
 	Key,
 	Lock,
+	RefreshCw,
 	Search,
 	Server,
 	Sparkles,
 	TestTube,
+	Trash2,
 	Workflow,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+	useDeleteApiKey,
 	useEnvVars,
-	useLlmProviders,
 	useModelRouting,
+	useSetDefaultModel,
+	useUserLlmSettings,
 	useUtilityModels,
 } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import {
 	mockAgentRoles,
 	mockEnvVars,
-	mockLlmProviders,
 	mockModelRouting,
 	mockUtilityModels,
 } from "../mock-data";
 import type { EnvVar, LlmProvider, ModelRouting, UtilityModel, UtilityPurpose } from "../types";
+import { EditApiKeyModal } from "./EditApiKeyModal";
 
 const UTILITY_ICON: Record<UtilityPurpose, React.ReactNode> = {
 	embedder_text: <Box className="h-3.5 w-3.5" />,
@@ -47,20 +52,37 @@ const UTILITY_ICON: Record<UtilityPurpose, React.ReactNode> = {
 
 export function ApiModelsTab() {
 	const [envFilter, setEnvFilter] = useState("");
+	const [editProvider, setEditProvider] = useState<LlmProvider | null>(null);
 
-	// Slice 7 Phase H: real backend with mock fallback
-	const providersQuery = useLlmProviders();
+	// exec-16: User LLM settings (live from backend)
+	const llmQuery = useUserLlmSettings();
 	const routingQuery = useModelRouting();
 	const utilityQuery = useUtilityModels();
 	const envQuery = useEnvVars();
+	const setDefaultModel = useSetDefaultModel();
+	const deleteKey = useDeleteApiKey();
 
-	const providers = (providersQuery.data?.items as LlmProvider[] | undefined) ?? mockLlmProviders;
+	// Data with mock fallback
+	const providers = llmQuery.data?.providers ?? [];
+	const defaultModel = llmQuery.data?.default_model ?? null;
 	const routing = (routingQuery.data?.items as ModelRouting[] | undefined) ?? mockModelRouting;
 	const utility = (utilityQuery.data?.items as UtilityModel[] | undefined) ?? mockUtilityModels;
 	const envVars = (envQuery.data?.items as EnvVar[] | undefined) ?? mockEnvVars;
 
+	// All available models across all active providers
+	const allModels = useMemo(() => {
+		const models: { model: string; provider: string }[] = [];
+		for (const p of providers) {
+			if (!p.is_active) continue;
+			for (const m of p.available_models) {
+				models.push({ model: m, provider: p.display_name });
+			}
+		}
+		return models;
+	}, [providers]);
+
 	const providerById = useMemo(() => {
-		const m: Record<string, (typeof providers)[number]> = {};
+		const m: Record<string, LlmProvider> = {};
 		for (const p of providers) m[p.id] = p;
 		return m;
 	}, [providers]);
@@ -76,21 +98,86 @@ export function ApiModelsTab() {
 	const activeCount = providers.filter((p) => p.is_active).length;
 	const sensitiveCount = envVars.filter((v) => v.is_sensitive).length;
 
+	const handleSetDefault = async (model: string) => {
+		try {
+			await setDefaultModel.mutateAsync(model);
+			toast.success(`Default model: ${model}`);
+		} catch {
+			toast.error("Failed to set default model");
+		}
+	};
+
+	const handleDeleteKey = async (provider: LlmProvider) => {
+		try {
+			await deleteKey.mutateAsync(provider.id);
+			toast.success(`Key for ${provider.display_name} removed`);
+		} catch {
+			toast.error("Failed to delete key");
+		}
+	};
+
 	return (
 		<div className="px-6 py-4 space-y-6">
 			<header className="flex items-baseline justify-between">
 				<div>
 					<h2 className="text-base font-semibold">API &amp; Models</h2>
 					<p className="text-xs text-muted-foreground">
-						LLM providers, model routing, embedders, env config · Read-only (D6)
+						LLM providers, model routing, embedders, env config
 					</p>
 				</div>
-				<Badge variant="outline" className="text-[10px]">
-					{activeCount}/{providers.length} providers active
-				</Badge>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-6 text-[10px] gap-1"
+						onClick={() => llmQuery.refetch()}
+						disabled={llmQuery.isFetching}
+					>
+						<RefreshCw className={cn("h-2.5 w-2.5", llmQuery.isFetching && "animate-spin")} />
+						Refresh
+					</Button>
+					<Badge variant="outline" className="text-[10px]">
+						{activeCount}/{providers.length} providers active
+					</Badge>
+				</div>
 			</header>
 
-			{/* ─── Section 1: LLM Providers ─────────────────────────────────── */}
+			{/* ─── Default Model Picker ────────────────────────────────── */}
+			{allModels.length > 0 && (
+				<section className="space-y-2">
+					<div className="flex items-baseline justify-between border-b border-border pb-1">
+						<h3 className="text-sm font-semibold flex items-center gap-2">
+							<Sparkles className="h-3.5 w-3.5" />
+							Default Model
+						</h3>
+						{defaultModel && (
+							<code className="text-[11px] text-muted-foreground font-mono">{defaultModel}</code>
+						)}
+					</div>
+					<div className="flex flex-wrap gap-1.5">
+						{allModels.slice(0, 20).map(({ model, provider }) => (
+							<Button
+								key={model}
+								variant={model === defaultModel ? "default" : "outline"}
+								size="sm"
+								className="h-6 text-[10px] gap-1"
+								onClick={() => handleSetDefault(model)}
+								disabled={setDefaultModel.isPending}
+							>
+								{model}
+								<span className="text-[9px] opacity-60">({provider})</span>
+							</Button>
+						))}
+						{allModels.length > 20 && (
+							<span className="text-[10px] text-muted-foreground self-center">
+								+{allModels.length - 20} more
+							</span>
+						)}
+					</div>
+				</section>
+			)}
+
+			{/* ─── Section 1: LLM Providers ─────────────────────────────── */}
 			<section className="space-y-2">
 				<div className="flex items-baseline justify-between border-b border-border pb-1">
 					<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -98,7 +185,7 @@ export function ApiModelsTab() {
 						LLM Providers
 					</h3>
 					<span className="text-[10px] text-muted-foreground">
-						API keys masked · Test disabled (Slice 7 backend pending)
+						Click &quot;Set Key&quot; to configure
 					</span>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -143,28 +230,32 @@ export function ApiModelsTab() {
 										<code className="font-mono text-amber-300">{provider.api_key_preview}</code>
 									</div>
 								)}
-								{provider.endpoint_url !== undefined && (
-									<div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-										<Server className="h-2.5 w-2.5" />
-										<code className="font-mono line-clamp-1">
-											{provider.endpoint_url || "not set"}
-										</code>
-									</div>
-								)}
 								{provider.available_models.length > 0 && (
 									<div className="text-[10px] text-muted-foreground">
 										{provider.available_models.length} model
-										{provider.available_models.length === 1 ? "" : "s"}
+										{provider.available_models.length === 1 ? "" : "s"} available
 									</div>
 								)}
 								<div className="flex gap-1 pt-1">
-									<Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" disabled>
-										<TestTube className="h-2.5 w-2.5" />
-										Test
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-6 text-[10px] gap-1"
+										onClick={() => setEditProvider(provider)}
+									>
+										<Key className="h-2.5 w-2.5" />
+										{provider.api_key_set ? "Change Key" : "Set Key"}
 									</Button>
-									{provider.type === "local" && (
-										<Button variant="outline" size="sm" className="h-6 text-[10px]" disabled>
-											Discover
+									{provider.api_key_set && (
+										<Button
+											variant="outline"
+											size="sm"
+											className="h-6 text-[10px] gap-1 text-red-400 hover:text-red-300"
+											onClick={() => handleDeleteKey(provider)}
+											disabled={deleteKey.isPending}
+										>
+											<Trash2 className="h-2.5 w-2.5" />
+											Remove
 										</Button>
 									)}
 								</div>
@@ -174,7 +265,7 @@ export function ApiModelsTab() {
 				</div>
 			</section>
 
-			{/* ─── Section 2: Model Routing per Role ────────────────────────── */}
+			{/* ─── Section 2: Model Routing per Role ────────────────────── */}
 			<section className="space-y-2">
 				<div className="flex items-baseline justify-between border-b border-border pb-1">
 					<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -182,7 +273,7 @@ export function ApiModelsTab() {
 						Model Routing
 					</h3>
 					<span className="text-[10px] text-muted-foreground">
-						Per Trading Role · Default → override
+						Per Trading Role
 					</span>
 				</div>
 				<div className="rounded-lg border border-border overflow-hidden">
@@ -238,7 +329,7 @@ export function ApiModelsTab() {
 				</div>
 			</section>
 
-			{/* ─── Section 3: Utility Models ────────────────────────────────── */}
+			{/* ─── Section 3: Utility Models ────────────────────────────── */}
 			<section className="space-y-2">
 				<div className="flex items-baseline justify-between border-b border-border pb-1">
 					<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -285,7 +376,7 @@ export function ApiModelsTab() {
 				</div>
 			</section>
 
-			{/* ─── Section 4: ENV Variables ─────────────────────────────────── */}
+			{/* ─── Section 4: ENV Variables ─────────────────────────────── */}
 			<section className="space-y-2">
 				<div className="flex items-baseline justify-between border-b border-border pb-1">
 					<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -294,7 +385,7 @@ export function ApiModelsTab() {
 					</h3>
 					<div className="flex items-center gap-2">
 						<span className="text-[10px] text-muted-foreground">
-							{sensitiveCount} sensitive · Read-only (D6)
+							{sensitiveCount} sensitive
 						</span>
 						<div className="relative">
 							<Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -355,6 +446,13 @@ export function ApiModelsTab() {
 					</table>
 				</div>
 			</section>
+
+			{/* Edit API Key Modal */}
+			<EditApiKeyModal
+				provider={editProvider}
+				open={!!editProvider}
+				onOpenChange={(open) => !open && setEditProvider(null)}
+			/>
 		</div>
 	);
 }

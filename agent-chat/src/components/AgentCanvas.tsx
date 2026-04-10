@@ -41,6 +41,7 @@ export const AgentCanvas = forwardRef<AgentCanvasRef, AgentCanvasProps>(function
 				const type = shapeType === "novel" ? "novel" : shapeType === "text" ? "text" : "geo";
 				editor.createShape({
 					id: shapeId,
+					// biome-ignore lint/suspicious/noExplicitAny: tldraw custom shape type requires cast
 					type: type as any,
 					x: (result.x as number) ?? 0,
 					y: (result.y as number) ?? 0,
@@ -49,6 +50,7 @@ export const AgentCanvas = forwardRef<AgentCanvasRef, AgentCanvasProps>(function
 						h: (result.height as number) ?? (type === "novel" ? 300 : 100),
 						text: (result.text as string) ?? "",
 					},
+					// biome-ignore lint/suspicious/noExplicitAny: tldraw createShape requires loose typing
 				} as any);
 			} else if (action === "update") {
 				const shapeId = result.shape_id as TLShapeId;

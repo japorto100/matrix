@@ -11,7 +11,7 @@ import { EditorContent, EditorRoot } from "novel";
 import { useState } from "react";
 import { BaseBoxShapeUtil, HTMLContainer } from "tldraw";
 
-// Shape type — using any to bypass tldraw's strict union type constraint for custom shapes
+// biome-ignore lint/suspicious/noExplicitAny: tldraw custom shape type requires loose typing
 type NovelShape = any;
 
 export class NovelShapeUtil extends BaseBoxShapeUtil<NovelShape> {
@@ -35,6 +35,7 @@ export class NovelShapeUtil extends BaseBoxShapeUtil<NovelShape> {
 							id: shape.id,
 							type: "novel",
 							props: { ...shape.props, text },
+							// biome-ignore lint/suspicious/noExplicitAny: tldraw updateShape type
 						} as any);
 					}}
 				/>
@@ -71,6 +72,7 @@ function NovelEditorInShape({
 								}
 							: undefined
 					}
+					// biome-ignore lint/suspicious/noExplicitAny: novel editor instance type not exported
 					onUpdate={({ editor }: { editor: any }) => {
 						const newText = editor.getText();
 						setContent(newText);

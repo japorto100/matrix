@@ -52,9 +52,7 @@ export function SandboxArtifact({
 				<Terminal className="h-3 w-3" />
 				<span>
 					Sandbox {language ?? "code"} —{" "}
-					{execution_time_ms != null
-						? `${(execution_time_ms / 1000).toFixed(1)}s`
-						: "completed"}
+					{execution_time_ms != null ? `${(execution_time_ms / 1000).toFixed(1)}s` : "completed"}
 				</span>
 			</div>
 

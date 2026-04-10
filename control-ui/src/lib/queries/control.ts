@@ -26,9 +26,10 @@ import type {
 	Skill,
 	ToolCategory,
 	ToolDefinition,
+	UserLlmSettings,
 	UtilityModel,
 } from "@/features/control/types";
-import { apiDelete, apiGet, apiPatch, apiPost } from "./client";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./client";
 
 // ─── Overview ──────────────────────────────────────────────────────────────
 
@@ -192,6 +193,37 @@ export const modelsQueries = {
 	routing: async (): Promise<{ items: ModelRouting[] }> => apiGet("/api/control/models/routing"),
 	utility: async (): Promise<{ items: UtilityModel[] }> => apiGet("/api/control/models/utility"),
 	env: async (): Promise<{ items: EnvVar[]; total: number }> => apiGet("/api/control/models/env"),
+};
+
+// ─── User LLM Settings (exec-16 CRUD) ────────────────────────────────────
+
+export const userLlmKeys = {
+	all: ["control", "user-llm"] as const,
+	settings: () => ["control", "user-llm", "settings"] as const,
+};
+
+export const userLlmQueries = {
+	settings: async (): Promise<UserLlmSettings> => apiGet("/api/control/user/llm"),
+	setDefaultModel: async (model: string): Promise<{ status: string; default_model: string }> =>
+		apiPut("/api/control/user/llm/model", { model }),
+	setRoleOverrides: async (
+		overrides: Record<string, string>,
+	): Promise<{ status: string; per_role_overrides: Record<string, string> }> =>
+		apiPut("/api/control/user/llm/roles", { overrides }),
+	setApiKey: async (
+		providerId: string,
+		apiKey: string,
+	): Promise<{ status: string; provider_id: string; api_key_preview: string }> =>
+		apiPut(`/api/control/user/llm/key/${encodeURIComponent(providerId)}`, { api_key: apiKey }),
+	deleteApiKey: async (providerId: string): Promise<{ status: string }> =>
+		apiDelete(`/api/control/user/llm/key/${encodeURIComponent(providerId)}`),
+	validateApiKey: async (
+		providerId: string,
+		apiKey: string,
+	): Promise<{ valid: boolean; error?: string; models?: string[] }> =>
+		apiPost(`/api/control/user/llm/key/${encodeURIComponent(providerId)}/validate`, {
+			api_key: apiKey,
+		}),
 };
 
 // ─── Audit ─────────────────────────────────────────────────────────────────

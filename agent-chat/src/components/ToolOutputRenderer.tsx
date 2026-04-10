@@ -13,11 +13,12 @@ import { ChartWidget } from "./tambo/ChartWidget";
 import { PortfolioCard } from "./tambo/PortfolioCard";
 
 // Tool-Name → React Component Mapping
+// biome-ignore lint/suspicious/noExplicitAny: tool output props vary per renderer
 const TOOL_RENDERERS: Record<string, ComponentType<any>> = {
 	get_chart_state: ChartWidget,
 	get_portfolio_summary: PortfolioCard,
-	sandbox_execute: SandboxArtifact,    // exec-13 6.3: OpenSandbox Results
-	file_analyze: SandboxArtifact,       // exec-12: File Analysis Results (same format)
+	sandbox_execute: SandboxArtifact, // exec-13 6.3: OpenSandbox Results
+	file_analyze: SandboxArtifact, // exec-12: File Analysis Results (same format)
 };
 
 /** Prueft ob ein Tool einen Rich Renderer hat */
@@ -36,7 +37,7 @@ export function ToolOutputRenderer({ toolName, output }: ToolOutputRendererProps
 	if (
 		typeof output === "object" &&
 		output !== null &&
-		(output as any).action === "browser_execute"
+		(output as Record<string, unknown>).action === "browser_execute"
 	) {
 		return (
 			<div className="flex items-center gap-1.5 text-amber-400 text-[10px] mt-1">

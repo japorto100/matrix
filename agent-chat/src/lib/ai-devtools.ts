@@ -36,7 +36,9 @@ export async function withDevTools(model: LanguageModel): Promise<LanguageModel>
 	const middleware = await getDevToolsMiddleware();
 	if (!middleware) return model;
 	return wrapLanguageModel({
+		// biome-ignore lint/suspicious/noExplicitAny: ai SDK types mismatch between LanguageModel versions
 		model: model as any,
+		// biome-ignore lint/suspicious/noExplicitAny: devtools middleware returns untyped
 		middleware: middleware() as any,
 	}) as unknown as LanguageModel;
 }

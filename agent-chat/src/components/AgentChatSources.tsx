@@ -118,7 +118,7 @@ export function AgentChatSources({ sources }: AgentChatSourcesProps) {
 			{/* Inline cards */}
 			<div className="grid grid-cols-1 gap-1">
 				{inline.map((src, idx) => (
-					<SourceCard key={`${src.url || src.title}-${idx}`} source={src} />
+					<SourceCard key={src.url || `${src.title}-${idx}`} source={src} />
 				))}
 			</div>
 
@@ -144,7 +144,7 @@ export function AgentChatSources({ sources }: AgentChatSourcesProps) {
 						</DialogHeader>
 						<div className="grid grid-cols-1 gap-1.5 mt-2">
 							{sources.map((src, idx) => (
-								<SourceCard key={`${src.url || src.title}-${idx}`} source={src} />
+								<SourceCard key={src.url || `${src.title}-${idx}`} source={src} />
 							))}
 						</div>
 					</DialogContent>

@@ -20,7 +20,7 @@ import {
 	MessagePrimitive,
 	ThreadPrimitive,
 } from "@assistant-ui/react";
-import { useVercelUseChatRuntime } from "@assistant-ui/react-ai-sdk";
+import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 
 interface Props {
 	/** useChat Return aus useChatSession (ai SDK v6) */
@@ -32,7 +32,7 @@ interface Props {
  * Unstyled Primitives — Styling kommt über className Props (Tailwind).
  */
 export function AssistantUIThread({ chat }: Props) {
-	const runtime = useVercelUseChatRuntime(chat);
+	const runtime = useChatRuntime(chat);
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
@@ -64,7 +64,7 @@ export function AssistantUIThread({ chat }: Props) {
 											<BranchPickerPrimitive.Previous className="text-[10px]">
 												←
 											</BranchPickerPrimitive.Previous>
-											<BranchPickerPrimitive.Number className="text-[10px] text-muted-foreground" />
+											<BranchPickerPrimitive.Count />
 											<BranchPickerPrimitive.Next className="text-[10px]">
 												→
 											</BranchPickerPrimitive.Next>

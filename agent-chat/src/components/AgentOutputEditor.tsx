@@ -43,6 +43,7 @@ export function AgentOutputEditor({ content, onChange }: Props) {
 								}
 							: undefined
 					}
+					// biome-ignore lint/suspicious/noExplicitAny: novel editor instance type not exported
 					onUpdate={({ editor }: { editor: any }) => {
 						const md = editor?.storage?.markdown?.getMarkdown?.() ?? editor?.getText?.() ?? "";
 						setEditorContent(md);

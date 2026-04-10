@@ -13,7 +13,15 @@
  * 5. Bridge: navigator.modelContext.callTool() → Result ans Backend
  */
 
-"use client";
+// navigator.modelContext is an experimental Web API (WebMCP) — no TS types yet
+interface ModelContext {
+	listTools?: () => Promise<
+		Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>
+	>;
+	callTool?: (name: string, input: Record<string, unknown>) => Promise<unknown>;
+}
+
+("use client");
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -46,7 +54,7 @@ export function useWebMcpBridge(): WebMcpBridgeReturn {
 	// Poll navigator.modelContext fuer registrierte Tools
 	// (Tools koennen sich dynamisch aendern wenn User die Page wechselt)
 	useEffect(() => {
-		const mc = (navigator as any).modelContext;
+		const mc = (navigator as unknown as { modelContext?: ModelContext }).modelContext;
 		if (!mc) {
 			setIsAvailable(false);
 			return;
@@ -55,10 +63,10 @@ export function useWebMcpBridge(): WebMcpBridgeReturn {
 
 		async function discover() {
 			try {
-				const mc = (navigator as any).modelContext;
+				const mc = (navigator as unknown as { modelContext?: ModelContext }).modelContext;
 				if (!mc?.listTools) return;
 				const tools = await mc.listTools();
-				const mapped: BrowserTool[] = (tools ?? []).map((t: any) => ({
+				const mapped: BrowserTool[] = (tools ?? []).map((t) => ({
 					name: t.name ?? "",
 					description: t.description ?? "",
 					inputSchema: t.inputSchema ?? {},
@@ -88,7 +96,7 @@ export function useWebMcpBridge(): WebMcpBridgeReturn {
 	// Browser-Tool ausfuehren (aufgerufen wenn Backend-Agent ein browser_* Tool called)
 	const executeBrowserTool = useCallback(
 		async (name: string, input: Record<string, unknown>): Promise<unknown> => {
-			const mc = (navigator as any).modelContext;
+			const mc = (navigator as unknown as { modelContext?: ModelContext }).modelContext;
 			if (!mc?.callTool) {
 				throw new Error("navigator.modelContext not available");
 			}

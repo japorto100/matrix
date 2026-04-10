@@ -9,9 +9,9 @@
  */
 
 import {
-	SandpackProvider,
-	SandpackPreview as SandpackPreviewPane,
 	SandpackCodeEditor,
+	SandpackPreview as SandpackPreviewPane,
+	SandpackProvider,
 } from "@codesandbox/sandpack-react";
 import { Code, Eye } from "lucide-react";
 import { useState } from "react";
@@ -25,19 +25,13 @@ export interface SandpackPreviewProps {
 	height?: number;
 }
 
-export function SandpackPreview({
-	files,
-	template = "react",
-	height = 300,
-}: SandpackPreviewProps) {
+export function SandpackPreview({ files, template = "react", height = 300 }: SandpackPreviewProps) {
 	const [showCode, setShowCode] = useState(false);
 
 	return (
 		<div className="my-2 rounded-lg border border-border/50 overflow-hidden">
 			<div className="flex items-center justify-between px-3 py-1.5 bg-muted/60 border-b border-border/40">
-				<span className="text-[10px] font-mono text-muted-foreground">
-					Live Preview
-				</span>
+				<span className="text-[10px] font-mono text-muted-foreground">Live Preview</span>
 				<button
 					type="button"
 					onClick={() => setShowCode(!showCode)}
@@ -63,17 +57,9 @@ export function SandpackPreview({
 				options={{ activeFile: Object.keys(files)[0] }}
 			>
 				{showCode ? (
-					<SandpackCodeEditor
-						style={{ height }}
-						showLineNumbers
-						showTabs
-					/>
+					<SandpackCodeEditor style={{ height }} showLineNumbers showTabs />
 				) : (
-					<SandpackPreviewPane
-						style={{ height }}
-						showOpenInCodeSandbox={false}
-						showRefreshButton
-					/>
+					<SandpackPreviewPane style={{ height }} showOpenInCodeSandbox={false} showRefreshButton />
 				)}
 			</SandpackProvider>
 		</div>

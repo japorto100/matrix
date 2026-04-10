@@ -21,14 +21,6 @@ export interface ChatThread {
 
 // ── Models & Reasoning ──────────────────────────────────────────────────────
 
-export const AGENT_MODELS = [
-	{ id: "claude-sonnet-4-6", label: "Sonnet 4.6" },
-	{ id: "claude-opus-4-6", label: "Opus 4.6" },
-	{ id: "claude-haiku-4-5", label: "Haiku 4.5" },
-] as const;
-
-export type AgentModelId = (typeof AGENT_MODELS)[number]["id"];
-
 export type ReasoningEffort = "low" | "medium" | "high";
 
 // ── Chat Session ────────────────────────────────────────────────────────────

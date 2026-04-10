@@ -17,10 +17,22 @@ function isImageType(mime: string): boolean {
 
 function FileIcon({ mime, name }: { mime: string; name: string }) {
 	const ext = name.split(".").pop()?.toLowerCase() ?? "";
-	if (mime === "text/csv" || ext === "xlsx" || ext === "xls" || mime.includes("spreadsheet") || mime.includes("ms-excel")) {
+	if (
+		mime === "text/csv" ||
+		ext === "xlsx" ||
+		ext === "xls" ||
+		mime.includes("spreadsheet") ||
+		mime.includes("ms-excel")
+	) {
 		return <FileSpreadsheet className="h-6 w-6 text-emerald-500" />;
 	}
-	if (ext === "py" || ext === "js" || ext === "ts" || mime.includes("python") || mime.includes("javascript")) {
+	if (
+		ext === "py" ||
+		ext === "js" ||
+		ext === "ts" ||
+		mime.includes("python") ||
+		mime.includes("javascript")
+	) {
 		return <FileCode className="h-6 w-6 text-blue-500" />;
 	}
 	return <FileText className="h-6 w-6 text-muted-foreground" />;

@@ -45,6 +45,8 @@ import {
 	systemQueries,
 	toolsKeys,
 	toolsQueries,
+	userLlmKeys,
+	userLlmQueries,
 } from "./control";
 
 // Default UseQuery options — short stale, graceful retry.
@@ -261,6 +263,67 @@ export function useEnvVars() {
 		...DEFAULTS,
 		queryKey: modelsKeys.env(),
 		queryFn: () => modelsQueries.env(),
+	});
+}
+
+// ─── User LLM Settings (exec-16) ─────────────────────────────────────────
+
+export function useUserLlmSettings() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.settings(),
+		queryFn: () => userLlmQueries.settings(),
+	});
+}
+
+export function useSetDefaultModel() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (model: string) => userLlmQueries.setDefaultModel(model),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: userLlmKeys.all });
+		},
+	});
+}
+
+export function useSetRoleOverrides() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (overrides: Record<string, string>) =>
+			userLlmQueries.setRoleOverrides(overrides),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: userLlmKeys.all });
+		},
+	});
+}
+
+export function useSetApiKey() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ providerId, apiKey }: { providerId: string; apiKey: string }) =>
+			userLlmQueries.setApiKey(providerId, apiKey),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: userLlmKeys.all });
+			qc.invalidateQueries({ queryKey: modelsKeys.all });
+		},
+	});
+}
+
+export function useDeleteApiKey() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (providerId: string) => userLlmQueries.deleteApiKey(providerId),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: userLlmKeys.all });
+			qc.invalidateQueries({ queryKey: modelsKeys.all });
+		},
+	});
+}
+
+export function useValidateApiKey() {
+	return useMutation({
+		mutationFn: ({ providerId, apiKey }: { providerId: string; apiKey: string }) =>
+			userLlmQueries.validateApiKey(providerId, apiKey),
 	});
 }
 

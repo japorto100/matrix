@@ -196,11 +196,17 @@ export type ControlMode = "user" | "dev";
 export type LlmProviderId =
 	| "anthropic"
 	| "openai"
+	| "gemini"
+	| "mistral"
+	| "groq"
+	| "cohere"
+	| "openrouter"
+	| "deepseek"
+	| "qwen"
 	| "ollama"
 	| "vllm"
-	| "lm-studio"
-	| "openrouter"
-	| "azure-openai";
+	| "lmstudio"
+	| (string & {}); // allow extension
 
 export type LlmProviderType = "cloud" | "local";
 
@@ -215,6 +221,13 @@ export interface LlmProvider {
 	available_models: string[];
 	last_test_at?: string;
 	last_test_status?: "ok" | "error";
+}
+
+// exec-16: User LLM Settings (from /api/control/user/llm)
+export interface UserLlmSettings {
+	user_id: string;
+	default_model: string | null;
+	providers: LlmProvider[];
 }
 
 export interface ModelRouting {
