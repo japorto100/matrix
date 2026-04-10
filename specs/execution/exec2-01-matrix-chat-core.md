@@ -72,6 +72,7 @@
 ### C-4: Encrypted State Events (MSC3414/MSC4362)
 - [ ] Vorbereitet in SDK, wartet auf Tuwunel-Support
 - [ ] Aktivierung: `enableEncryptedStateEvents: true`
+  - **Tracking:** siehe `specs/execution/exec-blocking.md` (BLOCK.MATRIX.*)
 
 ### C-6b: Gruppen-Calls Blueprint
 - [x] Architektur dokumentiert in exec-03

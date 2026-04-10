@@ -70,14 +70,14 @@
 - [x] motion (installiert, ersetzt framer-motion in Agent Chat)
 - [x] @livekit/track-processors (Background Blur in CallOverlay)
 - [x] @formkit/auto-animate (installiert)
-- [ ] react-shiki in Matrix TextContent.tsx umstellen
-- [ ] motion Import in Matrix Components umstellen
-- [ ] auto-animate in Matrix RoomList/Timeline einbauen
+- [x] react-shiki in Matrix TextContent.tsx umstellen
+- [x] motion Import in Matrix Components umstellen
+- [x] auto-animate in Matrix RoomList/Timeline einbauen
 
 ---
 
 ## Offene Punkte (Backlog)
 
-- [ ] Location Content: OpenStreetMap-Embed statt Link
+- [ ] Location Content: OpenStreetMap-Embed statt Link (OSM-Link bereits vorhanden, Embed offen)
 - [ ] Client→Server Analyse: welche API Calls optimierbar
 - [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren

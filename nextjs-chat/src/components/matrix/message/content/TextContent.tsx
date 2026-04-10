@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import ShikiHighlighter from "react-shiki";
 import rehypeParse from "rehype-parse";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
@@ -113,6 +114,36 @@ function linkifyText(text: string): (string | React.ReactElement)[] {
 	return parts;
 }
 
+const markdownComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+	code({ className, children, ...props }) {
+		const match = /language-(\w+)/.exec(className ?? "");
+		const value = String(children).replace(/\n$/, "");
+		if (!match && !value.includes("\n")) {
+			return (
+				<code
+					className="rounded bg-muted px-1 py-0.5 font-mono text-[0.8em] text-foreground"
+					{...props}
+				>
+					{children}
+				</code>
+			);
+		}
+
+		return (
+			<ShikiHighlighter
+				language={match?.[1] ?? "text"}
+				theme="one-dark-pro"
+				className="text-xs leading-relaxed !bg-transparent !m-0 !rounded-none"
+			>
+				{value}
+			</ShikiHighlighter>
+		);
+	},
+	pre({ children }) {
+		return <div className="my-2 rounded-md border border-border/50 overflow-hidden">{children}</div>;
+	},
+};
+
 export function TextContent({ message }: { message: ResolvedMessage }) {
 	const sanitizedHtml = useMemo(() => {
 		if (!message.formattedBody) return null;
@@ -135,7 +166,9 @@ export function TextContent({ message }: { message: ResolvedMessage }) {
 	if (message.isBot) {
 		return (
 			<div className="prose prose-sm dark:prose-invert max-w-none break-words">
-				<ReactMarkdown remarkPlugins={[remarkGfm]}>{message.body}</ReactMarkdown>
+				<ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+					{message.body}
+				</ReactMarkdown>
 			</div>
 		);
 	}

@@ -82,7 +82,7 @@ nicht den ganzen Viewport bedecken. Matrix Chat bekommt eine eigene Route (`/cha
 
 ### API Routes (aus exec-08 Task 2.5)
 
-- [ ] **2.1:** `agent-chat/api/` Routes nach `nextjs-chat/src/app/api/` kopieren
+- [x] **2.1:** `agent-chat/api/` Routes nach `nextjs-chat/src/app/api/` kopieren ✅
   - `api/agent/chat/route.ts` — SSE Streaming Proxy (BFF → Go Gateway :8090)
   - `api/agent/approve/route.ts` — Tool Approval
   - `api/agent/completion/route.ts` — One-Shot Completion
@@ -90,16 +90,10 @@ nicht den ganzen Viewport bedecken. Matrix Chat bekommt eine eigene Route (`/cha
   - `api/audio/transcribe/route.ts` — STT (HTTP-Fallback)
 
 ### Verify-Gate: Go Gateway (aus exec-08 Phase 1b)
-- [ ] `GET /health` zeigt Appservice + Agent Service Status
-- [ ] `POST /api/v1/agent/chat` proxied SSE Stream korrekt
-- [ ] `POST /api/v1/audio/synthesize` liefert audio/mpeg zurueck
-- [ ] Matrix E2EE + Agent Gateway laufen im gleichen Prozess
+- Siehe: `exec-eval.md` (infra/stack Verify-Gates)
 
 ### Verify-Gate: Agent Chat E2E (aus exec-08 Phase 2)
-- [ ] Agent Chat UI → BFF → Go Gateway → Python Agent → Claude → SSE Response
-- [ ] Tool-Call im Chat → Approval Card → Approve → Tool-Result
-- [ ] Mock-Agent: Chat funktioniert ohne API Key
-- [ ] HTTP TTS/STT funktioniert als Fallback
+- Siehe: `exec-eval.md` (infra/stack Verify-Gates)
 
 ---
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { MessageSquarePlus, Plus, Search } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
@@ -171,6 +172,7 @@ function VirtualizedRoomList({
 	filter: string;
 }) {
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const [inviteListRef] = useAutoAnimate<HTMLDivElement>();
 	const virtualizer = useVirtualizer({
 		count: filteredRooms.length,
 		getScrollElement: () => scrollRef.current,
@@ -206,7 +208,7 @@ function VirtualizedRoomList({
 		>
 			<div className="px-2 pb-2">
 				{inviteRooms.length > 0 && (
-					<div className="mb-2">
+					<div className="mb-2" ref={inviteListRef}>
 						<p className="text-[10px] font-semibold text-primary uppercase tracking-wider px-2.5 py-1">
 							Einladungen ({inviteRooms.length})
 						</p>

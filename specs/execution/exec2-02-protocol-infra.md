@@ -59,8 +59,7 @@
 ## Offene Punkte (Backlog)
 
 ### C-4: Encrypted State Events (MSC3414/MSC4362)
-- [ ] Wartet auf Tuwunel-Support — SDK vorbereitet
+- Blockiert / extern (Tuwunel Support) → siehe `exec-blocking.md` (MSC3414/MSC4362)
 
 ### OIDC/MAS Auth
-- [ ] Tuwunel Legacy SSO evaluiert, MAS nicht kompatibel
-- [ ] Fuer spaetere Portierung relevant
+- Blockiert / extern (Tuwunel Legacy SSO / MAS) → siehe `exec-blocking.md` (OIDC/MAS)

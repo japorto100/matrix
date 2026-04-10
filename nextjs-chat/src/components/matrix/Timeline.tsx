@@ -1,6 +1,7 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { format, isToday, isYesterday } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronDown, Loader2 } from "lucide-react";
@@ -61,6 +62,7 @@ export function Timeline({
 	const parentRef = useRef<HTMLDivElement>(null);
 	const bottomRef = useRef<HTMLDivElement>(null);
 	const lastLengthRef = useRef(messages.length);
+	const [timelineRootRef] = useAutoAnimate<HTMLDivElement>();
 
 	// Build items with date separators and grouping
 	const items: TimelineItem[] = useMemo(() => {
@@ -136,7 +138,7 @@ export function Timeline({
 	const virtualItems = virtualizer.getVirtualItems();
 
 	return (
-		<div className="flex-1 flex flex-col overflow-hidden relative">
+		<div className="flex-1 flex flex-col overflow-hidden relative" ref={timelineRootRef}>
 			{/* Ältere laden */}
 			{canLoadMore && (
 				<div className="flex justify-center py-3">
