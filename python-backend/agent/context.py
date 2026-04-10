@@ -21,6 +21,8 @@ class AgentExecutionContext:
     system_prompt: str
     # Tool instances for this session
     tools: tuple  # tuple[TradingTool, ...] — tuple for hashability
+    # exec-16: user-specific API key (decrypted, aus DB)
+    api_key: str | None = None
     # Optional live snapshots — populated from Go Gateway before loop starts
     market_snapshot: dict | None = None
     portfolio_state: dict | None = None
@@ -57,10 +59,10 @@ class CapabilityEnvelope:
     needs_human_approval: bool = False
 
     def check(self, tool_name: str) -> None:
-        """Raise CapabilityViolation if tool_name is not in allowed_tools."""
-        from agent.errors import CapabilityViolation
+        """Raise CapabilityViolationError if tool_name is not in allowed_tools."""
+        from agent.errors import CapabilityViolationError
         if self.allowed_tools and tool_name not in self.allowed_tools:
-            raise CapabilityViolation(tool_name, self.agent_class)
+            raise CapabilityViolationError(tool_name, self.agent_class)
 
 
 # Default envelope for the advisory agent class (no mutations, no order placement)

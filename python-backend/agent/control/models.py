@@ -36,14 +36,10 @@ SENSITIVE_KEY_PATTERNS = (
 
 # ENV vars to expose in the ApiModelsTab ENV section
 EXPOSED_ENV_KEYS = [
-    "AGENT_PROVIDER",
-    "AGENT_MODEL",
-    "AGENT_UTILITY_MODEL",
-    "AGENT_USE_LITELLM",
-    "AGENT_USE_LANGGRAPH",
+    "LITELLM_BASE_URL",
     "AGENT_TOOL_TIMEOUT_SEC",
     "AGENT_MAX_ITERATIONS",
-    "OPENAI_BASE_URL",
+    "OPENROUTER_API_KEY",
     "ANTHROPIC_API_KEY",
     "OPENAI_API_KEY",
     "HINDSIGHT_DB_URL",
@@ -78,11 +74,11 @@ def _mask(value: str) -> str:
 
 
 def _providers() -> list[dict[str, Any]]:
+    """System-level provider status. Per-user status kommt aus /user/llm Endpoint."""
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
     openai_key = os.environ.get("OPENAI_API_KEY", "")
-    ollama_url = os.environ.get("OPENAI_BASE_URL", "")  # ollama re-uses OPENAI_BASE_URL pattern
-
-    provider = os.environ.get("AGENT_PROVIDER", "anthropic")
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
+    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
     return [
         {
@@ -91,7 +87,7 @@ def _providers() -> list[dict[str, Any]]:
             "type": "cloud",
             "api_key_set": bool(anthropic_key),
             "api_key_preview": _mask(anthropic_key) if anthropic_key else None,
-            "is_active": provider == "anthropic",
+            "is_active": bool(anthropic_key),
             "available_models": [
                 "claude-opus-4-6",
                 "claude-sonnet-4-6",
@@ -104,7 +100,7 @@ def _providers() -> list[dict[str, Any]]:
             "type": "cloud",
             "api_key_set": bool(openai_key),
             "api_key_preview": _mask(openai_key) if openai_key else None,
-            "is_active": provider == "openai",
+            "is_active": bool(openai_key),
             "available_models": [
                 "gpt-4o",
                 "gpt-4o-mini",
@@ -117,7 +113,7 @@ def _providers() -> list[dict[str, Any]]:
             "type": "local",
             "api_key_set": False,
             "endpoint_url": ollama_url or "http://localhost:11434",
-            "is_active": provider == "openai-compatible" and "11434" in ollama_url,
+            "is_active": False,  # Ollama: aktiv wenn lokal laeuft (health check in Phase 2)
             "available_models": [],
         },
         {
@@ -142,9 +138,15 @@ def _providers() -> list[dict[str, Any]]:
             "id": "openrouter",
             "display_name": "OpenRouter",
             "type": "cloud",
-            "api_key_set": False,
-            "is_active": False,
-            "available_models": [],
+            "api_key_set": bool(openrouter_key),
+            "api_key_preview": _mask(openrouter_key) if openrouter_key else None,
+            "is_active": bool(openrouter_key),
+            "available_models": [
+                "openrouter/anthropic/claude-sonnet-4-6",
+                "openrouter/openai/gpt-4o",
+                "openrouter/qwen/qwen3-480b:free",
+                "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+            ] if openrouter_key else [],
         },
         {
             "id": "azure-openai",
@@ -169,16 +171,15 @@ async def list_providers() -> dict[str, Any]:
 
 @router.get("/models/routing")
 async def list_model_routing() -> dict[str, Any]:
-    """Per-role model routing: defaults + overrides (Phase 2 extends this)."""
-    default_provider = os.environ.get("AGENT_PROVIDER", "anthropic")
-    default_model = os.environ.get("AGENT_MODEL", "claude-sonnet-4-6")
+    """Per-role model routing: defaults + overrides.
+    System-Default aus ENV, User-Overrides aus DB (via /user/llm Endpoint)."""
+    default_model = ""  # kommt aus DB via /user/llm Endpoint, nicht aus ENV
 
     routing: list[dict[str, Any]] = []
     for role in TradingRole:
         routing.append(
             {
                 "role_id": role.value,
-                "provider_id": default_provider,
                 "model_id": default_model,
                 "is_default": True,
             }
@@ -191,7 +192,7 @@ async def list_utility_models() -> dict[str, Any]:
     """Utility models — embedder, reranker, STT, TTS."""
     stt = os.environ.get("AGENT_STT_PROVIDER", "whisper-local")
     tts = os.environ.get("AGENT_TTS_PROVIDER", "piper")
-    utility_model = os.environ.get("AGENT_UTILITY_MODEL", "claude-haiku-4-5")
+    utility_model = ""  # kommt aus DB via /user/llm Endpoint
 
     return {
         "items": [
@@ -225,7 +226,7 @@ async def list_utility_models() -> dict[str, Any]:
             {
                 "purpose": "summarizer",
                 "display_name": "Summarizer",
-                "provider_id": os.environ.get("AGENT_PROVIDER", "anthropic"),
+                "provider_id": "litellm",
                 "model_id": utility_model,
                 "is_local": False,
                 "is_active": True,

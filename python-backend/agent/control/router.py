@@ -13,11 +13,11 @@ from agent.control.a2a import router as a2a_router
 from agent.control.agents import router as agents_router
 from agent.control.audit import router as audit_router
 from agent.control.episodes import router as episodes_router
+from agent.control.highlights import router as highlights_router
 from agent.control.ingestion import router as ingestion_router
 from agent.control.kg_crud import router as kg_router
 from agent.control.mcp import router as mcp_router
 from agent.control.memory import router as memory_router
-from agent.control.highlights import router as highlights_router
 from agent.control.models import router as models_router
 from agent.control.overview import router as overview_router
 from agent.control.permissions import router as permissions_router
@@ -27,6 +27,7 @@ from agent.control.sessions import router as sessions_router
 from agent.control.skills import router as skills_router
 from agent.control.system import router as system_router
 from agent.control.tools import router as tools_router
+from agent.control.user_llm import router as user_llm_router
 
 router = APIRouter(prefix="/api/v1/control", tags=["control"])
 
@@ -59,5 +60,8 @@ router.include_router(a2a_router)
 router.include_router(overview_router)
 router.include_router(security_router)
 router.include_router(models_router)
+
+# exec-16: Per-user LLM settings (API keys, default model, per-role routing)
+router.include_router(user_llm_router)
 
 __all__ = ["router"]

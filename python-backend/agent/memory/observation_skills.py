@@ -18,8 +18,6 @@ Verbindet Hindsight Memory (Observations) mit dem Skill-System (exec-10).
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Any
 
 from agent.llm_helper import extract_json, llm_call
 from agent.skills.loader import SKILLS_BASE

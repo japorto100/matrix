@@ -79,8 +79,8 @@ async def list_a2a_delegations(
                 """,
                 tuple(params),
             )
-            cols = [d[0] for d in cur.description]
-            rows = cur.fetchall()
+            cols = [d[0] for d in cur.description] if cur.description else []
+            rows = cur.fetchall() or []
     except Exception as e:  # noqa: BLE001
         logger.warning("a2a list failed: %s", e)
         return {"items": [], "total": 0, "error": str(e)[:200]}
@@ -102,7 +102,7 @@ async def get_a2a_delegation(delegation_id: str) -> dict[str, Any]:
                 """,
                 (delegation_id,),
             )
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             row = cur.fetchone()
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"a2a: {e}") from e

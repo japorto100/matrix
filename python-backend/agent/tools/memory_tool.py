@@ -43,7 +43,7 @@ class SaveMemoryTool(TradingTool):
             "input_schema": SaveMemoryInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.working_memory import working_memory_set
         params = SaveMemoryInput(**tool_input)
         await working_memory_set(ctx.thread_id, params.key, params.content)
@@ -69,7 +69,7 @@ class LoadMemoryTool(TradingTool):
             "input_schema": LoadMemoryInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.working_memory import working_memory_get_entry
         params = LoadMemoryInput(**tool_input)
         entry = await working_memory_get_entry(ctx.thread_id, params.key)

@@ -76,7 +76,7 @@ class JsonLinesAuditStore(AuditStore):
         if not path.exists():
             return results
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 for line in f:
                     if not line.strip():
                         continue

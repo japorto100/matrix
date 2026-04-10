@@ -11,20 +11,20 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import psycopg
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from agent.control.request_scope import get_request_scope
 from agent.roles import (
     TRADING_ROLE_MEMORY,
     TRADING_ROLE_PROMPTS,
     TRADING_ROLE_TOOLS,
     TradingRole,
 )
-from agent.control.request_scope import get_request_scope
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ async def patch_agent(
                         field,
                         json.dumps(value),
                         req.updated_by,
-                        datetime.now(timezone.utc),
+                        datetime.now(UTC),
                     ),
                 )
     except Exception as e:  # noqa: BLE001

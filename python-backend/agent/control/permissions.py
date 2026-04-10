@@ -17,7 +17,7 @@ import logging
 import os
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import psycopg
@@ -273,7 +273,7 @@ async def patch_permission_cell(
                     scope.user_id,
                     req.level,
                     req.updated_by,
-                    datetime.now(timezone.utc),
+                    datetime.now(UTC),
                 ),
             )
     except Exception as e:  # noqa: BLE001

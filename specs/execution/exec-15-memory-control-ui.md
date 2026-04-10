@@ -28,6 +28,7 @@
 | **Slice 7** Two-Tier UI + Full Backend + Hash Reindex | ✅ DONE | **Frontend:** `useControlMode` hook (URL param + localStorage, D20), `ModeToggle`, `OverviewTab` (TT1), `SecurityTab` (TT8), `ApiModelsTab` (fused ENV + LLM providers + Model Routing + Utility Models), `ControlTopNav` mode-filtered (7 User Mode tabs + 6 Dev Mode tabs). **Backend:** `agent/control/overview.py`, `security.py` (4-pillar posture + event type mapping), `models.py` (providers + routing + utility + env). **56 total control routes** registered (added /kg/graph in K4). **Go Proxy:** `ControlProxyHandler` + `/api/v1/control/*` catch-all (D21, lint 0 issues). **Hash reindex (Phase E, D23):** `ingestion/tracking/dedup.hash_chunk`, `jobs.save_chunk_hashes`, `pipelines/document.smart_reindex()`, `hindsight_sink.delete_by_hashes()`, `worker.py /reindex`, `alembic/003_chunk_hashes.py`. **Frontend BFF (D21):** catch-all `/api/control/[...path]/route.ts` + `/api/memory/[...path]/route.ts` mit path mapping, `lib/server/control-proxy.ts`, `lib/queries/control.ts` + `hooks.ts` (now **27+ typed hooks** after Phase K mutations). Alle 13 Control Tabs + MemoryPage + EpisodesGrid + MemoryHealthCards auf useQuery + mock fallback (D22). **Phase J Code Review Fixes:** TradingRole enum aligned (fundamentals_analyst/sentiment_analyst/technical_analyst/researcher/trader/risk_manager), memory.health returns array shape, Session type optional fields, SecurityEventType mapping, permissions cache thread-safety, formatRelative null guard. **Phase K Code Gaps Closed (08.04.2026):** K1-K10 — all UI elements now fully wired, no more disabled buttons or "coming soon" placeholders. **TODO:** Devstack E2E run (Phase I) |
 | **Slice 8** Integration in agent-chat/ | Geplant | Komponenten-Migration, GlobalTopBar mit 4 Surfaces, BFF-Routes |
 | **Slice 9** Graphiti/Cognee Backend | Geplant | Aus exec-13 Phase 1 verschoben (10.04.2026). GraphitiRetriever, Cognee, Unified Search API |
+| **Slice 10** Computer Use + Artifacts | Teilweise ✅ | Aus exec-13 Phase 5+6 verschoben (10.04.2026). Sandpack ✅, SandboxArtifact ✅, Playwright/Pilot/WebMCP offen |
 
 ---
 
@@ -2250,6 +2251,77 @@ Code-level gates (no devstack needed — verified after Phase K closes):
 - [ ] GraphitiRetriever registriert und liefert Ergebnisse
 - [ ] Cognee Document-Pipeline: PDF → Facts in Hindsight
 - [ ] Unified Search: Query liefert Ergebnisse aus allen Backends
+
+### Slice 10 (geplant): Computer Use + Artifacts
+
+> Verschoben aus exec-13 Phase 5 + 6 (10.04.2026).
+> Playwright MCP dient doppelt: als MCP Server fuer Claude UND als Agent-Tool.
+
+**Voraussetzung:** exec-12 Phase 1 (OpenSandbox) ✅
+
+#### 10.1 Playwright MCP (Browser Automation)
+
+- [ ] **10.1.1:** Playwright MCP Server im Agent-Stack
+  - 33+ Tools (Navigate, Click, Type, Screenshot, Accessibility Tree)
+  - Agent kann Websites bedienen
+- [ ] **10.1.2:** Playwright CLI als Alternative (4x weniger Tokens)
+  - Fuer wiederholbare Flows (CI/CD, Testing)
+  - MCP fuer explorative Tasks
+- [x] **10.1.3:** Integration in Sandbox (exec-12 Phase 1) ✅ (03.04.2026)
+  - `SandboxBrowserTool` in `agent/tools/sandbox_browser_tool.py`
+  - Playwright laeuft innerhalb OpenSandbox Container (`Dockerfile.browser`)
+
+#### 10.1b Pilot MCP (Alternative — Evaluation, geparkt)
+
+> Siehe `PILOT_MCP_ANALYSIS.md` im Root.
+> Pilot = Dev-Tool fuer Claude/User, NICHT fuer Prod-Agent.
+> Prod-Browser-Automation = OpenSandbox + Playwright (10.1.3).
+
+- [ ] **10.1b.1:** Evaluieren als Ergaenzung zu Playwright MCP
+  - Repo: https://github.com/TacosyHorchata/Pilot (MIT, npm: `pilot-mcp`)
+  - Kernvorteil: steuert echten Chrome-Tab (eingeloggt, kein Bot-Fingerprint)
+  - 69x weniger Token-Verbrauch als @playwright/mcp
+  - 61 Tools, CAPTCHA-Handoff, Broker/Client Multiplexer
+- [ ] **10.1b.2:** Use-Case-Abgrenzung
+  - Pilot: Authentifizierte Webseiten, OSINT, Cloudflare-geschuetzt
+  - @playwright/mcp: CI/CD, headless Testing, Multi-Browser
+  - MolmoWeb: Vollautonome Web-Agents ohne LLM-API (GPU noetig)
+- [ ] **10.1b.3:** Risikobewertung
+  - v0.4.x, wenige Entwickler, kein Windows Cookie-Import
+
+#### 10.2 WebMCP (geparkt)
+
+- [ ] **10.2.1:** WebMCP Spec beobachten
+- [ ] **10.2.2:** Trading-Pages exposen Capabilities via `navigator.modelContext`
+  - Chart-State, Portfolio-Daten, Indikator-Werte als Tools
+
+#### 10.3 Anthropic Computer Use (geparkt)
+
+- [ ] **10.3.1:** Evaluieren fuer Desktop-Agent Use-Cases
+  - Claude sieht Screen + klickt (Cloud-side)
+  - Aktuell nicht prioritaer
+
+#### 10.4 Artifacts UI
+
+- [ ] **10.4.1:** E2B Fragments als UI-Inspiration (Evaluation)
+  - Artifacts-Style: Agent generiert Code → Preview im Chat
+  - Split-View: Code links, Output rechts
+- [x] **10.4.2:** Sandpack Browser-Previews ✅ (10.04.2026)
+  - `@codesandbox/sandpack-react` in agent-chat
+  - `SandpackPreview.tsx` — Live-Preview mit Code/Preview Toggle
+- [x] **10.4.3:** OpenSandbox Artifacts inline ✅ (10.04.2026)
+  - `SandboxArtifact.tsx` — stdout, stderr, base64 Charts/Files
+  - In `ToolOutputRenderer.tsx` registriert
+
+### Verify-Gate Slice 10
+- [ ] Playwright MCP Tools registriert und nutzbar im Agent
+- [ ] Pilot MCP evaluiert (Entscheidung dokumentiert)
+- [ ] WebMCP Polyfill in Frontend aktiv (bereits in agent-chat layout.tsx)
+- [x] Sandpack Browser-Preview im Agent-Chat
+- [x] OpenSandbox Artifacts inline gerendert
+- [ ] E2B Fragments Evaluation
+- [ ] Sandpack: Visual Test im laufenden Agent-Chat (braucht DevStack)
+- [ ] SandboxArtifact: E2E Test mit sandbox_execute Output (braucht OpenSandbox)
 
 ---
 

@@ -15,14 +15,18 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from memory_engine.kg_store import ALLOWED_EDGE_TYPES, ALLOWED_NODE_TYPES, create_kg_store
+from memory_engine.kg_store import (
+    ALLOWED_EDGE_TYPES,
+    ALLOWED_NODE_TYPES,
+    create_kg_store,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["control", "kg"])
 
 
-def _get_store():
+def _get_store():  # type: ignore[return-type]  # KG store has dynamic methods
     try:
         return create_kg_store()
     except Exception as e:  # noqa: BLE001

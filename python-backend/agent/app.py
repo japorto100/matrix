@@ -2,8 +2,8 @@
 # Phase 10a: Runtime, Rollen, BTE/DRS Guards, Memory/Context-Verdrahtung (10a.4)
 # Phase 22d: Model-agnostic SSE streaming endpoint (AC7)
 # Phase 22f: Audio endpoints — STT (ACR-A1) + TTS (ACR-A5)
-#   AGENT_PROVIDER=anthropic|openai|openai-compatible  (default: anthropic)
-#   AGENT_MODEL=<model id>  (default: claude-sonnet-4-6 / gpt-4o)
+#   Model + API Key kommen aus control-ui (DB) oder AGENT_DEFAULT_MODEL (ENV Fallback)
+#   LLM Calls gehen ueber LiteLLM Gateway (LITELLM_BASE_URL)
 #   AGENT_STT_PROVIDER=openai|whisper-local  (default: openai)
 #   AGENT_TTS_PROVIDER=openai|kokoro  (default: openai)
 #   AGENT_TTS_BASE_URL=<url>  (for Kokoro / self-hosted OpenAI-compatible TTS)
@@ -17,34 +17,39 @@ import base64
 import os
 import tempfile
 import uuid
+
 from fastapi import Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
-from pydantic import BaseModel, Field  # noqa: E402
-from shared import create_service_app  # noqa: E402
-from agent.roles import AgentRole  # noqa: E402
+from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
+
 from agent.context_assembler import assemble_context  # noqa: E402
+from agent.roles import AgentRole  # noqa: E402
+from agent.tools.chart_state import get_chart_state, set_chart_state  # noqa: E402
+from agent.tools.geomap import get_geomap_focus  # noqa: E402
+from agent.tools.portfolio import get_portfolio_summary  # noqa: E402
 from agent.working_memory import (  # noqa: E402
     working_memory_append,
     working_memory_get,
     working_memory_set,
 )
-from agent.tools.chart_state import get_chart_state, set_chart_state  # noqa: E402
-from agent.tools.geomap import get_geomap_focus  # noqa: E402
-from agent.tools.portfolio import get_portfolio_summary  # noqa: E402
+from shared import create_service_app  # noqa: E402
 
 app = create_service_app("agent-service")
 
 # exec-09: MCP Server als Sub-App mounten (gleicher Port wie Agent Service)
 from agent.mcp_server import create_mcp_server  # noqa: E402
+
 _mcp = create_mcp_server()
 app.mount("/mcp", _mcp.streamable_http_app())
 
 # ABP.2c: close shared httpx client on shutdown to release connections cleanly.
 from agent.http_client import close_client as _close_http_client  # noqa: E402
+
 app.add_event_handler("shutdown", _close_http_client)
 
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
 from agent.control import router as _control_router  # noqa: E402
+
 app.include_router(_control_router)
 
 
@@ -87,14 +92,16 @@ class BrowserToolDef(BaseModel):
 
 
 class AgentChatRequest(BaseModel):
-    message: str = Field(max_length=50000)  # Prevent excessive token costs
-    threadId: str | None = None
-    agentId: str | None = None
+    model_config = ConfigDict(populate_by_name=True)
+
+    message: str = Field(max_length=50000)
+    thread_id: str | None = Field(None, alias="threadId")
+    agent_id: str | None = Field(None, alias="agentId")
     context: str | None = None
-    model: str | None = None  # AC107: override AGENT_MODEL env var
-    attachments: list[FileAttachment] | None = None  # AC56+exec-12: images + files
-    reasoningEffort: str | None = None  # AC108: low/medium/high
-    browserTools: list[BrowserToolDef] | None = None  # exec-09: WebMCP Browser-Tools
+    model: str | None = None
+    attachments: list[FileAttachment] | None = None
+    reasoning_effort: str | None = Field(None, alias="reasoningEffort")
+    browser_tools: list[BrowserToolDef] | None = Field(None, alias="browserTools")
 
 
 class AudioTranscribeRequest(BaseModel):
@@ -182,6 +189,7 @@ class SkillInstallRequest(BaseModel):
 async def install_skill_archive(req: SkillInstallRequest):
     """Install a skill from .skill ZIP archive (exec-10 Phase 5.4)."""
     from pathlib import Path
+
     from agent.skills.importer import install_from_archive
     # Security: restrict to allowed upload directory
     allowed_base = Path(os.environ.get("SKILL_UPLOAD_DIR", "/tmp/skill-uploads")).resolve()
@@ -377,7 +385,7 @@ async def _store_file_attachments(
 async def agent_chat(req: AgentChatRequest, request: Request):
     """Agent chat endpoint — Vercel AI Data Stream Protocol SSE.
     Routes through run_agent_loop (LLM-agnostic, tool-capable, Phase 22g).
-    Provider: AGENT_PROVIDER=anthropic (default) | openai | openai-compatible
+    LLM Calls gehen ueber LiteLLM Gateway. Model + Key aus DB (control-ui).
       - anthropic: Anthropic SDK, Claude models
       - openai: OpenAI API, GPT models
       - openai-compatible: OpenRouter, Ollama, vLLM, LM Studio
@@ -385,7 +393,7 @@ async def agent_chat(req: AgentChatRequest, request: Request):
     Architecture: Frontend → Go Gateway (control) → here (LLM calls).
     Phase 22d AC7 / Phase 22g ABP.1."""
     system_prompt = _build_system_prompt(req.context)
-    thread_id = req.threadId or str(uuid.uuid4())
+    thread_id = req.thread_id or str(uuid.uuid4())
 
     # exec-12 Phase 2.6: Read user role + id from Go Gateway headers
     user_role = request.headers.get("x-user-role", "viewer").lower()
@@ -422,26 +430,37 @@ async def _stream_agent_loop(
         yield sse(ErrorPacket(error=f"Agent loop import error: {e}"))
         return
 
-    # Default model per provider
-    provider = os.environ.get("AGENT_PROVIDER", "anthropic").lower()
-    default_model = "claude-sonnet-4-6" if provider == "anthropic" else "gpt-4o"
-    model = req.model or os.environ.get("AGENT_MODEL", default_model)
+    # exec-16: Model + Key aus DB (control-ui), ENV als Fallback.
+    from agent.security.credentials import (
+        get_user_api_key,
+        get_user_default_model,
+        provider_from_model,
+    )
+
+    model = req.model or await get_user_default_model(user_id) or ""
+    if not model:
+        from agent.streaming import ErrorPacket, sse
+        yield sse(ErrorPacket(error="Kein Model konfiguriert. Bitte in control-ui ein Model waehlen."))
+        return
+
+    api_key = await get_user_api_key(user_id, provider_from_model(model))
 
     registry = ToolRegistry.load()
 
     # exec-09: Browser-Tools via WebMCP hinzufuegen (dynamisch je nach Page)
-    if req.browserTools:
+    if req.browser_tools:
         from agent.tools.browser_tool import BrowserToolProxy
-        for bt in req.browserTools:
+        for bt in req.browser_tools:
             registry.register(BrowserToolProxy(bt.name, bt.description, bt.input_schema))
 
     ctx = AgentExecutionContext(
         user_id=user_id,
         thread_id=thread_id,
         model=model,
+        api_key=api_key,
         system_prompt=system_prompt,
         tools=tuple(registry.all()),
-        reasoning_effort=req.reasoningEffort,
+        reasoning_effort=req.reasoning_effort,
         agent_class="advisory",
         user_role=user_role,
     )

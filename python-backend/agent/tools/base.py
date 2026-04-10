@@ -40,7 +40,7 @@ class TradingTool(ABC):
         """Policy/schema validation before execute().
         Default: validates against input_model if set (auto-JSON-Schema, ABP.2b).
         Raise ToolValidationError to surface as error result to the LLM.
-        Raise CapabilityViolation to abort the loop entirely.
+        Raise CapabilityViolationError to abort the loop entirely.
         Subclasses should call super().validate() first when overriding.
         """
         if self.input_model is not None:

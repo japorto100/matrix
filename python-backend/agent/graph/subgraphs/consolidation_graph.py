@@ -11,12 +11,9 @@ Sequential: Consolidator wartet auf beide.
 
 from __future__ import annotations
 
-import json
 import logging
-import operator
 from datetime import datetime
-from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph

@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 
 from agent.llm_helper import extract_json, llm_call
-from agent.roles import TRADING_ROLE_CONTRACTS, TradingRole
+from agent.roles import TRADING_ROLE_CONTRACTS
 
 logger = logging.getLogger(__name__)
 

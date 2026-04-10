@@ -1,0 +1,9 @@
+[project]
+name = "litellm-gateway"
+version = "0.1.0"
+description = "LiteLLM Proxy Gateway — unified LLM endpoint for all providers"
+requires-python = ">=3.11"
+dependencies = ["litellm[proxy]"]
+
+[tool.uv]
+managed = true

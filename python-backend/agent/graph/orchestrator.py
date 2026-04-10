@@ -18,7 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from agent.graph.nodes.llm_node import llm_node
 from agent.graph.nodes.tool_node import tool_node
 from agent.graph.state import AgentGraphState
-from agent.roles import TRADING_ROLE_PROMPTS, TRADING_ROLE_TOOLS, TradingRole
+from agent.roles import TRADING_ROLE_PROMPTS, TradingRole
 
 logger = logging.getLogger(__name__)
 

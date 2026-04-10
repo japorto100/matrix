@@ -14,6 +14,7 @@ from typing import Any
 
 import psycopg
 from fastapi import APIRouter, HTTPException, Query, Request
+
 from agent.control.request_scope import ensure_user_scope
 
 logger = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ async def list_audit_events(
                 """,
                 tuple([*params, limit, offset]),
             )
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             rows = cur.fetchall()
     except Exception as e:  # noqa: BLE001
         logger.exception("list_audit_events failed")
@@ -134,7 +135,7 @@ async def get_audit_event(event_id: int) -> dict[str, Any]:
                 """,
                 (event_id,),
             )
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             row = cur.fetchone()
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"audit: {e}") from e

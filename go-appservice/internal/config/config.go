@@ -61,6 +61,10 @@ type Config struct {
 	DeleteKeysAfterHours   int    // MATRIX_DELETE_KEYS_AFTER_HOURS=0 — Kompromiss: Keys X Stunden behalten (0=sofort wenn enabled)
 	NATSSubjectRouting     bool   // NATS_SUBJECT_ROUTING_ENABLED=false — Per-Agent NATS Subject Routing
 	AgentCapabilities      string // MATRIX_AGENT_CAPABILITIES=gateway — "gateway" (Go entschlüsselt) oder "native" (Agent entschlüsselt)
+
+	// exec-16: Key Encryption (shared mit Python — identisches AES-256-GCM Format)
+	KeyEncryptionSecret string // KEY_ENCRYPTION_SECRET — 64 hex chars (32 bytes)
+	KeyVaultBackend     string // KEY_VAULT_BACKEND — "aesgcm" (default) oder "hpke-mlkem"
 }
 
 // Load lädt Config aus .env.{environment} + Environment.
@@ -96,6 +100,8 @@ func Load() *Config {
 		DeleteKeysAfterHours:   getenvInt("MATRIX_DELETE_KEYS_AFTER_HOURS", 0),
 		NATSSubjectRouting:     getenv("NATS_SUBJECT_ROUTING_ENABLED", "false") == "true",
 		AgentCapabilities:      getenv("MATRIX_AGENT_CAPABILITIES", "gateway"),
+		KeyEncryptionSecret:    getenv("KEY_ENCRYPTION_SECRET", ""),
+		KeyVaultBackend:        getenv("KEY_VAULT_BACKEND", "aesgcm"),
 	}
 }
 

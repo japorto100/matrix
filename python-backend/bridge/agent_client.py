@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 import httpx
 
@@ -39,6 +40,7 @@ class AgentClient:
         room_id: str,
         sender: str,
         thread_id: str | None = None,
+        model: str | None = None,
     ) -> str:
         """
         Sendet eine Nachricht an den Agent-Service und gibt die vollständige Antwort zurück.
@@ -53,11 +55,13 @@ class AgentClient:
 
         Wir sammeln alle text_delta Pakete und konkatenieren sie.
         """
-        payload = {
+        payload: dict[str, Any] = {
             "message": message,
             "threadId": thread_id or room_id,
             "context": f"matrix_room:{room_id} sender:{sender}",
         }
+        if model:
+            payload["model"] = model
 
         full_text = ""
         try:

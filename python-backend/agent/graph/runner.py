@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from agent.context import AgentExecutionContext
-from agent.graph.agent_graph import create_agent_graph, MAX_ITERATIONS
+from agent.graph.agent_graph import MAX_ITERATIONS, create_agent_graph
 from agent.streaming import (
     ErrorPacket,
     FinishPacket,
@@ -34,7 +33,7 @@ async def run_agent_loop(
     Called from agent/app.py via _stream_agent_loop().
     """
     # ACR-G7: thread-id as first event
-    yield sse(ThreadIdPacket(threadId=ctx.thread_id))
+    yield sse(ThreadIdPacket(thread_id=ctx.thread_id))
 
     # Pre-processing: Skills, Temporal Context, Summarization, Dangling Tool Calls
     system_prompt = await _prepare_system_prompt(ctx)
@@ -53,7 +52,7 @@ async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
 
     # exec-10: Skill Injection
     try:
-        from agent.skills.loader import load_skills, format_skills_for_prompt
+        from agent.skills.loader import format_skills_for_prompt, load_skills
         skills = load_skills(user_id=ctx.user_id)
         skills_text = format_skills_for_prompt(skills)
         if skills_text:
@@ -130,10 +129,7 @@ async def _run_graph(
     """Execute the LangGraph agent and stream SSE events."""
     from agent.graph.state import AgentGraphState
 
-    provider = os.environ.get("AGENT_PROVIDER", "anthropic").lower()
-    if os.environ.get("AGENT_USE_LITELLM", "false").lower() == "true":
-        provider = "litellm"
-
+    # exec-16: Model + Key aus Context (resolved in app.py via credentials).
     graph = create_agent_graph()
 
     initial_state: AgentGraphState = {
@@ -145,7 +141,7 @@ async def _run_graph(
         "current_role": "default",
         "system_prompt": system_prompt,
         "model": ctx.model,
-        "provider": provider,
+        "api_key": ctx.api_key,
         "reasoning_effort": ctx.reasoning_effort,
         "final_response": "",
         "done": False,
@@ -188,7 +184,7 @@ async def _run_graph(
             "promptTokens": 0,  # TODO: extract from graph result
             "completionTokens": 0,
         }))
-        yield sse(FinishPacket(finishReason="stop"))
+        yield sse(FinishPacket(finish_reason="stop"))
 
     except Exception as e:
         yield sse(ErrorPacket(error=f"LangGraph error: {e}"))

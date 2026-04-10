@@ -54,5 +54,5 @@ class GetPortfolioSummaryTool(TradingTool):
             },
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         return await get_portfolio_summary(user_id=ctx.user_id)

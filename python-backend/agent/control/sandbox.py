@@ -89,7 +89,7 @@ async def list_sandbox_runs(
                 """,
                 tuple(params),
             )
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             rows = cur.fetchall()
     except Exception as e:  # noqa: BLE001
         logger.exception("list_sandbox_runs failed")
@@ -117,7 +117,7 @@ async def get_sandbox_run(run_id: str) -> dict[str, Any]:
                 """,
                 (run_id, run_id),
             )
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             row = cur.fetchone()
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"sandbox run: {e}") from e

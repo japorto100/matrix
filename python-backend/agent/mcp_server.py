@@ -9,7 +9,6 @@ Standalone: uv run python -m agent.mcp_server (Port 8095, fuer isoliertes Testin
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 
@@ -34,8 +33,8 @@ def _register_trading_tool(mcp_server: FastMCP, tool: TradingTool) -> None:
     input_schema = defn.get("input_schema", {})
 
     # Extrahiere Parameter-Properties fuer die MCP Tool-Signatur
-    properties = input_schema.get("properties", {})
-    required = set(input_schema.get("required", []))
+    input_schema.get("properties", {})
+    set(input_schema.get("required", []))
 
     # Closure ueber tool — MCP SDK inspiziert die Signatur,
     # daher keine _-Prefix Parameter erlaubt

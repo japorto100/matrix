@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class AgentRole(str, Enum):
+class AgentRole(StrEnum):
     """Four-role pattern for all KI workflows."""
 
     EXTRACTOR = "extractor"  # LLM: "Was steht im Text?"
@@ -16,7 +16,7 @@ class AgentRole(str, Enum):
     SYNTHESIZER = "synthesizer"  # LLM: "Was bedeutet das fuer den User?"
 
 
-class TradingRole(str, Enum):
+class TradingRole(StrEnum):
     """Trading-spezifische Rollen fuer Multi-Agent Orchestrierung (exec-10).
 
     Inspiriert von TauricResearch/TradingAgents.

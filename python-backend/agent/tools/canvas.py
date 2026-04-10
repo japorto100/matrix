@@ -57,7 +57,7 @@ class CreateCanvasShapeTool(TradingTool):
             "input_schema": CreateShapeInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = CreateShapeInput(**tool_input)
         shape_id = f"shape:{uuid.uuid4().hex[:8]}"
         return {
@@ -89,7 +89,7 @@ class UpdateCanvasShapeTool(TradingTool):
             "input_schema": UpdateShapeInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = UpdateShapeInput(**tool_input)
         return {
             "ok": True,
@@ -128,7 +128,7 @@ class CreateNovelBlockTool(TradingTool):
             "input_schema": CreateNovelBlockInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = CreateNovelBlockInput(**tool_input)
         shape_id = f"novel:{uuid.uuid4().hex[:8]}"
         return {
@@ -160,7 +160,7 @@ class DeleteCanvasShapeTool(TradingTool):
             "input_schema": DeleteShapeInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = DeleteShapeInput(**tool_input)
         return {
             "ok": True,

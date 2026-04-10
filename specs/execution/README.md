@@ -13,7 +13,7 @@ Werden abgearbeitet und als Referenz behalten.
 | exec-10-multi-agent.md | Multi-Agent Orchestrierung (Trading Roles) | ✅ Implementiert |
 | exec-11-memory-evolution.md | Hindsight Memory Engine (4 Networks) | ✅ Phase 1 implementiert |
 | exec-12-sandbox-security.md | OpenSandbox + Security Hardening | ✅ Phase 1+2 implementiert (03.04.2026) |
-| exec-13-ui-kg-extensions.md | Computer Use + Artifacts UI | Geplant |
+| exec-13-ui-kg-extensions.md | ARCHIVIERT — alles nach exec-15 verschoben | Archiviert |
 | exec-14-pddl-formal-planning.md | PDDL Formale Plan-Validierung | Geplant |
 | exec-15-memory-control-ui.md | Memory & Control UI (Frontend Surfaces, KG Viz, Settings) | Geplant |
 | exec-16-llm-provider-gateway.md | LLM Provider Gateway (LiteLLM + Multi-Provider Routing) | Geplant |

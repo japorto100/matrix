@@ -66,7 +66,7 @@ async def list_sessions(
                 """,
                 (limit,),
             )
-            cols = [d[0] for d in cur.description]
+            [d[0] for d in cur.description] if cur.description else []
             rows = cur.fetchall()
     except Exception as e:  # noqa: BLE001
         logger.warning("list_sessions failed: %s", e)

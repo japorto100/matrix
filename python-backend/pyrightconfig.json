@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/DetachHead/basedpyright/main/packages/pyright-internal/typestubs-fallback/pyright-config.schema.json",
+  "include": ["agent/", "bridge/"],
+  "exclude": ["**/__pycache__", "**/.venv", "**/node_modules"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "standard",
+  "reportMissingTypeStubs": false,
+  "reportMissingModuleSource": false
+}

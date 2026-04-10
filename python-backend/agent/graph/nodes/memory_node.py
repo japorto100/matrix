@@ -16,11 +16,11 @@ Graceful: Wenn Memory Engine nicht verfuegbar → Nodes sind No-Ops.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from agent.graph.state import AgentGraphState
-from agent.roles import TRADING_ROLE_MEMORY, TradingRole
+from agent.roles import TRADING_ROLE_MEMORY
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
             "max_tokens": 2000,
             "include_entities": True,
             "max_entity_tokens": 500,
-            "question_date": datetime.now(timezone.utc),
+            "question_date": datetime.now(UTC),
             "request_context": RequestContext(),
         }
         if recall_tags is not None:
@@ -175,11 +175,12 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
 
     try:
         from hindsight_api.models import RequestContext
+
         from agent.memory.coherence import get_coherence_manager
 
         bank_id = get_bank_id(state.get("user_id", "default"))
         thread_id = state.get("thread_id", "")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         content = f"User asked: {user_msg}\nAgent responded: {response[:2000]}"
 
         # Cache Coherence: Write-Ahead Log + Conflict Detection

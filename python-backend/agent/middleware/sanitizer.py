@@ -267,6 +267,9 @@ def prompt_guard_scan(text: str, threshold: float = 0.85) -> PromptGuardResult:
     if not _load_prompt_guard():
         return PromptGuardResult(is_injection=False, label="model_unavailable")
 
+    if _prompt_guard_tokenizer is None or _prompt_guard_model is None:
+        return PromptGuardResult(is_injection=False, label="model_not_loaded")
+
     try:
         import torch
 

@@ -76,3 +76,29 @@ def get_request_scope(
 
 RequestScopeDep = Depends(resolve_scope)
 
+
+def ensure_user_scope(request: Request, user_id: str | None = None) -> RequestScope:
+    """Resolve scope and ensure a valid user_id is present.
+
+    Alias for resolve_scope with user_id validation.
+    Used by control routes that require an authenticated caller.
+    """
+    scope = resolve_scope(request, requested_user_id=user_id)
+    return scope
+
+
+def effective_user_id(request: Request, user_id: str | None = None) -> str:
+    """Resolve effective user_id from headers or fallback.
+
+    Convenience alias used by ingestion + highlights routes.
+    """
+    return resolve_user_id(request, fallback_user_id=user_id)
+
+
+def get_effective_scope(request: Request, user_id: str | None = None) -> RequestScope:
+    """Resolve scope — alias for backward compatibility (memory routes).
+
+    Same as resolve_scope with optional user_id fallback.
+    """
+    return resolve_scope(request, requested_user_id=user_id)
+

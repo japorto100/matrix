@@ -7,7 +7,7 @@ from __future__ import annotations
 import importlib
 import logging
 import os
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -20,14 +20,14 @@ _POLICY_PATH = Path(__file__).resolve().parent.parent / "consent_policy.yaml"
 
 # ── Enums ──────────────────────────────────────────────────────────────────
 
-class ConsentLevel(str, Enum):
+class ConsentLevel(StrEnum):
     NONE = "none"        # No consent needed, auto-allow
     INFORM = "inform"    # Log but don't block
     CONFIRM = "confirm"  # Require explicit user consent
     DENY = "deny"        # Hard block, no way around it
 
 
-class ConsentSeverity(str, Enum):
+class ConsentSeverity(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -144,7 +144,7 @@ def _load_config() -> ConsentPolicyConfig:
         return ConsentPolicyConfig()
 
     try:
-        with open(_POLICY_PATH, "r", encoding="utf-8") as f:
+        with open(_POLICY_PATH, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         return ConsentPolicyConfig.model_validate(data)
     except Exception as e:

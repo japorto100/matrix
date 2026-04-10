@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from agent.memory_client import (
@@ -32,7 +32,7 @@ def _compute_freshness(timestamp_str: str | None, max_age_hours: float = 168) ->
         return 0.5
     try:
         ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         age_hours = (now - ts).total_seconds() / 3600
         if age_hours < 2:
             return 1.0

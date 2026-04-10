@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psycopg
@@ -94,7 +94,7 @@ def _compute_pillars() -> list[dict[str, Any]]:
     # Audit
     audit_count = 0
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         with psycopg.connect(_db_url(), autocommit=True, connect_timeout=2) as conn:
             row = conn.execute(
                 "SELECT COUNT(*) FROM agent.audit_events WHERE timestamp >= %s",
@@ -151,7 +151,7 @@ async def get_security_posture() -> dict[str, Any]:
                 (list(SECURITY_ACTIONS),),
             )
             rows = cur.fetchall()
-            cols = [d[0] for d in cur.description]
+            cols = [d[0] for d in cur.description] if cur.description else []
             for row in rows:
                 r = dict(zip(cols, row, strict=True))
                 action = r.get("action", "")
@@ -177,8 +177,8 @@ async def get_security_posture() -> dict[str, Any]:
                 "session_id": "sess_local_dev",
                 "ip": "127.0.0.1",
                 "user_agent": "local",
-                "first_seen": datetime.now(timezone.utc).isoformat(),
-                "last_seen": datetime.now(timezone.utc).isoformat(),
+                "first_seen": datetime.now(UTC).isoformat(),
+                "last_seen": datetime.now(UTC).isoformat(),
             }
         ],
     }

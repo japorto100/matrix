@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 
 from agent.audit.store import get_audit_store
 
 
-class AuditAction(str, Enum):
+class AuditAction(StrEnum):
     LLM_REQUEST = "llm_request"
     LLM_RESPONSE = "llm_response"
     TOOL_CALL = "tool_call"
@@ -42,7 +42,7 @@ async def audit_log(
 ) -> None:
     """Emit a structured audit event. Fire-and-forget, never raises."""
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "action": action.value,
         "agentId": agent_id,
         "sessionId": session_id,

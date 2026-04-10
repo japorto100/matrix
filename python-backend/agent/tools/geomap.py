@@ -56,5 +56,5 @@ class GetGeomapFocusTool(TradingTool):
             },
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         return await get_geomap_focus(user_id=ctx.user_id)

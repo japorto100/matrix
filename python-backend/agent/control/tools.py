@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psycopg
@@ -43,7 +43,7 @@ def _db_url() -> str:
 
 def _tool_stats_24h() -> dict[str, dict[str, Any]]:
     """Aggregate tool call counts + avg duration from audit_events last 24h."""
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             rows = conn.execute(
@@ -178,7 +178,7 @@ async def import_tool_from_url(
     updated_by = scope.actor
     if not (req.url.startswith("http://") or req.url.startswith("https://")):
         raise HTTPException(status_code=400, detail="url must start with http:// or https://")
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     tool_id = f"url:{req.url}"
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:

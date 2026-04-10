@@ -3,7 +3,12 @@
 **Datum:** 10.04.2026
 **Status:** Geplant
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-15 (control-ui ApiModelsTab)
-**Referenzen:** LiteLLM Docs, OpenRouter API, Vercel AI SDK Provider Registry
+**Referenzen:**
+- OpenRouter API: https://openrouter.ai/docs (Models, Pricing, Provider Routing)
+- LiteLLM Docs: https://docs.litellm.ai/docs/simple_proxy
+- LiteLLM Config: https://docs.litellm.ai/docs/proxy/configs
+- Vercel AI SDK Provider Registry: https://ai-sdk.dev/docs/reference/ai-sdk-core/provider-registry
+- NIST PQC Standards: https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards
 
 ---
 
@@ -35,6 +40,25 @@ und Neustart. Kein Fallback, kein Cost-Tracking, keine User-Level Model-Auswahl.
 | Dynamic Model Selection (UI → Backend) | ❌ Nur ENV-basiert |
 | Fallback/Retry | ❌ Kein Fallback |
 | Cost Tracking | ❌ Nicht vorhanden |
+
+---
+
+## Kernprinzip: Eine Konfiguration, alle Pfade
+
+Der User konfiguriert **einmal** in control-ui seine LLM-Praeferenzen (API Keys, Default-Model,
+Per-Rolle Overrides). Danach gilt das **ueberall** — egal ob Matrix Mention oder Agent Chat UI.
+
+```
+control-ui: User setzt API Keys + Default Model + Per-Rolle Routing
+                          ↓ (gespeichert in DB)
+Matrix Mention:   sender → User-ID → DB → User-Settings → LiteLLM (User's Key + Model)
+Agent Chat UI:    req.model oder User-Default → LiteLLM (User's Key + Model)
+```
+
+- Bridge schickt `sender` (Matrix User-ID) mit → Python Agent resolved zu User-Settings
+- Python Agent holt User-Settings aus DB: API Keys, Default-Model, Per-Rolle Overrides
+- LiteLLM bekommt den Virtual Key des Users → routet zum richtigen Provider
+- Orchestrator antwortet mit dem Model das der User konfiguriert hat
 
 ---
 
@@ -314,6 +338,187 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
 
 ---
 
+## Stufe 2.5: User LLM Settings (DB + API Key Security)
+
+> Kern-Baustein: Ohne DB-gespeicherte User-Settings gibt es kein Per-User Model-Routing.
+> Muss VOR Stufe 3 implementiert werden.
+
+### 2.6 Alembic Migration: `agent.user_llm_settings`
+
+- [ ] **2.6.1:** Migration erstellen
+  ```sql
+  CREATE TABLE agent.user_llm_settings (
+    id            SERIAL PRIMARY KEY,
+    user_id       TEXT NOT NULL UNIQUE,        -- Matrix User-ID oder App User-ID
+    default_model TEXT DEFAULT 'claude-sonnet', -- Logischer Model-Name
+    per_role_overrides JSONB DEFAULT '{}',     -- {"researcher": "claude-opus", "trader": "gpt-4o"}
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ DEFAULT NOW()
+  );
+
+  CREATE TABLE agent.user_api_keys (
+    id            SERIAL PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    provider_id   TEXT NOT NULL,              -- "anthropic", "openai", "openrouter", "gemini"
+    api_key_enc   BYTEA NOT NULL,             -- Fernet-verschluesselt
+    is_valid      BOOLEAN DEFAULT TRUE,       -- Letzte Validierung erfolgreich
+    validated_at  TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, provider_id)
+  );
+  ```
+
+### 2.7 API Key Verschluesselung (Go + Python, cross-language)
+
+> Im Hauptprojekt (tradeview-fusion) ist Go der zentrale Network-Layer mit DB-Zugriff.
+> Go braucht Keys fuer Exchanges, Datenquellen, Storage. Python braucht Keys fuer LLM Provider.
+> Beide muessen die gleiche DB-Tabelle lesen/schreiben → **identisches AES-256-GCM Format**.
+
+- [ ] **2.7.1:** Python KeyVault (`agent/security/key_vault.py`)
+  - AES-256-GCM via `cryptography` Package (bereits in Dependencies)
+  - Server-Secret aus ENV: `KEY_ENCRYPTION_SECRET` (32 Bytes, hex-encoded)
+  - Modulares Backend-Interface fuer spaetere PQC-Erweiterung:
+    ```python
+    class KeyVault:
+        def __init__(self, backend: str = "aesgcm"):
+            # "aesgcm"     = AES-256-GCM (Standard, jetzt)
+            # "hybrid-pqc" = AES-256-GCM + ML-KEM Key-Wrap (spaeter)
+        def encrypt(self, plaintext: str) -> bytes: ...
+        def decrypt(self, ciphertext: bytes) -> str: ...
+    ```
+  - Format: `[12-byte nonce][ciphertext][16-byte GCM tag]` — identisch in Go + Python
+
+- [ ] **2.7.2:** Go KeyVault (`internal/security/keyvault.go`)
+  - AES-256-GCM via Go stdlib (`crypto/aes` + `crypto/cipher`)
+  - Gleicher ENV: `KEY_ENCRYPTION_SECRET`
+  - Gleiches Byte-Format wie Python (cross-language kompatibel)
+  - Modulares Interface mit **beiden Backends von Anfang an**:
+    ```go
+    type KeyVault interface {
+        Encrypt(plaintext string) ([]byte, error)
+        Decrypt(ciphertext []byte) (string, error)
+        Backend() string // "aesgcm" oder "hpke-mlkem"
+    }
+
+    // AESGCMVault — Standard, symmetric, shared secret aus ENV
+    // crypto/aes + crypto/cipher (Go 1.0+)
+    type AESGCMVault struct { key []byte }
+
+    // HPKEVault — Post-Quantum ready, asymmetric, public/private key pair
+    // crypto/hpke (Go 1.26+ stdlib, kein externer Import)
+    // KEM: X25519MLKEM768 (hybrid classical + PQC)
+    // Keypair in DB oder Filesystem, rotierbar
+    type HPKEVault struct { publicKey, privateKey []byte }
+
+    // NewKeyVault erstellt das richtige Backend basierend auf ENV
+    func NewKeyVault(backend string) (KeyVault, error) {
+        switch backend {
+        case "hpke-mlkem":
+            return NewHPKEVault()  // crypto/hpke + ML-KEM
+        default:
+            return NewAESGCMVault() // crypto/aes (Standard)
+        }
+    }
+    ```
+  - **Beide Backends implementiert**, `KEY_VAULT_BACKEND` ENV wählt aus
+  - Default: `aesgcm` (kompatibel mit Python, symmetrisch, einfach)
+  - `hpke-mlkem`: sofort nutzbar auf Go 1.26+, Post-Quantum
+  - Auto-Detect beim Decrypt: erkennt Format am Prefix-Byte
+    - `0x01` + Daten = AES-GCM
+    - `0x02` + Daten = HPKE-MLKEM
+    - → Decrypt funktioniert mit beiden Formaten, egal welches Backend aktiv
+  - Go braucht das fuer: Exchange API Keys, Datenquellen-Credentials, Storage Secrets
+  - Wird bei Portierung ins Hauptprojekt 1:1 uebernommen
+
+- [ ] **2.7.3:** PQC-Readiness (Hybrid, spaeter aktivierbar)
+  - **Python:** `pqcrypto` oder `liboqs-python` fuer ML-KEM Key-Wrap
+    - Hybrid = ML-KEM kapselt den AES-256 Key → AES-256-GCM verschluesselt Daten
+    - `KEY_VAULT_BACKEND=hybrid-pqc` ENV aktiviert PQC
+  - **Go:** `crypto/hpke` (stdlib seit Go 1.26) — **von Anfang an implementiert**
+    - Go 1.24+ hat X25519MLKEM768 bereits default in TLS (in-transit)
+    - Go 1.26 `crypto/hpke` fuer Keys at rest (HPKE mit ML-KEM KEM)
+    - `KEY_VAULT_BACKEND=hpke-mlkem` ENV aktiviert PQC
+    - HPKEVault ist Teil des Go Backends, nicht nachtraeglich
+    - Keypair-Management: generiert bei erstem Start, persistiert in DB/Filesystem
+  - **Migration:** Auto-Detect via Prefix-Byte:
+    - `0x01` = AES-GCM (Python + Go kompatibel)
+    - `0x02` = HPKE-MLKEM (Go-only, Python spaeter via pqcrypto)
+    - Decrypt versteht beide Formate, Encrypt nutzt aktives Backend
+    - Re-Encrypt Script: alle Keys auf neues Backend umschreiben
+  - **Kein Breaking Change:** AES-GCM bleibt Default, HPKE-MLKEM ist opt-in
+  - **Portierung:** Go KeyVault wird 1:1 ins Hauptprojekt uebernommen
+
+- [ ] **2.7.4:** Sicherheitsregeln (Go + Python)
+  - API Keys nie in Logs (auch nicht teilweise)
+  - API Keys nie in API Responses (nur `is_set: true/false` + masked Preview)
+  - DB-Spalte ist BYTEA (verschluesselt), nicht TEXT
+  - `KEY_ENCRYPTION_SECRET` muss in `.env` gesetzt sein, Fehler wenn fehlend
+  - Secret-Rotation: Re-Encrypt aller Keys mit neuem Secret (Migration-Script)
+
+### 2.7b Shared DB-Tabelle fuer alle Credentials
+
+> Nicht nur LLM Keys — auch Exchange Keys, Datenquellen usw.
+> Eine Tabelle, beide Sprachen (Go + Python) lesen/schreiben.
+
+- [ ] **2.7b.1:** Generische Credentials-Tabelle (erweitert `user_api_keys`)
+  ```sql
+  CREATE TABLE agent.user_credentials (
+    id            SERIAL PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    category      TEXT NOT NULL,    -- "llm", "exchange", "datasource", "storage"
+    provider_id   TEXT NOT NULL,    -- "anthropic", "binance", "alpha_vantage", etc.
+    credential_enc BYTEA NOT NULL,  -- AES-256-GCM (oder Hybrid-PQC)
+    metadata      JSONB DEFAULT '{}', -- Provider-spezifisch (endpoint, region, etc.)
+    is_valid      BOOLEAN DEFAULT TRUE,
+    validated_at  TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, category, provider_id)
+  );
+  ```
+  - `category` trennt LLM Keys von Exchange Keys etc.
+  - Go liest Exchange/Datasource Keys, Python liest LLM Keys
+  - Beide nutzen identisches AES-256-GCM Format
+
+### 2.8 CRUD Endpoints fuer User-Settings
+
+- [ ] **2.8.1:** `agent/control/user_llm.py` — neuer Router
+  ```
+  GET    /api/v1/control/user/llm           → User-Settings + Provider-Status (masked keys)
+  PUT    /api/v1/control/user/llm/model     → Default-Model setzen
+  PUT    /api/v1/control/user/llm/roles     → Per-Rolle Overrides setzen
+  PUT    /api/v1/control/user/llm/key/{provider}  → API Key setzen (verschluesselt in DB)
+  DELETE /api/v1/control/user/llm/key/{provider}  → API Key loeschen
+  POST   /api/v1/control/user/llm/key/{provider}/validate → Key testen (LLM-Call mit minimal Prompt)
+  ```
+
+- [ ] **2.8.2:** Key Validation Endpoint
+  - Macht einen minimalen LLM-Call (`"Hi"` → pruefen ob Response kommt)
+  - Speichert `is_valid` + `validated_at` in DB
+  - Gibt `{ valid: true, model_list: [...] }` zurueck
+  - Timeout: 10s, kein Retry
+
+### 2.9 Python Agent: User-Settings Resolution
+
+- [ ] **2.9.1:** `agent/user_settings.py` — Settings Loader
+  ```python
+  async def get_user_llm_settings(user_id: str) -> UserLLMSettings:
+      # DB Lookup → Fallback auf ENV
+      # Returns: default_model, per_role_overrides, decrypted api_keys
+  ```
+
+- [ ] **2.9.2:** Integration in `app.py` + `runner.py`
+  - Vor LangGraph-Start: `settings = await get_user_llm_settings(user_id)`
+  - Model: `req.model or settings.default_model or ENV`
+  - API Key: `settings.api_key_for(provider) or ENV`
+  - Per-Rolle: `settings.model_for_role(role) or settings.default_model`
+
+- [ ] **2.9.3:** Integration in NATS Bridge (`agent_client.py`)
+  - `sender` → User-ID → `get_user_llm_settings(sender)` → Model
+  - `model` Feld im Payload an Agent Service
+
+---
+
 ## Stufe 3: Dynamic Model Selection (UI → Backend)
 
 ### 3.1 Agent Chat UI: Model-Dropdown
@@ -324,24 +529,44 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - Selected Model wird im Request mitgeschickt: `{ model: "claude-sonnet" }`
 
 - [ ] **3.1.2:** `useAvailableModels()` Hook
-  - Fetcht `GET /api/v1/control/models/providers` (bestehender Endpoint)
-  - Filtert auf `is_active` + `available_models`
-  - Cached via TanStack Query
+  - Fetcht `GET /api/v1/control/user/llm` (User-Settings inkl. verfuegbare Models)
+  - Zeigt nur Models wo User einen **gueltigen** API Key hat (`is_valid: true`)
+  - Grouped: Cloud (Claude, GPT, Gemini) | Aggregator (OpenRouter) | Local (Ollama)
+  - Cached via TanStack Query, invalidiert bei Key-Aenderung in control-ui
 
 - [ ] **3.1.3:** Model-Badge im Chat-Header
   - Zeigt aktives Model an: "claude-sonnet · Anthropic"
   - Bei Fallback: "claude-sonnet · via OpenRouter (fallback)"
 
-### 3.2 Request-Body Erweiterung
+### 3.2 Request-Body + User-Settings Resolution
 
 - [ ] **3.2.1:** `AgentChatRequest.model` (bereits vorhanden in `app.py:94`)
   - Aktuell: `req.model or os.environ.get("AGENT_MODEL", default)`
-  - Aenderung: Model-Name wird 1:1 an LiteLLM durchgereicht
-  - LiteLLM resolved den logischen Namen zum Provider
+  - Aenderung: `req.model or user_settings.default_model or ENV`
+  - Model-Name wird 1:1 an LiteLLM durchgereicht
 
 - [ ] **3.2.2:** Go Gateway durchreichen
   - `agent_chat_handler.go` leitet `model` Feld bereits im Request-Body durch ✅
   - Keine Go-Aenderungen noetig
+
+- [ ] **3.2.3:** User-Settings Resolution im Python Agent
+  - `sender` (Matrix User-ID) oder `X-Auth-User` Header → User-ID
+  - `user_settings = get_user_llm_settings(user_id)` aus DB
+  - Settings: `default_model`, `api_keys`, `per_role_overrides`
+  - Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV AGENT_MODEL`
+  - Alembic Migration: `agent.user_llm_settings` Tabelle
+
+- [ ] **3.2.4:** NATS Bridge User-Settings
+  - `nats_handler.py` schickt bereits `sender` (Matrix User-ID) mit
+  - `agent_client.py` erweitern: `model` Feld im Payload
+  - Python Agent resolved `sender` → User-Settings → Model + API Key
+  - Gleiche Logik wie Agent Chat UI — eine Konfiguration, alle Pfade
+
+- [ ] **3.2.5:** Per-Rolle Routing mit User-Settings
+  - Orchestrator: `user_settings.per_role_overrides` oder System-Default
+  - z.B. User will: Researcher → claude-opus, Rest → claude-haiku
+  - In `models.py` bereits vorbereitet (routing per TradingRole)
+  - Erweitern: User-Override hat Vorrang vor System-Default
 
 ### 3.3 control-ui: Provider Management (API Keys + Config via UI)
 
@@ -432,13 +657,28 @@ control-ui (Admin):                    agent-chat (User):
 - [ ] Fallback: Anthropic Key fehlt → OpenRouter uebernimmt automatisch
 - [ ] devstack2.ps1 startet LiteLLM als Service
 
+### Gate 2.5: User LLM Settings + Key Security (Stufe 2.5)
+- [ ] Alembic Migration: `agent.user_llm_settings` + `agent.user_credentials` Tabellen
+- [ ] Python KeyVault: AES-256-GCM encrypt/decrypt via `cryptography`
+- [ ] Go KeyVault: AES-256-GCM encrypt/decrypt via stdlib `crypto/aes`
+- [ ] Cross-language: Python-verschluesselt → Go-entschluesselbar (gleiches Byte-Format)
+- [ ] `KEY_ENCRYPTION_SECRET` ENV gesetzt, Fehler wenn fehlend (Go + Python)
+- [ ] CRUD: PUT Key → AES-256-GCM verschluesselt → GET zeigt nur masked Preview
+- [ ] Key Validation: POST validate → minimaler LLM-Call → `is_valid` + `model_list`
+- [ ] User-Settings Resolution: `get_user_llm_settings(user_id)` in runner.py
+- [ ] Fallback-Kette: `req.model` → `user_settings.default_model` → `ENV`
+- [ ] Matrix Mention: `sender` → User-Settings → richtiges Model
+- [ ] PQC-Readiness: `KEY_VAULT_BACKEND` ENV vorhanden, default `aesgcm`
+
 ### Gate 3: Dynamic Model Selection (Stufe 3)
-- [ ] Model-Dropdown im AgentChatComposer
+- [ ] Model-Dropdown im AgentChatComposer (nur Models mit gueltigem Key)
 - [ ] User waehlt "gpt-4o" → Backend nutzt OpenAI via LiteLLM
 - [ ] User waehlt "claude-sonnet" → Backend nutzt Anthropic via LiteLLM
 - [ ] User waehlt "local-llama" → Backend nutzt Ollama via LiteLLM
 - [ ] Model-Badge zeigt aktives Model + Provider
-- [ ] ApiModelsTab zeigt aktive Provider + Routing
+- [ ] control-ui: API Key Eingabe + Live-Validation + Model-Picker (User Mode)
+- [ ] control-ui: Per-Rolle Overrides (Dev Mode)
+- [ ] agent-chat ↔ control-ui: gleicher Endpoint, Aenderung sofort sichtbar
 
 ### Gate 4: Cost Tracking (Stufe 3)
 - [ ] LiteLLM Spend-Tracking in PostgreSQL

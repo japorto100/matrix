@@ -15,7 +15,11 @@ from typing import Any
 
 from agent.audit.logger import AuditAction, audit_log
 from agent.consent.cache import get_consent_cache
-from agent.consent.config import ConsentLevel, get_consent_config, resolve_provider_class
+from agent.consent.config import (
+    ConsentLevel,
+    get_consent_config,
+    resolve_provider_class,
+)
 from agent.consent.provider import ConsentDecision, ConsentProvider, ConsentRequest
 from agent.consent.rate_limiter import get_rate_limiter
 
@@ -47,6 +51,7 @@ def _get_provider() -> ConsentProvider:
             logger.warning("Failed to load consent provider '%s': %s — using YamlPolicyProvider", config.provider.use, e)
             from agent.consent.provider import YamlPolicyProvider
             _provider = YamlPolicyProvider()
+    assert _provider is not None  # guaranteed by fallback above
     return _provider
 
 

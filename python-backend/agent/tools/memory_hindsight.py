@@ -49,7 +49,7 @@ class MemorySearchTool(TradingTool):
             "input_schema": MemorySearchInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.memory.engine import get_bank_id, get_memory_engine
 
         engine = await get_memory_engine()
@@ -103,7 +103,7 @@ class MemoryAddTool(TradingTool):
             "input_schema": MemoryAddInput.model_json_schema(),
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.memory.engine import get_bank_id, get_memory_engine
 
         engine = await get_memory_engine()

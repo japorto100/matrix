@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import psycopg
@@ -131,7 +131,7 @@ async def patch_skill(
     if skill_id not in {f"{s.tier}:{s.name}" for s in skills}:
         raise HTTPException(status_code=404, detail="Skill not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             conn.execute(
@@ -196,7 +196,7 @@ async def import_skill_from_github(
 
     skill_name = (req.name or req.github_url.rstrip("/").split("/")[-1] or "imported-skill").strip()
     skill_id = f"{req.tier}:{skill_name}"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:

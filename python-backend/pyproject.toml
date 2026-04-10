@@ -46,6 +46,10 @@ dependencies = [
     # MIT, 91.4% LongMemEval, PostgreSQL+pgvector
     # slim = BYOE (Bring Your Own Embeddings/Reranker/DB)
     "hindsight-api-slim>=0.4.17",
+    # ── Security (exec-16: Key Encryption) ──────────────────────────────────
+    # AES-256-GCM fuer API Key Encryption at rest (DB)
+    # Cross-language kompatibel mit Go internal/keyvault/
+    "cryptography>=44.0.0",
     # ── Cache / State ───────────────────────────────────────────────────────
     "redis>=5.0.0",
     "cachetools>=5.3.0",

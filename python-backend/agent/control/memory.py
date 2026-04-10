@@ -12,8 +12,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
-from agent.memory.engine import get_bank_id, get_memory_engine
 from agent.control.request_scope import get_effective_scope
+from agent.memory.engine import get_bank_id, get_memory_engine
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,6 @@ Aggregates stats from multiple sources for the Overview tab:
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any

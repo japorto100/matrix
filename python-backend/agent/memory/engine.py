@@ -18,31 +18,23 @@ _init_failed = False
 
 
 def _bridge_env() -> None:
-    """Mappt unsere zentralen ENV vars auf Hindsight's HINDSIGHT_API_* ENV vars.
+    """Mappt LiteLLM Gateway auf Hindsight's HINDSIGHT_API_* ENV vars.
 
-    Einmalig beim Init. setdefault = ueberschreibt nicht wenn bereits gesetzt.
+    exec-16: Alles geht ueber LiteLLM (OpenAI-compatible).
+    Kein Provider-Dispatching, kein direkter API Key — LiteLLM hat die Keys.
     """
-    provider = os.environ.get("AGENT_PROVIDER", "anthropic")
-    if provider == "openai-compatible":
-        provider = "openai"
+    litellm_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
 
-    # LLM — Key aus unserer zentralen Config
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
-    if api_key:
-        os.environ.setdefault("HINDSIGHT_API_LLM_PROVIDER", provider)
-        os.environ.setdefault("HINDSIGHT_API_LLM_API_KEY", api_key)
-        os.environ.setdefault("HINDSIGHT_API_LLM_MODEL",
-                              os.environ.get("AGENT_UTILITY_MODEL", ""))
-    else:
-        # Kein API Key → DB-only Modus (Recall funktioniert, Retain/Reflect nicht)
-        os.environ.setdefault("HINDSIGHT_API_LLM_PROVIDER", "none")
-        logger.info("No LLM API key — Hindsight in DB-only mode (no Retain/Reflect)")
-    if os.environ.get("OPENAI_BASE_URL"):
-        os.environ.setdefault("HINDSIGHT_API_LLM_BASE_URL", os.environ["OPENAI_BASE_URL"])
+    # LLM — immer ueber LiteLLM (OpenAI-compatible)
+    # Model kommt aus DB (control-ui). Hindsight braucht ein Model fuer Retain/Reflect,
+    # das wird bei Engine-Init gesetzt. Ohne Model = DB-only Modus.
+    utility_model = os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
 
-    # LiteLLM: wenn aktiviert, Hindsight soll auch litellm nutzen
-    if os.environ.get("AGENT_USE_LITELLM", "").lower() == "true":
-        os.environ.setdefault("HINDSIGHT_API_LLM_PROVIDER", "litellm")
+    os.environ.setdefault("HINDSIGHT_API_LLM_PROVIDER", "openai")
+    os.environ.setdefault("HINDSIGHT_API_LLM_BASE_URL", litellm_url)
+    os.environ.setdefault("HINDSIGHT_API_LLM_API_KEY", "sk-litellm")
+    if utility_model:
+        os.environ.setdefault("HINDSIGHT_API_LLM_MODEL", utility_model)
 
     # Embeddings + Reranker (lokal by default)
     os.environ.setdefault("HINDSIGHT_API_EMBEDDINGS_PROVIDER", "local")

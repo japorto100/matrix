@@ -87,7 +87,7 @@ class SandboxBrowserTool(TradingTool):
             summary["error"] = result["error"]
         return summary
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = BrowserInput(**tool_input)
 
         manager = SandboxManager()

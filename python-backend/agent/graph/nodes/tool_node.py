@@ -68,16 +68,16 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
     tool_results: list[ToolResult] = []
     tool_messages: list[dict[str, Any]] = []
 
-    for tc, result in zip(tool_calls, results):
-        if isinstance(result, Exception):
-            tr = ToolResult(
+    for tc, raw_result in zip(tool_calls, results):
+        if isinstance(raw_result, BaseException):
+            tr: ToolResult = ToolResult(
                 tool_call_id=tc["tool_call_id"],
                 tool_name=tc["tool_name"],
                 result={},
-                error=str(result),
+                error=str(raw_result),
             )
         else:
-            tr = result
+            tr = raw_result  # type: ignore[assignment]  # gather returns ToolResult when no exception
 
         tool_results.append(tr)
 
@@ -114,7 +114,7 @@ async def _execute_single(
     ctx: AgentExecutionContext,
 ) -> ToolResult:
     """Fuehrt ein einzelnes Tool mit Timeout aus. Audit-logged."""
-    from agent.audit.logger import AuditAction, audit_log, audit_timer, audit_duration
+    from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
 
     tool = registry.lookup(tc["tool_name"])
     if not tool:

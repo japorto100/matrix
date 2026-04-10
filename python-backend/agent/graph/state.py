@@ -62,8 +62,8 @@ class AgentGraphState(TypedDict):
     # Model to use
     model: str
 
-    # Provider (anthropic/openai/openai-compatible/litellm)
-    provider: str
+    # exec-16: Per-user API key (aus DB, via extra_body an LiteLLM durchgereicht)
+    api_key: str | None
 
     # Reasoning effort (low/medium/high)
     reasoning_effort: str | None

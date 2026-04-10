@@ -45,7 +45,7 @@ class BrowserToolProxy(TradingTool):
             "input_schema": self._input_schema or {"type": "object", "properties": {}},
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         # Browser-Tools koennen nicht serverseitig ausgefuehrt werden.
         # Wir geben ein Marker-Result zurueck das das Frontend erkennt.
         return {

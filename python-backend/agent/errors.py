@@ -23,7 +23,7 @@ class ToolValidationError(RepairableError):
         super().__init__(f"Tool '{tool_name}' validation failed: {reason}")
 
 
-class CapabilityViolation(CriticalError):
+class CapabilityViolationError(CriticalError):
     """Tool is outside the agent's capability envelope — abort immediately."""
 
     def __init__(self, tool_name: str, envelope_class: str) -> None:
@@ -31,14 +31,14 @@ class CapabilityViolation(CriticalError):
         super().__init__(f"Tool '{tool_name}' not allowed for agent class '{envelope_class}'")
 
 
-class RetrievalAccessDenied(CriticalError):
+class RetrievalAccessDeniedError(CriticalError):
     """ACL or sensitivity check blocked a retrieval query."""
 
     def __init__(self, scope: str, reason: str) -> None:
         super().__init__(f"Retrieval denied for scope '{scope}': {reason}")
 
 
-class MaxIterationsExceeded(CriticalError):
+class MaxIterationsExceededError(CriticalError):
     """Agent loop hit MAX_ITERATIONS without end_turn."""
 
     def __init__(self, max_iter: int) -> None:

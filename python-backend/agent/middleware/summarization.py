@@ -11,7 +11,7 @@ zusammengefasst. Die letzten N Messages bleiben vollstaendig erhalten.
 Konfiguration via ENV:
   AGENT_SUMMARIZE_THRESHOLD=0.7     # 70% des Context-Windows
   AGENT_SUMMARIZE_KEEP_MESSAGES=20  # Letzte 20 Messages behalten
-  AGENT_SUMMARIZE_MODEL=claude-haiku-4-5  # Schnelles Model fuer Summaries
+  AGENT_SUMMARIZE_MODEL=  # Optional: eigenes Model fuer Summaries (sonst User's Model)
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Defaults
 THRESHOLD_FRACTION = float(os.environ.get("AGENT_SUMMARIZE_THRESHOLD", "0.7"))
 KEEP_MESSAGES = int(os.environ.get("AGENT_SUMMARIZE_KEEP_MESSAGES", "20"))
-SUMMARIZE_MODEL = os.environ.get("AGENT_SUMMARIZE_MODEL", "claude-haiku-4-5")
+SUMMARIZE_MODEL = os.environ.get("AGENT_SUMMARIZE_MODEL", "")  # aus ENV oder control-ui, kein hardcoded Default
 TOOL_RESULT_MAX_CHARS = int(os.environ.get("AGENT_TOOL_RESULT_MAX_CHARS", "2000"))
 
 # Token estimates (rough, fuer Threshold-Check)
@@ -77,7 +77,7 @@ def offload_large_tool_results(messages: list[dict[str, Any]]) -> list[dict[str,
         if msg.get("role") == "tool":
             content = msg.get("content", "")
             if isinstance(content, str) and len(content) > TOOL_RESULT_MAX_CHARS:
-                truncated = content[:TOOL_RESULT_MAX_CHARS] + "\n[... truncated, full result was {}chars]".format(len(content))
+                truncated = content[:TOOL_RESULT_MAX_CHARS] + f"\n[... truncated, full result was {len(content)}chars]"
                 result.append({**msg, "content": truncated})
                 continue
         result.append(msg)

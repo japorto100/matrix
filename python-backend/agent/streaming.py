@@ -8,12 +8,11 @@ import json
 from dataclasses import asdict, dataclass
 from typing import Literal
 
-
 # ── Packet types ─────────────────────────────────────────────────────────────
 
 @dataclass
 class ThreadIdPacket:
-    threadId: str
+    thread_id: str
     type: Literal["thread-id"] = "thread-id"
 
 
@@ -65,7 +64,7 @@ class MessageMetaPacket:
 
 @dataclass
 class FinishPacket:
-    finishReason: str = "stop"
+    finish_reason: str = "stop"
     type: Literal["finish"] = "finish"
 
 
@@ -86,12 +85,17 @@ class ApprovalRequestPacket:
 
 # ── SSE helper ────────────────────────────────────────────────────────────────
 
+def _snake_to_camel(name: str) -> str:
+    parts = name.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
+
+
 def _to_sse(packet: object) -> str:
-    """Serialize any packet dataclass to SSE data line."""
+    """Serialize any packet dataclass to SSE data line (camelCase keys for frontend)."""
     if isinstance(packet, dict):
         data = packet
     else:
-        data = asdict(packet)  # type: ignore[arg-type]
+        data = {_snake_to_camel(k): v for k, v in asdict(packet).items()}  # type: ignore[arg-type]
     return f"data: {json.dumps(data)}\n\n"
 
 

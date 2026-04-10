@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from agent.errors import ToolValidationError
 from agent.http_client import get_client
 from agent.tools.base import TradingTool
 from shared.config import GO_GATEWAY_URL
@@ -84,7 +83,7 @@ class GetChartStateTool(TradingTool):
             },
         }
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         return await get_chart_state(user_id=ctx.user_id)
 
 
@@ -108,7 +107,7 @@ class SetChartStateTool(TradingTool):
             "input_schema": SetChartStateInput.model_json_schema(),
         }
 
-    def validate(self, tool_input: dict, ctx: "AgentExecutionContext") -> None:
+    def validate(self, tool_input: dict, ctx: AgentExecutionContext) -> None:
         # Pydantic validation first (ABP.2b)
         super().validate(tool_input, ctx)
         # Advisory agent capability guard — keep as-is
@@ -118,6 +117,6 @@ class SetChartStateTool(TradingTool):
             if envelope:
                 envelope.check(self.name)
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = SetChartStateInput(**tool_input)
         return await set_chart_state(params.symbol, params.timeframe)

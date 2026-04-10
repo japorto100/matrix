@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 from agent.sandbox.config import BACKTEST_SANDBOX, CODE_SANDBOX
-from agent.sandbox.manager import SandboxManager, SandboxResult
+from agent.sandbox.manager import SandboxManager
 from agent.tools.base import TradingTool
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ class SandboxExecuteTool(TradingTool):
             summary["error"] = result["error"]
         return summary
 
-    async def execute(self, tool_input: dict, ctx: "AgentExecutionContext") -> dict:
+    async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         params = CodeExecuteInput(**tool_input)
 
         # Select config: longer timeout for backtesting

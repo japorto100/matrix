@@ -18,8 +18,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from agent.memory.engine import get_bank_id, get_memory_engine
 from agent.control.request_scope import resolve_scope
+from agent.memory.engine import get_bank_id, get_memory_engine
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ async def get_episode(
     try:
         from hindsight_api.models import RequestContext
 
-        result = await engine.get_memory_unit(
+        result = await engine.get_memory_unit(  # type: ignore[call-arg]  # Hindsight API version mismatch
             unit_id=episode_id,
             request_context=RequestContext(),
         )
@@ -196,7 +196,7 @@ async def delete_episode(
     try:
         from hindsight_api.models import RequestContext
 
-        current = await engine.get_memory_unit(
+        current = await engine.get_memory_unit(  # type: ignore[call-arg]  # Hindsight API version mismatch
             unit_id=episode_id,
             request_context=RequestContext(),
         )
