@@ -535,8 +535,7 @@ LiteLLM laeuft als reiner Python-Prozess — kein Docker noetig.
   - Grouped: Cloud (Claude, GPT, Gemini) | Aggregator (OpenRouter) | Local (Ollama)
   - Cached via TanStack Query, invalidiert bei Key-Aenderung in control-ui
 
-- [ ] **3.1.3:** Model-Badge im Chat-Header
-  - Zeigt aktives Model an: "claude-sonnet · Anthropic"
+- ~~**3.1.3:** Model-Badge im Chat-Header~~ (entfernt — Toolbar-Dropdown zeigt Model bereits)
   - Bei Fallback: "claude-sonnet · via OpenRouter (fallback)"
 
 ### 3.2 Request-Body + User-Settings Resolution
@@ -670,7 +669,7 @@ control-ui (Admin):                    agent-chat (User):
 - [ ] User waehlt "gpt-4o" → Backend nutzt OpenAI via LiteLLM (not verified)
 - [ ] User waehlt "claude-sonnet" → Backend nutzt Anthropic via LiteLLM (not verified)
 - [ ] User waehlt "local-llama" → Backend nutzt Ollama via LiteLLM (not verified)
-- [ ] Model-Badge zeigt aktives Model + Provider (NOT done)
+- ~~Model-Badge~~ (entfernt — Toolbar zeigt Model)
 - [x] control-ui: API Key Eingabe + Live-Validation + Model-Picker (User Mode)
 - [x] control-ui: Per-Rolle Overrides (Dropdown pro Rolle in ApiModelsTab)
 - [x] agent-chat ↔ control-ui: gleicher Endpoint, Aenderung sofort sichtbar
