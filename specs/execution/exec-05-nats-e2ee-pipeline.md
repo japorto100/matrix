@@ -122,26 +122,11 @@ User ← Tuwunel ← Go Appservice
   - Pfad: `<dbDir>/megolm_keys_backup.bin`, Passphrase-verschlüsselt
   - `MATRIX_KEY_BACKUP_PASSWORD` konfigurierbar
 
-### Phase C: Agent-Isolation (Optional)
+### Phase C: Agent-Isolation → verschoben nach `exec-05c-agent-isolation.md`
 
-- [ ] **C1:** NATS-Subjects per Raum partitionieren
-  - Statt `matrix.message.*` → `matrix.message.{roomId}`
-  - Python Bridge subscribed nur auf Räume die ihr Agent bedient
-
-- [ ] **C2:** Agent-Routing im Go Appservice
-  - Nachricht an `@agent-trading:matrix.local` → NATS Subject `matrix.message.trading`
-  - Nachricht an `@agent-research:matrix.local` → NATS Subject `matrix.message.research`
-  - Verschiedene Python-Instanzen können verschiedene Agents bedienen
-
-- [ ] **C3:** Access Control auf NATS
-  - NATS Authorization: Python-Trading darf nur `matrix.message.trading` lesen
-  - Verhindert dass ein Agent-Service andere Agents' Nachrichten sieht
-
-- [ ] **C4:** Agent Thread-Support
-  - Agent wird im Thread mentioned → Go Appservice erkennt Thread-Kontext
-  - NATS-Message enthaelt threadRootId → Python Agent antwortet im Thread (nicht Hauptchat)
-  - Go Appservice nutzt `client.sendMessage(roomId, threadId, content)` fuer Thread-Reply
-  - Agent-Thread-Strategie: kurze Antwort → Hauptchat, lange Analyse → Thread erstellen
+Phase C (NATS Subject-Routing, Agent-Routing, Access Control, Thread-Support)
+sowie Key Deletion und Hybrid-E2EE-Vorbereitung sind in einem eigenen Slice:
+**[exec-05c-agent-isolation.md](exec-05c-agent-isolation.md)**
 
 ---
 
@@ -308,10 +293,15 @@ User → Tuwunel → Go (Routing + Fallback-Decrypt)
 - Voice/Audio: LiveKit (WebRTC), nicht NATS — Sub-20ms Latenz nötig
 - **Empfehlung:** NATS für Matrix-Events, HTTP für Agent-Chat, LiveKit für Voice
 
+### Entscheidung (10.04.2026)
+- [x] **Option A aktiv** (Zentrales Go Gateway) — implementiert und funktional
+- [ ] **Hybrid-Vorbereitung (Option C):** Interface vorbereitet fuer spaetere Per-Agent E2EE
+  - Siehe `exec-05c-agent-isolation.md` Phase 3
+
 ### TODO
-- [ ] Architektur-Entscheidung A/B/C/D treffen
-- [ ] vodozemac-python evaluieren (Reife, Kompatibilität mit matrix-nio)
-- [ ] Key-Deletion-Strategie für Agents evaluieren (`MATRIX_DELETE_KEYS_AFTER_DECRYPT`)
+- [x] Architektur-Entscheidung A/B/C/D → Option A aktiv, Hybrid (C) als Zukunftsoption
+- [ ] vodozemac-python evaluieren → siehe `exec-05c-agent-isolation.md` HY-3
+- [ ] Key-Deletion-Strategie → siehe `exec-05c-agent-isolation.md` Phase 2
 - [ ] JetStream Persistence für `matrix.message.*` konfigurieren (Prod)
 - [ ] NATS TLS für Prod
 
@@ -334,15 +324,10 @@ User → Tuwunel → Go (Routing + Fallback-Decrypt)
 - [ ] Element X / Next.js Client sendet Keys an Bot (MSC4153)
 - [ ] Key Backup: Restart → alte Messages noch lesbar
 
-### Gate 3: Agent-Isolation (Phase C)
-- [ ] NATS-Subjects pro Agent partitioniert
-- [ ] Agent-Routing im Go Appservice (Mention → Subject)
-- [ ] NATS Authorization Rules (Agent darf nur eigenes Subject lesen)
+### Gate 3 + 4: → verschoben nach `exec-05c-agent-isolation.md`
 
-### Gate 4: Crypto-Library Entscheidung
-- [ ] goolm vs vodozemac evaluiert (PQXDH-Bedarf? CGO-Akzeptanz?)
-- [ ] vodozemac-python getestet (falls Option B/C gewählt)
-- [ ] Soatok Feb 2026 Issues bewertet (all-zero X25519, truncated MACs)
+Agent-Isolation (NATS Routing, Access Control) und Crypto-Library Entscheidung
+haben eigene Verify-Gates in `exec-05c-agent-isolation.md`.
 
 ---
 

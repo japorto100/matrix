@@ -15,7 +15,7 @@
 - [x] react-shiki in Matrix TextContent.tsx umstellen (Syntax Highlighting)
 - [x] motion Import in Matrix Components umstellen (framer-motion → motion/react)
 - [x] auto-animate in Matrix RoomList/Timeline einbauen
-- [x] Location Content: OpenStreetMap-Embed statt Link
+- [x] Location Content: OpenStreetMap-Embed statt Link (10.04.2026, shared/ Components)
 - [ ] Client→Server Analyse: welche API Calls optimierbar
 - [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
 

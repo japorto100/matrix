@@ -51,7 +51,7 @@ func run() int {
 		return 0
 	}
 
-	natsBridge, err := natsbridge.New(cfg.NATSUrl)
+	natsBridge, err := natsbridge.New(cfg.NATSUrl, cfg.NATSSubjectRouting)
 	if err != nil {
 		slog.Error("NATS connect failed", "error", err, "url", cfg.NATSUrl)
 		return 1

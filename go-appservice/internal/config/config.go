@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -54,6 +55,12 @@ type Config struct {
 
 	// Memory Service (Python, Port 8093)
 	MemoryServiceURL string // MEMORY_SERVICE_URL=http://127.0.0.1:8093
+
+	// exec-05c: Agent-Isolation + Hybrid E2EE
+	DeleteKeysAfterDecrypt bool   // MATRIX_DELETE_KEYS_AFTER_DECRYPT=false — Forward Secrecy (Keys löschen nach Decrypt)
+	DeleteKeysAfterHours   int    // MATRIX_DELETE_KEYS_AFTER_HOURS=0 — Kompromiss: Keys X Stunden behalten (0=sofort wenn enabled)
+	NATSSubjectRouting     bool   // NATS_SUBJECT_ROUTING_ENABLED=false — Per-Agent NATS Subject Routing
+	AgentCapabilities      string // MATRIX_AGENT_CAPABILITIES=gateway — "gateway" (Go entschlüsselt) oder "native" (Agent entschlüsselt)
 }
 
 // Load lädt Config aus .env.{environment} + Environment.
@@ -84,13 +91,26 @@ func Load() *Config {
 		MentionOnlyInGroups: getenv("MENTION_ONLY_IN_GROUPS", "true") == "true",
 		MCPServiceURL:       getenv("MCP_SERVICE_URL", "http://127.0.0.1:8094"),
 		AgentServiceURL:     getenv("AGENT_SERVICE_URL", "http://127.0.0.1:8094"),
-		MemoryServiceURL:  getenv("MEMORY_SERVICE_URL", "http://127.0.0.1:8093"),
+		MemoryServiceURL:       getenv("MEMORY_SERVICE_URL", "http://127.0.0.1:8093"),
+		DeleteKeysAfterDecrypt: getenv("MATRIX_DELETE_KEYS_AFTER_DECRYPT", "false") == "true",
+		DeleteKeysAfterHours:   getenvInt("MATRIX_DELETE_KEYS_AFTER_HOURS", 0),
+		NATSSubjectRouting:     getenv("NATS_SUBJECT_ROUTING_ENABLED", "false") == "true",
+		AgentCapabilities:      getenv("MATRIX_AGENT_CAPABILITIES", "gateway"),
 	}
 }
 
 func getenv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return fallback
+}
+
+func getenvInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
 	}
 	return fallback
 }

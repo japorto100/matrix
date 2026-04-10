@@ -95,3 +95,42 @@ braucht. Damit bleiben die eigentlichen `exec-*` Slices frei von wiederkehrenden
 
 **Done:** Gates pro Bridge erfuellt, Setup dokumentiert.
 
+---
+
+## EVAL-06: exec-09 Verify-Gates (MCP + Generative UI + Canvas + WebMCP)
+
+**Quelle:** `exec-09-protocols-generative-ui.md` (Gate 1-4)
+**Typ:** E2E Verify (Backend + UI + MCP + WebMCP)
+**Voraussetzungen:**
+- Python MCP Server laeuft auf :8095
+- Go Gateway MCP Proxy aktiv
+- Agent Chat UI laeuft
+- Chrome 146+ oder WebMCP Polyfill
+
+### Verify Gates
+- MCP: 10 Tools registriert, Frontend connected
+- Generative UI: ChartWidget/PortfolioCard rendern (CopilotKit aktiv, Tambo deprecated)
+- Canvas: tldraw Split-View, Novel blocks
+- WebMCP: navigator.modelContext.listTools() funktioniert
+
+**Done:** Gate-Checklist in exec-09 abgehakt + Evidence.
+
+---
+
+## EVAL-07: exec-15 Devstack E2E
+
+**Quelle:** `exec-15-memory-control-ui.md` (Phase I)
+**Typ:** Full-Stack E2E Verify
+**Voraussetzungen:**
+- devstack2.ps1 mit control-ui service
+- SeaweedFS (weed.exe) laeuft
+- PostgreSQL mit pgvector
+- Python agent service + ingestion worker
+
+### Verify Gates
+- control-ui startet und zeigt alle 13 Tabs
+- File upload + PDF preview E2E
+- Memory episodes list + detail E2E
+- KG visualization mit backend data
+
+**Done:** Devstack E2E laeuft, Screenshots/Logs verlinkt.

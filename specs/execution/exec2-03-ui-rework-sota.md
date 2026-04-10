@@ -78,6 +78,13 @@
 
 ## Offene Punkte (Backlog)
 
-- [ ] Location Content: OpenStreetMap-Embed statt Link (OSM-Link bereits vorhanden, Embed offen)
-- [ ] Client→Server Analyse: welche API Calls optimierbar
-- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
+- [x] Location Content: OpenStreetMap-Embed statt Link (10.04.2026)
+  - [x] `parseGeoUri()` shared utility in `shared/src/geo/parseGeoUri.ts`
+  - [x] `LocationEmbed.tsx` (iframe OSM embed, SSR-safe) in `shared/src/location/`
+  - [x] `LocationMapInner.tsx` (react-leaflet, dynamic import) in `shared/src/location/`
+  - [x] `LocationContent.tsx` in nextjs-chat refactored auf shared/ imports
+  - [ ] Agent-Chat: generische {lat, lon, label} Props (kein SDK) — bei Bedarf einbauen
+  - **SDK-Version:** matrix-js-sdk 41.2.0 hat `M_LOCATION` types, `makeLocationContent()`, `parseLocationEvent()`
+  - **Agent-Version:** Nur `{lat, lon, label}` Props, kein matrix-js-sdk noetig
+- [ ] Client→Server Analyse: welche API Calls optimierbar (Analyse, kein Code)
+- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren (Analyse, kein Code)

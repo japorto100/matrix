@@ -26,6 +26,8 @@
 | **Slice 5** Agent Configuration | ✅ Frontend + Backend wired + Edit Form + Permission Cell PATCH + Skill Toggle (K5, K6, K7) | **Frontend:** AgentsTab (roles + override badges), PermissionsTab (matrix), SkillsTab (3-tier), SandboxTab, ToolsTab. **Backend Slice 7 Phase C (08.04):** `agent/control/agents.py` (TradingRole dicts + agent_role_overrides merge), `permissions.py` (consent matrix + 5s TTL cache, thread-safe), `skills.py` (wraps agent/skills/loader), `tools.py` (builtin + MCP introspection + stats from audit_events), `sandbox.py` (query audit_events for SANDBOX_EXEC). Alembic migrations 004 + 005. **K5 (Phase K, 08.04.2026):** AgentsTab Detail Sheet now has Edit mode toggle. Edit mode shows: Textarea for `system_prompt` (10 rows, font-mono), RadioGroup for `memory_access` (read/read_write/none), Switch for `approval_required`. Save button → `usePatchAgent` → PATCH `/api/control/agents/{id}` with diff-only patch object. "Reset Prompt" + "Reset Memory" buttons (only shown when `!is_default`) → `useResetAgentField` → DELETE `/api/control/agents/{id}/overrides/{field}`. **Phase 1 limitation:** Allowed Tools editor is read-only (multi-select via Command primitive deferred to Phase 2). **K6 (Phase K, 08.04.2026):** PermissionsTab cells now wired to `usePatchPermissionCell` (left-click cycles `auto → inform → confirm → deny → auto`) + `useResetPermissionCell` (right-click resets overlay → yaml default, only when `is_overridden`). Toast feedback per action. Backend invalidates permissions matrix + audit queries. **K7 (Phase K, 08.04.2026):** SkillsTab Switch wired to `usePatchSkill` → PATCH `/api/control/skills/{id}` with `{enabled}` body. Backend stub returns `{status: "pending_phase2"}` (D25) — frontend shows `toast.warning("Skill toggle queued — Phase 2 backend will persist")`. "Import from GitHub" button still disabled (Phase 2 import flow). |
 | **Slice 6** System Observability | ✅ Frontend + Backend wired + Session Kill (Dev) + Audit Export (K8, K9) | **Frontend:** SystemTab, AuditTab, SessionsTab, McpTab, A2aTab. **Backend Slice 7 Phase D (08.04):** `agent/control/system.py` (concurrent health pings), `audit.py` (filtered query mit date range), `sessions.py` (raw SQL auf langgraph_checkpoint_postgres), `mcp.py` (FastMCP introspection), `a2a.py` (queries a2a_delegations table). Alembic migrations 006 + 007. **K8 (Phase K, 08.04.2026):** SessionsTab now shows Kill button per session row **only when `useControlMode().isDev`** (Dev Mode gate). Click → AlertDialog confirmation → `useKillSession` → DELETE `/api/control/sessions/{thread_id}` → invalidate sessions + audit + overview queries. **K9 (Phase K, 08.04.2026):** AuditTab Export button now a DropdownMenu with "Export as CSV" / "Export as JSON" actions. Pure client-side via Blob + anchor-click download — no backend needed, exports already-fetched filtered events. CSV escaper handles quotes/commas/newlines properly (RFC 4180). |
 | **Slice 7** Two-Tier UI + Full Backend + Hash Reindex | ✅ DONE | **Frontend:** `useControlMode` hook (URL param + localStorage, D20), `ModeToggle`, `OverviewTab` (TT1), `SecurityTab` (TT8), `ApiModelsTab` (fused ENV + LLM providers + Model Routing + Utility Models), `ControlTopNav` mode-filtered (7 User Mode tabs + 6 Dev Mode tabs). **Backend:** `agent/control/overview.py`, `security.py` (4-pillar posture + event type mapping), `models.py` (providers + routing + utility + env). **56 total control routes** registered (added /kg/graph in K4). **Go Proxy:** `ControlProxyHandler` + `/api/v1/control/*` catch-all (D21, lint 0 issues). **Hash reindex (Phase E, D23):** `ingestion/tracking/dedup.hash_chunk`, `jobs.save_chunk_hashes`, `pipelines/document.smart_reindex()`, `hindsight_sink.delete_by_hashes()`, `worker.py /reindex`, `alembic/003_chunk_hashes.py`. **Frontend BFF (D21):** catch-all `/api/control/[...path]/route.ts` + `/api/memory/[...path]/route.ts` mit path mapping, `lib/server/control-proxy.ts`, `lib/queries/control.ts` + `hooks.ts` (now **27+ typed hooks** after Phase K mutations). Alle 13 Control Tabs + MemoryPage + EpisodesGrid + MemoryHealthCards auf useQuery + mock fallback (D22). **Phase J Code Review Fixes:** TradingRole enum aligned (fundamentals_analyst/sentiment_analyst/technical_analyst/researcher/trader/risk_manager), memory.health returns array shape, Session type optional fields, SecurityEventType mapping, permissions cache thread-safety, formatRelative null guard. **Phase K Code Gaps Closed (08.04.2026):** K1-K10 — all UI elements now fully wired, no more disabled buttons or "coming soon" placeholders. **TODO:** Devstack E2E run (Phase I) |
+| **Slice 8** Integration in agent-chat/ | Geplant | Komponenten-Migration, GlobalTopBar mit 4 Surfaces, BFF-Routes |
+| **Slice 9** Graphiti/Cognee Backend | Geplant | Aus exec-13 Phase 1 verschoben (10.04.2026). GraphitiRetriever, Cognee, Unified Search API |
 
 ---
 
@@ -2218,6 +2220,36 @@ Code-level gates (no devstack needed — verified after Phase K closes):
 - [ ] GlobalTopBar mit 4 Surfaces (Agent · Memory · Control · Files)
 - [ ] BFF-Routes integration
 - [ ] control-ui/ archivieren oder eigenstaendig lassen
+
+### Slice 9 (geplant): Graphiti/Cognee Backend Integration
+
+> Verschoben aus exec-13 Phase 1 (10.04.2026).
+> Thematisch passt es hierher: exec-15 hat KG-Frontend (Slice 4) + Ingestion-Pipeline (Slice 2).
+
+**Voraussetzung:** exec-11 (Hindsight Memory) ✅, Slice 2 (Content Ingestion Pipeline), Slice 4 (KG Visualization)
+
+#### 9.1 Graphiti als Custom GraphRetriever
+- [ ] `GraphitiRetriever` implementieren (nutzt Graphiti's Temporal Knowledge Graph)
+- [ ] Graphiti installieren (`pip install graphiti-core`)
+- [ ] Neo4j oder FalkorDB als Graph-Backend evaluieren
+- [ ] Temporal Edges: Fakten haben Zeitstempel, alte werden invalidiert
+- [ ] Entity Resolution: Graphiti's eigene Entity-Merging-Pipeline
+
+#### 9.2 Cognee als Structured Knowledge Layer
+- [ ] Cognee installieren (`pip install cognee`)
+- [ ] Document → Knowledge Graph Pipeline (PDF, Markdown, Code)
+- [ ] Cognee's LLM-basierte Triplet Extraction
+- [ ] Integration mit Hindsight: Cognee Facts als `world` Memories retainen
+
+#### 9.3 Unified Search API
+- [ ] RRF Fusion ueber alle Backends (Hindsight + Graphiti + Cognee)
+- [ ] Fallback-Kette: Hindsight (immer) → Graphiti (wenn Neo4j) → Cognee (wenn konfiguriert)
+- [ ] Search API Endpoint: `/api/memory/search?q=...&backends=all`
+
+### Verify-Gate Slice 9
+- [ ] GraphitiRetriever registriert und liefert Ergebnisse
+- [ ] Cognee Document-Pipeline: PDF → Facts in Hindsight
+- [ ] Unified Search: Query liefert Ergebnisse aus allen Backends
 
 ---
 

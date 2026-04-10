@@ -1,9 +1,13 @@
-# exec-06: Agent Chat Integration + Verify (konsolidiert mit exec-08)
+# exec-06: Shared Components + Agent Chat Verify (konsolidiert mit exec-08)
 
-**Datum:** 28.03.2026 (konsolidiert 30.03.2026)
-**Status:** Geplant
+**Datum:** 28.03.2026 (konsolidiert 30.03.2026, restructured 10.04.2026)
+**Status:** Phase 5 in Arbeit
 **Abhaengig von:** exec-05 (NATS E2EE Pipeline)
 **Zusammengefuehrt aus:** exec-06 (Agent Chat UI) + exec-08 offene Items (Verify-Gates)
+
+> **Restructuring 10.04.2026:** Phase 1 (Package Setup) + Phase 6 (Dual-Panel + Layout)
+> verschoben nach `exec-merge-chat.md`. Dieser Slice fokussiert auf Shared Components
+> und Verify-Gates.
 
 ---
 
@@ -58,23 +62,9 @@ nicht den ganzen Viewport bedecken. Matrix Chat bekommt eine eigene Route (`/cha
 
 ---
 
-## Phase 1: Package Setup + Agent Chat in nextjs-chat einbinden
+## Phase 1: → verschoben nach `exec-merge-chat.md`
 
-- [ ] **1.1:** Fehlende Deps in `nextjs-chat/package.json` installieren
-  - Fehlend: `ai`, `@ai-sdk/react`, `@ai-sdk/ui-utils`
-  - Vorhanden: framer-motion, react-markdown, remark-gfm, sonner, lucide-react, nuqs
-  - agent-chat hat eigenes package.json als Referenz
-
-- [ ] **1.2:** Agent Chat Dateien nach `nextjs-chat/src/components/agent/` kopieren/symlinken
-  - 19 Komponenten aus `agent-chat/components/`
-  - Hooks aus `agent-chat/hooks/`
-  - Context/Stores aus `agent-chat/context/` + `agent-chat/stores/`
-  - Types aus `agent-chat/types.ts`
-
-- [ ] **1.3:** Jotai Provider in nextjs-chat Providers.tsx hinzufuegen
-
-- [ ] **1.4:** `/agent` Route erstellen in `nextjs-chat/src/app/agent/`
-  - Rendert AgentChatPanel standalone
+Package Setup + Agent Chat in Hauptprojekt einbinden → siehe [exec-merge-chat.md](exec-merge-chat.md) Phase 1.
 
 ---
 
@@ -136,36 +126,49 @@ Code ist komplett. Nur Verify-Gates offen.
 
 ---
 
-## Phase 5: Shared Components
+## Phase 5: Shared Components (`D:/matrix/shared/`)
 
-- [ ] **5.1:** Markdown-Rendering Core extrahieren → `shared/Markdown.tsx`
-  - Gemeinsam: GFM, Sanitize (rehype-sanitize), Code Blocks (Shiki), Linkify
-  - Matrix-spezifisch: Matrix Permalinks, Mention Pills
-  - Agent-spezifisch: Think-Blocks, Citations, JSON Renderer
-- [ ] **5.2:** ImagePreviewModal → `shared/ImagePreviewModal.tsx`
+> Stand 10.04.2026: shared/ Package erstellt, Location + CodeBlock + ImagePreview implementiert.
+
+- [x] **5.0:** `shared/` Package erstellt (package.json, tsconfig.json, barrel exports)
+  - tsconfig path alias `@shared/*` in nextjs-chat + agent-chat konfiguriert
+  - `bun install` + `tsc --noEmit` → 0 Errors
+
+- [x] **5.1:** CodeBlock (Shiki + Copy-to-Clipboard) → `shared/src/markdown/CodeBlock.tsx`
+  - ShikiHighlighter mit one-dark-pro Theme
+  - Copy-Button mit 1.5s Feedback
+  - Identisch in beiden Apps — jetzt einmal in shared/
+
+- [x] **5.2:** ImagePreviewModal → `shared/src/media/ImagePreviewModal.tsx`
+  - Generische Props: `{src, alt?, onClose}` (kein App-spezifischer Type)
+  - Zoom In/Out, Escape-Close, Backdrop-Blur
+
+- [x] **5.3:** Location Components → `shared/src/location/` + `shared/src/geo/`
+  - `parseGeoUri()` — geo: URI → {lat, lon, uncertainty}
+  - `LocationEmbed.tsx` — iframe OSM embed (0 deps, SSR-safe)
+  - `LocationMapInner.tsx` — react-leaflet interaktive Karte (dynamic import)
+  - `LocationContent.tsx` in nextjs-chat refactored auf shared/ imports
+  - **SDK-Version:** matrix-js-sdk 41.2.0 hat M_LOCATION types, makeLocationContent(), parseLocationEvent()
+  - **Agent-Version:** Nur {lat, lon, label} Props, kein matrix-js-sdk
+
+- [ ] **5.4:** SharedMarkdown — vollstaendige Markdown-Abstraktion (zurueckgestellt)
+  - Matrix rendert HTML-first (formatted_body), Agent rendert Markdown-first
+  - Zu divergent fuer sinnvolle Abstraktion — CodeBlock als Baustein reicht vorerst
+  - Evaluieren wenn beide Apps in tradeview-fusion zusammengefuehrt werden
 
 ### Verify-Gate Phase 5
-- [ ] Shared Markdown: Matrix Chat + Agent Chat nutzen gleiche Rendering-Engine
-- [ ] Shared Markdown: XSS mit `<script>` wird gefiltert
-- [ ] Shared ImagePreview: Beide UIs oeffnen gleichen Fullscreen-Viewer
+- [x] `@shared/*` Imports aufloesbar in nextjs-chat + agent-chat (tsc --noEmit)
+- [x] CodeBlock: Shiki Syntax Highlighting mit Copy-Button
+- [x] ImagePreview: Fullscreen Zoom in beiden Apps nutzbar
+- [x] LocationEmbed: OSM iframe mit korrekten Koordinaten
+- [ ] LocationMap: Leaflet-Karte rendert (nur Client-Side, braucht Visual Test)
+- [ ] SharedMarkdown: zurueckgestellt (siehe 5.4)
 
 ---
 
-## Phase 6: Dual-Panel + Integrationen (optional, spaeter)
+## Phase 6: → verschoben nach `exec-merge-chat.md`
 
-### Dual-Panel
-- [ ] ChatPanel-Wrapper Prototyp mit Tab-Toggle: [Matrix] [Agent]
-- [ ] MatrixChat responsive bei ~380px Breite
-- [ ] Gemeinsamer Notification-Badge
-- [ ] Kontextwechsel: Agent → Matrix Summary, Matrix Mention → Agent-Tab
-
-### Layout-Integration
-- [ ] GlobalChatProvider + GlobalChatOverlay in (shell)/layout.tsx
-- [ ] Sheet/Split/Rail Modes evaluieren
-
-### Cross-UI Integrationen
-- [ ] Agent-Antworten als Matrix-Nachricht relayed
-- [ ] Matrix-Mention → Agent-Chat Trigger (`@trading-agent analyze AAPL`)
+Dual-Panel Layout, Cross-UI Integrationen, Layout-Integration → siehe [exec-merge-chat.md](exec-merge-chat.md) Phase 2.
 
 ### E2EE fuer Agent Voice (spaeter)
 - Aktuell kein Fokus

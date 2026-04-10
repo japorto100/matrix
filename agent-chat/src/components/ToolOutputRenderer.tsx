@@ -8,6 +8,7 @@
 
 import { Loader2 } from "lucide-react";
 import type { ComponentType } from "react";
+import { SandboxArtifact } from "./artifacts/SandboxArtifact";
 import { ChartWidget } from "./tambo/ChartWidget";
 import { PortfolioCard } from "./tambo/PortfolioCard";
 
@@ -15,6 +16,8 @@ import { PortfolioCard } from "./tambo/PortfolioCard";
 const TOOL_RENDERERS: Record<string, ComponentType<any>> = {
 	get_chart_state: ChartWidget,
 	get_portfolio_summary: PortfolioCard,
+	sandbox_execute: SandboxArtifact,    // exec-13 6.3: OpenSandbox Results
+	file_analyze: SandboxArtifact,       // exec-12: File Analysis Results (same format)
 };
 
 /** Prueft ob ein Tool einen Rich Renderer hat */

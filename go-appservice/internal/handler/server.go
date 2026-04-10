@@ -63,7 +63,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 
 	// E2EE initialisieren (nur wenn aktiviert)
 	if cfg.E2EEEnabled {
-		m, err := crypto.New(context.Background(), client, cfg.CryptoDBPath, []byte(cfg.CryptoPickleKey), cfg.KeyBackupPassword)
+		m, err := crypto.New(context.Background(), client, cfg.CryptoDBPath, []byte(cfg.CryptoPickleKey), cfg.KeyBackupPassword, cfg.DeleteKeysAfterDecrypt)
 		if err != nil {
 			return nil, fmt.Errorf("crypto init: %w", err)
 		}
@@ -328,6 +328,7 @@ func (s *Server) processEvent(ctx context.Context, ev *event.Event) {
 // handleEncrypted verarbeitet verschlüsselte Events.
 // Bei aktiviertem E2EE: entschlüsseln und als normales Event weiterverarbeiten.
 // Bei deaktiviertem E2EE: Warnung loggen und überspringen.
+// exec-05c HY-2: Bei AgentCapabilities="native" wird Ciphertext durchgereicht (Zukunft).
 func (s *Server) handleEncrypted(ctx context.Context, ev *event.Event) {
 	if s.crypto == nil {
 		slog.Warn("E2EE disabled — encrypted event skipped (set MATRIX_E2EE_ENABLED=true to enable)",
@@ -335,6 +336,16 @@ func (s *Server) handleEncrypted(ctx context.Context, ev *event.Event) {
 			"sender", ev.Sender,
 		)
 		return
+	}
+
+	// exec-05c HY-2: Conditional Decrypt basierend auf Agent-Capability
+	// "gateway" (default) = Go entschlüsselt, Agent bekommt Klartext
+	// "native" (Zukunft) = Ciphertext durchreichen, Agent entschlüsselt selbst
+	if s.cfg.AgentCapabilities == "native" {
+		slog.Debug("E2EE: native mode — forwarding ciphertext to agent (not implemented yet)",
+			"room", ev.RoomID)
+		// TODO: Ciphertext als InboundMessage mit encrypted=true Flag publizieren
+		// Aktuell: Fallback auf Gateway-Decrypt
 	}
 
 	decrypted, err := s.crypto.Decrypt(ctx, ev)
@@ -395,20 +406,37 @@ func (s *Server) handleMessage(ctx context.Context, ev *event.Event) {
 		"body_len", len(content.Body),
 	)
 
+	// exec-05c C2: Target-Agent aus Mention extrahieren
+	targetAgent := extractAgentName(content.Body, s.cfg.AgentPrefix)
+
+	// exec-05c C4: Thread-Kontext erkennen
+	threadID := ""
+	isThreadReply := false
+	if content.RelatesTo != nil && content.RelatesTo.Type == event.RelThread {
+		threadID = content.RelatesTo.EventID.String()
+		isThreadReply = true
+	}
+
 	// An Python Agent via NATS weiterleiten
 	msg := natsbridge.InboundMessage{
-		RoomID:   ev.RoomID.String(),
-		Sender:   ev.Sender.String(),
-		Body:     content.Body,
-		EventID:  ev.ID.String(),
-		ThreadID: ev.RoomID.String(),
+		RoomID:        ev.RoomID.String(),
+		Sender:        ev.Sender.String(),
+		Body:          content.Body,
+		EventID:       ev.ID.String(),
+		ThreadID:      threadID,
+		TargetAgent:   targetAgent,
+		IsThreadReply: isThreadReply,
 	}
 
 	if err := s.nats.PublishInbound(ctx, msg); err != nil {
 		slog.Error("NATS publish failed", "error", err, "room", ev.RoomID)
 
-		defaultAgentID := id.UserID("@" + s.cfg.AgentPrefix + "trading:" + s.cfg.ServerName)
-		_ = s.agent.SendText(ctx, defaultAgentID, ev.RoomID, "⚠️ Agent temporär nicht erreichbar.")
+		agentName := targetAgent
+		if agentName == "" {
+			agentName = "trading"
+		}
+		fallbackID := id.UserID("@" + s.cfg.AgentPrefix + agentName + ":" + s.cfg.ServerName)
+		_ = s.agent.SendText(ctx, fallbackID, ev.RoomID, "⚠️ Agent temporär nicht erreichbar.")
 	}
 }
 
@@ -474,6 +502,18 @@ func (s *Server) handleAgentReply(reply natsbridge.ReplyMessage) {
 
 	roomID := id.RoomID(reply.RoomID)
 
+	// exec-05c C4: Thread-Reply Content aufbauen
+	msgContent := &event.MessageEventContent{
+		MsgType: event.MsgText,
+		Body:    reply.Text,
+	}
+	if reply.ThreadRootID != "" {
+		msgContent.RelatesTo = &event.RelatesTo{
+			Type:    event.RelThread,
+			EventID: id.EventID(reply.ThreadRootID),
+		}
+	}
+
 	// E2EE: verschlüsseln wenn Raum verschlüsselt
 	if s.crypto != nil {
 		encrypted, err := s.crypto.StateStore.IsEncrypted(ctx, roomID)
@@ -481,26 +521,28 @@ func (s *Server) handleAgentReply(reply natsbridge.ReplyMessage) {
 			slog.Warn("E2EE: could not check room encryption", "room", roomID, "error", err)
 		}
 		if encrypted {
-			if err := s.sendEncryptedReply(ctx, agentID, roomID, reply.Text); err != nil {
+			if err := s.sendEncryptedReply(ctx, agentID, roomID, msgContent); err != nil {
 				slog.Error("E2EE: send encrypted reply failed", "error", err, "room", roomID)
-				// Kein Plaintext-Fallback — würde E2EE umgehen
 				return
 			}
 			return
 		}
 	}
 
-	if err := s.agent.SendText(ctx, agentID, roomID, reply.Text); err != nil {
-		slog.Error("send agent reply failed",
-			"agent", agentID,
-			"room", roomID,
-			"error", err,
-		)
+	// Plaintext: Thread-Reply oder normale Nachricht
+	if reply.ThreadRootID != "" {
+		if err := s.agent.SendContent(ctx, agentID, roomID, event.EventMessage, msgContent); err != nil {
+			slog.Error("send agent thread reply failed", "agent", agentID, "room", roomID, "thread", reply.ThreadRootID, "error", err)
+		}
+	} else {
+		if err := s.agent.SendText(ctx, agentID, roomID, reply.Text); err != nil {
+			slog.Error("send agent reply failed", "agent", agentID, "room", roomID, "error", err)
+		}
 	}
 }
 
 // sendEncryptedReply verschlüsselt und sendet eine Nachricht in einen E2EE-Raum.
-func (s *Server) sendEncryptedReply(ctx context.Context, agentUserID id.UserID, roomID id.RoomID, text string) error {
+func (s *Server) sendEncryptedReply(ctx context.Context, agentUserID id.UserID, roomID id.RoomID, msgContent *event.MessageEventContent) error {
 	// D-1 Fix: Megolm-Session sicherstellen bevor wir verschlüsseln.
 	// Ohne EnsureSession schlägt Encrypt fehl wenn keine outbound Session existiert.
 	members := s.crypto.StateStore.GetMembers(roomID)
@@ -511,10 +553,7 @@ func (s *Server) sendEncryptedReply(ctx context.Context, agentUserID id.UserID, 
 	}
 
 	content := event.Content{
-		Parsed: &event.MessageEventContent{
-			MsgType: event.MsgText,
-			Body:    text,
-		},
+		Parsed: msgContent,
 	}
 
 	encrypted, err := s.crypto.Encrypt(ctx, roomID, event.EventMessage, content)
@@ -574,6 +613,28 @@ func (s *Server) shouldForwardToAgent(roomID id.RoomID, content *event.MessageEv
 	}
 
 	return false
+}
+
+// extractAgentName extrahiert den Agent-Namen aus einer @agent-* Mention.
+// z.B. "@agent-trading:matrix.local analysiere BTC" → "trading"
+// Wenn kein Agent mentioned wird, wird "" zurückgegeben.
+func extractAgentName(body, agentPrefix string) string {
+	lower := strings.ToLower(body)
+	prefix := "@" + agentPrefix
+	idx := strings.Index(lower, prefix)
+	if idx < 0 {
+		return ""
+	}
+	// Ab dem Prefix den Agent-Namen extrahieren (bis : oder Leerzeichen)
+	rest := body[idx+len(prefix):]
+	end := len(rest)
+	for i, ch := range rest {
+		if ch == ':' || ch == ' ' || ch == '\n' || ch == '\t' || ch == ',' {
+			end = i
+			break
+		}
+	}
+	return strings.ToLower(rest[:end])
 }
 
 // isAgentUser prüft ob eine User-ID aus dem Agent-Namespace kommt.

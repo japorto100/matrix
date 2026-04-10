@@ -1,19 +1,21 @@
-# exec-13: KG Backend Extensions + Computer Use + Artifacts
+# exec-13: Computer Use + Artifacts
 
 **Datum:** 30.03.2026
 **Status:** Geplant
-**Stand:** 06.04.2026 — Phase 2/3/4 nach exec-15 (Memory & Control UI) verschoben
-**Abhaengig von:** exec-11 (Hindsight Memory Engine) ✅, exec-09 (MCP/Generative UI) ✅, exec-12 Phase 1 (OpenSandbox) ✅
-**Referenz-Repos:** `_ref/hindsight`, `_ref/graphiti`, `_ref/cognee`
+**Stand:** 10.04.2026 — Phase 1 (Graphiti/Cognee) nach exec-15 Slice 9 verschoben, Phase 2/3/4 bereits nach exec-15 verschoben
+**Abhaengig von:** exec-09 (MCP/Generative UI) ✅, exec-12 Phase 1 (OpenSandbox) ✅
+**Referenz-Repos:** `_ref/hindsight`
 
 ---
 
 ## Kontext
 
-Aus exec-11 ausgelagerte Backend-Erweiterungen + aus exec-12 verschobene Tool-/UI-Themen:
-- **Graphiti/Cognee:** Knowledge Graph Layer als Hindsight Extension (Backend, Phase 1)
+Aus exec-12 verschobene Tool-/UI-Themen:
 - **Computer Use:** Playwright MCP, WebMCP, Anthropic Computer Use (Tool-Layer, Phase 5)
 - **Artifacts UI:** E2B Fragments / Sandpack / OpenSandbox Artifacts (Phase 6)
+
+> **Playwright MCP** dient doppelt: als MCP Server fuer Claude (AI-Assistent) UND
+> als Agent-Tool fuer die Full-Stack-App (Browser-Automation in Sandbox).
 
 > **HINWEIS — Verschoben nach exec-15:**
 > - **Phase 2 (Memory Graph Visualisierung)** → exec-15 Phase 3
@@ -26,26 +28,12 @@ Aus exec-11 ausgelagerte Backend-Erweiterungen + aus exec-12 verschobene Tool-/U
 
 ---
 
-## Phase 1: Graphiti als Custom GraphRetriever
+## Phase 1: → verschoben nach exec-15 Slice 9
 
-### 1.1 Graphiti Integration
-Hindsight bietet `GraphRetriever(ABC)` als Extension Point:
-- [ ] `GraphitiRetriever` implementieren (nutzt Graphiti's Temporal Knowledge Graph)
-- [ ] Graphiti installieren (`pip install graphiti-core`)
-- [ ] Neo4j oder FalkorDB als Graph-Backend evaluieren
-- [ ] Temporal Edges: Fakten haben Zeitstempel, alte werden invalidiert
-- [ ] Entity Resolution: Graphiti's eigene Entity-Merging-Pipeline
-
-### 1.2 Cognee als Structured Knowledge Layer
-- [ ] Cognee installieren (`pip install cognee`)
-- [ ] Document → Knowledge Graph Pipeline (PDF, Markdown, Code)
-- [ ] Cognee's LLM-basierte Triplet Extraction
-- [ ] Integration mit Hindsight: Cognee Facts als `world` Memories retainen
-
-### 1.3 Unified Search API
-- [ ] RRF Fusion ueber alle Backends (Hindsight + Graphiti + Cognee)
-- [ ] Fallback-Kette: Hindsight (immer) → Graphiti (wenn Neo4j) → Cognee (wenn konfiguriert)
-- [ ] Search API Endpoint: `/api/memory/search?q=...&backends=all`
+Graphiti/Cognee Backend Integration (GraphRetriever, Cognee, Unified Search API)
+verschoben nach `exec-15-memory-control-ui.md` Slice 9 (10.04.2026).
+Thematisch passt es besser zu exec-15 (Memory & Control UI) wo die KG-Frontend-Infrastruktur
+und Ingestion-Pipeline bereits implementiert sind.
 
 ---
 
@@ -68,10 +56,7 @@ Content Ingestion (File Upload Pipeline, Document → Memory, NATS Bridge UI) �
 
 ## Verify-Gates (verbleibend)
 
-### Gate 1: Graphiti/Cognee (Phase 1)
-- [ ] GraphitiRetriever registriert und liefert Ergebnisse
-- [ ] Cognee Document-Pipeline: PDF → Facts in Hindsight
-- [ ] Unified Search: Query liefert Ergebnisse aus allen Backends
+### Gate 1: → verschoben nach exec-15 Slice 9
 
 ### Gate 5: Computer Use (Phase 5)
 - [ ] Playwright MCP Tools registriert und nutzbar
@@ -79,8 +64,11 @@ Content Ingestion (File Upload Pipeline, Document → Memory, NATS Bridge UI) �
 - [ ] WebMCP Polyfill in Frontend aktiv
 
 ### Gate 6: Artifacts UI (Phase 6)
-- [ ] Sandpack Browser-Preview im Agent-Chat
-- [ ] OpenSandbox Artifacts (Charts, Tables) inline gerendert
+- [x] Sandpack Browser-Preview im Agent-Chat (SandpackPreview.tsx)
+- [x] OpenSandbox Artifacts (Charts, Tables) inline gerendert (SandboxArtifact.tsx)
+- [ ] E2B Fragments Evaluation (6.1 — offen)
+- [ ] Sandpack: Visual Test im laufenden Agent-Chat (braucht DevStack)
+- [ ] SandboxArtifact: E2E Test mit echtem sandbox_execute Output (braucht OpenSandbox)
 
 ---
 
@@ -143,11 +131,16 @@ Content Ingestion (File Upload Pipeline, Document → Memory, NATS Bridge UI) �
 - [ ] **6.1:** E2B Fragments als UI-Inspiration
   - Artifacts-Style: Agent generiert Code → Preview im Chat
   - Split-View: Code links, Output rechts
-- [ ] **6.2:** Sandpack fuer leichtgewichtige Browser-Previews
-  - Kein Server noetig, laeuft komplett im Browser
-  - React/JS Code-Previews direkt im Chat
-- [ ] **6.3:** OpenSandbox fuer schwere Execution ← nutzt `sandbox_execute` Tool
-  - Python Data-Analysis, File-Processing, API Calls
+- [x] **6.2:** Sandpack fuer leichtgewichtige Browser-Previews ✅ (10.04.2026)
+  - `@codesandbox/sandpack-react` installiert in agent-chat
+  - `SandpackPreview.tsx` — Live-Preview mit Code/Preview Toggle
+  - Templates: react, react-ts, vanilla, vanilla-ts
+  - Files als `Record<string, string>` Props
+- [x] **6.3:** OpenSandbox Artifacts inline rendern ✅ (10.04.2026)
+  - `SandboxArtifact.tsx` — rendert stdout, stderr, base64 Files (Charts als Bilder, Rest als Downloads)
+  - In `ToolOutputRenderer.tsx` registriert fuer `sandbox_execute` + `file_analyze` Tools
+  - Execution-Zeit + Sprache als Header
+  - Charts (PNG/SVG) als inline `<img>`, andere Files als Download-Links
   - Results als Artifacts im Chat (Charts, Tables, Files)
   - Backend: `SandboxExecuteTool` liefert stdout + files (base64 Charts)
 

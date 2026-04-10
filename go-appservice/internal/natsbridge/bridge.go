@@ -19,28 +19,32 @@ const (
 
 // InboundMessage repräsentiert eine eingehende Matrix-Nachricht.
 type InboundMessage struct {
-	RoomID   string `json:"room_id"`
-	Sender   string `json:"sender"`
-	Body     string `json:"body"`
-	EventID  string `json:"event_id"`
-	ThreadID string `json:"thread_id,omitempty"`
+	RoomID       string `json:"room_id"`
+	Sender       string `json:"sender"`
+	Body         string `json:"body"`
+	EventID      string `json:"event_id"`
+	ThreadID     string `json:"thread_id,omitempty"`      // exec-05c C4: Thread-Root Event-ID
+	TargetAgent  string `json:"target_agent,omitempty"`   // exec-05c C2: z.B. "trading", "research"
+	IsThreadReply bool  `json:"is_thread_reply,omitempty"` // exec-05c C4: true wenn Thread-Reply
 }
 
 // ReplyMessage repräsentiert eine Antwort vom Agent.
 type ReplyMessage struct {
-	RoomID      string `json:"room_id"`
-	AgentUserID string `json:"agent_user_id"` // @agent-trading:matrix.local
-	Text        string `json:"text"`
-	IsStreaming bool   `json:"is_streaming"`
+	RoomID        string `json:"room_id"`
+	AgentUserID   string `json:"agent_user_id"`              // @agent-trading:matrix.local
+	Text          string `json:"text"`
+	IsStreaming   bool   `json:"is_streaming"`
+	ThreadRootID  string `json:"thread_root_id,omitempty"`   // exec-05c C4: Thread-Root Event-ID
 }
 
 // Bridge verwaltet die NATS-Verbindung.
 type Bridge struct {
-	nc *nats.Conn
+	nc             *nats.Conn
+	subjectRouting bool // exec-05c: per-Agent Subject Routing
 }
 
 // New erstellt eine neue Bridge-Verbindung.
-func New(natsURL string) (*Bridge, error) {
+func New(natsURL string, subjectRouting bool) (*Bridge, error) {
 	nc, err := nats.Connect(natsURL,
 		nats.Name("matrix-appservice"),
 		nats.MaxReconnects(10),
@@ -56,23 +60,36 @@ func New(natsURL string) (*Bridge, error) {
 	if err != nil {
 		return nil, fmt.Errorf("nats connect %s: %w", natsURL, err)
 	}
-	slog.Info("NATS connected", "url", natsURL)
-	return &Bridge{nc: nc}, nil
+	slog.Info("NATS connected", "url", natsURL, "subject_routing", subjectRouting)
+	return &Bridge{nc: nc, subjectRouting: subjectRouting}, nil
 }
 
 // PublishInbound publiziert eine eingehende Matrix-Nachricht.
+// Bei subjectRouting=true wird das Subject per Room partitioniert:
+// matrix.message.inbound.room.<roomID> statt dem globalen Subject.
 func (b *Bridge) PublishInbound(ctx context.Context, msg InboundMessage) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
-	if err := b.nc.Publish(SubjectInbound, data); err != nil {
-		return fmt.Errorf("publish %s: %w", SubjectInbound, err)
+
+	subject := SubjectInbound
+	if b.subjectRouting {
+		// exec-05c C2: Agent-spezifisches Routing hat Vorrang vor Room-Routing
+		if msg.TargetAgent != "" {
+			subject = SubjectInbound + ".agent." + msg.TargetAgent
+		} else if msg.RoomID != "" {
+			subject = SubjectInbound + ".room." + msg.RoomID
+		}
+	}
+
+	if err := b.nc.Publish(subject, data); err != nil {
+		return fmt.Errorf("publish %s: %w", subject, err)
 	}
 	slog.Debug("published matrix message to NATS",
 		"room", msg.RoomID,
 		"sender", msg.Sender,
-		"subject", SubjectInbound,
+		"subject", subject,
 	)
 	return nil
 }

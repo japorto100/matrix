@@ -237,6 +237,12 @@ Jede Bridge = eigener Prozess, eigene registration.yaml, eigener Crypto-Store
 
 ## Content-Ingestion (nicht Matrix-spezifisch)
 
+> **Querverweis:** Die Content Ingestion Sektionen (YouTube, Email, RSS, PDF, Financial Data,
+> Code Repos, Podcasts) gehoeren thematisch zu `exec-15-memory-control-ui.md` Slice 2
+> (Content Ingestion Pipeline), wo die Ingestion-Infrastruktur (4-Venv Architektur,
+> Extractors, Sinks, Worker) bereits implementiert ist. Diese Sektionen hier dokumentieren
+> die Quellen-Beschreibungen; die Pipeline-Implementierung findet in exec-15 statt.
+
 Externe Inhalte als Agent-Kontext in die App bringen.
 Alle Tools muessen **kostenlos / Open-Source / Free-Tier** sein.
 

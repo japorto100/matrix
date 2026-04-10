@@ -50,7 +50,12 @@
   - [ ] Tool-Call Rendering + Approval Flow?
   - [ ] A2UI (Google) evaluieren
 
-- [ ] **2.4:** Entscheidung dokumentieren: Tambo + CopilotKit parallel vs. eines davon
+- [x] **2.4:** Entscheidung (10.04.2026): **CopilotKit bleibt, Tambo deprecated**
+  - CopilotKit AG-UI Protocol ist offener Standard (Google-backed)
+  - Tambo war Prototyp fuer Generative UI Components — kleinere Community, kein Standard
+  - ChartWidget + PortfolioCard werden spaeter auf CopilotKit umgestellt
+  - `@tambo-ai/react` bleibt vorerst in package.json aber wird nicht erweitert
+  - Tambo-Components in `components/tambo/` als deprecated markiert
 
 ## Phase 3: Infinite Canvas (tldraw 4.0)
 
@@ -78,9 +83,9 @@
   - AgentCanvas.applyToolResult() handelt "novel" Shape-Typ
   - User kann Novel-Block auf Canvas inline editieren (Slash-Commands, Formatting)
 
-- [ ] **3.4:** Lizenz evaluieren
+- [ ] **3.4:** Lizenz evaluieren (Business-Entscheidung, nicht Code)
   - tldraw 4.0: Kostenlos fuer Development + Hobby
-  - Commercial License fuer Prod noetig
+  - Commercial License fuer Prod noetig — bei Prod-Launch klaeren
 
 ## Phase 4: WebMCP (Browser-Tools → Backend-Agent Bridge)
 

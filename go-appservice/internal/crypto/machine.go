@@ -23,16 +23,17 @@ import (
 // Machine kapselt OlmMachine (via goolm — Pure-Go, kein libolm) für den Appservice.
 // Build-Tag: -tags goolm (= Go-Äquivalent zu Vodozemac)
 type Machine struct {
-	olm              *crypto.OlmMachine
-	StateStore       *StateStore
-	backupPath       string // C-8: Pfad für Megolm Key Backup Datei
-	backupPassphrase string // C-8: Passphrase für verschlüsseltes Backup
+	olm                    *crypto.OlmMachine
+	StateStore             *StateStore
+	backupPath             string // C-8: Pfad für Megolm Key Backup Datei
+	backupPassphrase       string // C-8: Passphrase für verschlüsseltes Backup
+	deleteKeysAfterDecrypt bool   // exec-05c: Forward Secrecy — Keys nach Decrypt löschen
 }
 
 // New initialisiert OlmMachine mit SQLite-Backend.
 // dbPath: Pfad zur SQLite-Datei (wird erstellt falls nicht vorhanden).
 // pickleKey: Schlüssel zum Verschlüsseln des Olm-Accounts in der DB.
-func New(ctx context.Context, client *mautrix.Client, dbPath string, pickleKey []byte, keyBackupPassword string) (*Machine, error) {
+func New(ctx context.Context, client *mautrix.Client, dbPath string, pickleKey []byte, keyBackupPassword string, deleteKeysAfterDecrypt bool) (*Machine, error) {
 	// Verzeichnis erstellen
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o750); err != nil {
 		return nil, fmt.Errorf("crypto db dir: %w", err)
@@ -77,10 +78,11 @@ func New(ctx context.Context, client *mautrix.Client, dbPath string, pickleKey [
 	backupPath := filepath.Join(filepath.Dir(dbPath), "megolm_keys_backup.bin")
 
 	m := &Machine{
-		olm:              olmMachine,
-		StateStore:       stateStore,
-		backupPath:       backupPath,
-		backupPassphrase: keyBackupPassword,
+		olm:                    olmMachine,
+		StateStore:             stateStore,
+		backupPath:             backupPath,
+		backupPassphrase:       keyBackupPassword,
+		deleteKeysAfterDecrypt: deleteKeysAfterDecrypt,
 	}
 
 	// C-8: Megolm Key Backup importieren (falls vorhanden)
@@ -234,12 +236,26 @@ func (m *Machine) HandleToDevice(ctx context.Context, ev *event.Event) {
 }
 
 // Decrypt entschlüsselt ein m.room.encrypted Event.
+// Bei deleteKeysAfterDecrypt=true wird der Megolm Session Key nach erfolgreichem
+// Decrypt gelöscht (Forward Secrecy). Default: false (Agent braucht History-Kontext).
 func (m *Machine) Decrypt(ctx context.Context, ev *event.Event) (*event.Event, error) {
 	decrypted, err := m.olm.DecryptMegolmEvent(ctx, ev)
 	if err != nil {
 		return nil, fmt.Errorf("megolm decrypt (room=%s event=%s): %w", ev.RoomID, ev.ID, err)
 	}
 	slog.Debug("E2EE: event decrypted", "room", ev.RoomID, "event_id", ev.ID, "type", decrypted.Type.Type)
+
+	// exec-05c KD-1: Forward Secrecy — Session Key nach Decrypt redacten
+	if m.deleteKeysAfterDecrypt {
+		if enc, ok := ev.Content.Parsed.(*event.EncryptedEventContent); ok {
+			if err := m.olm.CryptoStore.RedactGroupSession(ctx, ev.RoomID, enc.SessionID, "forward_secrecy"); err != nil {
+				slog.Warn("E2EE: key redaction after decrypt failed", "room", ev.RoomID, "session", enc.SessionID, "error", err)
+			} else {
+				slog.Info("E2EE: key redacted after decrypt (Forward Secrecy)", "room", ev.RoomID, "session", enc.SessionID)
+			}
+		}
+	}
+
 	return decrypted, nil
 }
 

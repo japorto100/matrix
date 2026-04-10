@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 )
 
@@ -50,6 +51,17 @@ func (s *AgentSender) SendText(ctx context.Context, agentUserID id.UserID, roomI
 		"room", roomID,
 		"body_len", len(text),
 	)
+	return nil
+}
+
+// SendContent sendet ein Event mit beliebigem Content als Agent (exec-05c C4: Thread-Replies).
+func (s *AgentSender) SendContent(ctx context.Context, agentUserID id.UserID, roomID id.RoomID, evType event.Type, content any) error {
+	reqURL := s.client.BuildClientURL("v3", "rooms", string(roomID), "send", evType.Type, "")
+	_, err := s.client.MakeRequest(ctx, "PUT", reqURL+"?user_id="+string(agentUserID), content, nil)
+	if err != nil {
+		return fmt.Errorf("send content as %s: %w", agentUserID, err)
+	}
+	slog.Debug("content sent as agent", "agent", agentUserID, "room", roomID, "type", evType.Type)
 	return nil
 }
 
