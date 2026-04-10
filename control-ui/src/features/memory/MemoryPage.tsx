@@ -15,7 +15,7 @@ import { EpisodeDetailSheet } from "./components/EpisodeDetailSheet";
 import { EpisodeFilterBar } from "./components/EpisodeFilterBar";
 import { EpisodesGrid } from "./components/EpisodesGrid";
 import { FullscreenNoteModal } from "./components/FullscreenNoteModal";
-import { type HighlightItem, HighlightsCard } from "./components/HighlightsCard";
+import { HighlightsCard } from "./components/HighlightsCard";
 import { IngestionStatusPage } from "./components/IngestionStatusPage";
 import { MemoryHealthCards } from "./components/MemoryHealthCards";
 import { MemoryTimelineView } from "./components/MemoryTimelineView";
@@ -25,35 +25,6 @@ import { KGGraphPage } from "./KGGraphPage";
 import { KGPage } from "./kg/KGPage";
 import { mockEpisodes } from "./mock-data";
 import type { Episode } from "./types";
-
-// Mock highlights — replace with real /api/control/memory/highlights in Slice 3.5
-const MOCK_HIGHLIGHTS: HighlightItem[] = [
-	{
-		id: "h1",
-		title: "BTC volatility regime shifted",
-		content: "Realized vol doubled from 42% to 85% annualized over Mar–Apr.",
-		format: "one_liner",
-		query: "BTC volatility",
-		source_episode_ids: ["ep_001"],
-	},
-	{
-		id: "h2",
-		title: "Risk-Off triggers",
-		content: "- VIX > 25\n- Bond yields falling\n- Equity outflows persistent",
-		format: "bullets",
-		query: "risk-off regime",
-		source_episode_ids: ["ep_004", "ep_005"],
-	},
-	{
-		id: "h3",
-		title: "Position sizing rule",
-		content:
-			"Never exceed 5% of portfolio per single name unless explicitly approved by risk_manager.",
-		format: "quote",
-		query: "position sizing risk",
-		source_episode_ids: ["ep_004"],
-	},
-];
 
 function EpisodesView() {
 	const [episodeId, setEpisodeId] = useQueryState("episode", episodeParam);
@@ -157,7 +128,7 @@ function EpisodesView() {
 			{/* Quick Note + Highlights — top widgets (supermemory pattern) */}
 			<section className="grid grid-cols-1 md:grid-cols-2 gap-4 px-6 py-4">
 				<QuickNoteCard onSave={handleQuickNoteSave} onMaximize={handleQuickNoteMaximize} />
-				<HighlightsCard items={MOCK_HIGHLIGHTS} />
+				<HighlightsCard items={[]} />
 			</section>
 
 			<div className="border-t border-border/30 mt-2 pt-4">

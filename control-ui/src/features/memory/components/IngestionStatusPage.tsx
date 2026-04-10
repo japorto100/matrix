@@ -65,7 +65,7 @@ export function IngestionStatusPage() {
 	const failed = data?.failed ?? 0;
 	const done = data?.done ?? 0;
 
-	const handleRetry = async (fileId: string | null) => {
+	const _handleRetry = async (fileId: string | null) => {
 		if (!fileId) {
 			toast.error("Cannot retry: no file_id on job");
 			return;

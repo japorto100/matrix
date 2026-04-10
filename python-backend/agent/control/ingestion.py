@@ -18,8 +18,9 @@ import os
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from agent.control.request_scope import effective_user_id
 
 router = APIRouter(tags=["ingestion"])
 
@@ -77,27 +78,35 @@ async def _proxy(method: str, path: str, json: dict | None = None) -> dict:
 
 
 @router.post("/ingest/document")
-async def ingest_document(req: IngestDocumentRequest) -> dict:
-    return await _proxy("POST", "/ingest/document", json=req.model_dump(mode="json"))
+async def ingest_document(req: IngestDocumentRequest, request: Request) -> dict:
+    payload = req.model_dump(mode="json")
+    payload["user_id"] = effective_user_id(request, req.user_id)
+    return await _proxy("POST", "/ingest/document", json=payload)
 
 
 @router.post("/ingest/note")
-async def ingest_note(req: IngestNoteRequest) -> dict:
-    return await _proxy("POST", "/ingest/note", json=req.model_dump(mode="json"))
+async def ingest_note(req: IngestNoteRequest, request: Request) -> dict:
+    payload = req.model_dump(mode="json")
+    payload["user_id"] = effective_user_id(request, req.user_id)
+    return await _proxy("POST", "/ingest/note", json=payload)
 
 
 @router.post("/ingest/link")
-async def ingest_link(req: IngestLinkRequest) -> dict:
-    return await _proxy("POST", "/ingest/link", json=req.model_dump(mode="json"))
+async def ingest_link(req: IngestLinkRequest, request: Request) -> dict:
+    payload = req.model_dump(mode="json")
+    payload["user_id"] = effective_user_id(request, req.user_id)
+    return await _proxy("POST", "/ingest/link", json=payload)
 
 
 @router.post("/ingest/document/{file_id}/reindex")
-async def reindex_document(file_id: UUID, req: IngestDocumentRequest) -> dict:
+async def reindex_document(file_id: UUID, req: IngestDocumentRequest, request: Request) -> dict:
     """Hash-based incremental reindex (Phase E — Cursor IDE pattern)."""
+    payload = req.model_dump(mode="json")
+    payload["user_id"] = effective_user_id(request, req.user_id)
     return await _proxy(
         "POST",
         f"/ingest/document/{file_id}/reindex",
-        json=req.model_dump(mode="json"),
+        json=payload,
     )
 
 

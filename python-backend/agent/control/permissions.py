@@ -21,9 +21,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from agent.control.request_scope import RequestScope, resolve_scope
 from agent.roles import TradingRole
 
 logger = logging.getLogger(__name__)
@@ -207,9 +208,10 @@ async def list_categories() -> dict[str, Any]:
 
 
 @router.get("/permissions/matrix")
-async def get_permission_matrix(user_id: str = "local") -> dict[str, Any]:
+async def get_permission_matrix(request: Request, user_id: str | None = None) -> dict[str, Any]:
     """Full permission matrix (roles × categories → level), with DB overrides."""
-    overlays = _cache.get(user_id)
+    scope: RequestScope = resolve_scope(request, user_id=user_id)
+    overlays = _cache.get(scope.user_id)
     cells: list[dict[str, Any]] = []
     for role in TradingRole:
         for cat in TOOL_CATEGORIES:
@@ -237,9 +239,10 @@ async def get_permission_matrix(user_id: str = "local") -> dict[str, Any]:
 
 @router.patch("/permissions/cell")
 async def patch_permission_cell(
-    req: PatchCellRequest, user_id: str = "local"
+    req: PatchCellRequest, request: Request, user_id: str | None = None
 ) -> dict[str, Any]:
     """UPSERT consent overlay cell (bounded-write)."""
+    scope: RequestScope = resolve_scope(request, user_id=user_id)
     if req.level not in VALID_LEVELS:
         raise HTTPException(
             status_code=400, detail=f"level must be one of {sorted(VALID_LEVELS)}"
@@ -267,7 +270,7 @@ async def patch_permission_cell(
                 (
                     req.role_id,
                     req.category_id,
-                    user_id,
+                    scope.user_id,
                     req.level,
                     req.updated_by,
                     datetime.now(timezone.utc),
@@ -288,14 +291,15 @@ async def patch_permission_cell(
 
 @router.delete("/permissions/cell/{role_id}/{category_id}")
 async def reset_permission_cell(
-    role_id: str, category_id: str, user_id: str = "local"
+    role_id: str, category_id: str, request: Request, user_id: str | None = None
 ) -> dict[str, Any]:
+    scope: RequestScope = resolve_scope(request, user_id=user_id)
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             cur = conn.execute(
                 "DELETE FROM agent.consent_overrides "
                 "WHERE role_id = %s AND category_id = %s AND user_id = %s",
-                (role_id, category_id, user_id),
+                (role_id, category_id, scope.user_id),
             )
             deleted = cur.rowcount or 0
     except Exception as e:  # noqa: BLE001

@@ -226,6 +226,13 @@ def _load_prompt_guard() -> bool:
     """Lazy-load PromptGuard model. Returns True if available."""
     global _prompt_guard_model, _prompt_guard_tokenizer, _prompt_guard_available
 
+    # Hard opt-in gate (lightweight-by-default).
+    # This prevents any accidental model downloads in CPU-only dev environments.
+    import os
+    if os.environ.get("AGENT_PROMPT_GUARD_ENABLED", "false").lower() not in ("1", "true"):
+        _prompt_guard_available = False
+        return False
+
     if _prompt_guard_available is not None:
         return _prompt_guard_available
 

@@ -57,6 +57,15 @@ export interface Skill {
 	body_preview: string;
 }
 
+export interface HighlightItem {
+	id: string;
+	title: string;
+	content: string;
+	format: "paragraph" | "bullets" | "quote" | "one_liner";
+	query: string;
+	source_episode_ids: string[];
+}
+
 // Sandbox runs (exec-12 OpenSandbox)
 export type SandboxStatus = "running" | "completed" | "failed" | "timeout" | "killed";
 

@@ -47,8 +47,8 @@ function renderContent(content: string, format: HighlightFormat) {
 				.filter(Boolean);
 			return (
 				<ul className="list-disc pl-[18px] space-y-0">
-					{lines.map((line, idx) => (
-						<li key={`${idx}-${line.slice(0, 8)}`} className="text-[12px] leading-normal">
+					{lines.map((line) => (
+						<li key={line} className="text-[12px] leading-normal">
 							{line}
 						</li>
 					))}

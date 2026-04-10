@@ -13,7 +13,8 @@ from datetime import datetime
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from agent.control.request_scope import ensure_user_scope
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ def _row_to_event(row: Any, cols: list[str]) -> dict[str, Any]:
 
 @router.get("/audit")
 async def list_audit_events(
+    request: Request,
     action: str | None = None,
     user_id: str | None = None,
     thread_id: str | None = None,
@@ -54,6 +56,8 @@ async def list_audit_events(
     offset: int = 0,
 ) -> dict[str, Any]:
     """Filtered audit events query."""
+    scope = ensure_user_scope(request, user_id)
+    user_id = scope.user_id
     clauses: list[str] = []
     params: list[Any] = []
 

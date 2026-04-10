@@ -34,14 +34,7 @@ import {
 	mockModelRouting,
 	mockUtilityModels,
 } from "../mock-data";
-import type {
-	EnvVar,
-	LlmProvider,
-	LlmProviderId,
-	ModelRouting,
-	UtilityModel,
-	UtilityPurpose,
-} from "../types";
+import type { EnvVar, LlmProvider, ModelRouting, UtilityModel, UtilityPurpose } from "../types";
 
 const UTILITY_ICON: Record<UtilityPurpose, React.ReactNode> = {
 	embedder_text: <Box className="h-3.5 w-3.5" />,

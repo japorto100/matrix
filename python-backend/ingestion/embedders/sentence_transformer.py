@@ -25,6 +25,11 @@ class SentenceTransformerEmbedder(Embedder):
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
+        if os.getenv("EMBEDDER_ALLOW_MODEL_DOWNLOAD", "true").lower() not in ("1", "true", "yes"):
+            raise EmbeddingError(
+                "Model download disabled (EMBEDDER_ALLOW_MODEL_DOWNLOAD=false). "
+                f"Pre-download '{self.model_name}' or enable downloads."
+            )
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as e:

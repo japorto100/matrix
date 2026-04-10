@@ -162,7 +162,7 @@ export function useSkills(tier?: string) {
 	});
 }
 
-// K7 (Slice 5): Skills toggle — backend returns `pending_phase2` stub
+// K7 (Slice 5): Skills toggle persisted in backend
 export function usePatchSkill() {
 	const qc = useQueryClient();
 	return useMutation({
@@ -174,12 +174,41 @@ export function usePatchSkill() {
 	});
 }
 
+export function useImportSkillFromGithub() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (input: {
+			github_url: string;
+			name?: string;
+			description?: string;
+			tier?: "team" | "personal";
+		}) => skillsQueries.importFromGithub(input),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: skillsKeys.all });
+			qc.invalidateQueries({ queryKey: toolsKeys.all });
+			qc.invalidateQueries({ queryKey: ["control", "audit"] });
+		},
+	});
+}
+
 // ─── Tools ─────────────────────────────────────────────────────────────────
 export function useTools(type?: string, category?: string) {
 	return useQuery({
 		...DEFAULTS,
 		queryKey: toolsKeys.list(type, category),
 		queryFn: () => toolsQueries.list(type, category),
+	});
+}
+
+export function useAddToolFromUrl() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (input: { url: string; name?: string; description?: string; category?: string }) =>
+			toolsQueries.addFromUrl(input),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: toolsKeys.all });
+			qc.invalidateQueries({ queryKey: ["control", "audit"] });
+		},
 	});
 }
 

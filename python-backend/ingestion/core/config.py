@@ -45,7 +45,7 @@ class IngestionConfig(BaseModel):
 
     # ── Embedder ──────────────────────────────────────────────────────────
     embedder_provider: str = Field(
-        default_factory=lambda: os.getenv("EMBEDDER_PROVIDER", "sentence_transformer")
+        default_factory=lambda: os.getenv("EMBEDDER_PROVIDER", "deterministic")
     )
     embedder_model: str = Field(
         default_factory=lambda: os.getenv(

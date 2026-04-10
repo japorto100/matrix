@@ -74,7 +74,10 @@ class _SentenceTransformerEmbeddingFunction:
         self._mock = mock
         self._deterministic = _DeterministicEmbeddingFunction()
         self._embedding_function = None
-        if not mock:
+        # Lightweight default: don't auto-download embedding models unless explicitly enabled.
+        # This avoids surprise downloads on weaker machines / minimal deployments.
+        allow_downloads = os.getenv("ALLOW_MODEL_DOWNLOADS", "false").lower() in ("1", "true")
+        if not mock and allow_downloads:
             from chromadb.utils.embedding_functions import (  # type: ignore[import-untyped]
                 SentenceTransformerEmbeddingFunction,
             )

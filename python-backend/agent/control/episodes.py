@@ -16,9 +16,10 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from agent.memory.engine import get_bank_id, get_memory_engine
+from agent.control.request_scope import resolve_scope
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,8 @@ def _apply_post_filters(
 
 @router.get("/episodes")
 async def list_episodes(
-    user_id: str = "local",
+    request: Request,
+    user_id: str | None = None,
     role: str | None = None,
     session_id: str | None = None,
     from_date: datetime | None = Query(None, alias="from"),
@@ -95,7 +97,8 @@ async def list_episodes(
     if engine is None:
         raise HTTPException(status_code=503, detail="Memory engine disabled")
 
-    bank_id = get_bank_id(user_id)
+    scope = resolve_scope(request, requested_user_id=user_id)
+    bank_id = get_bank_id(scope.user_id)
 
     try:
         from hindsight_api.models import RequestContext
@@ -134,6 +137,7 @@ async def list_episodes(
             "limit": limit,
             "offset": offset,
             "bank_id": bank_id,
+            "user_id": scope.user_id,
         }
     except Exception as e:  # noqa: BLE001
         logger.exception("list_episodes failed")
@@ -141,11 +145,17 @@ async def list_episodes(
 
 
 @router.get("/episodes/{episode_id}")
-async def get_episode(episode_id: str, user_id: str = "local") -> dict[str, Any]:
+async def get_episode(
+    episode_id: str,
+    request: Request,
+    user_id: str | None = None,
+) -> dict[str, Any]:
     """Fetch single episode by id via Hindsight get_memory_unit."""
     engine = await get_memory_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="Memory engine disabled")
+
+    scope = resolve_scope(request, requested_user_id=user_id)
 
     try:
         from hindsight_api.models import RequestContext
@@ -156,6 +166,9 @@ async def get_episode(episode_id: str, user_id: str = "local") -> dict[str, Any]
         )
         if result is None:
             raise HTTPException(status_code=404, detail="Episode not found")
+        unit_user = ((result.get("metadata") or {}).get("user_id") if isinstance(result, dict) else None)
+        if unit_user and unit_user != scope.user_id:
+            raise HTTPException(status_code=404, detail="Episode not found")
         return result
     except HTTPException:
         raise
@@ -165,7 +178,11 @@ async def get_episode(episode_id: str, user_id: str = "local") -> dict[str, Any]
 
 
 @router.delete("/episodes/{episode_id}")
-async def delete_episode(episode_id: str, user_id: str = "local") -> dict[str, Any]:
+async def delete_episode(
+    episode_id: str,
+    request: Request,
+    user_id: str | None = None,
+) -> dict[str, Any]:
     """Delete single episode (approval-write, 30s token expected in header).
 
     D22: vollstaendig inkl. writes — approval-gating done by middleware (exec-12).
@@ -174,8 +191,20 @@ async def delete_episode(episode_id: str, user_id: str = "local") -> dict[str, A
     if engine is None:
         raise HTTPException(status_code=503, detail="Memory engine disabled")
 
+    scope = resolve_scope(request, requested_user_id=user_id)
+
     try:
         from hindsight_api.models import RequestContext
+
+        current = await engine.get_memory_unit(
+            unit_id=episode_id,
+            request_context=RequestContext(),
+        )
+        if current is None:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        current_user = (current.get("metadata") or {}).get("user_id")
+        if current_user and current_user != scope.user_id:
+            raise HTTPException(status_code=404, detail="Episode not found")
 
         result = await engine.delete_memory_unit(
             unit_id=episode_id,

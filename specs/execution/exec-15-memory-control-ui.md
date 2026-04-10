@@ -27,6 +27,36 @@
 | **Slice 6** System Observability | ✅ Frontend + Backend wired + Session Kill (Dev) + Audit Export (K8, K9) | **Frontend:** SystemTab, AuditTab, SessionsTab, McpTab, A2aTab. **Backend Slice 7 Phase D (08.04):** `agent/control/system.py` (concurrent health pings), `audit.py` (filtered query mit date range), `sessions.py` (raw SQL auf langgraph_checkpoint_postgres), `mcp.py` (FastMCP introspection), `a2a.py` (queries a2a_delegations table). Alembic migrations 006 + 007. **K8 (Phase K, 08.04.2026):** SessionsTab now shows Kill button per session row **only when `useControlMode().isDev`** (Dev Mode gate). Click → AlertDialog confirmation → `useKillSession` → DELETE `/api/control/sessions/{thread_id}` → invalidate sessions + audit + overview queries. **K9 (Phase K, 08.04.2026):** AuditTab Export button now a DropdownMenu with "Export as CSV" / "Export as JSON" actions. Pure client-side via Blob + anchor-click download — no backend needed, exports already-fetched filtered events. CSV escaper handles quotes/commas/newlines properly (RFC 4180). |
 | **Slice 7** Two-Tier UI + Full Backend + Hash Reindex | ✅ DONE | **Frontend:** `useControlMode` hook (URL param + localStorage, D20), `ModeToggle`, `OverviewTab` (TT1), `SecurityTab` (TT8), `ApiModelsTab` (fused ENV + LLM providers + Model Routing + Utility Models), `ControlTopNav` mode-filtered (7 User Mode tabs + 6 Dev Mode tabs). **Backend:** `agent/control/overview.py`, `security.py` (4-pillar posture + event type mapping), `models.py` (providers + routing + utility + env). **56 total control routes** registered (added /kg/graph in K4). **Go Proxy:** `ControlProxyHandler` + `/api/v1/control/*` catch-all (D21, lint 0 issues). **Hash reindex (Phase E, D23):** `ingestion/tracking/dedup.hash_chunk`, `jobs.save_chunk_hashes`, `pipelines/document.smart_reindex()`, `hindsight_sink.delete_by_hashes()`, `worker.py /reindex`, `alembic/003_chunk_hashes.py`. **Frontend BFF (D21):** catch-all `/api/control/[...path]/route.ts` + `/api/memory/[...path]/route.ts` mit path mapping, `lib/server/control-proxy.ts`, `lib/queries/control.ts` + `hooks.ts` (now **27+ typed hooks** after Phase K mutations). Alle 13 Control Tabs + MemoryPage + EpisodesGrid + MemoryHealthCards auf useQuery + mock fallback (D22). **Phase J Code Review Fixes:** TradingRole enum aligned (fundamentals_analyst/sentiment_analyst/technical_analyst/researcher/trader/risk_manager), memory.health returns array shape, Session type optional fields, SecurityEventType mapping, permissions cache thread-safety, formatRelative null guard. **Phase K Code Gaps Closed (08.04.2026):** K1-K10 — all UI elements now fully wired, no more disabled buttons or "coming soon" placeholders. **TODO:** Devstack E2E run (Phase I) |
 
+---
+
+## Lightweight-by-default Setup (Cloud + weak local PCs)
+
+Ziel: **alles funktioniert out-of-the-box ohne schwere ML/OCR/Vision Modelle**. Heavy Komponenten bleiben **opt-in** via ENV + explizite Download-Skripte.
+
+### Lightweight Defaults (Code)
+
+- ✅ **Ingestion embedder**: `EMBEDDER_PROVIDER=deterministic` moeglich (kein HF download, CPU-only). **Default: deterministic** in `python-backend/ingestion/.env.example` fuer weak-PC friendly setup.
+- ✅ **Vector store**: `VECTOR_STORE_MOCK=true` erzwingt **keinen** sentence-transformers Download (deterministic embeddings). Das verhindert “first-run” surprise downloads in Chroma.
+- ✅ **KG Pipeline**: bleibt **disabled** (`KG_PIPELINE_ENABLED=false`) bis Phase 2 aktiv.
+- ✅ **Extraction Layout Worker**: bleibt skeleton (503) bis Phase 2 aktiv.
+- ✅ **PromptGuard**: bleibt optional; wird nur genutzt wenn Modell explizit runtergeladen wurde.
+  - **Hard opt-in:** `AGENT_PROMPT_GUARD_ENABLED=true` (default false).
+
+### Opt-in Download Scripts (manual)
+
+- `scripts/download-embedding-minilm.py` — cached `sentence-transformers/all-MiniLM-L6-v2` (CPU).
+- `scripts/download-promptguard.py` — cached PromptGuard (CPU).
+- `scripts/download-spacy-en-core-web-sm.sh` — spaCy small English model (CPU).
+- `scripts/download-relik-glirel-cpu.md` — Notizen fuer CPU-only KG stack (Phase 2; heavy).
+
+### Verify Gate — Lightweight Defaults
+
+- [ ] `VECTOR_STORE_MOCK=true` → agent start + memory features ohne HF download.
+- [ ] `EMBEDDER_PROVIDER=deterministic` (ingestion-worker) → ingest note/document laeuft ohne HF download.
+- [ ] `AGENT_PROMPT_GUARD_ENABLED=false` → sanitizer startet ohne transformers/torch model load attempts.
+- [ ] `KG_PIPELINE_ENABLED=false` → ingestion laeuft weiter (kg_sink skip).
+- [ ] `extraction_layout/worker.py` bleibt 503; registry nutzt `pymupdf4llm` fuer PDFs.
+
 ### Verify Status (08.04.2026 — Phase K complete)
 
 - **TypeScript (control-ui):** `bun run typecheck` → exit 0, **0 errors** (verified after K1-K10)
@@ -39,6 +69,11 @@
 - **Phase K Code Gaps:** K1-K10 all complete, 0 disabled UI elements or "coming soon" placeholders remaining (grep `coming next|coming in Slice|disabled.*Slice 5 backend|TODO Slice` returns empty)
 - **Visual smoke test:** noch nicht durchgefuehrt
 - **Devstack E2E:** noch nicht durchgefuehrt (Phase I)
+
+### Lightweight-by-default (09.04.2026 — weak PC friendly)
+
+- **Default posture:** Heavy ML/OCR/Vision workers stay **disabled** unless explicitly enabled via ENV.
+- **PromptGuard (optional local security model):** `AGENT_PROMPT_GUARD_ENABLED=false` by default. When disabled, sanitizer skips PromptGuard even if `transformers/torch` are installed (no accidental model downloads).
 
 ---
 
@@ -2232,10 +2267,28 @@ Code-level gates (no devstack needed — verified after Phase K closes):
 ### User Mode Items die noch nicht implementiert sind (Slice 7)
 
 - [ ] **TT1.1** `OverviewTab.tsx` — AI Health Indicator (online/degraded/offline), aktive Tasks-Zusammenfassung, letzter Agent-Fehler, recent activity ticker. Keine raw Infrastruktur-Metriken.
-- [ ] **TT3.1** Tools Tab erweitern: "Add Tool from URL" Button (marketplace pattern, ChatGPT plugin style). Bei Click → Dialog mit URL Input + Security-Scan Preview + Approval Gate (bounded-write).
-- [ ] **TT6.1** Skills Tab erweitern: "Import Skill from GitHub URL" Button. Bei Click → Dialog mit URL + Sandbox Preview + Approval Gate.
+- [x] **TT3.1** Tools Tab erweitert: "Add Tool from URL" Button + Dialog (bounded-write scaffold; backend `POST /api/v1/control/tools/import` schreibt Audit Event `TOOL_IMPORT_REQUESTED`).
+- [x] **TT6.1** Skills Tab erweitert: "Import Skill from GitHub URL" Button + Dialog (bounded-write scaffold; backend `POST /api/v1/control/skills/import` schreibt Audit Event `SKILL_IMPORT_REQUESTED`).
 - [ ] **TT7.1** Agents Tab erweitern: simpler View im User Mode (kein System Prompt Editor, nur "Active/Inactive" Toggle + Per-Agent Permission Matrix Link).
 - [ ] **TT8.1** `SecurityTab.tsx` — Posture-Score (4 Pillars: Auth, Encryption, Audit, Network), Recent Security Events (login attempts, role changes, sensitive tool calls), Access List (welche IPs/Sessions waren heute aktiv).
+
+---
+
+## Identity / Scope / Persistence (Addendum, 09.04.2026)
+
+Diese Punkte muessen fuer Phase 1–3 sauber sein, bevor wir E2E ernsthaft fahren:
+
+- [x] **S1** Header-first Identity fuer Control-Endpoints eingefuehrt (`x-auth-user`, optional `x-auth-team`, optional `x-auth-actor`), Query `user_id` nur noch als Dev-Fallback (neu: `agent/control/request_scope.py`).
+- [x] **S2** Skills Toggle ist **persistiert pro user_id** (neu: `agent.skills_state` via Alembic `008_skills_state.py`; `PATCH /api/v1/control/skills/{id}` schreibt DB + Audit `SKILL_TOGGLE`).
+- [x] **S3** Memory Highlights sind nicht mehr Frontend-only Mock: neues Backend `GET /api/v1/control/memory/highlights` + MemoryPage wired (fallback = empty).
+- [ ] **S4** Team-Scoped Skills (Tier `team/{team_id}`) im Loader + APIs aktiv nutzen (derzeit `team_id=None` in loader calls).
+- [ ] **S5** Spoofing-Hardening: `user_id` nicht mehr via Query fuer prod erlauben; Scope muss aus Auth kommen (nur Dev flag erlaubt Query override).
+- [ ] **S6** Daten-Loeschung/Lifecycle: definieren was bei User-Loeschung passiert (skills_state, role_overrides, consent_overrides, audit retention, memory banks).
+
+### Verify (Scope)
+- [ ] **VS1** Aufruf ohne Header: Control-Endpoints verwenden `user_id=local` (Dev) und funktionieren.
+- [ ] **VS2** Aufruf mit Header `x-auth-user=alice`: Skills/Overlays/Highlights sind getrennt von `local`.
+- [ ] **VS3** Versuch `?user_id=bob` bei gesetztem Header `x-auth-user=alice` wird ignoriert (Header gewinnt).
 
 ---
 

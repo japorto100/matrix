@@ -148,6 +148,12 @@ export function MemoryGraph({
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el) return;
+		// SSR/dev server safety: ResizeObserver doesn't exist in Node runtimes.
+		if (typeof ResizeObserver === "undefined") {
+			setContainerSize({ width: el.clientWidth, height: el.clientHeight });
+			setContainerBounds(el.getBoundingClientRect());
+			return;
+		}
 
 		const ro = new ResizeObserver(() => {
 			setContainerSize({ width: el.clientWidth, height: el.clientHeight });
@@ -388,7 +394,6 @@ export function MemoryGraph({
 	const onSlideshowNodeChangeRef = useRef(onSlideshowNodeChange);
 	onSlideshowNodeChangeRef.current = onSlideshowNodeChange;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reads from refs to avoid resetting interval on resize/node changes
 	useEffect(() => {
 		if (!isSlideshowActive || nodes.length === 0) {
 			if (!isSlideshowActive) {

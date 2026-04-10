@@ -20,6 +20,17 @@ router = APIRouter(tags=["control", "system"])
 
 _startup_ts = time.time()
 
+def _feature_flags() -> dict[str, Any]:
+    def _b(name: str, default: str = "false") -> bool:
+        return os.environ.get(name, default).lower() in ("1", "true", "yes", "on")
+
+    return {
+        "PROMPT_GUARD_ENABLED": _b("PROMPT_GUARD_ENABLED", "false"),
+        "INGESTION_EMBEDDER_MODE": os.environ.get("INGESTION_EMBEDDER_MODE", "local_minilm_cpu"),
+        "KG_PIPELINE_ENABLED": _b("KG_PIPELINE_ENABLED", "false"),
+        "EXTRACTION_LAYOUT_ENABLED": _b("EXTRACTION_LAYOUT_ENABLED", "false"),
+    }
+
 
 async def _ping_http(name: str, url: str, tier: str) -> dict[str, Any]:
     try:
@@ -118,4 +129,4 @@ async def get_system_health() -> dict[str, Any]:
     for it in items:
         counts[it.get("health", "unknown")] += 1
 
-    return {"items": items, "total": len(items), "counts": counts}
+    return {"items": items, "total": len(items), "counts": counts, "feature_flags": _feature_flags()}

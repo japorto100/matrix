@@ -11,17 +11,28 @@ Aggregates call_count_24h + avg_latency from agent.audit_events.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from agent.control.request_scope import RequestScope, resolve_scope
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["control", "tools"])
+
+
+class ImportToolRequest(BaseModel):
+    url: str
+    name: str | None = None
+    description: str | None = None
+    category: str | None = None
 
 
 def _db_url() -> str:
@@ -155,3 +166,48 @@ async def get_tool(tool_id: str) -> dict[str, Any]:
             stats = _tool_stats_24h().get(t["name"], {})
             return {**t, **stats}
     raise HTTPException(status_code=404, detail="Tool not found")
+
+
+@router.post("/tools/import")
+async def import_tool_from_url(
+    req: ImportToolRequest,
+    scope: RequestScope = Depends(resolve_scope),
+) -> dict[str, Any]:
+    """Queue bounded-write import of a tool from URL (Phase 1 scaffold)."""
+    user_id = scope.user_id
+    updated_by = scope.actor
+    if not (req.url.startswith("http://") or req.url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="url must start with http:// or https://")
+    now = datetime.now(timezone.utc)
+    tool_id = f"url:{req.url}"
+    try:
+        with psycopg.connect(_db_url(), autocommit=True) as conn:
+            conn.execute(
+                """
+                INSERT INTO agent.audit_events
+                    (timestamp, action, user_id, success, metadata)
+                VALUES (%s, %s, %s, %s, %s::jsonb)
+                """,
+                (
+                    now,
+                    "TOOL_IMPORT_REQUESTED",
+                    user_id,
+                    True,
+                    json.dumps(
+                        {
+                            "tool_id": tool_id,
+                            "url": req.url,
+                            "name": req.name,
+                            "description": req.description,
+                            "category": req.category,
+                            "updated_by": updated_by,
+                            "status": "queued_phase2",
+                        }
+                    ),
+                ),
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.exception("import_tool_from_url failed")
+        raise HTTPException(status_code=500, detail=f"import: {e}") from e
+
+    return {"status": "queued", "tool_id": tool_id}

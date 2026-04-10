@@ -17,6 +17,7 @@ from agent.control.ingestion import router as ingestion_router
 from agent.control.kg_crud import router as kg_router
 from agent.control.mcp import router as mcp_router
 from agent.control.memory import router as memory_router
+from agent.control.highlights import router as highlights_router
 from agent.control.models import router as models_router
 from agent.control.overview import router as overview_router
 from agent.control.permissions import router as permissions_router
@@ -35,6 +36,7 @@ router.include_router(ingestion_router)
 # Slice 3: Memory layer health + Episodes (faceted list/get/delete via Hindsight)
 router.include_router(memory_router)
 router.include_router(episodes_router)
+router.include_router(highlights_router)
 
 # Slice 4: Trading KG CRUD (via memory_engine/kg_store.py Kuzu backend)
 router.include_router(kg_router)
