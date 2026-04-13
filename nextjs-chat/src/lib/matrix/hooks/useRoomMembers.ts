@@ -18,7 +18,7 @@ export function roleLabel(powerLevel: number): string {
 }
 
 /**
- * Hook zum Laden von Raum-Mitgliedern via REST API (joined_members)
+ * Hook zum Laden von Raum-Mitgliedern via SDK getJoinedRoomMembers()
  * mit SDK-Cache als Fallback.
  * Extrahiert aus RoomInfoPanel (exec-07 Phase 5).
  */
@@ -42,15 +42,8 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 
 		(async () => {
 			try {
-				const token = client.getAccessToken();
-				const res = await fetch(
-					`${client.baseUrl}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/joined_members`,
-					{ headers: { Authorization: `Bearer ${token}` } },
-				);
-				if (!res.ok) throw new Error("members fetch failed");
-				const data = await res.json();
-				const joined =
-					(data.joined as Record<string, { display_name?: string; avatar_url?: string }>) ?? {};
+				const data = await client.getJoinedRoomMembers(roomId);
+				const joined = data.joined ?? {};
 				const memberList: MemberInfo[] = Object.entries(joined).map(([userId, info]) => ({
 					userId,
 					displayName: info.display_name || userId.split(":")[0]?.replace("@", "") || userId,
@@ -62,7 +55,6 @@ export function useRoomMembers(client: MatrixClient | null, roomId: string | nul
 				);
 				setMembers(memberList);
 			} catch {
-				// Fallback: SDK-Cache
 				const joined = room.getJoinedMembers();
 				const memberList: MemberInfo[] = joined.map((m) => ({
 					userId: m.userId,

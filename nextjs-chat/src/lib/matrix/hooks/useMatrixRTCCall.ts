@@ -42,19 +42,21 @@ export interface UseMatrixRTCCallReturn {
 	leaveCall: () => Promise<void>;
 }
 
-/** lk-jwt-service URL — Dev: localhost, Prod: hinter Reverse Proxy */
-const LK_JWT_SERVICE_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL ?? "http://localhost:8080";
+/** Env fallback for lk-jwt-service URL (Dev: localhost, Prod: hinter Reverse Proxy) */
+const LK_JWT_ENV_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL ?? "http://localhost:8080";
 
 /**
  * Holt ein LiveKit JWT vom lk-jwt-service.
- * Der Service validiert das Matrix OpenID Token und gibt ein LiveKit JWT zurück.
+ * URL-Aufloesung: SDK getLivekitServiceURL() (aus .well-known) → Env-Fallback.
+ * Der Service validiert das Matrix OpenID Token und gibt ein LiveKit JWT zurueck.
  */
 async function fetchLivekitToken(
 	client: MatrixClient,
 	roomId: string,
 ): Promise<{ token: string; url: string }> {
+	const serviceUrl = client.getLivekitServiceURL() ?? LK_JWT_ENV_URL;
 	const openIdToken = await client.getOpenIdToken();
-	const res = await fetch(`${LK_JWT_SERVICE_URL}/sfu/get`, {
+	const res = await fetch(`${serviceUrl}/sfu/get`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
@@ -124,7 +126,7 @@ export function useMatrixRTCCall(client: MatrixClient | null): UseMatrixRTCCallR
 
 				const livekitFocus: LivekitTransportConfig = {
 					type: "livekit",
-					livekit_service_url: LK_JWT_SERVICE_URL,
+					livekit_service_url: client.getLivekitServiceURL() ?? LK_JWT_ENV_URL,
 				};
 
 				// E2EE aktiviert: matrix-js-sdk generiert + verteilt Media Keys

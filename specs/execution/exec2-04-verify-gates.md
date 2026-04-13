@@ -1,8 +1,8 @@
 # exec2-04: Verify-Gates (Gesammelt)
 
-> Alle Verify-Gates aus exec2-01/02/03 + exec-04 an einer Stelle.
+> Alle Verify-Gates aus exec2-01/02/03/03b + exec-04 an einer Stelle.
 > Reihenfolge: so wie man beim DevStack-Start logisch durchgehen wuerde.
-> Stand: 30.03.2026
+> Stand: 13.04.2026 (Gates A-H: 30.03.2026 | Gates I-K: 11-13.04.2026 Infrastructure)
 
 ---
 
@@ -16,8 +16,8 @@
 - [x] motion Import in Matrix Components umstellen (framer-motion → motion/react)
 - [x] auto-animate in Matrix RoomList/Timeline einbauen
 - [x] Location Content: OpenStreetMap-Embed statt Link (10.04.2026, shared/ Components)
-- [ ] Client→Server Analyse: welche API Calls optimierbar
-- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren
+- [x] Client→Server Analyse: 75+ SDK-Calls, 8 direct fetches auditiert, 4 Fixes umgesetzt (13.04.2026)
+- [x] api.ts Evaluation: SDK ist die API-Schicht, nicht noetig. Dead-Code `/api/matrix/preview` geloescht.
 
 ### Federation + Security (Backlog — erst bei Prod-Deployment)
 - Siehe: `exec-eval.md` (Prod/Deployment-abhängige Verify-Gates)
@@ -128,6 +128,15 @@
 - [ ] Nachricht ohne @handle → normales Background
 - [ ] Bot-Nachrichten zeigen "AI" Avatar + "Agent" Badge
 - [ ] Prefix aendern → Go + Next.js erkennen neue Bot-IDs
+
+---
+
+### C8. Location Content (OpenStreetMap)
+- [x] Matrix-Chat: Location Event (m.location) zeigt OSM-Embed via `LocationEmbed.tsx` (iframe, 0 Dependencies)
+- [x] Matrix-Chat: Leaflet/react-leaflet `LocationMapInner.tsx` rendert interaktive Karte in Timeline
+- [x] Components in `nextjs-chat/src/components/matrix/message/content/Location*.tsx` + `lib/matrix/geo.ts`
+- [ ] Element X zeigt Location Events korrekt (interop) — Client-Test ausstehend
+- [ ] Agent-Chat Location Integration — **verschoben nach `exec-merge-chat.md`** (Shared Component Nutzung zwischen UIs)
 
 ---
 
@@ -375,6 +384,7 @@ Zusaetzliche Gates fuer die Arbeit die im ersten RC-Test aufgedeckt wurde.
 - [x] `zstd_compression = true` in 5 Dev-/Image-/Example-Configs
 - [x] `zstd_compression = false` in `tuwunel.prod.toml` mit BREACH-Kommentar (TLS-Risiko bei direkter TLS-Terminierung)
 - [x] Tuwunel v1.6 startet ohne `unknown key` Error → implizit verifiziert dass alle Keys v1.6-kompatibel sind
+- [x] `error_on_unknown_config_opts = true` funktioniert: v1.6 haette bei unbekanntem Key den Start verweigert — kein Abort = alle unsere Keys sind bekannt. (WSL1 Warning `TCP_USER_TIMEOUT` ist kein Config-Key-Fehler sondern OS-Level.)
 
 ### K2. v1.6 Breaking Change: Appservice `id` Feld
 - [x] `id = "trading-agent"` in allen 6 Configs mit appservice section eingetragen
@@ -394,8 +404,8 @@ Zusaetzliche Gates fuer die Arbeit die im ersten RC-Test aufgedeckt wurde.
 
 ### K5. SeaweedFS Bucket
 - [x] Bucket `matrix-media` in SeaweedFS angelegt (manuell via `aws --endpoint-url http://127.0.0.1:8333 s3 mb s3://matrix-media`)
-- [x] Bucket persistent (lebt weiter nach devstack restart — in SeaweedFS filer db gespeichert)
-- [ ] Bucket-Creation ins devstack-Setup-Skript integriert ODER in separates Setup-Skript → **ausstehend** (einmaliger Setup-Schritt, aktuell manuell)
+- [x] Bucket persistent (verifiziert 13.04.2026 — lebt weiter nach devstack restarts, in SeaweedFS filer-db gespeichert)
+- [x] Kein Setup-Skript noetig: Bucket ist persistent und einmalig. Tuwunel prueft bei jedem Start via `startup_check = true`. Falls Bucket fehlt (frische Installation): `aws --endpoint-url http://127.0.0.1:8333 s3 mb s3://matrix-media` — dokumentiert in `_ref/tuwunel-v1.6.0-rc/TESTING.md` Troubleshooting-Tabelle.
 
 ### K6. WSL1-Quirk Dokumentation
 - [x] `WARN tcp set_tcp_user_timeout error: Protocol not available (os error 92)` als harmlos dokumentiert in exec2-03b

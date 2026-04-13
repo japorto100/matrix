@@ -83,6 +83,12 @@
   - [x] `LocationEmbed.tsx` (iframe OSM embed, SSR-safe) in `shared/src/location/`
   - [x] `LocationMapInner.tsx` (react-leaflet, dynamic import) in `shared/src/location/`
   - [x] `LocationContent.tsx` in nextjs-chat refactored auf shared/ imports
-  - [x] Agent-Chat: Location Components in `nextjs-chat/src/components/matrix/shared/` + Copy nach agent-ui. Outdated: shared/ wurde direkt in Matrix-Ordner reorganisiert (Stand 11.04.2026).
-- [x] Client→Server Analyse: durchgefuehrt am 13.04.2026 (siehe `exec2-03b` Section 7 oder Konversations-Output)
-- [x] api.ts Evaluation: Teil der Client→Server Analyse — SDK ist die API-Schicht, zentrale api.ts nur fuer Custom/Admin-Endpoints sinnvoll.
+  - [x] Matrix-Chat Location: `LocationEmbed.tsx` + `geo.ts` implementiert in nextjs-chat (0 Dependencies, iframe OSM).
+  - **Agent-Chat Location verschoben nach `exec-merge-chat.md`** (13.04.2026) — Integration in agent-chat ist Teil des UI-Merge, nicht des Matrix-Chat-Reworks.
+- [x] Client→Server Analyse: durchgefuehrt am 13.04.2026. 75+ SDK-Calls, 8 direct fetches, 3 API-Routes, 16 Hooks.
+- [x] api.ts Evaluation: SDK ist die API-Schicht, zentrale api.ts nicht noetig.
+- [x] API-Cleanup: 4 Verbesserungen umgesetzt (13.04.2026):
+  - `useRoomMembers.ts`: direct fetch `/_matrix/client/v3/rooms/*/joined_members` → SDK `client.getJoinedRoomMembers(roomId)`
+  - `/api/matrix/preview` Route: Dead-Code geloescht. `UrlPreview.tsx` nutzte bereits SDK `client.getUrlPreview()` direkt.
+  - `useMatrixRTCCall.ts`: LiveKit JWT-Service URL via SDK `client.getLivekitServiceURL()` (aus .well-known) mit Env-Fallback statt nur Env-Hardcode
+  - FileContent.tsx: Proxy-Pattern (`/api/matrix/media`) architektonisch korrekt fuer `<img>/<iframe>` (Browser CORS) — kein Refactoring noetig

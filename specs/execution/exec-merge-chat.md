@@ -130,6 +130,30 @@ isoliert funktionieren (Devstack E2E verifiziert).
 ## Abhaengigkeiten
 
 - exec-06 Phase 5: Shared Components (Markdown, ImagePreview, Location) ✅
+  - `D:\matrix\shared\` (`@matrix/shared`) geloescht am 13.04.2026 — alle Components superseded:
+    - `geo/` + `location/` → lebt in `nextjs-chat/src/lib/matrix/geo.ts` + `components/matrix/message/content/Location*.tsx`
+    - `markdown/CodeBlock.tsx` (58 Z.) → superseded durch `agent-chat/src/components/AgentChatMarkdown.tsx` (366 Z., Mermaid, Sandpack, Syntax-HL)
+    - `media/ImagePreviewModal.tsx` → superseded durch `agent-chat/src/components/ImagePreviewModal.tsx`
+  - Beim UI-Merge: Components aus den jeweiligen Apps nehmen, nicht aus archiviertem shared/
 - exec-15: control-ui isoliert funktioniert
 - Devstack E2E: alle drei UIs laufen einzeln
 - tradeview-fusion: Hauptprojekt-Shell bereit
+
+---
+
+## Shared Component Integration: Location in Agent-Chat
+
+> Verschoben aus exec2-03 (13.04.2026). Location-Components existieren in
+> nextjs-chat (`LocationEmbed.tsx` + `geo.ts`), aber sind nicht in agent-chat
+> integriert. Gehoert zum Merge weil es um Shared-Component-Nutzung zwischen
+> den Chat-UIs geht.
+
+**Was existiert (nextjs-chat):**
+- `geo.ts` — `parseGeoUri()`, `osmUrl()`, `osmEmbedUrl()` (reine Utilities, 0 Dependencies)
+- `LocationEmbed.tsx` — iframe-basierter OSM-Embed, Props: `{lat, lon, label?, zoom?, height?}` (0 Dependencies, SSR-safe)
+- `LocationMapInner.tsx` — interaktive Leaflet-Karte (heavy, braucht leaflet + react-leaflet) — fuer Agent-Chat nicht noetig
+
+**Was fehlt (agent-chat):**
+- [ ] `geo.ts` + `LocationEmbed.tsx` nach agent-chat kopieren (oder als Shared Package)
+- [ ] In `ToolOutputRenderer.tsx` oder `AgentChatMessage.tsx` einbinden: wenn Agent Location-Daten liefert (`{lat, lon, label}`) → `<LocationEmbed />` rendern
+- [ ] Entscheidung: Agent liefert Location als Tool-Result JSON oder als `geo:` URI in Markdown?

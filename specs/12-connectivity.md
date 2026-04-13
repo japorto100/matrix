@@ -213,11 +213,16 @@ tools/bore.exe local 8448 --to bore.pub
 
 ---
 
-## Option 7 — Playit.gg (stabile URL + HTTPS ohne eigene Domain)
+## Option 7 — Playit.gg (⚠️ HTTPS nur im Premium-Plan)
 
-Playit ist ein globaler Proxy-Service, der Agent ist Open Source. Einziger Weg
-der **stabile URL + HTTPS + keine eigene Domain** kombiniert — genau die
-Lücke zwischen Cloudflare Tunnel (braucht Domain) und bore (kein HTTPS).
+> **Status: Verworfen fuer Matrix.** HTTPS-Tunnel erfordern Premium-Abo.
+> Free-Tier liefert nur TCP-Tunnel mit `*.playit.gg:PORT` ohne TLS.
+> Damit funktioniert Element X Mobile nicht (erzwingt HTTPS).
+> Hier dokumentiert damit die Evaluation nicht wiederholt wird.
+
+Playit ist ein globaler Proxy-Service, der Agent ist Open Source. Waere der
+einzige Weg der **stabile URL + HTTPS + keine eigene Domain** kombiniert —
+aber HTTPS ist hinter der Paywall.
 
 ### Wie es funktioniert
 
@@ -259,11 +264,11 @@ TCP-Tunnel liefern nur `tcp://...:PORT` ohne TLS → Element X lehnt ab.
 | | Playit.gg |
 |---|---|
 | Eigene Domain nötig | ❌ gratis Subdomain `*.playit.gg` |
-| HTTPS | ✅ automatisch (bei HTTP-Tunnel-Typ) |
+| HTTPS | ❌ nur Premium-Plan (Free = nur TCP ohne TLS) |
 | Stabile URL | ✅ bleibt nach Neustart |
 | Account | ✅ nötig (Discord/Google-Login) |
 | Open Source | ⚠️ nur Agent, Infra nicht |
-| Element X Mobile | ✅ (HTTPS erfüllt) |
+| Element X Mobile | ❌ (Free = kein HTTPS → Element X verweigert) |
 | Kosten | Gratis, mit Bandbreiten-Limit (Premium optional) |
 | Ursprung | Für Game-Server (Minecraft) gebaut, auch für HTTP nutzbar |
 | URL-Ästhetik | ⚠️ `*.playit.gg` sieht nach Bastel-Setup aus |
@@ -290,10 +295,8 @@ Willst du testen?
 │   └── 127.0.0.1 reicht — kein Tunnel nötig
 │
 ├── Mit Handy (kurzer Test heute, Element X)
-│   ├── Kein Domain-Kauf, stabile URL gewünscht
-│   │   └── Playit.gg (HTTP-Tunnel-Typ → HTTPS)
-│   └── Egal ob URL sich ändert
-│       └── cloudflared Quick Tunnel → https://xxxx.trycloudflare.com
+│   └── cloudflared Quick Tunnel → https://xxxx.trycloudflare.com
+│       (URL aendert sich bei Neustart, HTTPS automatisch, kein Account)
 │
 ├── Mit Freunden (Testgruppe, geschlossen)
 │   └── Tailscale → stabile IPs, kein Internet nötig
@@ -315,8 +318,7 @@ Willst du testen?
 
 | Use Case | VPS nötig? | Alternative |
 |---|---|---|
-| Local Dev + Handy testen | ❌ | cloudflared Quick Tunnel oder Playit.gg |
-| Stabile HTTPS-URL ohne Domain-Kauf | ❌ | Playit.gg (HTTP-Tunnel-Typ) |
+| Local Dev + Handy testen | ❌ | cloudflared Quick Tunnel (HTTPS automatisch) |
 | Freunde einladen (Testgruppe) | ❌ | Tailscale |
 | Production mit eigenem Domain | ❌ | Cloudflare Tunnel (kostenlos) |
 | Production mit IPv6 | ❌ | IPv6 direkt + DynDNS |

@@ -579,20 +579,48 @@ Der Go Ingestion Client ruft bereits `/ingest/image`, `/ingest/audio`, `/ingest/
 - [ ] `python-backend/ingestion/worker.py` — `POST /jobs/{job_id}/cancel` route (best-effort, markiert job als "cancelled" in DB, versucht running task zu stoppen)
 - [ ] `python-backend/ingestion/core/types.py` — `PipelineKind` enum um `image/audio/video/batch` erweitern
 
-**Phase 4 (C) — Test-Expansion der P0/P1 Files:**
-1. `keyvault/keyvault_test.go` — AES-256-GCM roundtrip + tamper detection
-2. `keyvault/hpke_test.go` — RFC 9180 MLKEM768X25519 gegen bekannte Test-Vektoren
-3. `storage/service_test.go` — Orchestration fuer alle bestehenden + neue Service-Methoden
-4. `handlers/http/artifact_handler_test.go` — HTTP integration (nach Phase 2)
-5. `storage/provider_filesystem_test.go` — Put/Get/Path-Traversal/SHA256
-6. `handlers/http/agent_chat_handler_test.go` — Request parsing + streaming cleanup
-7. `handlers/http/agent_audio_handler_test.go` — Audio base64 parsing
-8. `handlers/http/agent_tool_proxy_handler_test.go` — Tool param passthrough
-9. `handlers/http/memory_handler_test.go` — KG seed JSON
-10. `connectors/agentservice/client_test.go` — httptest mock
-11. `connectors/memory/client_test.go` — httptest mock
-12. `natsbridge/bridge_test.go` — message serialization
-13. `intent/agent_test.go` — Matrix event construction
+**Phase 4 (C) — Test-Expansion der P0/P1 Files ✅ DONE 13.04.2026:**
+
+Commit `45f12e1` — 13 neue Test-Files, ~150 Tests, 3 Code-Fixes.
+
+| # | Test-File | Tests | Modus |
+|---|-----------|-------|-------|
+| 1 | `keyvault/keyvault_test.go` | 15 (AES roundtrip/tamper/cross-vault/nonce + HPKE roundtrip/cross/key + factory) | pure unit |
+| 2 | `storage/provider_filesystem_test.go` | 6 (roundtrip, not-found, path-traversal 5 vectors, SHA256, subdirs) | pure unit |
+| 3 | `storage/service_test.go` | 6 (create, upload-url, get, wrong-user, delete) | pure unit (fake store+provider) |
+| 4 | `handlers/http/artifact_handler_test.go` | 6 (upload-url, metadata, not-found, forbidden, invalid-token, download) | httptest |
+| 5 | `handlers/http/agent_chat_handler_test.go` | 5 (method, SSE stream, invalid-json, upstream-error, body-forward) | httptest |
+| 6 | `handlers/http/agent_audio_handler_test.go` | 4 (transcribe, synthesize, method, invalid-json, body-too-large) | httptest |
+| 7 | `handlers/http/agent_tool_proxy_handler_test.go` | 6 (GET/POST proxy, method, nil-client) | httptest (fake interface) |
+| 8 | `handlers/http/memory_handler_test.go` | 5 (seed, query, nodes, search, method) | httptest |
+| 9 | `connectors/agentservice/client_test.go` | 5 (post, get, default-url, nil, normalization) | httptest |
+| 10 | `connectors/memory/client_test.go` | 6 (seed, query, nodes, default-url, slash, error) | httptest |
+| 11 | `natsbridge/bridge_test.go` | 3 (inbound serialization, reply serialization, omitempty) | pure unit |
+| 12 | `intent/agent_test.go` | 2 (user-id generation, server-name) | pure unit |
+
+**Code-Fixes entdeckt durch Tests (Phase 4):**
+
+- [x] **Fix A:** `agent_chat_handler.go` — SSE Status-Forwarding. Upstream non-2xx wird jetzt
+  als JSON-Error zurueckgegeben statt als maskierter 200+SSE-Stream. Clients sehen echte
+  Fehler (500/502/etc.) statt eines "broken stream".
+- [x] **Fix C:** `agent_chat_handler.go` — `AgentChatHandler(url, httpClient...)` nimmt optionalen
+  `*http.Client` Parameter fuer Testability. Default bleibt 5-Minuten-Timeout Client.
+  `agentChatHTTPClient` → `defaultChatHTTPClient` umbenannt.
+- [x] **Fix D:** `artifact_handler.go` — `parseArtifactPath` Kommentar dokumentiert die invertierte
+  Upload-URL-Struktur (`/upload/{id}` statt `/{id}/upload`) als historisches Tradefusion-Artefakt.
+- [x] `keyvault.go` — gosec G602 `//nolint` fuer bounds-checked slice access (false positive)
+
+**Design-Entscheidung dokumentiert (nicht gefixt):**
+- **Fix B (uebersprungen):** `memory/client.go` + `agentservice/client.go` geben (status, body, nil)
+  bei non-2xx zurueck — kein error. Das ist ein bewusstes **Proxy-Pattern**: Handler forwarden den
+  upstream Status 1:1. Ingestion-Client hingegen ist ein **Business-Client** der errors interpretiert.
+  Zwei verschiedene Patterns, beide korrekt fuer ihren Use-Case.
+
+**Gesamte go-appservice Test-Coverage nach Phase 4:**
+- 17 Test-Files, ~150+ Test-Funktionen
+- 9/9 Pakete mit Tests PASS
+- Pakete ohne Tests: `cmd/appservice`, `app`, `config`, `contracts`, `crypto`, `handler`, `registration`, `requestctx`
+  (Glue-Code, Config-Loading, Struct-only, oder hard-to-test ohne Homeserver)
 
 ---
 
