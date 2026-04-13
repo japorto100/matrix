@@ -157,3 +157,28 @@ isoliert funktionieren (Devstack E2E verifiziert).
 - [ ] `geo.ts` + `LocationEmbed.tsx` nach agent-chat kopieren (oder als Shared Package)
 - [ ] In `ToolOutputRenderer.tsx` oder `AgentChatMessage.tsx` einbinden: wenn Agent Location-Daten liefert (`{lat, lon, label}`) → `<LocationEmbed />` rendern
 - [ ] Entscheidung: Agent liefert Location als Tool-Result JSON oder als `geo:` URI in Markdown?
+
+---
+
+## Model Picker Integration (exec-19 Stufe 5b → exec-merge)
+
+> Added 13.04.2026. Dynamic Model Discovery liefert filterbare Model-Liste
+> mit Capabilities + Pricing. User waehlt in control-ui Models aus. Diese
+> Selection muss im agent-chat Model-Picker sichtbar sein.
+
+**Was existiert (control-ui, exec-19 Stufe 5b):**
+- `ModelExplorer.tsx` — Filter-Sidebar + Model-Cards (shadcn)
+- `GET /user/llm/models` — 7+ Filter, Facets, Pagination
+- `PUT /user/llm/selected-models` — User-Auswahl persistiert
+- `GET /user/llm/selected-models` — nur ausgewaehlte Models
+
+**Was existiert (agent-chat):**
+- `AgentChatToolbar.tsx` — Model-Selector Dropdown
+- `useChatSession.ts` — `model` state, forwarded als `model: "openrouter/..."` im BFF Body
+- AI SDK: `useChat({ body: { model } })` — String geht 1:1 an Python → LiteLLM
+
+**Beim Merge zu bauen:**
+- [ ] agent-chat Model-Picker liest `GET /user/llm/selected-models`
+- [ ] Capability-Badges (Tools, Vision, Reasoning) im Picker
+- [ ] Fallback: `AGENT_DEFAULT_UTILITY_MODEL` wenn nichts selected
+- [ ] Optional: inline Quick-Search im Picker

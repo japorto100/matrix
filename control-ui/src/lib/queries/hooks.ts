@@ -276,6 +276,15 @@ export function useUserLlmSettings() {
 	});
 }
 
+export function useModelList(filters: Record<string, string> = {}) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.models(filters),
+		queryFn: () => userLlmQueries.listModels(filters),
+		staleTime: 30_000,
+	});
+}
+
 export function useSetDefaultModel() {
 	const qc = useQueryClient();
 	return useMutation({

@@ -200,6 +200,7 @@ export const modelsQueries = {
 export const userLlmKeys = {
 	all: ["control", "user-llm"] as const,
 	settings: () => ["control", "user-llm", "settings"] as const,
+	models: (filters: Record<string, string>) => ["control", "user-llm", "models", filters] as const,
 };
 
 export const userLlmQueries = {
@@ -224,7 +225,47 @@ export const userLlmQueries = {
 		apiPost(`/api/control/user/llm/key/${encodeURIComponent(providerId)}/validate`, {
 			api_key: apiKey,
 		}),
+	listModels: async (filters: Record<string, string> = {}): Promise<ModelListResponse> => {
+		const params = new URLSearchParams(filters);
+		return apiGet(`/api/control/user/llm/models?${params.toString()}`);
+	},
 };
+
+export interface ModelInfo {
+	id: string;
+	name: string;
+	provider: string;
+	description?: string;
+	context_length?: number;
+	max_output_tokens?: number;
+	supports_tools?: boolean;
+	supports_vision?: boolean;
+	supports_reasoning?: boolean;
+	supports_structured_output?: boolean;
+	supports_streaming?: boolean;
+	is_free?: boolean;
+	prompt_price_per_mtok?: number | null;
+	completion_price_per_mtok?: number | null;
+	modality?: string;
+	architecture?: string | null;
+}
+
+export interface ModelFacets {
+	providers: Array<{ id: string; count: number }>;
+	free_count: number;
+	tools_count: number;
+	vision_count: number;
+	reasoning_count: number;
+	total_all: number;
+}
+
+export interface ModelListResponse {
+	models: ModelInfo[];
+	total: number;
+	limit: number;
+	offset: number;
+	facets: ModelFacets;
+}
 
 // ─── Audit ─────────────────────────────────────────────────────────────────
 

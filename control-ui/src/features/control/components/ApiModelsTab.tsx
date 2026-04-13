@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
 	useDeleteApiKey,
 	useEnvVars,
@@ -36,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { mockAgentRoles, mockEnvVars, mockModelRouting, mockUtilityModels } from "../mock-data";
 import type { EnvVar, LlmProvider, ModelRouting, UtilityModel, UtilityPurpose } from "../types";
 import { EditApiKeyModal } from "./EditApiKeyModal";
+import { ModelExplorer } from "./ModelExplorer";
 
 const UTILITY_ICON: Record<UtilityPurpose, React.ReactNode> = {
 	embedder_text: <Box className="h-3.5 w-3.5" />,
@@ -469,6 +471,10 @@ export function ApiModelsTab() {
 					</table>
 				</div>
 			</section>
+
+			{/* ── Model Explorer (exec-19 Stufe 5b) ──────────────────────── */}
+			<Separator className="my-6" />
+			<ModelExplorer />
 
 			{/* Edit API Key Modal */}
 			<EditApiKeyModal

@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, TypedDict
 
 import httpx
 from fastapi import APIRouter, Request
@@ -403,3 +403,341 @@ async def validate_api_key(provider_id: str, request: Request) -> dict[str, Any]
     except Exception as e:
         logger.warning("API key validation failed for %s: %s", provider_id, e)
         return {"valid": False, "error": str(e)[:200]}
+
+
+# ─── Dynamic Model Discovery (exec-19 Stufe 5b) ─────────────────────────────
+#
+# Provider-agnostic model listing with capabilities, pricing, and filtering.
+# OpenRouter is the richest source (500+ models with detailed metadata).
+# Other providers contribute their own models via /v1/models or static lists.
+# All are normalized into a unified ModelInfo schema.
+
+
+class ModelInfo(TypedDict, total=False):
+    id: str
+    name: str
+    provider: str
+    description: str
+    context_length: int
+    max_output_tokens: int
+    supports_tools: bool
+    supports_vision: bool
+    supports_reasoning: bool
+    supports_structured_output: bool
+    supports_streaming: bool
+    is_free: bool
+    prompt_price_per_mtok: float | None
+    completion_price_per_mtok: float | None
+    modality: str  # text | text+image | multimodal
+    architecture: str | None
+    created_at: int | None
+
+
+# Detailed model cache: provider → (list[ModelInfo], timestamp)
+_detailed_cache: dict[str, tuple[list[ModelInfo], float]] = {}
+_DETAIL_CACHE_TTL = 1800  # 30 min for detailed models (fresher than simple cache)
+
+
+async def _fetch_openrouter_models(api_key: str) -> list[ModelInfo]:
+    """Fetch full model details from OpenRouter /api/v1/models."""
+    cached = _detailed_cache.get("openrouter")
+    if cached and time.time() - cached[1] < _DETAIL_CACHE_TTL:
+        return cached[0]
+
+    try:
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                "https://openrouter.ai/api/v1/models", headers=headers
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        models: list[ModelInfo] = []
+        for m in data.get("data", []):
+            pricing = m.get("pricing", {})
+            prompt_price = _parse_price(pricing.get("prompt"))
+            completion_price = _parse_price(pricing.get("completion"))
+            supported_params = m.get("supported_parameters", [])
+            arch = m.get("architecture", {})
+
+            models.append(
+                ModelInfo(
+                    id=m.get("id", ""),
+                    name=m.get("name", m.get("id", "")),
+                    provider="openrouter",
+                    description=m.get("description", "")[:300],
+                    context_length=m.get("context_length", 0),
+                    max_output_tokens=m.get("top_provider", {}).get(
+                        "max_output_tokens", 0
+                    ),
+                    supports_tools="tools" in supported_params,
+                    supports_vision="image" in arch.get("modality", ""),
+                    supports_reasoning="reasoning" in supported_params
+                    or "include_reasoning" in supported_params,
+                    supports_structured_output="response_format" in supported_params
+                    or "json_schema" in supported_params,
+                    supports_streaming=True,
+                    is_free=prompt_price == 0 and completion_price == 0,
+                    prompt_price_per_mtok=prompt_price * 1_000_000
+                    if prompt_price is not None
+                    else None,
+                    completion_price_per_mtok=completion_price * 1_000_000
+                    if completion_price is not None
+                    else None,
+                    modality=arch.get("modality", "text->text"),
+                    architecture=arch.get("tokenizer"),
+                    created_at=m.get("created"),
+                )
+            )
+
+        _detailed_cache["openrouter"] = (models, time.time())
+        logger.info("OpenRouter: fetched %d models", len(models))
+        return models
+    except Exception as e:
+        logger.warning("OpenRouter model fetch failed: %s", e)
+        return _detailed_cache.get("openrouter", ([], 0))[0]
+
+
+def _parse_price(val: str | float | None) -> float | None:
+    if val is None:
+        return None
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
+
+def _static_models_to_info(
+    provider_id: str, model_ids: list[str]
+) -> list[ModelInfo]:
+    """Convert static model IDs to ModelInfo with known capabilities."""
+    meta = _PROVIDER_META.get(provider_id, {})
+    display = meta.get("display_name", provider_id)
+    result: list[ModelInfo] = []
+    for mid in model_ids:
+        info = ModelInfo(
+            id=f"{provider_id}/{mid}",
+            name=mid,
+            provider=provider_id,
+            description=f"{display} model",
+            supports_streaming=True,
+            is_free=False,
+        )
+        # Known capabilities for major providers
+        if provider_id == "anthropic":
+            info["supports_tools"] = True
+            info["supports_vision"] = True
+            info["supports_reasoning"] = "opus" in mid or "sonnet" in mid
+            info["context_length"] = 200000
+        elif provider_id == "openai":
+            info["supports_tools"] = True
+            info["supports_vision"] = "gpt-4" in mid
+            info["supports_reasoning"] = mid.startswith("o")
+            info["context_length"] = 128000
+        elif provider_id == "gemini":
+            info["supports_tools"] = True
+            info["supports_vision"] = True
+            info["supports_reasoning"] = "2.5" in mid
+            info["context_length"] = 1000000 if "pro" in mid else 200000
+        elif provider_id == "deepseek":
+            info["supports_tools"] = "chat" in mid
+            info["supports_reasoning"] = "reasoner" in mid or "r1" in mid
+            info["context_length"] = 64000
+        result.append(info)
+    return result
+
+
+@router.get("/user/llm/models")
+async def list_models(request: Request) -> dict[str, Any]:
+    """List available models with capabilities, pricing, and filtering.
+
+    Query params (all optional):
+        provider: filter by provider id (openrouter, anthropic, ...)
+        free_only: true = only free models
+        supports_tools: true = only models with tool calling
+        supports_vision: true = only multimodal/vision models
+        supports_reasoning: true = only models with reasoning/thinking
+        min_context: minimum context window (e.g. 128000)
+        search: substring match on id or name (case-insensitive)
+        sort_by: price_asc | price_desc | context_desc | name (default: name)
+        limit: max results (1-500, default 100)
+        offset: pagination offset
+
+    Returns { models: ModelInfo[], total, facets }.
+    """
+    user_id = _user_id(request)
+    q = request.query_params
+
+    from agent.security.credentials import get_user_api_key
+
+    # Collect models from all providers
+    all_models: list[ModelInfo] = []
+
+    for prov_id, meta in _PROVIDER_META.items():
+        key = await get_user_api_key(user_id, prov_id)
+        if not key:
+            env_key_name = meta.get("env_key", "")
+            key = os.environ.get(env_key_name, "") or None if env_key_name else None
+
+        if prov_id == "openrouter" and key:
+            all_models.extend(await _fetch_openrouter_models(key))
+        elif key or meta.get("type") == "local":
+            static = meta.get("models", [])
+            if static:
+                all_models.extend(_static_models_to_info(prov_id, static))
+
+    # ── Filters ───────────────────────────────────────────────────
+    provider_filter = q.get("provider", "").strip()
+    free_only = q.get("free_only", "").lower() == "true"
+    tools_only = q.get("supports_tools", "").lower() == "true"
+    vision_only = q.get("supports_vision", "").lower() == "true"
+    reasoning_only = q.get("supports_reasoning", "").lower() == "true"
+    structured_only = q.get("supports_structured_output", "").lower() == "true"
+    min_context = int(q.get("min_context", "0") or "0")
+    max_price = float(q.get("max_price", "0") or "0")
+    modality_filter = q.get("modality", "").strip().lower()
+    min_output = int(q.get("min_output", "0") or "0")
+    search = q.get("search", "").strip().lower()
+
+    filtered: list[ModelInfo] = []
+    for m in all_models:
+        if provider_filter and m.get("provider") != provider_filter:
+            continue
+        if free_only and not m.get("is_free"):
+            continue
+        if tools_only and not m.get("supports_tools"):
+            continue
+        if vision_only and not m.get("supports_vision"):
+            continue
+        if reasoning_only and not m.get("supports_reasoning"):
+            continue
+        if structured_only and not m.get("supports_structured_output"):
+            continue
+        if min_context and (m.get("context_length", 0) or 0) < min_context:
+            continue
+        if max_price > 0:
+            price = m.get("prompt_price_per_mtok")
+            if price is not None and price > max_price:
+                continue
+        if modality_filter and modality_filter not in (m.get("modality", "") or "").lower():
+            continue
+        if min_output and (m.get("max_output_tokens", 0) or 0) < min_output:
+            continue
+        if search and search not in (m.get("id", "") + m.get("name", "")).lower():
+            continue
+        filtered.append(m)
+
+    # ── Sort ──────────────────────────────────────────────────────
+    sort_by = q.get("sort_by", "name")
+    if sort_by == "price_asc":
+        filtered.sort(key=lambda m: m.get("prompt_price_per_mtok") or float("inf"))
+    elif sort_by == "price_desc":
+        filtered.sort(
+            key=lambda m: m.get("prompt_price_per_mtok") or 0, reverse=True
+        )
+    elif sort_by == "context_desc":
+        filtered.sort(key=lambda m: m.get("context_length", 0) or 0, reverse=True)
+    else:
+        filtered.sort(key=lambda m: m.get("name", "").lower())
+
+    # ── Pagination ────────────────────────────────────────────────
+    total = len(filtered)
+    limit = min(max(int(q.get("limit", "100") or "100"), 1), 500)
+    offset = max(int(q.get("offset", "0") or "0"), 0)
+    page = filtered[offset : offset + limit]
+
+    # ── Facets ────────────────────────────────────────────────────
+    provider_counts: dict[str, int] = {}
+    free_count = 0
+    tools_count = 0
+    vision_count = 0
+    reasoning_count = 0
+    for m in all_models:  # facets from UNFILTERED set
+        prov = m.get("provider", "unknown")
+        provider_counts[prov] = provider_counts.get(prov, 0) + 1
+        if m.get("is_free"):
+            free_count += 1
+        if m.get("supports_tools"):
+            tools_count += 1
+        if m.get("supports_vision"):
+            vision_count += 1
+        if m.get("supports_reasoning"):
+            reasoning_count += 1
+
+    return {
+        "models": page,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "facets": {
+            "providers": [
+                {"id": k, "count": v}
+                for k, v in sorted(provider_counts.items(), key=lambda x: -x[1])
+            ],
+            "free_count": free_count,
+            "tools_count": tools_count,
+            "vision_count": vision_count,
+            "reasoning_count": reasoning_count,
+            "total_all": len(all_models),
+        },
+    }
+
+
+# ─── Selected Models (exec-19 Stufe 5b) ─────────────────────────────────────
+# User picks which models they want available in agent-chat Model-Picker.
+# Persisted in agent.user_llm_settings.selected_models (jsonb array of model IDs).
+
+
+@router.get("/user/llm/selected-models")
+async def get_selected_models(request: Request) -> dict[str, Any]:
+    """Get user's selected model IDs for agent-chat Model-Picker."""
+    user_id = _user_id(request)
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {"user_id": user_id, "selected_models": []}
+
+    import psycopg
+
+    try:
+        async with await psycopg.AsyncConnection.connect(db_url) as conn:
+            cur = await conn.execute(
+                "SELECT selected_models FROM agent.user_llm_settings WHERE user_id = %s",
+                (user_id,),
+            )
+            row = await cur.fetchone()
+            models = row[0] if row and row[0] else []
+            return {"user_id": user_id, "selected_models": models}
+    except Exception as e:
+        logger.warning("get_selected_models failed: %s", e)
+        return {"user_id": user_id, "selected_models": []}
+
+
+@router.put("/user/llm/selected-models")
+async def set_selected_models(request: Request) -> dict[str, Any]:
+    """Set user's selected model IDs. Body: { "models": ["openrouter/anthropic/claude-sonnet-4-6", ...] }"""
+    user_id = _user_id(request)
+    body = await request.json()
+    models = body.get("models", [])
+
+    if not isinstance(models, list):
+        return {"status": "error", "message": "models must be a list of strings"}
+
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {"status": "env_only", "message": "No DB — selection requires PostgreSQL"}
+
+    import json
+
+    import psycopg
+
+    async with await psycopg.AsyncConnection.connect(db_url) as conn:
+        await conn.execute(
+            """INSERT INTO agent.user_llm_settings (user_id, selected_models, updated_at)
+               VALUES (%s, %s::jsonb, NOW())
+               ON CONFLICT (user_id) DO UPDATE SET selected_models = %s::jsonb, updated_at = NOW()""",
+            (user_id, json.dumps(models), json.dumps(models)),
+        )
+        await conn.commit()
+
+    return {"status": "ok", "user_id": user_id, "selected_models": models, "count": len(models)}

@@ -16,7 +16,13 @@ interface ProxyOptions {
 	forwardHeaders?: string[];
 }
 
-const DEFAULT_FORWARD_HEADERS = ["content-type", "authorization", "x-user-role"];
+const DEFAULT_FORWARD_HEADERS = [
+	"content-type",
+	"authorization",
+	"x-user-role",
+	"x-actor-user-id",
+	"x-request-id",
+];
 
 export async function controlProxy(
 	req: Request,
