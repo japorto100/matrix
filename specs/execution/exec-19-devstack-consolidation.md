@@ -1124,12 +1124,30 @@ Zusaetzlich:
 - [ ] Model-Cards zeigen alle Badges
 - [ ] Price-Filter schliesst 100 USD/Mtok Models aus wenn max=10
 
-### 5b.9 Portierung zurueck zu exec-16
+### 5b.9 Implementation Status (13.04.2026)
 
-Nach Implementierung in exec-19:
-- [ ] exec-19 Stufe 5b Markierung als "portiert zu exec-16 Stufe 4"
-- [ ] exec-16 Stufe 4 mit vollstaendiger Spec ergaenzt
-- [ ] Querverweis von exec-19 → exec-16 fuer Status-Tracking
+**DONE (Commit c74e798):**
+- [x] Backend: `ModelInfo` TypedDict, OpenRouter detailed fetch, static normalization
+- [x] Backend: `GET /user/llm/models` mit 11 Filtern + Facets + Pagination
+- [x] Backend: `PUT/GET /user/llm/selected-models` (User Model Selection)
+- [x] Alembic 011: `selected_models` jsonb column
+- [x] Frontend: `ModelExplorer.tsx` mit shadcn (Card/Badge/Checkbox/Select)
+- [x] Frontend: 11 Filter (Free/Tools/Vision/Reasoning/Structured Output/Provider/Context/Price/Modality/Max Output/Search + Sort)
+- [x] Frontend: Select-for-Use Buttons + Save + Load on mount
+- [x] `useModelList` hook + `ModelInfo`/`ModelListResponse` types
+- [x] `control-proxy.ts` forwarded `x-actor-user-id` + `x-request-id`
+- [x] `exec-merge-chat.md`: Model Picker Integration fuer agent-chat
+
+**OFFEN (naechste Session):**
+- [ ] **Filter-Extraction**: `ModelFilterSidebar.tsx` + `ModelCard.tsx` als eigene Components extrahieren (Wiederverwendung im agent-chat Merge)
+- [ ] **Provider Account-Level Info** in Provider Cards:
+  - OpenRouter: `GET /api/v1/auth/key` → credits_remaining, usage, rate limits
+  - OpenAI: Usage API
+  - Anthropic: Usage Dashboard (kein API, nur Web)
+  - Darstellung: direkt in den bestehenden Provider-Cards (ApiModelsTab) neben dem API Key — Budget, Usage, Rate Limit, Tier
+- [ ] **Budget-Filter im ModelExplorer**: "zeig nur Models die ich mir mit verbleibendem Budget leisten kann" (berechnet aus credits_remaining / prompt_price)
+- [ ] `useSelectedModels` eigener Hook (statt inline useEffect fetch)
+- [ ] Portierung zurueck zu exec-16 Stufe 4
 
 ---
 
