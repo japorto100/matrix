@@ -31,4 +31,6 @@ class GuardResult:
 class DeterministicGuard(Protocol):
     """Protocol for BTE/DRS-style guards."""
 
-    def calculate_score(self, verified_markers: list[VerifiedMarker]) -> GuardResult: ...
+    def calculate_score(
+        self, verified_markers: list[VerifiedMarker]
+    ) -> GuardResult: ...

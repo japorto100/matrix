@@ -35,7 +35,6 @@ async def extract(req: ExtractRequest) -> dict:
     raise HTTPException(
         status_code=503,
         detail=(
-            "kg_pipeline not yet activated. See kg_pipeline/README.md for "
-            "Phase 2 activation steps."
+            "kg_pipeline not yet activated. See kg_pipeline/README.md for Phase 2 activation steps."
         ),
     )

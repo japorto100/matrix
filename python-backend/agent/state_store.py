@@ -26,11 +26,18 @@ class FileBackedState:
         thread_dir = self.base_dir / thread_id
         thread_dir.mkdir(parents=True, exist_ok=True)
         path = thread_dir / f"{role}_output.json"
-        path.write_text(json.dumps({
-            "role": role,
-            "timestamp": datetime.now().isoformat(),
-            "data": data,
-        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(
+            json.dumps(
+                {
+                    "role": role,
+                    "timestamp": datetime.now().isoformat(),
+                    "data": data,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         return path
 
     def load(self, thread_id: str, role: str) -> dict | None:

@@ -530,11 +530,14 @@ control-ui/src/
 | control/storage/go-backend/internal/handlers/http/artifact_handler.go | 1:1 ins go-appservice/internal/handlers/http/ |
 | control/storage/tools/seaweedfs/ | 1:1 ins tools/seaweedfs/ |
 
-- [ ] **1.6.1:** `control/storage/go-backend/internal/storage/` → `go-appservice/internal/storage/`
-  - `types.go` (Artifact, SourceSnapshot, etc.)
-  - `metadata_store.go`, `metadata_store_postgres.go`, `metadata_store_factory.go`
-  - `service.go`, `signer.go`
-  - `object_store_env.go`, `provider_filesystem.go`, `provider_s3.go`
+- [x] **1.6.1:** Storage layer ist in `go-appservice/internal/storage/` (exec-19 Stufe 3)
+  - `types.go` — nur Artifact + FileRecord. SourceSnapshot (Tradefusion-Sanctions-Code)
+    wurde in exec-19 entfernt, kein Matrix-Use-Case.
+  - `metadata_store_postgres.go` (pgxpool native) — einziger metadata backend.
+    SQLite + Factory wurden in exec-19 Phase 3 cleanup entfernt (pre-exec-18 Phase 0).
+  - `service.go`, `signer.go` (mit User-ID-Binding aus Phase 2 A)
+  - `provider_s3.go` (mit ListObjects/Delete), `provider_filesystem.go`, `object_store_env.go`
+  - NEU in exec-19: `files_service.go` (High-Level Facade), `media_type.go`
 - [ ] **1.6.2:** `control/storage/go-backend/internal/handlers/http/artifact_handler.go` → `go-appservice/internal/handlers/http/`
 - [ ] **1.6.3:** Wiring in `go-appservice/cmd/appservice/main.go`:
   - `POST /api/v1/storage/artifacts/upload-url`

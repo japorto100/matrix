@@ -21,28 +21,55 @@ logger = logging.getLogger(__name__)
 ALLOWED_VARIABLES: dict[str, set[str]] = {
     # Context about the current session
     "session": {
-        "user_name", "user_id", "thread_id", "timestamp", "date", "time",
-        "agent_class", "agent_role",
+        "user_name",
+        "user_id",
+        "thread_id",
+        "timestamp",
+        "date",
+        "time",
+        "agent_class",
+        "agent_role",
     },
     # Market/trading context
     "market": {
-        "symbol", "ticker", "asset", "timeframe", "interval",
-        "price", "volume", "market_cap",
-        "portfolio_summary", "positions", "balances",
+        "symbol",
+        "ticker",
+        "asset",
+        "timeframe",
+        "interval",
+        "price",
+        "volume",
+        "market_cap",
+        "portfolio_summary",
+        "positions",
+        "balances",
     },
     # Agent behavior
     "agent": {
-        "role_name", "role_description", "language", "tone",
-        "max_tokens", "reasoning_effort",
+        "role_name",
+        "role_description",
+        "language",
+        "tone",
+        "max_tokens",
+        "reasoning_effort",
     },
     # Memory context
     "memory": {
-        "memories", "recent_memories", "relevant_context",
+        "memories",
+        "recent_memories",
+        "relevant_context",
     },
     # Custom user-defined variables (injected at runtime)
     "custom": {
-        "custom_1", "custom_2", "custom_3", "custom_4", "custom_5",
-        "instruction", "goal", "focus_area", "constraints",
+        "custom_1",
+        "custom_2",
+        "custom_3",
+        "custom_4",
+        "custom_5",
+        "instruction",
+        "goal",
+        "focus_area",
+        "constraints",
     },
 }
 
@@ -54,9 +81,18 @@ ALL_ALLOWED: frozenset[str] = frozenset(
 # ── Dangerous patterns (always blocked, even if variable name matches) ──────
 
 _DANGEROUS_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\{\{.*?(password|secret|key|token|credential|api_key|auth).*?\}\}", re.IGNORECASE),
-    re.compile(r"\{\{.*?(env|environ|os\.|sys\.|import|eval|exec|__\w+__).*?\}\}", re.IGNORECASE),
-    re.compile(r"\{\{.*?(system_prompt|instructions|config|database|db_url|connection).*?\}\}", re.IGNORECASE),
+    re.compile(
+        r"\{\{.*?(password|secret|key|token|credential|api_key|auth).*?\}\}",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\{\{.*?(env|environ|os\.|sys\.|import|eval|exec|__\w+__).*?\}\}",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\{\{.*?(system_prompt|instructions|config|database|db_url|connection).*?\}\}",
+        re.IGNORECASE,
+    ),
     # Code execution attempts
     re.compile(r"\{%.*?%\}", re.DOTALL),  # Jinja2 {% %} blocks
     re.compile(r"\{\{.*?\(.*?\).*?\}\}"),  # Function calls inside templates
@@ -73,6 +109,7 @@ _TEMPLATE_VAR_PATTERN = re.compile(
 @dataclass
 class ValidationResult:
     """Result of template validation."""
+
     valid: bool
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -135,12 +172,11 @@ def validate_template(
         match = pattern.search(template)
         if match:
             result.valid = False
-            result.errors.append(
-                f"Dangerous pattern detected: '{match.group()}'"
-            )
+            result.errors.append(f"Dangerous pattern detected: '{match.group()}'")
             logger.warning(
                 "Template validation BLOCKED dangerous pattern in '%s': %s",
-                context, match.group(),
+                context,
+                match.group(),
             )
 
     if not result.valid:
@@ -165,13 +201,15 @@ def validate_template(
         )
         logger.warning(
             "Template validation REJECTED '%s': unauthorized vars %s",
-            context, unauthorized,
+            context,
+            unauthorized,
         )
 
     return result
 
 
 # ── Template rendering (safe) ────────────────────────────────────────────────
+
 
 def render_template(
     template: str,
@@ -184,7 +222,9 @@ def render_template(
 
     Only renders variables from the allowlist. Unknown variables are left as-is.
     """
-    validation = validate_template(template, extra_allowed=extra_allowed, context=context)
+    validation = validate_template(
+        template, extra_allowed=extra_allowed, context=context
+    )
     if not validation.valid:
         logger.error("Template render refused for '%s': %s", context, validation.errors)
         return None

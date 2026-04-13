@@ -49,7 +49,9 @@ class SkillEvolver:
     """Analysiert Failures und generiert personalisierte Skills."""
 
     def __init__(self) -> None:
-        self.enabled = os.environ.get("AGENT_SKILL_EVOLUTION", "false").lower() == "true"
+        self.enabled = (
+            os.environ.get("AGENT_SKILL_EVOLUTION", "false").lower() == "true"
+        )
         self._generation_counter: dict[str, int] = {}  # user_id → current generation
 
     def _get_generation(self, user_id: str) -> int:
@@ -89,9 +91,13 @@ class SkillEvolver:
             return None
 
         # Deduplication: gleicher Failure → kein neuer Skill
-        failure_hash = hashlib.sha256(f"{user_request}:{failure_reason}".encode()).hexdigest()[:16]
+        failure_hash = hashlib.sha256(
+            f"{user_request}:{failure_reason}".encode()
+        ).hexdigest()[:16]
         if self._is_duplicate(user_id, failure_hash):
-            logger.debug("Duplicate failure for user %s, skipping skill generation", user_id)
+            logger.debug(
+                "Duplicate failure for user %s, skipping skill generation", user_id
+            )
             return None
 
         try:
@@ -130,7 +136,12 @@ class SkillEvolver:
             (skill_dir / ".failure_hash").write_text(failure_hash, encoding="utf-8")
 
             self._generation_counter[user_id] = generation
-            logger.info("Generated personal skill '%s' for user %s (gen %d)", name, user_id, generation)
+            logger.info(
+                "Generated personal skill '%s' for user %s (gen %d)",
+                name,
+                user_id,
+                generation,
+            )
             return skill_dir / "SKILL.md"
 
         except Exception as e:
@@ -140,6 +151,7 @@ class SkillEvolver:
 
 # Trajectory Logging — Grundlage fuer PRM Scoring (MetaClaw Sec. 3.3)
 # Aktuell: nur Logging. Zukunft: PRM bewertet Trajectories → bessere Skill-Evolution.
+
 
 class TrajectoryLogger:
     """Loggt Agent-Trajectories fuer spaetere Analyse + PRM Scoring."""
@@ -171,5 +183,7 @@ class TrajectoryLogger:
             "tool_calls": tool_calls,
         }
         path = self.storage_dir / f"{user_id}_{ts}.json"
-        path.write_text(json.dumps(entry, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(
+            json.dumps(entry, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         return path

@@ -75,7 +75,9 @@ class SessionConsentCache:
         """Clear entire cache."""
         self._store.clear()
 
-    def _set(self, thread_id: str, tool_name: str, decision: Literal["allow", "deny"]) -> None:
+    def _set(
+        self, thread_id: str, tool_name: str, decision: Literal["allow", "deny"]
+    ) -> None:
         now = time.monotonic()
         entry = CachedConsent(
             decision=decision,

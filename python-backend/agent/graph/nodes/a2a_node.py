@@ -75,7 +75,9 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
 
         if task.state == "completed" and task.result:
             return {
-                "messages": [{"role": "assistant", "content": f"[{role} via A2A]: {task.result}"}],
+                "messages": [
+                    {"role": "assistant", "content": f"[{role} via A2A]: {task.result}"}
+                ],
                 "final_response": task.result,
                 "done": True,
             }
@@ -83,7 +85,9 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             error = task.error or "Unknown A2A error"
             logger.warning("A2A delegation failed: %s", error)
             return {
-                "messages": [{"role": "assistant", "content": f"[{role} A2A error]: {error}"}],
+                "messages": [
+                    {"role": "assistant", "content": f"[{role} A2A error]: {error}"}
+                ],
             }
     finally:
         await client.close()

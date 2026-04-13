@@ -20,13 +20,16 @@ router = APIRouter(tags=["control", "system"])
 
 _startup_ts = time.time()
 
+
 def _feature_flags() -> dict[str, Any]:
     def _b(name: str, default: str = "false") -> bool:
         return os.environ.get(name, default).lower() in ("1", "true", "yes", "on")
 
     return {
         "PROMPT_GUARD_ENABLED": _b("PROMPT_GUARD_ENABLED", "false"),
-        "INGESTION_EMBEDDER_MODE": os.environ.get("INGESTION_EMBEDDER_MODE", "local_minilm_cpu"),
+        "INGESTION_EMBEDDER_MODE": os.environ.get(
+            "INGESTION_EMBEDDER_MODE", "local_minilm_cpu"
+        ),
         "KG_PIPELINE_ENABLED": _b("KG_PIPELINE_ENABLED", "false"),
         "EXTRACTION_LAYOUT_ENABLED": _b("EXTRACTION_LAYOUT_ENABLED", "false"),
     }
@@ -88,7 +91,9 @@ async def get_system_health() -> dict[str, Any]:
     """Ping all matrix services concurrently and return health per service."""
     ingestion_url = os.environ.get("INGESTION_WORKER_URL", "http://127.0.0.1:8098")
     kg_pipeline_url = os.environ.get("KG_PIPELINE_URL", "http://127.0.0.1:8099")
-    extraction_layout_url = os.environ.get("EXTRACTION_LAYOUT_URL", "http://127.0.0.1:8101")
+    extraction_layout_url = os.environ.get(
+        "EXTRACTION_LAYOUT_URL", "http://127.0.0.1:8101"
+    )
     go_url = os.environ.get("GO_GATEWAY_BASE_URL", "http://127.0.0.1:8090")
     open_sandbox_url = os.environ.get("OPEN_SANDBOX_URL", "http://127.0.0.1:8100")
     litellm_url = os.environ.get("LITELLM_BASE_URL", "http://127.0.0.1:4000")
@@ -111,7 +116,9 @@ async def get_system_health() -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     for r in results:
         if isinstance(r, Exception):
-            items.append({"id": "unknown", "health": "unknown", "error_message": str(r)[:200]})
+            items.append(
+                {"id": "unknown", "health": "unknown", "error_message": str(r)[:200]}
+            )
         else:
             items.append(r)
 
@@ -131,4 +138,9 @@ async def get_system_health() -> dict[str, Any]:
     for it in items:
         counts[it.get("health", "unknown")] += 1
 
-    return {"items": items, "total": len(items), "counts": counts, "feature_flags": _feature_flags()}
+    return {
+        "items": items,
+        "total": len(items),
+        "counts": counts,
+        "feature_flags": _feature_flags(),
+    }

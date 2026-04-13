@@ -78,7 +78,9 @@ class FileAnalyzeTool(TradingTool):
         return self._manager
 
     @override
-    async def execute(self, tool_input: dict[str, Any], ctx: AgentExecutionContext) -> dict[str, Any]:
+    async def execute(
+        self, tool_input: dict[str, Any], ctx: AgentExecutionContext
+    ) -> dict[str, Any]:
         from agent.working_memory import working_memory_get_entry
 
         params = FileAnalyzeInput(**tool_input)
@@ -87,7 +89,9 @@ class FileAnalyzeTool(TradingTool):
         # Retrieve file from working memory
         file_entry = await working_memory_get_entry(ctx.thread_id, params.file_ref)
         if file_entry is None:
-            return {"error": f"File reference '{params.file_ref}' not found in working memory."}
+            return {
+                "error": f"File reference '{params.file_ref}' not found in working memory."
+            }
 
         if not isinstance(file_entry, dict):
             return {"error": f"Invalid file entry format for '{params.file_ref}'."}

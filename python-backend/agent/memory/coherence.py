@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WriteEntry:
     """Ein Eintrag im Write-Ahead Log."""
+
     version: int
     role: str
     content: str
@@ -40,6 +41,7 @@ class WriteEntry:
 @dataclass
 class ConflictReport:
     """Ergebnis einer Conflict Detection."""
+
     has_conflict: bool
     entries: list[WriteEntry] = field(default_factory=list)
     resolution: str = ""  # "latest_wins" | "llm_fusion" | "manual"
@@ -64,7 +66,9 @@ class MemoryCoherenceManager:
         # Max entries per bank (sliding window)
         self._max_entries = 100
 
-    async def write_ahead(self, bank_id: str, role: str, content: str, tags: list[str] | None = None) -> int:
+    async def write_ahead(
+        self, bank_id: str, role: str, content: str, tags: list[str] | None = None
+    ) -> int:
         """Registriert einen bevorstehenden Write im WAL.
 
         Returns: Version number fuer diesen Write.
@@ -85,7 +89,7 @@ class MemoryCoherenceManager:
             wal.append(entry)
             # Sliding window
             if len(wal) > self._max_entries:
-                self._wal[bank_id] = wal[-self._max_entries:]
+                self._wal[bank_id] = wal[-self._max_entries :]
             return self._version_counter
 
     async def detect_conflicts(

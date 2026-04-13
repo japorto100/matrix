@@ -89,7 +89,9 @@ class TokenBudgetManager:
         self.model_class = model_class
         self._allocation: dict[str, int] = {}
 
-    def allocate(self, available_context: dict[str, Any] | None = None) -> dict[str, int]:
+    def allocate(
+        self, available_context: dict[str, Any] | None = None
+    ) -> dict[str, int]:
         self._allocation = allocate_budget(self.model_class, available_context)
         return self._allocation
 

@@ -49,8 +49,11 @@ def _row_to_run(row: Any, cols: list[str]) -> dict[str, Any]:
         "user_id": r.get("user_id"),
         "role": r.get("agent_role"),
         "tool_name": r.get("tool_name"),
-        "code_preview": (input_data.get("code") or input_data.get("script") or "")[:200],
-        "status": metadata.get("status") or ("failed" if not r.get("success") else "completed"),
+        "code_preview": (input_data.get("code") or input_data.get("script") or "")[
+            :200
+        ],
+        "status": metadata.get("status")
+        or ("failed" if not r.get("success") else "completed"),
         "duration_ms": r.get("duration_ms"),
         "exit_code": metadata.get("exit_code"),
         "stdout_preview": (metadata.get("stdout") or "")[:500],

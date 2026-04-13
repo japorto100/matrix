@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ingestion.core.exceptions import LoadError
-from ingestion.loaders.base import LoadResult, Loader
+from ingestion.loaders.base import Loader, LoadResult
 
 
 class LocalLoader(Loader):

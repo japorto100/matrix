@@ -72,7 +72,9 @@ async def _proxy(method: str, path: str, json: dict | None = None) -> dict:
             detail=f"ingestion-worker unreachable at {INGESTION_WORKER_URL}: {e}",
         ) from e
     except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"ingestion-worker error: {e}") from e
+        raise HTTPException(
+            status_code=502, detail=f"ingestion-worker error: {e}"
+        ) from e
 
 
 # ─── Routes ─────────────────────────────────────────────────────────────────
@@ -100,7 +102,9 @@ async def ingest_link(req: IngestLinkRequest, request: Request) -> dict:
 
 
 @router.post("/ingest/document/{file_id}/reindex")
-async def reindex_document(file_id: UUID, req: IngestDocumentRequest, request: Request) -> dict:
+async def reindex_document(
+    file_id: UUID, req: IngestDocumentRequest, request: Request
+) -> dict:
     """Hash-based incremental reindex (Phase E — Cursor IDE pattern)."""
     payload = req.model_dump(mode="json")
     payload["user_id"] = effective_user_id(request, req.user_id)

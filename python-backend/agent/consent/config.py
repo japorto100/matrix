@@ -20,11 +20,12 @@ _POLICY_PATH = Path(__file__).resolve().parent.parent / "consent_policy.yaml"
 
 # ── Enums ──────────────────────────────────────────────────────────────────
 
+
 class ConsentLevel(StrEnum):
-    NONE = "none"        # No consent needed, auto-allow
-    INFORM = "inform"    # Log but don't block
+    NONE = "none"  # No consent needed, auto-allow
+    INFORM = "inform"  # Log but don't block
     CONFIRM = "confirm"  # Require explicit user consent
-    DENY = "deny"        # Hard block, no way around it
+    DENY = "deny"  # Hard block, no way around it
 
 
 class ConsentSeverity(StrEnum):
@@ -35,6 +36,7 @@ class ConsentSeverity(StrEnum):
 
 
 # ── Pydantic Models ───────────────────────────────────────────────────────
+
 
 class ToolConsentConfig(BaseModel):
     level: ConsentLevel = ConsentLevel.NONE
@@ -84,10 +86,10 @@ class LoopDetectionConfig(BaseModel):
 
 
 class RateLimitsConfig(BaseModel):
-    max_iterations: int = 0           # 0 = use ENV fallback
+    max_iterations: int = 0  # 0 = use ENV fallback
     max_tool_calls_total: int = 50
-    max_tokens_per_session: int = 0   # 0 = unlimited
-    tool_timeout_sec: float = 0       # 0 = use ENV fallback
+    max_tokens_per_session: int = 0  # 0 = unlimited
+    tool_timeout_sec: float = 0  # 0 = use ENV fallback
     grace_iterations: int = 3
     loop_detection: LoopDetectionConfig = LoopDetectionConfig()
     per_tool: dict[str, PerToolRateLimit] = {}
@@ -153,6 +155,7 @@ def _load_config() -> ConsentPolicyConfig:
 
 
 # ── Dynamic Class Import (deer-flow pattern) ──────────────────────────────
+
 
 def resolve_provider_class(dotted_path: str) -> type:
     """Import a class from 'module.path:ClassName' notation.

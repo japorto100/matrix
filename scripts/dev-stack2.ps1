@@ -15,8 +15,8 @@ param(
     [switch]$SkipGoAppservice,
     [switch]$SkipPython,
     [switch]$SkipFrontend,
-    [switch]$UseMock,            # Slice 7: opt-in — use LLM mock on :8094 instead of real agent-service
-    [switch]$SkipAgentService,   # Skip the real Python agent service (:8094) — main runtime
+    [switch]$UseMock,            # Slice 7: opt-in - use LLM mock on :8094 instead of real agent-service
+    [switch]$SkipAgentService,   # Skip the real Python agent service (:8094) - main runtime
     [switch]$SkipControlUi,
     [switch]$SkipStorage,
     [switch]$SkipIngestion,
@@ -25,6 +25,7 @@ param(
     [switch]$DevTools,
     [switch]$WithVoice,
     [switch]$Tunnel,
+    [switch]$Tuwunel16,          # Use Tuwunel v1.6.0-rc (binary: tools/tuwunel-v1.6, config: homeserver/tuwunel.v1.6.toml)
     [switch]$FrontendOnly,
     [switch]$AgentOnly,
     [switch]$Inline,
@@ -188,12 +189,19 @@ function Start-Service([string]$Name) {
 function Start-ServiceSafe([string]$Name) {
     $svc = $script:services[$Name]
     if ($null -eq $svc) { return }
-    if (Test-PortInUse $svc.Port) {
+    # Port 0 = client-only service (e.g. cloudflared tunnel). Skip port-based checks.
+    $isClientOnly = ($svc.Port -eq 0)
+    if (-not $isClientOnly -and (Test-PortInUse $svc.Port)) {
         Write-Host "[$Name] Already running on :$($svc.Port) - skipping" -ForegroundColor Green
         return
     }
     try {
         Start-Service -Name $Name | Out-Null
+        if ($isClientOnly) {
+            # No listener to probe - just confirm launched
+            Write-Host "[$Name] Launched (client-only, no port check)" -ForegroundColor Green
+            return
+        }
         $portReady = Wait-ForPort -Port $svc.Port -Name $Name -TimeoutSecs $svc.TimeoutSecs
         if (-not $portReady) {
             Write-Host "[$Name] Port timeout after $($svc.TimeoutSecs)s" -ForegroundColor Yellow
@@ -225,7 +233,7 @@ try {
     if ($FrontendOnly) { $SkipHomeserver = $true; $SkipNats = $true; $SkipGoAppservice = $true; $SkipPython = $true }
     if ($AgentOnly)    { $SkipHomeserver = $true; $SkipFrontend = $true }
 
-    # Go pre-build + Python deps + Next.js compile — all in parallel background jobs
+    # Go pre-build + Python deps + Next.js compile - all in parallel background jobs
     $prepJobs = @()
 
     if (-not $SkipGoAppservice) {
@@ -270,9 +278,54 @@ try {
 
     # -- Tier: infra --
 
+    # !! ORDER MATTERS !!
+    # SeaweedFS MUST be registered (and started) BEFORE Tuwunel.
+    # Tuwunel v1.6 storage_provider startup_check pings SeaweedFS on boot.
+    # If SeaweedFS is not yet listening, the check retries 10x (~3s) then aborts.
+    # $script:services is [ordered]@{}, so Register-Service order = start order.
+
+    # -- SeaweedFS (S3-compatible object storage, exec-15 Slice 1, Port 8333/9333) --
+    # On by default. Use -SkipStorage to disable.
+    if (-not $SkipStorage -and (Test-Path $seaweedExe)) {
+        if (-not (Test-Path $seaweedDataDir)) {
+            New-Item -ItemType Directory -Path $seaweedDataDir -Force | Out-Null
+        }
+        Register-Service -Name "seaweedfs" -Port 8333 -Tier "infra" -TimeoutSecs 30 -StartAction {
+            # -ip.bind=127.0.0.1 bindet nur an Windows-Localhost.
+            # Funktioniert aus WSL1 (teilt Windows' Netzwerk-Stack, 127.0.0.1 ist identisch)
+            # und fuer Windows-native Clients.
+            # Falls ihr auf WSL2 oder Podman umzieht: auf 0.0.0.0 umstellen, weil dort
+            # 127.0.0.1 WSL-intern ist und der Windows-Host nur via Gateway-IP erreichbar.
+            #   "-ip=0.0.0.0",
+            #   "-ip.bind=0.0.0.0",
+            # Beachte: 0.0.0.0 macht Port 8333 im LAN sichtbar (kein Security-Problem im Dev).
+            Start-LoggedProcess -Name "seaweedfs" -FilePath $seaweedExe `
+                -ArgumentList @(
+                    "server",
+                    "-ip=127.0.0.1",
+                    "-ip.bind=127.0.0.1",
+                    "-volume.port=8180",
+                    "-dir=$seaweedDataDir",
+                    "-s3",
+                    "-s3.config=$($repoRoot)\tools\seaweedfs\s3.json"
+                ) `
+                -WorkingDirectory $repoRoot
+        }
+    } elseif (-not $SkipStorage -and -not (Test-Path $seaweedExe)) {
+        Write-Host "[seaweedfs] weed.exe not found at $seaweedExe - download from https://github.com/seaweedfs/seaweedfs/releases" -ForegroundColor Yellow
+    }
+
     if (-not $SkipHomeserver) {
-        $tuwunelBin = Join-Path $repoRoot "tools\tuwunel"
-        $tuwunelCfg = Join-Path $repoRoot "homeserver\tuwunel.toml"
+        if ($Tuwunel16) {
+            $tuwunelBin = Join-Path $repoRoot "tools\tuwunel-v1.6"
+            $tuwunelCfg = Join-Path $repoRoot "homeserver\tuwunel.v1.6.toml"
+            $script:tuwunelWslCmd = "cd /mnt/d/matrix && ./tools/tuwunel-v1.6 --config ./homeserver/tuwunel.v1.6.toml"
+            Write-Host "[tuwunel] Using v1.6.0-rc (tools/tuwunel-v1.6 + tuwunel.v1.6.toml)" -ForegroundColor Yellow
+        } else {
+            $tuwunelBin = Join-Path $repoRoot "tools\tuwunel"
+            $tuwunelCfg = Join-Path $repoRoot "homeserver\tuwunel.toml"
+            $script:tuwunelWslCmd = "cd /mnt/d/matrix && ./tools/tuwunel --config ./homeserver/tuwunel.toml"
+        }
         $zendriteBin = Join-Path $repoRoot "tools\zendrite.exe"
         $zendriteCfg = Join-Path $repoRoot "homeserver\dendrite.yaml"  # Config-Format kompatibel mit Zendrite
 
@@ -281,8 +334,7 @@ try {
                 -HealthUrl "http://127.0.0.1:8448/_matrix/client/versions" -StartAction {
                 # Tuwunel = Linux binary, needs WSL
                 Start-LoggedProcess -Name "tuwunel" -FilePath "wsl" `
-                    -ArgumentList @("-d", "Ubuntu", "-u", "root", "bash", "-c",
-                        "cd /mnt/d/matrix && ./tools/tuwunel --config ./homeserver/tuwunel.toml") `
+                    -ArgumentList @("-d", "Ubuntu", "-u", "root", "bash", "-c", $script:tuwunelWslCmd) `
                     -WorkingDirectory $repoRoot
             }
         } elseif (Test-Path $zendriteBin) {
@@ -349,7 +401,7 @@ try {
     $pyVenv = Join-Path $pyDir ".venv\Scripts\python.exe"
     $pyExe = if (Test-Path $pyVenv) { $pyVenv } else { "python" }
 
-    # -- Agent Service (Port 8094) — main Python runtime with /api/v1/control/* --
+    # -- Agent Service (Port 8094) - main Python runtime with /api/v1/control/* --
     # Slice 7: Real agent service is DEFAULT. Opt-in mock via -UseMock.
     # Go appservice ControlProxyHandler forwards /api/v1/control/* to :8094
     # which must be the REAL agent.app (mock-agent only has /api/v1/agent/chat).
@@ -369,7 +421,7 @@ try {
         }
     }
 
-    # -- Python Bridge (Port 8097) — NATS consumer for Matrix events --
+    # -- Python Bridge (Port 8097) - NATS consumer for Matrix events --
     if (-not $SkipPython) {
         Register-Service -Name "py-bridge" -Port 8097 -Tier "app" -TimeoutSecs 60 `
             -HealthUrl "http://127.0.0.1:8097/health" -StartAction {
@@ -395,22 +447,7 @@ try {
         }
     }
 
-    # -- SeaweedFS (S3-compatible object storage, exec-15 Slice 1, Port 8333/9333) --
-    # On by default. Use -SkipStorage to disable.
-    if (-not $SkipStorage -and (Test-Path $seaweedExe)) {
-        if (-not (Test-Path $seaweedDataDir)) {
-            New-Item -ItemType Directory -Path $seaweedDataDir -Force | Out-Null
-        }
-        Register-Service -Name "seaweedfs" -Port 8333 -Tier "infra" -TimeoutSecs 30 -StartAction {
-            Start-LoggedProcess -Name "seaweedfs" -FilePath $seaweedExe `
-                -ArgumentList @("server", "-dir=$seaweedDataDir", "-s3", "-s3.config=$($repoRoot)\tools\seaweedfs\s3.json") `
-                -WorkingDirectory $repoRoot
-        }
-    } elseif (-not $SkipStorage -and -not (Test-Path $seaweedExe)) {
-        Write-Host "[seaweedfs] weed.exe not found at $seaweedExe - download from https://github.com/seaweedfs/seaweedfs/releases" -ForegroundColor Yellow
-    }
-
-    # -- OpenObserve (exec-17, Observability — Port 5080) --
+    # -- OpenObserve (exec-17, Observability - Port 5080) --
     # OTel traces/metrics/logs backend. Services send directly to gRPC :5081.
     if (-not $SkipObservability) {
         $ooDir = Join-Path $repoRoot "tools\openobserve"
@@ -438,9 +475,9 @@ try {
         }
     }
 
-    # -- Ingestion Worker (exec-15 Slice 2, Venv 2 — Port 8098) --
+    # -- Ingestion Worker (exec-15 Slice 2, Venv 2 - Port 8098) --
     # Decoupled extraction pipeline. agent/control/ingestion.py is a thin
-    # httpx proxy. See exec-15 §5.2 + D13-D17.
+    # httpx proxy. See exec-15 Section 5.2 + D13-D17.
     if (-not $SkipIngestion -and (Test-Path $ingestionDir)) {
         Register-Service -Name "ingestion-worker" -Port 8098 -Tier "app" -TimeoutSecs 60 -StartAction {
             Start-LoggedProcess -Name "ingestion-worker" -FilePath "uv" `
@@ -451,7 +488,7 @@ try {
         Write-Host "[ingestion-worker] $ingestionDir not found - skipping" -ForegroundColor Yellow
     }
 
-    # -- LiteLLM Gateway (exec-16, Venv 5 — Port 4000) --
+    # -- LiteLLM Gateway (exec-16, Venv 5 - Port 4000) --
     # Unified LLM proxy: model-name prefix routes to provider automatically.
     # All provider API keys read from python-backend/.env.
     $litellmDir = Join-Path $repoRoot "python-backend\litellm-gateway"
@@ -525,12 +562,12 @@ try {
         foreach ($svc in $infraServices) { Start-ServiceSafe -Name $svc.Name }
     }
 
-    # Tier 2: Next.js first (longest compile), don't wait — launch rest in parallel
+    # Tier 2: Next.js first (longest compile), don't wait - launch rest in parallel
     $appServices = $script:services.Values | Where-Object { $_.Tier -eq "app" }
     if ($appServices) {
         Write-Host "[tier-2] Starting app services..." -ForegroundColor Cyan
         if ($script:services["nextjs"]) {
-            # Start Next.js but don't block — it compiles in background
+            # Start Next.js but don't block - it compiles in background
             $svc = $script:services["nextjs"]
             if (-not (Test-PortInUse $svc.Port)) {
                 try {
@@ -544,7 +581,7 @@ try {
                 Write-Host "[nextjs] Already running on :$($svc.Port) - skipping" -ForegroundColor Green
             }
         }
-        # All other app services — start and wait for port
+        # All other app services - start and wait for port
         $rest = $appServices | Where-Object { $_.Name -ne "nextjs" }
         foreach ($svc in $rest) { Start-ServiceSafe -Name $svc.Name }
         # Now wait for Next.js port
@@ -570,9 +607,9 @@ try {
     if ($script:services["control-ui"])    { Write-Host "    Control UI:      http://localhost:3001" }
     Write-Host ""
     Write-Host "  Backend" -ForegroundColor Cyan
-    if ($script:services["go-appservice"])    { Write-Host "    Go Appservice:       http://127.0.0.1:8090 (Matrix bridge + Control Proxy → :8094)" }
+    if ($script:services["go-appservice"])    { Write-Host "    Go Appservice:       http://127.0.0.1:8090 (Matrix bridge + Control Proxy -> :8094)" }
     if ($script:services["agent-service"])    { Write-Host "    Agent Service:       http://127.0.0.1:8094 (54 /api/v1/control/* routes)" }
-    if ($script:services["mock-agent"])       { Write-Host "    LLM Mock Agent:      http://127.0.0.1:8094 (MOCK — only /chat + /health)" -ForegroundColor DarkYellow }
+    if ($script:services["mock-agent"])       { Write-Host "    LLM Mock Agent:      http://127.0.0.1:8094 (MOCK - only /chat + /health)" -ForegroundColor DarkYellow }
     if ($script:services["py-bridge"])        { Write-Host "    Python Bridge:       http://127.0.0.1:8097 (NATS consumer)" }
     if ($script:services["ingestion-worker"]) { Write-Host "    Ingestion Worker:    http://127.0.0.1:8098 (Venv 2, Slice 2)" }
     if ($script:services["litellm"])          { Write-Host "    LiteLLM Gateway:     http://127.0.0.1:4000 (Venv 5, exec-16)" }
@@ -589,7 +626,38 @@ try {
     }
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }
     if ($script:services["postgres"])      { Write-Host "    PostgreSQL:      postgresql://postgres@localhost:5433/hindsight_dev (pgvector)" }
-    if ($script:services["tunnel"])        { Write-Host "    Tunnel:          see logs/dev-stack/tunnel.stdout.log" -ForegroundColor DarkCyan }
+    if ($script:services["tunnel"]) {
+        $tunnelLog = Join-Path $logsRoot "tunnel.stderr.log"
+        $tunnelUrl = $null
+        $maxWaitSecs = 300   # 5 min max
+        $pollIntervalMs = 500
+        $maxIterations = ($maxWaitSecs * 1000) / $pollIntervalMs
+        Write-Host "    Tunnel:          waiting for cloudflared URL (up to 5 min)..." -ForegroundColor DarkCyan
+        $lastStatusAt = [DateTime]::Now
+        for ($i = 0; $i -lt $maxIterations; $i++) {
+            if (Test-Path $tunnelLog) {
+                $match = Select-String -Path $tunnelLog -Pattern "https://[a-zA-Z0-9\-]+\.trycloudflare\.com" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($match) { $tunnelUrl = $match.Matches[0].Value; break }
+            }
+            # Status update every 15s so user sees progress
+            if (([DateTime]::Now - $lastStatusAt).TotalSeconds -ge 15) {
+                $elapsed = [int](($i * $pollIntervalMs) / 1000)
+                $logSize = if (Test-Path $tunnelLog) { (Get-Item $tunnelLog).Length } else { 0 }
+                Write-Host "    Tunnel:          still waiting ($elapsed s elapsed, log=$logSize bytes) - cloudflared may be slow on first run" -ForegroundColor DarkGray
+                $lastStatusAt = [DateTime]::Now
+            }
+            Start-Sleep -Milliseconds $pollIntervalMs
+        }
+        if ($tunnelUrl) {
+            Write-Host "    Tunnel (Element X): $tunnelUrl" -ForegroundColor Yellow
+        } else {
+            Write-Host "    Tunnel:          TIMEOUT after $maxWaitSecs s - check logs/dev-stack/tunnel.stderr.log" -ForegroundColor Red
+            Write-Host "                     Last log lines:" -ForegroundColor DarkGray
+            if (Test-Path $tunnelLog) {
+                Get-Content $tunnelLog -Tail 5 | ForEach-Object { Write-Host "                       $_" -ForegroundColor DarkGray }
+            }
+        }
+    }
     if ($script:services["openobserve"])   { Write-Host "    OpenObserve:     http://localhost:5080  (Traces/Logs/Metrics)" -ForegroundColor Cyan }
     if ($script:services["voice-worker"])  { Write-Host "    Voice Worker:    LiveKit Agent (-WithVoice)" -ForegroundColor DarkYellow }
     if ($script:services["ai-devtools"])   { Write-Host "    AI DevTools:     http://127.0.0.1:4983  (-DevTools)" -ForegroundColor DarkYellow }
@@ -626,9 +694,14 @@ try {
 
                 try {
                     Start-Service -Name $svc.Name | Out-Null
-                    $ready = Wait-ForPort -Port $svc.Port -Name $svc.Name -TimeoutSecs 30
-                    if ($ready -and $svc.HealthUrl) { Wait-ForHealth -Url $svc.HealthUrl -Name $svc.Name | Out-Null }
-                    if ($ready) { Write-Host "[$($svc.Name)] Restarted OK" -ForegroundColor Green }
+                    if ($svc.Port -eq 0) {
+                        # Client-only service (e.g. tunnel) - no port to probe
+                        Write-Host "[$($svc.Name)] Restarted (client-only)" -ForegroundColor Green
+                    } else {
+                        $ready = Wait-ForPort -Port $svc.Port -Name $svc.Name -TimeoutSecs 30
+                        if ($ready -and $svc.HealthUrl) { Wait-ForHealth -Url $svc.HealthUrl -Name $svc.Name | Out-Null }
+                        if ($ready) { Write-Host "[$($svc.Name)] Restarted OK" -ForegroundColor Green }
+                    }
                 } catch {
                     Write-Host "[$($svc.Name)] Restart failed: $($_.Exception.Message)" -ForegroundColor Red
                 }

@@ -42,7 +42,13 @@ class AgentCard:
             "version": self.version,
             "url": self.url,
             "skills": [
-                {"id": s.id, "name": s.name, "description": s.description, "tags": s.tags, "examples": s.examples}
+                {
+                    "id": s.id,
+                    "name": s.name,
+                    "description": s.description,
+                    "tags": s.tags,
+                    "examples": s.examples,
+                }
                 for s in self.skills
             ],
             "default_input_modes": self.input_modes,
@@ -57,42 +63,72 @@ TRADING_AGENT_CARDS: dict[str, AgentCard] = {
         name="Fundamentals Analyst",
         description="Analyzes company financials, valuations, and earnings.",
         skills=[
-            AgentSkill(id="fundamentals-analysis", name="Financial Analysis", description="Balance sheet, income, cash flow analysis", tags=["finance", "valuation"]),
+            AgentSkill(
+                id="fundamentals-analysis",
+                name="Financial Analysis",
+                description="Balance sheet, income, cash flow analysis",
+                tags=["finance", "valuation"],
+            ),
         ],
     ),
     "sentiment": AgentCard(
         name="Sentiment Analyst",
         description="Analyzes market sentiment from news, social media, and indicators.",
         skills=[
-            AgentSkill(id="sentiment-scan", name="Sentiment Scan", description="News and social media sentiment analysis", tags=["sentiment", "news"]),
+            AgentSkill(
+                id="sentiment-scan",
+                name="Sentiment Scan",
+                description="News and social media sentiment analysis",
+                tags=["sentiment", "news"],
+            ),
         ],
     ),
     "technical": AgentCard(
         name="Technical Analyst",
         description="Analyzes price charts, patterns, and technical indicators.",
         skills=[
-            AgentSkill(id="chart-analysis", name="Chart Analysis", description="Multi-timeframe technical analysis", tags=["technical", "charts"]),
+            AgentSkill(
+                id="chart-analysis",
+                name="Chart Analysis",
+                description="Multi-timeframe technical analysis",
+                tags=["technical", "charts"],
+            ),
         ],
     ),
     "researcher": AgentCard(
         name="Research Analyst",
         description="Synthesizes findings from all analysts into balanced research summary.",
         skills=[
-            AgentSkill(id="research-synthesis", name="Research Synthesis", description="Bull/bear framework synthesis", tags=["research"]),
+            AgentSkill(
+                id="research-synthesis",
+                name="Research Synthesis",
+                description="Bull/bear framework synthesis",
+                tags=["research"],
+            ),
         ],
     ),
     "trader": AgentCard(
         name="Trader",
         description="Makes actionable trading decisions based on research.",
         skills=[
-            AgentSkill(id="trade-decision", name="Trade Decision", description="Entry/exit, position sizing", tags=["trading"]),
+            AgentSkill(
+                id="trade-decision",
+                name="Trade Decision",
+                description="Entry/exit, position sizing",
+                tags=["trading"],
+            ),
         ],
     ),
     "risk_manager": AgentCard(
         name="Risk Manager",
         description="Evaluates trade proposals for risk exposure and portfolio impact.",
         skills=[
-            AgentSkill(id="risk-eval", name="Risk Evaluation", description="Position sizing, drawdown, correlation risk", tags=["risk"]),
+            AgentSkill(
+                id="risk-eval",
+                name="Risk Evaluation",
+                description="Position sizing, drawdown, correlation risk",
+                tags=["risk"],
+            ),
         ],
     ),
 }

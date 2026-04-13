@@ -31,7 +31,9 @@ async def llm_call(
     if not model:
         model = os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
     if not model:
-        raise ValueError("Kein Model fuer Utility-Call. Setze AGENT_DEFAULT_UTILITY_MODEL in .env")
+        raise ValueError(
+            "Kein Model fuer Utility-Call. Setze AGENT_DEFAULT_UTILITY_MODEL in .env"
+        )
 
     messages: list[dict[str, str]] = []
     if system:

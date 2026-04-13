@@ -8,6 +8,7 @@ Default Chroma path: python-backend/data/chroma/ (auto-created)
 Embedding model: all-MiniLM-L6-v2 (~23 MB, downloaded once, then cached)
 Mock fallback for tests: set VECTOR_STORE_MOCK=true
 """
+
 from __future__ import annotations
 
 import os
@@ -24,7 +25,9 @@ _VECTOR_DIMENSION = 384
 
 
 class _VectorBackend(Protocol):
-    def add(self, doc_id: str, text: str, metadata: dict[str, Any] | None = None) -> None: ...
+    def add(
+        self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
+    ) -> None: ...
     def search(self, query: str, n_results: int = 5) -> list[dict[str, Any]]: ...
     def count(self) -> int: ...
     def status(self) -> dict[str, Any]: ...
@@ -59,6 +62,7 @@ class _DeterministicEmbeddingFunction:
 
     def __call__(self, input: list[str]) -> list[list[float]]:  # noqa: A002
         import hashlib
+
         result = []
         for text in input:
             digest = hashlib.md5(text.encode()).digest()
@@ -76,13 +80,18 @@ class _SentenceTransformerEmbeddingFunction:
         self._embedding_function = None
         # Lightweight default: don't auto-download embedding models unless explicitly enabled.
         # This avoids surprise downloads on weaker machines / minimal deployments.
-        allow_downloads = os.getenv("ALLOW_MODEL_DOWNLOADS", "false").lower() in ("1", "true")
+        allow_downloads = os.getenv("ALLOW_MODEL_DOWNLOADS", "false").lower() in (
+            "1",
+            "true",
+        )
         if not mock and allow_downloads:
             from chromadb.utils.embedding_functions import (  # type: ignore[import-untyped]
                 SentenceTransformerEmbeddingFunction,
             )
 
-            self._embedding_function = SentenceTransformerEmbeddingFunction(model_name=_MODEL_NAME)
+            self._embedding_function = SentenceTransformerEmbeddingFunction(
+                model_name=_MODEL_NAME
+            )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if self._mock:
@@ -102,7 +111,10 @@ class _ChromaVectorStore:
     ) -> None:
         self._path = path or os.getenv("VECTOR_STORE_PATH", _DEFAULT_CHROMA_PATH)
         self._collection_name = collection_name
-        self._mock = mock or os.getenv("VECTOR_STORE_MOCK", "false").lower() in ("1", "true")
+        self._mock = mock or os.getenv("VECTOR_STORE_MOCK", "false").lower() in (
+            "1",
+            "true",
+        )
 
         Path(self._path).mkdir(parents=True, exist_ok=True)
 
@@ -126,7 +138,9 @@ class _ChromaVectorStore:
             embedding_function=cast(Any, chroma_ef),
         )
 
-    def add(self, doc_id: str, text: str, metadata: dict[str, Any] | None = None) -> None:
+    def add(
+        self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         if self._mock:
             self._mock_docs[doc_id] = (text, metadata or {})
             return
@@ -198,7 +212,12 @@ class _ChromaVectorStore:
     def status(self) -> dict[str, Any]:
         try:
             count = self.count()
-            return {"status": "ready", "count": count, "collection": self._collection_name, "provider": "chroma"}
+            return {
+                "status": "ready",
+                "count": count,
+                "collection": self._collection_name,
+                "provider": "chroma",
+            }
         except Exception as e:
             return {"status": "unavailable", "error": str(e), "provider": "chroma"}
 
@@ -236,7 +255,8 @@ class _PgVectorStore:
     ) -> None:
         self._dsn = (dsn or os.getenv("VECTOR_STORE_PGVECTOR_DSN", "")).strip()
         self._table_name = _sanitize_identifier(
-            table_name or os.getenv("VECTOR_STORE_PGVECTOR_TABLE", _DEFAULT_PGVECTOR_TABLE),
+            table_name
+            or os.getenv("VECTOR_STORE_PGVECTOR_TABLE", _DEFAULT_PGVECTOR_TABLE),
             _DEFAULT_PGVECTOR_TABLE,
         )
         self._embedding = _SentenceTransformerEmbeddingFunction(mock=mock)
@@ -274,7 +294,9 @@ class _PgVectorStore:
     def _embed_one(self, text: str) -> list[float]:
         return self._embedding.embed([text])[0]
 
-    def add(self, doc_id: str, text: str, metadata: dict[str, Any] | None = None) -> None:
+    def add(
+        self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         from psycopg import sql as pg_sql
         from psycopg.types.json import Json
 
@@ -402,17 +424,26 @@ class _LanceDBVectorStore:
         table_name: str | None = None,
         mock: bool = False,
     ) -> None:
-        self._path = (path or os.getenv("VECTOR_STORE_PATH", _DEFAULT_LANCE_PATH)).strip() or _DEFAULT_LANCE_PATH
+        self._path = (
+            path or os.getenv("VECTOR_STORE_PATH", _DEFAULT_LANCE_PATH)
+        ).strip() or _DEFAULT_LANCE_PATH
         self._table_name = _sanitize_identifier(
             table_name or os.getenv("VECTOR_STORE_LANCE_TABLE", _DEFAULT_COLLECTION),
             _DEFAULT_COLLECTION,
         )
-        self._mock = mock or os.getenv("VECTOR_STORE_MOCK", "false").lower() in ("1", "true")
+        self._mock = mock or os.getenv("VECTOR_STORE_MOCK", "false").lower() in (
+            "1",
+            "true",
+        )
         self._embedding = _SentenceTransformerEmbeddingFunction(mock=self._mock)
-        self._hybrid = os.getenv("VECTOR_STORE_LANCE_HYBRID", "false").lower() in ("1", "true")
+        self._hybrid = os.getenv("VECTOR_STORE_LANCE_HYBRID", "false").lower() in (
+            "1",
+            "true",
+        )
         Path(self._path).mkdir(parents=True, exist_ok=True)
         if not self._mock:
             import lancedb  # type: ignore[import-untyped]
+
             self._db = lancedb.connect(self._path)
         else:
             self._db = None
@@ -422,25 +453,39 @@ class _LanceDBVectorStore:
         import pyarrow as pa  # type: ignore[import-untyped]
 
         assert self._db is not None
-        schema = pa.schema([
-            pa.field("id", pa.string()),
-            pa.field("text", pa.string()),
-            pa.field("vector", pa.list_(pa.float32(), _VECTOR_DIMENSION)),
-            pa.field("metadata_json", pa.string()),
-        ])
+        schema = pa.schema(
+            [
+                pa.field("id", pa.string()),
+                pa.field("text", pa.string()),
+                pa.field("vector", pa.list_(pa.float32(), _VECTOR_DIMENSION)),
+                pa.field("metadata_json", pa.string()),
+            ]
+        )
         if self._table_name in self._db.table_names():
             return self._db.open_table(self._table_name)
         return self._db.create_table(self._table_name, schema=schema)
 
-    def add(self, doc_id: str, text: str, metadata: dict[str, Any] | None = None) -> None:
+    def add(
+        self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         if self._mock:
             self._mock_docs[doc_id] = (text, metadata or {})
             return
         import json as _json
+
         vector = self._embedding.embed([text])[0]
         tbl = self._get_or_create_table()
-        tbl.merge_insert("id").when_matched_update_all().when_not_matched_insert_all().execute(
-            [{"id": doc_id, "text": text, "vector": vector, "metadata_json": _json.dumps(metadata or {})}]
+        tbl.merge_insert(
+            "id"
+        ).when_matched_update_all().when_not_matched_insert_all().execute(
+            [
+                {
+                    "id": doc_id,
+                    "text": text,
+                    "vector": vector,
+                    "metadata_json": _json.dumps(metadata or {}),
+                }
+            ]
         )
 
     def search(self, query: str, n_results: int = 5) -> list[dict[str, Any]]:
@@ -457,7 +502,7 @@ class _LanceDBVectorStore:
             ranked.sort(key=lambda x: x[0])
             return [
                 {"id": d, "text": t, "distance": float(dist), "metadata": m}
-                for dist, d, t, m in ranked[:min(n_results, 20)]
+                for dist, d, t, m in ranked[: min(n_results, 20)]
             ]
         import json as _json
 
@@ -490,7 +535,13 @@ class _LanceDBVectorStore:
 
     def status(self) -> dict[str, Any]:
         try:
-            return {"status": "ready", "count": self.count(), "provider": "lancedb", "table": self._table_name, "hybrid": self._hybrid}
+            return {
+                "status": "ready",
+                "count": self.count(),
+                "provider": "lancedb",
+                "table": self._table_name,
+                "hybrid": self._hybrid,
+            }
         except Exception as e:
             return {"status": "unavailable", "error": str(e), "provider": "lancedb"}
 
@@ -512,7 +563,11 @@ class _LanceDBVectorStore:
             self.add(
                 doc_id=s.get("id", f"s_{count}"),
                 text=text,
-                metadata={"type": "Stratagem", "category": s.get("category", ""), "market_bias": s.get("market_bias", "")},
+                metadata={
+                    "type": "Stratagem",
+                    "category": s.get("category", ""),
+                    "market_bias": s.get("market_bias", ""),
+                },
             )
             count += 1
         return count
@@ -528,15 +583,23 @@ class VectorStore:
         mock: bool = False,
         provider: str | None = None,
     ) -> None:
-        self._provider = _normalize_provider(provider or os.getenv("VECTOR_STORE_PROVIDER", "chroma"))
+        self._provider = _normalize_provider(
+            provider or os.getenv("VECTOR_STORE_PROVIDER", "chroma")
+        )
         if self._provider == "pgvector":
             self._backend: _VectorBackend = _PgVectorStore(mock=mock)
         elif self._provider == "lancedb":
-            self._backend = _LanceDBVectorStore(path=path, table_name=collection_name, mock=mock)
+            self._backend = _LanceDBVectorStore(
+                path=path, table_name=collection_name, mock=mock
+            )
         else:
-            self._backend = _ChromaVectorStore(path=path, collection_name=collection_name, mock=mock)
+            self._backend = _ChromaVectorStore(
+                path=path, collection_name=collection_name, mock=mock
+            )
 
-    def add(self, doc_id: str, text: str, metadata: dict[str, Any] | None = None) -> None:
+    def add(
+        self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
+    ) -> None:
         self._backend.add(doc_id, text, metadata)
 
     def search(self, query: str, n_results: int = 5) -> list[dict[str, Any]]:

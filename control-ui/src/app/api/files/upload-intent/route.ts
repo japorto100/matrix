@@ -5,9 +5,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { writeFileAudit } from "@/lib/server/file-audit";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
 import { getErrorMessage } from "@/lib/utils";
-
-const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:9060";
 
 interface UploadIntentBody {
 	filename: string;
@@ -42,11 +41,12 @@ export async function POST(request: NextRequest) {
 	}
 
 	try {
-		const upstream = await fetch(`${GATEWAY_BASE}/api/v1/files/upload-intent`, {
+		const upstream = await fetch(`${getGatewayBaseURL()}/api/v1/files/upload-intent`, {
 			method: "POST",
 			headers: {
 				"content-type": "application/json",
 				"x-request-id": requestId,
+				"x-actor-user-id": actorUserId ?? "",
 			},
 			body: JSON.stringify(body),
 			cache: "no-store",

@@ -1,7 +1,7 @@
 "use client";
 
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { MessageSquarePlus, Plus, Search } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { memo, useCallback, useMemo, useRef, useState } from "react";

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -40,7 +41,7 @@ type Config struct {
 
 	// E2EE (Option C: Go übernimmt Crypto, Python bekommt Klartext)
 	E2EEEnabled       bool   // MATRIX_E2EE_ENABLED=false (Standard: deaktiviert für Tests)
-	CryptoDBPath      string // MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3
+	CryptoDBPath      string // MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3 (SQLite fallback only)
 	CryptoPickleKey   string // MATRIX_CRYPTO_PICKLE_KEY=<zufälliger Key>
 	KeyBackupPassword string // MATRIX_KEY_BACKUP_PASSWORD — Passphrase für lokales Megolm Key Backup
 
@@ -65,6 +66,12 @@ type Config struct {
 	// exec-16: Key Encryption (shared mit Python — identisches AES-256-GCM Format)
 	KeyEncryptionSecret string // KEY_ENCRYPTION_SECRET — 64 hex chars (32 bytes)
 	KeyVaultBackend     string // KEY_VAULT_BACKEND — "aesgcm" (default) oder "hpke-mlkem"
+
+	// exec-19 Stufe 2B + 3: shared PG DSN for all Go-owned schemas
+	// (storage.artifact_metadata, matrix_crypto). Resolved from a
+	// fallback chain so the env var name can evolve without breaking
+	// existing deployments: POSTGRES_URL → HINDSIGHT_DB_URL → DATABASE_URL.
+	PostgresDSN string
 }
 
 // Load lädt Config aus .env.{environment} + Environment.
@@ -102,7 +109,19 @@ func Load() *Config {
 		AgentCapabilities:      getenv("MATRIX_AGENT_CAPABILITIES", "gateway"),
 		KeyEncryptionSecret:    getenv("KEY_ENCRYPTION_SECRET", ""),
 		KeyVaultBackend:        getenv("KEY_VAULT_BACKEND", "aesgcm"),
+		PostgresDSN:            resolvePostgresDSN(),
 	}
+}
+
+// resolvePostgresDSN checks env vars in priority order so the canonical
+// name can evolve (exec-18 plans to standardise on DATABASE_URL).
+func resolvePostgresDSN() string {
+	for _, key := range []string{"POSTGRES_URL", "HINDSIGHT_DB_URL", "DATABASE_URL"} {
+		if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func getenv(key, fallback string) string {

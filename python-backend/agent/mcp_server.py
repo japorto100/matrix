@@ -73,6 +73,8 @@ def create_mcp_server() -> FastMCP:
 
 # Entry Point: uv run python -m agent.mcp_server
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
     server = create_mcp_server()
     server.run(transport="streamable-http", host="127.0.0.1", port=8095)

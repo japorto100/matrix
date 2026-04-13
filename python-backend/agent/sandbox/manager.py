@@ -42,7 +42,9 @@ class SandboxResult:
     stdout: str = ""
     stderr: str = ""
     exit_code: int = 0
-    files: list[dict[str, str]] = field(default_factory=list)  # [{name, data_b64, mime}]
+    files: list[dict[str, str]] = field(
+        default_factory=list
+    )  # [{name, data_b64, mime}]
     execution_time_ms: float = 0
     error: str | None = None
 
@@ -94,7 +96,12 @@ class SandboxManager:
                 entrypoint=list(config.entrypoint),
                 timeout=config.timeout,
             )
-            logger.info("Sandbox created: %s (image=%s, timeout=%s)", sandbox.id, config.image, config.timeout)
+            logger.info(
+                "Sandbox created: %s (image=%s, timeout=%s)",
+                sandbox.id,
+                config.image,
+                config.timeout,
+            )
 
             # 2. Upload files if provided (exec-12 Phase 1.4)
             if upload_files:
@@ -104,7 +111,9 @@ class SandboxManager:
             if language == "bash":
                 result = await self._execute_bash(sandbox, code, config)
             else:
-                lang_enum = getattr(SupportedLanguage, _LANGUAGE_MAP.get(language, "PYTHON"))
+                lang_enum = getattr(
+                    SupportedLanguage, _LANGUAGE_MAP.get(language, "PYTHON")
+                )
                 interpreter = await CodeInterpreter.create(sandbox=sandbox)
                 ctx = await interpreter.codes.create_context(lang_enum)
                 exec_result = await interpreter.codes.run(code, context=ctx)
@@ -112,11 +121,15 @@ class SandboxManager:
                 stdout_parts = []
                 if exec_result.logs and exec_result.logs.stdout:
                     for msg in exec_result.logs.stdout:
-                        stdout_parts.append(msg.text if hasattr(msg, "text") else str(msg))
+                        stdout_parts.append(
+                            msg.text if hasattr(msg, "text") else str(msg)
+                        )
                 stderr_parts = []
                 if exec_result.logs and exec_result.logs.stderr:
                     for msg in exec_result.logs.stderr:
-                        stderr_parts.append(msg.text if hasattr(msg, "text") else str(msg))
+                        stderr_parts.append(
+                            msg.text if hasattr(msg, "text") else str(msg)
+                        )
 
                 # Expression result (last expression value)
                 if exec_result.result:
@@ -139,7 +152,11 @@ class SandboxManager:
                 action=AuditAction.SANDBOX_EXEC,
                 thread_id=thread_id,
                 tool_name="sandbox_execute",
-                input_data={"language": language, "code_hash": code_hash, "code_len": len(code)},
+                input_data={
+                    "language": language,
+                    "code_hash": code_hash,
+                    "code_len": len(code),
+                },
                 output_data={
                     "exit_code": result.exit_code,
                     "stdout_len": len(result.stdout),
@@ -266,14 +283,20 @@ class SandboxManager:
             )
 
             # Collect screenshots
-            result.files = await self._collect_output_files(sandbox, directory="/tmp/screenshots")
+            result.files = await self._collect_output_files(
+                sandbox, directory="/tmp/screenshots"
+            )
             result.execution_time_ms = audit_duration(start)
 
             await audit_log(
                 action=AuditAction.SANDBOX_EXEC,
                 thread_id=thread_id,
                 tool_name="sandbox_browser",
-                input_data={"url": url, "extract_text": extract_text, "screenshot": screenshot},
+                input_data={
+                    "url": url,
+                    "extract_text": extract_text,
+                    "screenshot": screenshot,
+                },
                 output_data={
                     "exit_code": result.exit_code,
                     "stdout_len": len(result.stdout),
@@ -310,9 +333,7 @@ class SandboxManager:
 
     # ── Private helpers ────────────────────────────────────────────────────
 
-    async def _upload_files(
-        self, sandbox: Any, files: list[dict[str, str]]
-    ) -> None:
+    async def _upload_files(self, sandbox: Any, files: list[dict[str, str]]) -> None:
         """Upload files into the sandbox filesystem."""
         from opensandbox.models import WriteEntry
 
@@ -330,7 +351,9 @@ class SandboxManager:
             await sandbox.files.write_files(entries)
             logger.info("Uploaded %d files to sandbox", len(entries))
 
-    async def _execute_bash(self, sandbox: Any, code: str, config: SandboxConfig) -> SandboxResult:
+    async def _execute_bash(
+        self, sandbox: Any, code: str, config: SandboxConfig
+    ) -> SandboxResult:
         """Execute bash code via sandbox.commands.run()."""
         execution = await sandbox.commands.run(code)
         stdout = ""
@@ -359,7 +382,9 @@ class SandboxManager:
         files: list[dict[str, str]] = []
         try:
             # List files in the output directory
-            listing = await sandbox.commands.run(f"ls -1 {directory} 2>/dev/null || true")
+            listing = await sandbox.commands.run(
+                f"ls -1 {directory} 2>/dev/null || true"
+            )
             if not listing.logs or not listing.logs.stdout:
                 return files
 
@@ -372,7 +397,11 @@ class SandboxManager:
                     content = await sandbox.files.read_file(filepath)
                     if isinstance(content, bytes):
                         if len(content) > _MAX_FILE_SIZE:
-                            logger.warning("File %s too large (%d bytes), skipping", filename, len(content))
+                            logger.warning(
+                                "File %s too large (%d bytes), skipping",
+                                filename,
+                                len(content),
+                            )
                             continue
                         data_b64 = base64.b64encode(content).decode()
                     else:
@@ -388,16 +417,13 @@ class SandboxManager:
 
         return files
 
-
     async def health_check(self) -> bool:
         """Check if OpenSandbox server is reachable."""
         try:
             import httpx
 
             async with httpx.AsyncClient() as client:
-                r = await client.get(
-                    f"{get_sandbox_server_url()}/health", timeout=5.0
-                )
+                r = await client.get(f"{get_sandbox_server_url()}/health", timeout=5.0)
                 return r.status_code == 200
         except Exception:
             return False
@@ -434,7 +460,9 @@ def _build_playwright_script(
     if screenshot:
         parts.append("        import os")
         parts.append("        os.makedirs('/tmp/screenshots', exist_ok=True)")
-        parts.append("        await page.screenshot(path='/tmp/screenshots/page.png', full_page=True)")
+        parts.append(
+            "        await page.screenshot(path='/tmp/screenshots/page.png', full_page=True)"
+        )
         parts.append("        print('[screenshot saved to /tmp/screenshots/page.png]')")
 
     parts.append("        await browser.close()")

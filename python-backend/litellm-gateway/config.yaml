@@ -1,56 +1,56 @@
-# LiteLLM Proxy Config — exec-16
+# LiteLLM Proxy Config - exec-16
 # Docs: https://docs.litellm.ai/docs/proxy/configs
 # All Settings: https://docs.litellm.ai/docs/proxy/config_settings
 # Start: cd python-backend/litellm-gateway && uv run litellm --config config.yaml --port 4000
 #
 # PRINZIP: Wildcard-Routing. User waehlt Model in control-ui/agent-chat,
 # LiteLLM routet automatisch zum richtigen Provider.
-# z.B. "anthropic/claude-sonnet-4-6" → Anthropic API
-#      "openrouter/qwen/qwen3-480b:free" → OpenRouter (kostenlos)
-#      "ollama/llama3.3" → lokales Ollama
+# z.B. "anthropic/claude-sonnet-4-6" -> Anthropic API
+#      "openrouter/qwen/qwen3-480b:free" -> OpenRouter (kostenlos)
+#      "ollama/llama3.3" -> lokales Ollama
 
 model_list:
-  # ══════════════════════════════════════════════════════════════════════
+  # ======================================================================
   # US / EU Provider (direkt)
-  # ══════════════════════════════════════════════════════════════════════
+  # ======================================================================
 
-  # Anthropic — Claude Opus, Sonnet, Haiku
+  # Anthropic - Claude Opus, Sonnet, Haiku
   - model_name: "anthropic/*"
     litellm_params:
       model: "anthropic/*"
       api_key: "os.environ/ANTHROPIC_API_KEY"
 
-  # OpenAI — GPT-4o, o3, o4-mini
+  # OpenAI - GPT-4o, o3, o4-mini
   - model_name: "openai/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/OPENAI_API_KEY"
 
-  # Google Gemini — Gemini 2.5 Pro/Flash
+  # Google Gemini - Gemini 2.5 Pro/Flash
   - model_name: "gemini/*"
     litellm_params:
       model: "gemini/*"
       api_key: "os.environ/GEMINI_API_KEY"
 
-  # Cohere — Command R+, Embed, Rerank
+  # Cohere - Command R+, Embed, Rerank
   - model_name: "cohere/*"
     litellm_params:
       model: "cohere/*"
       api_key: "os.environ/COHERE_API_KEY"
 
-  # Mistral — Mistral Large, Codestral, Devstral
+  # Mistral - Mistral Large, Codestral, Devstral
   - model_name: "mistral/*"
     litellm_params:
       model: "mistral/*"
       api_key: "os.environ/MISTRAL_API_KEY"
 
-  # Groq — Ultra-fast Inference (Llama, Mixtral auf Groq Hardware)
+  # Groq - Ultra-fast Inference (Llama, Mixtral auf Groq Hardware)
   - model_name: "groq/*"
     litellm_params:
       model: "groq/*"
       api_key: "os.environ/GROQ_API_KEY"
 
-  # OpenRouter — 500+ Models, Free Tier, Aggregator
+  # OpenRouter - 500+ Models, Free Tier, Aggregator
   # Docs: https://openrouter.ai/docs | https://openrouter.ai/docs/app-attribution
   - model_name: "openrouter/*"
     litellm_params:
@@ -60,7 +60,7 @@ model_list:
         HTTP-Referer: "https://tradeview-fusion.local"
         X-OpenRouter-Title: "TradeView Fusion Agent"
 
-  # AWS Bedrock — Claude, Llama, Titan via AWS
+  # AWS Bedrock - Claude, Llama, Titan via AWS
   # - model_name: "bedrock/*"
   #   litellm_params:
   #     model: "bedrock/*"
@@ -68,99 +68,103 @@ model_list:
   #     aws_secret_access_key: "os.environ/AWS_SECRET_ACCESS_KEY"
   #     aws_region_name: "us-east-1"
 
-  # Azure OpenAI — GPT via Azure
+  # Azure OpenAI - GPT via Azure
   # - model_name: "azure/*"
   #   litellm_params:
   #     model: "azure/*"
   #     api_key: "os.environ/AZURE_API_KEY"
   #     api_base: "os.environ/AZURE_API_BASE"
 
-  # ══════════════════════════════════════════════════════════════════════
-  # Chinesische Provider (direkt — alle OpenAI-kompatibel)
-  # ══════════════════════════════════════════════════════════════════════
+  # ======================================================================
+  # Chinesische Provider (direkt - alle OpenAI-kompatibel)
+  # ======================================================================
 
-  # DeepSeek — V3.2, R1, guenstig, Open Weight
+  # DeepSeek - V3.2, R1, guenstig, Open Weight
   - model_name: "deepseek/*"
     litellm_params:
       model: "deepseek/*"
       api_key: "os.environ/DEEPSEEK_API_KEY"
 
-  # Qwen / Alibaba DashScope — Qwen3, QwQ, Coder
+  # Qwen / Alibaba DashScope - Qwen3, QwQ, Coder
   - model_name: "qwen/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/DASHSCOPE_API_KEY"
       api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-  # Zhipu AI — GLM-5, GLM-4, ChatGLM (Top China Benchmark)
+  # Zhipu AI - GLM-5, GLM-4, ChatGLM (Top China Benchmark)
   - model_name: "zhipu/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/ZHIPU_API_KEY"
       api_base: "https://open.bigmodel.cn/api/paas/v4"
 
-  # Moonshot / Kimi — Kimi K2.5, 256K Context
+  # Moonshot / Kimi - Kimi K2.5, 256K Context
   - model_name: "moonshot/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/MOONSHOT_API_KEY"
       api_base: "https://api.moonshot.cn/v1"
 
-  # Baichuan — Baichuan 4
+  # Baichuan - Baichuan 4
   - model_name: "baichuan/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/BAICHUAN_API_KEY"
       api_base: "https://api.baichuan-ai.com/v1"
 
-  # Yi / 01.AI — Yi-Lightning, Yi-Large
+  # Yi / 01.AI - Yi-Lightning, Yi-Large
   - model_name: "yi/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/YI_API_KEY"
       api_base: "https://api.lingyiwanwu.com/v1"
 
-  # MiniMax — MiniMax-01, abab-7
+  # MiniMax - MiniMax-01, abab-7
   - model_name: "minimax/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/MINIMAX_API_KEY"
       api_base: "https://api.minimax.chat/v1"
 
-  # StepFun — Step-2
+  # StepFun - Step-2
   - model_name: "stepfun/*"
     litellm_params:
       model: "openai/*"
       api_key: "os.environ/STEPFUN_API_KEY"
       api_base: "https://api.stepfun.com/v1"
 
-  # ══════════════════════════════════════════════════════════════════════
+  # ======================================================================
   # Lokal (kein API Key, kein Internet)
-  # ══════════════════════════════════════════════════════════════════════
+  # ======================================================================
+  # exec-19: Local providers commented out because they don't run in DevStack
+  # by default. When user enables Ollama/vLLM/LM Studio, uncomment the block
+  # below OR add via control-ui Models Tab (dynamic reload via LiteLLM
+  # /config/update endpoint - Stufe 4).
 
-  # Ollama — Llama, Mistral, Qwen, Phi lokal
-  - model_name: "ollama/*"
-    litellm_params:
-      model: "ollama/*"
-      api_base: "http://localhost:11434"
+  # Ollama - Llama, Mistral, Qwen, Phi lokal
+  # - model_name: "ollama/*"
+  #   litellm_params:
+  #     model: "ollama/*"
+  #     api_base: "http://localhost:11434"
 
-  # vLLM — GPU Inference Server
-  - model_name: "vllm/*"
-    litellm_params:
-      model: "openai/*"
-      api_base: "http://localhost:8000/v1"
-      api_key: "dummy"
+  # vLLM - GPU Inference Server
+  # - model_name: "vllm/*"
+  #   litellm_params:
+  #     model: "openai/*"
+  #     api_base: "http://localhost:8000/v1"
+  #     api_key: "dummy"
 
-  # LM Studio — Desktop GUI
-  - model_name: "lmstudio/*"
-    litellm_params:
-      model: "openai/*"
-      api_base: "http://localhost:1234/v1"
-      api_key: "dummy"
+  # LM Studio - Desktop GUI
+  # - model_name: "lmstudio/*"
+  #   litellm_params:
+  #     model: "openai/*"
+  #     api_base: "http://localhost:1234/v1"
+  #     api_key: "dummy"
 
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 # General Settings
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 litellm_settings:
   drop_params: true               # Unbekannte Params ignorieren
   set_verbose: false
@@ -173,18 +177,22 @@ litellm_settings:
   #   type: "local"               # "local", "redis", "s3"
   #   ttl: 3600
 
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 # Router Settings (Failover + Load Balancing)
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 router_settings:
   routing_strategy: "simple-shuffle"    # Failover bei gleichem model_name
-  enable_pre_call_checks: true          # Provider-Health vorab pruefen
+  # exec-19: pre_call_checks RE-ENABLED. Local providers (Ollama/vLLM/LM Studio)
+  # are commented out above so they don't spam errors. When user enables a local
+  # provider or adds a new API key via control-ui, pre-call-checks ensure we
+  # only route to healthy backends.
+  enable_pre_call_checks: true
   # cooldown_time: 60                   # Sekunden bevor failed Provider erneut versucht
   # retry_after: 5                      # Sekunden zwischen Retries
 
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 # Environment Settings (optional)
-# ══════════════════════════════════════════════════════════════════════════
+# ==========================================================================
 environment_variables: {}
   # LITELLM_MASTER_KEY: "sk-litellm-dev-key"  # Virtual Key fuer Agent Service
   # LITELLM_DATABASE_URL: "os.environ/HINDSIGHT_DB_URL"  # Fuer Cost Tracking (Stufe 3)

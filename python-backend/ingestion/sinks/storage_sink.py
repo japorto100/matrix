@@ -7,11 +7,10 @@ complete and record chunk count + extractor used.
 
 from __future__ import annotations
 
-from loguru import logger
-
 from ingestion.clients.go_storage import GoStorageClient
 from ingestion.core.types import ExtractedChunk, ExtractedDocument, Job
 from ingestion.sinks.base import Sink, SinkResult
+from loguru import logger
 
 
 class StorageSink(Sink):

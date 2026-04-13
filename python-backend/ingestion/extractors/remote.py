@@ -15,8 +15,6 @@ import os
 from pathlib import Path
 
 import httpx
-from loguru import logger
-
 from ingestion.core.exceptions import ExtractionError
 from ingestion.extractors.base import DocumentExtractor, ExtractedDocument
 
@@ -27,9 +25,7 @@ class RemoteLayoutExtractor(DocumentExtractor):
     backend_name: str = ""  # subclasses set this (docling | marker | mineru)
 
     def __init__(self) -> None:
-        self.base_url = os.environ.get(
-            "EXTRACTION_LAYOUT_URL", "http://127.0.0.1:8101"
-        ).rstrip("/")
+        self.base_url = os.environ.get("EXTRACTION_LAYOUT_URL", "http://127.0.0.1:8101").rstrip("/")
         self.enabled = os.environ.get("EXTRACTION_LAYOUT_ENABLED", "false").lower() == "true"
         self.timeout = float(os.environ.get("EXTRACTION_LAYOUT_TIMEOUT_S", "300"))
 
@@ -60,7 +56,7 @@ class RemoteLayoutExtractor(DocumentExtractor):
                 )
                 if r.status_code == 503:
                     raise ExtractionError(
-                        f"extraction_layout worker returned 503 (skeleton). "
+                        "extraction_layout worker returned 503 (skeleton). "
                         "Activate Phase 2 — see extraction_layout/README.md"
                     )
                 r.raise_for_status()

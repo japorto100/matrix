@@ -34,7 +34,9 @@ def _to_item(unit: dict[str, Any], idx: int) -> dict[str, Any]:
         tags = [tags]
     tags = [str(t).strip() for t in tags if str(t).strip()]
 
-    title = (tags[0] if tags else unit.get("agent_role") or f"Highlight {idx}").replace("_", " ")
+    title = (tags[0] if tags else unit.get("agent_role") or f"Highlight {idx}").replace(
+        "_", " "
+    )
     title = title.title()
 
     if "\n" in text:
@@ -110,5 +112,7 @@ async def get_memory_highlights(
         reverse=True,
     )
 
-    items = [_to_item(unit, idx + 1) for idx, unit in enumerate(ranked[: max(1, limit)])]
+    items = [
+        _to_item(unit, idx + 1) for idx, unit in enumerate(ranked[: max(1, limit)])
+    ]
     return {"items": items, "total": len(items)}

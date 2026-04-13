@@ -18,17 +18,21 @@ def get_stt():
 
     if provider == "openai":
         from livekit.plugins.openai import STT
+
         return STT()
 
     # Default: faster-whisper (open source, lokal)
     from livekit.plugins.silero import VAD  # noqa: F401 — ensures silero is importable
+
     try:
         from livekit_whisper import WhisperSTT
+
         model = os.getenv("WHISPER_MODEL", "base")
         return WhisperSTT(model=model)
     except ImportError:
         # Fallback: OpenAI Whisper API wenn faster-whisper nicht verfügbar
         from livekit.plugins.openai import STT
+
         return STT()
 
 
@@ -38,12 +42,14 @@ def get_tts():
 
     if provider == "openai":
         from livekit.plugins.openai import TTS
+
         voice = os.getenv("AGENT_TTS_VOICE", "alloy")
         return TTS(voice=voice)
 
     if provider == "kokoro":
         try:
             from livekit_kokoro import KokoroTTS
+
             return KokoroTTS()
         except ImportError:
             pass
@@ -51,10 +57,12 @@ def get_tts():
     # Default: Piper TTS (open source, lokal)
     try:
         from livekit_piper import PiperTTS
+
         return PiperTTS()
     except ImportError:
         # Fallback: OpenAI TTS wenn Piper nicht verfügbar
         from livekit.plugins.openai import TTS
+
         return TTS(voice=os.getenv("AGENT_TTS_VOICE", "alloy"))
 
 
@@ -65,10 +73,12 @@ def get_llm():
 
     if provider == "anthropic":
         from livekit.plugins.anthropic import LLM
+
         return LLM(model=model or "claude-sonnet-4-6")
 
     # openai + openai-compatible (Ollama, OpenRouter, vLLM, LM Studio)
     from livekit.plugins.openai import LLM
+
     kwargs = {}
     if model:
         kwargs["model"] = model
@@ -81,4 +91,5 @@ def get_llm():
 def get_vad():
     """Returns Silero VAD (Voice Activity Detection) — immer Open Source."""
     from livekit.plugins.silero import VAD
+
     return VAD.load()

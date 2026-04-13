@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 # Defaults
 THRESHOLD_FRACTION = float(os.environ.get("AGENT_SUMMARIZE_THRESHOLD", "0.7"))
 KEEP_MESSAGES = int(os.environ.get("AGENT_SUMMARIZE_KEEP_MESSAGES", "20"))
-SUMMARIZE_MODEL = os.environ.get("AGENT_SUMMARIZE_MODEL", "")  # aus ENV oder control-ui, kein hardcoded Default
+SUMMARIZE_MODEL = os.environ.get(
+    "AGENT_SUMMARIZE_MODEL", ""
+)  # aus ENV oder control-ui, kein hardcoded Default
 TOOL_RESULT_MAX_CHARS = int(os.environ.get("AGENT_TOOL_RESULT_MAX_CHARS", "2000"))
 
 # Token estimates (rough, fuer Threshold-Check)
@@ -77,7 +79,10 @@ def offload_large_tool_results(messages: list[dict[str, Any]]) -> list[dict[str,
         if msg.get("role") == "tool":
             content = msg.get("content", "")
             if isinstance(content, str) and len(content) > TOOL_RESULT_MAX_CHARS:
-                truncated = content[:TOOL_RESULT_MAX_CHARS] + f"\n[... truncated, full result was {len(content)}chars]"
+                truncated = (
+                    content[:TOOL_RESULT_MAX_CHARS]
+                    + f"\n[... truncated, full result was {len(content)}chars]"
+                )
                 result.append({**msg, "content": truncated})
                 continue
         result.append(msg)
@@ -114,6 +119,7 @@ async def summarize_old_messages(
 
     try:
         from agent.llm_helper import llm_call
+
         summary = await llm_call(
             SUMMARY_PROMPT.format(conversation=conversation_text[:4000]),
             max_tokens=512,

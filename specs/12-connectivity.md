@@ -213,6 +213,75 @@ tools/bore.exe local 8448 --to bore.pub
 
 ---
 
+## Option 7 — Playit.gg (stabile URL + HTTPS ohne eigene Domain)
+
+Playit ist ein globaler Proxy-Service, der Agent ist Open Source. Einziger Weg
+der **stabile URL + HTTPS + keine eigene Domain** kombiniert — genau die
+Lücke zwischen Cloudflare Tunnel (braucht Domain) und bore (kein HTTPS).
+
+### Wie es funktioniert
+
+```
+Handy ──HTTPS──► dein-name.playit.gg
+                      │
+                Playit Edge Server (Let's Encrypt automatisch)
+                      │
+                playit Agent (dein PC, ausgehende Verbindung)
+                      │
+                localhost:8448 (Tuwunel)
+```
+
+### Setup
+
+```powershell
+# 1. Agent herunterladen von https://playit.gg/download
+#    → tools/playit.exe
+
+# 2. Starten
+tools/playit.exe
+
+# 3. Browser öffnet automatisch → mit Discord/Google einloggen (Account nötig)
+
+# 4. Im Dashboard: "Add Tunnel"
+#    - Type: HTTP (nicht TCP — HTTP liefert Let's Encrypt Zertifikat)
+#    - Local Port: 8448
+#    - Region: Europe (Frankfurt/Amsterdam)
+
+# 5. Dashboard zeigt URL: https://dein-name.playit.gg
+```
+
+**Wichtig:** Tunnel-Type **HTTP** wählen, nicht TCP. Nur HTTP-Tunnel bekommen
+automatisch ein gültiges Let's-Encrypt-Zertifikat auf der `*.playit.gg`-Subdomain.
+TCP-Tunnel liefern nur `tcp://...:PORT` ohne TLS → Element X lehnt ab.
+
+### Vor- und Nachteile
+
+| | Playit.gg |
+|---|---|
+| Eigene Domain nötig | ❌ gratis Subdomain `*.playit.gg` |
+| HTTPS | ✅ automatisch (bei HTTP-Tunnel-Typ) |
+| Stabile URL | ✅ bleibt nach Neustart |
+| Account | ✅ nötig (Discord/Google-Login) |
+| Open Source | ⚠️ nur Agent, Infra nicht |
+| Element X Mobile | ✅ (HTTPS erfüllt) |
+| Kosten | Gratis, mit Bandbreiten-Limit (Premium optional) |
+| Ursprung | Für Game-Server (Minecraft) gebaut, auch für HTTP nutzbar |
+| URL-Ästhetik | ⚠️ `*.playit.gg` sieht nach Bastel-Setup aus |
+
+### Wann nutzen?
+
+- Du willst **keinen Domain-Kauf** (nichtmal 1–3 €/Jahr für `.xyz`)
+- Du willst Element X Mobile testen → HTTPS zwingend nötig
+- Du willst **eine URL die nach Neustart dieselbe bleibt** (Quick Tunnel von cloudflared ändert sich)
+
+### Wann nicht?
+
+- Production / Föderation mit `matrix.org` — da brauchst du eh eine echte Domain
+  (Matrix-Server-Namen sind Teil der User-IDs: `@user:dein-server.com`)
+- Wenn Bandbreite kritisch ist — Gratis-Tier throttlet
+
+---
+
 ## Entscheidungsbaum
 
 ```
@@ -220,8 +289,11 @@ Willst du testen?
 ├── Nur du selbst (lokal)
 │   └── 127.0.0.1 reicht — kein Tunnel nötig
 │
-├── Mit Handy (kurzer Test heute)
-│   └── cloudflared Quick Tunnel → https://xxxx.trycloudflare.com
+├── Mit Handy (kurzer Test heute, Element X)
+│   ├── Kein Domain-Kauf, stabile URL gewünscht
+│   │   └── Playit.gg (HTTP-Tunnel-Typ → HTTPS)
+│   └── Egal ob URL sich ändert
+│       └── cloudflared Quick Tunnel → https://xxxx.trycloudflare.com
 │
 ├── Mit Freunden (Testgruppe, geschlossen)
 │   └── Tailscale → stabile IPs, kein Internet nötig
@@ -243,7 +315,8 @@ Willst du testen?
 
 | Use Case | VPS nötig? | Alternative |
 |---|---|---|
-| Local Dev + Handy testen | ❌ | cloudflared Quick Tunnel |
+| Local Dev + Handy testen | ❌ | cloudflared Quick Tunnel oder Playit.gg |
+| Stabile HTTPS-URL ohne Domain-Kauf | ❌ | Playit.gg (HTTP-Tunnel-Typ) |
 | Freunde einladen (Testgruppe) | ❌ | Tailscale |
 | Production mit eigenem Domain | ❌ | Cloudflare Tunnel (kostenlos) |
 | Production mit IPv6 | ❌ | IPv6 direkt + DynDNS |

@@ -16,6 +16,7 @@ SSE Format (Vercel AI Data Stream Protocol):
   data: {"type":"text_end","id":"t1"}
   data: {"type":"finish","usage":{"input_tokens":10,"output_tokens":20}}
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -79,7 +80,9 @@ async def agent_chat(request: Request):
     thread_id = body.get("threadId", "unknown")
     context = body.get("context", "")
 
-    logger.info("Chat request | thread=%s context=%s msg=%.60s", thread_id, context, message)
+    logger.info(
+        "Chat request | thread=%s context=%s msg=%.60s", thread_id, context, message
+    )
 
     return StreamingResponse(
         _sse_stream(message, thread_id),
@@ -103,7 +106,11 @@ async def health():
 
 @app.get("/")
 async def root():
-    return {"service": "llm-mock-agent", "port": 8094, "endpoints": ["/api/v1/agent/chat", "/health"]}
+    return {
+        "service": "llm-mock-agent",
+        "port": 8094,
+        "endpoints": ["/api/v1/agent/chat", "/health"],
+    }
 
 
 if __name__ == "__main__":

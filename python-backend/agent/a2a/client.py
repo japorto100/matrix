@@ -82,7 +82,9 @@ class A2AClient:
 
                 return A2ATask(task_id=task_id, state="completed", result=text.strip())
             else:
-                return A2ATask(task_id=task_id, state="failed", error=f"HTTP {resp.status_code}")
+                return A2ATask(
+                    task_id=task_id, state="failed", error=f"HTTP {resp.status_code}"
+                )
 
         except Exception as e:
             return A2ATask(task_id=task_id, state="failed", error=str(e))

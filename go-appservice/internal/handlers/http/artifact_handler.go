@@ -17,11 +17,17 @@ import (
 
 type artifactService interface {
 	CreateArtifact(ctx context.Context, input storage.CreateArtifactInput) (storage.Artifact, error)
-	IssueUploadURL(artifactID, baseURL string) (storage.SignedURL, error)
-	IssueDownloadURL(artifactID, baseURL string) (storage.SignedURL, error)
-	GetArtifact(artifactID string) (storage.Artifact, error)
-	UploadArtifact(ctx context.Context, artifactID, token, contentType string, body io.ReadCloser) error
-	OpenDownload(ctx context.Context, artifactID, token string) (storage.Artifact, io.ReadCloser, error)
+	IssueUploadURL(artifactID, userID, baseURL string) (storage.SignedURL, error)
+	IssueDownloadURL(artifactID, userID, baseURL string) (storage.SignedURL, error)
+	GetArtifact(artifactID, userID string) (storage.Artifact, error)
+	UploadArtifact(ctx context.Context, artifactID, requestUserID, token, contentType string, body io.ReadCloser) error
+	OpenDownload(ctx context.Context, artifactID, requestUserID, token string) (storage.Artifact, io.ReadCloser, error)
+}
+
+// actorUserID extracts the X-Actor-User-Id header. Empty = anonymous /
+// unauthenticated. exec-19 Phase 2 (A).
+func actorUserID(r *http.Request) string {
+	return strings.TrimSpace(r.Header.Get("X-Actor-User-Id"))
 }
 
 type artifactPayload struct {
@@ -63,7 +69,9 @@ func ArtifactUploadURLHandler(service artifactService, gatewayBaseURL string) ht
 			writeJSON(w, http.StatusBadRequest, contracts.APIResponse[any]{Success: false, Error: fmt.Sprintf("invalid request: %v", err)})
 			return
 		}
+		userID := actorUserID(r)
 		artifact, err := service.CreateArtifact(r.Context(), storage.CreateArtifactInput{
+			UserID:         userID,
 			Filename:       req.Filename,
 			ContentType:    req.ContentType,
 			RetentionClass: req.RetentionClass,
@@ -72,7 +80,7 @@ func ArtifactUploadURLHandler(service artifactService, gatewayBaseURL string) ht
 			writeJSON(w, http.StatusBadRequest, contracts.APIResponse[any]{Success: false, Error: err.Error()})
 			return
 		}
-		uploadURL, err := service.IssueUploadURL(artifact.ID, gatewayBaseURL)
+		uploadURL, err := service.IssueUploadURL(artifact.ID, userID, gatewayBaseURL)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, contracts.APIResponse[any]{Success: false, Error: "failed to issue upload url"})
 			return
@@ -99,7 +107,8 @@ func ArtifactUploadHandler(service artifactService) http.HandlerFunc {
 			writeJSON(w, http.StatusNotFound, contracts.APIResponse[any]{Success: false, Error: "artifact upload route not found"})
 			return
 		}
-		if err := service.UploadArtifact(r.Context(), artifactID, r.URL.Query().Get("token"), r.Header.Get("Content-Type"), r.Body); err != nil {
+		userID := actorUserID(r)
+		if err := service.UploadArtifact(r.Context(), artifactID, userID, r.URL.Query().Get("token"), r.Header.Get("Content-Type"), r.Body); err != nil {
 			statusCode := http.StatusBadGateway
 			errorClass := "storage_error"
 			switch {
@@ -112,6 +121,9 @@ func ArtifactUploadHandler(service artifactService) http.HandlerFunc {
 			case errors.Is(err, storage.ErrInvalidToken):
 				statusCode = http.StatusUnauthorized
 				errorClass = "invalid_token"
+			case errors.Is(err, storage.ErrForbidden):
+				statusCode = http.StatusForbidden
+				errorClass = "forbidden"
 			case errors.Is(err, storage.ErrArtifactUploadState):
 				statusCode = http.StatusConflict
 				errorClass = "invalid_state"
@@ -123,7 +135,7 @@ func ArtifactUploadHandler(service artifactService) http.HandlerFunc {
 			writeJSON(w, statusCode, contracts.APIResponse[any]{Success: false, Error: err.Error()})
 			return
 		}
-		artifact, err := service.GetArtifact(artifactID)
+		artifact, err := service.GetArtifact(artifactID, userID)
 		if err != nil {
 			logArtifactAudit(r.Context(), artifactID, "upload", "failure", http.StatusBadGateway, "metadata_lookup_failed", err)
 			writeJSON(w, http.StatusBadGateway, contracts.APIResponse[any]{Success: false, Error: "artifact upload completed but metadata lookup failed"})
@@ -155,11 +167,15 @@ func ArtifactMetadataHandler(service artifactService) http.HandlerFunc {
 			writeJSON(w, http.StatusNotFound, contracts.APIResponse[any]{Success: false, Error: "artifact route not found"})
 			return
 		}
-		artifact, err := service.GetArtifact(artifactID)
+		userID := actorUserID(r)
+		artifact, err := service.GetArtifact(artifactID, userID)
 		if err != nil {
 			statusCode := http.StatusBadGateway
-			if errors.Is(err, storage.ErrArtifactNotFound) {
+			switch {
+			case errors.Is(err, storage.ErrArtifactNotFound):
 				statusCode = http.StatusNotFound
+			case errors.Is(err, storage.ErrForbidden):
+				statusCode = http.StatusForbidden
 			}
 			writeJSON(w, statusCode, contracts.APIResponse[any]{Success: false, Error: err.Error()})
 			return
@@ -187,7 +203,8 @@ func ArtifactDownloadHandler(service artifactService) http.HandlerFunc {
 			writeJSON(w, http.StatusNotFound, contracts.APIResponse[any]{Success: false, Error: "artifact download route not found"})
 			return
 		}
-		artifact, reader, err := service.OpenDownload(r.Context(), artifactID, r.URL.Query().Get("token"))
+		userID := actorUserID(r)
+		artifact, reader, err := service.OpenDownload(r.Context(), artifactID, userID, r.URL.Query().Get("token"))
 		if err != nil {
 			statusCode := http.StatusBadGateway
 			errorClass := "storage_error"
@@ -201,6 +218,9 @@ func ArtifactDownloadHandler(service artifactService) http.HandlerFunc {
 			case errors.Is(err, storage.ErrInvalidToken):
 				statusCode = http.StatusUnauthorized
 				errorClass = "invalid_token"
+			case errors.Is(err, storage.ErrForbidden):
+				statusCode = http.StatusForbidden
+				errorClass = "forbidden"
 			case errors.Is(err, storage.ErrArtifactNotReady):
 				statusCode = http.StatusConflict
 				errorClass = "not_ready"

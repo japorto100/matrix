@@ -27,7 +27,7 @@ class DocumentHasher:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     @staticmethod
-    def hash_chunk(chunk: "ExtractedChunk") -> str:
+    def hash_chunk(chunk: ExtractedChunk) -> str:
         """Per-chunk content hash for incremental reindex.
 
         Used by smart_reindex() to determine which chunks have changed since

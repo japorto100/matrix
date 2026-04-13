@@ -7,8 +7,9 @@ DB URL aus HINDSIGHT_DB_URL ENV var (gleiche PostgreSQL Instanz).
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine, text
+
+from alembic import context
 
 config = context.config
 

@@ -5,9 +5,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { writeFileAudit } from "@/lib/server/file-audit";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
 import { getErrorMessage } from "@/lib/utils";
 
-const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:9060";
 // Approval nonce TTL: client must confirm within 30s
 const NONCE_TTL_MS = 30_000;
 
@@ -29,15 +29,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const expiresAt = new Date(Date.now() + NONCE_TTL_MS);
 
 	try {
-		const upstream = await fetch(`${GATEWAY_BASE}/api/v1/files/${encodeURIComponent(id)}/reindex`, {
-			method: "POST",
-			headers: {
-				"x-request-id": requestId,
-				"x-confirm-token": confirmToken,
-				...(actorUserId ? { "x-actor-user-id": actorUserId } : {}),
+		const upstream = await fetch(
+			`${getGatewayBaseURL()}/api/v1/files/${encodeURIComponent(id)}/reindex`,
+			{
+				method: "POST",
+				headers: {
+					"x-request-id": requestId,
+					"x-confirm-token": confirmToken,
+					...(actorUserId ? { "x-actor-user-id": actorUserId } : {}),
+				},
+				cache: "no-store",
 			},
-			cache: "no-store",
-		});
+		);
 
 		if (!upstream.ok) {
 			const body = (await upstream.json().catch(() => ({}))) as Record<string, unknown>;

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 WEIGHT_FRESHNESS = 0.30
@@ -20,7 +20,7 @@ def compute_freshness(timestamp_str: str | None, max_age_hours: float = 168) -> 
         return 0.5
     try:
         ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         age_hours = (now - ts).total_seconds() / 3600
         if age_hours < 2:
             return 1.0
@@ -69,9 +69,13 @@ def relevance_score(
 ) -> float:
     """Composite relevance score (4 dimensions). CE Sek. 4.2."""
     freshness = compute_freshness(fragment.get("timestamp"))
-    symbols = fragment.get("symbols", []) or fragment.get("metadata", {}).get("symbols", [])
+    symbols = fragment.get("symbols", []) or fragment.get("metadata", {}).get(
+        "symbols", []
+    )
     proximity = compute_user_proximity(symbols, user_kg)
-    confidence = float(fragment.get("confidence", fragment.get("metadata", {}).get("confidence", 0.7)))
+    confidence = float(
+        fragment.get("confidence", fragment.get("metadata", {}).get("confidence", 0.7))
+    )
     regime_fit = compute_regime_fit(symbols, current_regime)
 
     score = (

@@ -89,7 +89,9 @@ async def get_session(thread_id: str) -> dict[str, Any]:
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             if not _table_exists(conn, "public", "checkpoints"):
-                raise HTTPException(status_code=404, detail="checkpoints table not found")
+                raise HTTPException(
+                    status_code=404, detail="checkpoints table not found"
+                )
             cur = conn.execute(
                 """
                 SELECT checkpoint_id, parent_checkpoint_id, metadata
@@ -113,11 +115,17 @@ async def get_session(thread_id: str) -> dict[str, Any]:
         {
             "checkpoint_id": str(row[0]),
             "parent_checkpoint_id": str(row[1]) if row[1] else None,
-            "metadata": json.loads(row[2]) if isinstance(row[2], str) else (row[2] or {}),
+            "metadata": json.loads(row[2])
+            if isinstance(row[2], str)
+            else (row[2] or {}),
         }
         for row in rows
     ]
-    return {"thread_id": thread_id, "checkpoints": checkpoints, "count": len(checkpoints)}
+    return {
+        "thread_id": thread_id,
+        "checkpoints": checkpoints,
+        "count": len(checkpoints),
+    }
 
 
 @router.delete("/sessions/{thread_id}")

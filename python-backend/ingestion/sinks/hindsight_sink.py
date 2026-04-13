@@ -14,14 +14,13 @@ least one of {vector, kg} sinks alongside hindsight.
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-
-from loguru import logger
 
 from ingestion.core.exceptions import SinkError
 from ingestion.core.types import ExtractedChunk, ExtractedDocument, Job
 from ingestion.sinks.base import Sink, SinkResult
+from loguru import logger
 
 
 class HindsightSink(Sink):
@@ -43,9 +42,7 @@ class HindsightSink(Sink):
         try:
             from hindsight_api.engine.memory_engine import MemoryEngine
         except ImportError as e:
-            raise SinkError(
-                "hindsight-api-slim not installed in ingestion venv"
-            ) from e
+            raise SinkError("hindsight-api-slim not installed in ingestion venv") from e
 
         # SyncTaskBackend = inline consolidation (no separate worker process)
         try:
@@ -93,7 +90,7 @@ class HindsightSink(Sink):
 
         bank_id = f"user_{job.user_id}"
         job_tags: list[str] = list((job.metadata or {}).get("tags", []))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         contents: list[dict[str, Any]] = []
         for chunk in chunks:
@@ -123,8 +120,7 @@ class HindsightSink(Sink):
                 {
                     "content": chunk.text,
                     "context": (
-                        f"doc:{doc.doc_id} section:{chunk.section or 'untitled'} "
-                        f"chunk:{chunk.id}"
+                        f"doc:{doc.doc_id} section:{chunk.section or 'untitled'} chunk:{chunk.id}"
                     ),
                     "event_date": now,
                     "tags": chunk_tags,
@@ -152,7 +148,9 @@ class HindsightSink(Sink):
         facts_total = sum(len(ids) for ids in (unit_ids or []))
         logger.info(
             "HindsightSink wrote {} chunks → {} facts to bank {}",
-            len(contents), facts_total, bank_id,
+            len(contents),
+            facts_total,
+            bank_id,
         )
 
         return SinkResult(

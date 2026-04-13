@@ -1,7 +1,7 @@
 "use client";
 
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { format, isToday, isYesterday } from "date-fns";
 import { de } from "date-fns/locale";
 import { ChevronDown, Loader2 } from "lucide-react";

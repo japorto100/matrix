@@ -4,15 +4,17 @@ Revision ID: 001
 Revises: None
 Create Date: 2026-03-31
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 
+from alembic import op
+
 revision: str = "001"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 SCHEMA = "agent"
 
@@ -21,7 +23,12 @@ def upgrade() -> None:
     op.create_table(
         "audit_events",
         sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
-        sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "timestamp",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("action", sa.Text, nullable=False),
         sa.Column("user_id", sa.Text),
         sa.Column("thread_id", sa.Text),

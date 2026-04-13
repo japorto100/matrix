@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 # ── Request / Decision dataclasses ─────────────────────────────────────────
 
+
 @dataclass
 class ConsentRequest:
     tool_name: str
@@ -47,9 +48,11 @@ class ConsentDecision:
 
 # ── Protocol ───────────────────────────────────────────────────────────────
 
+
 @runtime_checkable
 class ConsentProvider(Protocol):
     """Plugin protocol for consent evaluation. Any class with evaluate() satisfies it."""
+
     name: str
 
     def evaluate(self, request: ConsentRequest) -> ConsentDecision: ...
@@ -58,6 +61,7 @@ class ConsentProvider(Protocol):
 
 
 # ── Built-in: AllowlistProvider ────────────────────────────────────────────
+
 
 class AllowlistProvider:
     """Simple allowlist/denylist provider. Tools on denylist always need consent."""
@@ -77,7 +81,9 @@ class AllowlistProvider:
     def evaluate(self, request: ConsentRequest) -> ConsentDecision:
         # Auto-allow takes precedence
         if self._auto_allow is not None and request.tool_name in self._auto_allow:
-            return ConsentDecision(needs_consent=False, policy_id="allowlist:auto_allow")
+            return ConsentDecision(
+                needs_consent=False, policy_id="allowlist:auto_allow"
+            )
 
         if request.tool_name in self._consent_required:
             return ConsentDecision(
@@ -95,6 +101,7 @@ class AllowlistProvider:
 
 
 # ── Built-in: YamlPolicyProvider ───────────────────────────────────────────
+
 
 class YamlPolicyProvider:
     """Evaluates consent based on consent_policy.yaml config.
@@ -132,7 +139,9 @@ class YamlPolicyProvider:
     async def aevaluate(self, request: ConsentRequest) -> ConsentDecision:
         return self.evaluate(request)
 
-    def _from_tool_config(self, request: ConsentRequest, cfg: ToolConsentConfig) -> ConsentDecision:
+    def _from_tool_config(
+        self, request: ConsentRequest, cfg: ToolConsentConfig
+    ) -> ConsentDecision:
         tool_name = request.tool_name
 
         # min_role check: deny if user role is insufficient
@@ -148,10 +157,14 @@ class YamlPolicyProvider:
 
         # Agent class filter: if roles are specified, only apply to those agent classes
         if cfg.roles and request.agent_class not in cfg.roles:
-            return ConsentDecision(needs_consent=False, policy_id=f"yaml:tool:{tool_name}:role_skip")
+            return ConsentDecision(
+                needs_consent=False, policy_id=f"yaml:tool:{tool_name}:role_skip"
+            )
 
         if cfg.level == ConsentLevel.NONE:
-            return ConsentDecision(needs_consent=False, policy_id=f"yaml:tool:{tool_name}")
+            return ConsentDecision(
+                needs_consent=False, policy_id=f"yaml:tool:{tool_name}"
+            )
 
         if cfg.level == ConsentLevel.DENY:
             return ConsentDecision(

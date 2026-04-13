@@ -43,21 +43,28 @@ def _apply_post_filters(
             i
             for i in out
             if (i.get("metadata") or {}).get("agent_role") == role
-            or (i.get("tags") or []) and role in (i.get("tags") or [])
+            or (i.get("tags") or [])
+            and role in (i.get("tags") or [])
         ]
     if session_id:
-        out = [i for i in out if (i.get("metadata") or {}).get("session_id") == session_id]
+        out = [
+            i for i in out if (i.get("metadata") or {}).get("session_id") == session_id
+        ]
     if from_date is not None:
         out = [
             i
             for i in out
-            if i.get("event_date") and datetime.fromisoformat(str(i["event_date"]).replace("Z", "+00:00")) >= from_date
+            if i.get("event_date")
+            and datetime.fromisoformat(str(i["event_date"]).replace("Z", "+00:00"))
+            >= from_date
         ]
     if to_date is not None:
         out = [
             i
             for i in out
-            if i.get("event_date") and datetime.fromisoformat(str(i["event_date"]).replace("Z", "+00:00")) <= to_date
+            if i.get("event_date")
+            and datetime.fromisoformat(str(i["event_date"]).replace("Z", "+00:00"))
+            <= to_date
         ]
     if tags:
         tag_set = set(tags)
@@ -166,7 +173,11 @@ async def get_episode(
         )
         if result is None:
             raise HTTPException(status_code=404, detail="Episode not found")
-        unit_user = ((result.get("metadata") or {}).get("user_id") if isinstance(result, dict) else None)
+        unit_user = (
+            (result.get("metadata") or {}).get("user_id")
+            if isinstance(result, dict)
+            else None
+        )
         if unit_user and unit_user != scope.user_id:
             raise HTTPException(status_code=404, detail="Episode not found")
         return result

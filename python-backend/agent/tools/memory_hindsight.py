@@ -120,11 +120,13 @@ class MemoryAddTool(TradingTool):
             role_tag = getattr(ctx, "agent_class", "advisory")
             unit_ids = await engine.retain_batch_async(
                 bank_id=bank_id,
-                contents=[{
-                    "content": params.content,
-                    "context": f"Explicitly stored by agent (thread:{ctx.thread_id})",
-                    "tags": [role_tag],
-                }],
+                contents=[
+                    {
+                        "content": params.content,
+                        "context": f"Explicitly stored by agent (thread:{ctx.thread_id})",
+                        "tags": [role_tag],
+                    }
+                ],
                 request_context=RequestContext(),
             )
 

@@ -37,9 +37,7 @@ class HTMLExtractor(DocumentExtractor):
         # Convert to markdown-ish
         lines: list[str] = []
         section_count = 0
-        for el in soup.find_all(
-            ["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "code"]
-        ):
+        for el in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "code"]):
             text = el.get_text(strip=True)
             if not text:
                 continue

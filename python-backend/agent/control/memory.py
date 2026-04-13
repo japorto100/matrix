@@ -127,7 +127,11 @@ async def list_memory_banks(request: Request, user_id: str = "local") -> dict[st
 
         req_ctx = RequestContext()
         banks = await engine.list_banks(request_context=req_ctx)
-        banks = [b for b in banks if isinstance(b, dict) and b.get("bank_id") == get_bank_id(scope.user_id)]
+        banks = [
+            b
+            for b in banks
+            if isinstance(b, dict) and b.get("bank_id") == get_bank_id(scope.user_id)
+        ]
         return {"banks": banks, "total": len(banks) if isinstance(banks, list) else 0}
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"list_banks failed: {e}") from e

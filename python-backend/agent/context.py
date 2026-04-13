@@ -61,6 +61,7 @@ class CapabilityEnvelope:
     def check(self, tool_name: str) -> None:
         """Raise CapabilityViolationError if tool_name is not in allowed_tools."""
         from agent.errors import CapabilityViolationError
+
         if self.allowed_tools and tool_name not in self.allowed_tools:
             raise CapabilityViolationError(tool_name, self.agent_class)
 
@@ -68,17 +69,19 @@ class CapabilityEnvelope:
 # Default envelope for the advisory agent class (no mutations, no order placement)
 ADVISORY_ENVELOPE = CapabilityEnvelope(
     agent_class="advisory",
-    allowed_tools=frozenset({
-        "get_chart_state",
-        "get_portfolio_summary",
-        "get_geomap_focus",
-        "save_memory",
-        "load_memory",
-        "memory_search",
-        "memory_add",
-        "sandbox_execute",
-        "sandbox_browser",
-    }),
+    allowed_tools=frozenset(
+        {
+            "get_chart_state",
+            "get_portfolio_summary",
+            "get_geomap_focus",
+            "save_memory",
+            "load_memory",
+            "memory_search",
+            "memory_add",
+            "sandbox_execute",
+            "sandbox_browser",
+        }
+    ),
     risk_level="read-only",
     needs_human_approval=False,
 )

@@ -28,7 +28,9 @@ class CapabilityViolationError(CriticalError):
 
     def __init__(self, tool_name: str, envelope_class: str) -> None:
         self.tool_name = tool_name
-        super().__init__(f"Tool '{tool_name}' not allowed for agent class '{envelope_class}'")
+        super().__init__(
+            f"Tool '{tool_name}' not allowed for agent class '{envelope_class}'"
+        )
 
 
 class RetrievalAccessDeniedError(CriticalError):

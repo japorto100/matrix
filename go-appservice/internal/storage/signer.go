@@ -29,12 +29,18 @@ func (s *Signer) Issue(claims TokenClaims, now time.Time) (string, error) {
 		return "", fmt.Errorf("token expiry invalid")
 	}
 
+	// exec-19 Stufe 3 Phase 2: UserID is part of the signed payload.
+	// Empty UserID is accepted for backward compatibility but logged —
+	// all new call-sites should set it. Verify will then bind to the
+	// request's X-Actor-User-Id header.
 	payload, err := json.Marshal(struct {
 		ArtifactID string `json:"artifactId"`
+		UserID     string `json:"uid,omitempty"`
 		Action     Action `json:"action"`
 		ExpUnix    int64  `json:"expUnix"`
 	}{
 		ArtifactID: claims.ArtifactID,
+		UserID:     claims.UserID,
 		Action:     claims.Action,
 		ExpUnix:    claims.ExpiresAt.UTC().Unix(),
 	})
@@ -65,6 +71,7 @@ func (s *Signer) Verify(token string, now time.Time) (TokenClaims, error) {
 	}
 	var decoded struct {
 		ArtifactID string `json:"artifactId"`
+		UserID     string `json:"uid,omitempty"`
 		Action     Action `json:"action"`
 		ExpUnix    int64  `json:"expUnix"`
 	}
@@ -73,6 +80,7 @@ func (s *Signer) Verify(token string, now time.Time) (TokenClaims, error) {
 	}
 	claims := TokenClaims{
 		ArtifactID: decoded.ArtifactID,
+		UserID:     decoded.UserID,
 		Action:     decoded.Action,
 		ExpiresAt:  time.Unix(decoded.ExpUnix, 0).UTC(),
 	}

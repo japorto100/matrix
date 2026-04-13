@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ingestion.clients.go_storage import GoStorageClient
 from ingestion.core.exceptions import LoadError
-from ingestion.loaders.base import LoadResult, Loader
+from ingestion.loaders.base import Loader, LoadResult
 
 
 class SeaweedFSLoader(Loader):

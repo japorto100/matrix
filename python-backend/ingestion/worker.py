@@ -5,10 +5,13 @@ Decoupled from main agent runtime (D17). Communication via HTTP only.
 
 from __future__ import annotations
 
+import hmac
+import os
 from contextlib import asynccontextmanager
 from uuid import UUID
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -64,6 +67,37 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+# ─── Service auth (exec-19 Review Fix #8) ─────────────────────────────────
+#
+# The worker is called by go-appservice over the loopback interface. In
+# dev mode no secret is set and unauthenticated calls are accepted. In
+# production INGESTION_WORKER_SHARED_SECRET must be set on both sides
+# (Go + Python) and every request carries X-Service-Auth: <secret>.
+#
+# The middleware approach protects all routes except /health with a single
+# check. hmac.compare_digest prevents timing attacks.
+
+_SHARED_SECRET = os.getenv("INGESTION_WORKER_SHARED_SECRET", "").strip()
+_AUTH_EXEMPT_PATHS = frozenset({"/health", "/docs", "/openapi.json", "/redoc"})
+
+
+@app.middleware("http")
+async def service_auth_middleware(request: Request, call_next):
+    # Dev mode: no secret configured → accept all
+    if not _SHARED_SECRET:
+        return await call_next(request)
+    # Health + docs bypass auth so monitoring + devtools work without secret
+    if request.url.path in _AUTH_EXEMPT_PATHS:
+        return await call_next(request)
+    header = request.headers.get("X-Service-Auth", "")
+    if not header or not hmac.compare_digest(header, _SHARED_SECRET):
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "invalid or missing X-Service-Auth"},
+        )
+    return await call_next(request)
 
 
 # ─── Request models ────────────────────────────────────────────────────────
@@ -203,6 +237,32 @@ async def status() -> dict:
         ),
         "skipped_dedup": counts.get("skipped_dedup", 0),
     }
+
+
+@app.get("/jobs")
+async def list_jobs(
+    limit: int = 50,
+    pipeline: str | None = None,
+    status: str | None = None,
+    user_id: str | None = None,
+) -> dict:
+    """List recent ingestion jobs with optional filters.
+
+    Query params:
+        limit: max rows (1-500, default 50)
+        pipeline: filter by pipeline kind (document/note/link/batch)
+        status: filter by status (pending/done/failed/extracting/...)
+        user_id: filter by user
+
+    Returns dict with {jobs, total, has_more}.
+    Used by control-ui Files tabs to show file lists (exec-19).
+    """
+    if _ctx is None:
+        raise HTTPException(status_code=503, detail="not initialized")
+    jobs = _ctx.tracker.list_recent(
+        limit=limit, pipeline=pipeline, status=status, user_id=user_id
+    )
+    return {"jobs": jobs, "total": len(jobs), "has_more": len(jobs) >= limit}
 
 
 @app.get("/jobs/{job_id}")

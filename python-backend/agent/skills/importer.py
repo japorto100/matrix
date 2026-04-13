@@ -66,15 +66,23 @@ async def import_from_github(
     # Security: nur erlaubte Git-Hosts
     parsed = urlparse(repo_url)
     if parsed.hostname not in ALLOWED_GIT_HOSTS:
-        raise ValueError(f"Git host '{parsed.hostname}' not allowed. Allowed: {ALLOWED_GIT_HOSTS}")
+        raise ValueError(
+            f"Git host '{parsed.hostname}' not allowed. Allowed: {ALLOWED_GIT_HOSTS}"
+        )
     if parsed.scheme not in ("https",):
         raise ValueError(f"Only HTTPS git URLs allowed, got '{parsed.scheme}'")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Shallow clone
         proc = await asyncio.create_subprocess_exec(
-            "git", "clone", "--depth", "1", repo_url, tmpdir,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            repo_url,
+            tmpdir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0:
@@ -105,7 +113,9 @@ async def import_from_github(
                 shutil.rmtree(dest_dir)
             shutil.copytree(skill_dir, dest_dir)
             imported.append(skill.name)
-            logger.info("Imported skill '%s' from %s → %s", skill.name, repo_url, dest_dir)
+            logger.info(
+                "Imported skill '%s' from %s → %s", skill.name, repo_url, dest_dir
+            )
 
         return imported
 
@@ -159,10 +169,18 @@ def install_from_archive(
     """
     archive_path = Path(archive_path)
     if not archive_path.exists():
-        return {"success": False, "skill_name": "", "message": f"Archive not found: {archive_path}"}
+        return {
+            "success": False,
+            "skill_name": "",
+            "message": f"Archive not found: {archive_path}",
+        }
 
     if archive_path.stat().st_size > MAX_ZIP_SIZE:
-        return {"success": False, "skill_name": "", "message": f"Archive too large (max {MAX_ZIP_SIZE // 1024 // 1024}MB)"}
+        return {
+            "success": False,
+            "skill_name": "",
+            "message": f"Archive too large (max {MAX_ZIP_SIZE // 1024 // 1024}MB)",
+        }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
@@ -172,15 +190,27 @@ def install_from_archive(
                 # Sicherheits-Checks
                 members = zf.infolist()
                 if len(members) > MAX_FILES_IN_ZIP:
-                    return {"success": False, "skill_name": "", "message": f"Too many files in archive (max {MAX_FILES_IN_ZIP})"}
+                    return {
+                        "success": False,
+                        "skill_name": "",
+                        "message": f"Too many files in archive (max {MAX_FILES_IN_ZIP})",
+                    }
 
                 for member in members:
                     if _is_unsafe_member(member):
-                        return {"success": False, "skill_name": "", "message": f"Unsafe member in archive: {member.filename}"}
+                        return {
+                            "success": False,
+                            "skill_name": "",
+                            "message": f"Unsafe member in archive: {member.filename}",
+                        }
 
                 zf.extractall(tmp_path)
         except zipfile.BadZipFile:
-            return {"success": False, "skill_name": "", "message": "Invalid ZIP archive"}
+            return {
+                "success": False,
+                "skill_name": "",
+                "message": "Invalid ZIP archive",
+            }
 
         # Skill-Root finden (kann direkt oder in Unterverzeichnis sein)
         items = [p for p in tmp_path.iterdir() if not _should_ignore(p)]
@@ -191,11 +221,19 @@ def install_from_archive(
         # SKILL.md suchen
         skill_file = skill_root / "SKILL.md"
         if not skill_file.exists():
-            return {"success": False, "skill_name": "", "message": "No SKILL.md found in archive"}
+            return {
+                "success": False,
+                "skill_name": "",
+                "message": "No SKILL.md found in archive",
+            }
 
         skill = parse_skill_file(skill_file, tier=target_tier, owner=target_owner)
         if skill is None:
-            return {"success": False, "skill_name": "", "message": "Failed to parse SKILL.md"}
+            return {
+                "success": False,
+                "skill_name": "",
+                "message": "Failed to parse SKILL.md",
+            }
 
         # Installieren
         if target_tier == "global":
@@ -212,4 +250,8 @@ def install_from_archive(
         shutil.copytree(skill_root, dest_dir)
 
         logger.info("Installed skill '%s' from archive → %s", skill.name, dest_dir)
-        return {"success": True, "skill_name": skill.name, "message": f"Installed to {dest_dir}"}
+        return {
+            "success": True,
+            "skill_name": skill.name,
+            "message": f"Installed to {dest_dir}",
+        }

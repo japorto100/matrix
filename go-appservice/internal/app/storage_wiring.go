@@ -32,27 +32,26 @@ type ArtifactServiceConfig struct {
 // BuildArtifactService constructs the storage.Service from env variables.
 // Returns (cfg, nil) on success or (nil, err) if init fails.
 //
-// Required for write operations:
+// Required:
 //   - ARTIFACT_STORAGE_SIGNING_SECRET (or AUTH_SECRET fallback in dev)
 //   - ARTIFACT_STORAGE_PROVIDER (filesystem | s3 | seaweedfs)
 //   - For s3/seaweedfs: ARTIFACT_STORAGE_S3_ENDPOINT + BUCKET + ACCESS_KEY_ID + SECRET_ACCESS_KEY
-//   - ARTIFACT_STORAGE_METADATA_PROVIDER (postgres | sqlite, default: filesystem dev)
-func BuildArtifactService(host, port string) (*ArtifactServiceConfig, error) {
+//   - HINDSIGHT_DB_URL (or POSTGRES_DSN) — Postgres is the only metadata backend
+//
+// exec-19: the SQLite metadata store was removed in Phase 3 cleanup. The
+// devstack always has Postgres running (required by Hindsight + Agent), so
+// a SQLite fallback was dead weight.
+func BuildArtifactService(host, port, postgresDSN string) (*ArtifactServiceConfig, error) {
 	signingSecret := artifactSigningSecretFromEnv()
 	if signingSecret == "" {
 		return nil, fmt.Errorf("ARTIFACT_STORAGE_SIGNING_SECRET (or AUTH_SECRET fallback) required")
 	}
 
-	metadataProvider := envOr("ARTIFACT_STORAGE_METADATA_PROVIDER", "")
-	if metadataProvider == "" && boolOr("POSTGRES_ENABLED", false) {
-		metadataProvider = "postgres"
+	if strings.TrimSpace(postgresDSN) == "" {
+		return nil, fmt.Errorf("PostgresDSN required (set HINDSIGHT_DB_URL, POSTGRES_URL, or DATABASE_URL)")
 	}
 
-	store, err := storage.NewArtifactMetadataStore(
-		metadataProvider,
-		envOr("ARTIFACT_STORAGE_METADATA_DB_PATH", "data/storage/artifacts.db"),
-		envOr("POSTGRES_DSN", ""),
-	)
+	store, err := storage.NewPostgresMetadataStore(postgresDSN)
 	if err != nil {
 		return nil, fmt.Errorf("init artifact metadata store: %w", err)
 	}

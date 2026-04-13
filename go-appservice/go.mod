@@ -2,6 +2,8 @@ module matrix/go-appservice
 
 go 1.26
 
+toolchain go1.26.2
+
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.49.0

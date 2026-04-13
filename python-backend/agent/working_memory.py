@@ -18,6 +18,7 @@ M5_SESSION_PREFIX = "tradeview:m5:session:"
 def _get_cache():
     """Lazy init cache adapter (reuse memory-service pattern)."""
     from shared.cache_adapter import create_cache_adapter
+
     return create_cache_adapter()
 
 
@@ -68,7 +69,9 @@ async def working_memory_set(
     entry_val = {"content": content, "timestamp": now}
 
     # Write entry atomically
-    await cache.set(_entry_key(session_id, entry_id), entry_val, ttl_seconds=M5_TTL_SECONDS)
+    await cache.set(
+        _entry_key(session_id, entry_id), entry_val, ttl_seconds=M5_TTL_SECONDS
+    )
 
     # Update index (add entry_id if not present, evict oldest if over limit)
     index_raw = await cache.get(_index_key(session_id))
@@ -80,7 +83,7 @@ async def working_memory_set(
     # Evict oldest entries if over limit
     if len(entry_ids) > M5_MAX_ENTRIES:
         evict_ids = entry_ids[: len(entry_ids) - M5_MAX_ENTRIES]
-        entry_ids = entry_ids[len(entry_ids) - M5_MAX_ENTRIES:]
+        entry_ids = entry_ids[len(entry_ids) - M5_MAX_ENTRIES :]
         for eid in evict_ids:
             await cache.delete(_entry_key(session_id, eid))
 

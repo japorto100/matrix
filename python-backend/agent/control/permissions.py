@@ -142,11 +142,7 @@ class _OverlayCache:
         with self._lock:
             if now - self._ts >= self.ttl_s or not self._data:
                 self._refresh()
-            return {
-                (k[0], k[1]): v
-                for k, v in self._data.items()
-                if k[2] == user_id
-            }
+            return {(k[0], k[1]): v for k, v in self._data.items() if k[2] == user_id}
 
     def _refresh(self) -> None:
         try:
@@ -208,7 +204,9 @@ async def list_categories() -> dict[str, Any]:
 
 
 @router.get("/permissions/matrix")
-async def get_permission_matrix(request: Request, user_id: str | None = None) -> dict[str, Any]:
+async def get_permission_matrix(
+    request: Request, user_id: str | None = None
+) -> dict[str, Any]:
     """Full permission matrix (roles × categories → level), with DB overrides."""
     scope: RequestScope = resolve_scope(request, user_id=user_id)
     overlays = _cache.get(scope.user_id)

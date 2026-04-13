@@ -83,8 +83,6 @@
   - [x] `LocationEmbed.tsx` (iframe OSM embed, SSR-safe) in `shared/src/location/`
   - [x] `LocationMapInner.tsx` (react-leaflet, dynamic import) in `shared/src/location/`
   - [x] `LocationContent.tsx` in nextjs-chat refactored auf shared/ imports
-  - [ ] Agent-Chat: generische {lat, lon, label} Props (kein SDK) — bei Bedarf einbauen
-  - **SDK-Version:** matrix-js-sdk 41.2.0 hat `M_LOCATION` types, `makeLocationContent()`, `parseLocationEvent()`
-  - **Agent-Version:** Nur `{lat, lon, label}` Props, kein matrix-js-sdk noetig
-- [ ] Client→Server Analyse: welche API Calls optimierbar (Analyse, kein Code)
-- [ ] api.ts fuer zentralisierte Matrix-API-Calls evaluieren (Analyse, kein Code)
+  - [x] Agent-Chat: Location Components in `nextjs-chat/src/components/matrix/shared/` + Copy nach agent-ui. Outdated: shared/ wurde direkt in Matrix-Ordner reorganisiert (Stand 11.04.2026).
+- [x] Client→Server Analyse: durchgefuehrt am 13.04.2026 (siehe `exec2-03b` Section 7 oder Konversations-Output)
+- [x] api.ts Evaluation: Teil der Client→Server Analyse — SDK ist die API-Schicht, zentrale api.ts nur fuer Custom/Admin-Endpoints sinnvoll.

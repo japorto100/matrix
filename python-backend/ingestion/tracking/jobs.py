@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import psycopg
-from loguru import logger
-
 from ingestion.core.types import Job, JobStatus, PipelineKind
+from loguru import logger
 
 
 class JobTracker:
@@ -37,7 +36,7 @@ class JobTracker:
             status=JobStatus.PENDING,
             document_hash=document_hash,
             metadata=metadata or {},
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         with self._connect() as conn:
             conn.execute(
@@ -104,7 +103,7 @@ class JobTracker:
 
     def complete(self, job: Job) -> None:
         job.status = JobStatus.DONE
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = datetime.now(UTC)
         job.progress = 1.0
         with self._connect() as conn:
             conn.execute(
@@ -118,7 +117,7 @@ class JobTracker:
     def fail(self, job: Job, error: str) -> None:
         job.status = JobStatus.FAILED
         job.error_message = error
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = datetime.now(UTC)
         with self._connect() as conn:
             conn.execute(
                 """UPDATE ingestion.jobs
@@ -152,11 +151,52 @@ class JobTracker:
             cols = [d[0] for d in cur.description]
             return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
 
+    def list_recent(
+        self,
+        limit: int = 50,
+        pipeline: str | None = None,
+        status: str | None = None,
+        user_id: str | None = None,
+    ) -> list[dict]:
+        """List recent jobs with optional filters. Ordered by started_at DESC.
+
+        Args:
+            limit: max rows (default 50, max 500)
+            pipeline: filter by pipeline kind (document, note, link, batch)
+            status: filter by status (pending, done, failed, etc.)
+            user_id: filter by user
+
+        Returns dict rows from ingestion.jobs.
+        """
+        limit = max(1, min(limit, 500))
+        conditions: list[str] = []
+        params: list[object] = []
+
+        if pipeline:
+            conditions.append("pipeline = %s")
+            params.append(pipeline)
+        if status:
+            conditions.append("status = %s")
+            params.append(status)
+        if user_id:
+            conditions.append("user_id = %s")
+            params.append(user_id)
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        sql = (
+            f"SELECT * FROM ingestion.jobs {where_clause} "
+            f"ORDER BY started_at DESC LIMIT %s"
+        )
+        params.append(limit)
+
+        with self._connect() as conn:
+            cur = conn.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+
     def status_counts(self) -> dict[str, int]:
         with self._connect() as conn:
-            cur = conn.execute(
-                "SELECT status, COUNT(*) FROM ingestion.jobs GROUP BY status"
-            )
+            cur = conn.execute("SELECT status, COUNT(*) FROM ingestion.jobs GROUP BY status")
             return {row[0]: int(row[1]) for row in cur.fetchall()}
 
     def find_by_hash(self, document_hash: str) -> dict | None:

@@ -52,14 +52,16 @@ async def _aggregate_analyses(state: AgentGraphState) -> dict[str, Any]:
     )
 
     return {
-        "messages": [{
-            "role": "user",
-            "content": (
-                "Based on the analyses above, provide a balanced research summary "
-                "with bull and bear arguments, key risks, and a confidence level.\n\n"
-                f"Analyses:\n{analysis_summary}"
-            ),
-        }],
+        "messages": [
+            {
+                "role": "user",
+                "content": (
+                    "Based on the analyses above, provide a balanced research summary "
+                    "with bull and bear arguments, key risks, and a confidence level.\n\n"
+                    f"Analyses:\n{analysis_summary}"
+                ),
+            }
+        ],
     }
 
 

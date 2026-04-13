@@ -7,6 +7,7 @@ desktop.ini
 .vscode/settings.json
 .idea/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .specstory/
 *.swp
 *.swo
@@ -24,6 +25,7 @@ desktop.ini
 go-appservice/vendor/
 go-appservice/*.exe
 go-appservice/tmp/
+go-appservice/data/
 
 # ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/

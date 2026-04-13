@@ -10,6 +10,7 @@ from typing import Literal
 
 # ── Packet types ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ThreadIdPacket:
     thread_id: str
@@ -77,6 +78,7 @@ class ErrorPacket:
 @dataclass
 class ApprovalRequestPacket:
     """ABP.3: signals that a tool call needs human approval before execution."""
+
     tool_call_id: str
     tool_name: str
     tool_input: dict
@@ -84,6 +86,7 @@ class ApprovalRequestPacket:
 
 
 # ── SSE helper ────────────────────────────────────────────────────────────────
+
 
 def _snake_to_camel(name: str) -> str:
     parts = name.split("_")
@@ -100,6 +103,7 @@ def _to_sse(packet: object) -> str:
 
 
 # ── StreamEmitter ─────────────────────────────────────────────────────────────
+
 
 class StreamEmitter:
     """Collects SSE strings emitted by the loop — callers async-iterate via __aiter__."""

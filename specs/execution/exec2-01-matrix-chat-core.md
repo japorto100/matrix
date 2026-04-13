@@ -70,9 +70,7 @@
 ## Offene Punkte (Backlog)
 
 ### C-4: Encrypted State Events (MSC3414/MSC4362)
-- [ ] Vorbereitet in SDK, wartet auf Tuwunel-Support
-- [ ] Aktivierung: `enableEncryptedStateEvents: true`
-  - **Tracking:** siehe `specs/execution/exec-blocking.md` (BLOCK.MATRIX.*)
+- [x] **Ausgelagert nach `exec-blocking.md` (C1 + C5)** — upstream blocked, kein Homeserver implementiert MSC3414/MSC4362. Auch Tuwunel v1.6.0-rc nicht (geprueft 11.04.2026: nicht in unstable_features).
 
 ### C-6b: Gruppen-Calls Blueprint
 - [x] Architektur dokumentiert in exec-03

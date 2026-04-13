@@ -84,7 +84,8 @@ def _default_role(role_id: str) -> dict[str, Any] | None:
         "memory_access": "read_write"
         if TRADING_ROLE_MEMORY.get(role, {}).get("memory_write", False)
         else "read",
-        "approval_required": role == TradingRole.TRADER or role == TradingRole.RISK_MANAGER,
+        "approval_required": role == TradingRole.TRADER
+        or role == TradingRole.RISK_MANAGER,
     }
 
 
@@ -207,7 +208,9 @@ async def reset_agent_field(
 ) -> dict[str, Any]:
     """Reset a single overridden field to its default."""
     if field not in OVERLAY_FIELDS:
-        raise HTTPException(status_code=400, detail=f"Unknown field. Allowed: {sorted(OVERLAY_FIELDS)}")
+        raise HTTPException(
+            status_code=400, detail=f"Unknown field. Allowed: {sorted(OVERLAY_FIELDS)}"
+        )
     scope = get_request_scope(request)
     user_id = scope.user_id
     try:

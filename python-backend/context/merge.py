@@ -29,7 +29,11 @@ def merge_fragments(
     Merge fragments from multiple sources with caps and dedup.
     Priority: KG > Episodic > Vector (structured first).
     """
-    by_source: dict[str, list[dict[str, Any]]] = {"kg": [], "episodic": [], "vector": []}
+    by_source: dict[str, list[dict[str, Any]]] = {
+        "kg": [],
+        "episodic": [],
+        "vector": [],
+    }
     for f in fragments:
         src = f.get("source", "vector")
         if src not in by_source:

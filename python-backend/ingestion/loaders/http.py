@@ -5,9 +5,8 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 import httpx
-
 from ingestion.core.exceptions import LoadError
-from ingestion.loaders.base import LoadResult, Loader
+from ingestion.loaders.base import Loader, LoadResult
 
 
 class HttpLoader(Loader):
@@ -28,9 +27,7 @@ class HttpLoader(Loader):
             raise LoadError(f"Failed to fetch URL {identifier}: {e}") from e
 
         if len(r.content) > self._max_size:
-            raise LoadError(
-                f"URL response too large: {len(r.content)} > {self._max_size} bytes"
-            )
+            raise LoadError(f"URL response too large: {len(r.content)} > {self._max_size} bytes")
 
         parsed = urlparse(identifier)
         filename = parsed.path.rsplit("/", 1)[-1] or parsed.netloc + ".html"

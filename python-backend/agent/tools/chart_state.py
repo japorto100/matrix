@@ -113,6 +113,7 @@ class SetChartStateTool(TradingTool):
         # Advisory agent capability guard — keep as-is
         if ctx.agent_class == "advisory":
             from agent.context import ENVELOPES
+
             envelope = ENVELOPES.get(ctx.agent_class)
             if envelope:
                 envelope.check(self.name)

@@ -1,13 +1,15 @@
 """Pydantic request/response models for the memory service."""
+
 from __future__ import annotations
 
-from typing import Any, Optional
-from pydantic import BaseModel, Field
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # KG models
 # ---------------------------------------------------------------------------
+
 
 class KGSeedRequest(BaseModel):
     force: bool = False  # if True, clear and re-seed even if nodes exist
@@ -48,6 +50,7 @@ class KGSyncResponse(BaseModel):
 # Episode models
 # ---------------------------------------------------------------------------
 
+
 class EpisodeCreateRequest(BaseModel):
     session_id: str
     agent_role: str
@@ -78,11 +81,12 @@ class EpisodesListResponse(BaseModel):
 # Vector search models
 # ---------------------------------------------------------------------------
 
+
 class VectorSearchRequest(BaseModel):
     query: str
     n_results: int = 5
     collection: str = "memory"
-    filter_metadata: Optional[dict[str, Any]] = None
+    filter_metadata: dict[str, Any] | None = None
 
 
 class VectorSearchResult(BaseModel):
@@ -114,9 +118,10 @@ class VectorAddResponse(BaseModel):
 # Health
 # ---------------------------------------------------------------------------
 
+
 class MemoryHealthResponse(BaseModel):
     ok: bool
-    kg: str       # "ready" | "unavailable" | "degraded"
-    vector: str   # "ready" | "unavailable"
-    cache: str    # "lru" | "redis" | "unavailable"
-    episodic: str # "ready" | "unavailable"
+    kg: str  # "ready" | "unavailable" | "degraded"
+    vector: str  # "ready" | "unavailable"
+    cache: str  # "lru" | "redis" | "unavailable"
+    episodic: str  # "ready" | "unavailable"

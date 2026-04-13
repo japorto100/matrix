@@ -1,13 +1,48 @@
+// GET /api/files/[id] — single file detail
 // DELETE /api/files/[id] — bounded-write action (DW18)
-// Proxies delete to Go Gateway; writes FileAuditLog entry (requestId, actor, role, target).
-// Auth headers forwarded; actorUserId extracted from session if available.
+// Proxies to Go Gateway; writes FileAuditLog for DELETE.
+// exec-19 Stufe 3: proxy.ts injects X-Actor-User-Id.
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { writeFileAudit } from "@/lib/server/file-audit";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
 import { getErrorMessage } from "@/lib/utils";
 
-const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:9060";
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const { id } = await params;
+	const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+	const actorUserId = request.headers.get("x-actor-user-id") ?? "";
+
+	try {
+		const upstream = await fetch(`${getGatewayBaseURL()}/api/v1/files/${encodeURIComponent(id)}`, {
+			headers: {
+				"x-request-id": requestId,
+				"x-actor-user-id": actorUserId,
+				accept: "application/json",
+			},
+			cache: "no-store",
+		});
+
+		if (!upstream.ok) {
+			const body = (await upstream.json().catch(() => ({}))) as Record<string, unknown>;
+			return NextResponse.json(
+				{ code: (body.code as string) ?? "NOT_FOUND", requestId },
+				{ status: upstream.status, headers: { "x-request-id": requestId } },
+			);
+		}
+
+		const data: unknown = await upstream.json();
+		return NextResponse.json(data, {
+			headers: { "cache-control": "no-store", "x-request-id": requestId },
+		});
+	} catch (error: unknown) {
+		return NextResponse.json(
+			{ code: "STORAGE_UNAVAILABLE", message: getErrorMessage(error), requestId },
+			{ status: 503, headers: { "x-request-id": requestId } },
+		);
+	}
+}
 
 export async function DELETE(
 	request: NextRequest,
@@ -19,7 +54,7 @@ export async function DELETE(
 	const actorRole = request.headers.get("x-actor-role") ?? undefined;
 
 	try {
-		const upstream = await fetch(`${GATEWAY_BASE}/api/v1/files/${encodeURIComponent(id)}`, {
+		const upstream = await fetch(`${getGatewayBaseURL()}/api/v1/files/${encodeURIComponent(id)}`, {
 			method: "DELETE",
 			headers: {
 				"x-request-id": requestId,

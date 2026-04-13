@@ -38,7 +38,7 @@ class AESGCMVault:
         if len(secret_hex) != 64:
             raise ValueError(
                 "KEY_ENCRYPTION_SECRET must be 64 hex chars (32 bytes). "
-                "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                'Generate with: python -c "import secrets; print(secrets.token_hex(32))"'
             )
         self._key = bytes.fromhex(secret_hex)
         self._aesgcm = AESGCM(self._key)
@@ -53,7 +53,9 @@ class AESGCMVault:
             raise ValueError("Empty ciphertext")
         prefix = ciphertext[0:1]
         if prefix == _PREFIX_HPKE:
-            raise NotImplementedError("HPKE-MLKEM decrypt not yet implemented in Python. Use Go backend.")
+            raise NotImplementedError(
+                "HPKE-MLKEM decrypt not yet implemented in Python. Use Go backend."
+            )
         if prefix != _PREFIX_AESGCM:
             raise ValueError(f"Unknown encryption prefix: {prefix!r}")
         nonce = ciphertext[1 : 1 + _NONCE_SIZE]
@@ -79,7 +81,7 @@ def get_vault() -> KeyVault:
     if not secret:
         raise RuntimeError(
             "KEY_ENCRYPTION_SECRET not set. API key encryption requires this ENV var. "
-            "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            'Generate with: python -c "import secrets; print(secrets.token_hex(32))"'
         )
 
     backend = os.environ.get("KEY_VAULT_BACKEND", "aesgcm")

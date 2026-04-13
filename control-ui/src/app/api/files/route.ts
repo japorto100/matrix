@@ -1,21 +1,28 @@
 // GET /api/files — list files + metadata
-// BFF boundary: proxies to Go Gateway (DW13, DW14, DW15)
-// no-store: metadata must always be fresh.
+// BFF boundary: proxies to Go Gateway /api/v1/files
+// Forwards all query params (type, status, search, limit, offset) + X-Actor-User-Id.
+// exec-19 Stufe 3: proxy.ts injects X-Actor-User-Id before this route runs.
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
 import { getErrorMessage } from "@/lib/utils";
-
-const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:9060";
 
 export async function GET(request: NextRequest) {
 	const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+	const actorUserId = request.headers.get("x-actor-user-id") ?? "";
 
 	try {
-		const upstreamUrl = `${GATEWAY_BASE}/api/v1/files`;
-		const upstream = await fetch(upstreamUrl, {
+		// Forward all query params transparently (type, status, search, limit, offset)
+		const upstreamUrl = new URL(`${getGatewayBaseURL()}/api/v1/files`);
+		for (const [key, value] of request.nextUrl.searchParams.entries()) {
+			upstreamUrl.searchParams.set(key, value);
+		}
+
+		const upstream = await fetch(upstreamUrl.toString(), {
 			headers: {
 				"x-request-id": requestId,
+				"x-actor-user-id": actorUserId,
 				accept: "application/json",
 			},
 			cache: "no-store",

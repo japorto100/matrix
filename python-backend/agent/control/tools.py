@@ -88,12 +88,16 @@ def _builtin_tools() -> list[dict[str, Any]]:
                 for t in tools:
                     out.append(
                         {
-                            "id": f"builtin:{t.name}" if hasattr(t, "name") else f"builtin:{t}",
+                            "id": f"builtin:{t.name}"
+                            if hasattr(t, "name")
+                            else f"builtin:{t}",
                             "name": t.name if hasattr(t, "name") else str(t),
                             "type": "builtin",
                             "description": getattr(t, "description", ""),
                             "provider": "matrix-builtin",
-                            "input_schema_summary": str(getattr(t, "input_schema", {}))[:100],
+                            "input_schema_summary": str(getattr(t, "input_schema", {}))[
+                                :100
+                            ],
                             "categories": getattr(t, "categories", []),
                             "enabled": True,
                         }
@@ -114,7 +118,9 @@ def _mcp_tools() -> list[dict[str, Any]]:
         # FastMCP stores tools internally — introspect via _tools attribute if available
         tools = getattr(mcp, "_tools", None) or getattr(mcp, "tools", None)
         if tools:
-            for name, tool in (tools.items() if isinstance(tools, dict) else enumerate(tools)):
+            for name, tool in (
+                tools.items() if isinstance(tools, dict) else enumerate(tools)
+            ):
                 if isinstance(name, int):
                     name = getattr(tool, "name", f"mcp_tool_{name}")
                 out.append(
@@ -122,7 +128,9 @@ def _mcp_tools() -> list[dict[str, Any]]:
                         "id": f"mcp:{name}",
                         "name": name,
                         "type": "mcp",
-                        "description": getattr(tool, "description", "") if not isinstance(tool, str) else "",
+                        "description": getattr(tool, "description", "")
+                        if not isinstance(tool, str)
+                        else "",
                         "provider": "matrix-mcp",
                         "input_schema_summary": "",
                         "categories": [],
@@ -135,7 +143,9 @@ def _mcp_tools() -> list[dict[str, Any]]:
 
 
 @router.get("/tools")
-async def list_tools(type: str | None = None, category: str | None = None) -> dict[str, Any]:
+async def list_tools(
+    type: str | None = None, category: str | None = None
+) -> dict[str, Any]:
     """List all available tools across builtin/mcp/skill/a2a sources."""
     all_tools: list[dict[str, Any]] = []
     all_tools.extend(_builtin_tools())
@@ -177,7 +187,9 @@ async def import_tool_from_url(
     user_id = scope.user_id
     updated_by = scope.actor
     if not (req.url.startswith("http://") or req.url.startswith("https://")):
-        raise HTTPException(status_code=400, detail="url must start with http:// or https://")
+        raise HTTPException(
+            status_code=400, detail="url must start with http:// or https://"
+        )
     now = datetime.now(UTC)
     tool_id = f"url:{req.url}"
     try:

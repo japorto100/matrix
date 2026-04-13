@@ -29,11 +29,13 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
 
         vault = get_vault()
         async with await psycopg.AsyncConnection.connect(db_url) as conn:
-            row = await (await conn.execute(
-                "SELECT credential_enc FROM agent.user_credentials "
-                "WHERE user_id = %s AND category = 'llm' AND provider_id = %s AND is_valid = true",
-                (user_id, provider),
-            )).fetchone()
+            row = await (
+                await conn.execute(
+                    "SELECT credential_enc FROM agent.user_credentials "
+                    "WHERE user_id = %s AND category = 'llm' AND provider_id = %s AND is_valid = true",
+                    (user_id, provider),
+                )
+            ).fetchone()
 
             if row and row[0]:
                 return vault.decrypt(bytes(row[0]))
@@ -51,11 +53,14 @@ async def get_user_default_model(user_id: str) -> str | None:
 
     try:
         import psycopg
+
         async with await psycopg.AsyncConnection.connect(db_url) as conn:
-            row = await (await conn.execute(
-                "SELECT default_model FROM agent.user_llm_settings WHERE user_id = %s",
-                (user_id,),
-            )).fetchone()
+            row = await (
+                await conn.execute(
+                    "SELECT default_model FROM agent.user_llm_settings WHERE user_id = %s",
+                    (user_id,),
+                )
+            ).fetchone()
 
             if row and row[0]:
                 return row[0]
@@ -73,11 +78,14 @@ async def get_user_role_model(user_id: str, role: str) -> str | None:
 
     try:
         import psycopg
+
         async with await psycopg.AsyncConnection.connect(db_url) as conn:
-            row = await (await conn.execute(
-                "SELECT per_role_overrides FROM agent.user_llm_settings WHERE user_id = %s",
-                (user_id,),
-            )).fetchone()
+            row = await (
+                await conn.execute(
+                    "SELECT per_role_overrides FROM agent.user_llm_settings WHERE user_id = %s",
+                    (user_id,),
+                )
+            ).fetchone()
 
             if row and row[0] and isinstance(row[0], dict):
                 return row[0].get(role)

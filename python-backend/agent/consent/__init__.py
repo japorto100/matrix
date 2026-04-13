@@ -46,16 +46,24 @@ def _get_provider() -> ConsentProvider:
         try:
             provider_cls = resolve_provider_class(config.provider.use)
             _provider = provider_cls(**config.provider.config)
-            logger.info("Consent provider: %s (%s)", _provider.name, config.provider.use)
+            logger.info(
+                "Consent provider: %s (%s)", _provider.name, config.provider.use
+            )
         except Exception as e:
-            logger.warning("Failed to load consent provider '%s': %s — using YamlPolicyProvider", config.provider.use, e)
+            logger.warning(
+                "Failed to load consent provider '%s': %s — using YamlPolicyProvider",
+                config.provider.use,
+                e,
+            )
             from agent.consent.provider import YamlPolicyProvider
+
             _provider = YamlPolicyProvider()
     assert _provider is not None  # guaranteed by fallback above
     return _provider
 
 
 # ── Main API ───────────────────────────────────────────────────────────────
+
 
 async def check_consent(
     tool_name: str,
@@ -190,5 +198,8 @@ async def record_consent_decision(
         thread_id=thread_id,
         tool_name=tool_name,
         success=user_decision in ("allow_once", "allow_session"),
-        metadata={"decision": user_decision, "cached": user_decision.endswith("_session")},
+        metadata={
+            "decision": user_decision,
+            "cached": user_decision.endswith("_session"),
+        },
     )

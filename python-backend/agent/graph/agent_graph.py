@@ -22,12 +22,15 @@ from agent.graph.state import AgentGraphState
 
 logger = logging.getLogger(__name__)
 
+
 def _get_max_iterations() -> int:
     try:
         from agent.consent.config import get_consent_config
+
         return get_consent_config().rate_limits.get_max_iterations()
     except Exception:
         return int(os.environ.get("AGENT_MAX_ITERATIONS", "10"))
+
 
 MAX_ITERATIONS = _get_max_iterations()
 
@@ -55,6 +58,7 @@ async def _increment_iteration(state: AgentGraphState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "")
     if thread_id:
         from agent.consent.rate_limiter import get_rate_limiter
+
         get_rate_limiter().record_iteration(thread_id)
     return {"iteration": state.get("iteration", 0) + 1}
 
@@ -105,6 +109,7 @@ def create_agent_graph(checkpointer: Any | None = None) -> Any:
         if db_url:
             try:
                 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
                 checkpointer = AsyncPostgresSaver.from_conn_string(db_url)
                 logger.info("LangGraph checkpointer: PostgreSQL (persistent)")
             except Exception:
@@ -118,5 +123,7 @@ def create_agent_graph(checkpointer: Any | None = None) -> Any:
         interrupt_before=["approval_gate"],
     )
 
-    logger.info("Agent graph compiled (nodes: memory_recall, llm_call, approval_gate, tool_execute, increment, memory_retain)")
+    logger.info(
+        "Agent graph compiled (nodes: memory_recall, llm_call, approval_gate, tool_execute, increment, memory_retain)"
+    )
     return compiled

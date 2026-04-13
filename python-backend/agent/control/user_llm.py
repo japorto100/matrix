@@ -137,7 +137,9 @@ _model_cache: dict[str, tuple[list[str], float]] = {}
 _CACHE_TTL = 3600
 
 
-async def _fetch_provider_models(provider_id: str, api_key: str | None = None) -> list[str]:
+async def _fetch_provider_models(
+    provider_id: str, api_key: str | None = None
+) -> list[str]:
     """Fetch available models from provider /v1/models API. Cached 1h."""
     meta = _PROVIDER_META.get(provider_id)
     if not meta:
@@ -208,15 +210,18 @@ async def get_user_llm_settings(request: Request) -> dict[str, Any]:
         else:
             models = meta.get("models", []) if key else []
 
-        providers.append({
-            "id": prov_id,
-            "display_name": meta["display_name"],
-            "type": meta.get("type", "cloud"),
-            "api_key_set": bool(key),
-            "api_key_preview": _mask_key(key) if key else None,
-            "is_active": bool(key) or (meta.get("type") == "local" and len(models) > 0),
-            "available_models": models,
-        })
+        providers.append(
+            {
+                "id": prov_id,
+                "display_name": meta["display_name"],
+                "type": meta.get("type", "cloud"),
+                "api_key_set": bool(key),
+                "api_key_preview": _mask_key(key) if key else None,
+                "is_active": bool(key)
+                or (meta.get("type") == "local" and len(models) > 0),
+                "available_models": models,
+            }
+        )
 
     return {
         "user_id": user_id,
@@ -234,9 +239,13 @@ async def set_default_model(request: Request) -> dict[str, Any]:
 
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
-        return {"status": "env_only", "message": "No DB — Model-Konfiguration braucht PostgreSQL"}
+        return {
+            "status": "env_only",
+            "message": "No DB — Model-Konfiguration braucht PostgreSQL",
+        }
 
     import psycopg
+
     async with await psycopg.AsyncConnection.connect(db_url) as conn:
         await conn.execute(
             """INSERT INTO agent.user_llm_settings (user_id, default_model, updated_at)
@@ -258,11 +267,15 @@ async def set_role_overrides(request: Request) -> dict[str, Any]:
 
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
-        return {"status": "env_only", "message": "No DB — per-role overrides require PostgreSQL"}
+        return {
+            "status": "env_only",
+            "message": "No DB — per-role overrides require PostgreSQL",
+        }
 
     import json
 
     import psycopg
+
     async with await psycopg.AsyncConnection.connect(db_url) as conn:
         await conn.execute(
             """INSERT INTO agent.user_llm_settings (user_id, per_role_overrides, updated_at)
@@ -327,6 +340,7 @@ async def delete_api_key(provider_id: str, request: Request) -> dict[str, Any]:
         return {"status": "env_only", "message": "No DB"}
 
     import psycopg
+
     async with await psycopg.AsyncConnection.connect(db_url) as conn:
         await conn.execute(
             "DELETE FROM agent.user_credentials WHERE user_id = %s AND category = 'llm' AND provider_id = %s",

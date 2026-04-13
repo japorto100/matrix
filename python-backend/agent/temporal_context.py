@@ -50,13 +50,15 @@ def get_temporal_context(
             ts = datetime.fromisoformat(data.get("timestamp", ""))
             if ts < cutoff:
                 continue
-            entries.append({
-                "time": ts.strftime("%H:%M"),
-                "success": data.get("success", True),
-                "messages": data.get("messages_count", 0),
-                "tools": data.get("tool_calls_count", 0),
-                "summary": _summarize_trajectory(data),
-            })
+            entries.append(
+                {
+                    "time": ts.strftime("%H:%M"),
+                    "success": data.get("success", True),
+                    "messages": data.get("messages_count", 0),
+                    "tools": data.get("tool_calls_count", 0),
+                    "summary": _summarize_trajectory(data),
+                }
+            )
         except Exception:
             continue
 
@@ -66,7 +68,9 @@ def get_temporal_context(
     lines = [f"## Recent Activity (last {lookback_hours}h)\n"]
     for e in entries:
         status = "ok" if e["success"] else "FAILED"
-        lines.append(f"- [{e['time']}] {e['summary']} ({e['messages']} msgs, {e['tools']} tools, {status})")
+        lines.append(
+            f"- [{e['time']}] {e['summary']} ({e['messages']} msgs, {e['tools']} tools, {status})"
+        )
 
     return "\n".join(lines)
 

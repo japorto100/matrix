@@ -39,7 +39,12 @@ def test_sqlite_query_named_params(monkeypatch, tmp_path: pathlib.Path) -> None:
     store.query(
         "INSERT OR IGNORE INTO kg_nodes (id, node_type, name, properties)"
         " VALUES (:id, :node_type, :name, :properties)",
-        {"id": "test-22g", "node_type": "Test", "name": "Test Node", "properties": "{}"},
+        {
+            "id": "test-22g",
+            "node_type": "Test",
+            "name": "Test Node",
+            "properties": "{}",
+        },
     )
     results = store.query(
         "SELECT id, node_type FROM kg_nodes WHERE id = :id",

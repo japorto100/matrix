@@ -50,7 +50,9 @@ class TradingTool(ABC):
                 raise ToolValidationError(self.name, str(e))
 
     @abstractmethod
-    async def execute(self, tool_input: dict[str, Any], ctx: AgentExecutionContext) -> dict[str, Any]:
+    async def execute(
+        self, tool_input: dict[str, Any], ctx: AgentExecutionContext
+    ) -> dict[str, Any]:
         """Execute the tool and return a JSON-serialisable result dict."""
         ...
 

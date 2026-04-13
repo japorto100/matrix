@@ -16,6 +16,7 @@ import (
 	"matrix/go-appservice/internal/app"
 	"matrix/go-appservice/internal/config"
 	"matrix/go-appservice/internal/connectors/agentservice"
+	"matrix/go-appservice/internal/connectors/ingestion"
 	memclient "matrix/go-appservice/internal/connectors/memory"
 	"matrix/go-appservice/internal/crypto"
 	agenthttp "matrix/go-appservice/internal/handlers/http"
@@ -63,7 +64,9 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 
 	// E2EE initialisieren (nur wenn aktiviert)
 	if cfg.E2EEEnabled {
-		m, err := crypto.New(context.Background(), client, cfg.CryptoDBPath, []byte(cfg.CryptoPickleKey), cfg.KeyBackupPassword, cfg.DeleteKeysAfterDecrypt)
+		// exec-19 Stufe 2B: prefer Postgres (cfg.PostgresDSN) for crypto
+		// store. Falls back to SQLite (MATRIX_CRYPTO_DB_PATH) if PG not set.
+		m, err := crypto.New(context.Background(), client, cfg.PostgresDSN, cfg.CryptoDBPath, []byte(cfg.CryptoPickleKey), cfg.KeyBackupPassword, cfg.DeleteKeysAfterDecrypt)
 		if err != nil {
 			return nil, fmt.Errorf("crypto init: %w", err)
 		}
@@ -129,7 +132,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	if host == "" {
 		host = "127.0.0.1"
 	}
-	artifactCfg, artifactErr := app.BuildArtifactService(host, cfg.AppservicePort)
+	artifactCfg, artifactErr := app.BuildArtifactService(host, cfg.AppservicePort, cfg.PostgresDSN)
 	if artifactErr != nil {
 		slog.Warn("Artifact Storage disabled — set ARTIFACT_STORAGE_* env vars to enable",
 			"error", artifactErr)
@@ -144,6 +147,40 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 		slog.Info("Artifact Storage active",
 			"provider", os.Getenv("ARTIFACT_STORAGE_PROVIDER"),
 			"gateway_base_url", artifactCfg.GatewayBaseURL)
+
+		// ── Files API (exec-19 Stufe 3) ─────────────────────────────
+		// High-level facade over the artifact store + SeaweedFS + Python
+		// ingestion worker. Handler dispatches on sub-path; see
+		// internal/handlers/http/files_handler.go.
+		ingestionURL := envOrDefault("INGESTION_WORKER_URL", ingestion.DefaultBaseURL)
+		ingestionClient := ingestion.NewClient(
+			ingestionURL,
+			10*time.Second,
+			ingestion.WithSharedSecret(os.Getenv("INGESTION_WORKER_SHARED_SECRET")),
+		)
+		// Optional: if the artifact provider is S3/SeaweedFS it also implements
+		// ObjectLister. We type-assert to discover the capability at wiring
+		// time so the handler can surface orphan blobs.
+		var lister storage.ObjectLister
+		if objLister, ok := artifactCfg.Service.Provider().(storage.ObjectLister); ok {
+			lister = objLister
+		}
+		filesService := storage.NewFilesService(storage.FilesServiceConfig{
+			Store:                artifactCfg.Store,
+			Lister:               lister,
+			Ingestion:            ingestionClient,
+			Artifact:             artifactCfg.Service,
+			AllowLegacyOwnerless: boolEnv("FILES_ALLOW_LEGACY_OWNERLESS", false),
+		})
+		mux.HandleFunc("/api/v1/files",
+			agenthttp.FilesListHandler(filesService))
+		mux.HandleFunc("/api/v1/files/",
+			agenthttp.FilesItemHandler(filesService, artifactCfg.GatewayBaseURL))
+		slog.Info("Files API active",
+			"ingestion_url", ingestionURL,
+			"lister_enabled", lister != nil,
+			"allow_legacy_ownerless", boolEnv("FILES_ALLOW_LEGACY_OWNERLESS", false),
+		)
 	}
 
 	s.httpServer = &http.Server{
@@ -160,6 +197,29 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	}
 
 	return s, nil
+}
+
+// envOrDefault returns os.Getenv(key) or fallback if empty/whitespace.
+func envOrDefault(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// boolEnv parses common boolean forms from an env var, fallback otherwise.
+func boolEnv(key string, fallback bool) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	switch v {
+	case "":
+		return fallback
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
 }
 
 // Start startet den HTTP-Server.

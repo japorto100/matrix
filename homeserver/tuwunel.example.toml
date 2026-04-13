@@ -10,6 +10,14 @@ address = "0.0.0.0"
 port = 8448
 log = "warn"
 
+# ─── Safety: schlage Start ab bei unbekannten Config-Keys ───────────────────
+error_on_unknown_config_opts = true
+
+# ─── HTTP Response Compression ─────────────────────────────────────────────
+# Sicher im Dev-Setup (kein TLS direkt auf Tuwunel). In Prod mit eigener TLS: false.
+# Siehe: BREACH-Attack — https://breachattack.com/
+zstd_compression = true
+
 # ─── Room Version ─────────────────────────────────────────────────────────────
 # V12 = Project Hydra: State Resolution 2.1 + kryptografische Room-IDs
 default_room_version = "12"
@@ -27,7 +35,7 @@ federate_created_rooms = false
 # ─── E2EE ────────────────────────────────────────────────────────────────────
 # E2EE aus — Clients entscheiden pro Raum (Privat=E2EE, Offen=kein E2EE)
 # Wird nicht auf "invite" zurückgesetzt — auch nach exec-05 bleibt Client-Entscheidung
-encryption_enabled_by_default_for_room_type = "off"
+encryption_enabled_by_default_for_room_type = "none"
 
 # ─── Presence (B-6) ──────────────────────────────────────────────────────────
 # Für Dev aktiviert → grüner Online-Punkt in der UI.
@@ -38,12 +46,17 @@ allow_outgoing_presence = false   # kein Aussenden an andere Server
 
 # ─── Media: Upload-Limit ──────────────────────────────────────────────────────
 # Tuwunel/conduwuit: max_request_size in Bytes (Default 24 MB)
-max_request_size = 524288000  # 500 MB
+# 100 MB = Cloudflare Free/Pro Plan Request-Body-Cap (Business 200 MB, Enterprise 500 MB)
+# Höhere Werte würden bei CF-Tunnel sowieso als 413 zurückgewiesen.
+max_request_size = 104857600  # 100 MB (Cloudflare Free Plan Limit)
 
 # ─── Media: Legacy-URLs erlauben (QW-4 / MSC3916) ───────────────────────────
 # Erlaubt /_matrix/media/v3/download/ ohne Auth-Header (Dev-Modus).
 # Für Production: auf false setzen und Next.js API-Proxy verwenden.
 allow_legacy_media = true
+
+# ─── Media: Migrations-Safety ───────────────────────────────────────────────
+prune_missing_media = false
 
 # ─── STUN/TURN (Voice/Video Calls) ──────────────────────────────────────────
 # STUN: Öffentliche Server, kostenlos, hilft bei einfachem NAT.
@@ -113,7 +126,9 @@ type = "livekit"
 livekit_service_url = "http://YOUR_LAN_IP:8080"
 
 # ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
+# v1.6 Breaking: explicit id field required and must match TOML section key.
 [global.appservice.trading-agent]
+id         = "trading-agent"
 url        = "http://127.0.0.1:8090"
 as_token   = "REPLACE_WITH_AS_TOKEN"
 hs_token   = "REPLACE_WITH_HS_TOKEN"

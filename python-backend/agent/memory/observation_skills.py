@@ -94,6 +94,7 @@ async def observations_to_skills(user_id: str, max_observations: int = 20) -> li
                 skill_dir.mkdir(parents=True, exist_ok=True)
 
                 from datetime import datetime
+
                 skill_md = (
                     f"---\n"
                     f"name: {name}\n"
@@ -107,7 +108,9 @@ async def observations_to_skills(user_id: str, max_observations: int = 20) -> li
                 )
                 (skill_dir / "SKILL.md").write_text(skill_md, encoding="utf-8")
                 generated.append(name)
-                logger.info("Generated skill '%s' from observation for user %s", name, user_id)
+                logger.info(
+                    "Generated skill '%s' from observation for user %s", name, user_id
+                )
 
             except Exception as e:
                 logger.debug("Skill generation from observation failed: %s", e)
@@ -200,7 +203,7 @@ async def get_user_profile_tags(user_id: str) -> list[str]:
         opinions_text = "\n".join(f"- {f.text}" for f in result.results[:5])
         response = await llm_call(
             f"Extract user profile tags from these opinions:\n{opinions_text}\n\n"
-            f"Output JSON: {{\"tags\": [\"tag1\", \"tag2\"]}}",
+            f'Output JSON: {{"tags": ["tag1", "tag2"]}}',
             max_tokens=128,
         )
         data = extract_json(response)

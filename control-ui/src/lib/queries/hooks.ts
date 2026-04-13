@@ -289,8 +289,7 @@ export function useSetDefaultModel() {
 export function useSetRoleOverrides() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (overrides: Record<string, string>) =>
-			userLlmQueries.setRoleOverrides(overrides),
+		mutationFn: (overrides: Record<string, string>) => userLlmQueries.setRoleOverrides(overrides),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: userLlmKeys.all });
 		},

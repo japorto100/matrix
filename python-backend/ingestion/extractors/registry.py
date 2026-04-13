@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import os
 
-from loguru import logger
-
 from ingestion.extractors.base import DocumentExtractor
 from ingestion.extractors.code_ext import CodeExtractor
 from ingestion.extractors.csv_ext import CSVExtractor
@@ -25,6 +23,7 @@ from ingestion.extractors.remote import (
     MarkerExtractor,
     MineruExtractor,
 )
+from loguru import logger
 
 # MIME → preferred extractor name (lookup is overridable via env)
 _MIME_MAP: dict[str, str] = {

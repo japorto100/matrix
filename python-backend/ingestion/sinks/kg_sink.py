@@ -9,11 +9,10 @@ writes them to Kuzu.
 
 from __future__ import annotations
 
-from loguru import logger
-
 from ingestion.clients.kg_pipeline import KGPipelineClient
 from ingestion.core.types import ExtractedChunk, ExtractedDocument, Job
 from ingestion.sinks.base import Sink, SinkResult
+from loguru import logger
 
 
 class KGSink(Sink):

@@ -13,12 +13,13 @@ This SQLite store remains for:
 NEW Control endpoints (agent/control/episodes.py) MUST NOT use this file —
 they go directly to Hindsight via agent.memory.engine.get_memory_engine().
 """
+
 from __future__ import annotations
 
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ _DEFAULT_DB_PATH = str(Path(__file__).resolve().parents[3] / "data" / "episodic.
 class EpisodicStore:
     def __init__(self, db_path: str | None = None) -> None:
         import threading
+
         self._path = db_path or _DEFAULT_DB_PATH
         Path(self._path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._path, check_same_thread=False)
@@ -73,8 +75,8 @@ class EpisodicStore:
         retain_days: int = 90,
     ) -> dict[str, Any]:
         ep_id = f"ep_{uuid.uuid4().hex[:12]}"
-        now = datetime.now(timezone.utc).isoformat()
-        retain_until = (datetime.now(timezone.utc) + timedelta(days=retain_days)).isoformat()
+        now = datetime.now(UTC).isoformat()
+        retain_until = (datetime.now(UTC) + timedelta(days=retain_days)).isoformat()
         with self._write_lock:
             self._conn.execute(
                 """INSERT INTO agent_episodes
@@ -83,10 +85,19 @@ class EpisodicStore:
                     retain_until, created_at)
                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    ep_id, session_id, agent_role, input_json, output_json,
-                    json.dumps(tools_used or []), duration_ms, token_count, confidence,
-                    json.dumps(tags or []), json.dumps(metadata or {}),
-                    retain_until, now,
+                    ep_id,
+                    session_id,
+                    agent_role,
+                    input_json,
+                    output_json,
+                    json.dumps(tools_used or []),
+                    duration_ms,
+                    token_count,
+                    confidence,
+                    json.dumps(tags or []),
+                    json.dumps(metadata or {}),
+                    retain_until,
+                    now,
                 ),
             )
             self._conn.commit()
@@ -232,7 +243,7 @@ class EpisodicStore:
         }
 
     def prune_expired(self) -> int:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         with self._write_lock:
             cur = self._conn.execute(
                 "DELETE FROM agent_episodes WHERE retain_until < ?", (now,)
@@ -241,7 +252,9 @@ class EpisodicStore:
         return cur.rowcount
 
     def count(self) -> int:
-        return int(self._conn.execute("SELECT COUNT(*) FROM agent_episodes").fetchone()[0])
+        return int(
+            self._conn.execute("SELECT COUNT(*) FROM agent_episodes").fetchone()[0]
+        )
 
     def status(self) -> str:
         try:

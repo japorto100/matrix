@@ -92,7 +92,9 @@ class SandboxExecuteTool(TradingTool):
         if stderr:
             summary["stderr"] = stderr[:500] + ("..." if len(stderr) > 500 else "")
         if files:
-            summary["files"] = [{"name": f["name"], "mime": f.get("mime", "")} for f in files]
+            summary["files"] = [
+                {"name": f["name"], "mime": f.get("mime", "")} for f in files
+            ]
         if result.get("error"):
             summary["error"] = result["error"]
         return summary

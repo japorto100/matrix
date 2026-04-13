@@ -76,6 +76,51 @@ von `mxcToHttp()` und allen Komponenten die Media laden.
 
 ## Backend / Agent
 
+### ConnectRPC / gRPC fuer Go <-> Python IPC
+**Aus:** exec-19 Diskussion 11.04.2026 (beim pgxpool-Umstieg)
+**Was:** Aktuell laeuft die Inter-Service-Communication zwischen `go-appservice`
+und den Python-Services (agent :8094, bridge :8097, ingestion :8098, memory-worker
+:9999) ueber **HTTP REST + JSON**, Agent-Streaming ueber **SSE**, event-driven Paths
+ueber **NATS**. Das funktioniert, ist aber nicht type-safe — Go und Python definieren
+ihre DTOs unabhaengig voneinander, Drift ist moeglich.
+
+Tradefusion-Hauptprojekt nutzt **Standard gRPC** (`google.golang.org/grpc v1.79.2`,
+`grpcio`) fuer die Go<->Python IPC mit:
+- Echtem Server-Stream fuer High-Frequency MarketData (`StreamMarketData`)
+- Unary RPCs fuer ML Inference + Soft-Signal Analysis
+- Generic `ForwardRequest (ProxyRequest -> ProxyResponse)` HTTP-over-gRPC Proxy, der
+  alle HTTP Endpoints via gRPC-Transport macht (Zero-Migration-Cost fuer bestehende
+  Python HTTP-Handler)
+- Proto file: `tradeview-fusion/go-backend/internal/proto/ipc/ipc.proto`
+
+**Options fuer Matrix (wenn wir es je machen):**
+
+1. **ConnectRPC (connectrpc.com)** — moderner gRPC-Ersatz von Buf. HTTP-kompatibel,
+   ein Endpoint kann **gleichzeitig** per Connect-Go-Client (gRPC) und per `fetch()`
+   (HTTP/JSON) aufgerufen werden. Protobuf-Codegen fuer Go + TypeScript. Kein Setup
+   fuer control-ui-BFF-Integration noetig weil es HTTP bleibt.
+2. **Standard gRPC** wie tradefusion — mehr Ecosystem, aber control-ui kann nicht
+   direkt connecten (braucht grpc-web Proxy)
+3. **Twirp** — einfacher als gRPC, aber veraltet
+4. **HTTP REST + OpenAPI-Codegen** — fetch bleibt, codegen produziert type-safe
+   clients. Am wenigsten invasiv.
+
+**Warum verschoben:**
+- Matrix hat keine High-Frequency Streams (kein Ticker-Feed)
+- SSE fuer Agent-Messages funktioniert, geht eh ueber Next.js BFF
+- Kosten Full-Rewrite: ~1-2 Wochen fuer alle Endpoints + BFF-Integration
+- Nutzen aktuell gering (Type-Safety kann OpenAPI auch)
+- **Geeigneter Auslöser:** wenn wir einen echten Bedarf fuer Bi-Direktionales Streaming
+  haben (z.B. Agent Tool-Execution Events live Go <-> Python Push), dann ConnectRPC
+  mit Proto Schema einfuehren. Vorher: nicht Invest-wuerdig.
+
+**NICHT geeignet fuer:**
+- **Postgres Zugriffe** — `pgx`/`pgxpool` hat eigenes PG-Protokoll, gRPC waere Proxy ohne Mehrwert
+- **SeaweedFS Blob Access** — S3-Protokoll via HTTP PUT/GET ist Industry Standard,
+  signed URLs funktionieren perfekt, gRPC waere bloat
+
+---
+
 ### Remote A2A Agents (exec-10 Phase 4)
 **Aus:** Codebase-Erkundung — `agent/graph/nodes/a2a_node.py` Scaffold vorhanden
 **Was:** Inter-Agent Delegation an *externe* Agents (HTTP+JSON), nicht nur lokale

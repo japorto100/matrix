@@ -125,6 +125,66 @@ func (p *S3Provider) Get(ctx context.Context, objectKey string) (io.ReadCloser, 
 	return output.Body, nil
 }
 
+// ListObjects returns object info under a prefix (up to maxKeys). Implements
+// the ObjectLister capability interface. exec-19 Stufe 3.
+//
+// For per-user isolation, the caller should pass `users/{user_id}/` as prefix.
+// The maxKeys cap is clamped to [1, 1000] (S3 API limit).
+func (p *S3Provider) ListObjects(ctx context.Context, prefix string, maxKeys int) ([]ObjectInfo, error) {
+	if maxKeys <= 0 {
+		maxKeys = 100
+	}
+	if maxKeys > 1000 {
+		maxKeys = 1000
+	}
+	// After the clamp [1, 1000] the cast to int32 can never overflow —
+	// satisfies gosec G115.
+	maxKeys32 := int32(maxKeys) //nolint:gosec // clamped above
+	output, err := p.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket:  aws.String(p.bucket),
+		Prefix:  aws.String(strings.TrimSpace(prefix)),
+		MaxKeys: aws.Int32(maxKeys32),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list s3 objects: %w", err)
+	}
+	result := make([]ObjectInfo, 0, len(output.Contents))
+	for _, obj := range output.Contents {
+		info := ObjectInfo{}
+		if obj.Key != nil {
+			info.Key = *obj.Key
+		}
+		if obj.Size != nil {
+			info.SizeBytes = *obj.Size
+		}
+		if obj.LastModified != nil {
+			info.LastModified = obj.LastModified.UTC()
+		}
+		if obj.ETag != nil {
+			info.ETag = strings.Trim(*obj.ETag, `"`)
+		}
+		result = append(result, info)
+	}
+	return result, nil
+}
+
+// Delete removes a single object. Implements the optional Delete
+// capability used by FilesService.DeleteArtifact.
+func (p *S3Provider) Delete(ctx context.Context, objectKey string) error {
+	key := strings.TrimSpace(objectKey)
+	if key == "" {
+		return fmt.Errorf("object key required")
+	}
+	_, err := p.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(p.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("delete s3 object: %w", err)
+	}
+	return nil
+}
+
 func (p *S3Provider) ensureBucket(ctx context.Context) error {
 	if _, err := p.client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(p.bucket),

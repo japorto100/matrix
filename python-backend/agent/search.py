@@ -17,7 +17,9 @@ CODEBASE_ALLOWLIST = [
 ]
 
 
-async def memory_search(query: str, *, episodic_limit: int = 5, vector_limit: int = 5) -> dict[str, Any]:
+async def memory_search(
+    query: str, *, episodic_limit: int = 5, vector_limit: int = 5
+) -> dict[str, Any]:
     """Episodic + Semantic (Vector) search. Phase 10d.3."""
     episodic: list[dict[str, Any]] = []
     vector: list[dict[str, Any]] = []
@@ -36,7 +38,9 @@ async def memory_search(query: str, *, episodic_limit: int = 5, vector_limit: in
     return {"episodic": episodic, "vector": vector, "query": query}
 
 
-async def codebase_search(query: str, *, allowlist: list[str] | None = None) -> list[dict[str, Any]]:
+async def codebase_search(
+    query: str, *, allowlist: list[str] | None = None
+) -> list[dict[str, Any]]:
     """
     Codebase search with allowlist. Phase 10d.1.
     Scope-begrenzt: only paths in allowlist. Stub returns empty; implement with ripgrep/glob.
@@ -46,7 +50,9 @@ async def codebase_search(query: str, *, allowlist: list[str] | None = None) -> 
     return []
 
 
-async def news_search(query: str, *, source: str = "emergent_mind") -> list[dict[str, Any]]:
+async def news_search(
+    query: str, *, source: str = "emergent_mind"
+) -> list[dict[str, Any]]:
     """
     News/Research search. Phase 10d.2.
     Evaluated: Emergent Mind API, arXiv API. Stub for now.

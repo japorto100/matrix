@@ -57,7 +57,9 @@ def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
         "owner": skill.owner,
         "path": str(skill.path),
         "body_preview": skill.content[:400] if skill.content else "",
-        "source": "builtin" if skill.tier == "global" else ("github" if skill.tier == "team" else "local"),
+        "source": "builtin"
+        if skill.tier == "global"
+        else ("github" if skill.tier == "team" else "local"),
     }
 
 
@@ -80,7 +82,9 @@ async def list_skills_endpoint(
             item["enabled"] = overrides[item["id"]]
     if tier:
         if tier not in {"global", "team", "personal"}:
-            raise HTTPException(status_code=400, detail="tier must be global|team|personal")
+            raise HTTPException(
+                status_code=400, detail="tier must be global|team|personal"
+            )
         items = [i for i in items if i["tier"] == tier]
     return {"items": items, "total": len(items)}
 
@@ -194,7 +198,9 @@ async def import_skill_from_github(
     if req.tier not in {"team", "personal"}:
         raise HTTPException(status_code=400, detail="tier must be team|personal")
 
-    skill_name = (req.name or req.github_url.rstrip("/").split("/")[-1] or "imported-skill").strip()
+    skill_name = (
+        req.name or req.github_url.rstrip("/").split("/")[-1] or "imported-skill"
+    ).strip()
     skill_id = f"{req.tier}:{skill_name}"
     now = datetime.now(UTC)
 

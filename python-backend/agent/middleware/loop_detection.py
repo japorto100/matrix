@@ -15,13 +15,16 @@ from collections import OrderedDict, defaultdict
 
 logger = logging.getLogger(__name__)
 
+
 def _get_loop_config():
     """Get loop detection config from consent_policy.yaml with hardcoded fallbacks."""
     try:
         from agent.consent.config import get_consent_config
+
         return get_consent_config().rate_limits.loop_detection
     except Exception:
         return None
+
 
 _lc = _get_loop_config()
 WARN_THRESHOLD = _lc.warn_threshold if _lc else 3
@@ -42,11 +45,15 @@ def _hash_tool_calls(tool_calls: list[dict]) -> str:
     """Deterministischer Hash eines Sets von Tool-Calls (name + args)."""
     normalized = []
     for tc in tool_calls:
-        normalized.append({
-            "name": tc.get("tool_name", tc.get("name", "")),
-            "args": tc.get("tool_input", tc.get("args", {})),
-        })
-    normalized.sort(key=lambda tc: (tc["name"], json.dumps(tc["args"], sort_keys=True, default=str)))
+        normalized.append(
+            {
+                "name": tc.get("tool_name", tc.get("name", "")),
+                "args": tc.get("tool_input", tc.get("args", {})),
+            }
+        )
+    normalized.sort(
+        key=lambda tc: (tc["name"], json.dumps(tc["args"], sort_keys=True, default=str))
+    )
     blob = json.dumps(normalized, sort_keys=True, default=str)
     return hashlib.md5(blob.encode()).hexdigest()[:12]
 
@@ -84,19 +91,29 @@ class LoopDetector:
 
         # Sliding window
         if len(history) > self.window_size:
-            history[:] = history[-self.window_size:]
+            history[:] = history[-self.window_size :]
 
         count = history.count(call_hash)
 
         if count >= self.hard_limit:
-            logger.warning("Loop hard stop: thread=%s hash=%s count=%d", thread_id, call_hash, count)
+            logger.warning(
+                "Loop hard stop: thread=%s hash=%s count=%d",
+                thread_id,
+                call_hash,
+                count,
+            )
             return _HARD_STOP_MSG, True
 
         if count >= self.warn_threshold:
             warned = self._warned[thread_id]
             if call_hash not in warned:
                 warned.add(call_hash)
-                logger.info("Loop warning: thread=%s hash=%s count=%d", thread_id, call_hash, count)
+                logger.info(
+                    "Loop warning: thread=%s hash=%s count=%d",
+                    thread_id,
+                    call_hash,
+                    count,
+                )
                 return _WARNING_MSG, False
 
         return None, False

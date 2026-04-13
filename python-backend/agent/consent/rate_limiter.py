@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SessionUsage:
     """Tracks usage counters for a single session/thread."""
+
     tool_calls_total: int = 0
     tool_calls_per_tool: dict[str, int] = field(default_factory=dict)
     tokens_used: int = 0
@@ -26,6 +27,7 @@ class SessionUsage:
 @dataclass
 class RateLimitResult:
     """Result of a rate limit check."""
+
     allowed: bool
     reason: str = ""
     is_grace_warning: bool = False
@@ -49,7 +51,10 @@ class SessionRateLimiter:
         session = self._get_session(thread_id)
 
         # 1. Per-session total tool calls
-        if config.max_tool_calls_total > 0 and session.tool_calls_total >= config.max_tool_calls_total:
+        if (
+            config.max_tool_calls_total > 0
+            and session.tool_calls_total >= config.max_tool_calls_total
+        ):
             return RateLimitResult(
                 allowed=False,
                 reason=f"Session tool call limit reached ({config.max_tool_calls_total})",
@@ -66,7 +71,10 @@ class SessionRateLimiter:
                 )
 
         # 3. Token budget
-        if config.max_tokens_per_session > 0 and session.tokens_used >= config.max_tokens_per_session:
+        if (
+            config.max_tokens_per_session > 0
+            and session.tokens_used >= config.max_tokens_per_session
+        ):
             return RateLimitResult(
                 allowed=False,
                 reason=f"Session token budget exhausted ({config.max_tokens_per_session})",
@@ -89,7 +97,9 @@ class SessionRateLimiter:
         """Record a tool call after execution."""
         session = self._get_session(thread_id)
         session.tool_calls_total += 1
-        session.tool_calls_per_tool[tool_name] = session.tool_calls_per_tool.get(tool_name, 0) + 1
+        session.tool_calls_per_tool[tool_name] = (
+            session.tool_calls_per_tool.get(tool_name, 0) + 1
+        )
 
     def record_tokens(self, thread_id: str, tokens: int) -> None:
         """Record token usage (input + output)."""

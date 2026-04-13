@@ -27,20 +27,15 @@ class IngestionConfig(BaseModel):
 
     # ── Storage Gateway (D12 capability-based) ────────────────────────────
     artifact_gateway_base_url: str = Field(
-        default_factory=lambda: os.getenv(
-            "ARTIFACT_GATEWAY_BASE_URL", "http://127.0.0.1:8090"
-        )
+        default_factory=lambda: os.getenv("ARTIFACT_GATEWAY_BASE_URL", "http://127.0.0.1:8090")
     )
 
     # ── KG Pipeline (Phase 2) ─────────────────────────────────────────────
     kg_pipeline_url: str = Field(
-        default_factory=lambda: os.getenv(
-            "KG_PIPELINE_URL", "http://127.0.0.1:8099"
-        )
+        default_factory=lambda: os.getenv("KG_PIPELINE_URL", "http://127.0.0.1:8099")
     )
     kg_pipeline_enabled: bool = Field(
-        default_factory=lambda: os.getenv("KG_PIPELINE_ENABLED", "false").lower()
-        == "true"
+        default_factory=lambda: os.getenv("KG_PIPELINE_ENABLED", "false").lower() == "true"
     )
 
     # ── Embedder ──────────────────────────────────────────────────────────
@@ -54,15 +49,9 @@ class IngestionConfig(BaseModel):
     )
 
     # ── Chunker ───────────────────────────────────────────────────────────
-    chunker_name: str = Field(
-        default_factory=lambda: os.getenv("CHUNKER_NAME", "token")
-    )
-    chunker_size: int = Field(
-        default_factory=lambda: int(os.getenv("CHUNKER_SIZE", "500"))
-    )
-    chunker_overlap: int = Field(
-        default_factory=lambda: int(os.getenv("CHUNKER_OVERLAP", "50"))
-    )
+    chunker_name: str = Field(default_factory=lambda: os.getenv("CHUNKER_NAME", "token"))
+    chunker_size: int = Field(default_factory=lambda: int(os.getenv("CHUNKER_SIZE", "500")))
+    chunker_overlap: int = Field(default_factory=lambda: int(os.getenv("CHUNKER_OVERLAP", "50")))
 
     # ── Worker ────────────────────────────────────────────────────────────
     host: str = Field(default_factory=lambda: os.getenv("INGESTION_HOST", "127.0.0.1"))

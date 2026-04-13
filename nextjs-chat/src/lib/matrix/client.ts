@@ -53,7 +53,9 @@ export async function getMatrixClient(opts: MatrixClientOptions): Promise<Matrix
 		const blacklist = process.env.NEXT_PUBLIC_E2EE_BLACKLIST_UNVERIFIED === "true";
 		const crypto = _client.getCrypto();
 		if (crypto) crypto.globalBlacklistUnverifiedDevices = blacklist;
-		console.info(`[matrix] Rust crypto initialized (E2EE enabled, blacklist=${blacklist ? "on" : "off"})`);
+		console.info(
+			`[matrix] Rust crypto initialized (E2EE enabled, blacklist=${blacklist ? "on" : "off"})`,
+		);
 	} catch (err) {
 		console.warn("[matrix] Rust crypto init failed — E2EE disabled:", err);
 	}

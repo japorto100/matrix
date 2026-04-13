@@ -74,13 +74,16 @@ class NATSHandler:
 
         logger.info(
             "NATS inbound: room=%s sender=%s body_len=%d",
-            room_id, sender, len(body),
+            room_id,
+            sender,
+            len(body),
         )
 
         # exec-16: User-Settings fuer Matrix Mention (sender → model + api_key)
         model: str | None = None
         try:
             from agent.security.credentials import get_user_default_model
+
             model = await get_user_default_model(sender)
         except Exception:
             pass  # DB nicht verfuegbar → kein User-Model, Agent nutzt Fallback
@@ -104,7 +107,9 @@ class NATSHandler:
 
         if self._nc and not self._nc.is_closed:
             await self._nc.publish(SUBJECT_REPLY, json.dumps(reply).encode())
-            logger.info("NATS reply published: room=%s text_len=%d", room_id, len(reply_text))
+            logger.info(
+                "NATS reply published: room=%s text_len=%d", room_id, len(reply_text)
+            )
 
     async def _on_disconnect(self) -> None:
         logger.warning("NATS disconnected")

@@ -20,7 +20,9 @@ class SaveMemoryInput(BaseModel):
 
 
 class LoadMemoryInput(BaseModel):
-    key: str = Field(min_length=1, description="The key used when saving the memory entry")
+    key: str = Field(
+        min_length=1, description="The key used when saving the memory entry"
+    )
 
 
 class SaveMemoryTool(TradingTool):
@@ -45,6 +47,7 @@ class SaveMemoryTool(TradingTool):
 
     async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.working_memory import working_memory_set
+
         params = SaveMemoryInput(**tool_input)
         await working_memory_set(ctx.thread_id, params.key, params.content)
         return {"ok": True, "key": params.key, "saved": True}
@@ -71,7 +74,13 @@ class LoadMemoryTool(TradingTool):
 
     async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
         from agent.working_memory import working_memory_get_entry
+
         params = LoadMemoryInput(**tool_input)
         entry = await working_memory_get_entry(ctx.thread_id, params.key)
         content = entry.get("content") if isinstance(entry, dict) else entry
-        return {"ok": True, "key": params.key, "content": content, "found": entry is not None}
+        return {
+            "ok": True,
+            "key": params.key,
+            "content": content,
+            "found": entry is not None,
+        }

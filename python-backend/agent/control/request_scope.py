@@ -35,7 +35,9 @@ def resolve_user_id(request: Request, fallback_user_id: str | None = None) -> st
     return "local"
 
 
-def resolve_team_id(request: Request, fallback_team_id: str | None = None) -> str | None:
+def resolve_team_id(
+    request: Request, fallback_team_id: str | None = None
+) -> str | None:
     """Resolve team_id with header-first precedence."""
     header_team = request.headers.get("x-auth-team")
     if header_team:
@@ -101,4 +103,3 @@ def get_effective_scope(request: Request, user_id: str | None = None) -> Request
     Same as resolve_scope with optional user_id fallback.
     """
     return resolve_scope(request, requested_user_id=user_id)
-

@@ -27,4 +27,3 @@ class DeterministicEmbedder(Embedder):
             vec = (base * ((self.dim // len(base)) + 1))[: self.dim]
             out.append(vec)
         return out
-

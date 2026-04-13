@@ -89,7 +89,10 @@ async def list_kg_nodes(
 async def get_kg_node(node_id: str) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "get_node"):
-        raise HTTPException(status_code=501, detail="KG store backend has no get_node (SQLite fallback?)")
+        raise HTTPException(
+            status_code=501,
+            detail="KG store backend has no get_node (SQLite fallback?)",
+        )
     node = store.get_node(node_id)
     if node is None:
         raise HTTPException(status_code=404, detail="Node not found")
@@ -100,7 +103,9 @@ async def get_kg_node(node_id: str) -> dict[str, Any]:
 async def create_kg_node(req: CreateNodeRequest) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "create_node"):
-        raise HTTPException(status_code=501, detail="KG store backend has no create_node")
+        raise HTTPException(
+            status_code=501, detail="KG store backend has no create_node"
+        )
     try:
         props = dict(req.properties)
         if req.label:
@@ -118,7 +123,9 @@ async def create_kg_node(req: CreateNodeRequest) -> dict[str, Any]:
 async def update_kg_node(node_id: str, req: UpdateNodeRequest) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "update_node"):
-        raise HTTPException(status_code=501, detail="KG store backend has no update_node")
+        raise HTTPException(
+            status_code=501, detail="KG store backend has no update_node"
+        )
     updated = store.update_node(node_id, req.properties)
     if updated is None:
         raise HTTPException(status_code=404, detail="Node not found")
@@ -129,7 +136,9 @@ async def update_kg_node(node_id: str, req: UpdateNodeRequest) -> dict[str, Any]
 async def delete_kg_node(node_id: str) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "delete_node"):
-        raise HTTPException(status_code=501, detail="KG store backend has no delete_node")
+        raise HTTPException(
+            status_code=501, detail="KG store backend has no delete_node"
+        )
     deleted = store.delete_node(node_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Node not found")
@@ -162,7 +171,9 @@ async def list_kg_edges(
 async def create_kg_edge(req: CreateEdgeRequest) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "create_edge"):
-        raise HTTPException(status_code=501, detail="KG store backend has no create_edge")
+        raise HTTPException(
+            status_code=501, detail="KG store backend has no create_edge"
+        )
     try:
         edge = store.create_edge(req.from_id, req.to_id, req.type, req.properties)
         return {"status": "created", **edge}
@@ -177,7 +188,9 @@ async def create_kg_edge(req: CreateEdgeRequest) -> dict[str, Any]:
 async def delete_kg_edge(from_id: str, to_id: str, type: str) -> dict[str, Any]:
     store = _get_store()
     if not hasattr(store, "delete_edge"):
-        raise HTTPException(status_code=501, detail="KG store backend has no delete_edge")
+        raise HTTPException(
+            status_code=501, detail="KG store backend has no delete_edge"
+        )
     try:
         deleted = store.delete_edge(from_id, to_id, type)
     except ValueError as e:

@@ -4,9 +4,8 @@
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { getGatewayBaseURL } from "@/lib/server/gateway";
 import { getErrorMessage } from "@/lib/utils";
-
-const GATEWAY_BASE = process.env.GATEWAY_URL ?? "http://localhost:9060";
 
 export async function GET(request: NextRequest) {
 	const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
 	const q = searchParams.get("q") ?? "";
 
 	try {
-		const upstreamUrl = new URL(`${GATEWAY_BASE}/api/v1/files/search`);
+		const upstreamUrl = new URL(`${getGatewayBaseURL()}/api/v1/files/search`);
 		if (q) upstreamUrl.searchParams.set("q", q);
 
 		const upstream = await fetch(upstreamUrl.toString(), {

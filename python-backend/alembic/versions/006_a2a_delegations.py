@@ -8,15 +8,17 @@ Revision ID: 006
 Revises: 005
 Create Date: 2026-04-07
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "006"
-down_revision: Union[str, None] = "005"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "005"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 SCHEMA = "agent"
 
@@ -34,7 +36,9 @@ def upgrade() -> None:
         sa.Column("from_role", sa.Text, nullable=False),
         sa.Column("to_role", sa.Text, nullable=False),
         sa.Column("task", sa.Text, nullable=False),
-        sa.Column("status", sa.Text, nullable=False),  # pending|running|completed|failed
+        sa.Column(
+            "status", sa.Text, nullable=False
+        ),  # pending|running|completed|failed
         sa.Column(
             "started_at",
             sa.DateTime(timezone=True),

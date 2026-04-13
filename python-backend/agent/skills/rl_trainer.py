@@ -101,7 +101,9 @@ class LoRATrainer:
 
     def __init__(self) -> None:
         self.enabled = os.environ.get("AGENT_RL_ENABLED", "false").lower() == "true"
-        self.backend = os.environ.get("AGENT_RL_BACKEND", "openai")  # openai | unsloth | disabled
+        self.backend = os.environ.get(
+            "AGENT_RL_BACKEND", "openai"
+        )  # openai | unsloth | disabled
         self.min_samples = int(os.environ.get("AGENT_RL_MIN_SAMPLES", "50"))
         self.training_data_dir = TRAJECTORIES_DIR / "training"
         self.training_data_dir.mkdir(parents=True, exist_ok=True)
@@ -129,13 +131,21 @@ class LoRATrainer:
             "reasoning": prm_score.get("reasoning", ""),
             "failure_category": prm_score.get("failure_category"),
             "collected_at": datetime.now().isoformat(),
-            "label": "positive" if score >= 7 else "negative" if score <= 3 else "neutral",
+            "label": "positive"
+            if score >= 7
+            else "negative"
+            if score <= 3
+            else "neutral",
         }
 
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         out = self.training_data_dir / f"sample_{ts}_{score}.json"
-        out.write_text(json.dumps(sample, ensure_ascii=False, indent=2), encoding="utf-8")
-        logger.debug("Collected training sample: score=%d label=%s", score, sample["label"])
+        out.write_text(
+            json.dumps(sample, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        logger.debug(
+            "Collected training sample: score=%d label=%s", score, sample["label"]
+        )
 
     def ready_to_train(self) -> bool:
         """Prueft ob genug Samples fuer ein Training vorhanden sind."""
@@ -154,7 +164,11 @@ class LoRATrainer:
 
         if not self.ready_to_train():
             samples = list(self.training_data_dir.glob("sample_*.json"))
-            return {"status": "insufficient_data", "samples": len(samples), "required": self.min_samples}
+            return {
+                "status": "insufficient_data",
+                "samples": len(samples),
+                "required": self.min_samples,
+            }
 
         if self.backend == "openai":
             return await self._train_openai()

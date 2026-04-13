@@ -40,7 +40,9 @@ class Skill:
     enabled: bool = True
 
 
-def parse_skill_file(skill_file: Path, tier: str = "global", owner: str | None = None) -> Skill | None:
+def parse_skill_file(
+    skill_file: Path, tier: str = "global", owner: str | None = None
+) -> Skill | None:
     """Parst eine SKILL.md Datei mit YAML Frontmatter."""
     try:
         raw = skill_file.read_text(encoding="utf-8")
@@ -64,7 +66,7 @@ def parse_skill_file(skill_file: Path, tier: str = "global", owner: str | None =
         logger.warning("Skill has no name in %s", skill_file)
         return None
 
-    content = raw[fm_match.end():]
+    content = raw[fm_match.end() :]
 
     return Skill(
         name=name,
@@ -137,12 +139,19 @@ def load_skills(
 
     # Tier 2: Team
     if team_id:
-        for skill in _scan_tier(base / "team" / team_id, tier="team", owner=team_id, category=category):
+        for skill in _scan_tier(
+            base / "team" / team_id, tier="team", owner=team_id, category=category
+        ):
             merged[skill.name] = skill
 
     # Tier 3: Personal
     if user_id:
-        for skill in _scan_tier(base / "personal" / user_id, tier="personal", owner=user_id, category=category):
+        for skill in _scan_tier(
+            base / "personal" / user_id,
+            tier="personal",
+            owner=user_id,
+            category=category,
+        ):
             merged[skill.name] = skill
 
     skills = sorted(merged.values(), key=lambda s: s.name)
@@ -164,6 +173,8 @@ def format_skills_for_prompt(skills: list[Skill]) -> str:
     sections = ["## Available Skills\n"]
     for skill in skills:
         tier_badge = f"[{skill.tier}]" if skill.tier != "global" else ""
-        sections.append(f"### {skill.name} {tier_badge}\n{skill.description}\n\n{skill.content}\n")
+        sections.append(
+            f"### {skill.name} {tier_badge}\n{skill.description}\n\n{skill.content}\n"
+        )
 
     return "\n".join(sections)

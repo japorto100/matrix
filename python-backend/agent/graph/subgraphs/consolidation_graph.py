@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class ConsolidationState(TypedDict):
     """State fuer den Consolidation Sub-Graph."""
+
     trajectories: list[dict[str, Any]]
     user_id: str
     error_patterns: list[str]
@@ -88,7 +89,9 @@ async def _error_analyst(state: ConsolidationState) -> dict[str, Any]:
     text = await llm_call(ERROR_PROMPT.format(trajectories=formatted), max_tokens=1024)
     try:
         data = extract_json(text)
-        return {"error_patterns": data.get("patterns", []) + data.get("root_causes", [])}
+        return {
+            "error_patterns": data.get("patterns", []) + data.get("root_causes", [])
+        }
     except Exception:
         return {"error_patterns": []}
 
@@ -100,10 +103,15 @@ async def _success_analyst(state: ConsolidationState) -> dict[str, Any]:
         return {"success_patterns": []}
 
     formatted = _format_trajectories(successes)
-    text = await llm_call(SUCCESS_PROMPT.format(trajectories=formatted), max_tokens=1024)
+    text = await llm_call(
+        SUCCESS_PROMPT.format(trajectories=formatted), max_tokens=1024
+    )
     try:
         data = extract_json(text)
-        return {"success_patterns": data.get("patterns", []) + data.get("key_strategies", [])}
+        return {
+            "success_patterns": data.get("patterns", [])
+            + data.get("key_strategies", [])
+        }
     except Exception:
         return {"success_patterns": []}
 
@@ -131,7 +139,9 @@ async def _consolidator(state: ConsolidationState) -> dict[str, Any]:
 
     confidence = skill_data.get("confidence", 0)
     if confidence < 0.5:
-        logger.info("Consolidated skill confidence too low (%.2f), skipping", confidence)
+        logger.info(
+            "Consolidated skill confidence too low (%.2f), skipping", confidence
+        )
         return {"consolidated_skill": skill_data, "skill_path": ""}
 
     # Skill speichern
@@ -161,13 +171,25 @@ async def _consolidator(state: ConsolidationState) -> dict[str, Any]:
         ref_dir.mkdir(exist_ok=True)
         ref_content = "# Analysis Patterns\n\n"
         if error_patterns:
-            ref_content += "## Error Patterns\n" + "\n".join(f"- {p}" for p in error_patterns) + "\n\n"
+            ref_content += (
+                "## Error Patterns\n"
+                + "\n".join(f"- {p}" for p in error_patterns)
+                + "\n\n"
+            )
         if success_patterns:
-            ref_content += "## Success Patterns\n" + "\n".join(f"- {p}" for p in success_patterns) + "\n"
+            ref_content += (
+                "## Success Patterns\n"
+                + "\n".join(f"- {p}" for p in success_patterns)
+                + "\n"
+            )
         (ref_dir / "patterns.md").write_text(ref_content, encoding="utf-8")
 
-    logger.info("Consolidated %d trajectories → skill '%s' (confidence=%.2f)",
-               len(state["trajectories"]), name, confidence)
+    logger.info(
+        "Consolidated %d trajectories → skill '%s' (confidence=%.2f)",
+        len(state["trajectories"]),
+        name,
+        confidence,
+    )
 
     return {"consolidated_skill": skill_data, "skill_path": str(skill_dir / "SKILL.md")}
 
@@ -179,9 +201,11 @@ def _format_trajectories(trajectories: list[dict]) -> str:
         status = "SUCCESS" if t.get("success") else "FAILURE"
         reason = t.get("failure_reason", "")
         msgs = t.get("messages", [])
-        user_msg = next((m.get("content", "")[:200] for m in msgs if m.get("role") == "user"), "")
+        user_msg = next(
+            (m.get("content", "")[:200] for m in msgs if m.get("role") == "user"), ""
+        )
         parts.append(
-            f"### Trajectory {i+1} ({status})\n"
+            f"### Trajectory {i + 1} ({status})\n"
             f"Request: {user_msg}\n"
             f"Tools: {t.get('tool_calls_count', 0)}\n"
             f"{'Failure: ' + reason if reason else ''}"

@@ -9,8 +9,12 @@ from typing import Any
 
 # Hook signatures (all async)
 OnStreamChunkHook = Callable[[str, str], Awaitable[None]]  # (thread_id, text_delta)
-OnToolBeforeHook = Callable[[str, str, dict], Awaitable[None]]  # (thread_id, tool_name, input)
-OnToolAfterHook = Callable[[str, str, dict, dict], Awaitable[None]]  # (thread_id, tool_name, input, result)
+OnToolBeforeHook = Callable[
+    [str, str, dict], Awaitable[None]
+]  # (thread_id, tool_name, input)
+OnToolAfterHook = Callable[
+    [str, str, dict, dict], Awaitable[None]
+]  # (thread_id, tool_name, input, result)
 OnResponseEndHook = Callable[[str, dict], Awaitable[None]]  # (thread_id, final_message)
 
 
@@ -42,7 +46,9 @@ class ExtensionRegistry:
             except Exception:
                 pass  # hooks must not crash the loop
 
-    async def fire_tool_before(self, thread_id: str, tool_name: str, tool_input: dict) -> None:
+    async def fire_tool_before(
+        self, thread_id: str, tool_name: str, tool_input: dict
+    ) -> None:
         for hook in self._on_tool_before:
             try:
                 await hook(thread_id, tool_name, tool_input)
@@ -76,6 +82,7 @@ def get_extension_registry() -> ExtensionRegistry:
 
 # ── exec-12: Audit Logger Hooks (Legacy-Loop Fallback) ─────────────────────
 
+
 def _register_audit_hooks() -> None:
     """Register audit logging hooks for the legacy agent loop."""
     from agent.audit.logger import AuditAction, audit_log
@@ -88,7 +95,9 @@ def _register_audit_hooks() -> None:
             input_data=tool_input,
         )
 
-    async def _on_tool_after(thread_id: str, tool_name: str, tool_input: dict, result: dict) -> None:
+    async def _on_tool_after(
+        thread_id: str, tool_name: str, tool_input: dict, result: dict
+    ) -> None:
         await audit_log(
             action=AuditAction.TOOL_RESULT,
             thread_id=thread_id,

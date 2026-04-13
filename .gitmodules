@@ -34,3 +34,6 @@
 [submodule "_ref/autoresearch"]
 	path = _ref/autoresearch
 	url = https://github.com/karpathy/autoresearch.git
+[submodule "_ref/agno"]
+	path = _ref/agno
+	url = https://github.com/agno-agi/agno.git

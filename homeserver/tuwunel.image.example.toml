@@ -8,6 +8,14 @@ address = "0.0.0.0"
 port = 8448
 log = "warn"
 
+# ─── Safety: schlage Start ab bei unbekannten Config-Keys ───────────────────
+error_on_unknown_config_opts = true
+
+# ─── HTTP Response Compression ─────────────────────────────────────────────
+# Container-Dev: hinter Reverse Proxy oder CF Tunnel, kein direktes TLS → sicher.
+# In Prod mit eigener TLS-Terminierung: false setzen (BREACH-Risiko).
+zstd_compression = true
+
 # ─── Room Version ─────────────────────────────────────────────────────────────
 default_room_version = "12"
 
@@ -23,7 +31,7 @@ federate_created_rooms = false
 
 # ─── E2EE ────────────────────────────────────────────────────────────────────
 # E2EE aus — Clients entscheiden pro Raum
-encryption_enabled_by_default_for_room_type = "off"
+encryption_enabled_by_default_for_room_type = "none"
 
 # ─── Presence ──────────────────────────────────────────────────────────────
 allow_local_presence = true
@@ -31,10 +39,14 @@ allow_incoming_presence = false
 allow_outgoing_presence = false
 
 # ─── Media ─────────────────────────────────────────────────────────────────
-max_request_size = 524288000  # 500 MB
+# 100 MB = Cloudflare Free/Pro Plan Request-Body-Cap (Business 200 MB, Enterprise 500 MB)
+max_request_size = 104857600  # 100 MB (Cloudflare Free Plan Limit)
 # Dev: true (Legacy-URLs ohne Auth-Header erlaubt)
 # Prod: false (erzwingt Authenticated Media MSC3916, Next.js API-Proxy übernimmt Auth)
 allow_legacy_media = true
+
+# ─── Media: Migrations-Safety ───────────────────────────────────────────────
+prune_missing_media = false
 
 # ─── URL Preview ─────────────────────────────────────────────────────────────
 # Deaktiviert (SSRF-Risiko). Siehe specs/16-security.md.
@@ -83,7 +95,9 @@ livekit_service_url = "http://matrix-rtc-jwt:8081"
 
 # ─── Appservice: Go Appservice ───────────────────────────────────────────────
 # Container-Netzwerk: Service-Name statt 127.0.0.1
+# v1.6 Breaking: explicit id field required and must match TOML section key.
 [global.appservice.trading-agent]
+id         = "trading-agent"
 url        = "http://go-appservice:8090"
 as_token   = "REPLACE_WITH_AS_TOKEN"
 hs_token   = "REPLACE_WITH_HS_TOKEN"

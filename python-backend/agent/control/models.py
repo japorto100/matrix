@@ -92,7 +92,9 @@ def _providers() -> list[dict[str, Any]]:
                 "claude-opus-4-6",
                 "claude-sonnet-4-6",
                 "claude-haiku-4-5-20251001",
-            ] if anthropic_key else [],
+            ]
+            if anthropic_key
+            else [],
         },
         {
             "id": "openai",
@@ -105,7 +107,9 @@ def _providers() -> list[dict[str, Any]]:
                 "gpt-4o",
                 "gpt-4o-mini",
                 "text-embedding-3-small",
-            ] if openai_key else [],
+            ]
+            if openai_key
+            else [],
         },
         {
             "id": "ollama",
@@ -146,7 +150,9 @@ def _providers() -> list[dict[str, Any]]:
                 "openrouter/openai/gpt-4o",
                 "openrouter/qwen/qwen3-480b:free",
                 "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-            ] if openrouter_key else [],
+            ]
+            if openrouter_key
+            else [],
         },
         {
             "id": "azure-openai",

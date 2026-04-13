@@ -46,9 +46,7 @@ class ExtensionDetector(Detector):
             ext = Path(filename).suffix.lower()
             name_for_mime = filename
         else:
-            raise DetectionError(
-                "ExtensionDetector requires path or filename"
-            )
+            raise DetectionError("ExtensionDetector requires path or filename")
 
         if not ext:
             raise DetectionError(f"No extension on filename: {name_for_mime}")
@@ -60,6 +58,4 @@ class ExtensionDetector(Detector):
         if mime:
             return DetectionResult(mime_type=mime, extension=ext)
 
-        return DetectionResult(
-            mime_type="application/octet-stream", extension=ext, confidence=0.5
-        )
+        return DetectionResult(mime_type="application/octet-stream", extension=ext, confidence=0.5)

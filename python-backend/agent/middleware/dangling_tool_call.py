@@ -69,11 +69,13 @@ def patch_dangling_tool_calls(messages: list[dict[str, Any]]) -> list[dict[str, 
                 continue
             tc_id = block.get("id")
             if tc_id and tc_id not in existing_ids and tc_id not in patched_ids:
-                patched.append({
-                    "role": "tool",
-                    "tool_use_id": tc_id,
-                    "content": "[Tool call was interrupted and did not return a result.]",
-                })
+                patched.append(
+                    {
+                        "role": "tool",
+                        "tool_use_id": tc_id,
+                        "content": "[Tool call was interrupted and did not return a result.]",
+                    }
+                )
                 patched_ids.add(tc_id)
                 logger.debug("Patched dangling tool call: %s", tc_id)
 

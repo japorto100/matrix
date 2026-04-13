@@ -52,6 +52,11 @@ from agent.http_client import close_client as _close_http_client  # noqa: E402
 
 app.add_event_handler("shutdown", _close_http_client)
 
+# exec-17: Auto-run Alembic migrations on startup (idempotent, non-fatal on error)
+from agent.startup_migrations import run_migrations_if_enabled  # noqa: E402
+
+app.add_event_handler("startup", run_migrations_if_enabled)
+
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
 from agent.control import router as _control_router  # noqa: E402
 

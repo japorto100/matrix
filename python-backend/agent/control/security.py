@@ -66,7 +66,9 @@ def _compute_pillars() -> list[dict[str, Any]]:
         {
             "name": "Authentication",
             "score": min(auth_score, 100),
-            "status": "good" if auth_score >= 90 else ("warning" if auth_score >= 50 else "critical"),
+            "status": "good"
+            if auth_score >= 90
+            else ("warning" if auth_score >= 50 else "critical"),
             "message": (
                 f"LLM keys: {'Anthropic✓' if has_anthropic else ''} "
                 f"{'OpenAI✓' if has_openai else ''} · "
@@ -158,7 +160,9 @@ async def get_security_posture() -> dict[str, Any]:
                 event_type = _ACTION_TO_EVENT_TYPE.get(action, "sensitive_tool_call")
                 recent_events.append(
                     {
-                        "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                        "timestamp": r["timestamp"].isoformat()
+                        if r.get("timestamp")
+                        else None,
                         "type": event_type,
                         "actor": r.get("user_id") or r.get("agent_role") or "system",
                         "description": r.get("tool_name") or r.get("error") or action,

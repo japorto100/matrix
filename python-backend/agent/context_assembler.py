@@ -131,7 +131,10 @@ async def assemble_context(
             for r in data["results"]:
                 frag = ContextFragment(
                     source="vector",
-                    content={"text": r.get("text", ""), "distance": r.get("distance", 0)},
+                    content={
+                        "text": r.get("text", ""),
+                        "distance": r.get("distance", 0),
+                    },
                     relevance=0.9 - (r.get("distance", 0) * 0.2),
                     metadata=r.get("metadata", {}),
                 )

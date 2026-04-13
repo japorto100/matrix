@@ -57,3 +57,41 @@
   - vodozemac-python evaluiert + getestet
   - Per-Agent Crypto-Store funktioniert
   - NATS Subject-Routing (exec-05c) als Voraussetzung verifiziert
+
+---
+
+## C5. Tuwunel v1.6 Upstream Bugs — Tracking (Stand 11.04.2026)
+
+- **Quelle**: `exec2-03b-advanced-matrix-options.md` (Section 6), `exec2-04-verify-gates.md` (J7)
+- **Warum hier**: Upstream-Bugs die wir nicht selbst fixen koennen. Workarounds in unserem Code wo moeglich, sonst warten.
+- **Trigger**: Tuwunel v1.6.0 stable Release oder Patch-Releases die diese Issues fixen.
+
+| Bug | Severity | Unser Workaround | Status |
+|---|---|---|---|
+| [#411](https://github.com/matrix-construct/tuwunel/issues/411) S3 Large File Timeout | CRITICAL | `max_request_size ≤ 100 MB` | Blockiert J5 (max_request_size erhoehen) |
+| [#401](https://github.com/matrix-construct/tuwunel/issues/401) Appservice /whoami device_id | HIGH | Pruefen ob mautrix-go betroffen; ggf. device_id aus lokaler Config | Offen, Test bei Go-Appservice-Integration |
+| [#377](https://github.com/matrix-construct/tuwunel/issues/377) device_lists.changed fehlt in /sync | MEDIUM | `FetchKeys()` Workaround in `go-appservice/internal/crypto/machine.go:EnsureSession()` | ✅ Proaktiv gefixt |
+| [#372](https://github.com/matrix-construct/tuwunel/issues/372) /room_keys/version 500 statt 404 | LOW | Pruefen ob mautrix-go 500 korrekt handled | Offen, Test bei Go-Appservice-Integration |
+
+---
+
+## C6. exec2-03b Future Features — Account-Provisioning + BYOS (Backlog)
+
+- **Quelle**: `exec2-03b-advanced-matrix-options.md` (Phase A/B/C)
+- **Warum hier**: Grosse Feature-Bloecke die eigene Exec-Sessions brauchen und von mehreren Abhaengigkeiten blockiert sind.
+- **Trigger**: exec2-01 (Matrix Chat Core) abgeschlossen + exec-merge-chat (Hauptprojekt-Integration) + OIDC/MAS auf Tuwunel verfuegbar.
+
+**Phase A: Auto-Create (Minimum Viable)**
+- A1: OIDC/MAS Integration (blockiert durch C2 oben)
+- A2: Post-Login Matrix Init (initMatrixClient, Cross-Signing Bootstrap)
+- A3: Onboarding Wizard (optional)
+
+**Phase B: BYOS (Bring Your Own Server)**
+- B1: Server-Auswahl UI (Homeserver URL + Well-Known Discovery)
+- B2: Federation Verify (blockiert durch C3 oben)
+- B3: E2EE Key Management UI
+
+**Phase C: Multi-Account** (erst bei echtem Bedarf)
+- C1: Mehrere Matrix-Accounts gleichzeitig + Account-Switcher
+
+**Verify-Gates** bleiben in `exec2-04-verify-gates.md` (Gates A/B/C) — werden erst aktiv wenn die entsprechende Phase gestartet wird.
