@@ -86,8 +86,8 @@ func (v *AESGCMVault) Decrypt(ciphertext []byte) (string, error) {
 		return "", fmt.Errorf("keyvault: unknown prefix 0x%02x", prefix)
 	}
 
-	nonce := ciphertext[1 : 1+nonceSize]
-	ct := ciphertext[1+nonceSize:]
+	nonce := ciphertext[1 : 1+nonceSize]   //nolint:gosec // bounds checked above
+	ct := ciphertext[1+nonceSize:]         //nolint:gosec // bounds checked above
 
 	plain, err := v.gcm.Open(nil, nonce, ct, nil)
 	if err != nil {

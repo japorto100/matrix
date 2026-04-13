@@ -242,6 +242,14 @@ func ArtifactDownloadHandler(service artifactService) http.HandlerFunc {
 	}
 }
 
+// parseArtifactPath extracts artifactID and action from URL paths like:
+//
+//	/api/v1/storage/artifacts/{id}          → (id, "")
+//	/api/v1/storage/artifacts/{id}/download → (id, "download")
+//	/api/v1/storage/artifacts/upload/{id}   → (id, "upload")  ← NOTE: upload has inverted order
+//
+// The upload path has the action BEFORE the id for historical reasons
+// (tradefusion compatibility). Do not change without updating all clients.
 func parseArtifactPath(path string) (artifactID string, action string) {
 	trimmed := strings.TrimPrefix(path, "/api/v1/storage/artifacts/")
 	trimmed = strings.TrimSpace(trimmed)

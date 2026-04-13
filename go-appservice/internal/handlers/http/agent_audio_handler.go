@@ -55,7 +55,7 @@ func agentAudioProxyHandler(agentServiceBaseURL string, upstreamPath string) htt
 		}
 		upstreamReq.Header.Set("Content-Type", "application/json")
 
-		resp, err := agentChatHTTPClient.Do(upstreamReq)
+		resp, err := defaultChatHTTPClient.Do(upstreamReq)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": fmt.Sprintf("agent audio service unreachable: %v", err)})
 			return
