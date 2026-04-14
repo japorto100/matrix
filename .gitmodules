@@ -37,3 +37,12 @@
 [submodule "_ref/agno"]
 	path = _ref/agno
 	url = https://github.com/agno-agi/agno.git
+[submodule "_ref/OpenWorldLib"]
+	path = _ref/OpenWorldLib
+	url = https://github.com/OpenDCAI/OpenWorldLib.git
+[submodule "_ref/mcp-manager"]
+	path = _ref/mcp-manager
+	url = https://github.com/Brightwing-Systems-LLC/mcp-manager.git
+[submodule "_ref/mempalace"]
+	path = _ref/mempalace
+	url = https://github.com/MemPalace/mempalace.git
