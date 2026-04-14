@@ -18,7 +18,7 @@
 | Go Gateway | zentrale Frontdoor fuer Market, Geo, Memory, Portfolio-nahe und interne Service-Routen | klare Control Plane fuer Auth, Policy, Audit, Routing, Streaming und spaeter async orchestration |
 | Python Services | interne Compute-/ML-/Agent-/Memory-Services hinter Go | Python wird logisch in `compute`, `agent` und `indexing` getrennt |
 | Rust | lokaler Compute-Layer, aktuell vor allem via `python-backend/rust_core` | staerkere Produktionsgrenze fuer Hot Paths, selektiv auch direkter Go↔Rust-Pfad |
-| GCT / go-crypto-trader | externer Read-/Execution-nahe Crypto-Upstream hinter dem Gateway | read-only Slices selektiv absorbieren, keine blinde Volluebernahme |
+| GCT / go-crypto-trader | externer Read-/Execution-nahe Crypto-Upstream hinter dem Gateway (go module replace). Binary 78MB, aktualisiert 13.04.2026 auf ef1e5334. | read-only Slices selektiv absorbieren, keine blinde Volluebernahme. Langfristig Exchange-Adapter extrahieren, GCT-Dependency reduzieren (siehe GCT Bestandsaufnahme unten). |
 | Stores | SQLite/Prisma lokal, JSON-Fallbacks an einzelnen Stellen, Redis/DB/NATS optional oder vorbereitend | `Postgres` als SoR, `SeaweedFS` fuer Artefakte, `Valkey` fuer Cache/Locks, `pgvector` fuer document-centric retrieval, `FalkorDB` fuer graph-centric retrieval, `DuckDB` fuer Analytics-/Replay-Pfade |
 
 ### Wichtigste offene Runtime-Drifts (kompakt)
@@ -96,6 +96,33 @@ vorbereitet, aber noch nicht die dominante Alltags-Laufzeit des Systems.
 | Python | logisch getrennt in `compute`, `agent`, `indexing`; ML, retrieval/context assembly, soft-signals, simulation und indexing workers | Browser-frontdoor, offene externe Fetch-Wildwest-Logik |
 | Rust | numerische Hot Paths, Indikator-Kerne, Batch-/Monte-Carlo-/Signal-Kernels | Policy, BFF, breit volatile Research-Logik |
 | GCT | crypto-specific read/order infrastructure hinter Gateway | allgemeine Makro-/Geo-/Agent-Plattformlogik |
+
+### GCT Bestandsaufnahme (13.04.2026)
+
+**Was GCT alles mitbringt:**
+
+| Modul | Beschreibung | Von uns genutzt? |
+|:------|:-------------|:-----------------|
+| Exchange Adapters (30+) | REST + WebSocket fuer Binance, Kraken, GateIO, OKX, Coinbase, etc. | **Ja** — Kern-Nutzung via gRPC/JSON-RPC |
+| `currency` Package | Pair-Normalisierung, FX-Raten | **Ja** — importiert in Gateway Connector |
+| `exchanges/asset` | Asset-Type-Definitionen (Spot, Futures, Margin) | **Ja** — importiert in Gateway Connector |
+| `gctrpc` + gRPC Gateway | RPC-Interface (GetTicker, GetOrderbook, Streams) | **Ja** — Haupt-Kommunikationspfad |
+| `gctrpc/auth` | BasicAuth fuer RPC | **Ja** — Auth-Setup |
+| WebSocket Engine | Unified WS-Management, Reconnect, Subscription-Routing | **Ja** — indirekt via Exchange Adapters |
+| Database (SQLite/Postgres) | Candles, Trades, Withdrawals, Audit Events, Scripts | **Nein** — Gateway hat eigene Persistence-Planung |
+| Backtester Engine | Strategy Execution, Report Generation | **Teilweise** — via `POST /api/v1/backtest/runs` orchestriert |
+| Portfolio Manager | Position Tracking, PnL, Risk Metrics | **Nein** — eigene Portfolio-Logik in compute/rust_core |
+| Config System | JSON-Config mit Exchange-Credentials, Runtime-Settings | **Minimal** — hardened Config, nur Crypto-Exchanges |
+| CLI (`gctcli`) | Terminal-Client fuer alle GCT-Features | **Nein** |
+| Web Frontend | Eingebautes Web-UI | **Nein** |
+| Engine Loop | Event-Driven Main Loop, Sync Manager, Order Manager | **Nein** — Gateway orchestriert selbst |
+| Communications | Slack/Telegram/SMTP Notifications | **Nein** |
+| Currency Converter | Live FX Conversion | **Nein** — eigene ECB/FRED Adapter |
+| Data History Manager | OHLCV Download/Persistence | **Nein** — eigene Candle-Persistence geplant |
+
+**Einbindung:** `go.mod` Replace-Directive (`=> ./go-crypto-trader`). Gateway importiert nur `currency`, `asset`, `gctrpc`, `gctauth`. Kein direkter Import von DB, Engine, Portfolio, Config.
+
+**Langfrist-Richtung:** Exchange-Adapter-Logik (WebSocket + REST) schrittweise in eigene thin Clients extrahieren. GCT als laufende Engine beibehalten solange Crypto-Adapter gebraucht werden, aber Abhängigkeit vom Gesamtpaket reduzieren. Additiv eigene Adapter bauen (bereits 40+ Connectors im Gateway die nicht aus GCT kommen).
 
 ---
 

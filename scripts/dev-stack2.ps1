@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 # dev-stack2.ps1 -- Matrix Dev Stack (v2)
 # Usage: .\scripts\dev-stack2.ps1 [-UseMock] [-Tunnel] [-SkipHomeserver] [-SkipNats] [-SkipPostgres] ...
 # By default opens its own PowerShell window. Use -Inline to run in current terminal.
@@ -14,10 +15,12 @@ param(
     [switch]$SkipPostgres,
     [switch]$SkipGoAppservice,
     [switch]$SkipPython,
-    [switch]$SkipFrontend,
+    [switch]$SkipFrontend,       # Skip ALL frontends (nextjs + control-ui + agent-chat)
+    [switch]$SkipNextjs,         # Skip nextjs-chat only (:3000)
+    [switch]$SkipControlUi,      # Skip control-ui only (:3001)
+    [switch]$SkipAgentChat,      # Skip agent-chat only (:3002)
     [switch]$UseMock,            # Slice 7: opt-in - use LLM mock on :8094 instead of real agent-service
     [switch]$SkipAgentService,   # Skip the real Python agent service (:8094) - main runtime
-    [switch]$SkipControlUi,
     [switch]$SkipStorage,
     [switch]$SkipIngestion,
     [switch]$SkipLiteLLM,
@@ -25,6 +28,7 @@ param(
     [switch]$DevTools,
     [switch]$WithVoice,
     [switch]$Tunnel,
+    [switch]$Kill,               # Kill all DevStack processes and exit
     [switch]$Tuwunel16,          # Use Tuwunel v1.6.0-rc (binary: tools/tuwunel-v1.6, config: homeserver/tuwunel.v1.6.toml)
     [switch]$FrontendOnly,
     [switch]$AgentOnly,
@@ -33,6 +37,74 @@ param(
     [bool]$Watch = $true,
     [int]$MaxRestarts = 5
 )
+
+# -- Kill Mode: stop all DevStack processes and exit (runs in current terminal) --
+if ($Kill) {
+    $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+    Write-Host "[kill] Stopping all Matrix DevStack processes..." -ForegroundColor Red
+
+    function Kill-Hard([int]$TargetPid, [string]$Label) {
+        Stop-Process -Id $TargetPid -Force -ErrorAction SilentlyContinue
+        Get-CimInstance Win32_Process -Filter "ProcessId=$TargetPid" -ErrorAction SilentlyContinue |
+            Invoke-CimMethod -MethodName Terminate -ErrorAction SilentlyContinue | Out-Null
+        Write-Host "  $Label (PID $TargetPid) -> terminated" -ForegroundColor DarkGray
+    }
+
+    function Is-Protected([int]$TargetPid) {
+        $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$TargetPid" -ErrorAction SilentlyContinue).CommandLine
+        return ($cmd -match "gitnexus|webmcp|claude")
+    }
+
+    # 1. Graceful Postgres shutdown (before force-killing)
+    $pgCtlKill = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
+    $pgDataKill = Join-Path $repoRoot "tools\pgsql-data"
+    if ((Test-Path $pgCtlKill) -and (Test-Path $pgDataKill)) {
+        Write-Host "  [postgres] pg_ctl stop..." -ForegroundColor DarkGray
+        & $pgCtlKill stop -D $pgDataKill -w -m fast 2>&1 | Out-Null
+    }
+
+    # 2. Kill by port (catches anything listening on DevStack ports)
+    $ports = @(3000, 3001, 3002, 4000, 4222, 5080, 7880, 8090, 8094, 8097, 8098, 8333, 8448, 9333)
+    foreach ($p in $ports) {
+        try {
+            Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue |
+                Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+                    if ($_ -and $_ -ne 0 -and -not (Is-Protected $_)) { Kill-Hard $_ ":$p" }
+                }
+        } catch { }
+    }
+
+    # 3. Kill by process name (catches zombies not on any port)
+    $knownNames = @("weed", "tuwunel", "tuwunel-v1.6", "zendrite", "nats-server",
+                     "livekit-server", "openobserve", "appservice", "cloudflared",
+                     "uvicorn", "litellm")
+    foreach ($name in $knownNames) {
+        Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object {
+            Kill-Hard $_.Id $name
+        }
+    }
+
+    # 4. Kill bun + python DevStack children (but protect MCP servers)
+    foreach ($procName in @("bun", "python")) {
+        Get-Process -Name $procName -ErrorAction SilentlyContinue | ForEach-Object {
+            if (-not (Is-Protected $_.Id)) { Kill-Hard $_.Id $procName }
+        }
+    }
+
+    # 5. Kill the watcher PowerShell window (via lockfile PID)
+    $lockFile = Join-Path $repoRoot "logs\dev-stack\.devstack.pid"
+    if (Test-Path $lockFile) {
+        $watcherPid = [int](Get-Content $lockFile -ErrorAction SilentlyContinue)
+        if ($watcherPid -and $watcherPid -ne $PID) {
+            Write-Host "  watcher (PID $watcherPid) -> terminated" -ForegroundColor DarkGray
+            Kill-Hard $watcherPid "watcher"
+        }
+        Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "[kill] Done." -ForegroundColor Green
+    return
+}
 
 # -- Detach: re-launch in own PowerShell window unless -Inline was passed
 if (-not $Inline -and -not $env:DEVSTACK_INLINE) {
@@ -232,6 +304,8 @@ try {
     # Shortcut flags
     if ($FrontendOnly) { $SkipHomeserver = $true; $SkipNats = $true; $SkipGoAppservice = $true; $SkipPython = $true }
     if ($AgentOnly)    { $SkipHomeserver = $true; $SkipFrontend = $true }
+    # -SkipFrontend expands to skip all three frontend services
+    if ($SkipFrontend) { $SkipNextjs = $true; $SkipControlUi = $true; $SkipAgentChat = $true }
 
     # Go pre-build + Python deps + Next.js compile - all in parallel background jobs
     $prepJobs = @()
@@ -272,8 +346,15 @@ try {
     }
 
     # ===========================================================================
+    # Write lockfile with watcher PID (used by -Kill to find this window)
+    $lockFile = Join-Path $repoRoot "logs\dev-stack\.devstack.pid"
+    if (-not (Test-Path (Split-Path $lockFile))) { New-Item -ItemType Directory -Path (Split-Path $lockFile) -Force | Out-Null }
+    $PID | Out-File -FilePath $lockFile -Encoding ascii -Force
+
     #  PHASE B -- REGISTER + START
     # ===========================================================================
+    # Service isolation: individual service failures must not crash the whole stack
+    $ErrorActionPreference = "Continue"
     Write-Phase "Phase B: Register"
 
     # -- Tier: infra --
@@ -364,6 +445,18 @@ try {
         }
     }
 
+    # -- LiveKit SFU (Voice/Video Calls + Agent Voice) --
+    $livekitExe = Join-Path $repoRoot "tools\livekit-server.exe"
+    $livekitConfig = Join-Path $repoRoot "homeserver\livekit.yaml"
+    if (Test-Path $livekitExe) {
+        Register-Service -Name "livekit" -Port 7880 -Tier "infra" -TimeoutSecs 15 -StartAction {
+            Start-LoggedProcess -Name "livekit" -FilePath $livekitExe `
+                -ArgumentList @("--config", $livekitConfig) -WorkingDirectory $repoRoot
+        }
+    } else {
+        Write-Host "[livekit] livekit-server.exe not found in tools/ (Voice/Video disabled)" -ForegroundColor Yellow
+    }
+
     # -- PostgreSQL + pgvector (exec-11 Memory Engine) --
     # Setup once: .\scripts\setup-postgres.ps1
 
@@ -371,13 +464,45 @@ try {
         $pgCtl = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
         $pgDataDir = Join-Path $repoRoot "tools\pgsql-data"
         if (Test-Path $pgCtl) {
-            Register-Service -Name "postgres" -Port 5433 -Tier "infra" -TimeoutSecs 20 -StartAction {
-                Start-LoggedProcess -Name "postgres" -FilePath $pgCtl `
-                    -ArgumentList @("start", "-D", $pgDataDir, "-l", (Join-Path $repoRoot "logs\dev-stack\postgres.log"), "-w") `
-                    -WorkingDirectory $repoRoot
+            # pg_ctl start exits immediately after launching postgres daemon.
+            # We start it directly (not via Register-Service watcher) to avoid crash-loop.
+            # Ensure clean state: stop stale postgres + remove stale pid
+            $stalePid = Join-Path $pgDataDir "postmaster.pid"
+            $running = Get-Process -Name "postgres" -ErrorAction SilentlyContinue
+            if ($running) {
+                Write-Host "[postgres] Stopping stale instance..." -ForegroundColor DarkGray
+                & $pgCtl stop -D $pgDataDir -m fast 2>&1 | Out-Null
+                Start-Sleep -Seconds 2
             }
+            if (Test-Path $stalePid) {
+                Remove-Item $stalePid -Force -ErrorAction SilentlyContinue
+                Write-Host "[postgres] Removed stale postmaster.pid" -ForegroundColor DarkGray
+            }
+            Write-Host "[postgres] Starting..." -ForegroundColor Cyan
+            Start-Process -FilePath $pgCtl -ArgumentList @("start","-D",$pgDataDir) -WindowStyle Hidden
         } else {
             Write-Host "[postgres] Not installed. Run: .\scripts\setup-postgres.ps1" -ForegroundColor Yellow
+        }
+    }
+
+    # -- Wait for Postgres to accept connections (exec-19 Auto-Migrate Robustheit) --
+    if (-not $SkipPostgres -and (Test-Path (Join-Path $repoRoot "tools\pgsql\bin\pg_isready.exe"))) {
+        $pgIsReady = Join-Path $repoRoot "tools\pgsql\bin\pg_isready.exe"
+        $pgWaitMax = 15
+        $pgWaitCount = 0
+        Write-Host "[postgres] Waiting for connections..." -NoNewline
+        while ($pgWaitCount -lt $pgWaitMax) {
+            $null = & $pgIsReady -h 127.0.0.1 -p 5433 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host " ready ($pgWaitCount`s)" -ForegroundColor Green
+                break
+            }
+            Start-Sleep -Seconds 1
+            $pgWaitCount++
+            Write-Host "." -NoNewline
+        }
+        if ($pgWaitCount -ge $pgWaitMax) {
+            Write-Host " timeout after ${pgWaitMax}s" -ForegroundColor Yellow
         }
     }
 
@@ -432,7 +557,7 @@ try {
         }
     }
 
-    if (-not $SkipFrontend) {
+    if (-not $SkipNextjs) {
         Register-Service -Name "nextjs" -Port 3000 -Tier "app" -TimeoutSecs 120 -StartAction {
             Start-LoggedProcess -Name "nextjs" -FilePath "bun" `
                 -ArgumentList @("run", "dev") -WorkingDirectory $nextDir
@@ -444,6 +569,15 @@ try {
         Register-Service -Name "control-ui" -Port 3001 -Tier "app" -TimeoutSecs 120 -StartAction {
             Start-LoggedProcess -Name "control-ui" -FilePath "bun" `
                 -ArgumentList @("run", "dev") -WorkingDirectory $controlUiDir
+        }
+    }
+
+    # -- agent-chat (Agent Chat UI, exec-merge-chat, Port 3002) --
+    $agentChatDir = Join-Path $repoRoot "agent-chat"
+    if (-not $SkipAgentChat -and (Test-Path $agentChatDir)) {
+        Register-Service -Name "agent-chat" -Port 3002 -Tier "app" -TimeoutSecs 120 -StartAction {
+            Start-LoggedProcess -Name "agent-chat" -FilePath "bun" `
+                -ArgumentList @("run", "dev") -WorkingDirectory $agentChatDir
         }
     }
 
@@ -562,33 +696,41 @@ try {
         foreach ($svc in $infraServices) { Start-ServiceSafe -Name $svc.Name }
     }
 
-    # Tier 2: Next.js first (longest compile), don't wait - launch rest in parallel
+    # Tier 2: App services
     $appServices = $script:services.Values | Where-Object { $_.Tier -eq "app" }
     if ($appServices) {
         Write-Host "[tier-2] Starting app services..." -ForegroundColor Cyan
-        if ($script:services["nextjs"]) {
-            # Start Next.js but don't block - it compiles in background
-            $svc = $script:services["nextjs"]
-            if (-not (Test-PortInUse $svc.Port)) {
-                try {
-                    Start-Service -Name "nextjs" | Out-Null
-                    Write-Host "[nextjs] Compiling in background..." -ForegroundColor Green
-                } catch {
-                    Write-Host "[nextjs] Start failed: $($_.Exception.Message)" -ForegroundColor Yellow
-                    $script:failedServices += "nextjs"
-                }
-            } else {
-                Write-Host "[nextjs] Already running on :$($svc.Port) - skipping" -ForegroundColor Green
+
+        # Start all frontends first (compile in background, don't wait)
+        $frontendNames = @("nextjs", "control-ui", "agent-chat")
+        foreach ($fn in $frontendNames) {
+            $svc = $script:services[$fn]
+            if ($null -eq $svc) { continue }
+            if (Test-PortInUse $svc.Port) {
+                Write-Host "[$fn] Already running on :$($svc.Port) - skipping" -ForegroundColor Green
+                continue
+            }
+            try {
+                Start-Service -Name $fn | Out-Null
+                Write-Host "[$fn] Compiling in background..." -ForegroundColor Green
+            } catch {
+                Write-Host "[$fn] Start failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                $script:failedServices += $fn
             }
         }
-        # All other app services - start and wait for port
-        $rest = $appServices | Where-Object { $_.Name -ne "nextjs" }
+
+        # Start all non-frontend app services (wait for port)
+        $rest = $appServices | Where-Object { $_.Name -notin $frontendNames }
         foreach ($svc in $rest) { Start-ServiceSafe -Name $svc.Name }
-        # Now wait for Next.js port
-        if ($script:services["nextjs"] -and -not (Test-PortInUse 3000)) {
-            $ready = Wait-ForPort -Port 3000 -Name "nextjs" -TimeoutSecs 120
-            if ($ready) { Write-Host "[nextjs] Ready on :3000" -ForegroundColor Green }
-            else { Write-Host "[nextjs] Port timeout after 120s" -ForegroundColor Yellow; $script:failedServices += "nextjs" }
+
+        # Now wait for all frontend ports
+        foreach ($fn in $frontendNames) {
+            $svc = $script:services[$fn]
+            if ($null -eq $svc) { continue }
+            if (Test-PortInUse $svc.Port) { continue }
+            $ready = Wait-ForPort -Port $svc.Port -Name $fn -TimeoutSecs 180
+            if ($ready) { Write-Host "[$fn] Ready on :$($svc.Port)" -ForegroundColor Green }
+            else { Write-Host "[$fn] Port timeout after 180s" -ForegroundColor Yellow; $script:failedServices += $fn }
         }
     }
 
@@ -605,6 +747,7 @@ try {
     Write-Host "  Frontend" -ForegroundColor Cyan
     if ($script:services["nextjs"])        { Write-Host "    Next.js Chat:    http://localhost:3000/matrix" }
     if ($script:services["control-ui"])    { Write-Host "    Control UI:      http://localhost:3001" }
+    if ($script:services["agent-chat"])    { Write-Host "    Agent Chat:      http://localhost:3002" }
     Write-Host ""
     Write-Host "  Backend" -ForegroundColor Cyan
     if ($script:services["go-appservice"])    { Write-Host "    Go Appservice:       http://127.0.0.1:8090 (Matrix bridge + Control Proxy -> :8094)" }
@@ -625,6 +768,7 @@ try {
         Write-Host "    Homeserver:      http://127.0.0.1:8448"
     }
     if ($script:services["nats"])          { Write-Host "    NATS:            nats://127.0.0.1:4222 | Monitor: http://localhost:8222" }
+    if ($script:services["livekit"])       { Write-Host "    LiveKit SFU:     ws://127.0.0.1:7880  (Voice/Video, WebRTC)" }
     if ($script:services["postgres"])      { Write-Host "    PostgreSQL:      postgresql://postgres@localhost:5433/hindsight_dev (pgvector)" }
     if ($script:services["tunnel"]) {
         $tunnelLog = Join-Path $logsRoot "tunnel.stderr.log"
@@ -720,8 +864,22 @@ try {
 finally {
     Write-Host "`n[shutdown] Stopping all processes..." -ForegroundColor Cyan
     $stopped = 0
+
+    # Graceful Postgres shutdown via pg_ctl (prevents WAL corruption)
+    $pgCtlShutdown = Join-Path $repoRoot "tools\pgsql\bin\pg_ctl.exe"
+    $pgDataDirShutdown = Join-Path $repoRoot "tools\pgsql-data"
+    if ((Test-Path $pgCtlShutdown) -and (Test-Path $pgDataDirShutdown)) {
+        Write-Host "  [postgres] Graceful shutdown via pg_ctl..." -ForegroundColor DarkGray
+        try {
+            & $pgCtlShutdown stop -D $pgDataDirShutdown -w -m fast 2>&1 | Out-Null
+            $stopped++
+        } catch { }
+    }
+
     foreach ($proc in $script:processes) {
         if ($null -ne $proc -and -not $proc.HasExited) {
+            # Skip postgres — already stopped gracefully above
+            if ($proc.ProcessName -eq "postgres") { continue }
             try {
                 Write-Host "  Stopping $($proc.ProcessName) (PID $($proc.Id))" -ForegroundColor DarkGray
                 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue

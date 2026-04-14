@@ -58,6 +58,21 @@ class ToolErrorPacket:
 
 
 @dataclass
+class StepStartPacket:
+    """Marks a step boundary in multi-step agent execution (AI SDK StepStartUIPart)."""
+
+    type: Literal["step-start"] = "step-start"
+
+
+@dataclass
+class ReasoningDeltaPacket:
+    """Reasoning/thinking content delta (AI SDK ReasoningUIPart)."""
+
+    delta: str
+    type: Literal["reasoning-delta"] = "reasoning-delta"
+
+
+@dataclass
 class MessageMetaPacket:
     metadata: dict  # {promptTokens, completionTokens, threadId}
     type: Literal["message-metadata"] = "message-metadata"

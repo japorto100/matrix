@@ -24,4 +24,11 @@ Werden abgearbeitet und als Referenz behalten.
 | exec2-03-ui-rework-sota.md | UI Rework + SOTA Packages | Referenz |
 | exec2-04-verify-gates.md | Gesammelte Verify Gates (Chat/E2EE/Calls) | Aktiv |
 
+| exec-openworldlib.md | OpenWorldLib Integration Evaluation (Synthesis, Memory, Operators) | Evaluation |
+| exec-ebm.md | Energy-Based Models fuer Agent Scoring, Game Theory, Commodity Markets | Evaluation |
+| exec-rust.md | Rust Indicator Core & Compute Integration (aus TradeFusion portiert) | Portiert |
+| exec-20-mcp-manager.md | MCP Security, Governance, Auth Proxy, Tool Filtering, MCP Apps | Evaluation |
+| exec-memory.md | Memory Architecture Evaluation — Hindsight vs MemPalace vs weitere Systeme | Evaluation |
+| exec-skills.md | Skill Discovery, Refinement & Evolution — finder, refiner, SkillRL | Evaluation / Phase 1 bereit |
+
 Archivierte Slices: `archive/`

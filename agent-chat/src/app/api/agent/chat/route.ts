@@ -27,8 +27,8 @@ const chatRequestSchema = z
 		model: z.string().trim().min(1).optional(),
 		/** AC56: multimodal image attachments */
 		attachments: z.array(attachmentSchema).max(5).optional(),
-		/** AC108: reasoning effort — low/medium/high */
-		reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
+		/** AC108: reasoning effort — dynamic per provider (LiteLLM validates) */
+		reasoningEffort: z.string().trim().min(1).optional(),
 		/** exec-09: Browser-Tools via WebMCP (dynamisch je nach aktueller Page) */
 		browserTools: z
 			.array(
@@ -51,6 +51,34 @@ function jsonError(message: string, reason: string, requestId: string, status: n
 
 function sseErrorFrame(msg: string): Uint8Array {
 	return ENCODER.encode(`data: ${JSON.stringify({ type: "error", errorText: msg })}\n\n`);
+}
+
+/**
+ * Smooth text deltas by splitting into word-sized chunks with micro-delays.
+ * Non-text frames pass through immediately.
+ * Returns an array of frames to emit (may be 1:1 or 1:N for text deltas).
+ */
+const SMOOTH_DELAY_MS = 12;
+
+function splitTextDelta(frame: string): string[] {
+	const dataLine = frame.split("\n").find((l) => l.startsWith("data:"));
+	if (!dataLine) return [frame];
+	try {
+		const parsed = JSON.parse(dataLine.slice(5).trim()) as Record<string, unknown>;
+		if (parsed.type !== "text-delta" || typeof parsed.textDelta !== "string") return [frame];
+
+		const text = parsed.textDelta as string;
+		// Split into words (keep whitespace attached to following word)
+		const words = text.match(/\S+\s*/g);
+		if (!words || words.length <= 1) return [frame];
+
+		return words.map((word) => {
+			const chunk = { ...parsed, textDelta: word };
+			return `data: ${JSON.stringify(chunk)}`;
+		});
+	} catch {
+		return [frame];
+	}
 }
 
 /**
@@ -173,6 +201,7 @@ export async function POST(request: NextRequest) {
 			});
 
 			void (async () => {
+				const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 				try {
 					while (!cancelled) {
 						const { done, value } = await reader.read();
@@ -184,7 +213,13 @@ export async function POST(request: NextRequest) {
 							buffer = buffer.slice(boundary + 2);
 							if (rawFrame.trim()) {
 								const frame = rewriteFrame(rawFrame);
-								controller.enqueue(ENCODER.encode(`${frame}\n\n`));
+								const chunks = splitTextDelta(frame);
+								for (let i = 0; i < chunks.length && !cancelled; i++) {
+									controller.enqueue(ENCODER.encode(`${chunks[i]}\n\n`));
+									if (chunks.length > 1 && i < chunks.length - 1) {
+										await sleep(SMOOTH_DELAY_MS);
+									}
+								}
 							}
 							boundary = buffer.indexOf("\n\n");
 						}

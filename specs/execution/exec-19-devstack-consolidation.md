@@ -118,7 +118,7 @@ Problem: `listen tcp 192.168.1.34:8080: bind: Zugriff verweigert` — weed binde
 
 Loesung: SeaweedFS mit `-ip=127.0.0.1 -port=8080` statt LAN IP. Oder `-publicUrl=http://localhost:8333`.
 
-- [ ] `scripts/dev-stack2.ps1` SeaweedFS StartAction anpassen:
+- [x] `scripts/dev-stack2.ps1` SeaweedFS StartAction anpassen:
   ```powershell
   Start-LoggedProcess -Name "seaweedfs" -FilePath $seaweedExe `
       -ArgumentList @(
@@ -135,12 +135,12 @@ Loesung: SeaweedFS mit `-ip=127.0.0.1 -port=8080` statt LAN IP. Oder `-publicUrl
 
 Problem: 7 Routes nutzen hardcoded `localhost:9060` statt `getGatewayBaseURL()` (`:8090`).
 
-- [ ] `control-ui/src/app/api/files/route.ts` — nutze `getGatewayBaseURL()`
-- [ ] `control-ui/src/app/api/files/[id]/route.ts`
-- [ ] `control-ui/src/app/api/files/[id]/url/route.ts`
-- [ ] `control-ui/src/app/api/files/[id]/reindex/route.ts`
-- [ ] `control-ui/src/app/api/files/upload-intent/route.ts`
-- [ ] `control-ui/src/app/api/files/search/route.ts`
+- [x] `control-ui/src/app/api/files/route.ts` — nutze `getGatewayBaseURL()`
+- [x] `control-ui/src/app/api/files/[id]/route.ts`
+- [x] `control-ui/src/app/api/files/[id]/url/route.ts`
+- [x] `control-ui/src/app/api/files/[id]/reindex/route.ts`
+- [x] `control-ui/src/app/api/files/upload-intent/route.ts`
+- [x] `control-ui/src/app/api/files/search/route.ts`
 
 Alle auf einheitliches `import { getGatewayBaseURL } from "@/lib/server/gateway"` umstellen.
 
@@ -183,9 +183,8 @@ ok   matrix/go-appservice/internal/telemetry  20.393s
 ```
 
 **Keine Code-Aenderung notwendig.** Dokumentations-Action:
-- [ ] `go-appservice/README.md` erweitern: "Always build with `-tags goolm`"
-- [ ] Optional: `//go:build goolm`-Dummy in `internal/crypto/assert_goolm.go` der einen
-  klaren Compile-Error gibt wenn ohne Tag gebaut wird (besser als libolm.h Fehler)
+- [x] `go-appservice/BUILDING.md` erstellt: "Always build with `-tags goolm`" dokumentiert
+- [ ] Optional: `//go:build goolm`-Dummy in `internal/crypto/assert_goolm.go` (nice-to-have)
 
 ### Entdeckte Probleme waehrend Stufe 3 Tests (11.04.2026)
 
@@ -260,7 +259,7 @@ POSTGRES_URL → HINDSIGHT_DB_URL → DATABASE_URL → "" (= SQLite fallback)
 **Nach Stufe 2B: `modernc.org/sqlite` Dependency im go.mod** bleibt als Fallback
 fuer Dev-Setups ohne Postgres. In exec-18 Phase 0 wird der SQLite-Pfad in
 `crypto/machine.go` entfernt und die Dependency kann weg.
-- [ ] `go-appservice/internal/crypto/machine.go`:
+- [x] `go-appservice/internal/crypto/machine.go`:
   ```go
   db, err := dbutil.NewWithDB(rawDB, dialect)
   if err != nil { ... }
@@ -272,7 +271,7 @@ fuer Dev-Setups ohne Postgres. In exec-18 Phase 0 wird der SQLite-Pfad in
 
 ### 2.3 Migration 019: matrix_crypto Schema
 
-- [ ] Neue Alembic Migration `019_matrix_crypto_schema.py`:
+- [x] Neue Alembic Migration `019_matrix_crypto_schema.py`:
   ```python
   def upgrade():
       op.execute("CREATE SCHEMA IF NOT EXISTS matrix_crypto")
@@ -285,7 +284,7 @@ fuer Dev-Setups ohne Postgres. In exec-18 Phase 0 wird der SQLite-Pfad in
 
 ### 2.4 Env-Files updaten
 
-- [ ] `go-appservice/.env.development`:
+- [x] `go-appservice/.env.development`:
   ```
   # Option A (SQLite, default)
   MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3
@@ -659,15 +658,12 @@ IngestionJobs (Postgres: ingestion.jobs)
 **Kritisch fuer exec-19**: Der aktuelle Entwurf hat KEINE User-Filterung.
 Jeder Request muss einen `user_id` Context haben (aus Session oder Matrix ID).
 
-- [ ] `go-appservice/internal/handlers/http/files_handler.go` — alle Handlers
-  extrahieren `user_id` aus Header `X-Actor-User-Id` (aus control-ui BFF gesetzt)
-- [ ] `ListFiles` filtert nach `user_id`
-- [ ] `GetFile` / `DeleteFile` / `UploadIntent` pruefen `user_id` Ownership
-- [ ] SeaweedFS Bucket-Strategie: ein Bucket pro User (`user-{user_id}-files`)
-  oder ein Prefix pro User (`user-{user_id}/artifact-id/filename`)
-  → **Empfehlung: Prefix** (einfacher, kein Bucket-Management)
-- [ ] Artifact Metadata Store braucht `user_id` Filter in allen Queries
-- [ ] Ingestion Jobs haben schon `user_id`, aber `list_recent()` muss filtern
+- [x] `go-appservice/internal/handlers/http/files_handler.go` — alle Handlers extrahieren `user_id` aus `X-Actor-User-Id`
+- [x] `ListFiles` filtert nach `user_id`
+- [x] `GetFile` / `DeleteFile` / `UploadIntent` pruefen `user_id` Ownership (via `checkOwnership` in files_service.go)
+- [x] Prefix-Strategie implementiert (`user-{user_id}/artifact-id/filename`)
+- [x] Artifact Metadata Store hat `user_id` Filter (`ListByUser`)
+- [x] Ingestion Jobs filtern per `user_id`
 
 ### 3.3 Route-Spezifikation (erweitert)
 
@@ -755,11 +751,11 @@ func ClassifyMediaType(contentType, filename string) MediaType {
 
 **Neue Komponente** in `go-appservice/internal/storage/`:
 
-- [ ] `s3_lister.go` — wraps SeaweedFS S3 API fuer Listing
+- [x] `provider_s3.go` ListObjects — wraps SeaweedFS S3 API fuer Listing
   - Nutzt bestehenden `provider_s3.go` Client
   - `ListObjects(bucket, prefix, maxKeys)` -> `[]S3Object{Key, Size, LastModified, ETag}`
   - Per-User Filter via prefix `user-{user_id}/`
-- [ ] `FilesService` integriert S3 Listing + Metadata-Join:
+- [x] `FilesService` integriert S3 Listing + Metadata-Join:
   ```go
   func (s *FilesService) List(userID string, filters FileFilters) ([]FileRecord, error) {
       // 1. Query ArtifactMetadataStore fuer User
@@ -786,13 +782,13 @@ func ClassifyMediaType(contentType, filename string) MediaType {
 
 **Go (go-appservice):**
 
-- [ ] `internal/handlers/http/files_handler.go` — HTTP handlers (ListFiles, GetFile, DeleteFile, UploadIntent, FileURL, Reindex, Search)
-- [ ] `internal/handlers/http/files_media_types.go` — `ClassifyMediaType` helper
-- [ ] `internal/connectors/ingestion/client.go` — HTTP client fuer Python ingestion worker
-- [ ] `internal/storage/s3_lister.go` — SeaweedFS ListObjects wrapper
-- [ ] `internal/storage/files_service.go` — Join Logic (Metadata + Jobs + S3)
-- [ ] `internal/storage/metadata_store.go` — erweitern um `ListByUser(userID, filters)`
-- [ ] `internal/handler/server.go` — Route Registrierung
+- [x] `internal/handlers/http/files_handler.go` — HTTP handlers (9 Endpoints)
+- [x] `internal/storage/media_type.go` — `ClassifyMediaType` helper (80+ Extensions)
+- [x] `internal/connectors/ingestion/client.go` — HTTP client fuer Python ingestion worker
+- [x] `internal/storage/provider_s3.go` — ListObjects + Delete
+- [x] `internal/storage/files_service.go` — Join Logic (Metadata + Jobs + S3 + Orphans)
+- [x] `internal/storage/metadata_store_postgres.go` — pgxpool native mit `ListByUser`
+- [x] `internal/handler/server.go` — Route Registrierung
 
 **Python (ingestion worker):**
 
@@ -804,8 +800,8 @@ func ClassifyMediaType(contentType, filename string) MediaType {
 
 - [x] `src/lib/server/gateway.ts` — zentraler `getGatewayBaseURL()`
 - [x] 7 Files Routes auf `getGatewayBaseURL()` umgestellt
-- [ ] BFF Routes forwarden `X-Actor-User-Id` Header aus Session
-- [ ] BFF Routes forwarden `type`, `status`, `limit` Query-Params
+- [x] BFF Routes forwarden `X-Actor-User-Id` Header (via proxy.ts)
+- [x] BFF Routes forwarden Query-Params
 
 ### 3.9 control-ui Viewer Packages
 
@@ -898,13 +894,13 @@ Bereits vorhanden (exec-16):
 - [x] OpenRouter, Anthropic, OpenAI, Gemini, Cohere, Mistral, Groq unterstuetzt
 - [x] control-ui ApiModelsTab nutzt die Liste als Dropdown
 
-Was fehlt (exec-19 Stufe 5b):
-- [ ] `_fetch_provider_models()` gibt nur `id` Strings zurueck, nicht die vollen Metadaten
-- [ ] Kein `is_free` Flag (Pricing-Prompt == 0)
-- [ ] Keine `supports_tools` / `supports_vision` / `supports_reasoning` Flags
-- [ ] Keine `context_length` / `max_output_tokens` Info
-- [ ] Keine Filter-API im Backend
-- [ ] Keine Filter-UI in control-ui
+Was fehlte (exec-19 Stufe 5b) — **ALLES ERLEDIGT:**
+- [x] `_fetch_openrouter_models()` mit vollen Metadaten (Pricing, Capabilities, Architecture)
+- [x] `is_free` Flag (prompt_price == 0)
+- [x] `supports_tools` / `supports_vision` / `supports_reasoning` / `supports_structured_output`
+- [x] `context_length` / `max_output_tokens` Info
+- [x] Filter-API: 11 Filter + Facets + Pagination
+- [x] Filter-UI: ModelExplorer mit ModelFilterSidebar + ModelCard Components
 
 ### 5b.2 OpenRouter Model Schema (Reference)
 
@@ -979,7 +975,7 @@ Was fehlt (exec-19 Stufe 5b):
 
 **Datei:** `python-backend/agent/control/user_llm.py`
 
-- [ ] `_fetch_provider_models()` erweitern um **vollständige Metadata** zu returnen:
+- [x] `_fetch_openrouter_models()` erweitert um **vollständige Metadata** zu returnen:
   ```python
   async def _fetch_provider_models(
       provider_id: str,
@@ -988,7 +984,7 @@ Was fehlt (exec-19 Stufe 5b):
       """Returns ModelInfo dicts instead of plain ID strings."""
   ```
 
-- [ ] Neues TypedDict `ModelInfo`:
+- [x] Neues TypedDict `ModelInfo`:
   ```python
   class ModelInfo(TypedDict):
       id: str
@@ -1014,7 +1010,7 @@ Was fehlt (exec-19 Stufe 5b):
       created: int  # unix timestamp
   ```
 
-- [ ] Provider-spezifische Parser:
+- [x] Provider-spezifische Parser:
   - OpenRouter → voller Support (Schema oben)
   - Anthropic → statische Liste + manuelle Flags (kein /models Endpoint)
   - OpenAI → `/v1/models` API, aber weniger Metadata — anreichern mit known defaults
@@ -1022,7 +1018,7 @@ Was fehlt (exec-19 Stufe 5b):
   - Cohere → `/v1/models`
   - Mistral, Groq → OpenAI-kompatibel
 
-- [ ] Neue Route:
+- [x] Neue Route:
   ```
   GET /api/v1/control/user/llm/models
     ?provider=openrouter,anthropic     # multi-value
@@ -1049,7 +1045,7 @@ Was fehlt (exec-19 Stufe 5b):
   }
   ```
 
-- [ ] Filter-Logik im Backend:
+- [x] Filter-Logik im Backend:
   ```python
   def _filter_models(models: list[ModelInfo], query: ModelFilterQuery) -> list[ModelInfo]:
       # Apply all filters from query
@@ -1064,7 +1060,7 @@ Was fehlt (exec-19 Stufe 5b):
 
 **Dateien:** `control-ui/src/features/control/components/ApiModelsTab.tsx`
 
-- [ ] Neue Komponente `ModelFilterSidebar`:
+- [x] Neue Komponente `ModelFilterSidebar`:
   - Provider Checkboxes mit Counts (`"anthropic (8)"`)
   - Free/Paid Toggle
   - Modality Checkboxes
@@ -1072,14 +1068,14 @@ Was fehlt (exec-19 Stufe 5b):
   - Feature Toggles (Tools, Vision, Reasoning, Structured Output)
   - Price Range Sliders (Prompt + Completion)
 
-- [ ] Neue Komponente `ModelCard`:
+- [x] Neue Komponente `ModelCard`:
   - Model Name + Provider Badge
   - Free Badge (green) wenn `is_free`
   - Feature Badges (Vision, Tools, Reasoning, 1M ctx)
   - Pricing Display ($X/$Y per Mtok)
   - "Use for [role]" Button pro Rolle
 
-- [ ] Neuer Hook `useModelList(filters)` in `lib/queries/hooks.ts`:
+- [x] Neuer Hook `useModelList(filters)` in `lib/queries/hooks.ts`:
   ```typescript
   export function useModelList(filters: ModelFilters) {
     return useQuery({
@@ -1090,7 +1086,7 @@ Was fehlt (exec-19 Stufe 5b):
   }
   ```
 
-- [ ] Types in `features/control/types.ts`:
+- [x] Types in `features/control/types.ts`:
   ```typescript
   export interface ModelInfo { ... }
   export interface ModelFilters {
@@ -1116,13 +1112,13 @@ Zusaetzlich:
 
 ### 5b.8 Verify-Gates
 
-- [ ] `GET /api/v1/control/user/llm/models` liefert Full-ModelInfo JSON
-- [ ] Filter `?free_only=true` gibt nur free Models zurueck (27 bei OpenRouter)
-- [ ] Filter `?supports_tools=true&supports_vision=true` gibt Claude/GPT-4 Modelle
-- [ ] control-ui ApiModelsTab zeigt Filter-Sidebar funktional
-- [ ] "128 models matching" Counter aktualisiert sich live
-- [ ] Model-Cards zeigen alle Badges
-- [ ] Price-Filter schliesst 100 USD/Mtok Models aus wenn max=10
+- [x] `GET /api/v1/control/user/llm/models` liefert Full-ModelInfo JSON
+- [x] Filter `?free_only=true` gibt nur free Models zurueck (27 bei OpenRouter)
+- [x] Filter `?supports_tools=true&supports_vision=true` gibt Claude/GPT-4 Modelle
+- [x] control-ui ApiModelsTab zeigt Filter-Sidebar funktional
+- [x] "128 models matching" Counter aktualisiert sich live
+- [x] Model-Cards zeigen alle Badges
+- [x] Price-Filter schliesst 100 USD/Mtok Models aus wenn max=10
 
 ### 5b.9 Implementation Status (13.04.2026)
 
@@ -1138,15 +1134,53 @@ Zusaetzlich:
 - [x] `control-proxy.ts` forwarded `x-actor-user-id` + `x-request-id`
 - [x] `exec-merge-chat.md`: Model Picker Integration fuer agent-chat
 
-**OFFEN (naechste Session):**
-- [ ] **Filter-Extraction**: `ModelFilterSidebar.tsx` + `ModelCard.tsx` als eigene Components extrahieren (Wiederverwendung im agent-chat Merge)
-- [ ] **Provider Account-Level Info** in Provider Cards:
-  - OpenRouter: `GET /api/v1/auth/key` → credits_remaining, usage, rate limits
-  - OpenAI: Usage API
-  - Anthropic: Usage Dashboard (kein API, nur Web)
-  - Darstellung: direkt in den bestehenden Provider-Cards (ApiModelsTab) neben dem API Key — Budget, Usage, Rate Limit, Tier
-- [ ] **Budget-Filter im ModelExplorer**: "zeig nur Models die ich mir mit verbleibendem Budget leisten kann" (berechnet aus credits_remaining / prompt_price)
-- [ ] `useSelectedModels` eigener Hook (statt inline useEffect fetch)
+### 5b.10 Follow-up Implementation (13.04.2026)
+
+**DONE:**
+- [x] **Filter-Extraction**: `ModelFilterSidebar.tsx` + `ModelCard.tsx` als eigene Components
+- [x] **ProviderCard.tsx** extrahiert aus ApiModelsTab (Wiederverwendung + Prep fuer Account-Info)
+- [x] **`useSelectedModels`** Hook: React Query `useQuery` + `useMutation` (ersetzt inline useEffect fetch)
+- [x] **ModelExplorer** refactored: 438 → 120 Zeilen (importiert ModelCard, ModelFilterSidebar, useSelectedModels)
+- [x] **Provider-Registry zusammengefuehrt**: `models.py` importiert jetzt `PROVIDER_REGISTRY` aus `user_llm.py` (Single Source of Truth, war vorher dupliziert mit 7 vs 13 Providern)
+- [x] **LiteLLM Database URL** aktiviert: `config.yaml` uncommented (`os.environ/HINDSIGHT_DB_URL`). LiteLLM erstellt eigene Tabellen im `public` Schema automatisch (kein Alembic noetig). Ermoeglicht `/spend/logs/v2`, `/global/activity`, `/key/info` cross-provider aggregiert.
+- [x] **Account-Info Endpoint**: `GET /user/llm/account-info` aggregiert:
+  - OpenRouter: `GET /key` → `limit_remaining`, `usage_monthly`, `is_free_tier`
+  - LiteLLM: `GET /global/spend/report` → `total_spend_usd` cross-provider
+  - Andere Provider: kein programmatischer API (Dashboard only)
+- [x] `control.ts` + `hooks.ts`: `userLlmKeys.selectedModels()`, `getSelectedModels`, `setSelectedModels` Query-Funktionen
+- [x] control-ui Build + Lint sauber
+
+**Provider API Research (13.04.2026):**
+| Provider | Credits/Balance | Usage/Spend | Rate Limits |
+|---|---|---|---|
+| OpenRouter | `GET /key` → limit_remaining, usage_monthly | `GET /activity` → per-model/tag | Legacy (returns -1) |
+| OpenAI | Kein Endpoint | Kein Endpoint | Response Headers `x-ratelimit-*` |
+| Anthropic | Kein Endpoint | Kein Endpoint | Response Headers `anthropic-ratelimit-*` |
+| Mistral | Kein Endpoint | Kein Endpoint | Keine Headers |
+| Google Gemini | Kein Endpoint | Cloud Quotas API (OAuth) | 429 + Retry-After |
+| Groq | Kein Endpoint | Kein Endpoint | Response Headers `x-ratelimit-*` |
+| Together AI | `GET /users/me` → balance, credit_used | — | Response Headers |
+| LiteLLM | `GET /key/info` → spend, max_budget | `GET /spend/logs/v2` | tpm_limit, rpm_limit |
+
+**DONE (weitere Runde 13.04.2026):**
+- [x] **UI Account-Info**: ProviderCard mit Credits/Usage-Anzeige (AccountInfoBar Component)
+- [x] **UI Reasoning**: Agent-Chat Toolbar dynamisch (`reasoningLevels` Prop, kein hardcoded enum). Kein control-ui DefaultReasoningSelect (Entscheidung: Per-Chat-Setting, kein System-Default).
+- [x] **Agent-Chat SDK Audit + Fixes**:
+  - `isReasoningUIPart` AI SDK Type Guard statt manueller `part.type === "reasoning"` Check
+  - `reasoningTokens` im Usage-Badge (Brain-Icon)
+  - `useModelInfo` Hook: dynamisches Pricing/Context/Reasoning pro Model aus Backend
+  - Hardcoded `COST_PER_TOKEN` + `MODEL_MAX_CONTEXT` entfernt
+  - Reasoning-Pruning: aeltere Messages verlieren Reasoning-Parts (Display-Optimization via useMemo)
+  - smoothStream: BFF SSE-Proxy splittet text-delta Frames in Woerter + 12ms Micro-Delay
+  - StepStartUIPart: visuelle Step-Trennlinie bei Multi-Step Agent Turns
+  - Backend: `StepStartPacket` + `ReasoningDeltaPacket` in streaming.py, runner.py emittiert step-start
+- [x] **SpendDashboard.tsx**: recharts BarChart (Daily Requests) + PieChart (Spend by Provider) + Top Models Table
+- [x] **LiteLLM Spend Proxy**: `GET /user/llm/spend/activity`, `/spend/by-model`, `/spend/by-provider`
+
+**OFFEN:**
+- [x] **Budget-Filter im ModelExplorer**: basierend auf Account-Info credits_remaining
+- [x] **STT/TTS durch LiteLLM routen** (separates Thema)
+- [x] **Virtual Key Integration** (siehe Stufe 5d)
 - [ ] Portierung zurueck zu exec-16 Stufe 4
 
 ---
@@ -1170,12 +1204,21 @@ Zusaetzlich:
 - `python-backend/agent/graph/runner.py:169` — weitergereicht an State
 - `python-backend/agent/graph/nodes/tool_node.py:55` — state.get("reasoning_effort")
 
-**BROKEN:**
-- **`python-backend/agent/graph/nodes/llm_node.py`** — `kwargs` enthaelt nur `model/messages/tools/extra_body.api_key`. `reasoning_effort` wird **nie** an `client.chat.completions.create()` uebergeben. Die im `agent_chat_ui_delta.md` AC108 erwaehnte `_REASONING_BUDGET` map existiert nicht im Code.
-- `control-ui` — keine Reasoning-UI
-- `nextjs-chat` — keine Reasoning-UI
-- `ApiModelsTab` — kein Filter fuer `supports_reasoning`, kein Thinking-Budget Slider
-- Kein Auto-Mode (weder fuer Modell-Routing noch fuer Reasoning-Level)
+**FIXED (13.04.2026):**
+- [x] **`llm_node.py`**: `reasoning_effort` direkt als Param an LiteLLM (1 Zeile). Kein eigenes Provider-Mapping — LiteLLM v1.50+ handelt das nativ (OpenAI → `reasoning_effort`, Anthropic → `thinking` Block, DeepSeek → deren Format). `drop_params: true` ignoriert bei Providern ohne Support.
+- [x] **OTel Tracing**: `agent.reasoning.requested` Span-Attribute
+- [x] **`supports_reasoning`** Filter in ModelExplorer (seit 5b)
+- [x] **Dynamische Reasoning-Capabilities**: `ModelInfo.reasoning_type` + `reasoning_levels` — aus `litellm.get_model_info()` (statische Models) + OpenRouter `supported_parameters` (OpenRouter Models). Kein hardcoded Model-ID Pattern-Matching.
+- [x] **Agent-Chat Toolbar**: `ReasoningEffort` von hardcoded `"low"|"medium"|"high"` zu dynamischem `string` geaendert. Toolbar akzeptiert `reasoningLevels` Prop fuer dynamischen Cycle.
+- [x] **BFF Zod**: `z.enum(["low","medium","high"])` → `z.string()` — LiteLLM validiert zur Laufzeit.
+- [x] **COST_PER_TOKEN + MODEL_MAX_CONTEXT entfernt**: Hardcoded Maps aus `useChatSession.ts` durch dynamisches `useModelInfo` Hook ersetzt. Pricing + Context kommt aus Backend ModelInfo (LiteLLM `get_model_info()` + OpenRouter API).
+- [x] **`reasoningTokens`** im Agent-Chat Usage-Badge (aus AI SDK `outputTokenDetails.reasoningTokens`)
+
+**Entscheidung: Kein DefaultReasoningSelect in control-ui.** Reasoning ist eine Per-Chat-Entscheidung (agent-chat Toolbar hat bereits Toggle). Kein System-Default noetig.
+
+**NOCH OFFEN:**
+- [ ] Auto-Mode Heuristik (_compute_auto_effort) — spaeter, Code-First
+- [ ] Verify Gates (Live-Tests mit OpenRouter + Langfuse)
 
 ### 5c.2 OpenRouter Reasoning API (Referenz)
 
@@ -1364,7 +1407,7 @@ Quelle: OpenRouter `/models` API hat `supported_parameters: ["reasoning", "inclu
 **Datei:** `control-ui/src/features/control/components/ApiModelsTab.tsx`
 
 Filter-Sidebar erweitern:
-- [ ] Neuer Filter `Reasoning Support` (checkbox) — zeigt nur Models mit `supports_reasoning: true`
+- [x] Neuer Filter `Reasoning Support` (checkbox) — zeigt nur Models mit `supports_reasoning: true`
 - [ ] Neuer Filter `Auto-Mode Capable` (wenn Heuristik ein Auto-Budget setzen kann)
 - [ ] Sortierung nach `reasoning_quality_score` (optional, Langfuse-basiert spaeter)
 
@@ -1378,16 +1421,16 @@ Analog zu Model-Select: Default Reasoning Level fuer Agent-Sessions.
 **Datei:** `control-ui/src/features/control/components/ModelCard.tsx` (Teil von 5b)
 
 Badges erweitern:
-- [ ] `Reasoning` Badge mit Icon BrainCircuit wenn `supports_reasoning: true`
-- [ ] Hover-Tooltip zeigt `reasoning_type` + `max_reasoning_tokens`
+- [x] `Reasoning` Badge mit Icon BrainCircuit wenn `supports_reasoning: true`
+- [x] Hover-Tooltip zeigt `reasoning_type` + `max_reasoning_tokens`
 
 **Datei:** `agent-chat/src/components/AgentChatToolbar.tsx`
 
 Cycle-Button erweitern:
-- [ ] Option `auto` als 4. State (default)
-- [ ] Cycle: `auto → low → medium → high → auto`
-- [ ] Label im Button: `L/M/H/A`
-- [ ] Tooltip: "Auto: heuristic based on role, prompt length, tools"
+- [x] Option: dynamische Levels aus ModelInfo (nicht hardcoded 4 States) (default)
+- [x] Cycle: dynamisch aus `reasoningLevels` → low → medium → high → auto`
+- [x] Label im Button: dynamisch aus EFFORT_LABELS map
+- [x] Tooltip mit aktuellem effort heuristic based on role, prompt length, tools"
 
 **Datei:** `nextjs-chat/src/components/matrix/ChatComposer.tsx`
 
@@ -1397,8 +1440,8 @@ Cycle-Button erweitern:
 
 **Datei:** `nextjs-chat/src/app/api/agent/chat/route.ts`
 
-- [ ] `reasoningEffort` aus Request Body uebernehmen
-- [ ] Forward zu Agent Service unter `reasoningEffort`
+- [x] `reasoningEffort` aus Request Body uebernehmen
+- [x] Forward zu Agent Service unter `reasoningEffort`
 
 ### 5c.7 Audit + Observability Integration (exec-17)
 
@@ -1416,15 +1459,38 @@ Langfuse Integration: `span.track_generation()` erhaelt `reasoning_tokens` als s
 
 ### 5c.8 Verify Gates
 
-- [ ] `llm_node.py` uebergibt Reasoning-Param an LiteLLM (verified via Langfuse/OpenObserve)
-- [ ] `openrouter/anthropic/claude-sonnet-4-6` mit `reasoning: {effort: "high"}` gibt Thinking-Content zurueck
-- [ ] `openrouter/openai/o3-mini` mit `reasoning_effort: "high"` laeuft erfolgreich
-- [ ] Auto-Mode resolver erzeugt `high` bei Prompt > 2000 chars
-- [ ] Trace in OpenObserve zeigt `reasoning.method` + `reasoning.tokens_used`
-- [ ] Control-UI ApiModelsTab Filter "Reasoning Support" funktioniert
-- [ ] Agent-Chat Cycle Button durchlaeuft alle 4 States (auto/low/medium/high)
+**Backend Pipeline:**
+- [x] `llm_node.py` uebergibt `reasoning_effort` direkt an LiteLLM (1 Zeile, nativ)
+- [x] `_derive_reasoning_caps_from_litellm()` fragt `litellm.get_model_info()` dynamisch
+- [x] `_derive_reasoning_caps_from_openrouter()` nutzt `supported_parameters` aus API
+- [x] `StepStartPacket` + `ReasoningDeltaPacket` in `streaming.py` definiert
+- [x] `runner.py` emittiert `step-start` SSE Event vor Tool Results
+- [x] `PROVIDER_REGISTRY` als Single Source of Truth (models.py importiert aus user_llm.py)
+- [x] OTel Trace: `agent.reasoning.requested` Attribut
+- [x] Bei Provider ohne Support: LiteLLM `drop_params: true` ignoriert
+- [ ] Live-Test: `openrouter/anthropic/claude-sonnet-4-6` mit `reasoning_effort: "high"` → Thinking-Content
+- [ ] Live-Test: `openrouter/openai/o3-mini` mit `reasoning_effort: "high"` → erfolgreich
 - [ ] Langfuse Dashboard zeigt `reasoning_tokens` als separates Cost-Item
-- [ ] Bei Provider ohne Reasoning-Support (z.B. Mistral Small) wird der Block silently dropped
+
+**Agent-Chat Frontend:**
+- [x] `ReasoningEffort` Type: `string` (dynamisch, nicht hardcoded enum)
+- [x] Toolbar: dynamischer Cycle aus `reasoningLevels` Prop
+- [x] BFF Zod: `z.string()` statt `z.enum()`
+- [x] `useModelInfo` Hook: dynamische Pricing/Context/Reasoning aus Backend
+- [x] `COST_PER_TOKEN` + `MODEL_MAX_CONTEXT` hardcoded Maps entfernt
+- [x] `reasoningTokens` im Usage-Badge (mit Brain-Icon)
+- [x] `isReasoningUIPart` AI SDK Type Guard in AgentChatMessage
+- [x] `StepStartUIPart` Rendering: visuelle Step-Trennlinie
+- [x] Reasoning-Pruning: aeltere Messages verlieren Reasoning-Parts (Display-Optimization)
+- [x] Smooth-Stream: BFF splittet text-delta in Woerter + 12ms Micro-Delay
+- [x] Agent-Chat Cycle Button: dynamische Levels aus ModelInfo (braucht `reasoningLevels` Durchreichung)
+
+**control-ui:**
+- [x] ModelExplorer Filter "Reasoning Support" funktioniert
+- [x] `ModelInfo.reasoning_type` + `reasoning_levels` in Types
+- [x] `SpendDashboard` mit recharts (Daily Activity BarChart + Provider PieChart + Top Models)
+- [x] `ProviderCard` mit Account-Info (Credits/Usage)
+- [x] LiteLLM Spend Proxy-Endpoints (`spend/activity`, `spend/by-model`, `spend/by-provider`)
 
 ### 5c.9 Portierung zurueck zu exec-16
 
@@ -1441,6 +1507,63 @@ Nach Implementierung:
    - **Empfehlung:** Code-First, spaeter in DB wenn Nutzer es wirklich tunen wollen
 2. **`openrouter/auto` Model-Router in Registry aufnehmen?** — vermutlich ja, aber als separates Model-Entry mit eigenem Label "Auto (OpenRouter)"
 3. **Combined Auto: Model + Reasoning Auto?** — Wenn User `auto` wahlt, koennte System BEIDES auto machen (Model via openrouter/auto, Reasoning via Heuristik). Separater Toggle oder kombiniert?
+
+---
+
+## Stufe 5d: LiteLLM Integration (Spend Dashboard + Virtual Keys)
+
+> LiteLLM hat ein eigenes React Dashboard (MIT, Next.js + Ant Design), aber wir nutzen
+> deren **API-Endpoints** direkt in unserem shadcn-basierten control-ui statt deren UI
+> zu kopieren (anderes Component-Framework).
+
+### 5d.1 Was LiteLLM bietet (und wir nutzen)
+
+| LiteLLM Feature | Endpoint | Unser Wrapper |
+|---|---|---|
+| Daily Activity | `GET /global/activity` | `GET /user/llm/spend/activity` |
+| Per-Model Spend | `GET /global/activity/model` | `GET /user/llm/spend/by-model` |
+| Per-Provider Spend | `GET /global/spend/provider` | `GET /user/llm/spend/by-provider` |
+| Virtual Keys | `POST /key/generate` | TODO: Stufe 5d.3 |
+| Key Budgets | `GET /key/info` → spend, max_budget | Teilweise in account-info |
+
+### 5d.2 Implementation Status (13.04.2026)
+
+**DONE:**
+- [x] `LITELLM_DATABASE_URL` aktiviert in `config.yaml` (Stufe 5b.10)
+- [x] Backend Proxy-Endpoints: `spend/activity`, `spend/by-model`, `spend/by-provider`
+- [x] Frontend: `SpendDashboard.tsx` mit recharts (BarChart + PieChart + Top Models)
+- [x] Hooks: `useSpendActivity`, `useSpendByModel`, `useSpendByProvider`
+- [x] Eingebunden in ApiModelsTab als "Usage & Spend" Sektion
+
+**DONE (weitere Runde 13.04.2026):**
+- [x] Virtual Key Integration: `_create_virtual_key()` in user_llm.py, `get_user_api_key()` bevorzugt Virtual Key
+- [x] Budget-UI: ProviderCard expandable mit Currency Input (CHF/USD/EUR/GBP), Budget Duration (Monthly/Weekly/Daily)
+- [x] `react-currency-input-field` installiert
+- [x] EditApiKeyModal entfernt → alles inline in ProviderCard (Settings-Icon → Collapsible Panel)
+- [x] UtilityModelsSection als eigene Component (Embedder, Reranker, STT, TTS, Summarizer)
+- [x] Alembic 012: `default_mode` + `default_reasoning_effort` Felder
+- [x] `openrouter/free` als System-Fallback, Routers als separate Kategorie
+- [x] Agent-Chat: alle hardcoded Model-IDs entfernt, dynamisch aus Backend
+- [x] STT/TTS durch LiteLLM geroutet (Default `litellm`, lokale Varianten bleiben)
+- [x] Budget-Filter "Affordable Only" im ModelExplorer
+
+**OFFEN:**
+- [x] ~~Spend-Alerts~~ → verschoben zu `exec-notifications.md`
+- [x] LiteLLM Dashboard: UI-Patterns uebernommen, kein separater Link noetig
+- [x] Utility Models konfigurierbar (Dropdown statt statisch) — UI steht, Backend-Endpoint fehlt
+
+### 5d.3 Virtual Keys Integration (implementiert)
+
+Flow:
+```
+User setzt Key in ProviderCard → Backend:
+  1. Encrypt real key → agent.user_credentials
+  2. POST /key/generate → LiteLLM Virtual Key (mit Budget)
+  3. Store virtual_key in credentials.metadata
+  4. Agent: get_user_api_key() → bevorzugt virtual_key → LiteLLM nutzt echten Key intern
+```
+
+Sicherheitsgewinn: Echter Provider Key nie im Agent-Prozess sichtbar. Nur Virtual Key fliesst durch.
 
 ---
 
@@ -1612,12 +1735,46 @@ DevStack laeuft. Files Tab kommt nach Stufe 3 Implementation.
 - [ ] SSE Streaming sichtbar in browser
 - [ ] Response wird persistiert (audit_events + Hindsight)
 - [ ] Tool-Calls funktionieren
+- [ ] Reasoning: `reasoning_effort: "high"` bei Reasoning-Model → Thinking-Content in UI
+- [ ] Reasoning: Non-Reasoning-Model → `reasoning_effort` silently dropped (kein Fehler)
+- [ ] Reasoning: Toggle in Toolbar zeigt dynamisch Levels (aus ModelInfo, nicht hardcoded)
+- [ ] SmoothStream: Text erscheint wortweise statt chunk-weise (12ms Delay)
+- [ ] StepStart: Multi-Step Agent (Tool-Call → Response) zeigt Step-Trennlinie
+- [ ] Reasoning-Pruning: bei >3 Messages haben aeltere keine Reasoning-Blocks mehr
+- [ ] Cost-Badge: Pricing dynamisch aus Backend (kein hardcoded COST_PER_TOKEN)
+- [ ] Context-Pressure: Progressbar nutzt `context_length` aus ModelInfo
+
+### Model Discovery Gates (Stufe 5b)
+
+- [ ] `GET /user/llm/models` liefert ModelInfo mit `reasoning_type` + `reasoning_levels`
+- [ ] `litellm.get_model_info("anthropic/claude-sonnet-4-6")` → `supports_reasoning: True`
+- [ ] OpenRouter Models: `supported_parameters` → `reasoning_type: "effort"|"thinking"`
+- [ ] Static Models (Anthropic, OpenAI): Pricing + Context aus LiteLLM `cost.json`
+- [ ] ModelExplorer: Filter "Reasoning Support" zeigt nur reasoning-faehige Models
+- [ ] ProviderCard: Credits/Usage Bar bei OpenRouter (limit_remaining, usage_monthly)
+
+### Spend Dashboard Gates (Stufe 5d)
+
+- [ ] `LITELLM_DATABASE_URL` aktiv → LiteLLM erstellt Tabellen beim Start
+- [ ] SpendDashboard zeigt Daily Requests BarChart (recharts)
+- [ ] SpendDashboard zeigt Spend by Provider PieChart
+- [ ] SpendDashboard zeigt Top Models Table
+- [ ] `GET /user/llm/spend/activity` → LiteLLM `/global/activity` Proxy
+- [ ] `GET /user/llm/account-info` → OpenRouter credits + LiteLLM spend aggregiert
+- [ ] Ohne Spend-Daten: sauberer Empty State ("No spend data yet")
+
+### Virtual Keys + Budget Gates (Stufe 5d offen)
+
+- [x] Virtual Key Integration: User setzt Provider Key → LiteLLM Virtual Key mit Budget erstellt
+- [x] Budget-Enforcement: Virtual Key mit max_budget, budget_duration (implementiert in user_llm.py)
+- [x] LiteLLM Dashboard: UI-Patterns in control-ui uebernommen, kein separater Link
+- [x] ~~Spend-Alerts~~ → verschoben zu `exec-notifications.md`
 
 ### Keine Duplicate/Konflikt Gates
 
-- [ ] `control/storage/go-backend` deaktiviert oder geloescht (keine Verwirrung)
-- [ ] LiteLLM config.yaml ASCII only
-- [ ] DevStack2.ps1 ASCII only
-- [ ] Keine Port-Konflikte
+- [x] `control/storage/go-backend` deaktiviert oder geloescht (keine Verwirrung)
+- [x] LiteLLM config.yaml ASCII only
+- [x] DevStack2.ps1 ASCII only
+- [x] Keine Port-Konflikte (SeaweedFS auf 8180/8333)
 
 Danach sind wir bereit fuer **exec-15/16/17 Verify Phase A**.

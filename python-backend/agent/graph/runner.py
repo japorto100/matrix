@@ -12,6 +12,7 @@ from agent.streaming import (
     ErrorPacket,
     FinishPacket,
     MessageMetaPacket,
+    StepStartPacket,
     TextDeltaPacket,
     TextEndPacket,
     TextStartPacket,
@@ -203,24 +204,28 @@ async def _run_graph(
                     )
                 yield sse(TextDeltaPacket(id=text_id, text=final))
 
-            for tr in result.get("tool_results", []):
-                yield sse(
-                    ToolStartPacket(
-                        tool_name=tr["tool_name"], tool_call_id=tr["tool_call_id"]
-                    )
-                )
-                if tr.get("error"):
+            tool_results = result.get("tool_results", [])
+            if tool_results:
+                # Step boundary: tool execution happened before final response
+                yield sse(StepStartPacket())
+                for tr in tool_results:
                     yield sse(
-                        ToolErrorPacket(
-                            tool_call_id=tr["tool_call_id"], error=tr["error"]
+                        ToolStartPacket(
+                            tool_name=tr["tool_name"], tool_call_id=tr["tool_call_id"]
                         )
                     )
-                else:
-                    yield sse(
-                        ToolResultPacket(
-                            tool_call_id=tr["tool_call_id"], result=tr["result"]
+                    if tr.get("error"):
+                        yield sse(
+                            ToolErrorPacket(
+                                tool_call_id=tr["tool_call_id"], error=tr["error"]
+                            )
                         )
-                    )
+                    else:
+                        yield sse(
+                            ToolResultPacket(
+                                tool_call_id=tr["tool_call_id"], result=tr["result"]
+                            )
+                        )
 
             yield sse(TextEndPacket(id=text_id))
             yield sse(

@@ -23,17 +23,30 @@ import { Button } from "@/components/ui/button";
 import { useAvailableModels } from "../hooks/useAvailableModels";
 import { useGlobalChat } from "../stores/globalChatStore";
 
-export type ReasoningEffort = "low" | "medium" | "high";
+/** Reasoning effort — string passthrough, LiteLLM validates per provider. */
+export type ReasoningEffort = string;
 
-const EFFORT_LABELS: Record<ReasoningEffort, string> = {
+/** Default cycle order. Provider may support more (e.g. "none", "xhigh", "max"). */
+const DEFAULT_EFFORT_ORDER = ["low", "medium", "high"];
+
+const EFFORT_LABELS: Record<string, string> = {
+	none: "—",
+	minimal: "Min",
 	low: "L",
 	medium: "M",
 	high: "H",
+	xhigh: "XH",
+	max: "Max",
 };
-const EFFORT_COLORS: Record<ReasoningEffort, string> = {
+
+const EFFORT_COLORS: Record<string, string> = {
+	none: "text-muted-foreground/30",
+	minimal: "text-muted-foreground/40",
 	low: "text-muted-foreground/60",
 	medium: "text-amber-500",
 	high: "text-primary",
+	xhigh: "text-primary",
+	max: "text-red-400",
 };
 
 interface AgentChatToolbarProps {
@@ -45,6 +58,8 @@ interface AgentChatToolbarProps {
 	/** AC108: reasoning effort toggle */
 	reasoningEffort?: ReasoningEffort;
 	onReasoningEffortChange?: (effort: ReasoningEffort) => void;
+	/** Available reasoning levels for the current model (from ModelInfo) */
+	reasoningLevels?: string[];
 	/** AC50: TTS autoplay toggle */
 	autoplayTts?: boolean;
 	onAutoplayToggle?: () => void;
@@ -56,10 +71,11 @@ interface AgentChatToolbarProps {
 export function AgentChatToolbar({
 	onNewThread,
 	onContextReset,
-	selectedModel = "claude-sonnet-4-6",
+	selectedModel = "",
 	onModelChange,
 	reasoningEffort = "medium",
 	onReasoningEffortChange,
+	reasoningLevels,
 	autoplayTts = false,
 	onAutoplayToggle,
 	voiceActive = false,
@@ -69,6 +85,7 @@ export function AgentChatToolbar({
 	const { mode, toggleMode } = useGlobalChat();
 	const { cloudModels, localModels } = useAvailableModels();
 	const activeReasoningEffort: ReasoningEffort = reasoningEffort ?? "medium";
+	const effortOrder = reasoningLevels?.length ? reasoningLevels : DEFAULT_EFFORT_ORDER;
 
 	// Short label: strip provider prefix, show last part
 	const shortLabel = (id: string) => {
@@ -78,9 +95,8 @@ export function AgentChatToolbar({
 	const currentLabel = shortLabel(selectedModel);
 
 	function cycleEffort() {
-		const order: ReasoningEffort[] = ["low", "medium", "high"];
-		const next =
-			order[(order.indexOf(activeReasoningEffort) + 1) % order.length] ?? activeReasoningEffort;
+		const idx = effortOrder.indexOf(activeReasoningEffort);
+		const next = effortOrder[(idx + 1) % effortOrder.length] ?? activeReasoningEffort;
 		onReasoningEffortChange?.(next);
 	}
 

@@ -41,7 +41,7 @@ def _mask_key(key: str) -> str:
 # models: Fallback/static models (Anthropic hat keinen /models Endpoint)
 # env_key: ENV var fuer System-Default Key (LiteLLM config liest diese)
 
-_PROVIDER_META: dict[str, dict[str, Any]] = {
+PROVIDER_REGISTRY: dict[str, dict[str, Any]] = {
     # Cloud US/EU
     "anthropic": {
         "display_name": "Anthropic",
@@ -85,7 +85,8 @@ _PROVIDER_META: dict[str, dict[str, Any]] = {
         "models": ["command-r-plus", "command-r"],
         "env_key": "COHERE_API_KEY",
     },
-    # Aggregator
+    # Aggregator — openrouter/auto and openrouter/free are ROUTERS, not models.
+    # They are handled as special mode values, not listed in models[].
     "openrouter": {
         "display_name": "OpenRouter",
         "type": "cloud",
@@ -141,7 +142,7 @@ async def _fetch_provider_models(
     provider_id: str, api_key: str | None = None
 ) -> list[str]:
     """Fetch available models from provider /v1/models API. Cached 1h."""
-    meta = _PROVIDER_META.get(provider_id)
+    meta = PROVIDER_REGISTRY.get(provider_id)
     if not meta:
         return []
 
@@ -195,8 +196,29 @@ async def get_user_llm_settings(request: Request) -> dict[str, Any]:
 
     default_model = await get_user_default_model(user_id) or get_env_default_model()
 
+    # default_mode + default_reasoning_effort from DB
+    default_mode = "auto"
+    default_reasoning_effort = "medium"
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if db_url:
+        try:
+            import psycopg
+
+            async with await psycopg.AsyncConnection.connect(db_url) as conn:
+                row = await (
+                    await conn.execute(
+                        "SELECT default_mode, default_reasoning_effort FROM agent.user_llm_settings WHERE user_id = %s",
+                        (user_id,),
+                    )
+                ).fetchone()
+                if row:
+                    default_mode = row[0] or "auto"
+                    default_reasoning_effort = row[1] or "medium"
+        except Exception:
+            pass
+
     providers = []
-    for prov_id, meta in _PROVIDER_META.items():
+    for prov_id, meta in PROVIDER_REGISTRY.items():
         key = await get_user_api_key(user_id, prov_id)
         if not key:
             env_key_name = meta.get("env_key", "")
@@ -226,7 +248,13 @@ async def get_user_llm_settings(request: Request) -> dict[str, Any]:
     return {
         "user_id": user_id,
         "default_model": default_model,
+        "default_mode": default_mode,
+        "default_reasoning_effort": default_reasoning_effort,
         "providers": providers,
+        "routers": [
+            {"id": "openrouter/free", "label": "Free (auto-select from free models)", "cost": "free"},
+            {"id": "openrouter/auto", "label": "Auto (best model for task)", "cost": "paid"},
+        ],
     }
 
 
@@ -290,20 +318,31 @@ async def set_role_overrides(request: Request) -> dict[str, Any]:
 
 @router.put("/user/llm/key/{provider_id}")
 async def set_api_key(provider_id: str, request: Request) -> dict[str, Any]:
-    """Store an encrypted API key for a provider."""
+    """Store an encrypted API key for a provider + create LiteLLM Virtual Key.
+
+    Flow:
+    1. Encrypt and store the real provider key in agent.user_credentials
+    2. Create a LiteLLM Virtual Key with budget/rate limits pointing at the provider
+    3. Store the virtual key reference in credentials metadata
+    4. Agent uses the virtual key at runtime (real key stays hidden in LiteLLM)
+    """
     user_id = _user_id(request)
     body = await request.json()
     api_key = body.get("api_key", "")
+    max_budget = body.get("max_budget")  # Optional: USD budget limit
+    budget_duration = body.get("budget_duration", "monthly")  # monthly | daily | weekly
 
     if not api_key:
         return {"status": "error", "message": "api_key required"}
 
-    if provider_id not in _PROVIDER_META:
+    if provider_id not in PROVIDER_REGISTRY:
         return {"status": "error", "message": f"Unknown provider: {provider_id}"}
 
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
         return {"status": "env_only", "message": "No DB — set API key in .env directly"}
+
+    import json
 
     import psycopg
 
@@ -312,22 +351,83 @@ async def set_api_key(provider_id: str, request: Request) -> dict[str, Any]:
     vault = get_vault()
     encrypted = vault.encrypt(api_key)
 
+    # Create LiteLLM Virtual Key (if LiteLLM is available)
+    virtual_key_info = await _create_virtual_key(
+        user_id=user_id,
+        provider_id=provider_id,
+        max_budget=max_budget,
+        budget_duration=budget_duration,
+    )
+
+    metadata = {}
+    if virtual_key_info and "key" in virtual_key_info:
+        metadata["virtual_key"] = virtual_key_info["key"]
+        if "token" in virtual_key_info:
+            metadata["virtual_key_id"] = virtual_key_info["token"]
+        if max_budget is not None:
+            metadata["max_budget"] = max_budget
+            metadata["budget_duration"] = budget_duration
+
     async with await psycopg.AsyncConnection.connect(db_url) as conn:
         await conn.execute(
-            """INSERT INTO agent.user_credentials (user_id, category, provider_id, credential_enc, updated_at)
-               VALUES (%s, 'llm', %s, %s, NOW())
+            """INSERT INTO agent.user_credentials
+               (user_id, category, provider_id, credential_enc, metadata, updated_at)
+               VALUES (%s, 'llm', %s, %s, %s::jsonb, NOW())
                ON CONFLICT (user_id, category, provider_id)
-               DO UPDATE SET credential_enc = %s, is_valid = true, updated_at = NOW()""",
-            (user_id, provider_id, encrypted, encrypted),
+               DO UPDATE SET credential_enc = %s, metadata = %s::jsonb,
+                  is_valid = true, updated_at = NOW()""",
+            (
+                user_id, provider_id, encrypted,
+                json.dumps(metadata), encrypted, json.dumps(metadata),
+            ),
         )
         await conn.commit()
 
-    return {
+    result: dict[str, Any] = {
         "status": "ok",
         "user_id": user_id,
         "provider_id": provider_id,
         "api_key_preview": _mask_key(api_key),
     }
+    if virtual_key_info and "key" in virtual_key_info:
+        result["virtual_key"] = True
+        result["budget"] = {"max_budget": max_budget, "duration": budget_duration}
+    return result
+
+
+async def _create_virtual_key(
+    user_id: str,
+    provider_id: str,
+    max_budget: float | None = None,
+    budget_duration: str = "monthly",
+) -> dict[str, Any] | None:
+    """Create a LiteLLM Virtual Key for this user+provider.
+
+    Returns {"key": "sk-litellm-...", "token": "..."} or None if LiteLLM unavailable.
+    """
+    litellm_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
+    try:
+        payload: dict[str, Any] = {
+            "models": [f"{provider_id}/*"],
+            "metadata": {"user_id": user_id, "provider_id": provider_id},
+            "key_alias": f"{user_id}-{provider_id}",
+        }
+        if max_budget is not None:
+            payload["max_budget"] = max_budget
+            payload["budget_duration"] = budget_duration
+
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(f"{litellm_url}/key/generate", json=payload)
+            if resp.status_code == 200:
+                return resp.json()
+            logger.warning(
+                "LiteLLM virtual key creation failed: %d %s",
+                resp.status_code, resp.text[:200],
+            )
+            return None
+    except Exception as e:
+        logger.debug("LiteLLM virtual key creation error: %s", e)
+        return None
 
 
 @router.delete("/user/llm/key/{provider_id}")
@@ -364,7 +464,7 @@ async def validate_api_key(provider_id: str, request: Request) -> dict[str, Any]
     if not api_key:
         return {"valid": False, "error": "api_key required"}
 
-    meta = _PROVIDER_META.get(provider_id)
+    meta = PROVIDER_REGISTRY.get(provider_id)
     if not meta:
         return {"valid": False, "error": f"Unknown provider: {provider_id}"}
 
@@ -431,6 +531,9 @@ class ModelInfo(TypedDict, total=False):
     modality: str  # text | text+image | multimodal
     architecture: str | None
     created_at: int | None
+    # Reasoning capabilities (dynamic, not hardcoded)
+    reasoning_type: str | None  # "effort" | "thinking" | "always_on" | None
+    reasoning_levels: list[str] | None  # e.g. ["low","medium","high"] or ["enabled"]
 
 
 # Detailed model cache: provider → (list[ModelInfo], timestamp)
@@ -461,6 +564,9 @@ async def _fetch_openrouter_models(api_key: str) -> list[ModelInfo]:
             supported_params = m.get("supported_parameters", [])
             arch = m.get("architecture", {})
 
+            # Derive reasoning capabilities from supported_parameters
+            r_type, r_levels = _derive_reasoning_caps_from_openrouter(supported_params)
+
             models.append(
                 ModelInfo(
                     id=m.get("id", ""),
@@ -488,6 +594,8 @@ async def _fetch_openrouter_models(api_key: str) -> list[ModelInfo]:
                     modality=arch.get("modality", "text->text"),
                     architecture=arch.get("tokenizer"),
                     created_at=m.get("created"),
+                    reasoning_type=r_type,
+                    reasoning_levels=r_levels,
                 )
             )
 
@@ -497,6 +605,62 @@ async def _fetch_openrouter_models(api_key: str) -> list[ModelInfo]:
     except Exception as e:
         logger.warning("OpenRouter model fetch failed: %s", e)
         return _detailed_cache.get("openrouter", ([], 0))[0]
+
+
+def _derive_reasoning_caps_from_openrouter(
+    supported_params: list[str],
+) -> tuple[str | None, list[str] | None]:
+    """Derive reasoning_type from OpenRouter supported_parameters.
+
+    Only used for OpenRouter models. For other providers, use
+    _derive_reasoning_caps_from_litellm() which queries LiteLLM's model registry.
+    """
+    has_reasoning = "reasoning" in supported_params or "include_reasoning" in supported_params
+    has_effort = "reasoning_effort" in supported_params
+
+    if not has_reasoning and not has_effort:
+        return None, None
+
+    if has_effort:
+        return "effort", None
+
+    return "thinking", None
+
+
+def _derive_reasoning_caps_from_litellm(
+    model: str,
+) -> tuple[str | None, list[str] | None]:
+    """Query LiteLLM's model registry for reasoning capabilities.
+
+    Uses litellm.get_model_info() which returns:
+    - supports_reasoning: bool
+    - supported_openai_params: list — contains "reasoning_effort" if supported
+
+    This is fully dynamic and provider-agnostic.
+    """
+    try:
+        import litellm as _litellm
+
+        info = _litellm.get_model_info(model=model)
+        if not info:
+            return None, None
+
+        has_reasoning = info.get("supports_reasoning", False)
+        params = info.get("supported_openai_params") or []
+        has_effort = "reasoning_effort" in params
+        has_thinking = "thinking" in params
+
+        if not has_reasoning and not has_effort and not has_thinking:
+            return None, None
+
+        if has_thinking:
+            return "thinking", None
+        if has_effort:
+            return "effort", None
+
+        return "reasoning", None
+    except Exception:
+        return None, None
 
 
 def _parse_price(val: str | float | None) -> float | None:
@@ -511,39 +675,55 @@ def _parse_price(val: str | float | None) -> float | None:
 def _static_models_to_info(
     provider_id: str, model_ids: list[str]
 ) -> list[ModelInfo]:
-    """Convert static model IDs to ModelInfo with known capabilities."""
-    meta = _PROVIDER_META.get(provider_id, {})
+    """Convert static model IDs to ModelInfo using LiteLLM's model registry.
+
+    Queries litellm.get_model_info() for each model to get capabilities
+    dynamically. Falls back to minimal info if LiteLLM doesn't know the model.
+    """
+    meta = PROVIDER_REGISTRY.get(provider_id, {})
     display = meta.get("display_name", provider_id)
     result: list[ModelInfo] = []
     for mid in model_ids:
+        model_key = f"{provider_id}/{mid}"
         info = ModelInfo(
-            id=f"{provider_id}/{mid}",
+            id=model_key,
             name=mid,
             provider=provider_id,
             description=f"{display} model",
             supports_streaming=True,
             is_free=False,
         )
-        # Known capabilities for major providers
-        if provider_id == "anthropic":
-            info["supports_tools"] = True
-            info["supports_vision"] = True
-            info["supports_reasoning"] = "opus" in mid or "sonnet" in mid
-            info["context_length"] = 200000
-        elif provider_id == "openai":
-            info["supports_tools"] = True
-            info["supports_vision"] = "gpt-4" in mid
-            info["supports_reasoning"] = mid.startswith("o")
-            info["context_length"] = 128000
-        elif provider_id == "gemini":
-            info["supports_tools"] = True
-            info["supports_vision"] = True
-            info["supports_reasoning"] = "2.5" in mid
-            info["context_length"] = 1000000 if "pro" in mid else 200000
-        elif provider_id == "deepseek":
-            info["supports_tools"] = "chat" in mid
-            info["supports_reasoning"] = "reasoner" in mid or "r1" in mid
-            info["context_length"] = 64000
+
+        # Query LiteLLM for dynamic capabilities
+        try:
+            import litellm as _litellm
+
+            lm_info = _litellm.get_model_info(model=model_key)
+            if lm_info:
+                info["context_length"] = lm_info.get("max_input_tokens") or lm_info.get("max_tokens", 0)
+                info["max_output_tokens"] = lm_info.get("max_output_tokens", 0)
+                info["supports_tools"] = lm_info.get("supports_function_calling", False)
+                info["supports_vision"] = lm_info.get("supports_vision", False)
+                info["supports_reasoning"] = lm_info.get("supports_reasoning", False)
+
+                params = lm_info.get("supported_openai_params") or []
+                info["supports_structured_output"] = "response_format" in params
+
+                # Reasoning type from LiteLLM
+                r_type, r_levels = _derive_reasoning_caps_from_litellm(model_key)
+                info["reasoning_type"] = r_type
+                info["reasoning_levels"] = r_levels
+
+                # Pricing
+                input_cost = lm_info.get("input_cost_per_token")
+                output_cost = lm_info.get("output_cost_per_token")
+                if input_cost is not None:
+                    info["prompt_price_per_mtok"] = input_cost * 1_000_000
+                if output_cost is not None:
+                    info["completion_price_per_mtok"] = output_cost * 1_000_000
+        except Exception:
+            pass  # LiteLLM doesn't know this model — keep minimal info
+
         result.append(info)
     return result
 
@@ -574,7 +754,7 @@ async def list_models(request: Request) -> dict[str, Any]:
     # Collect models from all providers
     all_models: list[ModelInfo] = []
 
-    for prov_id, meta in _PROVIDER_META.items():
+    for prov_id, meta in PROVIDER_REGISTRY.items():
         key = await get_user_api_key(user_id, prov_id)
         if not key:
             env_key_name = meta.get("env_key", "")
@@ -741,3 +921,221 @@ async def set_selected_models(request: Request) -> dict[str, Any]:
         await conn.commit()
 
     return {"status": "ok", "user_id": user_id, "selected_models": models, "count": len(models)}
+
+
+# ─── Account-Level Info (exec-19 Stufe 5b follow-up) ─────────────────────────
+# Aggregates credits/usage/spend from provider APIs + LiteLLM.
+# OpenRouter: GET /key → limit_remaining, usage_monthly
+# LiteLLM: GET /key/info → spend, max_budget (requires LITELLM_DATABASE_URL)
+# Other providers: dashboard only (no programmatic API)
+
+_account_cache: dict[str, tuple[dict[str, Any], float]] = {}
+_ACCOUNT_CACHE_TTL = 60  # 1 min
+
+
+async def _fetch_openrouter_account(api_key: str) -> dict[str, Any]:
+    """Fetch account info from OpenRouter GET /key endpoint."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                "https://openrouter.ai/api/v1/key",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            resp.raise_for_status()
+            data = resp.json().get("data", resp.json())
+        return {
+            "provider": "openrouter",
+            "limit": data.get("limit"),
+            "limit_remaining": data.get("limit_remaining"),
+            "usage": data.get("usage"),
+            "usage_monthly": data.get("usage_monthly"),
+            "is_free_tier": data.get("is_free_tier", False),
+            "rate_limit": data.get("rate_limit"),
+        }
+    except Exception as e:
+        logger.debug("OpenRouter account fetch failed: %s", e)
+        return {"provider": "openrouter", "error": str(e)[:200]}
+
+
+async def _fetch_litellm_spend() -> dict[str, Any]:
+    """Fetch spend info from LiteLLM GET /key/info (if DB is configured)."""
+    litellm_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(f"{litellm_url}/global/spend/report?group_by=api_key")
+            if resp.status_code == 200:
+                data = resp.json()
+                return {
+                    "source": "litellm",
+                    "total_spend_usd": sum(
+                        item.get("spend", 0)
+                        for item in (data if isinstance(data, list) else [])
+                    ),
+                    "details": data if isinstance(data, list) else [],
+                }
+            # Non-200: LiteLLM running but spend endpoint unavailable
+            return {
+                "source": "litellm",
+                "total_spend_usd": None,
+                "message": f"LiteLLM spend endpoint returned {resp.status_code}",
+            }
+    except Exception as e:
+        logger.debug("LiteLLM spend fetch failed: %s", e)
+        return {"source": "litellm", "error": str(e)[:200]}
+
+
+@router.get("/user/llm/account-info")
+async def get_account_info(request: Request) -> dict[str, Any]:
+    """Aggregated account-level info from all providers.
+
+    Returns credits, usage, spend data where available.
+    Provider support:
+    - OpenRouter: credits remaining, monthly usage, free tier status
+    - LiteLLM: aggregated spend across all providers (requires DB)
+    - Others: no programmatic API (dashboard only)
+    """
+    user_id = _user_id(request)
+
+    # Check cache
+    cached = _account_cache.get(user_id)
+    if cached and time.time() - cached[1] < _ACCOUNT_CACHE_TTL:
+        return cached[0]
+
+    from agent.security.credentials import get_user_api_key
+
+    providers_info: list[dict[str, Any]] = []
+
+    # OpenRouter account info
+    or_key = await get_user_api_key(user_id, "openrouter")
+    if not or_key:
+        or_key = os.environ.get("OPENROUTER_API_KEY", "") or None
+    if or_key:
+        providers_info.append(await _fetch_openrouter_account(or_key))
+
+    # LiteLLM aggregated spend
+    litellm_info = await _fetch_litellm_spend()
+    providers_info.append(litellm_info)
+
+    result = {
+        "user_id": user_id,
+        "providers": providers_info,
+        "total_spend_usd": litellm_info.get("total_spend_usd"),
+    }
+
+    _account_cache[user_id] = (result, time.time())
+    return result
+
+
+# ─── LiteLLM Spend Proxy (exec-19 Stufe 5d) ──────────────────────────────────
+# Proxy endpoints to LiteLLM's spend/activity APIs.
+# LiteLLM must have LITELLM_DATABASE_URL configured for these to work.
+
+
+async def _litellm_get(path: str, params: dict[str, str] | None = None) -> Any:
+    """Proxy GET to LiteLLM. Returns parsed JSON or error dict."""
+    litellm_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{litellm_url}{path}", params=params)
+            if resp.status_code == 200:
+                return resp.json()
+            return {"error": f"LiteLLM {resp.status_code}", "detail": resp.text[:300]}
+    except Exception as e:
+        return {"error": str(e)[:200]}
+
+
+@router.get("/user/llm/spend/activity")
+async def get_spend_activity(request: Request) -> Any:
+    """Daily spend + request activity from LiteLLM.
+
+    Query params: start_date, end_date (YYYY-MM-DD). Defaults to last 30 days.
+    Returns: [{date, api_requests, total_tokens}] + sums.
+    """
+    q = request.query_params
+    params: dict[str, str] = {}
+    if q.get("start_date"):
+        params["start_date"] = q["start_date"]
+    if q.get("end_date"):
+        params["end_date"] = q["end_date"]
+    return await _litellm_get("/global/activity", params or None)
+
+
+@router.get("/user/llm/spend/by-model")
+async def get_spend_by_model(request: Request) -> Any:
+    """Spend broken down by model from LiteLLM.
+
+    Query params: start_date, end_date (YYYY-MM-DD).
+    Returns: [{model, api_requests, total_tokens, ...}] grouped by model_group.
+    """
+    q = request.query_params
+    params: dict[str, str] = {}
+    if q.get("start_date"):
+        params["start_date"] = q["start_date"]
+    if q.get("end_date"):
+        params["end_date"] = q["end_date"]
+    return await _litellm_get("/global/activity/model", params or None)
+
+
+@router.get("/user/llm/spend/by-provider")
+async def get_spend_by_provider() -> Any:
+    """Spend grouped by provider. No DB required (uses router cache)."""
+    return await _litellm_get("/global/spend/provider")
+
+
+# ─── Utility Models Config (exec-19 Stufe 5d) ─────────────────────────────────
+
+UTILITY_PURPOSES = ("summarizer", "embedder_text", "embedder_visual", "reranker", "stt", "tts")
+
+
+@router.get("/user/llm/utility-models")
+async def get_utility_models(request: Request) -> dict[str, Any]:
+    """Get user's configured utility models."""
+    user_id = _user_id(request)
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {"user_id": user_id, "utility_models": {}}
+
+    import psycopg
+
+    try:
+        async with await psycopg.AsyncConnection.connect(db_url) as conn:
+            row = await (
+                await conn.execute(
+                    "SELECT utility_models FROM agent.user_llm_settings WHERE user_id = %s",
+                    (user_id,),
+                )
+            ).fetchone()
+            models = row[0] if row and row[0] else {}
+            return {"user_id": user_id, "utility_models": models}
+    except Exception as e:
+        logger.warning("get_utility_models failed: %s", e)
+        return {"user_id": user_id, "utility_models": {}}
+
+
+@router.put("/user/llm/utility-models")
+async def set_utility_models(request: Request) -> dict[str, Any]:
+    """Set utility models. Body: { "summarizer": "model-id", "stt": "whisper-local", ... }"""
+    user_id = _user_id(request)
+    body = await request.json()
+
+    # Validate keys
+    models = {k: v for k, v in body.items() if k in UTILITY_PURPOSES and isinstance(v, str)}
+
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {"status": "env_only", "message": "No DB"}
+
+    import json
+
+    import psycopg
+
+    async with await psycopg.AsyncConnection.connect(db_url) as conn:
+        await conn.execute(
+            """INSERT INTO agent.user_llm_settings (user_id, utility_models, updated_at)
+               VALUES (%s, %s::jsonb, NOW())
+               ON CONFLICT (user_id) DO UPDATE SET utility_models = %s::jsonb, updated_at = NOW()""",
+            (user_id, json.dumps(models), json.dumps(models)),
+        )
+        await conn.commit()
+
+    return {"status": "ok", "user_id": user_id, "utility_models": models}

@@ -193,6 +193,6 @@ router_settings:
 # ==========================================================================
 # Environment Settings (optional)
 # ==========================================================================
-environment_variables: {}
+environment_variables:
   # LITELLM_MASTER_KEY: "sk-litellm-dev-key"  # Virtual Key fuer Agent Service
-  # LITELLM_DATABASE_URL: "os.environ/HINDSIGHT_DB_URL"  # Fuer Cost Tracking (Stufe 3)
+  LITELLM_DATABASE_URL: "os.environ/HINDSIGHT_DB_URL"  # Spend Tracking (exec-16 Stufe 3)

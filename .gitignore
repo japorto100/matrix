@@ -106,3 +106,20 @@ logs/
 # ─── Build Artifacts ─────────────────────────────────────────────────────────
 go-appservice/tmp/
 .gitnexus
+
+# Windows reserved name artifact
+python-backend/rust_core/nul
+nul
+NUL
+
+# Windows reserved name artifact
+python-backend/rust_core/nul
+nul
+NUL
+
+# Rust target variants (local-only builds)
+target/
+target-local/
+python-backend/rust_core/target/
+python-backend/rust_core/target-local/
+python-backend/rust_core/target-host/

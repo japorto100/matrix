@@ -69,8 +69,20 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         kwargs: dict[str, Any] = {"model": model, "messages": oai_messages}
         if openai_tools:
             kwargs["tools"] = openai_tools
+
+        extra_body: dict[str, Any] = {}
         if api_key:
-            kwargs["extra_body"] = {"api_key": api_key}
+            extra_body["api_key"] = api_key
+
+        # exec-19 Stufe 5c: Reasoning/Thinking pipeline
+        # LiteLLM handles per-provider mapping natively (v1.50+):
+        # OpenAI → reasoning_effort, Anthropic → thinking block, DeepSeek → their format
+        reasoning_effort = state.get("reasoning_effort")
+        if reasoning_effort and reasoning_effort in ("low", "medium", "high"):
+            kwargs["reasoning_effort"] = reasoning_effort
+
+        if extra_body:
+            kwargs["extra_body"] = extra_body
 
         response = await client.chat.completions.create(**kwargs)
         choice = response.choices[0]
@@ -121,6 +133,8 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
 
         # exec-17: OTel + Langfuse via unified AgentSpan
         span.set_attribute("agent.tool_calls_count", len(tool_calls))
+        if reasoning_effort:
+            span.set_attribute("agent.reasoning.requested", reasoning_effort)
         span.track_generation(
             name="agent.llm_call",
             model=model,
@@ -162,6 +176,8 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             ]
 
         return result
+
+
 
 
 def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:

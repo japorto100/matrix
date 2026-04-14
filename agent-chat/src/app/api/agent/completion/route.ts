@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 			},
 			body: JSON.stringify({
 				message: SYSTEM_PREFIX + parsed.data.prompt,
-				model: "claude-haiku-4-5-20251001",
+				model: process.env.AGENT_COMPLETION_MODEL || "",
 			}),
 			cache: "no-store",
 			signal: req.signal,

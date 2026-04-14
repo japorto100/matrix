@@ -74,95 +74,31 @@ def _mask(value: str) -> str:
 
 
 def _providers() -> list[dict[str, Any]]:
-    """System-level provider status. Per-user status kommt aus /user/llm Endpoint."""
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    openai_key = os.environ.get("OPENAI_API_KEY", "")
-    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
-    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+    """System-level provider status derived from the canonical registry in user_llm.
 
-    return [
-        {
-            "id": "anthropic",
-            "display_name": "Anthropic",
-            "type": "cloud",
-            "api_key_set": bool(anthropic_key),
-            "api_key_preview": _mask(anthropic_key) if anthropic_key else None,
-            "is_active": bool(anthropic_key),
-            "available_models": [
-                "claude-opus-4-6",
-                "claude-sonnet-4-6",
-                "claude-haiku-4-5-20251001",
-            ]
-            if anthropic_key
-            else [],
-        },
-        {
-            "id": "openai",
-            "display_name": "OpenAI",
-            "type": "cloud",
-            "api_key_set": bool(openai_key),
-            "api_key_preview": _mask(openai_key) if openai_key else None,
-            "is_active": bool(openai_key),
-            "available_models": [
-                "gpt-4o",
-                "gpt-4o-mini",
-                "text-embedding-3-small",
-            ]
-            if openai_key
-            else [],
-        },
-        {
-            "id": "ollama",
-            "display_name": "Ollama (local)",
-            "type": "local",
-            "api_key_set": False,
-            "endpoint_url": ollama_url or "http://localhost:11434",
-            "is_active": False,  # Ollama: aktiv wenn lokal laeuft (health check in Phase 2)
-            "available_models": [],
-        },
-        {
-            "id": "vllm",
-            "display_name": "vLLM",
-            "type": "local",
-            "api_key_set": False,
-            "endpoint_url": "",
-            "is_active": False,
-            "available_models": [],
-        },
-        {
-            "id": "lm-studio",
-            "display_name": "LM Studio",
-            "type": "local",
-            "api_key_set": False,
-            "endpoint_url": "http://localhost:1234/v1",
-            "is_active": False,
-            "available_models": [],
-        },
-        {
-            "id": "openrouter",
-            "display_name": "OpenRouter",
-            "type": "cloud",
-            "api_key_set": bool(openrouter_key),
-            "api_key_preview": _mask(openrouter_key) if openrouter_key else None,
-            "is_active": bool(openrouter_key),
-            "available_models": [
-                "openrouter/anthropic/claude-sonnet-4-6",
-                "openrouter/openai/gpt-4o",
-                "openrouter/qwen/qwen3-480b:free",
-                "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-            ]
-            if openrouter_key
-            else [],
-        },
-        {
-            "id": "azure-openai",
-            "display_name": "Azure OpenAI",
-            "type": "cloud",
-            "api_key_set": False,
-            "is_active": False,
-            "available_models": [],
-        },
-    ]
+    Per-user status (with user-specific keys) comes from the /user/llm endpoint.
+    This endpoint shows the system-wide view based on ENV keys only.
+    """
+    from agent.control.user_llm import PROVIDER_REGISTRY
+
+    result: list[dict[str, Any]] = []
+    for prov_id, meta in PROVIDER_REGISTRY.items():
+        env_key_name = meta.get("env_key", "")
+        key = os.environ.get(env_key_name, "") if env_key_name else ""
+        is_local = meta.get("type") == "local"
+
+        result.append(
+            {
+                "id": prov_id,
+                "display_name": meta["display_name"],
+                "type": meta.get("type", "cloud"),
+                "api_key_set": bool(key),
+                "api_key_preview": _mask(key) if key else None,
+                "is_active": bool(key) or is_local,
+                "available_models": meta.get("models", []) if key or is_local else [],
+            }
+        )
+    return result
 
 
 @router.get("/models/providers")

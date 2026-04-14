@@ -558,10 +558,11 @@ _AUDIO_MIME_EXT: dict[str, str] = {
 @app.post("/api/v1/audio/transcribe")
 async def audio_transcribe(req: AudioTranscribeRequest):
     """STT: base64 audio → transcript text.
-    Routes via AGENT_STT_PROVIDER (openai|whisper-local). Default: openai (Whisper API).
-    whisper-local uses OPENAI_BASE_URL to point at WhisperLiveKit OpenAI-compatible endpoint.
+    Routes via AGENT_STT_PROVIDER (openai|whisper-local|litellm). Default: litellm.
+    litellm: routes through LiteLLM proxy (spend tracking, provider-agnostic).
+    whisper-local: WhisperLiveKit on OPENAI_BASE_URL (on-premise, no cloud).
     ACR-A1 / Phase 22f."""
-    provider = os.environ.get("AGENT_STT_PROVIDER", "openai")
+    provider = os.environ.get("AGENT_STT_PROVIDER", "litellm")
     try:
         from openai import AsyncOpenAI
     except ImportError:
@@ -572,11 +573,19 @@ async def audio_transcribe(req: AudioTranscribeRequest):
 
     audio_bytes = base64.b64decode(req.audio_base64)
     ext = _AUDIO_MIME_EXT.get(req.mime_type, ".webm")
-    api_key = os.environ.get("OPENAI_API_KEY", "not-set")
-    # whisper-local: point at self-hosted endpoint (WhisperLiveKit on Port 8095)
-    base_url = (
-        os.environ.get("OPENAI_BASE_URL") if provider == "whisper-local" else None
-    )
+
+    if provider == "whisper-local":
+        # On-premise: WhisperLiveKit OpenAI-compatible endpoint
+        base_url = os.environ.get("OPENAI_BASE_URL", "http://localhost:8095/v1")
+        api_key = "not-needed"
+    elif provider == "litellm":
+        # Through LiteLLM proxy (spend tracking, failover)
+        base_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
+        api_key = "sk-litellm"
+    else:
+        # Direct to OpenAI (legacy)
+        base_url = None
+        api_key = os.environ.get("OPENAI_API_KEY", "not-set")
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     tmp_path: str | None = None
@@ -604,12 +613,13 @@ async def audio_transcribe(req: AudioTranscribeRequest):
 @app.post("/api/v1/audio/synthesize")
 async def audio_synthesize(req: AudioSynthesizeRequest):
     """TTS: text → audio bytes (mp3).
-    Routes via AGENT_TTS_PROVIDER (openai|kokoro). Default: openai.
-    kokoro / openai-compatible: AGENT_TTS_BASE_URL points at self-hosted service.
+    Routes via AGENT_TTS_PROVIDER (openai|kokoro|litellm). Default: litellm.
+    litellm: routes through LiteLLM proxy (spend tracking, provider-agnostic).
+    kokoro / openai-compatible: AGENT_TTS_BASE_URL points at self-hosted service (on-premise).
     ACR-A5 / Phase 22f."""
     from fastapi.responses import Response as FastAPIResponse
 
-    provider = os.environ.get("AGENT_TTS_PROVIDER", "openai")
+    provider = os.environ.get("AGENT_TTS_PROVIDER", "litellm")
     try:
         from openai import AsyncOpenAI
     except ImportError:
@@ -618,13 +628,18 @@ async def audio_synthesize(req: AudioSynthesizeRequest):
             content={"ok": False, "error": "openai package not installed"},
         )
 
-    api_key = os.environ.get("OPENAI_API_KEY", "not-set")
-    # Kokoro / self-hosted: AGENT_TTS_BASE_URL overrides default OpenAI endpoint
-    base_url = (
-        os.environ.get("AGENT_TTS_BASE_URL")
-        if provider in ("kokoro", "openai-compatible")
-        else None
-    )
+    if provider in ("kokoro", "openai-compatible"):
+        # On-premise: Kokoro / self-hosted OpenAI-compatible TTS
+        base_url = os.environ.get("AGENT_TTS_BASE_URL", "http://localhost:8095/v1")
+        api_key = "not-needed"
+    elif provider == "litellm":
+        # Through LiteLLM proxy (spend tracking, failover)
+        base_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
+        api_key = "sk-litellm"
+    else:
+        # Direct to OpenAI (legacy)
+        base_url = None
+        api_key = os.environ.get("OPENAI_API_KEY", "not-set")
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
     tts_model = req.model or os.environ.get("AGENT_TTS_MODEL", "tts-1")
 

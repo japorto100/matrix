@@ -285,6 +285,69 @@ export function useModelList(filters: Record<string, string> = {}) {
 	});
 }
 
+export function useSelectedModels() {
+	const qc = useQueryClient();
+	const query = useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.selectedModels(),
+		queryFn: async () => {
+			const data = await userLlmQueries.getSelectedModels();
+			return new Set(data.selected_models ?? []);
+		},
+		staleTime: 60_000,
+	});
+
+	const mutation = useMutation({
+		mutationFn: (models: Set<string>) => userLlmQueries.setSelectedModels(Array.from(models)),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: userLlmKeys.selectedModels() });
+		},
+	});
+
+	return {
+		selected: query.data ?? new Set<string>(),
+		isLoading: query.isLoading,
+		save: mutation.mutateAsync,
+		isSaving: mutation.isPending,
+	};
+}
+
+export function useAccountInfo() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.accountInfo(),
+		queryFn: () => userLlmQueries.getAccountInfo(),
+		staleTime: 60_000,
+	});
+}
+
+export function useSpendActivity(startDate?: string, endDate?: string) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.spendActivity(`${startDate}-${endDate}`),
+		queryFn: () => userLlmQueries.getSpendActivity(startDate, endDate),
+		staleTime: 60_000,
+	});
+}
+
+export function useSpendByModel(startDate?: string, endDate?: string) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.spendByModel(`${startDate}-${endDate}`),
+		queryFn: () => userLlmQueries.getSpendByModel(startDate, endDate),
+		staleTime: 60_000,
+	});
+}
+
+export function useSpendByProvider() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: userLlmKeys.spendByProvider(),
+		queryFn: () => userLlmQueries.getSpendByProvider(),
+		staleTime: 60_000,
+	});
+}
+
 export function useSetDefaultModel() {
 	const qc = useQueryClient();
 	return useMutation({
@@ -308,8 +371,19 @@ export function useSetRoleOverrides() {
 export function useSetApiKey() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: ({ providerId, apiKey }: { providerId: string; apiKey: string }) =>
-			userLlmQueries.setApiKey(providerId, apiKey),
+		mutationFn: ({
+			providerId,
+			apiKey,
+			maxBudget,
+			budgetDuration,
+			budgetCurrency,
+		}: {
+			providerId: string;
+			apiKey: string;
+			maxBudget?: number;
+			budgetDuration?: string;
+			budgetCurrency?: string;
+		}) => userLlmQueries.setApiKey(providerId, apiKey, maxBudget, budgetDuration, budgetCurrency),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: userLlmKeys.all });
 			qc.invalidateQueries({ queryKey: modelsKeys.all });

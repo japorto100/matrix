@@ -1,0 +1,1514 @@
+// indicators.proto — gRPC service definition for indicator_engine.
+//
+// Derived from: python-backend/python-compute/indicator_engine/models.py (Step 1)
+// Enhanced with: python-backend/rust_core/src/indicators/*.rs structs (Step 2)
+//
+// Conventions:
+//   - Field numbers are grouped by domain (100s = core, 200s = trend, etc.)
+//   - Enums use UPPER_SNAKE_CASE with 0 = UNSPECIFIED sentinel
+//   - Repeated float fields for time-series (not nested messages) where performance matters
+//   - All request messages embed OHLCV inline (no shared base — proto3 has no inheritance)
+
+syntax = "proto3";
+
+package indicator_engine;
+
+option go_package = "github.com/tradeview-fusion/proto/indicator_engine";
+
+// ===========================================================================
+// Enums (from Python Literal types + Rust enums)
+// ===========================================================================
+
+enum SignalDirection {
+  SIGNAL_DIRECTION_UNSPECIFIED = 0;
+  SIGNAL_DIRECTION_BUY = 1;
+  SIGNAL_DIRECTION_SELL = 2;
+  SIGNAL_DIRECTION_NEUTRAL = 3;
+}
+
+enum PatternDirection {
+  PATTERN_DIRECTION_UNSPECIFIED = 0;
+  PATTERN_DIRECTION_BULLISH = 1;
+  PATTERN_DIRECTION_BEARISH = 2;
+  PATTERN_DIRECTION_NEUTRAL = 3;
+}
+
+enum ExoticMAType {
+  EXOTIC_MA_TYPE_UNSPECIFIED = 0;
+  EXOTIC_MA_TYPE_KAMA = 1;
+  EXOTIC_MA_TYPE_ALMA = 2;
+  EXOTIC_MA_TYPE_IWMA = 3;
+  EXOTIC_MA_TYPE_OLS = 4;
+  EXOTIC_MA_TYPE_SMA = 5;
+  EXOTIC_MA_TYPE_EMA = 6;
+  EXOTIC_MA_TYPE_SMMA = 7;
+}
+
+enum ChartTransformType {
+  CHART_TRANSFORM_TYPE_UNSPECIFIED = 0;
+  CHART_TRANSFORM_TYPE_HEIKIN_ASHI = 1;
+  CHART_TRANSFORM_TYPE_K_CANDLES = 2;
+  CHART_TRANSFORM_TYPE_VOLUME_CANDLES = 3;
+  CHART_TRANSFORM_TYPE_CARSI = 4;
+}
+
+enum VolatilityRegime {
+  VOLATILITY_REGIME_UNSPECIFIED = 0;
+  VOLATILITY_REGIME_ELEVATED = 1;
+  VOLATILITY_REGIME_NORMAL = 2;
+  VOLATILITY_REGIME_COMPRESSED = 3;
+}
+
+enum SpikeWeightedRegime {
+  SPIKE_WEIGHTED_REGIME_UNSPECIFIED = 0;
+  SPIKE_WEIGHTED_REGIME_VERY_QUIET = 1;
+  SPIKE_WEIGHTED_REGIME_NORMAL = 2;
+  SPIKE_WEIGHTED_REGIME_ELEVATED = 3;
+  SPIKE_WEIGHTED_REGIME_HIGH_VOLATILITY = 4;
+}
+
+enum MarketRegime {
+  MARKET_REGIME_UNSPECIFIED = 0;
+  MARKET_REGIME_BULLISH = 1;
+  MARKET_REGIME_BEARISH = 2;
+  MARKET_REGIME_RANGING = 3;
+}
+
+enum BarrierLabel {
+  BARRIER_LABEL_UNSPECIFIED = 0;
+  BARRIER_LABEL_TP = 1;
+  BARRIER_LABEL_SL = 2;
+  BARRIER_LABEL_TIMEOUT = 3;
+}
+
+enum SignalLabel {
+  SIGNAL_LABEL_UNSPECIFIED = 0;
+  SIGNAL_LABEL_BUY = 1;
+  SIGNAL_LABEL_SELL = 2;
+  SIGNAL_LABEL_HOLD = 3;
+}
+
+enum StressLevel {
+  STRESS_LEVEL_UNSPECIFIED = 0;
+  STRESS_LEVEL_LOW = 1;
+  STRESS_LEVEL_MEDIUM = 2;
+  STRESS_LEVEL_HIGH = 3;
+}
+
+enum PivotKind {
+  PIVOT_KIND_UNSPECIFIED = 0;
+  PIVOT_KIND_HIGH = 1;
+  PIVOT_KIND_LOW = 2;
+}
+
+enum RegimeWeightMode {
+  REGIME_WEIGHT_MODE_UNSPECIFIED = 0;
+  REGIME_WEIGHT_MODE_MULTIPLY = 1;
+  REGIME_WEIGHT_MODE_FILTER = 2;
+}
+
+enum OrderFlowState {
+  ORDER_FLOW_STATE_UNSPECIFIED = 0;
+  ORDER_FLOW_STATE_ACCUMULATION = 1;
+  ORDER_FLOW_STATE_DISTRIBUTION = 2;
+  ORDER_FLOW_STATE_SQUEEZE = 3;
+}
+
+enum DarkPoolSignal {
+  DARK_POOL_SIGNAL_UNSPECIFIED = 0;
+  DARK_POOL_SIGNAL_ACCUMULATION = 1;
+  DARK_POOL_SIGNAL_DISTRIBUTION = 2;
+  DARK_POOL_SIGNAL_NEUTRAL = 3;
+}
+
+enum MeanRevClassification {
+  MEAN_REV_CLASSIFICATION_UNSPECIFIED = 0;
+  MEAN_REV_CLASSIFICATION_MEAN_REVERTING = 1;
+  MEAN_REV_CLASSIFICATION_MOMENTUM = 2;
+  MEAN_REV_CLASSIFICATION_RANDOM_WALK = 3;
+}
+
+enum SignalQualityLabel {
+  SIGNAL_QUALITY_LABEL_UNSPECIFIED = 0;
+  SIGNAL_QUALITY_LABEL_STRONG = 1;
+  SIGNAL_QUALITY_LABEL_WEAK = 2;
+  SIGNAL_QUALITY_LABEL_INVALID = 3;
+}
+
+// ===========================================================================
+// Core / Shared Messages
+// ===========================================================================
+
+message OHLCVPoint {
+  int64 time = 1;
+  double open = 2;
+  double high = 3;
+  double low = 4;
+  double close = 5;
+  double volume = 6;
+}
+
+message IndicatorPoint {
+  int64 time = 1;
+  double value = 2;
+}
+
+// Flat series — more efficient than repeated IndicatorPoint for large datasets
+message TimeSeries {
+  repeated int64 times = 1;
+  repeated double values = 2;
+}
+
+message IndicatorResponse {
+  repeated IndicatorPoint data = 1;
+  map<string, string> metadata = 2;
+}
+
+message IndicatorServiceRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  map<string, string> params = 2;
+}
+
+// ===========================================================================
+// Trend / Moving Averages
+// ===========================================================================
+
+message ExoticMARequest {
+  repeated OHLCVPoint ohlcv = 1;
+  ExoticMAType ma_type = 2;
+  int32 period = 3;       // [2..500]
+  double alma_sigma = 4;  // [1.0..20.0], default 6.0
+}
+
+message HMARequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;  // [2..500], default 9
+}
+
+message IchimokuRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 tenkan_period = 2;    // default 9
+  int32 kijun_period = 3;     // default 26
+  int32 senkou_b_period = 4;  // default 52
+  int32 displacement = 5;     // default 26
+  bool include_future = 6;    // default true
+}
+
+message IchimokuSignals {
+  repeated bool above_cloud = 1;
+  repeated bool below_cloud = 2;
+  repeated bool in_cloud = 3;
+  repeated bool bullish_cloud = 4;
+  repeated bool tk_bull = 5;
+  repeated bool tk_bear = 6;
+  repeated bool chikou_bull = 7;
+  repeated bool chikou_bear = 8;
+  repeated bool chikou_above_cloud = 9;
+  repeated bool chikou_below_cloud = 10;
+  repeated bool kijun_cross_bull = 11;
+  repeated bool kijun_cross_bear = 12;
+  repeated string strength = 13;
+}
+
+message IchimokuResponse {
+  repeated IndicatorPoint tenkan = 1;
+  repeated IndicatorPoint kijun = 2;
+  repeated IndicatorPoint span_a = 3;
+  repeated IndicatorPoint span_b = 4;
+  repeated IndicatorPoint chikou = 5;
+  IchimokuSignals signals = 6;
+  map<string, string> metadata = 7;
+}
+
+// ===========================================================================
+// Oscillators / Momentum
+// ===========================================================================
+
+message MACDRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 fast = 2;    // default 12
+  int32 slow = 3;    // default 26
+  int32 signal = 4;  // default 9
+}
+
+message MACDResponse {
+  repeated IndicatorPoint macd_line = 1;
+  repeated IndicatorPoint signal_line = 2;
+  repeated IndicatorPoint histogram = 3;
+  map<string, string> metadata = 4;
+}
+
+message StochasticRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 k_period = 2;  // default 14
+  int32 d_period = 3;  // default 3
+}
+
+message StochasticResponse {
+  repeated IndicatorPoint k = 1;
+  repeated IndicatorPoint d = 2;
+  map<string, string> metadata = 3;
+}
+
+message ADXRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;  // default 14
+}
+
+message ADXResponse {
+  repeated IndicatorPoint adx = 1;
+  repeated IndicatorPoint di_plus = 2;
+  repeated IndicatorPoint di_minus = 3;
+  map<string, string> metadata = 4;
+}
+
+message RSIVariantRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 rsi_period = 2;  // default 14
+  int32 atr_period = 3;  // default 14
+}
+
+message CompositeSignalRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  double heartbeat_threshold = 2;     // default 0.7
+  double volume_spike_threshold = 3;  // default 1.5
+}
+
+message CompositeComponent {
+  double score = 1;
+  map<string, string> details = 2;
+}
+
+message CompositeSignalResponse {
+  SignalDirection signal = 1;
+  double confidence = 2;
+  map<string, CompositeComponent> components = 3;
+  int64 timestamp = 4;
+  // Step 2 — Rust-only fields (from CompositeSignalResult)
+  double sma50_slope = 5;
+  double heartbeat = 6;
+  double volume_power = 7;
+}
+
+// ===========================================================================
+// K's Collection (Kaabar proprietary)
+// ===========================================================================
+
+message KsCollectionRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;  // default 14
+}
+
+// Step 2 — Rust-only: full KsCollection struct
+message KsCollectionResponse {
+  repeated double reversal_i = 1;
+  repeated double reversal_ii = 2;
+  repeated double atr_adjusted_rsi = 3;
+  repeated double rsi_squared = 4;
+  repeated double marsi_values = 5;
+  repeated double marsi_signals = 6;
+  repeated double fma = 7;
+  map<string, string> metadata = 8;
+}
+
+// ===========================================================================
+// Rainbow Collection (Kaabar proprietary)
+// ===========================================================================
+
+message RainbowRequest {
+  repeated OHLCVPoint ohlcv = 1;
+}
+
+message RainbowSignalSeries {
+  repeated IndicatorPoint data = 1;
+  map<string, string> metadata = 2;
+}
+
+message RainbowResponse {
+  RainbowSignalSeries red = 1;
+  RainbowSignalSeries orange = 2;
+  RainbowSignalSeries yellow = 3;
+  RainbowSignalSeries green = 4;
+  RainbowSignalSeries blue = 5;
+  RainbowSignalSeries indigo = 6;
+  RainbowSignalSeries violet = 7;
+}
+
+message RPatternRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 rsi_period = 2;  // default 14
+}
+
+message RPatternResponse {
+  repeated IndicatorPoint data = 1;
+  map<string, string> metadata = 2;
+}
+
+message GapPatternRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 atr_period = 2;  // default 14
+  double min_size = 3;   // default 1.0
+}
+
+message GapPatternResponse {
+  repeated IndicatorPoint data = 1;
+  map<string, string> metadata = 2;
+}
+
+// ===========================================================================
+// Volatility / Bands
+// ===========================================================================
+
+message BollingerVariantRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;     // default 20
+  double num_std = 3;   // default 2.0
+}
+
+message BollingerSqueezeRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 bb_period = 2;   // default 20
+  int32 kc_period = 3;   // default 20
+  double kc_mult = 4;    // default 1.5
+  double num_std = 5;    // default 2.0
+}
+
+message BollingerSqueezeResponse {
+  repeated bool squeeze = 1;
+  repeated IndicatorPoint histogram = 2;
+  map<string, string> metadata = 3;
+}
+
+message BollingerOnRSIResponse {
+  repeated IndicatorPoint upper = 1;
+  repeated IndicatorPoint mid = 2;
+  repeated IndicatorPoint lower = 3;
+  map<string, string> metadata = 4;
+}
+
+message KeltnerRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 ema_period = 2;   // default 20
+  int32 atr_period = 3;   // default 10
+  double multiplier = 4;  // default 2.0
+}
+
+message KeltnerResponse {
+  repeated IndicatorPoint upper = 1;
+  repeated IndicatorPoint middle = 2;
+  repeated IndicatorPoint lower = 3;
+  map<string, string> metadata = 4;
+}
+
+message VWAPRequest {
+  repeated OHLCVPoint ohlcv = 1;
+}
+
+message VolatilitySuiteRequest {
+  repeated double closes = 1;
+  int32 lookback = 2;  // default 20
+}
+
+message VolatilitySuiteResponse {
+  double spike_weighted_vol = 1;
+  double volatility_index = 2;
+  double exp_weighted_stddev = 3;
+  VolatilityRegime volatility_regime = 4;
+  SpikeWeightedRegime spike_weighted_regime = 5;
+}
+
+// ===========================================================================
+// Regime Detection
+// ===========================================================================
+
+message RegimeDetectRequest {
+  repeated double closes = 1;
+  int32 lookback = 2;      // default 100
+  int32 n_components = 3;  // default 3
+}
+
+message RegimeDetectResponse {
+  MarketRegime current_regime = 1;
+  double sma_slope = 2;
+  double adx = 3;
+  double confidence = 4;
+}
+
+message MarkovRegimeResponse {
+  string current_regime = 1;
+  map<string, double> transition_probs = 2;
+  double expected_duration = 3;
+  double shift_probability = 4;
+  map<string, double> stationary_distribution = 5;
+  string warning = 6;
+}
+
+message HMMRegimeResponse {
+  int32 n_components = 1;
+  int32 hidden_state = 2;
+  repeated string state_labels = 3;
+  repeated double means = 4;
+  double bic_score = 5;
+}
+
+// ===========================================================================
+// Patterns
+// ===========================================================================
+
+message PatternRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 lookback = 2;      // default 250
+  double threshold = 3;    // default 0.015
+  bool slanted_neckline = 4;
+}
+
+message PatternData {
+  string pattern_type = 1;
+  PatternDirection direction = 2;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  double confidence = 5;
+  map<string, string> details = 6;
+  // Rust-only: index-based (for array lookups)
+  int32 start_idx = 7;
+  int32 end_idx = 8;
+}
+
+message PatternResponse {
+  repeated PatternData patterns = 1;
+  map<string, string> metadata = 2;
+}
+
+message SwingPoint {
+  int32 index = 1;
+  int64 time = 2;
+  double price = 3;
+  PivotKind kind = 4;
+}
+
+// Step 2 — Rust-only: LabeledSwing (patterns.rs)
+message LabeledSwing {
+  int32 index = 1;
+  int64 time = 2;
+  double price = 3;
+  PivotKind kind = 4;
+  string label = 5;  // "HH", "HL", "LH", "LL"
+}
+
+message SwingDetectRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 window = 2;  // default 3
+}
+
+message SwingDetectResponse {
+  repeated SwingPoint swings = 1;
+  map<string, string> metadata = 2;
+}
+
+message FibonacciLevel {
+  double ratio = 1;
+  double price = 2;
+}
+
+message FibonacciResponse {
+  map<string, string> swing = 1;
+  repeated FibonacciLevel levels = 2;
+}
+
+message FibonacciConfluenceRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  double threshold_pct = 2;  // default 0.005
+  int32 num_swings = 3;      // default 3
+}
+
+message ConfluenceZone {
+  double price_center = 1;
+  double price_range_low = 2;
+  double price_range_high = 3;
+  repeated FibonacciLevel levels = 4;
+  int32 strength = 5;
+}
+
+message FibonacciConfluenceResponse {
+  repeated ConfluenceZone zones = 1;
+  map<string, string> metadata = 2;
+}
+
+// Step 2 — Rust-only: PivotLevels (patterns.rs)
+message PivotLevels {
+  double pp = 1;
+  repeated PivotLevel levels = 2;  // Vec<(String, f64)> in Rust
+}
+
+message PivotLevel {
+  string name = 1;  // "r1", "r2", "r3", "s1", "s2", "s3"
+  double value = 2;
+}
+
+// Step 2 — Rust-only: ZigZagPivot (patterns.rs)
+message ZigZagPivot {
+  int32 index = 1;
+  double price = 2;
+  PivotKind kind = 3;
+}
+
+// ===========================================================================
+// Chart Transforms
+// ===========================================================================
+
+message ChartTransformRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  ChartTransformType transform_type = 2;
+}
+
+message ChartTransformResponse {
+  repeated OHLCVPoint data = 1;
+  map<string, string> metadata = 2;
+}
+
+// ===========================================================================
+// Strategy / Portfolio
+// ===========================================================================
+
+message TradeInput {
+  double entry = 1;
+  double exit = 2;
+  double quantity = 3;  // default 1.0
+  string side = 4;      // "long" | "short"
+  double fee = 5;       // default 0.0
+}
+
+message EvaluateStrategyRequest {
+  repeated TradeInput trades = 1;
+  double risk_free_rate = 2;
+}
+
+message StrategyMetrics {
+  double net_return = 1;
+  double hit_ratio = 2;
+  double risk_reward_ratio = 3;
+  double expectancy = 4;
+  double profit_factor = 5;
+  double sharpe = 6;
+  double sortino = 7;
+  double average_win = 8;
+  double average_loss = 9;
+  int32 trade_count = 10;
+}
+
+message StrategyEvaluationResponse {
+  StrategyMetrics metrics = 1;
+  int32 trade_count = 2;
+}
+
+message PerformanceMetricsRequest {
+  repeated double returns = 1;
+  double risk_free_rate = 2;
+}
+
+message PerformanceMetricsResponse {
+  double net_return = 1;
+  double hit_ratio = 2;
+  double profit_factor = 3;
+  double sharpe = 4;
+  double sortino = 5;
+  double max_drawdown = 6;
+}
+
+// Step 2 — Rust-only: DrawdownPeriod + DrawdownAnalysis (portfolio.rs)
+message DrawdownPeriod {
+  int32 start_idx = 1;
+  int32 trough_idx = 2;
+  int32 end_idx = 3;      // -1 if still in drawdown (Option<usize> → sentinel)
+  double depth = 4;
+  int32 duration_bars = 5;
+  int32 recovery_bars = 6; // -1 if still in drawdown
+}
+
+message DrawdownAnalysis {
+  double max_drawdown = 1;
+  double avg_drawdown = 2;
+  repeated double underwater_curve = 3;
+  repeated DrawdownPeriod periods = 4;
+}
+
+// Step 2 — Rust-only: RollingMetrics (portfolio.rs)
+message RollingMetrics {
+  repeated double rolling_sharpe = 1;
+  repeated double rolling_sortino = 2;
+  repeated double rolling_calmar = 3;
+}
+
+// Step 2 — Rust-only: CorrelationMatrix (portfolio.rs)
+message CorrelationMatrixResponse {
+  repeated double matrix = 1;   // row-major flattened n×n
+  int32 n_assets = 2;
+  double diversification_score = 3;
+}
+
+// Step 2 — Rust-only: HRP weights (portfolio.rs)
+message HRPWeightsRequest {
+  repeated double returns_matrix = 1;  // row-major: n_periods × n_assets
+  int32 n_assets = 2;
+  int32 n_periods = 3;
+}
+
+message HRPWeightsResponse {
+  repeated double weights = 1;
+}
+
+// Step 2 — Rust-only: VolumeProfile (volume.rs)
+message VolumeProfileResult {
+  double poc_price = 1;  // point of control
+  double va_high = 2;    // value area high
+  double va_low = 3;     // value area low
+  repeated VolumeProfileBin histogram = 4;
+}
+
+message VolumeProfileBin {
+  double bin_low = 1;
+  double bin_high = 2;
+  double volume = 3;
+}
+
+// ===========================================================================
+// Backtest / Walk-Forward
+// ===========================================================================
+
+message BacktestRequest {
+  repeated double closes = 1;
+  int32 lookback = 2;        // default 10
+  double slippage_bps = 3;   // default 0.0
+  double commission_bps = 4; // default 0.0
+}
+
+message BacktestResponse {
+  repeated double strategy_returns = 1;
+  double cumulative_return = 2;
+  int32 trade_count = 3;
+}
+
+// Step 2 — Rust-only: TradeRecord (backtest.rs)
+message TradeRecord {
+  double entry = 1;
+  double exit = 2;
+  double quantity = 3;
+  double fee = 4;
+  bool is_short = 5;
+}
+
+message TripleBarrierRequest {
+  repeated double closes = 1;
+  int32 horizon = 2;       // default 10
+  double take_profit = 3;  // default 0.03
+  double stop_loss = 4;    // default 0.02
+}
+
+message TripleBarrierResponse {
+  repeated BarrierLabel labels = 1;
+  int32 tp_count = 2;
+  int32 sl_count = 3;
+  int32 timeout_count = 4;
+}
+
+message ParameterSensitivityRequest {
+  repeated double closes = 1;
+  repeated int32 lookbacks = 2;
+}
+
+message ParameterSensitivityResponse {
+  map<string, double> by_lookback = 1;
+  double stability_score = 2;
+}
+
+// Step 2 — Rust-only: SensitivityResult (backtest.rs)
+message SensitivityResult {
+  map<string, double> by_lookback = 1;
+  double stability_score = 2;
+  double mean_return = 3;
+  double std_return = 4;
+}
+
+message WalkForwardRequest {
+  repeated double closes = 1;
+  int32 train_window = 2;  // default 40
+  int32 test_window = 3;   // default 10
+}
+
+message WalkForwardResponse {
+  repeated double oos_scores = 1;
+  double mean_oos_score = 2;
+  double stability_score = 3;
+}
+
+message DeflatedSharpeRequest {
+  double sharpe = 1;
+  int32 trials = 2;         // default 10
+  int32 sample_length = 3;  // default 252
+}
+
+message DeflatedSharpeResponse {
+  double deflated_sharpe = 1;
+  bool pass_gate = 2;
+}
+
+message EvalBaselineRequest {
+  repeated double closes = 1;
+  int32 horizon = 2;       // default 10
+  double take_profit = 3;  // default 0.03
+  double stop_loss = 4;    // default 0.02
+}
+
+message EvalBaselineResponse {
+  repeated BarrierLabel labels = 1;
+  double hit_ratio = 2;
+  double expectancy = 3;
+  string regime = 4;
+  double precision_proxy = 5;
+  double recall_proxy = 6;
+  double f1_proxy = 7;
+}
+
+message EvalIndicatorRequest {
+  repeated double closes = 1;
+}
+
+// Step 2 — Rust-only: full IndicatorEvaluation (quant.rs)
+message EvalIndicatorResponse {
+  WalkForwardResponse walk_forward = 1;
+  EvalBaselineResponse baseline = 2;
+  DeflatedSharpeResponse deflated_sharpe = 3;
+  bool execution_realism_pass = 4;
+  bool gate_pass = 5;
+  // Rust-only extras
+  double hurst_exponent = 6;
+}
+
+// ===========================================================================
+// Quant / Heuristic Classifiers
+// ===========================================================================
+
+message FeatureEngineeringRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;  // default 14
+}
+
+message FeatureEngineeringResponse {
+  repeated FeatureRow features = 1;
+  repeated string feature_names = 2;
+}
+
+message FeatureRow {
+  map<string, double> values = 1;
+}
+
+message MLClassifySignalRequest {
+  map<string, double> features = 1;
+}
+
+message MLClassifySignalResponse {
+  SignalLabel label = 1;
+  double score = 2;
+}
+
+message HybridFusionRequest {
+  double ml_score = 1;
+  double rule_score = 2;
+  double ml_weight = 3;  // default 0.6
+}
+
+message HybridFusionResponse {
+  double fused_score = 1;
+  SignalLabel action = 2;
+}
+
+message BiasMonitoringRequest {
+  map<string, int32> geographic_distribution = 1;
+  map<string, int32> regime_distribution = 2;
+  double agreement_rate = 3;
+}
+
+message BiasMonitoringResponse {
+  double geographic_imbalance = 1;
+  double regime_imbalance = 2;
+  double agreement_rate = 3;
+  bool alert = 4;
+}
+
+message SignalQualityChainRequest {
+  repeated SignalQualityLabel labels = 1;
+}
+
+message SignalQualityChainResponse {
+  map<string, TransitionRow> transition = 1;
+  double quality_score = 2;
+}
+
+message TransitionRow {
+  map<string, double> probabilities = 1;
+}
+
+// Step 2 — Rust-only: SignalQualityResult (quant.rs)
+message SignalQualityResult {
+  map<string, TransitionRow> transition = 1;
+  double quality_score = 2;
+  double strong_ratio = 3;
+  double weak_ratio = 4;
+  double invalid_ratio = 5;
+}
+
+message OrderFlowStateRequest {
+  repeated double buy_volumes = 1;
+  repeated double sell_volumes = 2;
+  double squeeze_threshold = 3;  // default 0.1
+}
+
+message OrderFlowStateResponse {
+  repeated OrderFlowState states = 1;
+  OrderFlowState dominant_state = 2;
+}
+
+message AlternativeBarsRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 bucket_size = 2;  // default 20
+}
+
+message AlternativeBarsResponse {
+  repeated double volume_bar_closes = 1;
+  repeated double dollar_bar_closes = 2;
+  repeated double tick_bar_closes = 3;
+  map<string, string> metadata = 4;
+}
+
+// Step 2 — Rust-only: AlternativeBarsResult (quant.rs)
+message AlternativeBarsResult {
+  repeated double volume_bar_closes = 1;
+  repeated double dollar_bar_closes = 2;
+  repeated double tick_bar_closes = 3;
+  int32 volume_bar_count = 4;
+  int32 dollar_bar_count = 5;
+  int32 tick_bar_count = 6;
+}
+
+message CUSUMRequest {
+  repeated double closes = 1;
+  double threshold = 2;  // default 0.02
+}
+
+message CUSUMResponse {
+  repeated int32 break_indices = 1;
+  repeated string break_signals = 2;
+  double cumulative_pos = 3;
+  double cumulative_neg = 4;
+}
+
+// Step 2 — Rust-only: CusumBreak (quant.rs)
+message CusumBreak {
+  int32 index = 1;
+  bool is_up = 2;
+}
+
+message CusumResult {
+  repeated CusumBreak breaks = 1;
+  double cumulative_pos = 2;
+  double cumulative_neg = 3;
+}
+
+message MeanRevMomentumRequest {
+  repeated double closes = 1;
+}
+
+message MeanRevMomentumResponse {
+  double hurst = 1;
+  double adf_proxy_stat = 2;
+  double half_life = 3;
+  MeanRevClassification classification = 4;
+}
+
+// ===========================================================================
+// Derivatives / Market Microstructure
+// ===========================================================================
+
+message DarkPoolSignalRequest {
+  double lit_volume = 1;
+  double dark_pool_volume = 2;
+}
+
+message DarkPoolSignalResponse {
+  double dark_pool_ratio = 1;
+  DarkPoolSignal signal = 2;
+  double confidence = 3;
+}
+
+message GEXProfileRequest {
+  repeated double strikes = 1;
+  repeated double call_gamma = 2;
+  repeated double put_gamma = 3;
+}
+
+message GEXProfileResponse {
+  repeated double net_gex = 1;
+  double call_wall = 2;
+  double put_wall = 3;
+}
+
+message ExpectedMoveRequest {
+  double spot = 1;
+  double iv_annual = 2;
+  int32 days = 3;  // default 7
+}
+
+message ExpectedMoveResponse {
+  double move_abs = 1;
+  double upper = 2;
+  double lower = 3;
+}
+
+message OptionLeg {
+  string kind = 1;    // "call" | "put"
+  double strike = 2;
+  double premium = 3;
+  int32 quantity = 4;  // default 1
+}
+
+message OptionsCalculatorRequest {
+  double spot = 1;
+  repeated OptionLeg legs = 2;
+  int32 underlying_qty = 3;  // default 100
+}
+
+message OptionsCalculatorResponse {
+  double max_profit = 1;
+  double max_loss = 2;
+  repeated double breakevens = 3;
+}
+
+message DeFiStressRequest {
+  double tvl_change_pct = 1;
+  double funding_rate = 2;
+  double open_interest_change_pct = 3;
+}
+
+message DeFiStressResponse {
+  double stress_score = 1;
+  StressLevel level = 2;
+}
+
+message OracleCrossCheckRequest {
+  double web2_price = 1;
+  double oracle_price = 2;
+  double threshold_pct = 3;  // default 0.01
+}
+
+message OracleCrossCheckResponse {
+  double divergence_pct = 1;
+  bool disagreement = 2;
+  StressLevel severity = 3;
+}
+
+// ===========================================================================
+// Rob Booker Reversal (Kaabar 2026, Ch. 12)
+// ===========================================================================
+
+message RobBookerReversalRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 stoch_k_period = 2;   // default 70
+  int32 stoch_smooth_k = 3;   // default 10
+  int32 stoch_d_period = 4;   // default 10
+  int32 macd_fast = 5;        // default 12
+  int32 macd_slow = 6;        // default 26
+  int32 macd_signal = 7;      // default 9
+  double stoch_lower = 8;     // default 30.0
+  double stoch_upper = 9;     // default 70.0
+}
+
+// ===========================================================================
+// Cross-Asset Convergence (Kaabar 2026, Ch. 6)
+// ===========================================================================
+
+message CrossAssetConvergenceRequest {
+  repeated double primary_closes = 1;
+  repeated double inverse_closes = 2;
+  int32 rsi_period = 3;  // default 14
+  double lower = 4;      // default 30.0
+  double upper = 5;      // default 70.0
+}
+
+message CrossAssetConvergenceResponse {
+  repeated double signals = 1;
+  repeated double primary_rsi = 2;
+  repeated double inverse_rsi = 3;
+  map<string, string> metadata = 4;
+}
+
+// ===========================================================================
+// Swarming — Multi-Chart-System Validation (Kaabar 2026, Kap. 4/9/11)
+// ===========================================================================
+
+message SwarmValidationRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  string pattern_type = 2;  // "candlestick" | "timing" | "price"
+  int32 lookback = 3;       // default 250
+  double threshold = 4;     // default 0.015
+}
+
+// Step 2 — Rust SwarmSignal has chart_system list
+message SwarmSignal {
+  string pattern_type = 1;
+  PatternDirection direction = 2;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  double swarming_ratio = 5;
+  repeated string fired_on = 6;  // ["standard", "heikin_ashi", "k_candles"]
+  double confidence = 7;
+  // Rust-only: index-based
+  int32 start_idx = 8;
+  int32 end_idx = 9;
+}
+
+message SwarmValidationResponse {
+  repeated SwarmSignal signals = 1;
+  map<string, string> metadata = 2;
+}
+
+// ===========================================================================
+// Regime Weighting (Kaabar 2026, Ch. 1)
+// ===========================================================================
+
+message RegimeWeightConfig {
+  double boost_aligned = 1;   // default 1.3
+  double dampen_opposed = 2;  // default 0.7
+  double filter_threshold = 3;
+  RegimeWeightMode mode = 4;
+}
+
+// ===========================================================================
+// RSI Signal Techniques (Kaabar 2026, Ch. 3)
+// ===========================================================================
+
+message RSIVTechniqueRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 rsi_period = 2;  // default 5
+  double lower = 3;      // default 15.0
+  double upper = 4;      // default 85.0
+}
+
+message RSIDCCRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 fast_period = 2;  // default 13
+  int32 slow_period = 3;  // default 34
+  double lower = 4;       // default 30.0
+  double upper = 5;       // default 70.0
+  int32 tolerance = 6;    // default 0
+}
+
+message RSIMACrossRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 rsi_period = 2;  // default 5
+  int32 sma_period = 3;  // default 5
+  double lower = 4;      // default 25.0
+  double upper = 5;      // default 75.0
+}
+
+// ===========================================================================
+// BB Signal Techniques (Kaabar 2026, Ch. 3)
+// ===========================================================================
+
+message BBTrendFriendlyRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 bb_period = 2;   // default 20
+  double num_std = 3;    // default 2.0
+  int32 sma_period = 4;  // default 100
+  int32 sma_offset = 5;  // default 10
+}
+
+// ===========================================================================
+// WMA/IWMA Cross (Kaabar 2026, Ch. 3)
+// ===========================================================================
+
+message WMAIWMACrossRequest {
+  repeated OHLCVPoint ohlcv = 1;
+  int32 period = 2;  // default 20
+}
+
+// ===========================================================================
+// Generic Signal Response (shared by RSI/BB/WMA techniques + Rob Booker)
+// ===========================================================================
+
+message SignalSeriesResponse {
+  repeated IndicatorPoint data = 1;  // 1.0 / -1.0 / 0.0
+  map<string, string> metadata = 2;
+}
+
+// ===========================================================================
+// Step 2 — Rust-only: CorrelState (stats.rs)
+// ===========================================================================
+
+message CorrelState {
+  double sx = 1;
+  double sy = 2;
+  double sxx = 3;
+  double syy = 4;
+  double sxy = 5;
+}
+
+// ===========================================================================
+// Step 3 — New Indicator Messages (from kand-rs/new implementation)
+// ===========================================================================
+
+// --- Trend: DEMA, TEMA, T3, TRIMA, SuperTrend, ADXR, VegasChannel ---
+
+message DEMARequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message TEMARequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message T3Request {
+  repeated double closes = 1;
+  uint32 period = 2;
+  double v_factor = 3;  // default 0.7
+}
+
+message TRIMARequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message SuperTrendRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  uint32 atr_period = 4;
+  double multiplier = 5;
+}
+
+message SuperTrendResponse {
+  repeated double supertrend = 1;
+  repeated int32 direction = 2;  // 1 = up, -1 = down
+}
+
+message ADXRRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  uint32 period = 4;
+}
+
+message ADXRResponse {
+  repeated double adxr = 1;
+}
+
+message VegasChannelRequest {
+  repeated double closes = 1;
+  uint32 short_period = 2;
+  uint32 long_period = 3;
+}
+
+message VegasChannelResponse {
+  repeated double ema_short = 1;
+  repeated double ema_long = 2;
+  repeated double upper = 3;
+  repeated double lower = 4;
+}
+
+// --- Oscillators: CCI, WillR, Aroon, Trix, Momentum, ROC variants ---
+
+message CCIRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  uint32 period = 4;
+}
+
+message WillRRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  uint32 period = 4;
+}
+
+message AroonRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  uint32 period = 3;
+}
+
+message AroonResponse {
+  repeated double aroon_up = 1;
+  repeated double aroon_down = 2;
+}
+
+message TrixRequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message MomentumRequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message ROCRequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+// --- Volume: AD Line, AD Osc, MFI, BOP ---
+
+message ADLineRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  repeated double volumes = 4;
+}
+
+message ADOscRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  repeated double volumes = 4;
+  uint32 fast_period = 5;
+  uint32 slow_period = 6;
+}
+
+message MFIRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  repeated double volumes = 4;
+  uint32 period = 5;
+}
+
+message BOPRequest {
+  repeated double opens = 1;
+  repeated double highs = 2;
+  repeated double lows = 3;
+  repeated double closes = 4;
+}
+
+// --- Volatility: NATR, ADR ---
+
+message NATRRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  repeated double closes = 3;
+  uint32 period = 4;
+}
+
+message ADRRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  uint32 period = 3;
+}
+
+// --- Patterns: Marubozu, Long Shadow ---
+
+message CandlePatternRequest {
+  repeated double opens = 1;
+  repeated double highs = 2;
+  repeated double lows = 3;
+  repeated double closes = 4;
+}
+
+message CandlePatternResponse {
+  repeated int32 signals = 1;  // +100 bullish, -100 bearish, 0 none
+}
+
+// --- Stats: Midpoint, Midprice, FutureValue, NPER ---
+
+message MidpointRequest {
+  repeated double closes = 1;
+  uint32 period = 2;
+}
+
+message MidpriceRequest {
+  repeated double highs = 1;
+  repeated double lows = 2;
+  uint32 period = 3;
+}
+
+message FutureValueRequest {
+  double rate = 1;
+  uint32 nper = 2;
+  double pmt = 3;
+  double pv = 4;
+}
+
+message FutureValueResponse {
+  double fv = 1;
+}
+
+message NPERRequest {
+  double rate = 1;
+  double pmt = 2;
+  double pv = 3;
+  double fv = 4;
+}
+
+message NPERResponse {
+  double nper = 1;
+}
+
+// --- Portfolio: Beta, Jensen's Alpha, Calmar Ratio ---
+
+message BetaRequest {
+  repeated double asset_returns = 1;
+  repeated double benchmark_returns = 2;
+}
+
+message BetaResponse {
+  double beta = 1;
+}
+
+message JensensAlphaRequest {
+  repeated double asset_returns = 1;
+  repeated double benchmark_returns = 2;
+  double risk_free_rate = 3;
+}
+
+message JensensAlphaResponse {
+  double alpha = 1;
+}
+
+message CalmarRatioRequest {
+  repeated double returns = 1;
+}
+
+message CalmarRatioResponse {
+  double calmar_ratio = 1;
+}
+
+// ===========================================================================
+// Service Definition
+// ===========================================================================
+
+service IndicatorService {
+  // --- Trend ---
+  rpc ExoticMA(ExoticMARequest) returns (IndicatorResponse);
+  rpc HMA(HMARequest) returns (IndicatorResponse);
+  rpc Ichimoku(IchimokuRequest) returns (IchimokuResponse);
+  rpc DEMA(DEMARequest) returns (IndicatorResponse);
+  rpc TEMA(TEMARequest) returns (IndicatorResponse);
+  rpc T3(T3Request) returns (IndicatorResponse);
+  rpc TRIMA(TRIMARequest) returns (IndicatorResponse);
+  rpc SuperTrend(SuperTrendRequest) returns (SuperTrendResponse);
+  rpc ADXR(ADXRRequest) returns (ADXRResponse);
+  rpc VegasChannel(VegasChannelRequest) returns (VegasChannelResponse);
+
+  // --- Oscillators ---
+  rpc MACD(MACDRequest) returns (MACDResponse);
+  rpc Stochastic(StochasticRequest) returns (StochasticResponse);
+  rpc ADX(ADXRequest) returns (ADXResponse);
+  rpc RSIVariant(RSIVariantRequest) returns (IndicatorResponse);
+  rpc CompositeSignal(CompositeSignalRequest) returns (CompositeSignalResponse);
+  rpc CCI(CCIRequest) returns (IndicatorResponse);
+  rpc WilliamsR(WillRRequest) returns (IndicatorResponse);
+  rpc Aroon(AroonRequest) returns (AroonResponse);
+  rpc AroonOsc(AroonRequest) returns (IndicatorResponse);
+  rpc Trix(TrixRequest) returns (IndicatorResponse);
+  rpc Momentum(MomentumRequest) returns (IndicatorResponse);
+  rpc ROC(ROCRequest) returns (IndicatorResponse);
+  rpc ROCP(ROCRequest) returns (IndicatorResponse);
+  rpc ROCR(ROCRequest) returns (IndicatorResponse);
+  rpc ROCR100(ROCRequest) returns (IndicatorResponse);
+
+  // --- K's Collection ---
+  rpc KsCollection(KsCollectionRequest) returns (KsCollectionResponse);
+
+  // --- Rainbow ---
+  rpc Rainbow(RainbowRequest) returns (RainbowResponse);
+  rpc RPattern(RPatternRequest) returns (RPatternResponse);
+  rpc GapPattern(GapPatternRequest) returns (GapPatternResponse);
+
+  // --- Volume ---
+  rpc ADLine(ADLineRequest) returns (IndicatorResponse);
+  rpc ADOsc(ADOscRequest) returns (IndicatorResponse);
+  rpc MFI(MFIRequest) returns (IndicatorResponse);
+  rpc BOP(BOPRequest) returns (IndicatorResponse);
+
+  // --- Volatility ---
+  rpc BollingerVariant(BollingerVariantRequest) returns (IndicatorResponse);
+  rpc BollingerSqueeze(BollingerSqueezeRequest) returns (BollingerSqueezeResponse);
+  rpc BollingerOnRSI(RSIVariantRequest) returns (BollingerOnRSIResponse);
+  rpc Keltner(KeltnerRequest) returns (KeltnerResponse);
+  rpc VWAP(VWAPRequest) returns (IndicatorResponse);
+  rpc VolatilitySuite(VolatilitySuiteRequest) returns (VolatilitySuiteResponse);
+  rpc NATR(NATRRequest) returns (IndicatorResponse);
+  rpc ADR(ADRRequest) returns (IndicatorResponse);
+
+  // --- Regime ---
+  rpc RegimeDetect(RegimeDetectRequest) returns (RegimeDetectResponse);
+  rpc MarkovRegime(RegimeDetectRequest) returns (MarkovRegimeResponse);
+  rpc HMMRegime(RegimeDetectRequest) returns (HMMRegimeResponse);
+
+  // --- Patterns ---
+  rpc DetectPatterns(PatternRequest) returns (PatternResponse);
+  rpc DetectSwings(SwingDetectRequest) returns (SwingDetectResponse);
+  rpc Fibonacci(SwingDetectRequest) returns (FibonacciResponse);
+  rpc FibonacciConfluence(FibonacciConfluenceRequest) returns (FibonacciConfluenceResponse);
+  rpc CdlMarubozu(CandlePatternRequest) returns (CandlePatternResponse);
+  rpc CdlLongShadow(CandlePatternRequest) returns (CandlePatternResponse);
+
+  // --- Chart Transforms ---
+  rpc ChartTransform(ChartTransformRequest) returns (ChartTransformResponse);
+
+  // --- Stats ---
+  rpc Midpoint(MidpointRequest) returns (IndicatorResponse);
+  rpc Midprice(MidpriceRequest) returns (IndicatorResponse);
+  rpc FutureValue(FutureValueRequest) returns (FutureValueResponse);
+  rpc NPER(NPERRequest) returns (NPERResponse);
+
+  // --- Strategy / Portfolio ---
+  rpc EvaluateStrategy(EvaluateStrategyRequest) returns (StrategyEvaluationResponse);
+  rpc PerformanceMetrics(PerformanceMetricsRequest) returns (PerformanceMetricsResponse);
+  rpc ComputeDrawdown(PerformanceMetricsRequest) returns (DrawdownAnalysis);
+  rpc ComputeRollingMetrics(PerformanceMetricsRequest) returns (RollingMetrics);
+  rpc ComputeCorrelationMatrix(HRPWeightsRequest) returns (CorrelationMatrixResponse);
+  rpc HRPWeights(HRPWeightsRequest) returns (HRPWeightsResponse);
+  rpc Beta(BetaRequest) returns (BetaResponse);
+  rpc JensensAlpha(JensensAlphaRequest) returns (JensensAlphaResponse);
+  rpc CalmarRatio(CalmarRatioRequest) returns (CalmarRatioResponse);
+
+  // --- Backtest ---
+  rpc Backtest(BacktestRequest) returns (BacktestResponse);
+  rpc TripleBarrier(TripleBarrierRequest) returns (TripleBarrierResponse);
+  rpc ParameterSensitivity(ParameterSensitivityRequest) returns (ParameterSensitivityResponse);
+  rpc WalkForward(WalkForwardRequest) returns (WalkForwardResponse);
+  rpc DeflatedSharpe(DeflatedSharpeRequest) returns (DeflatedSharpeResponse);
+  rpc EvalBaseline(EvalBaselineRequest) returns (EvalBaselineResponse);
+  rpc EvalIndicator(EvalIndicatorRequest) returns (EvalIndicatorResponse);
+
+  // --- Quant ---
+  rpc FeatureEngineering(FeatureEngineeringRequest) returns (FeatureEngineeringResponse);
+  rpc MLClassifySignal(MLClassifySignalRequest) returns (MLClassifySignalResponse);
+  rpc HybridFusion(HybridFusionRequest) returns (HybridFusionResponse);
+  rpc BiasMonitoring(BiasMonitoringRequest) returns (BiasMonitoringResponse);
+  rpc SignalQualityChain(SignalQualityChainRequest) returns (SignalQualityChainResponse);
+  rpc OrderFlow(OrderFlowStateRequest) returns (OrderFlowStateResponse);
+  rpc AlternativeBars(AlternativeBarsRequest) returns (AlternativeBarsResponse);
+  rpc CUSUM(CUSUMRequest) returns (CUSUMResponse);
+  rpc MeanRevMomentum(MeanRevMomentumRequest) returns (MeanRevMomentumResponse);
+
+  // --- Derivatives ---
+  rpc DarkPool(DarkPoolSignalRequest) returns (DarkPoolSignalResponse);
+  rpc GEXProfile(GEXProfileRequest) returns (GEXProfileResponse);
+  rpc ExpectedMove(ExpectedMoveRequest) returns (ExpectedMoveResponse);
+  rpc OptionsCalculator(OptionsCalculatorRequest) returns (OptionsCalculatorResponse);
+  rpc DeFiStress(DeFiStressRequest) returns (DeFiStressResponse);
+  rpc OracleCrossCheck(OracleCrossCheckRequest) returns (OracleCrossCheckResponse);
+
+  // --- Signal Techniques ---
+  rpc RobBookerReversal(RobBookerReversalRequest) returns (SignalSeriesResponse);
+  rpc CrossAssetConvergence(CrossAssetConvergenceRequest) returns (CrossAssetConvergenceResponse);
+  rpc SwarmValidation(SwarmValidationRequest) returns (SwarmValidationResponse);
+  rpc RSIVTechnique(RSIVTechniqueRequest) returns (SignalSeriesResponse);
+  rpc RSIDCC(RSIDCCRequest) returns (SignalSeriesResponse);
+  rpc RSIMACross(RSIMACrossRequest) returns (SignalSeriesResponse);
+  rpc BBTrendFriendly(BBTrendFriendlyRequest) returns (SignalSeriesResponse);
+  rpc WMAIWMACross(WMAIWMACrossRequest) returns (SignalSeriesResponse);
+}

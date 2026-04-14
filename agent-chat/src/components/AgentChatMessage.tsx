@@ -13,7 +13,7 @@
 // AC103: Token usage badge in message footer
 // AC104: Cost-per-token estimate badge
 
-import type { TextUIPart, UIMessage } from "ai";
+import { isReasoningUIPart, type TextUIPart, type UIMessage } from "ai";
 import { Pencil, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { motion } from "motion/react";
 import { memo, useState } from "react";
@@ -153,8 +153,8 @@ function AgentChatMessageInner({
 							);
 						}
 
-						// AC84: Extended thinking via reasoning parts
-						if (part.type === "reasoning") {
+						// AC84: Extended thinking via reasoning parts (AI SDK type guard)
+						if (isReasoningUIPart(part)) {
 							return <ReasoningBlock key={key} text={part.text} />;
 						}
 
@@ -179,6 +179,20 @@ function AgentChatMessageInner({
 									onApprove={onApproveToolCall}
 									onDeny={onDenyToolCall}
 								/>
+							);
+						}
+
+						// Step boundary — visual separator between multi-step agent turns
+						if (part.type === "step-start") {
+							return (
+								<div
+									key={key}
+									className="my-1.5 flex items-center gap-2 text-[9px] text-muted-foreground/40"
+								>
+									<div className="flex-1 border-t border-border/30" />
+									<span className="font-mono">step</span>
+									<div className="flex-1 border-t border-border/30" />
+								</div>
 							);
 						}
 
@@ -250,6 +264,7 @@ function AgentChatMessageInner({
 										title={`finish: ${usage.finishReason}${usage.costUsd !== undefined ? ` · cost: ${formatCost(usage.costUsd)}` : ""}`}
 									>
 										{usage.promptTokens}↑ {usage.completionTokens}↓
+										{usage.reasoningTokens ? ` ${usage.reasoningTokens}🧠` : ""}
 										{usage.costUsd !== undefined && (
 											<span className="ml-1 text-muted-foreground/30">
 												{formatCost(usage.costUsd)}

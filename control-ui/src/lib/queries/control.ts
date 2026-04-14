@@ -201,6 +201,11 @@ export const userLlmKeys = {
 	all: ["control", "user-llm"] as const,
 	settings: () => ["control", "user-llm", "settings"] as const,
 	models: (filters: Record<string, string>) => ["control", "user-llm", "models", filters] as const,
+	selectedModels: () => ["control", "user-llm", "selected-models"] as const,
+	accountInfo: () => ["control", "user-llm", "account-info"] as const,
+	spendActivity: (range?: string) => ["control", "user-llm", "spend-activity", range] as const,
+	spendByModel: (range?: string) => ["control", "user-llm", "spend-model", range] as const,
+	spendByProvider: () => ["control", "user-llm", "spend-provider"] as const,
 };
 
 export const userLlmQueries = {
@@ -214,8 +219,16 @@ export const userLlmQueries = {
 	setApiKey: async (
 		providerId: string,
 		apiKey: string,
-	): Promise<{ status: string; provider_id: string; api_key_preview: string }> =>
-		apiPut(`/api/control/user/llm/key/${encodeURIComponent(providerId)}`, { api_key: apiKey }),
+		maxBudget?: number,
+		budgetDuration?: string,
+		budgetCurrency?: string,
+	): Promise<{ status: string; provider_id: string; api_key_preview: string }> => {
+		const body: Record<string, unknown> = { api_key: apiKey };
+		if (maxBudget != null) body.max_budget = maxBudget;
+		if (budgetDuration) body.budget_duration = budgetDuration;
+		if (budgetCurrency) body.budget_currency = budgetCurrency;
+		return apiPut(`/api/control/user/llm/key/${encodeURIComponent(providerId)}`, body);
+	},
 	deleteApiKey: async (providerId: string): Promise<{ status: string }> =>
 		apiDelete(`/api/control/user/llm/key/${encodeURIComponent(providerId)}`),
 	validateApiKey: async (
@@ -229,7 +242,81 @@ export const userLlmQueries = {
 		const params = new URLSearchParams(filters);
 		return apiGet(`/api/control/user/llm/models?${params.toString()}`);
 	},
+	getSelectedModels: async (): Promise<{ selected_models: string[] }> =>
+		apiGet("/api/control/user/llm/selected-models"),
+	setSelectedModels: async (models: string[]): Promise<{ status: string; count: number }> =>
+		apiPut("/api/control/user/llm/selected-models", { models }),
+	getAccountInfo: async (): Promise<AccountInfo> => apiGet("/api/control/user/llm/account-info"),
+	getSpendActivity: async (
+		startDate?: string,
+		endDate?: string,
+	): Promise<SpendActivityResponse> => {
+		const params = new URLSearchParams();
+		if (startDate) params.set("start_date", startDate);
+		if (endDate) params.set("end_date", endDate);
+		const qs = params.toString();
+		return apiGet(`/api/control/user/llm/spend/activity${qs ? `?${qs}` : ""}`);
+	},
+	getSpendByModel: async (startDate?: string, endDate?: string): Promise<SpendByModelResponse> => {
+		const params = new URLSearchParams();
+		if (startDate) params.set("start_date", startDate);
+		if (endDate) params.set("end_date", endDate);
+		const qs = params.toString();
+		return apiGet(`/api/control/user/llm/spend/by-model${qs ? `?${qs}` : ""}`);
+	},
+	getSpendByProvider: async (): Promise<SpendByProviderEntry[]> =>
+		apiGet("/api/control/user/llm/spend/by-provider"),
 };
+
+export interface ProviderAccountInfo {
+	provider: string;
+	limit?: number | null;
+	limit_remaining?: number | null;
+	usage?: number | null;
+	usage_monthly?: number | null;
+	is_free_tier?: boolean;
+	rate_limit?: { requests: number; interval: string } | null;
+	total_spend_usd?: number | null;
+	source?: string;
+	error?: string;
+	message?: string;
+}
+
+export interface SpendActivityEntry {
+	date: string;
+	api_requests: number;
+	total_tokens: number;
+}
+
+export interface SpendActivityResponse {
+	daily_data: SpendActivityEntry[];
+	sum_api_requests: number;
+	sum_total_tokens: number;
+	error?: string;
+}
+
+export interface SpendByModelEntry {
+	model_group: string;
+	api_requests: number;
+	total_tokens: number;
+	spend?: number;
+}
+
+export interface SpendByModelResponse {
+	data: SpendByModelEntry[];
+	error?: string;
+}
+
+export interface SpendByProviderEntry {
+	provider: string;
+	spend: number;
+}
+
+export interface AccountInfo {
+	user_id: string;
+	providers: ProviderAccountInfo[];
+	total_spend_usd: number | null;
+}
 
 export interface ModelInfo {
 	id: string;
@@ -248,6 +335,8 @@ export interface ModelInfo {
 	completion_price_per_mtok?: number | null;
 	modality?: string;
 	architecture?: string | null;
+	reasoning_type?: string | null; // "effort" | "thinking" | null
+	reasoning_levels?: string[] | null; // null = unknown, LiteLLM handles validation
 }
 
 export interface ModelFacets {

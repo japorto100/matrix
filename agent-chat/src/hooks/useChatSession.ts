@@ -17,10 +17,12 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useQueryState } from "nuqs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReasoningEffort } from "../components/AgentChatToolbar";
 import { collapsedToolsAtom, toggleToolCollapseAtom, usageMapAtom } from "../context/atoms";
 import type { RequestAttachment, StagedAttachment } from "./useAttachments";
+import { useAvailableModels } from "./useAvailableModels";
+import { computeCost, useModelInfo } from "./useModelInfo";
 
 let idCounter = 0;
 function localId(prefix = "chat"): string {
@@ -30,25 +32,11 @@ function localId(prefix = "chat"): string {
 export interface MessageUsage {
 	promptTokens: number;
 	completionTokens: number;
+	reasoningTokens?: number;
 	finishReason: string;
-	/** AC104: estimated cost in USD */
+	/** AC104: estimated cost in USD (dynamic from ModelInfo pricing) */
 	costUsd?: number;
 }
-
-// AC104: cost table (USD per token, approximate)
-const COST_PER_TOKEN: Record<string, { input: number; output: number }> = {
-	"claude-sonnet-4-6": { input: 3 / 1_000_000, output: 15 / 1_000_000 },
-	"claude-opus-4-6": { input: 15 / 1_000_000, output: 75 / 1_000_000 },
-	"claude-haiku-4-5": { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
-};
-
-// AC64: model max context window (tokens)
-const MODEL_MAX_CONTEXT: Record<string, number> = {
-	"claude-sonnet-4-6": 200_000,
-	"claude-opus-4-6": 200_000,
-	"claude-haiku-4-5": 200_000,
-};
-const DEFAULT_MAX_CONTEXT = 200_000;
 
 export interface UseChatSessionReturn {
 	messages: UIMessage[];
@@ -79,6 +67,9 @@ export interface UseChatSessionReturn {
 	/** AC108: reasoning effort */
 	reasoningEffort: ReasoningEffort;
 	setReasoningEffort: (effort: ReasoningEffort) => void;
+	/** Model capabilities (reasoning, pricing, context) — dynamic from backend */
+	supportsReasoning: boolean;
+	reasoningLevels: string[] | null;
 	/** AC50: TTS autoplay for new assistant messages */
 	autoplayTts: boolean;
 	toggleAutoplayTts: () => void;
@@ -104,20 +95,34 @@ export function useChatSession(): UseChatSessionReturn {
 	const toggleToolCollapse = useSetAtom(toggleToolCollapseAtom);
 	const [usageMap, setUsageMap] = useAtom(usageMapAtom);
 
-	const [selectedModel, setSelectedModel] = useState("claude-sonnet-4-6");
-	const selectedModelRef = useRef(selectedModel);
+	// Model + reasoning defaults loaded from backend (no hardcoded values)
+	const { models: availableModels, defaultModel: backendDefaultModel } = useAvailableModels();
+	const initialModel = backendDefaultModel || availableModels[0]?.id || "openrouter/free";
+	const [selectedModel, setSelectedModel] = useState("");
+	const selectedModelRef = useRef("");
+	const modelInfo = useModelInfo(selectedModel || initialModel);
+
+	// Sync initial model from backend on first load
+	const initializedRef = useRef(false);
+	useEffect(() => {
+		if (!initializedRef.current && initialModel && !selectedModel) {
+			setSelectedModel(initialModel);
+			selectedModelRef.current = initialModel;
+			initializedRef.current = true;
+		}
+	}, [initialModel, selectedModel]);
 
 	// AC56: pending attachments ref (populated before sendMessage, read in prepareSendMessagesRequest)
 	const pendingAttachmentsRef = useRef<RequestAttachment[] | undefined>(undefined);
-	const pendingReasoningEffortRef = useRef<ReasoningEffort>("medium");
+	const pendingReasoningEffortRef = useRef<ReasoningEffort>("");
 
 	// AC54: track sent staged attachments indexed by user message order
 	const sentAttachmentsRef = useRef<StagedAttachment[][]>([]);
 	const [sentAttachmentsVersion, setSentAttachmentsVersion] = useState(0);
 
-	// AC108: reasoning effort
-	const [reasoningEffort, setReasoningEffortState] = useState<ReasoningEffort>("medium");
-	const reasoningEffortRef = useRef<ReasoningEffort>("medium");
+	// AC108: reasoning effort — default from backend, no hardcoded "medium"
+	const [reasoningEffort, setReasoningEffortState] = useState<ReasoningEffort>("");
+	const reasoningEffortRef = useRef<ReasoningEffort>("");
 
 	// exec-09 Phase 4: Browser-Tools via WebMCP (dynamisch je nach Page)
 	const browserToolsRef = useRef<
@@ -163,14 +168,14 @@ export function useChatSession(): UseChatSessionReturn {
 						message: text,
 						threadId: threadIdRef.current,
 					};
-					if (selectedModelRef.current !== "claude-sonnet-4-6") {
+					if (selectedModelRef.current) {
 						body.model = selectedModelRef.current;
 					}
 					if (pendingAttachmentsRef.current?.length) {
 						body.attachments = pendingAttachmentsRef.current;
 					}
 					const effort = pendingReasoningEffortRef.current;
-					if (effort !== "medium") {
+					if (effort) {
 						body.reasoningEffort = effort;
 					}
 					// exec-09: Browser-Tools via WebMCP mitschicken
@@ -188,20 +193,20 @@ export function useChatSession(): UseChatSessionReturn {
 					const promptTokens = typeof meta?.promptTokens === "number" ? meta.promptTokens : 0;
 					const completionTokens =
 						typeof meta?.completionTokens === "number" ? meta.completionTokens : 0;
+					const reasoningTokens =
+						typeof meta?.reasoningTokens === "number" ? meta.reasoningTokens : undefined;
 					// ACR-G7: update threadId from server so follow-up requests use the same thread
 					if (typeof meta?.threadId === "string" && meta.threadId) {
 						threadIdRef.current = meta.threadId;
 					}
-					const costs = COST_PER_TOKEN[selectedModelRef.current];
-					const costUsd =
-						costs && (promptTokens || completionTokens)
-							? promptTokens * costs.input + completionTokens * costs.output
-							: undefined;
+					// Dynamic cost from ModelInfo (no more hardcoded COST_PER_TOKEN)
+					const costUsd = computeCost(modelInfo, promptTokens, completionTokens);
 					setUsageMap((prev) => {
 						const next = new Map(prev);
 						next.set(message.id, {
 							promptTokens,
 							completionTokens,
+							reasoningTokens,
 							finishReason: finishReason ?? "stop",
 							costUsd,
 						});
@@ -277,14 +282,38 @@ export function useChatSession(): UseChatSessionReturn {
 
 	void sentAttachmentsVersion;
 
-	// AC64: context pressure from latest assistant usage promptTokens
+	// Prune reasoning from older messages (display optimization).
+	// Keeps reasoning only on the last assistant message to reduce visual clutter
+	// and rendering cost in long threads. Inspired by AI SDK pruneMessages.
+	const prunedMessages = useMemo(() => {
+		if (messages.length <= 2) return messages;
+		let lastAssistantIdx = -1;
+		for (let i = messages.length - 1; i >= 0; i--) {
+			if (messages[i].role === "assistant") {
+				lastAssistantIdx = i;
+				break;
+			}
+		}
+		return messages.map((msg, idx) => {
+			if (msg.role !== "assistant" || idx === lastAssistantIdx) return msg;
+			const hasReasoning = msg.parts.some((p) => p.type === "reasoning");
+			if (!hasReasoning) return msg;
+			return {
+				...msg,
+				parts: msg.parts.filter((p) => p.type !== "reasoning"),
+			} as UIMessage;
+		});
+	}, [messages]);
+
+	// AC64: context pressure from latest assistant usage promptTokens (dynamic from ModelInfo)
 	const latestAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
 	const latestUsage = latestAssistantMsg ? usageMap.get(latestAssistantMsg.id) : undefined;
-	const maxCtx = MODEL_MAX_CONTEXT[selectedModel] ?? DEFAULT_MAX_CONTEXT;
-	const contextPressure = latestUsage ? Math.min(latestUsage.promptTokens / maxCtx, 1) : 0;
+	const contextPressure = latestUsage
+		? Math.min(latestUsage.promptTokens / (modelInfo.context_length || 200_000), 1)
+		: 0;
 
 	return {
-		messages,
+		messages: prunedMessages,
 		isStreaming,
 		isConnecting,
 		error: error?.message ?? null,
@@ -303,6 +332,8 @@ export function useChatSession(): UseChatSessionReturn {
 		contextPressure,
 		reasoningEffort,
 		setReasoningEffort,
+		supportsReasoning: modelInfo.supports_reasoning,
+		reasoningLevels: modelInfo.reasoning_levels,
 		autoplayTts,
 		toggleAutoplayTts,
 		editAndResend,

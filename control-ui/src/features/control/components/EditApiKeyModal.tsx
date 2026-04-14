@@ -1,9 +1,10 @@
 "use client";
 
-// EditApiKeyModal — exec-16: Set/test/save API keys for LLM providers
+// EditApiKeyModal — exec-16/19: Set/test/save API keys + budget for LLM providers
 
 import { CheckCircle, Key, Loader2, XCircle } from "lucide-react";
 import { useCallback, useState } from "react";
+import CurrencyInput from "react-currency-input-field";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +16,23 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useSetApiKey, useValidateApiKey } from "@/lib/queries/hooks";
 import type { LlmProvider } from "../types";
+
+const CURRENCIES = ["CHF", "USD", "EUR", "GBP"] as const;
+const BUDGET_DURATIONS = [
+	{ value: "monthly", label: "Monthly" },
+	{ value: "weekly", label: "Weekly" },
+	{ value: "daily", label: "Daily" },
+] as const;
 
 interface EditApiKeyModalProps {
 	provider: LlmProvider | null;
@@ -26,6 +42,9 @@ interface EditApiKeyModalProps {
 
 export function EditApiKeyModal({ provider, open, onOpenChange }: EditApiKeyModalProps) {
 	const [apiKey, setApiKey] = useState("");
+	const [budgetAmount, setBudgetAmount] = useState<string | undefined>(undefined);
+	const [budgetCurrency, setBudgetCurrency] = useState<string>("CHF");
+	const [budgetDuration, setBudgetDuration] = useState("monthly");
 	const [validationResult, setValidationResult] = useState<{
 		valid: boolean;
 		error?: string;
@@ -37,6 +56,7 @@ export function EditApiKeyModal({ provider, open, onOpenChange }: EditApiKeyModa
 
 	const handleClose = useCallback(() => {
 		setApiKey("");
+		setBudgetAmount(undefined);
 		setValidationResult(null);
 		onOpenChange(false);
 	}, [onOpenChange]);
@@ -58,16 +78,24 @@ export function EditApiKeyModal({ provider, open, onOpenChange }: EditApiKeyModa
 	const handleSave = useCallback(async () => {
 		if (!provider || !apiKey.trim()) return;
 		try {
+			const budget = budgetAmount ? Number.parseFloat(budgetAmount) : undefined;
 			await saveKey.mutateAsync({
 				providerId: provider.id,
 				apiKey: apiKey.trim(),
+				maxBudget: budget,
+				budgetDuration: budget ? budgetDuration : undefined,
+				budgetCurrency: budget ? budgetCurrency : undefined,
 			});
-			toast.success(`API Key for ${provider.display_name} saved`);
+			toast.success(
+				budget
+					? `Key saved for ${provider.display_name} (budget: ${budgetCurrency} ${budget}/${budgetDuration})`
+					: `Key saved for ${provider.display_name}`,
+			);
 			handleClose();
 		} catch {
 			toast.error("Failed to save API key");
 		}
-	}, [provider, apiKey, saveKey, handleClose]);
+	}, [provider, apiKey, budgetAmount, budgetCurrency, budgetDuration, saveKey, handleClose]);
 
 	if (!provider) return null;
 
@@ -102,6 +130,50 @@ export function EditApiKeyModal({ provider, open, onOpenChange }: EditApiKeyModa
 							}}
 							className="font-mono text-sm"
 						/>
+					</div>
+
+					{/* Budget Section */}
+					<Separator />
+					<div className="space-y-2">
+						<label className="text-xs font-medium">
+							Budget Limit <span className="text-muted-foreground font-normal">(optional)</span>
+						</label>
+						<div className="flex gap-2">
+							<Select value={budgetCurrency} onValueChange={setBudgetCurrency}>
+								<SelectTrigger className="w-20 h-9 text-xs">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{CURRENCIES.map((c) => (
+										<SelectItem key={c} value={c}>
+											{c}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<CurrencyInput
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+								placeholder="50.00"
+								decimalsLimit={2}
+								value={budgetAmount}
+								onValueChange={setBudgetAmount}
+							/>
+							<Select value={budgetDuration} onValueChange={setBudgetDuration}>
+								<SelectTrigger className="w-28 h-9 text-xs">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{BUDGET_DURATIONS.map((d) => (
+										<SelectItem key={d.value} value={d.value}>
+											{d.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<p className="text-[10px] text-muted-foreground">
+							Creates a LiteLLM Virtual Key with spend enforcement. Real provider key stays hidden.
+						</p>
 					</div>
 
 					{/* Validation result */}

@@ -3,28 +3,16 @@
 // ApiModelsTab — exec-16: Interactive LLM provider config
 // Provider cards with key management, dynamic model discovery, default model picker
 
-import {
-	Box,
-	Cloud,
-	HardDrive,
-	Key,
-	Lock,
-	RefreshCw,
-	Search,
-	Server,
-	Sparkles,
-	TestTube,
-	Trash2,
-	Workflow,
-} from "lucide-react";
+import { Lock, RefreshCw, Search, Server, Sparkles, Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import type { ProviderAccountInfo } from "@/lib/queries/control";
 import {
+	useAccountInfo,
 	useDeleteApiKey,
 	useEnvVars,
 	useModelRouting,
@@ -35,22 +23,14 @@ import {
 } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockAgentRoles, mockEnvVars, mockModelRouting, mockUtilityModels } from "../mock-data";
-import type { EnvVar, LlmProvider, ModelRouting, UtilityModel, UtilityPurpose } from "../types";
-import { EditApiKeyModal } from "./EditApiKeyModal";
+import type { EnvVar, LlmProvider, ModelRouting, UtilityModel } from "../types";
 import { ModelExplorer } from "./ModelExplorer";
-
-const UTILITY_ICON: Record<UtilityPurpose, React.ReactNode> = {
-	embedder_text: <Box className="h-3.5 w-3.5" />,
-	embedder_visual: <Sparkles className="h-3.5 w-3.5" />,
-	reranker: <Workflow className="h-3.5 w-3.5" />,
-	summarizer: <Workflow className="h-3.5 w-3.5" />,
-	stt: <TestTube className="h-3.5 w-3.5" />,
-	tts: <TestTube className="h-3.5 w-3.5" />,
-};
+import { ProviderCard } from "./ProviderCard";
+import { SpendDashboard } from "./SpendDashboard";
+import { UtilityModelsSection } from "./UtilityModelsSection";
 
 export function ApiModelsTab() {
 	const [envFilter, setEnvFilter] = useState("");
-	const [editProvider, setEditProvider] = useState<LlmProvider | null>(null);
 
 	// exec-16: User LLM settings (live from backend)
 	const llmQuery = useUserLlmSettings();
@@ -60,6 +40,7 @@ export function ApiModelsTab() {
 	const setDefaultModel = useSetDefaultModel();
 	const setRoleOverrides = useSetRoleOverrides();
 	const deleteKey = useDeleteApiKey();
+	const accountQuery = useAccountInfo();
 
 	// Data with mock fallback
 	const providers = llmQuery.data?.providers ?? [];
@@ -79,6 +60,14 @@ export function ApiModelsTab() {
 		}
 		return models;
 	}, [providers]);
+
+	const accountByProvider = useMemo(() => {
+		const m: Record<string, ProviderAccountInfo> = {};
+		for (const p of accountQuery.data?.providers ?? []) {
+			if (p.provider) m[p.provider] = p;
+		}
+		return m;
+	}, [accountQuery.data]);
 
 	const providerById = useMemo(() => {
 		const m: Record<string, LlmProvider> = {};
@@ -189,79 +178,27 @@ export function ApiModelsTab() {
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
 					{providers.map((provider) => (
-						<Card
+						<ProviderCard
 							key={provider.id}
-							className={cn(
-								"transition-colors",
-								provider.is_active && "border-emerald-500/30 bg-emerald-950/5",
-							)}
-						>
-							<CardHeader className="pb-2">
-								<div className="flex items-start justify-between gap-2">
-									<div className="flex items-center gap-2">
-										{provider.type === "cloud" ? (
-											<Cloud className="h-3.5 w-3.5 text-sky-400" />
-										) : (
-											<HardDrive className="h-3.5 w-3.5 text-amber-400" />
-										)}
-										<CardTitle className="text-sm font-semibold leading-tight">
-											{provider.display_name}
-										</CardTitle>
-									</div>
-									{provider.is_active ? (
-										<Badge
-											variant="outline"
-											className="text-[9px] h-4 px-1.5 border-emerald-500/50 text-emerald-400"
-										>
-											active
-										</Badge>
-									) : (
-										<Badge variant="outline" className="text-[9px] h-4 px-1.5">
-											inactive
-										</Badge>
-									)}
-								</div>
-							</CardHeader>
-							<CardContent className="space-y-2 pt-0">
-								{provider.api_key_set && provider.api_key_preview && (
-									<div className="flex items-center gap-1.5 text-[11px]">
-										<Key className="h-3 w-3 text-muted-foreground" />
-										<code className="font-mono text-amber-300">{provider.api_key_preview}</code>
-									</div>
-								)}
-								{provider.available_models.length > 0 && (
-									<div className="text-[10px] text-muted-foreground">
-										{provider.available_models.length} model
-										{provider.available_models.length === 1 ? "" : "s"} available
-									</div>
-								)}
-								<div className="flex gap-1 pt-1">
-									<Button
-										variant="outline"
-										size="sm"
-										className="h-6 text-[10px] gap-1"
-										onClick={() => setEditProvider(provider)}
-									>
-										<Key className="h-2.5 w-2.5" />
-										{provider.api_key_set ? "Change Key" : "Set Key"}
-									</Button>
-									{provider.api_key_set && (
-										<Button
-											variant="outline"
-											size="sm"
-											className="h-6 text-[10px] gap-1 text-red-400 hover:text-red-300"
-											onClick={() => handleDeleteKey(provider)}
-											disabled={deleteKey.isPending}
-										>
-											<Trash2 className="h-2.5 w-2.5" />
-											Remove
-										</Button>
-									)}
-								</div>
-							</CardContent>
-						</Card>
+							provider={provider}
+							accountInfo={accountByProvider[provider.id]}
+							onDeleteKey={() => handleDeleteKey(provider)}
+							isDeleting={deleteKey.isPending}
+						/>
 					))}
 				</div>
+			</section>
+
+			{/* ─── Section 1b: Spend Dashboard (LiteLLM) ───────────────── */}
+			<section className="space-y-2">
+				<div className="flex items-baseline justify-between border-b border-border pb-1">
+					<h3 className="text-sm font-semibold flex items-center gap-2">
+						<Sparkles className="h-3.5 w-3.5" />
+						Usage &amp; Spend
+					</h3>
+					<span className="text-[10px] text-muted-foreground">via LiteLLM Spend Tracking</span>
+				</div>
+				<SpendDashboard />
 			</section>
 
 			{/* ─── Section 2: Model Routing per Role ────────────────────── */}
@@ -356,54 +293,16 @@ export function ApiModelsTab() {
 				</div>
 			</section>
 
-			{/* ─── Section 3: Utility Models ────────────────────────────── */}
-			<section className="space-y-2">
-				<div className="flex items-baseline justify-between border-b border-border pb-1">
-					<h3 className="text-sm font-semibold flex items-center gap-2">
-						<Sparkles className="h-3.5 w-3.5" />
-						Utility Models
-					</h3>
-					<span className="text-[10px] text-muted-foreground">Embedder, reranker, STT, TTS</span>
-				</div>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-					{utility.map((u) => (
-						<Card key={u.purpose} className={cn(!u.is_active && "opacity-60")}>
-							<CardHeader className="pb-2">
-								<div className="flex items-start justify-between gap-2">
-									<div className="flex items-center gap-1.5">
-										{UTILITY_ICON[u.purpose]}
-										<CardTitle className="text-xs font-semibold leading-tight">
-											{u.display_name}
-										</CardTitle>
-									</div>
-									{u.is_local ? (
-										<Badge variant="outline" className="text-[9px] h-4 px-1.5">
-											local
-										</Badge>
-									) : (
-										<Badge
-											variant="outline"
-											className="text-[9px] h-4 px-1.5 border-sky-500/50 text-sky-400"
-										>
-											cloud
-										</Badge>
-									)}
-								</div>
-							</CardHeader>
-							<CardContent className="space-y-1 pt-0">
-								<code className="text-[10px] text-muted-foreground font-mono line-clamp-1">
-									{u.model_id}
-								</code>
-								{u.notes && (
-									<div className="text-[10px] text-muted-foreground leading-relaxed">{u.notes}</div>
-								)}
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</section>
+			{/* ── Model Explorer (exec-19 Stufe 5b) ──────────────────────── */}
+			<Separator className="my-6" />
+			<ModelExplorer />
 
-			{/* ─── Section 4: ENV Variables ─────────────────────────────── */}
+			{/* ── Utility & Inference Subtab ──────────────────────────────── */}
+			<Separator className="my-6" />
+			<UtilityModelsSection utilities={utility} />
+
+			{/* ─── ENV Variables ──────────────────────────────────────────── */}
+			<Separator className="my-6" />
 			<section className="space-y-2">
 				<div className="flex items-baseline justify-between border-b border-border pb-1">
 					<h3 className="text-sm font-semibold flex items-center gap-2">
@@ -471,17 +370,6 @@ export function ApiModelsTab() {
 					</table>
 				</div>
 			</section>
-
-			{/* ── Model Explorer (exec-19 Stufe 5b) ──────────────────────── */}
-			<Separator className="my-6" />
-			<ModelExplorer />
-
-			{/* Edit API Key Modal */}
-			<EditApiKeyModal
-				provider={editProvider}
-				open={!!editProvider}
-				onOpenChange={(open) => !open && setEditProvider(null)}
-			/>
 		</div>
 	);
 }

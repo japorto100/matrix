@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "tradeviewfusion-rust-core"
+version = "0.2.0"
+description = "Rust acceleration core (PyO3) for TradeView Fusion indicator pipelines"
+requires-python = ">=3.11"
+
+[tool.maturin]
+module-name = "tradeviewfusion_rust_core"
+features = ["pyo3/extension-module", "pyo3/abi3-py311"]
+

@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 async def get_user_api_key(user_id: str, provider: str) -> str | None:
-    """Holt decrypted API Key aus DB. None wenn nicht gesetzt."""
+    """Holt API Key fuer LLM Calls. Bevorzugt LiteLLM Virtual Key (sicherer).
+
+    Priority: Virtual Key (metadata.virtual_key) > Decrypted Provider Key.
+    Virtual Key = LiteLLM proxy key mit Budget-Enforcement.
+    Provider Key = direkter Provider-Schluessel (Fallback).
+    """
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
         return None
@@ -31,14 +36,22 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
         async with await psycopg.AsyncConnection.connect(db_url) as conn:
             row = await (
                 await conn.execute(
-                    "SELECT credential_enc FROM agent.user_credentials "
+                    "SELECT credential_enc, metadata FROM agent.user_credentials "
                     "WHERE user_id = %s AND category = 'llm' AND provider_id = %s AND is_valid = true",
                     (user_id, provider),
                 )
             ).fetchone()
 
-            if row and row[0]:
-                return vault.decrypt(bytes(row[0]))
+            if not row or not row[0]:
+                return None
+
+            # Prefer Virtual Key if available (budget-enforced, real key hidden)
+            meta = row[1] if row[1] else {}
+            if isinstance(meta, dict) and meta.get("virtual_key"):
+                return meta["virtual_key"]
+
+            # Fallback: decrypt real provider key
+            return vault.decrypt(bytes(row[0]))
     except Exception as e:
         logger.warning("get_user_api_key failed for %s/%s: %s", user_id, provider, e)
 
