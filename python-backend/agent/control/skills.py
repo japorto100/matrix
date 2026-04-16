@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from agent.control.request_scope import RequestScope, resolve_scope
+from agent.skills.db_state import load_skill_toggle_overrides
 from agent.skills.loader import load_skills
 
 logger = logging.getLogger(__name__)
@@ -33,16 +34,7 @@ def _db_url() -> str:
 
 def _load_enabled_overrides(user_id: str = "local") -> dict[str, bool]:
     """Return {skill_id: enabled} overrides from DB."""
-    try:
-        with psycopg.connect(_db_url(), autocommit=True) as conn:
-            rows = conn.execute(
-                "SELECT skill_id, enabled FROM agent.skills_state WHERE user_id = %s",
-                (user_id,),
-            ).fetchall()
-    except Exception as e:  # noqa: BLE001
-        logger.warning("load skill state failed: %s", e)
-        return {}
-    return {row[0]: bool(row[1]) for row in rows}
+    return load_skill_toggle_overrides(user_id)
 
 
 def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
@@ -55,11 +47,18 @@ def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
         "generation": skill.generation,
         "enabled": skill.enabled,
         "owner": skill.owner,
+        "db_id": getattr(skill, "db_id", None),
         "path": str(skill.path),
         "body_preview": skill.content[:400] if skill.content else "",
-        "source": "builtin"
-        if skill.tier == "global"
-        else ("github" if skill.tier == "team" else "local"),
+        "source": (
+            "db"
+            if getattr(skill, "db_id", None)
+            else (
+                "builtin"
+                if skill.tier == "global"
+                else ("github" if skill.tier == "team" else "local")
+            )
+        ),
     }
 
 
@@ -138,19 +137,42 @@ async def patch_skill(
     now = datetime.now(UTC)
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
-            conn.execute(
+            # Resolve tier:name → agent_skills UUID for user_skill_preferences FK
+            skill_uuid_row = conn.execute(
                 """
-                INSERT INTO agent.skills_state
-                    (skill_id, user_id, enabled, updated_by, updated_at)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (skill_id, user_id)
-                DO UPDATE SET
-                    enabled = EXCLUDED.enabled,
-                    updated_by = EXCLUDED.updated_by,
-                    updated_at = EXCLUDED.updated_at
+                SELECT id FROM agent.agent_skills
+                WHERE tier || ':' || name = %s AND enabled = true
+                LIMIT 1
                 """,
-                (skill_id, scope.user_id, req.enabled, scope.actor, now),
-            )
+                (skill_id,),
+            ).fetchone()
+
+            if skill_uuid_row:
+                conn.execute(
+                    """
+                    INSERT INTO agent.user_skill_preferences
+                        (user_id, skill_id, disabled)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id, skill_id)
+                    DO UPDATE SET disabled = EXCLUDED.disabled
+                    """,
+                    (scope.user_id, skill_uuid_row[0], not req.enabled),
+                )
+            else:
+                # Fallback to legacy skills_state if skill not in DB
+                conn.execute(
+                    """
+                    INSERT INTO agent.skills_state
+                        (skill_id, user_id, enabled, updated_by, updated_at)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (skill_id, user_id)
+                    DO UPDATE SET
+                        enabled = EXCLUDED.enabled,
+                        updated_by = EXCLUDED.updated_by,
+                        updated_at = EXCLUDED.updated_at
+                    """,
+                    (skill_id, scope.user_id, req.enabled, scope.actor, now),
+                )
             conn.execute(
                 """
                 INSERT INTO agent.audit_events

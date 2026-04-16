@@ -46,3 +46,6 @@
 [submodule "_ref/mempalace"]
 	path = _ref/mempalace
 	url = https://github.com/MemPalace/mempalace.git
+[submodule "_ref/EvoSkill"]
+	path = _ref/EvoSkill
+	url = https://github.com/sentient-agi/EvoSkill.git

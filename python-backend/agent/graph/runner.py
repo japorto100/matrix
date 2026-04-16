@@ -37,7 +37,7 @@ async def run_agent_loop(
     yield sse(ThreadIdPacket(thread_id=ctx.thread_id))
 
     # Pre-processing: Skills, Temporal Context, Summarization, Dangling Tool Calls
-    system_prompt = await _prepare_system_prompt(ctx)
+    system_prompt = await _prepare_system_prompt(ctx, messages)
     messages = await _prepare_messages(messages, ctx)
 
     # Run LangGraph
@@ -45,7 +45,24 @@ async def run_agent_loop(
         yield chunk
 
 
-async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
+def _last_user_text(msgs: list[dict]) -> str:
+    for msg in reversed(msgs):
+        if isinstance(msg, dict) and msg.get("role") == "user":
+            c = msg.get("content")
+            if isinstance(c, str):
+                return c
+            if isinstance(c, list):
+                parts = []
+                for block in c:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        parts.append(block.get("text", ""))
+                return " ".join(parts)
+    return ""
+
+
+async def _prepare_system_prompt(
+    ctx: AgentExecutionContext, messages: list[dict]
+) -> str:
     """Enrich system prompt with skills, temporal context, and security instructions."""
     from agent.middleware.sanitizer import SYSTEM_PROMPT_INJECTION
     from agent.tracing import turn_span
@@ -53,12 +70,18 @@ async def _prepare_system_prompt(ctx: AgentExecutionContext) -> str:
     with turn_span("prepare_system_prompt", "", 0) as span:
         system_prompt = ctx.system_prompt + SYSTEM_PROMPT_INJECTION
 
-        # exec-10: Skill Injection
+        # exec-10 + exec-skills Phase 1: Skill Injection (finder wenn User-Query vorhanden)
         try:
-            from agent.skills.loader import format_skills_for_prompt, load_skills
+            from agent.skills.loader import format_skills_for_prompt_async
 
-            skills = load_skills(user_id=ctx.user_id)
-            skills_text = format_skills_for_prompt(skills)
+            skill_query = _last_user_text(messages)
+            skills_text = await format_skills_for_prompt_async(
+                None,
+                query=skill_query or None,
+                user_id=ctx.user_id,
+                context_hint=ctx.system_prompt[:800],
+                api_key=ctx.api_key,
+            )
             if skills_text:
                 system_prompt = f"{system_prompt}\n\n{skills_text}"
         except Exception:
@@ -180,8 +203,24 @@ async def _run_graph(
 
     from agent.tracing import session_span, set_session_summary
 
+    # exec-18: Create session row at start
+    db_session = None
+    try:
+        from agent.sessions import create_session
+
+        db_session = create_session(
+            session_type="agent_chat",
+            agent_id=getattr(ctx, "agent_id", "default"),
+            user_id=ctx.user_id,
+            thread_id=ctx.thread_id,
+            bank_id=f"user-{ctx.user_id}" if ctx.user_id else None,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
     with session_span(
-        ctx.thread_id, ctx.user_id, "agent_chat", "default"
+        db_session.session_id if db_session else ctx.thread_id,
+        ctx.user_id, "agent_chat", "default"
     ) as _session_span:
         try:
             text_id = "t1"
@@ -243,8 +282,32 @@ async def _run_graph(
                 total_tokens=result.get("token_usage", 0),
                 outcome="completed",
             )
+
+            # exec-18: Update session with completion
+            if db_session:
+                try:
+                    from agent.sessions import update_session
+
+                    update_session(
+                        db_session.session_id,
+                        status="completed",
+                        summary={
+                            "total_turns": result.get("iteration", 0),
+                            "total_tokens": result.get("token_usage", 0),
+                        },
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
+
             yield sse(FinishPacket(finish_reason="stop"))
 
         except Exception as e:
             set_session_summary(_session_span, outcome="error")
+            if db_session:
+                try:
+                    from agent.sessions import update_session
+
+                    update_session(db_session.session_id, status="errored")
+                except Exception:  # noqa: BLE001
+                    pass
             yield sse(ErrorPacket(error=f"LangGraph error: {e}"))

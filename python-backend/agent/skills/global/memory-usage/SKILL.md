@@ -1,7 +1,9 @@
 ---
 name: memory-usage
-description: When and how to use long-term memory (store and recall facts across conversations)
+description: Use when the task depends on user preferences, prior decisions, past conversations, 'do you remember' questions, or when deciding whether to store vs recall long-term memory
 category: general
+skill_type: general
+api_version: v1
 ---
 
 # Memory Usage Skill

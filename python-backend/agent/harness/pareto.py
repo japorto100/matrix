@@ -80,12 +80,87 @@ def compute_pareto_frontier(
 
 
 def load_all_candidates() -> list[dict[str, Any]]:
-    """Load all scored candidates from data/harness/candidates/."""
+    """Load all scored candidates from DB (primary) + filesystem (fallback).
+
+    DB source: agent.component_configs WHERE component_id='harness.default'
+    Filesystem source: data/harness/candidates/v*/scores.json (legacy)
+    Both are merged, deduplicated by version label.
+    """
+    candidates: list[dict[str, Any]] = []
+    seen_versions: set[str] = set()
+
+    # ── DB path (primary, exec-18) ───────────────────────────────────
+    try:
+        candidates.extend(_load_candidates_db(seen_versions))
+    except Exception:  # noqa: BLE001
+        pass
+
+    # ── Filesystem path (legacy Meta-Harness pattern) ────────────────
+    candidates.extend(_load_candidates_fs(seen_versions))
+
+    return candidates
+
+
+def _load_candidates_db(seen: set[str]) -> list[dict[str, Any]]:
+    """Load candidates from agent.component_configs."""
+    import os
+
+    import psycopg
+
+    db_url = os.environ.get(
+        "HINDSIGHT_DB_URL",
+        "postgresql://postgres@localhost:5433/hindsight_dev",
+    )
+    candidates = []
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        rows = conn.execute(
+            """
+            SELECT version, label, stage, config, notes,
+                   proposer_model, pareto_frontier, created_at
+            FROM agent.component_configs
+            WHERE component_id = 'harness.default'
+            ORDER BY version ASC
+            """,
+        ).fetchall()
+        for row in rows:
+            version, label, stage, config, notes, model, frontier, created = row
+            version_label = label or f"v{version:03d}"
+            if version_label in seen:
+                continue
+            seen.add(version_label)
+            entry: dict[str, Any] = {
+                "version": version_label,
+                "db_version": version,
+                "stage": stage,
+                "proposer_model": model,
+                "pareto_frontier": frontier,
+                "source": "db",
+            }
+            # Merge config fields if they look like score data
+            if isinstance(config, dict):
+                for k in ("completion_rate", "avg_turns", "total_tokens",
+                           "tool_success_rate", "total_cost_usd"):
+                    if k in config:
+                        entry[k] = config[k]
+            # Normalize
+            turns = entry.get("avg_turns", 10)
+            tokens = entry.get("total_tokens", 100000)
+            entry.setdefault("turn_efficiency", round(1.0 / max(turns, 1), 3))
+            entry.setdefault("token_efficiency", round(1000.0 / max(tokens, 1), 6))
+            candidates.append(entry)
+    return candidates
+
+
+def _load_candidates_fs(seen: set[str]) -> list[dict[str, Any]]:
+    """Load scored candidates from data/harness/candidates/ (filesystem)."""
     if not CANDIDATES_DIR.exists():
         return []
 
     candidates = []
     for version_dir in sorted(CANDIDATES_DIR.glob("v*")):
+        if version_dir.name in seen:
+            continue
+
         scores_path = version_dir / "scores.json"
         config_path = version_dir / "config.json"
 
@@ -94,6 +169,7 @@ def load_all_candidates() -> list[dict[str, Any]]:
 
         scores = json.loads(scores_path.read_text(encoding="utf-8"))
         scores["version"] = version_dir.name
+        scores["source"] = "filesystem"
 
         # Normalize to "higher = better" for Pareto comparison
         turns = scores.get("avg_turns", 10)
@@ -104,6 +180,7 @@ def load_all_candidates() -> list[dict[str, Any]]:
         if config_path.exists():
             scores["has_config"] = True
 
+        seen.add(version_dir.name)
         candidates.append(scores)
 
     return candidates

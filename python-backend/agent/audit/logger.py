@@ -24,6 +24,9 @@ class AuditAction(StrEnum):
     CONSENT_REQUEST = "consent_request"
     CONSENT_DECISION = "consent_decision"
     RATE_LIMIT_HIT = "rate_limit_hit"
+    SKILL_FOUND = "skill_found"
+    SKILL_REFINED = "skill_refined"
+    SKILL_USED = "skill_used"
 
 
 async def audit_log(

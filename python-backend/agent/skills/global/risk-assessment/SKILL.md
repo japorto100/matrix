@@ -1,6 +1,6 @@
 ---
 name: risk-assessment
-description: Portfolio risk assessment and position sizing framework
+description: Use when the user asks about risk, position size, stop placement, drawdown, correlated exposure, portfolio concentration, or whether a trade should be approved / reduced / rejected
 category: risk
 ---
 

@@ -14,6 +14,7 @@ Scoring dimensions:
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -82,10 +83,38 @@ async def score_session(thread_id: str) -> dict[str, Any]:
             model = m
             break
 
+    # Session-based outcome signal (exec-18, if agent.sessions row exists)
+    session_status = None
+    session_summary = None
+    try:
+        from agent.sessions import get_session
+
+        session = get_session(thread_id)
+        if session:
+            session_status = session.get("status")
+            session_summary = session.get("summary")
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Skill events for this thread
+    skill_events = [e for e in events if (e.get("action") or "").startswith("skill_")]
+    skills_loaded = set()
+    for se in skill_events:
+        meta = se.get("metadata") or {}
+        if isinstance(meta, str):
+            try:
+                meta = json.loads(meta)
+            except Exception:  # noqa: BLE001
+                meta = {}
+        for sid in (meta.get("skill_ids") or []):
+            skills_loaded.add(sid)
+
     return {
         "thread_id": thread_id,
         "model": model,
         "completed": completed,
+        "session_status": session_status,
+        "session_summary": session_summary,
         "turns": turns,
         "turn_efficiency": round(1.0 / max(turns, 1), 3),
         "total_tokens": total_tokens,
@@ -98,6 +127,8 @@ async def score_session(thread_id: str) -> dict[str, Any]:
         "memory_recalls": len(memory_recalls),
         "memory_retains": len(memory_retains),
         "memory_utilization": len(memory_recalls) > 0,
+        "skills_loaded": sorted(skills_loaded),
+        "skill_events": len(skill_events),
         "cost_estimate_usd": _estimate_cost(model, total_tokens),
     }
 

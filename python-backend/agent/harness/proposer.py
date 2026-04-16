@@ -44,6 +44,7 @@ You will receive:
 1. CURRENT HARNESS CONFIG — the agent's system prompts, available tools, memory settings
 2. RECENT TRACES — what happened in recent agent sessions (LLM calls, tool uses, memory)
 3. SCORES — quality metrics for recent sessions
+4. SKILL STRATEGY — which skills were found/refined/used, coverage scores, trigger quality
 
 Analyze the data and respond with a JSON object:
 {
@@ -136,10 +137,55 @@ async def _gather_context(last_n_sessions: int = 10) -> dict[str, Any]:
             summary["timeline"].append(entry)
         trace_summaries.append(summary)
 
+    # 5. Skill strategy analysis from audit events
+    skill_events = [
+        ev
+        for ev in all_events
+        if (ev.get("action") or "").startswith("skill_")
+    ]
+    skill_summary = {
+        "total_skill_events": len(skill_events),
+        "by_action": {},
+        "recent_coverage_scores": [],
+        "recent_skill_ids": [],
+    }
+    for ev in skill_events[:50]:
+        action = ev.get("action", "")
+        skill_summary["by_action"][action] = (
+            skill_summary["by_action"].get(action, 0) + 1
+        )
+        meta = ev.get("metadata") or {}
+        if isinstance(meta, str):
+            try:
+                meta = json.loads(meta)
+            except Exception:  # noqa: BLE001
+                meta = {}
+        if meta.get("coverage_score") is not None:
+            skill_summary["recent_coverage_scores"].append(
+                meta["coverage_score"]
+            )
+        if meta.get("skill_ids"):
+            for sid in meta["skill_ids"][:5]:
+                if sid not in skill_summary["recent_skill_ids"]:
+                    skill_summary["recent_skill_ids"].append(sid)
+
+    # 6. Trigger quality aggregation (best-effort)
+    trigger_quality = None
+    try:
+        from agent.skills.trigger_quality import compute_trigger_quality
+
+        tq = compute_trigger_quality(days=30, min_n=3)
+        if tq:
+            trigger_quality = [s.as_dict() for s in tq]
+    except Exception:  # noqa: BLE001
+        pass
+
     return {
         "config": json.loads(config.to_json()),
         "scores": scores,
         "traces": trace_summaries,
+        "skill_strategy": skill_summary,
+        "trigger_quality": trigger_quality,
     }
 
 
@@ -207,13 +253,100 @@ harness (system prompts, tool config, memory settings) would improve agent perfo
     proposal["model"] = model
     proposal["sessions_analyzed"] = len(context["scores"])
 
-    _save_proposal(proposal)
+    _save_proposal(proposal, context.get("config"))
 
     return proposal
 
 
-def _save_proposal(proposal: dict[str, Any]) -> None:
-    """Save proposal to data/harness/candidates/ directory."""
+def _save_proposal(proposal: dict[str, Any], config_snapshot: dict | None = None) -> None:
+    """Save proposal to DB (agent.component_configs) AND optionally filesystem.
+
+    Primary: DB (exec-18 Migration 018). Versioned, queryable, Pareto-ready.
+    Secondary: Filesystem (Meta-Harness pattern, kept as option).
+
+    Env HARNESS_SAVE_MODE: 'db' (default) | 'filesystem' | 'both'
+    """
+    import os
+    import time
+
+    save_mode = os.environ.get("HARNESS_SAVE_MODE", "both").strip().lower()
+
+    # ── DB path (primary) ────────────────────────────────────────────
+    if save_mode in ("db", "both"):
+        try:
+            _save_proposal_db(proposal, config_snapshot)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("DB proposal save failed, falling back to filesystem: %s", e)
+            save_mode = "filesystem"  # degrade gracefully
+
+    # ── Filesystem path (secondary / fallback) ───────────────────────
+    if save_mode in ("filesystem", "both"):
+        _save_proposal_fs(proposal)
+
+
+def _save_proposal_db(proposal: dict[str, Any], config_snapshot: dict | None) -> None:
+    """Persist proposal as component_config row in agent.component_configs."""
+    import os
+    import time
+
+    import psycopg
+
+    db_url = os.environ.get(
+        "HINDSIGHT_DB_URL",
+        "postgresql://postgres@localhost:5433/hindsight_dev",
+    )
+    now_ms = int(time.time() * 1000)
+    component_id = "harness.default"
+
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        # Ensure component exists
+        conn.execute(
+            """
+            INSERT INTO agent.components
+                (component_id, component_type, name, created_at)
+            VALUES (%s, 'agent', 'Default Harness', %s)
+            ON CONFLICT (component_id) DO NOTHING
+            """,
+            (component_id, now_ms),
+        )
+
+        # Next version number
+        row = conn.execute(
+            "SELECT COALESCE(MAX(version), 0) FROM agent.component_configs WHERE component_id = %s",
+            (component_id,),
+        ).fetchone()
+        next_version = (row[0] if row else 0) + 1
+
+        # Insert config
+        conn.execute(
+            """
+            INSERT INTO agent.component_configs
+                (component_id, version, label, stage, config, notes,
+                 proposer_model, created_at)
+            VALUES (%s, %s, %s, 'draft', %s::jsonb, %s, %s, %s)
+            """,
+            (
+                component_id,
+                next_version,
+                f"v{next_version:03d}",
+                json.dumps(config_snapshot or {}, default=str),
+                json.dumps(proposal.get("analysis", ""), default=str)[:2000],
+                proposal.get("model", ""),
+                now_ms,
+            ),
+        )
+
+        # Update component current_version
+        conn.execute(
+            "UPDATE agent.components SET current_version = %s, updated_at = %s WHERE component_id = %s",
+            (next_version, now_ms, component_id),
+        )
+
+    logger.info("Harness proposal saved to DB: %s v%03d", component_id, next_version)
+
+
+def _save_proposal_fs(proposal: dict[str, Any]) -> None:
+    """Save proposal to data/harness/candidates/ directory (Meta-Harness filesystem pattern)."""
     candidates_dir = HARNESS_DATA_DIR / "candidates"
     candidates_dir.mkdir(parents=True, exist_ok=True)
 
@@ -235,7 +368,7 @@ def _save_proposal(proposal: dict[str, Any]) -> None:
     config.version = f"v{next_num:03d}"
     config.save(version_dir / "config.json")
 
-    logger.info("Harness proposal saved: %s", version_dir)
+    logger.info("Harness proposal saved to filesystem: %s", version_dir)
 
 
 async def propose_loop(

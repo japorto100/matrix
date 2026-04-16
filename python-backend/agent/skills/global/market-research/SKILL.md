@@ -1,6 +1,6 @@
 ---
 name: market-research
-description: Comprehensive market research combining fundamentals, sentiment, and macro analysis
+description: Use when the user asks for a thesis, market overview, bull/bear case, macro + fundamentals + sentiment synthesis, or longer-form research on an asset, sector, or theme
 category: research
 ---
 

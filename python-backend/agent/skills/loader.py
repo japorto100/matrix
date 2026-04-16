@@ -15,6 +15,7 @@ Versioning: Generation-Index in Frontmatter (MetaClaw Paper Sec. 3.2)
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +28,7 @@ SKILLS_BASE = Path(__file__).parent
 
 @dataclass
 class Skill:
-    """Geladener Skill aus SKILL.md."""
+    """Geladener Skill aus SKILL.md oder `agent.agent_skills`."""
 
     name: str
     description: str
@@ -38,6 +39,10 @@ class Skill:
     owner: str | None = None  # team_id oder user_id
     generation: int = 0  # MetaClaw: Skill Generation Index
     enabled: bool = True
+    db_id: str | None = None  # UUID aus agent.agent_skills (optional)
+    skill_type: Literal["general", "task_specific"] = "task_specific"
+    api_version: str | None = None  # Schema-Drift Detection (exec-skills §6.6)
+    assets: dict = field(default_factory=dict)  # scripts/examples/templates JSONB
 
 
 def parse_skill_file(
@@ -68,6 +73,26 @@ def parse_skill_file(
 
     content = raw[fm_match.end() :]
 
+    # Scan for asset subdirectories (scripts/, examples/, templates/)
+    assets: dict = {}
+    skill_dir = skill_file.parent
+    for subdir_name in ("scripts", "examples", "templates"):
+        subdir = skill_dir / subdir_name
+        if not subdir.is_dir():
+            continue
+        files: dict[str, str] = {}
+        for f in sorted(subdir.iterdir()):
+            if f.is_file() and f.stat().st_size < 10_240:  # <10KB text files only
+                try:
+                    files[f.name] = f.read_text(encoding="utf-8")
+                except Exception:  # noqa: BLE001
+                    pass
+        if files:
+            assets[subdir_name] = files
+
+    skill_type_raw = metadata.get("skill_type", "task_specific")
+    skill_type = skill_type_raw if skill_type_raw in ("general", "task_specific") else "task_specific"
+
     return Skill(
         name=name,
         description=metadata.get("description", ""),
@@ -77,6 +102,9 @@ def parse_skill_file(
         tier=tier,
         owner=owner,
         generation=int(metadata.get("generation", "0")),
+        skill_type=skill_type,
+        api_version=metadata.get("api_version"),
+        assets=assets,
     )
 
 
@@ -110,6 +138,28 @@ def _scan_tier(
     return skills
 
 
+def _merge_global_from_db(
+    merged: dict[str, Skill],
+    *,
+    category: str | None,
+    prefer_db: bool,
+) -> None:
+    """Overlay globale Skills aus `agent.agent_skills` (Migration 014)."""
+    try:
+        from agent.skills.store_db import fetch_enabled_skills
+    except Exception as e:  # noqa: BLE001
+        logger.debug("DB skill source unavailable: %s", e)
+        return
+
+    rows = fetch_enabled_skills(tiers=("global",), category=category)
+    if not rows:
+        return
+
+    for skill in rows:
+        if prefer_db or skill.name not in merged:
+            merged[skill.name] = skill
+
+
 def load_skills(
     user_id: str | None = None,
     team_id: str | None = None,
@@ -121,6 +171,11 @@ def load_skills(
     Loading-Reihenfolge: Global → Team → Personal
     Bei gleichem Name: Personal > Team > Global (Override-Semantik)
 
+    Env `AGENT_SKILLS_SOURCE` (default: `filesystem`):
+      - `filesystem` → nur Dateien unter `agent/skills/`
+      - `db` → globale Skills aus `agent.agent_skills`
+      - `hybrid` → Dateisystem + DB; DB-global gewinnt bei Namenskollision
+
     Args:
         user_id: User-ID fuer Personal-Skills (optional)
         team_id: Team-ID fuer Team-Skills (optional)
@@ -131,11 +186,19 @@ def load_skills(
         Merged Liste, sortiert nach Name.
     """
     base = skills_base or SKILLS_BASE
+    source = os.environ.get("AGENT_SKILLS_SOURCE", "filesystem").strip().lower()
     merged: dict[str, Skill] = {}
 
     # Tier 1: Global
-    for skill in _scan_tier(base / "global", tier="global", category=category):
-        merged[skill.name] = skill
+    if source in ("filesystem", "hybrid"):
+        for skill in _scan_tier(base / "global", tier="global", category=category):
+            merged[skill.name] = skill
+    if source in ("db", "hybrid"):
+        _merge_global_from_db(
+            merged,
+            category=category,
+            prefer_db=(source == "hybrid" or source == "db"),
+        )
 
     # Tier 2: Team
     if team_id:
@@ -156,8 +219,9 @@ def load_skills(
 
     skills = sorted(merged.values(), key=lambda s: s.name)
     logger.info(
-        "Loaded %d skills (global=%d, team=%d, personal=%d)",
+        "Loaded %d skills (source=%s, global=%d, team=%d, personal=%d)",
         len(skills),
+        source,
         sum(1 for s in skills if s.tier == "global"),
         sum(1 for s in skills if s.tier == "team"),
         sum(1 for s in skills if s.tier == "personal"),
@@ -165,8 +229,31 @@ def load_skills(
     return skills
 
 
-def format_skills_for_prompt(skills: list[Skill]) -> str:
-    """Formatiert Skills als Prompt-Abschnitt fuer LLM Injection."""
+def format_skills_for_prompt(
+    skills: list[Skill] | None = None,
+    *,
+    query: str | None = None,
+    user_id: str | None = None,
+    team_id: str | None = None,
+    category: str | None = None,
+    skills_base: Path | None = None,
+) -> str:
+    """Formatiert Skills als Prompt-Abschnitt fuer LLM Injection.
+
+    Ohne `skills`: laedt via `load_skills`. Mit `query` (letzte User-Nachricht o.ae.):
+    BM25+dense Hybrid-Ranking (exec-skills Phase 1, `agent.skills.finder`).
+    """
+    if skills is None:
+        skills = load_skills(
+            user_id=user_id, team_id=team_id, category=category, skills_base=skills_base
+        )
+
+    if query and query.strip():
+        from agent.skills.finder import filter_disabled_skills, find_skills_for_query
+
+        skills = filter_disabled_skills(skills, user_id)
+        skills = find_skills_for_query(skills, query.strip())
+
     if not skills:
         return ""
 
@@ -178,3 +265,184 @@ def format_skills_for_prompt(skills: list[Skill]) -> str:
         )
 
     return "\n".join(sections)
+
+
+async def format_skills_for_prompt_async(
+    skills: list[Skill] | None = None,
+    *,
+    query: str | None = None,
+    user_id: str | None = None,
+    team_id: str | None = None,
+    category: str | None = None,
+    skills_base: Path | None = None,
+    context_hint: str = "",
+    api_key: str | None = None,
+    session_id: str = "",
+    thread_id: str = "",
+) -> str:
+    """Async variant with query-ranking, coverage-gated refinement, audit + counters.
+
+    Audit events emitted when `query` is given:
+      - SKILL_FOUND  — after ranking, with skill_ids + rank_scores
+      - SKILL_REFINED — when refiner ran (per_skill or compose mode)
+      - SKILL_USED   — when skills are actually rendered into the prompt
+    Also increments `agent.agent_skills.usage_count` for each DB-backed
+    skill that ends up in the prompt.
+    """
+    if skills is None:
+        skills = load_skills(
+            user_id=user_id, team_id=team_id, category=category, skills_base=skills_base
+        )
+
+    pre_refine: list[Skill] = skills
+    refine_fired = False
+    coverage_score: float | None = None
+
+    if query and query.strip():
+        from agent.skills.finder import filter_disabled_skills
+        from agent.skills.iterative_search import iterative_find
+
+        skills = filter_disabled_skills(skills, user_id)
+
+        # SkillRL §3.2: General skills always-load, Task-Specific via finder
+        general = [s for s in skills if s.skill_type == "general"]
+        task_specific = [s for s in skills if s.skill_type != "general"]
+
+        search_result = await iterative_find(
+            task_specific, query.strip(), api_key=api_key
+        )
+        skills = general + search_result.picked
+        pre_refine = skills
+
+        await _audit_skill(
+            action="skill_found",
+            skills=skills,
+            query=query,
+            user_id=user_id,
+            session_id=session_id,
+            thread_id=thread_id,
+            metadata={
+                "search_rounds": search_result.rounds,
+                "reformulations": search_result.queries[1:]
+                if len(search_result.queries) > 1
+                else None,
+                "satisfied": search_result.satisfied,
+            },
+        )
+
+        if _refinement_enabled() and skills:
+            try:
+                from agent.skills.coverage import should_refine
+                from agent.skills.refiner import refine_skills_for_query
+
+                proceed, coverage_score = await should_refine(
+                    skills, query.strip(), api_key=api_key
+                )
+                if proceed:
+                    refined = await refine_skills_for_query(
+                        skills,
+                        query=query.strip(),
+                        context_hint=context_hint,
+                        api_key=api_key,
+                    )
+                    refine_fired = True
+                    await _audit_skill(
+                        action="skill_refined",
+                        skills=refined,
+                        query=query,
+                        user_id=user_id,
+                        session_id=session_id,
+                        thread_id=thread_id,
+                        metadata={
+                            "coverage_score": coverage_score,
+                            "source_skills": [f"{s.tier}:{s.name}" for s in pre_refine],
+                            "mode": os.environ.get("AGENT_SKILL_REFINE_MODE", "compose"),
+                        },
+                    )
+                    skills = refined
+                else:
+                    logger.debug(
+                        "skill refinement skipped: coverage=%.1f below threshold",
+                        coverage_score,
+                    )
+            except Exception as e:  # noqa: BLE001
+                logger.warning("format_skills_for_prompt_async refine failed: %s", e)
+
+        # Final usage record — what actually lands in the prompt.
+        if skills:
+            await _audit_skill(
+                action="skill_used",
+                skills=skills,
+                query=query,
+                user_id=user_id,
+                session_id=session_id,
+                thread_id=thread_id,
+                metadata={
+                    "refined": refine_fired,
+                    "coverage_score": coverage_score,
+                    "source_skills": [
+                        f"{s.tier}:{s.name}" for s in pre_refine
+                    ]
+                    if refine_fired
+                    else None,
+                },
+            )
+            _bump_usage(pre_refine if refine_fired else skills)
+
+    return format_skills_for_prompt(skills)
+
+
+def _refinement_enabled() -> bool:
+    v = os.environ.get("AGENT_SKILL_REFINEMENT", "").strip().lower()
+    return v in ("1", "true", "yes", "on")
+
+
+async def _audit_skill(
+    *,
+    action: str,
+    skills: list[Skill],
+    query: str | None,
+    user_id: str | None,
+    session_id: str,
+    thread_id: str,
+    metadata: dict | None = None,
+) -> None:
+    """Emit a SKILL_* audit event. Best-effort, never raises."""
+    try:
+        from agent.audit.logger import AuditAction, audit_log
+
+        try:
+            act = AuditAction(action)
+        except ValueError:
+            logger.debug("unknown skill audit action: %s", action)
+            return
+        payload: dict = {
+            "skill_ids": [f"{s.tier}:{s.name}" for s in skills],
+            "skill_names": [s.name for s in skills],
+            "query_preview": (query or "")[:200],
+            "user_id": user_id or "",
+        }
+        if metadata:
+            payload.update(metadata)
+        await audit_log(
+            action=act,
+            agent_id="skills",
+            session_id=session_id,
+            thread_id=thread_id,
+            success=True,
+            metadata=payload,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.debug("_audit_skill swallowed: %s", e)
+
+
+def _bump_usage(skills: list[Skill]) -> None:
+    """Increment agent.agent_skills.usage_count for DB-backed skills."""
+    try:
+        from agent.skills.store_db import increment_usage_counts
+
+        ids = [s.db_id for s in skills if getattr(s, "db_id", None)]
+        if ids:
+            increment_usage_counts([str(x) for x in ids])
+    except Exception as e:  # noqa: BLE001
+        logger.debug("_bump_usage swallowed: %s", e)

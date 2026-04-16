@@ -1,0 +1,34 @@
+{
+  "experiment_id": 18,
+  "chunk_size": 512,
+  "chunk_overlap": 80,
+  "top_k": 10,
+  "embedding_model": "qwen/qwen3-embedding-8b",
+  "llm_model": "qwen/qwen3.5-flash-02-23",
+  "temperature": 0.1,
+  "search_type": "similarity",
+  "splitter": "character",
+  "score_threshold": null,
+  "_scores": {
+    "faithfulness": 0.9,
+    "answer_relevance": 0.605,
+    "avg_score": 0.7525,
+    "_eval_tokens": {
+      "prompt_tokens": 324697,
+      "completion_tokens": 23310,
+      "total_tokens": 348007
+    },
+    "_pipeline_tokens": {
+      "embedding_tokens": 0,
+      "llm_prompt_tokens": 281221,
+      "llm_completion_tokens": 3622
+    },
+    "_cost": {
+      "llm_input_cost": 0.019685,
+      "llm_output_cost": 0.001014,
+      "embedding_cost": 0.0,
+      "total_cost_usd": 0.0207
+    }
+  },
+  "_timestamp": "2026-04-06T09:21:44.637420+00:00"
+}

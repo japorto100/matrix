@@ -2,7 +2,7 @@
 
 **Datum:** 10.04.2026
 **Status:** Draft
-**Abhaengig von:** exec-11 (Memory Engine / Hindsight), exec-12 (Audit), exec-17 (Observability)
+**Abhaengig von:** exec-11 (Memory Engine / Hindsight), exec-12 (Audit), exec-17 (Observability), `exec-world-model.md`, `exec-personal-kb.md`, `exec-context.md`
 **Referenzen:**
 - Agno Framework: https://github.com/agno-agi/agno (lokal als submodule: `_ref/agno`)
 - Agno Docs: https://docs.agno.com
@@ -23,6 +23,8 @@ weiterfuehrt:
 - `agent` = Python Agent Service (bekommt in exec-18 die 8 neuen Tabellen)
 - `ingestion` = Python Ingestion Worker
 - `storage` = Go Appservice (Artifacts, Crypto, S3-Metadata)
+- `personal_kb` (optional) = user-kuratierte Knowledgebase
+- `world` (optional) = globale Evidence-/Claim-Metadaten
 - `matrix_crypto` (optional) = Go Appservice (mautrix-go Olm Store)
 
 **Doku:** `specs/17-schema-ownership.md` (geschrieben exec-19, 11.04.2026).
@@ -48,6 +50,7 @@ weiterfuehrt:
   - [ ] `go-appservice/.env.development` + `python-backend/.env` anpassen
   - [ ] Migration script `scripts/pg-permission-split.sql`
   - [ ] Cold-Start Test: Go kann `agent.audit_events` NICHT mehr lesen (sollte "permission denied" kommen)
+  - [ ] Wenn `personal_kb` / `world` aktiviert werden: Grants/Rollen explizit erweitern statt still `agent` mitzubenutzen
 - [ ] **SQLite-Store entfernen** — `metadata_store.go` (SQLite) loeschen,
   `metadata_store_factory.go` loeschen, nur `PostgresMetadataStore` bleibt.
   Das macht den Code-Pfad eindeutig und passt zum Single-Schema-per-Service Modell.
@@ -955,6 +958,83 @@ op.create_index(
 - Cross-schema FKs in Postgres sind moeglich aber zerstoeren die Schema-Isolation
 - Wir speichern die UUID als String und validieren zur Laufzeit
 
+### 019: `personal_kb.*` (optionaler Bounded Context, Owner: `exec-personal-kb`)
+
+`memory_kg.md` trennt klar:
+
+- `personal memory` = interaktionsnah
+- `personal knowledgebase` = kurationsnah
+
+Wenn wir diese Schicht produktiv persistent machen, braucht sie einen eigenen
+Bounded Context statt still in `agent` oder `public` aufzugehen.
+
+Minimaler Schema-Vorschlag:
+
+- `personal_kb.items` — gespeicherte Artefakte (`note`, `link`, `pdf`, `video`, `transcript`, `bookmark`)
+- `personal_kb.annotations` — Highlights, Notes, Pins, Labels
+- `personal_kb.links` — leichte Links zu Entities / World Evidence / Memory
+- `personal_kb.import_jobs` — Markdown-/PKM-/Bookmark-Importe
+
+Wichtige Felder fuer `items`:
+
+- `id`
+- `user_id`
+- `artifact_type`
+- `title`
+- `source_uri`
+- `storage_ref`
+- `transcript_ref`
+- `metadata`
+- `created_at`
+- `updated_at`
+- `saved_at`
+- `saved_from`
+- `status`
+
+Wichtige Regel:
+
+- `personal_kb` ist System-of-record fuer bewusst gespeicherte User-Artefakte
+- Links zu `memory` oder `world` sind Bridges, nicht zweite Wahrheiten
+
+### 020: `world.*` (optionaler Bounded Context, Owner: `exec-world-model`)
+
+`memory_kg.md` trennt klar:
+
+- `global world evidence`
+- `claim layer`
+- `global world KG`
+
+Selbst wenn der spaetere KG in FalkorDB / Kuzu / Hybrid landet, brauchen wir
+fuer Postgres-nahe Metadaten und Auditing eine klare Welt-Seite.
+
+Minimaler Schema-Vorschlag:
+
+- `world.sources` — Quelle / Publisher / Feed / Snapshot-Metadaten
+- `world.evidence_items` — extrahierte Evidenz-Einheiten
+- `world.claims` — Claims mit Status / Freshness / Provenance-Qualitaet
+- `world.claim_evidence` — Support-/Contradiction-Links zwischen Claim und Evidence
+
+Wichtige Felder fuer `claims`:
+
+- `id`
+- `claim_text`
+- `claim_type`
+- `status`
+- `support_count`
+- `conflict_count`
+- `freshness_score`
+- `source_quality_prior`
+- `entity_link_quality`
+- `contradiction_risk`
+- `metadata`
+- `created_at`
+- `updated_at`
+
+Wichtige Regel:
+
+- `world.claims` ist nicht identisch mit dem spaeteren Graph-of-record
+- relationale Metadaten + KG + Vector koennen koexistieren, Rollen bleiben getrennt
+
 ---
 
 ## Migration Sequenz
@@ -969,6 +1049,8 @@ op.create_index(
 | 016 | `schedules` + `schedule_runs` | 011 | Nein — Cron mode |
 | 017 | `approvals` | 011 | Nein — erweitert exec-12 |
 | 018 | `session_memories` | 011 | Nein — Hindsight bridge |
+| 019 | `personal_kb.items` + `annotations` + `links` + `import_jobs` | 011 / Storage-Entscheidungen | Nein — Phase 2/3 |
+| 020 | `world.sources` + `evidence_items` + `claims` + `claim_evidence` | 011 / Ingestion-Entscheidungen | Nein — Phase 3 |
 
 ---
 
@@ -1109,20 +1191,63 @@ async def trace_detail(session_id: str) -> str:
 
 ## Zusammenfassung: Was, Wann, Warum
 
-| Migration | Was | Warum | Wann |
-|-----------|-----|-------|------|
-| **011** sessions | Zentrale Session Table | Grundlage fuer alle neuen FKs | Phase 1 |
-| **012** evals | Eval Run Records | exec-17 Phase 6 Evaluator persistence | Phase 1 |
-| **013** metrics | Daily Aggregation | Dashboards, Cost Reports | Phase 2 |
-| **014** traces + spans | Persistent OTel | SQL-able harness analysis | Phase 1 |
-| **015** components + configs + links | Versionierte Agent Configs | exec-17 Phase 5 Proposer, Pareto Frontier | Phase 1 |
-| **016** schedules + runs | Cron Jobs | exec-17 Phase 6 Automatic Proposer | Phase 3 |
-| **017** approvals | HITL Workflow | Besseres Consent Management | Phase 2 |
-| **018** session_memories | Hindsight Bridge | Query Sessions by Memory | Phase 2 |
+**WICHTIG — Nummern-Mapping:** Spec-Nummern 011-018 sind VERALTET. Tatsaechliche Alembic-Nummern 011-014 waren schon belegt (selected_models, default_mode, utility_models, agent_skills). Reale Migrationen:
 
-**Phase 1 (kritisch, exec-17 Follow-Up):** 011 + 012 + 014 + 015
-**Phase 2 (Enhancement):** 013 + 017 + 018
-**Phase 3 (Optional):** 016
+| Spec-Nr | Reale Nr | Was | Status (2026-04-16) |
+|---------|----------|-----|---------------------|
+| — | **014** agent_skills | Skills DB Schema | ✅ gebaut + verifiziert |
+| — | **015** skill_extensions | skill_type + assets JSONB (ALTER TABLE) | ✅ gebaut + verifiziert |
+| 011 | **016** sessions | `agent.sessions` + `agent/sessions.py` CRUD | ✅ gebaut + verifiziert |
+| 014 | **017** traces_spans | `agent.traces` + `agent.spans` | ✅ Tabellen gebaut, PostgresSpanProcessor TODO |
+| 015 | **018** components | `agent.components` + `component_configs` + `component_links` | ✅ Tabellen gebaut, Proposer-Integration TODO |
+| 012 | **019** (geplant) | `agent.evals` | noch nicht gebaut |
+| 013 | **020** (geplant) | `agent.metrics` | noch nicht gebaut |
+| 017 | **021** (geplant) | `agent.approvals` | noch nicht gebaut |
+| 018 | **022** (geplant) | `agent.session_memories` (Hindsight Bridge) | noch nicht gebaut |
+| 016 | **023** (geplant) | `agent.schedules` + `schedule_runs` | noch nicht gebaut |
+| 019 | **024** (geplant) | `personal_kb.*` | noch nicht gebaut |
+| 020 | **025** (geplant) | `world.*` | noch nicht gebaut |
+
+**Gebaut (Phase 1, 2026-04-16):** 014 + 015 + 016 + 017 + 018
+**Naechster Schritt:** PostgresSpanProcessor (017 Runtime-Integration), Proposer→component_configs (018 Integration), evals (019)
+**Spaeter:** 020-025
+
+---
+
+## Ergaenzung (Plan 2026-04): `agent_skills` + Memory-A/B in `agent.evals`
+
+**Zweck:** [`exec-skills.md`](./exec-skills.md) und [`exec-memory.md`](./exec-memory.md) ohne neue „Wahrheit“ duplizieren — hier nur **Schema-Entwurf**, Migration wenn Persistenz gewuenscht. **Agno-Referenz:** `_ref/agno/libs/agno/agno/db/postgres/schemas.py` (Patterns, nicht 1:1 kopieren).
+
+### `agent.agent_skills` + `user_skill_preferences` (Entwurf)
+
+Align mit exec-skills §3a: Spalten `id`, `name`, `description`, `content`, `tier`, `owner_id`, `generation`, `parent_skill_id`, `success_count`, `usage_count`, `enabled`, `api_version` (Schema-Drift), Timestamps. Zweite Tabelle: User-Deaktivierung pro Skill (`user_id`, `skill_id`, `disabled`).
+
+- **Umsetzung (Matrix python-backend):** Alembic **`014_agent_skills.py`** — `agent.agent_skills` + `agent.user_skill_preferences` (`schema="agent"`). Loader bleibt bis Seed filesystem-basiert; nach `alembic upgrade head` DB bereit.
+- **Beziehung zu `components`:** optional Skills zusaetzlich als `component_type='skill'` (exec-18 Open Questions Punkt 4) — Policy vor Migration festlegen.
+- **Runtime-Pfad:** `agent/skills/store_db.py` + `scripts/seed_agent_skills.py`; **Alembic erstellt nur Tabellen**. Runtime-Zugriff, Seed und spaeteres Umschalten `filesystem|db|hybrid` passieren bewusst ausserhalb der Migration.
+
+### `agent.evals` — `eval_type` Erweiterung `memory_ab`
+
+Fuer MemPalace-vs-Hindsight-Vergleiche (gleiche Queries, zwei Pipelines):
+
+- **`eval_type`:** `memory_ab` (oder `memory_retrieval_ab`)
+- **`eval_input` (JSONB):** z. B. `{ "corpus_id": "...", "queries": ["q1", ...], "pipelines": ["hindsight", "mempalace"] }`
+- **`eval_data` (JSONB):** Metriken pro Pipeline — R@k, Latenz, Token-Kosten, Fehlerquote
+
+Keine neue Tabelle noetig solange ein Run = eine Zeile in `evals` reicht.
+
+---
+
+## Verify / offene Punkte (Plan 2026-04)
+
+- [ ] Alembic `014_agent_skills.py` gegen echte DB verifizieren
+- [ ] Entscheiden, ob `agent.agent_skills` zusaetzlich einen Unique-Constraint auf (`name`,`tier`,`owner_id`) braucht
+- [ ] Entscheiden, ob Skills parallel als `components` registriert werden oder bewusst getrennt bleiben
+- [ ] `memory_ab` Write-/Aggregation-Pfad existiert (`agent/harness/evals_store.py`, `scripts/persist_memory_ab_eval.py`, `experiments/memory_eval/aggregate_memory_ab.py`); Hindsight-Runner existiert, echter MemPalace-Runner / Evaluator-Kopplung noch offen
+- [ ] Entscheiden, ob `personal_kb` ein eigenes Postgres-Schema wird oder nur logisch ueber Artefaktstores modelliert wird
+- [ ] Entscheiden, wie stark `world.claims` relationale Metadaten vs. Graph-of-record nur spiegeln statt doppeln
+- [ ] `component_configs` / HarnessConfig auf `consumer_type` / layer-aware Policies pruefen (siehe `exec-harness.md`)
+- [ ] **API-Version / Schema-Drift breit:** `api_version` existiert auf `agent_skills` (exec-skills §6.6). Gleiche Logik sollte auf `component_configs` (Harness-Configs referenzieren Tool-APIs), und auf Hindsight Memory-Units (gespeicherte Tool-Call-Patterns mit alter API ungueltig). Aktuell nur Skills-Scope; breitere Umsetzung nach exec-18 Tabellen.
 
 ---
 
@@ -1152,16 +1277,29 @@ async def trace_detail(session_id: str) -> str:
    - Pro Role? `user-{user_id}-{role}` (wie in Hindsight-Docs vorgesehen?)
    - Muss mit Hindsight-Integrations Team abgestimmt werden
 
+6. **Wie weit ziehen wir Bounded Contexts physisch durch?**
+   - `personal_kb` / `world` nur logisch?
+   - oder echte Schemas ab Migration 019/020?
+   - Entscheidung haengt an Ownership, Privacy und Infra-Komplexitaet
+
 ---
 
-## Verify-Gates (spaeter)
+## Verify-Gates
 
-- [ ] Migrationen 011-018 laufen durch ohne Fehler
-- [ ] Agent-Session erstellt Row in `agent.sessions` mit korrektem Status
-- [ ] OTel Span exportiert parallel zu OpenObserve UND `agent.traces`/`spans`
-- [ ] Proposer legt Component Config als `draft` Stage an
-- [ ] Evaluator speichert Ergebnis in `agent.evals` mit FK zu component_configs
-- [ ] Pareto-Frontier Flag wird korrekt gesetzt nach SQL-Query
+**Verifiziert (2026-04-16):**
+- [x] Migrationen 014-018 laufen durch ohne Fehler (podman PG 5433/hindsight_dev)
+- [x] `agent.sessions` CRUD: `create_session()` → status='active', `update_session()` → status='completed' + summary JSONB, `get_session()` → dict zurueck. Smoke-Test bestanden.
+- [x] 16 Tabellen im `agent` Schema nach 018 (agent_skills, sessions, traces, spans, components, component_configs, component_links, + 9 bestehende)
+- [x] Hindsight Schema unveraendert (public.* nicht beruehrt)
+- [x] `audit_events` laufen weiter (SKILL_* Events parallel zu neuen Tabellen)
+
+**Noch offen:**
+- [x] PostgresSpanProcessor in `agent/tracing.py` gebaut — `AGENT_PERSIST_TRACES=1` exportiert OTel Spans → `agent.traces` + `agent.spans` (2026-04-16)
+- [x] `agent/graph/runner.py:_run_graph()` erstellt Session-Row via `create_session()` bei Start, updated `completed`/`errored` am Ende (2026-04-16)
+- [x] Proposer legt Component Config als `draft` in `agent.component_configs` an. Env `HARNESS_SAVE_MODE=db|filesystem|both` (default both). `pareto.py` merged DB+FS dedupliziert. (2026-04-16)
+- [ ] Evaluator speichert Ergebnis in `agent.evals` (Migration 019 noch nicht gebaut)
+- [ ] Pareto-Frontier Flag auf component_configs wird korrekt gesetzt
 - [ ] MCP Trace Tools liefern reichere Daten (Session + Trace + Spans + Memory)
-- [ ] Hindsight Schema bleibt unveraendert (keine Kreuzungen)
-- [ ] `audit_events` laufen weiter fuer Compliance
+- [ ] `personal_kb`-Persistenz landet nicht still in `agent.sessions` oder Hindsight-Banken
+- [ ] `world`-Claims/Evidence sind von Personal Memory physisch oder mindestens logisch getrennt
+- [ ] !! `agent.sessions` vs Hindsight `operations`/`banks` Abgleich — siehe exec-memory §8.6

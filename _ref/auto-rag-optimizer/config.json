@@ -1,0 +1,12 @@
+{
+  "experiment_id": 21,
+  "chunk_size": 512,
+  "chunk_overlap": 90,
+  "top_k": 10,
+  "embedding_model": "qwen/qwen3-embedding-8b",
+  "llm_model": "qwen/qwen3.5-flash-02-23",
+  "temperature": 0.1,
+  "search_type": "similarity",
+  "splitter": "character",
+  "score_threshold": null
+}

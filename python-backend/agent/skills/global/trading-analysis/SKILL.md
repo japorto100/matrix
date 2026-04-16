@@ -1,6 +1,6 @@
 ---
 name: trading-analysis
-description: Multi-timeframe trading analysis workflow for forex and crypto markets
+description: Use when the user wants trade setup analysis, multi-timeframe structure, entry / stop / target ideas, key levels, confluence, or a directional view on forex, crypto, or liquid macro assets
 category: trading
 ---
 

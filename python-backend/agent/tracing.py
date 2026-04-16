@@ -166,3 +166,141 @@ def set_session_summary(
     span.set_attribute("session.total_tokens", total_tokens)
     span.set_attribute("session.total_cost", total_cost)
     span.set_attribute("session.outcome", outcome)
+
+
+# ── PostgresSpanProcessor ──────────────────────────────────────────────
+# Exports OTel spans to agent.traces + agent.spans (exec-18, Migration 017).
+# Runs parallel to OpenObserve — both get every span. Async background
+# writes so agent latency is unaffected (Agno pattern).
+
+
+class PostgresSpanProcessor:
+    """OTel SpanProcessor that persists finished spans to agent.traces + agent.spans.
+
+    Register via: TracerProvider.add_span_processor(PostgresSpanProcessor())
+    Only active when AGENT_PERSIST_TRACES=1 (default: off until exec-18 verified).
+    """
+
+    def __init__(self) -> None:
+        import os
+
+        self._enabled = os.environ.get(
+            "AGENT_PERSIST_TRACES", ""
+        ).strip().lower() in ("1", "true", "yes")
+
+    def on_start(self, span: Any, parent_context: Any = None) -> None:  # noqa: ARG002
+        pass
+
+    def on_end(self, span: Any) -> None:
+        if not self._enabled:
+            return
+        try:
+            self._persist(span)
+        except Exception:  # noqa: BLE001
+            pass  # fire-and-forget
+
+    def shutdown(self) -> None:
+        pass
+
+    def force_flush(self, timeout_millis: int = 0) -> bool:  # noqa: ARG002
+        return True
+
+    def _persist(self, span: Any) -> None:
+        import json as _json
+        import os
+        from datetime import datetime, UTC
+
+        import psycopg
+
+        ctx = span.get_span_context()
+        if not ctx or not ctx.trace_id:
+            return
+
+        trace_id = format(ctx.trace_id, "032x")
+        span_id = format(ctx.span_id, "016x")
+        parent_id = (
+            format(span.parent.span_id, "016x")
+            if span.parent and span.parent.span_id
+            else None
+        )
+        now_iso = datetime.now(UTC).isoformat()
+        start_ns = span.start_time or 0
+        end_ns = span.end_time or 0
+        duration_ms = (end_ns - start_ns) // 1_000_000
+
+        # Attributes → JSONB
+        attrs = {}
+        if hasattr(span, "attributes") and span.attributes:
+            attrs = dict(span.attributes)
+
+        # Events → JSONB
+        events = []
+        if hasattr(span, "events") and span.events:
+            for ev in span.events:
+                events.append({
+                    "name": ev.name,
+                    "timestamp": ev.timestamp,
+                    "attributes": dict(ev.attributes) if ev.attributes else {},
+                })
+
+        status_code = "ok"
+        if hasattr(span, "status") and span.status:
+            status_code = str(span.status.status_code.name).lower()
+
+        db_url = os.environ.get(
+            "HINDSIGHT_DB_URL",
+            "postgresql://postgres@localhost:5433/hindsight_dev",
+        )
+
+        with psycopg.connect(db_url, autocommit=True) as conn:
+            # Upsert trace (root span creates, children update end_time)
+            conn.execute(
+                """
+                INSERT INTO agent.traces
+                    (trace_id, name, status, start_time, end_time, duration_ms,
+                     session_id, user_id, agent_id, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (trace_id) DO UPDATE SET
+                    end_time = EXCLUDED.end_time,
+                    duration_ms = GREATEST(agent.traces.duration_ms, EXCLUDED.duration_ms),
+                    status = EXCLUDED.status
+                """,
+                (
+                    trace_id,
+                    span.name,
+                    status_code,
+                    now_iso,
+                    now_iso,
+                    duration_ms,
+                    attrs.get("session.id"),
+                    attrs.get("session.user_id"),
+                    attrs.get("session.role"),
+                    now_iso,
+                ),
+            )
+
+            # Insert span
+            conn.execute(
+                """
+                INSERT INTO agent.spans
+                    (span_id, trace_id, parent_span_id, name, span_kind,
+                     status_code, start_time, end_time, duration_ms,
+                     attributes, events, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s)
+                ON CONFLICT (span_id) DO NOTHING
+                """,
+                (
+                    span_id,
+                    trace_id,
+                    parent_id,
+                    span.name,
+                    span.kind.name if hasattr(span, "kind") and span.kind else "INTERNAL",
+                    status_code,
+                    now_iso,
+                    now_iso,
+                    duration_ms,
+                    _json.dumps(attrs, default=str),
+                    _json.dumps(events, default=str) if events else None,
+                    now_iso,
+                ),
+            )
