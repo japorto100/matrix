@@ -3,6 +3,16 @@
 Operative Umsetzungspläne mit Checkboxen und Verify Gates.
 Werden abgearbeitet und als Referenz behalten.
 
+## Empfohlene Reihenfolge (Memory / World Model / Personal KB / Context / Harness — 2026-04)
+
+1. **Specs abstimmen:** [`exec-memory.md`](./exec-memory.md), [`exec-world-model.md`](./exec-world-model.md), [`exec-personal-kb.md`](./exec-personal-kb.md), [`exec-context.md`](./exec-context.md), [`exec-harness.md`](./exec-harness.md), [`exec-skills.md`](./exec-skills.md) — Refs `_ref/mempalace`, `_ref/agno` (siehe [`exec-18-unified-agent-schema.md`](./exec-18-unified-agent-schema.md)).
+2. **Memory sauber schneiden:** `exec-memory` = Personal Memory, `exec-world-model` = globale Wissensseite, `exec-personal-kb` = user-kuratierte KB.
+3. **Code zuerst Runtime:** `exec-context` (Python: `agent/llm_client.py`, `context/merge.py`) — Retrieval-/Assembly-Regeln, Compaction, Caching, Prompt-Economics.
+4. **Parallel Eval:** MemPalace vs Hindsight (siehe exec-memory §5) — Artefakte unter `python-backend/experiments/memory_eval/` möglich, DB optional.
+5. **Schema bei Bedarf:** `exec-18` — Bridges / Claims / KB / `agent.evals`, wenn Persistenzentscheidungen stabil sind.
+6. **Harness danach explizit:** `exec-harness` fuer layer-aware / consumer-aware Tuning, nicht nur generische Trace-Optimierung.
+7. **UI:** [`exec-15-memory-control-ui.md`](./exec-15-memory-control-ui.md) + Agent-Chat ([`exec-06`](./exec-06-agent-chat-integration.md), [`exec-merge-chat.md`](./exec-merge-chat.md)), wenn APIs stehen.
+
 | Datei | Inhalt | Status |
 |---|---|---|
 | exec-05-nats-e2ee-pipeline.md | NATS E2EE Pipeline (Go↔Python Bridge) | ✅ Implementiert |
@@ -29,6 +39,10 @@ Werden abgearbeitet und als Referenz behalten.
 | exec-rust.md | Rust Indicator Core & Compute Integration (aus TradeFusion portiert) | Portiert |
 | exec-20-mcp-manager.md | MCP Security, Governance, Auth Proxy, Tool Filtering, MCP Apps | Evaluation |
 | exec-memory.md | Memory Architecture Evaluation — Hindsight vs MemPalace vs weitere Systeme | Evaluation |
+| exec-world-model.md | Global World Evidence + Claims + KG + Adjudication | Planung |
+| exec-personal-kb.md | Personal Knowledgebase — Capture, Curation, Retrieval, UI-Patterns | Planung |
+| exec-context.md | Context Assembly — Compaction-Trigger, Prompt-Caching, merge.py-Reihenfolge, SOTA Prompt-Economics | Evaluation / aktiv |
+| exec-harness.md | Layer-aware / consumer-aware Harness Tuning, Pareto, Trace-informed Optimization | Draft |
 | exec-skills.md | Skill Discovery, Refinement & Evolution — finder, refiner, SkillRL | Evaluation / Phase 1 bereit |
 
 Archivierte Slices: `archive/`

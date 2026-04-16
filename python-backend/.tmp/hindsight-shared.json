@@ -1,0 +1,150 @@
+{
+  "pipeline": "hindsight",
+  "corpus_id": "sample-shared-corpus",
+  "items": [
+    {
+      "query": "What trading style does the user prefer for Brent?",
+      "expected_ids": [
+        "session-01.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-01.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_refs": [
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_raw_ids": [
+        "54e65f1d-6030-4ef6-a4ec-0f7b28435de9",
+        "9264b817-12ac-4daf-91c0-abf5df9f80fa",
+        "ce48a971-c70d-473c-b9d0-9682aa9da44d",
+        "1a86434b-bd61-4706-9536-bb02b7c20a39"
+      ],
+      "retrieved_texts": [
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts."
+      ],
+      "latency_ms": 2262.61,
+      "token_cost": 0.0,
+      "error": null
+    },
+    {
+      "query": "Which timeframes did the user prefer over 5-minute charts?",
+      "expected_ids": [
+        "session-01.jsonl#1"
+      ],
+      "expected_refs": [
+        "session-01.jsonl#1"
+      ],
+      "retrieved_ids": [
+        "session-01.jsonl#1",
+        "session-01.jsonl#0",
+        "session-03.jsonl#0",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_refs": [
+        "session-01.jsonl#1",
+        "session-01.jsonl#0",
+        "session-03.jsonl#0",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_raw_ids": [
+        "1a86434b-bd61-4706-9536-bb02b7c20a39",
+        "54e65f1d-6030-4ef6-a4ec-0f7b28435de9",
+        "ce48a971-c70d-473c-b9d0-9682aa9da44d",
+        "9264b817-12ac-4daf-91c0-abf5df9f80fa"
+      ],
+      "retrieved_texts": [
+        "The user said weekly and daily timeframes are more useful than 5-minute charts.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent."
+      ],
+      "latency_ms": 249.91,
+      "token_cost": 0.0,
+      "error": null
+    },
+    {
+      "query": "What risk did the assistant mention about OPEC headlines?",
+      "expected_ids": [
+        "session-02.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-02.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1",
+        "session-01.jsonl#0"
+      ],
+      "retrieved_refs": [
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1",
+        "session-01.jsonl#0"
+      ],
+      "retrieved_raw_ids": [
+        "9264b817-12ac-4daf-91c0-abf5df9f80fa",
+        "ce48a971-c70d-473c-b9d0-9682aa9da44d",
+        "1a86434b-bd61-4706-9536-bb02b7c20a39",
+        "54e65f1d-6030-4ef6-a4ec-0f7b28435de9"
+      ],
+      "retrieved_texts": [
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading."
+      ],
+      "latency_ms": 290.76,
+      "token_cost": 0.0,
+      "error": null
+    },
+    {
+      "query": "What did the user say about over-trading?",
+      "expected_ids": [
+        "session-03.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-03.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-01.jsonl#1",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_refs": [
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-01.jsonl#1",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_raw_ids": [
+        "ce48a971-c70d-473c-b9d0-9682aa9da44d",
+        "54e65f1d-6030-4ef6-a4ec-0f7b28435de9",
+        "1a86434b-bd61-4706-9536-bb02b7c20a39",
+        "9264b817-12ac-4daf-91c0-abf5df9f80fa"
+      ],
+      "retrieved_texts": [
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent."
+      ],
+      "latency_ms": 302.93,
+      "token_cost": 0.0,
+      "error": null
+    }
+  ]
+}

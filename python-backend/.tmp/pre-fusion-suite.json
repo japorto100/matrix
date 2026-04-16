@@ -1,0 +1,20 @@
+{
+  "name": "memory_suite:sample-shared-corpus",
+  "corpus_id": "sample-shared-corpus",
+  "pipelines": {
+    "hindsight": {
+      "queries": 4,
+      "mean_recall": 0.0,
+      "mean_latency_ms": 964.52,
+      "total_token_cost": 0.0,
+      "error_rate": 0.0
+    },
+    "mempalace": {
+      "queries": 4,
+      "mean_recall": 0.0,
+      "mean_latency_ms": 475.96,
+      "total_token_cost": 0.0,
+      "error_rate": 0.0
+    }
+  }
+}

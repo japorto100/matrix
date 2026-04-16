@@ -2,10 +2,28 @@
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# ── SOTA 2026 uv-Workspace ──────────────────────────────────────────────────
+# Python-backend ist Workspace-Root. Konflikt-freie Subpakete sind Members:
+# ein gemeinsames .venv + ein Lockfile, Members erben root-deps via shared venv.
+# Ingestion + litellm-gateway sind auch Members (keine Konflikte mit root).
+#
+# ISOLIERT (NICHT Workspace-Member, eigene venv + eigene pyproject.toml):
+# - compute (fastapi==0.116.1 Pin vs root >=0.120.3)
+# - kg_pipeline (torch==2.3.1 harter ReLiK-Pin)
+# - extraction_layout (pillow<11 Konflikt mit hindsight)
+# - litellm-gateway (transitive uvicorn<0.22.0 Pin vs root >=0.38.0 — von uv 2026-04-15 erkannt)
+# - rust_core (maturin build-system, PyO3-Binding)
+#
+# Siehe matrix/specs/18-python-backend-workspace-refactor.md
+[tool.uv.workspace]
+members = ["agent", "bridge", "voice", "memory_engine", "mock", "ingestion"]
+
+# Root liefert shared-base für alle Workspace-Members (context/retrieval/memory/shared
+# bleiben Namespace-Packages von python-backend selbst — noch ohne eigenes pyproject).
 [tool.setuptools.packages.find]
 where = ["."]
 namespaces = true
-include = ["agent*", "bridge*", "memory_engine*", "context*", "voice*", "mock*"]
+include = ["context*", "retrieval*", "memory*", "shared*"]
 
 [project]
 name = "matrix-python-backend"
@@ -60,6 +78,8 @@ dependencies = [
     # "chromadb>=0.5.0",
     # "sentence-transformers>=3.0.0",
     # "lancedb>=0.6.0",
+    "chromadb>=0.5.0,<0.7",
+    "pyyaml>=6.0,<7",
     "psycopg[binary]>=3.2.0", # Audit Logging (exec-12) + eigene Alembic Migrationen
     # ── Voice AI Pipeline (LiveKit Agents) ──────────────────────────────────
     # Provider-agnostisch: STT/TTS/LLM via ENV umschaltbar
@@ -98,6 +118,7 @@ dev = [
     "basedpyright>=1.34.0",
     "pytest>=8.3",
     "pytest-asyncio>=0.23",
+    "maturin>=1.7,<2",          # Rust↔Python binding build für rust_core
 ]
 
 [tool.pytest.ini_options]

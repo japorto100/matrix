@@ -1,6 +1,10 @@
 """Shared LiteLLM Client — einziger OpenAI SDK Client im Agent.
 
-Alle LLM-Calls gehen hierueber → LiteLLM Gateway → Provider.
+Alle LLM-Calls gehen hierueber → LiteLLM Gateway → Provider (OpenRouter-Upstreams
+ueber Model-String `openrouter/...`). Prompt-Caching / Extra-Parameter:
+provider-agnostisch in den Call-Sites (z. B. `agent/graph/nodes/llm_node.py`),
+nicht parallel ein zweites Provider-SDK — siehe specs/execution/exec-context.md.
+
 Konfiguration: LITELLM_BASE_URL (default: http://localhost:4000)
 """
 

@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matrix-mock"
+version = "0.1.0"
+description = "Mock Agent — für Test-/Dev-Setup im Isolationsprojekt"
+requires-python = ">=3.11"
+dependencies = []  # erbt shared-base aus python-backend/
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = true
+include = ["mock*"]

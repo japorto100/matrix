@@ -1,6 +1,8 @@
 # Multi-Source Context Merge — Phase 10b.3
 # Simple merge: priority order, dedup by symbol, diversity floor
 # Ref: CONTEXT_ENGINEERING.md Sek. 6
+# Prompt-Block-Reihenfolge (System → Skills → Memory → History) siehe
+# specs/execution/exec-context.md §5 — dieses Modul merged Retrieval-Fragmente, nicht den vollen Chat-Prompt.
 # Note: DyCP/LLMLingua-2 evaluated; simple merge chosen for MVP
 
 from __future__ import annotations

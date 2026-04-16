@@ -29,6 +29,21 @@
 | **Slice 8** Integration in agent-chat/ | Geplant | Komponenten-Migration, GlobalTopBar mit 4 Surfaces, BFF-Routes |
 | **Slice 9** Graphiti/Cognee Backend | Geplant | Aus exec-13 Phase 1 verschoben (10.04.2026). GraphitiRetriever, Cognee, Unified Search API |
 | **Slice 10** Computer Use + Artifacts | Teilweise ✅ | Aus exec-13 Phase 5+6 verschoben (10.04.2026). Sandpack ✅, SandboxArtifact ✅, Playwright/Pilot/WebMCP offen |
+| **Slice 11** Personal KB + World Model Surfaces | Geplant | Folge aus `memory_kg.md`: UI-Trennung zwischen Personal Memory, Personal Knowledgebase und Global World Model |
+
+### Agent-Chat + Control UI — gemeinsame Backend-Vertraege (2026-04)
+
+**Abgrenzung:** [`exec-merge-chat.md`](./exec-merge-chat.md) betrifft UI-Merge/Dual-Panel — hier nur **Schnittstellen**, die Agent-Chat und Control gleich nutzen (kein doppelter Prompt-/Memory-Pfad).
+
+| Thema | Python (Agent-Service) | Control / BFF |
+|-------|------------------------|---------------|
+| Model / Key | `AgentExecutionContext.model`, `api_key`; `agent/graph/runner.py` | `GET/PATCH` unter `/api/v1/control/models`, User-LLM-Settings |
+| Skills | `load_skills` + `format_skills_for_prompt` mit Query aus letzter User-Nachricht; `agent/skills/finder.py`; Toggle: `agent.skills_state` | SkillsTab → `GET/PATCH /api/control/skills` |
+| Memory (Recall) | `runner._prepare_system_prompt` + Hindsight `recall_async` | Memory-Browser / Episodes — separate Routes |
+| Kosten / Caching | `llm_node` Usage + optional `prompt_tokens_details` (Langfuse) | ApiModelsTab / Spend (Proxy) |
+| Zukuenftig: Compaction-Flags | siehe [`exec-context.md`](./exec-context.md) — noch keine dedizierten Control-Felder | Settings-Erweiterung wenn API stabil |
+
+Slice 8 (agent-chat Integration) baut auf denselben **Go → Python** Pfaden auf; keine zweite „Skill-Liste“ im Frontend ohne Abgleich mit `agent/control/skills.py`.
 
 ---
 
@@ -1137,10 +1152,13 @@ Backend deckt aktuell `SandboxManager.execute_code()` und `execute_browser()` ab
   - Tab 4: **Bridge** — NATS Subject Subscription (siehe 5.6)
 - [ ] **5.1.2:** Pro Tab: "Upload Target" Selector
   - Sandbox (File-Upload zum Agent-Sandbox via existierender `FileAnalyzeTool`)
-  - Memory Engine (Document → Hindsight Pipeline)
+  - Personal Memory (`raw evidence`, interaktionsnah)
+  - Personal Knowledgebase (`curated`, Library/Notebook Ziel)
+  - Global World Evidence (nur fuer kuratierte Weltquellen / Ops-Flows)
   - Object Storage only (Files Surface, kein Processing)
 - [ ] **5.1.3:** Tag Selector (Multi-Select) am Bottom des Modals
 - [ ] **5.1.4:** Submit triggert je nach Target unterschiedlichen Endpoint
+- [ ] **5.1.5:** UI copy / badges machen die Trennung sichtbar: `Memory`, `Personal KB`, `World Evidence` duerfen nicht als gleiches Ziel erscheinen
 
 ### 5.2 Document → Hindsight Memory Pipeline (3-Venv Architektur, D13-D17)
 
@@ -1697,6 +1715,60 @@ Wir haben einen FastMCP Server (exec-09) der Tools standardisiert exposed. Wir h
   - DelegationLogTable.tsx — Time, From-Agent, To-Agent, Task, Result Status, Duration
   - RemoteAgentCardsList.tsx — Agent Cards (name, capabilities, last seen)
 - [ ] **6.7.3:** **Optional** — kann auch FUTURE_IDEAS sein wenn A2A nicht aktiv genutzt wird
+
+---
+
+## Phase 6b: Personal Knowledgebase + World Model Surfaces (NEU 16.04.2026)
+
+**Ziel:** `Memory Browser`, `Personal Knowledgebase` und `Global World Model`
+duerfen in der UI nicht als dieselbe Sache erscheinen.
+
+### 6b.1 Personal Knowledgebase Surfaces
+
+| Source | What |
+|---|---|
+| `memory_kg.md` | `Personal Knowledgebase` als kuratierte Schicht |
+| `Recall` | Produktmuster fuer Capture / Library / Transcript |
+| `TriliumNext` | UI-/UX-Muster fuer Tree / Notebook / Web Clipper |
+
+- [ ] **6b.1.1:** Neue KB-Routefamilie planen: `/kb/inbox`, `/kb/library`, `/kb/item/[id]`, `/kb/notes/[id]`
+- [ ] **6b.1.2:** `KBInboxPage` fuer neue Saves / Imports / untriagierte Artefakte
+- [ ] **6b.1.3:** `KBLibraryPage` mit Filter auf `artifact_type` (`note`, `link`, `pdf`, `video`, `transcript`, `bookmark`)
+- [ ] **6b.1.4:** `KBItemDetail` mit Artefakt, Transcript/PDF-View, Highlights, Labels, Related Entities
+- [ ] **6b.1.5:** Save-/Import-Flows aus Phase 5 muessen `Personal KB` explizit als Ziel zeigen
+- [ ] **6b.1.6:** KB-Surfaces sind **nicht** `Episodes` / `Memory Browser`; getrennte Navigation und Labels
+
+### 6b.2 Global World Model / Ops Surfaces
+
+| Source | What |
+|---|---|
+| `memory_kg.md` | `Global World Evidence` + `Claim Layer` + `Global World KG` |
+| `exec-world-model.md` | Owner fuer Evidence / Claims / KG / Adjudication |
+
+- [ ] **6b.2.1:** Neue Routefamilie planen: `/world/evidence`, `/world/claims`, `/world/kg`
+- [ ] **6b.2.2:** `WorldEvidencePage` mit Quellenliste, Status, Freshness, Provenance
+- [ ] **6b.2.3:** `WorldClaimsPage` mit `status`, `support_count`, `conflict_count`, `freshness_score`
+- [ ] **6b.2.4:** `WorldClaimDetailSheet` zeigt Claim + Support/Contradiction Evidence + Source Links
+- [ ] **6b.2.5:** `WorldKG` bleibt getrennt von Episode-/Personal-Memory-Graph; andere Terminologie und Filter
+- [ ] **6b.2.6:** Ops-/Research-Surfaces duerfen spaeter Adjudication-/Review-Aktionen zeigen, aber nicht Personal KB mit Welt-Claims vermischen
+
+### 6b.3 Context / Degradation Surfacing
+
+| Source | What |
+|---|---|
+| `memory_kg.md` | Consumer-Typen, Degradation-Flags, Layer-Trennung |
+| `exec-context.md` | Runtime-Owner fuer Merge / Degradation |
+
+- [ ] **6b.3.1:** Response-/Detail-Surfaces zeigen `source_layer` badges: `world`, `personal memory`, `personal KB`
+- [ ] **6b.3.2:** Sichtbare Flags fuer fehlende Schichten vorsehen: `NO_WORLD_KG`, `NO_WORLD_EVIDENCE`, `NO_PERSONAL_KB`, `WORLD_CLAIM_CONFLICT`
+- [ ] **6b.3.3:** Frontend darf `world claim` nie wie eine nackte Tatsache rendern; `status` + `provenance` sichtbar machen
+- [ ] **6b.3.4:** KB-Treffer im UI als user-owned Artefakte markieren, nicht als globale Wahrheit
+
+**Verify Gate Phase 6b:**
+- [ ] Ein gespeicherter Artikel landet sichtbar in `Personal KB`, nicht in `Episodes`
+- [ ] Ein globaler Claim ist in der UI mit Status + Provenance sichtbar
+- [ ] `Memory Browser`, `Personal KB` und `World Model` haben getrennte Navigation / Terminologie
+- [ ] Degradation-/Layer-Badges sind in mindestens einer Detailansicht sichtbar
 
 ---
 

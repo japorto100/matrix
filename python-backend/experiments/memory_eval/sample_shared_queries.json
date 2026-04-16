@@ -1,0 +1,23 @@
+{
+  "corpus_id": "sample-shared-corpus",
+  "bank_id": "user_eval_shared_v3",
+  "palace_path": "../../.tmp/mempalace_eval/shared-palace",
+  "queries": [
+    {
+      "query": "What trading style does the user prefer for Brent?",
+      "expected_refs": ["session-01.jsonl#0"]
+    },
+    {
+      "query": "Which timeframes did the user prefer over 5-minute charts?",
+      "expected_refs": ["session-01.jsonl#1"]
+    },
+    {
+      "query": "What risk did the assistant mention about OPEC headlines?",
+      "expected_refs": ["session-02.jsonl#0"]
+    },
+    {
+      "query": "What did the user say about over-trading?",
+      "expected_refs": ["session-03.jsonl#0"]
+    }
+  ]
+}

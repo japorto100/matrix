@@ -161,6 +161,8 @@ async def list_skills(
                 "owner": s.owner,
                 "generation": s.generation,
                 "enabled": s.enabled,
+                "db_id": getattr(s, "db_id", None),
+                "source": "db" if getattr(s, "db_id", None) else "filesystem",
             }
             for s in skills
         ]

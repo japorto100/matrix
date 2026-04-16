@@ -47,7 +47,10 @@ dependencies = [
     "opentelemetry-instrumentation-httpx>=0.50b0",
 
     # ── Shared workspace packages ────────────────────────────────────────────
-    "tradeview-fusion-python-backend",
+    # Kein dep auf tradeview-fusion-python-backend — compute hat fastapi==0.116.1
+    # Pin, python-backend will >=0.120.3 → unauflösbar. Compute bleibt isoliert.
+    # rust_core Binding wird via `maturin develop -m ../rust_core/Cargo.toml` in
+    # compute's venv installiert (separat, nicht via Workspace).
 ]
 
 [project.optional-dependencies]
@@ -60,8 +63,7 @@ ml = [
 testpaths = ["tests"]
 pythonpath = ["."]  # makes indicator_engine.* and geopolitical_soft_signals.* importable
 
-[tool.uv.sources]
-tradeview-fusion-python-backend = { workspace = true }
+# [tool.uv.sources] entfernt — compute ist isoliert, kein workspace-Source nötig
 
 [tool.ruff]
 exclude = [".venv", ".venv/**", "**/.venv/**"]

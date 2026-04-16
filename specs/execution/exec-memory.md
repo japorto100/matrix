@@ -2,12 +2,12 @@
 
 > Status: Evaluation / laufend
 > Erstellt: 2026-04-13
-> Abhaengigkeiten: exec-11 (Hindsight Memory Engine), exec-15 (Memory Control UI)
-> Referenzen: `_ref/mempalace/`, `_ref/hindsight/`, `_ref/supermemory/`
-> Papers: `docs/Hindsight_2512.12818v1.pdf`, `docs/Memory_Autonomous_LLM_Agents_2603.07670v1.pdf`
+> Abhaengigkeiten: exec-11 (Hindsight Memory Engine), exec-15 (Memory Control UI), [`exec-context.md`](./exec-context.md) (Compaction-Trigger, Prompt-Caching, `merge.py`-Reihenfolge — **operativer Owner**), [`exec-world-model.md`](./exec-world-model.md) (globale Wissensseite), [`exec-personal-kb.md`](./exec-personal-kb.md) (user-kuratierte Knowledgebase)
+> Referenzen (Code): `_ref/mempalace/` — Eval & Portierungs-Kandidaten (z. B. Dedup, Query-Sanitizer); `_ref/hindsight/` — produktive Engine; `_ref/supermemory/` — TBD. **Agno-Schema** (`_ref/agno/`) betrifft vor allem [`exec-18-unified-agent-schema.md`](./exec-18-unified-agent-schema.md), nicht dieses Exec.
+> Papers (ArXiv kanonisch): **2512.12818** Hindsight; **2603.07670** Memory for Autonomous LLM Agents; PDFs unter `docs/` falls vorhanden
 > Hauptprojekt-Docs (Source of Truth fuer bestehende Architektur):
 >   - `main_docs/root/MEMORY_ARCHITECTURE.md` — M1-M5, Self-Baking, Confidence Dampening, MemoryAccessPolicy
->   - `main_docs/root/CONTEXT_ENGINEERING.md` — Token Budget, Relevance Scoring, Entropy-Schutz, Multi-Source Merging
+>   - `main_docs/root/CONTEXT_ENGINEERING.md` — Token Budget, Relevance Scoring, Entropy-Schutz, Multi-Source Merging (mit [`exec-context.md`](./exec-context.md) zur Runtime aktualisieren)
 >   - `main_docs/root/RAG_GRAPHRAG_STRATEGY_2026.md` — Dual Pipeline, Hybrid Retrieval, UQ/Bayesian Confidence-Gates
 >   - `main_docs/root/storage_layer.md` — SeaweedFS/Object Storage Entscheidung
 >   - `main_docs/root/AGENT_SECURITY.md` — Capability Envelope, Retrieval Broker, Privacy/Deletion
@@ -23,6 +23,27 @@ keine Personalisierung, kein kumulatives Wissen ueber Maerkte/User/Strategien.
 Dieses exec sammelt alle Memory-relevanten Evaluierungen, Vergleiche und
 Architektur-Entscheidungen an einem Ort.
 
+Nicht Owner fuer:
+
+- globales World Model / Claim-Adjudication
+- user-kuratierte Personal Knowledgebase
+
+### 0a. Operative Leitregeln seit `memory_kg.md`
+
+Dieses Exec ist ab jetzt explizit Owner fuer die **persoenliche Memory-Seite**:
+
+- `Personal Raw Evidence`
+- `Personal Derived Memory`
+- Verbatim-/Retain-/Recall-Pfade dazwischen
+
+Harte Regeln:
+
+- User-Input startet als **Evidenzquelle**, nicht als `truth`
+- User-Input startet auch **nicht automatisch** als `belief`
+- Agent-Output ist ein **sekundaeres Artefakt**, keine primaere Evidenz
+- `derived memory` darf nie alleine als Antwortschaetzchen existieren, sondern nur mit Evidence-/Source-Backlinks
+- `Personal Knowledgebase` und `Global World Model` duerfen mit Memory **verlinkt** sein, sind aber keine Default-Write-Ziele dieses Execs
+
 ---
 
 ## 1. IST-Zustand: Unser Memory Stack
@@ -37,6 +58,18 @@ Architektur-Entscheidungen an einem Ort.
 | M3 | Episodic Memory | `memory_engine/episodic_store.py` (Legacy SQLite) → **Hindsight** | Hindsight Phase 1 implementiert |
 | M4 | Vector Store | `memory_engine/vector_store.py` — ChromaDB/pgvector | Architektur definiert |
 | M5 | Working Memory | `agent/working_memory.py` — Redis/Valkey Cache, per-entry keys, 30min TTL | Implementiert |
+
+**Wichtig:** Diese Tabelle zeigt den breiteren historischen Stack.
+Der **operative Fokus dieses Execs** liegt aber auf dem persoenlichen Memory-Pfad:
+
+- rohe persoenliche Evidenz
+- daraus abgeleitete persoenliche Learnings
+- deren Speicherung, Recall, Promotion, Eval und Guardrails
+
+Nicht Fokus dieses Execs:
+
+- globale Welt-Claims als eigener Truth-Layer
+- user-kuratierte Personal-Knowledgebase als eigener Artefakt-Layer
 
 ### Hindsight Memory Engine (exec-11)
 
@@ -269,110 +302,46 @@ vollstaendig. MemPalace liest die volle Datei, nicht den compacted Context.
 - Batch-Mining in Verbatim Store (PostgreSQL `verbatim_store`)
 - PreCompact-Hook als Sicherheitsnetz: Verbatim Retain triggern bevor Context schrumpft
 
-### 3f. Compaction-Strategie + Token Caching
+### 3f. Compaction, Token-Caching & Prompt-Reihenfolge
 
-**Compaction = Context-Fenster schrumpft wenn voll.** Muss dynamisch sein:
+**Operativer Owner:** [`exec-context.md`](./exec-context.md) — dort: modell-relative Schwellen (80/85/95%), **LiteLLM** / Provider **Prompt Caching**, **KV-Cache** (vLLM/SGLang/LMCache), Ziel-Reihenfolge fuer `context/merge.py`, SOTA-Referenzen (Stand 15.04.2026), Observability (`cached_tokens`), und Abgrenzung zu Memory-**Write**-Pfaden.
 
-#### Wann Compaction triggern
+**Memory-Perspektive (kurz):** Compaction **verdichtet** den sichtbaren Chat im LLM-Fenster; ohne parallelen **Verbatim-/Hindsight-Write** gehen Details verloren (Paper **2603.07670** zu Drift / langer Kontext). Deshalb bleibt die Kette aus **§3e PreCompact / §3b Verbatim-Store** + Retain hier verbindlich; die **Trigger-Logik und Merge-Order** pflegen wir in **exec-context**.
 
-| Trigger | Bedingung | Aktion |
-|---------|-----------|--------|
-| **Pre-Compaction Save** | Context-Nutzung >= 80% des Modell-Kontextfensters | Verbatim Retain aller aktuellen Session-Inhalte BEVOR compacted wird |
-| **Compaction** | Context-Nutzung >= 85% | Rolling Summary der aelteren Turns, behalte letzte N Turns verbatim |
-| **Emergency Compaction** | Context-Nutzung >= 95% | Aggressive Kompression, nur System Prompt + letzte 3 Turns + L0/L1 Memory |
+**Kurzüberblick Schwellen:** bei ~80% Kontextnutzung Pre-Save (Verbatim/Session), bei ~85% Rolling Summary, bei ~95% Notfall-Modus — Details und Implementierungs-Checkliste → **exec-context** §6.
 
-**Modell-dynamisch:** Kontextfenster variiert je Model (Claude Opus 200k, Sonnet 200k, Haiku 200k,
-GPT-4o 128k, lokale Modelle 8-32k). Die Schwellenwerte (80/85/95%) sind prozentual — der
-Agent muss das Kontextfenster des aktuellen Modells kennen.
+### 3g. Idealer Hybrid fuer **Personal Memory**
 
-```
-Implementierung:
-  1. AGENT_MODEL → context_window_tokens (aus Model-Registry oder LiteLLM Metadata)
-  2. Aktueller Token-Count pro Turn tracken (tiktoken oder Modell-spezifisch)
-  3. Bei 80%: Verbatim Retain triggern (async, blockiert nicht)
-  4. Bei 85%: Compaction starten (Rolling Summary aelterer Turns)
-  5. Verbatim Store hat damit IMMER den vollen Verlauf, auch nach Compaction
-```
-
-**Kritisch:** Pre-Compaction Save MUSS vor Compaction abgeschlossen sein.
-Sonst gehen genau die Details verloren die wir verbatim speichern wollen.
-Bei Async Write: Compaction warten bis Verbatim Retain bestaetigt.
-
-#### Token Caching (Prompt Caching) — SOTA 13.04.2026
-
-Token Caching ist orthogonal zu Compaction — es reduziert Kosten und Latenz ohne
-den Context zu aendern. Drei Ebenen:
-
-**Ebene 1: Provider-seitiges Prompt Caching (API-Level)**
-
-Alle grossen Provider bieten Prefix-Caching. LiteLLM unifiziert die Formate:
-
-| Provider | Mechanismus | Ersparnis | LiteLLM Support |
-|----------|-----------|-----------|-----------------|
-| Anthropic | `cache_control: {"type": "ephemeral"}` | 90% auf gecachtem Prefix | Ja — auto-inject + Format-Translation |
-| OpenAI | Automatisch bei Prefixes > 1024 Tokens | 50% Discount | Ja — via `extra_body` |
-| Google/Vertex | Context Caching API | Aehnlich Anthropic | Ja — LiteLLM uebersetzt Anthropic-Format automatisch |
-| DeepSeek | Anthropic-kompatibles Format | Aehnlich | Ja — unified format |
-
-**Da wir LiteLLM nutzen:** Provider-agnostisch `cache_control` setzen, LiteLLM uebersetzt.
-Kein Provider-Lock-in. Ein Format, alle Provider.
-
-**Status bei uns:** Nicht aktiviert. `agent/llm_client.py` setzt keine `cache_control` Blocks.
-
-**Ebene 2: Inference-Engine KV-Cache (Self-Hosted, fuer spaeter)**
-
-Relevant wenn wir lokale Modelle fahren (Ollama, vLLM, SGLang):
-
-| Engine | Technik | Vorteil |
-|--------|---------|---------|
-| **vLLM** | Automatic Prefix Caching (APC), PagedAttention, Block-Level Hashing | Standard, breit unterstuetzt |
-| **SGLang** | RadixAttention, Token-Level Radix Tree | Bis 6.4x schneller bei Prefix-heavy Workloads (Chat, RAG) |
-| **LMCache** | Open-Source KV-Cache Layer ueber vLLM/SGLang | Bis 15x Throughput, shared zwischen Engine-Instanzen |
-
-**Status bei uns:** Aktuell API-Provider via LiteLLM (Ebene 1). Ebene 2 wird relevant bei Self-Hosted.
-
-**Ebene 3: Client-Side Prompt-Optimierung (kein Package, reine Architektur)**
-
-Prompt so ordnen dass statische Teile vorne stehen — maximiert Cache-Hit bei allen Providern
-(die alle Prefix-basiert cachen):
-
-```
-[GECACHT — aendert sich selten]
-├── System Prompt
-├── Agent Role Definition
-├── Skills (Top-K aus finder.py)
-├── L0 Identity (~100 Tokens)
-├── L1 Essential Story (~800 Tokens)
-
-[NICHT GECACHT — aendert sich pro Turn]
-├── L2 On-Demand Memory Recall
-├── Aktuelle Conversation History (letzte N Turns)
-└── User Query
-```
-
-**Status bei uns:** Nicht optimiert. `context/merge.py` merged ohne Cache-Reihenfolge.
-
-**Massnahmen:**
-1. `agent/llm_client.py`: LiteLLM `cache_control` Blocks fuer System Prompt + Skills + L0/L1
-2. `context/merge.py`: Prompt-Reihenfolge optimieren (statisch vorne, dynamisch hinten)
-3. Token-Count pro Turn loggen fuer Compaction-Trigger
-4. Modell-Kontextfenster aus LiteLLM Metadata oder eigener Registry beziehen
-
-**Verbindung zu Paper 4.1 (Quadratic Cost):** Token Caching + optimierte Prompt-Reihenfolge
-reduziert die effektiven Kosten dramatisch. Loest das quadratische Problem nicht
-fundamental, aber macht es wirtschaftlich tragbar bis Compaction greift.
-
-### 3g. Idealer Hybrid
-
-- **Write:** Verbatim in `verbatim_store` (Postgres) + LLM-Extrakte in Hindsight (parallel, bei jedem Write)
+- **Write:** `Personal Raw Evidence` verbatim in `verbatim_store` (Postgres) + Extrakte/Observations in Hindsight (`Personal Derived Memory`) parallel
 - **Pre-Compaction:** Bei 80% Context-Auslastung → Verbatim Retain triggern bevor Compaction Details loescht
-- **Read:** Hindsight 4-Strategie-Fusion als Primaer, Verbatim-Store als Fallback bei niedrigem Recall-Score
-- **KG:** Hindsight Entity-Links (implizit) + Temporal Triple-Store (explizit, MemPalace-Pattern)
-- **Context Loading:** L0-L3 Layer-Konzept (MemPalace) fuer Token-Budget-bewusstes Priming
-- **Token Caching:** Anthropic Prompt Caching + statisch-vorne/dynamisch-hinten Prompt-Reihenfolge
-- **Compaction:** Modell-dynamisch (80/85/95% Schwellenwerte), Verbatim vor Compaction gesichert
+- **Read:** Hindsight 4-Strategie-Fusion als Primaer fuer `derived`/semantische Learnings, Verbatim-Store als Fallback fuer exakten Belegtext
+- **Memory-side Graph:** Hindsight Entity-Links / lokale Memory-Relationen sind ok; **globaler KG** bleibt eigener Owner in [`exec-world-model.md`](./exec-world-model.md)
+- **Context Loading:** L0-L3 Layer-Konzept (MemPalace) fuer Token-Budget-bewusstes Priming — operative Ausgestaltung mit [`exec-context.md`](./exec-context.md)
+- **Token Caching + Prompt-Reihenfolge + Compaction-Trigger:** [`exec-context.md`](./exec-context.md)
+- **Compaction:** Verbatim vor Compaction gesichert; Schwellen modellrelativ — **exec-context**
 - **Tiered Storage:** Hot (Postgres) → Warm (Postgres) → Cold (SeaweedFS)
 - **Coherence:** Unser bestehendes `coherence.py` fuer Multi-Agent Writes
+- **Nicht Default:** gespeicherte PDFs/Webclips/YouTube-Transcripts in denselben Memory-Write-Pfad pressen; das ist primaer [`exec-personal-kb.md`](./exec-personal-kb.md)
+
+### 3h. Memory-Grenzen und Default-Routing
+
+| Artefakt | Default-Ziel | Owner dieses Execs? | Regel |
+|---|---|---|---|
+| Chatturn | `Personal Raw Evidence` | **Ja** | primaere Session-Evidenz |
+| Tool-Output | `Personal Raw Evidence` | **Ja** | primaere Evidenz, spaeter evtl. `derived` |
+| Session-Scratch-Note | `Personal Raw Evidence` | **Ja** | interaktionsnah, nicht kurationsnah |
+| Observation / Preference / Mental Model | `Personal Derived Memory` | **Ja** | nur mit Evidence-Backlinks / Status |
+| Gespeicherter Artikel / Webclip | `Personal Knowledgebase` | **Nein** | nur optionaler Bridge-Read fuer Memory |
+| Private PDF | `Personal Knowledgebase` | **Nein** | Heavy Ingestion / KB first |
+| YouTube / Podcast mit Transcript | `Personal Knowledgebase` | **Nein** | KB first, evtl. spaeter `derived` |
+| Globale News / Filing / Marktbericht | `Global World Evidence` | **Nein** | gehoert nicht in Personal Memory |
+| Welt-/Markt-Claim | `Global World KG` | **Nein** | eigener Truth-/Claim-Layer |
+
+Praktische Folge:
+
+- `memory_fusion` darf persoenliche rohe und abgeleitete Memory-Wege verbessern
+- `memory_fusion` ist **nicht** die heimliche Sammelhalde fuer KB + World Model
+- Bridges sind ok, stille Verschmelzung nicht
 
 ---
 
@@ -407,6 +376,25 @@ fundamental, aber macht es wirtschaftlich tragbar bis Compaction greift.
 
 **Entscheidung:** Zuerst isoliert evaluieren, DANN gezielt hybridisieren.
 Nicht direkt hybridisieren — wir wissen nicht ob der Aufwand sich auf unseren Daten lohnt.
+
+### 5a. Query-Typen fuer Memory-Evals (Pflicht, sonst Benchmark-Salat)
+
+Memory-Evals in diesem Exec muessen mindestens diese Klassen trennen:
+
+1. **Verbatim / Evidence Recall**
+   - "Was genau wurde gesagt / geschrieben / beobachtet?"
+2. **Derived / Preference / Observation Recall**
+   - "Was weiss das System ueber wiederkehrende Praeferenzen / Learnings?"
+3. **Cross-Session Coherence**
+   - "Ist persoenliches Wissen ueber Sessions konsistent?"
+4. **Forgetting / Conflict Handling**
+   - "Wie geht das System mit veralteten oder widerspruechlichen persoenlichen Infos um?"
+
+Nicht Teil des Kern-A/B in `exec-memory`, ausser explizit als Bridge-Test:
+
+- globale World-Model-Fragen
+- Personal-KB-Library-/Notebook-Fragen
+- Claim-Adjudication fuer globale Wahrheiten
 
 ### Phase 1: Isolierter MemPalace Test (1-2 Tage)
 
@@ -590,12 +578,26 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 4. **Bayesian RAG** Paper (Frontiers in AI, 2025) genauer studieren — Uncertainty-aware Retrieval
 5. **System 3 Think** als eigenes Forschungsthema formalisieren (Trajectory-Simulation + EBM + Game Theory)
 
+6. **!! `agent.sessions` vs Hindsight `operations`/`banks` Abgleich !!**
+   - exec-18 Migration 016 erstellt `agent.sessions` (Agent-Execution-Sessions mit status, thread_id, bank_id).
+   - Hindsight hat eigene Tabellen: `banks` (per-user Memory-Store), `operations` (retain/recall Log).
+   - **Frage:** Ist `agent.sessions` redundant mit Hindsight-Interna? Oder komplementaer?
+   - **Aktuelle Einschaetzung:** Komplementaer — `agent.sessions` trackt *Agent-Execution*, Hindsight `operations` trackt *Memory-Ops*. Bridge: `agent.sessions.bank_id` → Hindsight `banks.id`.
+   - **Aber:** Wenn `memory_fusion/` (cursor arbeitet dran) Hindsight + MemPalace fusioniert, muss geprueft werden ob die Session-Tabelle noch zum neuen Memory-Pfad passt oder angepasst werden muss.
+   - **TODO:** Cursor-Instanz muss `agent.sessions` Schema-Kompatibilitaet mit memory_fusion abgleichen.
+
+7. **!! api_version / Schema-Drift fuer Memory !!**
+   - `api_version` existiert auf `agent.agent_skills` (exec-skills §6.6) — trackt welche Tool-API-Version ein Skill referenziert.
+   - **Gleiche Logik braucht Memory:** Hindsight `memory_units` die Tool-Call-Patterns speichern (z.B. "Agent rief `market_data_fetch(symbol='BTCUSD')` auf") werden ungueltig wenn die Tool-API sich aendert.
+   - **Loesung:** `api_version` Tag bei Hindsight Retain oder als Feld auf `memory_units`. Alte Records bei API-Aenderung als `stale` flaggen.
+   - **Scope:** Nicht exec-memory allein — betrifft exec-18 (`component_configs.api_version`), exec-skills, und Hindsight. Vermerkt auch in exec-18 Verify-Punkte.
+
 ---
 
 ## 9. Naechste Schritte
 
 **Phase 1+2 Eval (Prioritaet):**
-- [ ] MemPalace isoliert testen: `python-backend/experiments/mempalace/`
+- [ ] MemPalace isoliert testen: `python-backend/experiments/memory_eval/` (README + Protokoll) bzw. dedizierter Ordner unter `experiments/`
 - [ ] Hindsight vs. MemPalace Benchmark auf eigenen Daten
 - [ ] Eval-Harness mit 4-Layer Metric Stack (Task + Quality + Efficiency + Governance)
 - [ ] MemoryArena-artige Tests: nicht nur Recall, sondern aktive Decision-Making
@@ -603,16 +605,25 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 - [ ] Cost/Latenz pro Memory-Operation messen
 
 **Architektur (nach Eval):**
+- [x] `Personal Raw Evidence` als expliziten Write-Vertrag festziehen (`chat_turn`, `tool_output`, `scratch_note`) — aktuell im `memory_fusion` Retain-Pfad ueber `semantics.py`
+- [x] `Personal Derived Memory` als expliziten Write-Vertrag festziehen (`observation`, `preference`, `mental_model`) — aktuell im `memory_fusion` Retain-Pfad ueber `semantics.py`
+- [~] Promotion-Gates `raw -> derived` festziehen: keine Observation ohne Evidence-Backlinks / Provenance / Status — Backlinks/Provenance sind jetzt enforced, `status`/Promotion-Workflow noch offen
+- [x] User-Input / Tool-Output / Agent-Output als `source_type` markieren (`user_input`, `tool_output`, `agent_output`, `system_observation`)
+- [x] Agent-Output als sekundaeres Artefakt markieren, nicht still wie primaere Evidenz behandeln
+- [x] Guardrail: `Personal Knowledgebase` bleibt separates Default-Ziel fuer kuratierte Artefakte (`exec-personal-kb`)
+- [x] Guardrail: `Global World Evidence/KG` bleibt separates Default-Ziel fuer Weltwissen (`exec-world-model`)
 - [ ] Verbatim-Store Schema Design (`verbatim_store` Tabelle)
 - [ ] L0-L3 Layer-Konzept Prototype
 - [ ] Ebbinghaus Decay-Score statt starre 90-Tage Cold-Migration
-- [ ] Source Attribution Feld auf Memory Units
+- [~] Source Attribution Feld auf Memory Units — aktuell als semantische Metadata im `memory_fusion` Pfad, noch nicht als explizites DB-/Schema-Feld
 - [ ] Memory Operation Logging
 - [ ] Query Reformulation + Self-RAG Gate
-- [ ] Compaction-Trigger: Modell-Kontextfenster auslesen, Token-Count tracken, 80% Pre-Save
-- [ ] LiteLLM `cache_control` in `agent/llm_client.py` aktivieren (provider-agnostisch)
-- [ ] `context/merge.py` Prompt-Reihenfolge optimieren (statisch vorne fuer Cache-Hit)
-- [ ] Bei Self-Hosted: SGLang RadixAttention oder LMCache evaluieren
+- [ ] MemoryAccessPolicy fuer `personal raw` vs `personal derived` vorbereiten (Read/Write pro Agent/Consumer)
+- [ ] Context-/Prompt-Pfad — **nicht gelöscht**, Detail in [`exec-context.md`](./exec-context.md) §6–7 (eine Quelle statt Doppelpflege in exec-memory §3f):
+  - [ ] Compaction-Trigger: Kontextfenster, Token-Count, **80 % Pre-Save**
+  - [ ] LiteLLM (**provider-agnostisch**, aktuell v. a. **OpenRouter**-Upstreams): `llm_client` + ggf. Cache-Parameter
+  - [ ] `context/merge.py`: statischer Prefix zuerst
+  - [ ] Self-hosted optional: vLLM / SGLang / LMCache
 
 **Portierung:**
 - [ ] RAPTOR + Late Chunking aus Paperwatcher
@@ -625,3 +636,23 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 - [ ] Privacy/PII Deletion ueber alle Tiers
 - [ ] Multi-Agent Memory ACL (MEMORY_ARCHITECTURE.md 15.1)
 - [ ] Multimodal Memory (wenn Voice/Chart-Memory kommt)
+
+**Verify / offene Punkte fuer aktuelle Umsetzung:**
+- [x] `memory_ab` Persistenzpfad existiert (`agent/harness/evals_store.py`, `scripts/persist_memory_ab_eval.py`) und ist jetzt an file-basierte Hindsight-/MemPalace-Runs anschliessbar
+- [x] Hindsight-Runner (`experiments/memory_eval/run_hindsight_eval.py`) und echter MemPalace-Runner auf Basis des Submoduls (`experiments/memory_eval/run_mempalace_eval.py`, `_ref/mempalace/`) existieren; Aggregation existiert (`experiments/memory_eval/aggregate_memory_ab.py`)
+- [x] MemPalace ist als waehlbare Runtime-Engine im Python-Backend anschliessbar (`AGENT_MEMORY_ENGINE=mempalace`, `agent/memory/mempalace_engine.py`, `agent/memory/engine.py`)
+- [x] Minimaler Linux/Podman-Stack fuer Memory-Evals ist separat beschrieben (`docker-compose.memory-eval.yml`, `experiments/memory_eval/STACKS.md`) statt den vollen DevStack zu erzwingen
+- [x] Gemeinsamer Shared-Corpus-Pfad fuer `hindsight` / `mempalace` / `fusion` existiert (`experiments/memory_eval/load_benchmark_corpus.py`, `sample_shared_corpus.json`, `sample_shared_queries.json`, `aggregate_memory_suite.py`) und liefert kanonische `expected_refs`
+- [x] `memory_fusion/` ist jetzt ein eigener Runtime-Umbaupfad auf Basis von `agent/memory` (`memory_fusion/engine.py`, `runtime_env.py`, `coherence.py`, `observation_skills.py`) und vermeidet produktive Runtime-Imports aus `_ref/mempalace`
+- [x] `memory_fusion/` Read-/Retain-Pfad existiert (`memory_fusion/fusion_engine.py`, `summary_builder.py`, `experiments/memory_eval/run_fusion_eval.py`) und wurde auf Postgres mit dem Shared-Corpus verifiziert
+- [x] Groesserer Langkontext-Smoke fuer `summary` / `verbatim` / `fusion` existiert (`experiments/memory_eval/run_long_context_smoke.py`) und ist lokal auf Postgres verifiziert; bei `summary_llm_provider=none` liefern aktuell alle drei Routen identische Metriken, waehrend der Harness fuer spaetere LLM-backed Summary-Runs vorbereitet ist
+- [x] `memory_fusion` nutzt MemPalace-Konzepte produktiv im Postgres-Pfad: `query_sanitizer`, kanonische `source_ref`/`provenance_ref`, Method-of-Loci-Metadaten (`wing` / `room` / `hall` / `closet_id` / `drawer_id`) fuer Recall-Filter, verbatim evidence surfacing
+- [x] Langkontext-Runner kann jetzt Ingest und Recall-only trennen (`--bank-id`, `--skip-retain`, `--session-count`, `--max-queries`, `--routes`) und der Recall-only-Reuse wurde lokal verifiziert
+- [~] Cross-System-Ground-Truth fuer fehlende Public-Benchmark-Adapter ist vorbereitet (`prepare_convomem_adapter.py`, `prepare_memoryarena_adapter.py`), aber noch nicht an echte Public-Dataset-Downloads verdrahtet
+- [x] Roher User-Input wird im produktiven `memory_fusion`-Pfad explizit als Evidenzquelle markiert, nicht als implizite Observation / Wahrheit
+- [x] `derived memory`-Objekte tragen im `memory_fusion`-Pfad Evidence-/Source-Backlinks und surfacen nicht allein (`retain`, `recall`, `list_memory_units`, `list_documents`, `get_document`)
+- [x] Gespeicherte PDFs / Webclips / Transcripts landen im `memory_fusion`-Default-Write-Pfad nicht still im Personal Memory, sondern werden als KB-Bridge-Ziel abgewiesen
+- [x] Globales Weltwissen geht im `memory_fusion`-Default-Write-Pfad nicht ueber denselben Personal-Memory-Truth-Pfad
+- [~] Memory-Evals trennen Verbatim-, Derived-, Cross-Session- und Forgetting-Fragen — aktuell im Langkontext-Smoke / `run_fusion_eval.py`, noch nicht als vollstaendige Suite ueber alle Eval-Pfade
+- [ ] Kein produktiver Hybrid-Fallback aktiv, bis Eval auf echten Daten abgeschlossen ist
+- [ ] Referenz-Papers sind ArXiv-kanonisch; lokale PDF-Pfade nur nutzen, wenn Artefakte im Clone wirklich vorhanden sind

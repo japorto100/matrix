@@ -61,9 +61,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             if isinstance(msg.get("content"), str):
                 oai_messages.append(msg)
 
-        # exec-17 Phase 6: Anthropic ephemeral caching on last 3 messages
-        # Saves 60-90% prompt tokens on multi-turn (from Meta-Harness artifact)
-        if "claude" in model.lower() or "anthropic" in model.lower():
+        # exec-17 / exec-context: Anthropic-style ephemeral cache on last messages (via LiteLLM).
+        # Trifft u.a. openrouter/anthropic/claude-* und direkte claude IDs — nicht jedes OR-Modell.
+        if _model_may_use_ephemeral_cache(model):
             _apply_anthropic_caching(oai_messages)
 
         kwargs: dict[str, Any] = {"model": model, "messages": oai_messages}
@@ -135,6 +135,16 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         span.set_attribute("agent.tool_calls_count", len(tool_calls))
         if reasoning_effort:
             span.set_attribute("agent.reasoning.requested", reasoning_effort)
+        usage_extra: dict[str, Any] = {}
+        if response.usage:
+            # LiteLLM / manche Provider: prompt_tokens_details.cached_tokens
+            pt = getattr(response.usage, "prompt_tokens_details", None)
+            if pt is not None:
+                if hasattr(pt, "model_dump"):
+                    usage_extra["prompt_tokens_details"] = pt.model_dump()
+                elif isinstance(pt, dict):
+                    usage_extra["prompt_tokens_details"] = pt
+
         span.track_generation(
             name="agent.llm_call",
             model=model,
@@ -150,6 +160,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 if response.usage
                 else 0,
                 "total_tokens": token_usage,
+                **usage_extra,
             },
             metadata={"thread_id": thread_id, "iteration": iteration},
         )
@@ -178,6 +189,15 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         return result
 
 
+
+
+def _model_may_use_ephemeral_cache(model: str) -> bool:
+    """True wenn LiteLLM/Upstream Anthropic-style cache_control unterstuetzt (heuristisch)."""
+    m = model.lower()
+    if "claude" in m or "anthropic" in m:
+        return True
+    # OpenRouter: openrouter/anthropic/claude-... — bereits durch claude/anthropic abgedeckt
+    return False
 
 
 def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:

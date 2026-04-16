@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 
 from agent.control.request_scope import get_effective_scope
-from agent.memory.engine import get_bank_id, get_memory_engine
+from agent.memory.engine import get_bank_id, get_memory_engine, get_memory_provider
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,12 @@ async def get_memory_health(request: Request, user_id: str = "local") -> dict[st
     layers: list[dict[str, Any]] = []
 
     # ─── Episodic + Vector (both from Hindsight) ────────────────────────────
+    memory_provider = get_memory_provider()
+    vector_provider = "chromadb" if memory_provider == "mempalace" else "pgvector"
+
     episodic_entry: dict[str, Any] = {
         "type": "episodic",
-        "provider": "hindsight",
+        "provider": memory_provider,
         "health": "error",
         "item_count": 0,
         "last_sync_at": None,
@@ -57,7 +60,7 @@ async def get_memory_health(request: Request, user_id: str = "local") -> dict[st
     }
     vector_entry: dict[str, Any] = {
         "type": "vector",
-        "provider": "pgvector",
+        "provider": vector_provider,
         "health": "error",
         "item_count": 0,
         "last_sync_at": None,

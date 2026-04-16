@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "matrix-memory-engine"
+version = "0.1.0"
+description = "Memory Engine — KG Store, Vector Store, Episodic Store (Hindsight Pattern)"
+requires-python = ">=3.11"
+dependencies = []  # erbt shared-base + hindsight aus python-backend/
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = true
+include = ["memory_engine*"]

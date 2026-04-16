@@ -1,0 +1,183 @@
+{
+  "pipeline": "mempalace",
+  "corpus_id": "sample-shared-corpus",
+  "palace_path": "/home/lipfi/code/matrix/python-backend/.tmp/mempalace_eval/shared-palace",
+  "items": [
+    {
+      "query": "What trading style does the user prefer for Brent?",
+      "expected_ids": [
+        "session-01.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-01.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_drawer_ids": [
+        "drawer_user_eval_shared_v2_experience_b2b0047a98deb0c8ffe98b22",
+        "drawer_user_eval_shared_v2_world_8caa5cc4ab9cbbabace3eea7",
+        "drawer_user_eval_shared_v2_experience_29975f63e0cd7ef289c1930a",
+        "drawer_user_eval_shared_v2_experience_2b49a17e1812dfe377c33622"
+      ],
+      "retrieved_refs": [
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_texts": [
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts."
+      ],
+      "distances": [
+        0.6113,
+        1.1576,
+        1.2087,
+        1.7452
+      ],
+      "latency_ms": 1662.99,
+      "token_cost": 0.0,
+      "error": null,
+      "wing": null,
+      "room": null
+    },
+    {
+      "query": "Which timeframes did the user prefer over 5-minute charts?",
+      "expected_ids": [
+        "session-01.jsonl#1"
+      ],
+      "expected_refs": [
+        "session-01.jsonl#1"
+      ],
+      "retrieved_ids": [
+        "session-01.jsonl#1",
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_drawer_ids": [
+        "drawer_user_eval_shared_v2_experience_2b49a17e1812dfe377c33622",
+        "drawer_user_eval_shared_v2_experience_29975f63e0cd7ef289c1930a",
+        "drawer_user_eval_shared_v2_experience_b2b0047a98deb0c8ffe98b22",
+        "drawer_user_eval_shared_v2_world_8caa5cc4ab9cbbabace3eea7"
+      ],
+      "retrieved_refs": [
+        "session-01.jsonl#1",
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-02.jsonl#0"
+      ],
+      "retrieved_texts": [
+        "The user said weekly and daily timeframes are more useful than 5-minute charts.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent."
+      ],
+      "distances": [
+        0.41,
+        1.636,
+        1.6486,
+        1.8861
+      ],
+      "latency_ms": 110.69,
+      "token_cost": 0.0,
+      "error": null,
+      "wing": null,
+      "room": null
+    },
+    {
+      "query": "What risk did the assistant mention about OPEC headlines?",
+      "expected_ids": [
+        "session-02.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-02.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-02.jsonl#0",
+        "session-01.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_drawer_ids": [
+        "drawer_user_eval_shared_v2_world_8caa5cc4ab9cbbabace3eea7",
+        "drawer_user_eval_shared_v2_experience_b2b0047a98deb0c8ffe98b22",
+        "drawer_user_eval_shared_v2_experience_29975f63e0cd7ef289c1930a",
+        "drawer_user_eval_shared_v2_experience_2b49a17e1812dfe377c33622"
+      ],
+      "retrieved_refs": [
+        "session-02.jsonl#0",
+        "session-01.jsonl#0",
+        "session-03.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_texts": [
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts."
+      ],
+      "distances": [
+        0.664,
+        1.4879,
+        1.6083,
+        2.0475
+      ],
+      "latency_ms": 128.65,
+      "token_cost": 0.0,
+      "error": null,
+      "wing": null,
+      "room": null
+    },
+    {
+      "query": "What did the user say about over-trading?",
+      "expected_ids": [
+        "session-03.jsonl#0"
+      ],
+      "expected_refs": [
+        "session-03.jsonl#0"
+      ],
+      "retrieved_ids": [
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_drawer_ids": [
+        "drawer_user_eval_shared_v2_experience_29975f63e0cd7ef289c1930a",
+        "drawer_user_eval_shared_v2_experience_b2b0047a98deb0c8ffe98b22",
+        "drawer_user_eval_shared_v2_world_8caa5cc4ab9cbbabace3eea7",
+        "drawer_user_eval_shared_v2_experience_2b49a17e1812dfe377c33622"
+      ],
+      "retrieved_refs": [
+        "session-03.jsonl#0",
+        "session-01.jsonl#0",
+        "session-02.jsonl#0",
+        "session-01.jsonl#1"
+      ],
+      "retrieved_texts": [
+        "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+        "User prefers swing trading on Brent and WTI instead of scalp trading.",
+        "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+        "The user said weekly and daily timeframes are more useful than 5-minute charts."
+      ],
+      "distances": [
+        0.7351,
+        1.1475,
+        1.5343,
+        1.8006
+      ],
+      "latency_ms": 154.17,
+      "token_cost": 0.0,
+      "error": null,
+      "wing": null,
+      "room": null
+    }
+  ]
+}

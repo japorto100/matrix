@@ -11,8 +11,9 @@ where = ["."]
 namespaces = true
 include = ["shared*", "scripts*"]
 
-[tool.uv.workspace]
-members = ["python-agent", "python-compute", "python-ingest-workers"]
+# [tool.uv.workspace] entfernt (2026-04-15): members ["python-agent", "python-compute",
+# "python-ingest-workers"] sind im matrix-Repo nicht vorhanden — stale Copy-Paste
+# aus trading-project-Port. Siehe specs/18-python-backend-workspace-refactor.md.
 
 [dependency-groups]
 dev = [
@@ -105,9 +106,7 @@ exclude = [
 # Rebuild rust_core:  uv run scripts/maturin_rebuild.py [--release] [--smoke]
 # On Windows also:    .\scripts\rebuild-rust-core.ps1 [-Release] [-SmokeTest]
 
-[tool.uv.sources]
-# Rust extension: single source declaration for all workspace members.
-# python-agent, python-compute, python-ingest-workers get it transitively
-# via tradeview-fusion-python-backend — no duplicate path entry needed.
-tradeviewfusion-rust-core = { path = "rust_core" }
-tradeview-fusion-python-ingest-workers = { workspace = true }
+# [tool.uv.sources] entfernt (2026-04-15): referenzierte Members + Pfade
+# (python-agent/compute/ingest-workers, ./rust_core) existieren in matrix nicht.
+# rust_core liegt hier unter python-backend/rust_core/ und wird via dessen
+# eigenem pyproject.toml gebaut (maturin). Siehe specs/18-*.md.

@@ -1,0 +1,35 @@
+{
+  "corpus_id": "sample-shared-corpus",
+  "bank_id": "user_eval_shared_v3",
+  "user_id": "eval-shared",
+  "items": [
+    {
+      "source_ref": "session-01.jsonl#0",
+      "source_file": "session-01.jsonl",
+      "text": "User prefers swing trading on Brent and WTI instead of scalp trading.",
+      "fact_type": "experience",
+      "tags": ["energy", "preferences"]
+    },
+    {
+      "source_ref": "session-01.jsonl#1",
+      "source_file": "session-01.jsonl",
+      "text": "The user said weekly and daily timeframes are more useful than 5-minute charts.",
+      "fact_type": "experience",
+      "tags": ["timeframe", "preferences"]
+    },
+    {
+      "source_ref": "session-02.jsonl#0",
+      "source_file": "session-02.jsonl",
+      "text": "The assistant warned that OPEC headlines can create false intraday breakouts in Brent.",
+      "fact_type": "world",
+      "tags": ["energy", "risk"]
+    },
+    {
+      "source_ref": "session-03.jsonl#0",
+      "source_file": "session-03.jsonl",
+      "text": "The user dislikes over-trading and asked for fewer but higher conviction setups.",
+      "fact_type": "experience",
+      "tags": ["preferences", "risk"]
+    }
+  ]
+}

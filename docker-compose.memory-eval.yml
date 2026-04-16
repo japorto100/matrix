@@ -1,0 +1,47 @@
+name: matrix-memory-eval
+
+services:
+  postgres:
+    image: docker.io/pgvector/pgvector:pg17
+    container_name: matrix-memory-eval-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hindsight_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - memory-eval-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hindsight_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: matrix-memory-eval-litellm
+    profiles: ["llm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./python-backend/litellm-gateway/config.yaml:/app/config.yaml:ro
+    env_file:
+      - ./python-backend/.env
+    environment:
+      HINDSIGHT_DB_URL: postgresql://postgres:postgres@postgres:5432/hindsight_dev
+      LITELLM_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/hindsight_dev
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  memory-eval-postgres:

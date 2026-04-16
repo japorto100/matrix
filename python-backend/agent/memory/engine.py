@@ -1,9 +1,14 @@
-"""Hindsight Memory Engine Singleton (exec-11).
+"""Memory engine selection for Agent runtime.
 
-Lazy-initialized MemoryEngine. Bridged unsere zentrale ENV Config
-auf Hindsight's erwartete HINDSIGHT_API_* ENV vars.
+Default bleibt Hindsight, aber MemPalace kann jetzt als echte Runtime-Engine
+aktiviert werden:
 
-Keine hardcoded Werte — alles kommt aus unseren zentralen ENV vars.
+- `AGENT_MEMORY_ENGINE=hindsight`
+- `AGENT_MEMORY_ENGINE=mempalace`
+- `AGENT_MEMORY_ENGINE=auto` (default)
+
+`auto` waehlt Hindsight wenn `HINDSIGHT_DB_URL` gesetzt ist, sonst MemPalace
+wenn `MEMPALACE_PALACE_PATH` gesetzt ist.
 """
 
 from __future__ import annotations
@@ -15,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 _engine = None
 _init_failed = False
+_engine_provider: str | None = None
 
 
 def _bridge_env() -> None:
@@ -56,46 +62,78 @@ async def get_memory_engine():
     Returns:
         MemoryEngine Instanz oder None wenn Init fehlschlaegt.
     """
-    global _engine, _init_failed
+    global _engine, _init_failed, _engine_provider
 
-    if _engine is not None:
+    provider = get_memory_provider()
+
+    if _engine is not None and _engine_provider == provider:
         return _engine
+
+    if _engine_provider != provider:
+        _engine = None
+        _init_failed = False
+        _engine_provider = provider
 
     if _init_failed:
         return None
 
-    db_url = os.environ.get("HINDSIGHT_DB_URL")
-    if not db_url:
-        logger.info("HINDSIGHT_DB_URL not set — Memory Engine disabled")
+    if provider == "disabled":
+        logger.info("No memory engine configured — memory disabled")
         _init_failed = True
         return None
 
     try:
-        _bridge_env()
+        if provider == "hindsight":
+            db_url = os.environ.get("HINDSIGHT_DB_URL")
+            if not db_url:
+                logger.info("HINDSIGHT_DB_URL not set — Hindsight disabled")
+                _init_failed = True
+                return None
 
-        from hindsight_api.engine.memory_engine import MemoryEngine
+            _bridge_env()
 
-        # Task Backend: BrokerTaskBackend (default, braucht hindsight-worker Prozess)
-        # oder SyncTaskBackend (inline, fuer Dev ohne Worker)
-        task_backend = None
-        use_sync = os.environ.get("HINDSIGHT_SYNC_TASKS", "").lower() == "true"
-        if use_sync:
-            from hindsight_api.engine.task_backend import SyncTaskBackend
+            from hindsight_api.engine.memory_engine import MemoryEngine
 
-            task_backend = SyncTaskBackend()
+            # Task Backend: BrokerTaskBackend (default, braucht hindsight-worker Prozess)
+            # oder SyncTaskBackend (inline, fuer Dev ohne Worker)
+            task_backend = None
+            use_sync = os.environ.get("HINDSIGHT_SYNC_TASKS", "").lower() == "true"
+            if use_sync:
+                from hindsight_api.engine.task_backend import SyncTaskBackend
+
+                task_backend = SyncTaskBackend()
+                logger.info(
+                    "Hindsight: using SyncTaskBackend (consolidation inline, no worker needed)"
+                )
+
+            _engine = MemoryEngine(db_url=db_url, task_backend=task_backend)
+            await _engine.initialize()
             logger.info(
-                "Hindsight: using SyncTaskBackend (consolidation inline, no worker needed)"
+                "Hindsight Memory Engine initialized (db=%s)", db_url.split("@")[-1]
             )
+            return _engine
 
-        _engine = MemoryEngine(db_url=db_url, task_backend=task_backend)
-        await _engine.initialize()
-        logger.info(
-            "Hindsight Memory Engine initialized (db=%s)", db_url.split("@")[-1]
-        )
-        return _engine
+        if provider == "mempalace":
+            from agent.memory.mempalace_engine import MempalaceMemoryEngine
+
+            palace_path = os.environ.get(
+                "MEMPALACE_PALACE_PATH", os.path.expanduser("~/.mempalace/palace")
+            )
+            _engine = MempalaceMemoryEngine(palace_path=palace_path)
+            await _engine.initialize()
+            logger.info("MemPalace Memory Engine initialized (palace=%s)", palace_path)
+            return _engine
+
+        logger.info("Unsupported memory provider '%s' — memory disabled", provider)
+        _init_failed = True
+        return None
 
     except Exception as e:
-        logger.warning("Memory Engine init failed (Agent works without memory): %s", e)
+        logger.warning(
+            "Memory Engine init failed for provider '%s' (Agent works without memory): %s",
+            provider,
+            e,
+        )
         _init_failed = True
         return None
 
@@ -103,3 +141,21 @@ async def get_memory_engine():
 def get_bank_id(user_id: str) -> str:
     """Generiert Bank-ID fuer einen User (1 Bank pro User)."""
     return f"user_{user_id}"
+
+
+def get_memory_provider() -> str:
+    """Resolve active memory provider from env.
+
+    Order:
+    1. `AGENT_MEMORY_ENGINE` explicit (`hindsight|mempalace|auto`)
+    2. `auto`: Hindsight if DB configured, else MemPalace if palace path configured
+    3. otherwise `disabled`
+    """
+    provider = os.environ.get("AGENT_MEMORY_ENGINE", "auto").strip().lower()
+    if provider and provider != "auto":
+        return provider
+    if os.environ.get("HINDSIGHT_DB_URL"):
+        return "hindsight"
+    if os.environ.get("MEMPALACE_PALACE_PATH"):
+        return "mempalace"
+    return "disabled"

@@ -235,6 +235,32 @@ const SubjectMatrixReply   = "matrix.event.reply"
 
 ---
 
+## Infrastruktur, Caches & Python-Workspace — SOTA 2026
+
+> **Siehe:** [18-python-backend-workspace-refactor.md](./18-python-backend-workspace-refactor.md)
+>
+> Beim Reverse-Port nach tradeview-fusion (trading-project) infrastruktur-seitig:
+>
+> - `python-backend/` ist uv-Workspace-Root, Members erben shared-base-Deps
+>   (matrix: `agent/bridge/voice/memory_engine/mock/ingestion`).
+>   trading-project hat `python-agent/python-compute/python-ingest-workers` —
+>   mapping: matrix-Struktur → trading-project-Namen beim Port.
+> - Konflikt-harte Subpakete bleiben isoliert (eigenes `.venv`):
+>   `compute` (fastapi-Pin), `kg_pipeline` (torch==2.3.1), `extraction_layout`
+>   (pillow<11), `litellm-gateway` (transitive uvicorn<0.22), `rust_core` (maturin).
+> - **`agent/` aus Workspace rausnehmen** + eigenes `agent/.venv` beim Port —
+>   komplette Dep-Liste steht als Kommentar in
+>   `python-backend/agent/pyproject.toml` (copy-paste-fertig).
+> - **Hardcoded `target-local/`** + `$HOME/.cargo/bin/cargo.exe` aus `package.json`
+>   entfernen — ersetzt durch globales `CARGO_TARGET_DIR=~/.cache/cargo-target`.
+> - **Secrets** nicht in `.bashrc` — `~/.bashrc.local` (chmod 600) als Pattern.
+> - **Cache-Layout Hot-vs-Cold**: toolchains/mise/venvs/node_modules/target → SSD;
+>   cargo registry+git, npm/uv/bun/pnpm-caches, GOMODCACHE, HF/Ollama → HDD.
+> - **Convenience-Script**: `python-backend/scripts/sync-all.sh` syncet alle venvs
+>   (workspace + isolierte) + baut rust_core — beim Port nach trading-project spiegeln.
+
+---
+
 ## Zeitplan (grob)
 
 | Phase | Was | Voraussetzung |

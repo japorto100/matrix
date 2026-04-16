@@ -1,0 +1,14 @@
+{
+  "corpus_id": "sample-corpus",
+  "bank_id": "user_local",
+  "queries": [
+    {
+      "query": "What did the agent say about Brent?",
+      "expected_ids": []
+    },
+    {
+      "query": "What preferences did the user mention about timeframe or trading style?",
+      "expected_ids": []
+    }
+  ]
+}

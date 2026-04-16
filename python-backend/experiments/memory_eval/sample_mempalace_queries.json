@@ -1,0 +1,20 @@
+{
+  "corpus_id": "sample-corpus",
+  "convo_dir": "../fixtures/convos",
+  "palace_path": ".tmp/mempalace_eval/sample-corpus",
+  "source_root": "../fixtures/convos",
+  "wing": "sample",
+  "remine": true,
+  "queries": [
+    {
+      "query": "What did the agent say about Brent?",
+      "expected_ids": []
+    },
+    {
+      "query": "What preferences did the user mention about timeframe or trading style?",
+      "expected_refs": [
+        "session-01.jsonl#0"
+      ]
+    }
+  ]
+}

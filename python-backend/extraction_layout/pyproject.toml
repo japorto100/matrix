@@ -38,6 +38,8 @@ dev = [
 
 [tool.uv]
 cache-dir = "../../.uv-cache"
+# doclayout-yolo (transitive von docling) ist pre-release — explizit erlauben
+prerelease = "allow"
 
 [tool.ruff]
 line-length = 100

@@ -1,10 +1,11 @@
-"""Agent Memory — Hindsight Integration (exec-11).
+"""Agent Memory — selectable engine integration (exec-11 / exec-memory).
 
 Persistent Memory fuer AI Agents:
 - Auto-Retain: Fakten aus Conversations extrahieren
 - Auto-Recall: Relevante Memories vor LLM-Call injizieren
-- 4-Weg Retrieval: Semantic + BM25 + Graph + Temporal
+- Waehlbare Runtime-Engine: Hindsight oder MemPalace
 - Per-User Banks: Isolation pro User
 
-Powered by Hindsight (MIT, 91.4% LongMemEval).
+Default bleibt Hindsight; MemPalace kann via `AGENT_MEMORY_ENGINE=mempalace`
+aktiviert werden.
 """
