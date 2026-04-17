@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import json
 import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 
 def make_article(i: int, title: str, source: str, summary: str) -> dict[str, str]:
-    ts = (datetime.now(timezone.utc) - timedelta(minutes=i * 9)).isoformat()
+    ts = (datetime.now(UTC) - timedelta(minutes=i * 9)).isoformat()
     return {
         "title": title,
         "url": f"https://example.com/article-{i}",
@@ -42,7 +42,7 @@ def main() -> int:
 
     payload = {
         "adapterId": "smoke",
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "generatedAt": datetime.now(UTC).isoformat(),
         "maxCandidates": 6,
         "articles": articles,
     }
@@ -56,12 +56,12 @@ def main() -> int:
         results[route] = count
 
     game_theory_payload = {
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "generatedAt": datetime.now(UTC).isoformat(),
         "limit": 6,
         "events": [
             {
                 "id": "ev-1",
-                "eventDate": datetime.now(timezone.utc).date().isoformat(),
+                "eventDate": datetime.now(UTC).date().isoformat(),
                 "country": "Ukraine",
                 "region": "Europe",
                 "eventType": "Battles",
@@ -72,7 +72,7 @@ def main() -> int:
             },
             {
                 "id": "ev-2",
-                "eventDate": datetime.now(timezone.utc).date().isoformat(),
+                "eventDate": datetime.now(UTC).date().isoformat(),
                 "country": "Israel",
                 "region": "Middle East",
                 "eventType": "Explosions/Remote violence",

@@ -40,11 +40,14 @@ from indicator_engine.models import (
 )
 from indicator_engine.rust_bridge import (
     calculate_heartbeat as rust_calculate_heartbeat,
+)
+from indicator_engine.rust_bridge import (
     calculate_indicators_batch as rust_calculate_indicators_batch,
+)
+from indicator_engine.rust_bridge import (
     composite_sma50_slope_norm as rust_composite_sma50_slope_norm,
 )
 from indicator_engine.trend import ema, sma
-
 
 # ---------------------------------------------------------------------------
 # Oscillator primitives
@@ -577,7 +580,7 @@ def build_composite_signal(payload: CompositeSignalRequest) -> CompositeSignalRe
 
 
 def calculate_rob_booker_reversal(
-    payload: "RobBookerReversalRequest",
+    payload: RobBookerReversalRequest,  # noqa: F821
 ) -> IndicatorResponse:
     """Rob Booker Reversal: MACD zero-cross confirmed by extreme Stochastic.
 
@@ -638,8 +641,8 @@ def calculate_rob_booker_reversal(
 
 
 def calculate_cross_asset_convergence(
-    payload: "CrossAssetConvergenceRequest",
-) -> "CrossAssetConvergenceResponse":
+    payload: CrossAssetConvergenceRequest,  # noqa: F821
+) -> CrossAssetConvergenceResponse:  # noqa: F821
     """RSI convergence across inversely-correlated assets.
 
     Bullish: primary RSI < lower (oversold) AND inverse RSI > upper (overbought)
@@ -684,7 +687,7 @@ def calculate_cross_asset_convergence(
 
 
 def calculate_rsi_v_technique(
-    payload: "RSIVTechniqueRequest",
+    payload: RSIVTechniqueRequest,  # noqa: F821
 ) -> IndicatorResponse:
     """RSI V-Technique: V-shaped bounce from extreme zone.
 
@@ -716,7 +719,7 @@ def calculate_rsi_v_technique(
 
 
 def calculate_rsi_dcc(
-    payload: "RSIDCCRequest",
+    payload: RSIDCCRequest,  # noqa: F821
 ) -> IndicatorResponse:
     """RSI DCC: both RSI(13) and RSI(34) cross threshold on same bar (±tolerance).
 
@@ -770,7 +773,7 @@ def calculate_rsi_dcc(
 
 
 def calculate_rsi_ma_cross(
-    payload: "RSIMACrossRequest",
+    payload: RSIMACrossRequest,  # noqa: F821
 ) -> IndicatorResponse:
     """RSI MA Cross: RSI crosses above/below SMA(RSI) while in extreme zone.
 

@@ -208,7 +208,7 @@ class PostgresSpanProcessor:
     def _persist(self, span: Any) -> None:
         import json as _json
         import os
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         import psycopg
 

@@ -30,6 +30,7 @@ from typing import Any
 
 from experiments.memory_eval.metrics import summarize_eval_run
 
+
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 

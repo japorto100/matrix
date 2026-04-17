@@ -12,9 +12,6 @@ from uuid import UUID
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from loguru import logger
-from pydantic import BaseModel, Field
-
 from ingestion.core.config import get_config
 from ingestion.core.exceptions import DedupSkipError
 from ingestion.core.types import JobStatus
@@ -22,6 +19,8 @@ from ingestion.pipelines.base import PipelineContext
 from ingestion.pipelines.document import DocumentPipeline
 from ingestion.pipelines.link import LinkPipeline
 from ingestion.pipelines.note import NotePipeline
+from loguru import logger
+from pydantic import BaseModel, Field
 
 # Global pipeline context (initialized on startup)
 _ctx: PipelineContext | None = None

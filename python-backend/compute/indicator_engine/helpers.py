@@ -19,7 +19,10 @@ from typing import TYPE_CHECKING, Any
 from indicator_engine.models import OHLCVPoint
 
 if TYPE_CHECKING:
-    from indicator_engine.models import SwarmValidationResponse
+    from indicator_engine.models import (
+        Pivot,
+        SwarmValidationResponse,
+    )
 
 pl: types.ModuleType | None
 try:
@@ -217,7 +220,7 @@ def ohlcv_polars_frame(points: list[OHLCVPoint]) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def detect_swings(points: list[OHLCVPoint], window: int = 3) -> list["Pivot"]:
+def detect_swings(points: list[OHLCVPoint], window: int = 3) -> list[Pivot]:
     """Detect swing highs/lows using a rolling window. Returns sorted, deduped pivots."""
     from indicator_engine.models import Pivot
 
@@ -281,7 +284,7 @@ def detect_swings(points: list[OHLCVPoint], window: int = 3) -> list["Pivot"]:
     return deduped
 
 
-def detect_close_turning_pivots(points: list[OHLCVPoint]) -> list["Pivot"]:
+def detect_close_turning_pivots(points: list[OHLCVPoint]) -> list[Pivot]:
     """Close-based turning point detection (3-bar reversal). Used by TD timing patterns."""
     from indicator_engine.models import Pivot
 
@@ -350,7 +353,7 @@ def swarm_validate(
     pattern_fn: str,
     lookback: int = 250,
     threshold: float = 0.015,
-) -> "SwarmValidationResponse":
+) -> SwarmValidationResponse:
     """Run pattern detection on Standard + Heikin-Ashi + K's CCS, return swarmed signals.
 
     Kaabar: "The interesting part is where you consider the signal only when it's

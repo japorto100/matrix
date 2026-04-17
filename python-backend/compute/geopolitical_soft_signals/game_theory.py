@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from collections import Counter
-from datetime import datetime, timezone
 import math
 import random
+from collections import Counter
+from datetime import UTC, datetime
 from typing import Literal, cast
 
 from pydantic import BaseModel, Field
-
 
 MarketBias = Literal["risk_on", "risk_off", "neutral"]
 TransmissionDirection = Literal["up", "down", "flat"]
@@ -221,14 +220,14 @@ def _clamp(value: float, min_value: float, max_value: float) -> float:
 def _normalize_date(raw: str) -> str:
     trimmed = raw.strip()
     if not trimmed:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
     try:
         parsed = datetime.fromisoformat(trimmed.replace("Z", "+00:00"))
-        return parsed.astimezone(timezone.utc).isoformat()
+        return parsed.astimezone(UTC).isoformat()
     except Exception:
         if len(trimmed) == 10 and trimmed[4] == "-" and trimmed[7] == "-":
             return f"{trimmed}T00:00:00+00:00"
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
 
 def _infer_region(event: GameTheoryEventInput) -> str:

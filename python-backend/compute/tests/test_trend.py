@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 
 import pytest
-
 from indicator_engine.models import OHLCVPoint
 from indicator_engine.trend import (
     alma,
@@ -23,7 +22,6 @@ from indicator_engine.trend import (
     smma,
     wma,
 )
-
 
 # ---------------------------------------------------------------------------
 # SMA

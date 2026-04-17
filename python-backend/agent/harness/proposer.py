@@ -267,7 +267,6 @@ def _save_proposal(proposal: dict[str, Any], config_snapshot: dict | None = None
     Env HARNESS_SAVE_MODE: 'db' (default) | 'filesystem' | 'both'
     """
     import os
-    import time
 
     save_mode = os.environ.get("HARNESS_SAVE_MODE", "both").strip().lower()
 

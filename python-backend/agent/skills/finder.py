@@ -13,6 +13,7 @@ import math
 import os
 import re
 from functools import lru_cache
+
 from agent.skills.loader import Skill
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,9 @@ def find_skills_for_query(
 
     picked: list[Skill] = []
     est = 0
-    approx_tok = lambda text: max(1, len(text) // 4)
+    def approx_tok(text: str) -> int:
+        return max(1, len(text) // 4)
+
     for i in idx_sorted:
         s = skills[i]
         block = f"{s.name}\n{s.description}\n{s.content}"

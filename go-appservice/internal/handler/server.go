@@ -144,6 +144,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 			agenthttp.ArtifactUploadHandler(artifactCfg.Service))
 		mux.HandleFunc("/api/v1/storage/artifacts/",
 			agenthttp.ArtifactMetadataHandler(artifactCfg.Service))
+		// #nosec G706 -- ENV values are operator-controlled, not user input.
 		slog.Info("Artifact Storage active",
 			"provider", os.Getenv("ARTIFACT_STORAGE_PROVIDER"),
 			"gateway_base_url", artifactCfg.GatewayBaseURL)
@@ -299,11 +300,13 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 
 	var txn transactionBody
 	if err := json.NewDecoder(r.Body).Decode(&txn); err != nil {
+		// #nosec G706 -- slog emits structured fields (JSON), caller-supplied values escaped.
 		slog.Error("decode transaction failed", "txn_id", txnID, "error", err)
 		http.Error(w, `{"error":"bad request"}`, http.StatusBadRequest)
 		return
 	}
 
+	// #nosec G706 -- slog structured logging, txnID is path param from Tuwunel AS txn.
 	slog.Debug("transaction received",
 		"txn_id", txnID,
 		"event_count", len(txn.Events),
@@ -317,9 +320,11 @@ func (s *Server) handleTransaction(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(toDeviceEvents) > 0 {
 			slog.Debug("E2EE: to-device events processed", "count", len(toDeviceEvents))
-			// C-8: Key Backup nach neuen Room Keys aktualisieren
+			// C-8: Key Backup nach neuen Room Keys aktualisieren.
+			// Detach cancellation but keep request values (trace IDs etc.).
+			bgCtx := context.WithoutCancel(r.Context())
 			go func() {
-				if err := s.crypto.ExportKeyBackup(context.Background()); err != nil {
+				if err := s.crypto.ExportKeyBackup(bgCtx); err != nil {
 					slog.Warn("E2EE: key backup export failed", "error", err)
 				}
 			}()
@@ -351,7 +356,7 @@ func (t *transactionBody) toDeviceEvents() []*event.Event {
 func (s *Server) handleUserQuery(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("userID")
 	if isAgentUser(userID, s.cfg.ServerName, s.cfg.AgentPrefix) {
-		slog.Info("user query: agent user exists", "user_id", userID)
+		slog.Info("user query: agent user exists", "user_id", userID) //nolint:gosec // structured slog field
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("{}"))
 		return

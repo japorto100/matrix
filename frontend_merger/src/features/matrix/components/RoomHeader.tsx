@@ -1,0 +1,136 @@
+"use client";
+
+import type { RoomInfo } from "@matrix/lib/types";
+import { mxcToHttp } from "@matrix/lib/utils";
+import { MessageSquare, Phone, Search, UserPlus, Users, Video } from "lucide-react";
+import type { MatrixClient } from "matrix-js-sdk";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { InviteDialog } from "./contacts/InviteDialog";
+import { EncryptionBadge } from "./shared/EncryptionBadge";
+
+interface Props {
+	room: RoomInfo;
+	client?: MatrixClient | null;
+	roomId?: string;
+	onCall?: (withVideo: boolean) => void;
+	onSettingsOpen?: () => void;
+	onSearchOpen?: () => void;
+	onThreadsOpen?: () => void;
+}
+
+export function RoomHeader({
+	room,
+	client,
+	roomId,
+	onCall,
+	onSettingsOpen,
+	onSearchOpen,
+	onThreadsOpen,
+}: Props) {
+	const headerAvatarSrc = room.avatarUrl?.startsWith("mxc://")
+		? mxcToHttp(room.avatarUrl)
+		: room.avatarUrl;
+	const headerInitials = room.name.slice(0, 2).toUpperCase();
+
+	// E2EE: Verschlüsselungsstatus prüfen (Lock grün/rot)
+	const matrixRoom = client && roomId ? client.getRoom(roomId) : null;
+	const isEncrypted = !!matrixRoom?.currentState.getStateEvents("m.room.encryption", "");
+
+	return (
+		<header className="flex items-center gap-3 px-4 h-[57px] border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+			{/* Raum-Avatar — klickbar → InfoPanel */}
+			<button
+				type="button"
+				onClick={onSettingsOpen}
+				className="shrink-0 cursor-pointer"
+				title="Info öffnen"
+			>
+				<Avatar className="h-9 w-9">
+					{headerAvatarSrc && <AvatarImage src={headerAvatarSrc} alt={room.name} />}
+					<AvatarFallback className="text-xs font-semibold bg-muted">
+						{headerInitials}
+					</AvatarFallback>
+				</Avatar>
+			</button>
+
+			{/* Raum-Name + Topic */}
+			<div className="flex-1 min-w-0">
+				<div className="flex items-center gap-1.5">
+					<EncryptionBadge isEncrypted={isEncrypted} compact />
+					<span className="font-semibold text-sm truncate">{room.name}</span>
+					<div className="flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+						<Users className="h-3 w-3" />
+						<span>{room.memberCount}</span>
+					</div>
+				</div>
+				{room.topic && <p className="text-xs text-muted-foreground truncate">{room.topic}</p>}
+			</div>
+
+			<div className="flex items-center gap-0.5">
+				{/* B-8: Threads */}
+				{onThreadsOpen && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-8 w-8"
+						title="Threads"
+						onClick={onThreadsOpen}
+					>
+						<MessageSquare className="h-4 w-4" />
+					</Button>
+				)}
+
+				{/* UI-8: Suche */}
+				{onSearchOpen && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-8 w-8"
+						title="Nachrichten durchsuchen"
+						onClick={onSearchOpen}
+					>
+						<Search className="h-4 w-4" />
+					</Button>
+				)}
+
+				{/* UI-3: Einladen */}
+				{client && roomId && (
+					<InviteDialog
+						client={client}
+						roomId={roomId}
+						trigger={
+							<Button variant="ghost" size="icon" className="h-8 w-8" title="Benutzer einladen">
+								<UserPlus className="h-4 w-4" />
+							</Button>
+						}
+					/>
+				)}
+
+				{/* MatrixRTC Call-Buttons (DMs + Gruppen-Räume) */}
+				{onCall && (
+					<>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+							title="Sprachanruf"
+							onClick={() => onCall(false)}
+						>
+							<Phone className="h-4 w-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+							title="Videoanruf"
+							onClick={() => onCall(true)}
+						>
+							<Video className="h-4 w-4" />
+						</Button>
+					</>
+				)}
+			</div>
+		</header>
+	);
+}

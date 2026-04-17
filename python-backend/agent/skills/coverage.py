@@ -109,7 +109,7 @@ def _coverage_enabled() -> bool:
 
 
 async def score_coverage(
-    skills: list["Skill"],
+    skills: list[Skill],
     query: str,
     *,
     api_key: str | None = None,
@@ -151,7 +151,7 @@ async def score_coverage(
 
 
 async def should_refine(
-    skills: list["Skill"],
+    skills: list[Skill],
     query: str,
     *,
     api_key: str | None = None,

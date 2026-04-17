@@ -5,8 +5,31 @@ import json as _json
 from typing import Any
 
 from fastapi.responses import JSONResponse
+
 from shared import create_service_app
-from shared.cache_adapter import create_cache_adapter, TTL_INDICATOR
+from shared.cache_adapter import TTL_INDICATOR, create_cache_adapter
+
+# --- Backtest ---
+from .backtest import (
+    calculate_triple_barrier,
+    run_backtest,
+    run_parameter_sensitivity,
+    run_walk_forward,
+)
+
+# --- Derivatives ---
+from .derivatives import (
+    calculate_dark_pool_signal,
+    calculate_defi_stress,
+    calculate_expected_move,
+    calculate_gex_profile,
+    calculate_options_payoff,
+    calculate_oracle_crosscheck,
+)
+
+# --- Helpers ---
+from .helpers import indicator_dataframe_status, swarm_validate
+
 # --- Models (request/response types) ---
 from .models import (
     ADXRequest,
@@ -15,6 +38,7 @@ from .models import (
     AlternativeBarsResponse,
     BacktestRequest,
     BacktestResponse,
+    BBTrendFriendlyRequest,
     BiasMonitoringRequest,
     BiasMonitoringResponse,
     BollingerOnRSIResponse,
@@ -26,14 +50,16 @@ from .models import (
     CompositeSignalRequest,
     CompositeSignalResponse,
     ConfluenceZone,  # noqa: F401 — re-exported for schema inference
+    CrossAssetConvergenceRequest,
+    CrossAssetConvergenceResponse,
     CUSUMRequest,
     CUSUMResponse,
     DarkPoolSignalRequest,
     DarkPoolSignalResponse,
-    DeflatedSharpeRequest,
-    DeflatedSharpeResponse,
     DeFiStressRequest,
     DeFiStressResponse,
+    DeflatedSharpeRequest,
+    DeflatedSharpeResponse,
     EvalBaselineRequest,
     EvalBaselineResponse,
     EvalIndicatorRequest,
@@ -47,6 +73,8 @@ from .models import (
     FibonacciConfluenceRequest,
     FibonacciConfluenceResponse,
     FibonacciResponse,
+    GapPatternRequest,
+    GapPatternResponse,
     GEXProfileRequest,
     GEXProfileResponse,
     HMARequest,
@@ -79,23 +107,17 @@ from .models import (
     PatternResponse,
     PerformanceMetricsRequest,
     PerformanceMetricsResponse,
-    BBTrendFriendlyRequest,
-    CrossAssetConvergenceRequest,
-    CrossAssetConvergenceResponse,
-    GapPatternRequest,
-    GapPatternResponse,
+    RainbowRequest,
+    RainbowResponse,
+    RegimeDetectRequest,
+    RegimeDetectResponse,
+    RobBookerReversalRequest,
     RPatternRequest,
     RPatternResponse,
     RSIDCCRequest,
     RSIMACrossRequest,
-    RSIVTechniqueRequest,
-    RainbowRequest,
-    RainbowResponse,
     RSIVariantRequest,
-    WMAIWMACrossRequest,
-    RegimeDetectRequest,
-    RegimeDetectResponse,
-    RobBookerReversalRequest,
+    RSIVTechniqueRequest,
     SignalQualityChainRequest,
     SignalQualityChainResponse,
     StochasticRequest,
@@ -112,36 +134,9 @@ from .models import (
     VWAPRequest,
     WalkForwardRequest,
     WalkForwardResponse,
+    WMAIWMACrossRequest,
 )
-# --- Pattern detection ---
-from .patterns import (
-    apply_chart_transform,
-    build_candlestick_patterns,
-    build_elliott_wave_patterns,
-    build_fibonacci_confluence,
-    build_fibonacci_levels,
-    build_harmonic_patterns,
-    build_price_patterns,
-    build_strategy_metrics,
-    build_td_timing_patterns,
-    calculate_swing_points,
-)
-# --- Volatility ---
-from .volatility import (
-    calculate_atr_rsi,
-    calculate_bb_aggressive,
-    calculate_bb_bandwidth,
-    calculate_bb_conservative,
-    calculate_bb_percent_b,
-    calculate_bb_trend_friendly,
-    calculate_bollinger_keltner_squeeze,
-    calculate_bollinger_on_rsi,
-    calculate_hmm_regime,
-    calculate_keltner,
-    calculate_markov_regime,
-    calculate_regime,
-    calculate_volatility_suite,
-)
+
 # --- Oscillators ---
 from .oscillators import (
     build_composite_signal,
@@ -155,60 +150,20 @@ from .oscillators import (
     calculate_rsi_v_technique,
     calculate_stochastic,
 )
-# --- Trend ---
-from .trend import (
-    calculate_exotic_ma,
-    calculate_hma,
-    calculate_ichimoku,
-    calculate_wma_iwma_cross,
+
+# --- Pattern detection ---
+from .patterns import (
+    apply_chart_transform,
+    build_candlestick_patterns,
+    build_elliott_wave_patterns,
+    build_fibonacci_confluence,
+    build_fibonacci_levels,
+    build_harmonic_patterns,
+    build_price_patterns,
+    build_strategy_metrics,
+    build_td_timing_patterns,
+    calculate_swing_points,
 )
-# --- Volume ---
-from .volume import calculate_vwap
-# --- Quant / ML ---
-from .quant import (
-    build_features,
-    calculate_alternative_bars,
-    calculate_cusum,
-    calculate_deflated_sharpe,
-    calculate_eval_baseline,
-    calculate_meanrev_momentum,
-    calculate_order_flow_state,
-    calculate_performance_metrics,
-    calculate_signal_quality_chain,
-    classify_signal,
-    evaluate_indicator,
-    fuse_hybrid,
-    monitor_bias,
-)
-# --- Derivatives ---
-from .derivatives import (
-    calculate_dark_pool_signal,
-    calculate_defi_stress,
-    calculate_expected_move,
-    calculate_gex_profile,
-    calculate_options_payoff,
-    calculate_oracle_crosscheck,
-)
-# --- Backtest ---
-from .backtest import (
-    calculate_triple_barrier,
-    run_backtest,
-    run_parameter_sensitivity,
-    run_walk_forward,
-)
-# --- Helpers ---
-from .helpers import indicator_dataframe_status, swarm_validate
-# --- Rainbow ---
-from .rainbow import (
-    calculate_gap_pattern,
-    calculate_r_pattern,
-    calculate_rainbow_collection,
-    calculate_rainbow_confluence,
-    rainbow_composite_score,
-)
-# --- Regime Weighting ---
-from .regime_weighting import regime_weight_patterns
-from .rust_bridge import rust_core_status
 from .portfolio_analytics import (
     CorrelationRequest,
     DrawdownRequest,
@@ -228,6 +183,63 @@ from .portfolio_analytics import (
     compute_vpin,
 )
 
+# --- Quant / ML ---
+from .quant import (
+    build_features,
+    calculate_alternative_bars,
+    calculate_cusum,
+    calculate_deflated_sharpe,
+    calculate_eval_baseline,
+    calculate_meanrev_momentum,
+    calculate_order_flow_state,
+    calculate_performance_metrics,
+    calculate_signal_quality_chain,
+    classify_signal,
+    evaluate_indicator,
+    fuse_hybrid,
+    monitor_bias,
+)
+
+# --- Rainbow ---
+from .rainbow import (
+    calculate_gap_pattern,
+    calculate_r_pattern,
+    calculate_rainbow_collection,
+    calculate_rainbow_confluence,
+    rainbow_composite_score,
+)
+
+# --- Regime Weighting ---
+from .regime_weighting import regime_weight_patterns
+from .rust_bridge import rust_core_status
+
+# --- Trend ---
+from .trend import (
+    calculate_exotic_ma,
+    calculate_hma,
+    calculate_ichimoku,
+    calculate_wma_iwma_cross,
+)
+
+# --- Volatility ---
+from .volatility import (
+    calculate_atr_rsi,
+    calculate_bb_aggressive,
+    calculate_bb_bandwidth,
+    calculate_bb_conservative,
+    calculate_bb_percent_b,
+    calculate_bb_trend_friendly,
+    calculate_bollinger_keltner_squeeze,
+    calculate_bollinger_on_rsi,
+    calculate_hmm_regime,
+    calculate_keltner,
+    calculate_markov_regime,
+    calculate_regime,
+    calculate_volatility_suite,
+)
+
+# --- Volume ---
+from .volume import calculate_vwap
 
 app = create_service_app("indicator-service", http_port=8092)
 

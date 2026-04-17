@@ -29,6 +29,8 @@ func MemoryKGSeedHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -51,6 +53,8 @@ func MemoryKGQueryHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -69,6 +73,8 @@ func MemoryKGNodesHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -86,6 +92,8 @@ func MemoryKGSyncHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -110,6 +118,8 @@ func MemoryEpisodePostHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -133,6 +143,8 @@ func MemoryEpisodesGetHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -157,6 +169,8 @@ func MemorySearchHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }
@@ -172,6 +186,8 @@ func MemoryHealthHandler(client *memory.Client) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body is the JSON response from the Python memory service
+		// (operator-configured upstream); Content-Type explicitly set to application/json.
 		_, _ = w.Write(body)
 	}
 }

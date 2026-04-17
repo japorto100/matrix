@@ -5,12 +5,11 @@ Skips detect/load/extract/normalize phases — text is already clean.
 
 from __future__ import annotations
 
-from loguru import logger
-
 from ingestion.core.exceptions import DedupSkipError, IngestionError
 from ingestion.core.types import Job, JobStatus, PipelineKind
 from ingestion.extractors.note_ext import NoteExtractor
 from ingestion.pipelines.base import Pipeline
+from loguru import logger
 
 
 class NotePipeline(Pipeline):

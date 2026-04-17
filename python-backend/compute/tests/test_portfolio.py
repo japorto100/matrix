@@ -11,7 +11,6 @@ from __future__ import annotations
 import math
 
 import pytest
-
 from indicator_engine.portfolio import (
     DrawdownRequest,
     KellyRequest,
@@ -20,7 +19,6 @@ from indicator_engine.portfolio import (
     calculate_portfolio_drawdown,
     calculate_rolling_sharpe,
 )
-
 
 # ---------------------------------------------------------------------------
 # Drawdown

@@ -67,7 +67,7 @@ class TestExpectedMove:
 
 class TestOptionsPayoff:
     def test_long_call(self) -> None:
-        from indicator_engine.models import OptionsCalculatorRequest, OptionLeg
+        from indicator_engine.models import OptionLeg, OptionsCalculatorRequest
         req = OptionsCalculatorRequest(
             spot=100.0,
             legs=[OptionLeg(kind="call", strike=100.0, premium=5.0)],
@@ -77,7 +77,7 @@ class TestOptionsPayoff:
         assert resp.max_profit > 0
 
     def test_straddle(self) -> None:
-        from indicator_engine.models import OptionsCalculatorRequest, OptionLeg
+        from indicator_engine.models import OptionLeg, OptionsCalculatorRequest
         req = OptionsCalculatorRequest(
             spot=100.0,
             legs=[

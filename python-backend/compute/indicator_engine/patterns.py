@@ -47,7 +47,6 @@ from indicator_engine.models import (
     TDCountdownState,
 )
 
-
 # ---------------------------------------------------------------------------
 # Pivot Points (Classic / Fibonacci / Camarilla)
 # ---------------------------------------------------------------------------

@@ -59,7 +59,7 @@ class OHLCVPoint(BaseModel):
     volume: float = Field(default=0.0, ge=0.0)
 
     @model_validator(mode="after")
-    def _validate_ohlcv(self) -> "OHLCVPoint":
+    def _validate_ohlcv(self) -> OHLCVPoint:
         if self.high < self.low:
             msg = f"high ({self.high}) must be >= low ({self.low})"
             raise ValueError(msg)
@@ -107,7 +107,7 @@ def build_points(times: list[int], values: list[float]) -> list[IndicatorPoint]:
 
 def build_response(
     times: list[int], values: list[float], metadata: dict[str, Any] | None = None
-) -> "IndicatorResponse":
+) -> IndicatorResponse:
     """Build a complete IndicatorResponse from parallel arrays — fast path."""
     return IndicatorResponse(
         data=build_points(times, values),
@@ -190,7 +190,7 @@ class MACDRequest(IndicatorServiceRequest):
     signal: ShortPeriod = 9
 
     @model_validator(mode="after")
-    def _fast_lt_slow(self) -> "MACDRequest":
+    def _fast_lt_slow(self) -> MACDRequest:
         if self.fast >= self.slow:
             msg = f"fast ({self.fast}) must be < slow ({self.slow})"
             raise ValueError(msg)
@@ -789,7 +789,7 @@ class GEXProfileRequest(BaseModel):
     put_gamma: list[float] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def _check_list_parity(self) -> "GEXProfileRequest":
+    def _check_list_parity(self) -> GEXProfileRequest:
         n = len(self.strikes)
         if len(self.call_gamma) != n or len(self.put_gamma) != n:
             raise ValueError("strikes, call_gamma, put_gamma must have equal length")

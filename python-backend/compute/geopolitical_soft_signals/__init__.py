@@ -4,7 +4,13 @@ from .game_theory import (
     GameTheoryImpactResponse,
     build_game_theory_impact,
 )
-from .pipeline import SignalRequest, SignalResponse, build_narrative_shift, build_news_cluster, build_social_surge
+from .pipeline import (
+    SignalRequest,
+    SignalResponse,
+    build_narrative_shift,
+    build_news_cluster,
+    build_social_surge,
+)
 
 __all__ = [
     "SignalRequest",

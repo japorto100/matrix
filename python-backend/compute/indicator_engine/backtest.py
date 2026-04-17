@@ -25,7 +25,6 @@ from indicator_engine.models import (
 )
 from indicator_engine.trend import sma
 
-
 # ---------------------------------------------------------------------------
 # Core backtest
 # ---------------------------------------------------------------------------

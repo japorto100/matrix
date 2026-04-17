@@ -6,6 +6,7 @@ import math
 
 from indicator_engine.models import OHLCVPoint
 from indicator_engine.quant import (
+    build_features,
     calculate_alternative_bars,
     calculate_cusum,
     calculate_deflated_sharpe,
@@ -14,7 +15,6 @@ from indicator_engine.quant import (
     calculate_order_flow_state,
     calculate_performance_metrics,
     calculate_signal_quality_chain,
-    build_features,
     classify_signal,
     fuse_hybrid,
     monitor_bias,
