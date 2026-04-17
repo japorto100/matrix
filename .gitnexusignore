@@ -1,1 +1,34 @@
+# GitNexus setup notes for this machine:
+# - This is an older 8GB RAM desktop, so the main matrix index should stay
+#   focused on matrix itself.
+# - Reference repos under _ref/ are indexed as separate GitNexus repos
+#   (agno, EvoSkill, autoresearch, mempalace, auto-rag-optimizer,
+#   hermes-agent including tinker-atropos). Do not pull them into matrix.
+# - TREK is intentionally not indexed.
+# - Local GitNexus package tuning was added for future runs:
+#   GITNEXUS_PARSE_WORKERS=<n>, GITNEXUS_PARSE_TIMEOUT_MS=<ms>,
+#   GITNEXUS_PARSE_SUB_BATCH_SIZE=<n>, GITNEXUS_HEAP_MB=<mb>,
+#   GITNEXUS_STACK_KB=<kb>, GITNEXUS_EMBEDDING_BATCH_SIZE=<n>.
+#   Defaults stay fast; use lower workers/batch/heap only if RAM or swap hurts.
 _ref/
+
+# Defensive excludes for generated dependencies, virtualenvs, caches, and build
+# outputs. GitNexus normally respects .gitignore; keep these here too so a
+# future run cannot accidentally ingest heavy local artifacts.
+node_modules/
+.venv/
+**/.venv/
+vendor/
+**/vendor/
+target/
+**/target/
+.next/
+**/.next/
+.turbo/
+**/.turbo/
+.cache/
+**/.cache/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.log

@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "npx",
+      "command": "/home/lipfi2/.local/share/mise/shims/gitnexus",
       "args": [
-        "-y",
-        "gitnexus@1.6.1",
         "mcp"
       ]
     }

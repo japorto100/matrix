@@ -2,8 +2,8 @@
   "mcpServers": {
     "gitnexus": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "gitnexus@1.6.1", "mcp"]
+      "command": "/home/lipfi2/.local/share/mise/shims/gitnexus",
+      "args": ["mcp"]
     },
     "matrix-agent-openapi": {
       "type": "stdio",
