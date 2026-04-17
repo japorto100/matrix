@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import os
 
-from loguru import logger
-
 from ingestion.core.exceptions import EmbeddingError
 from ingestion.embedders.base import Embedder
+from loguru import logger
 
 
 class SentenceTransformerEmbedder(Embedder):

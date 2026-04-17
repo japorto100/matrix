@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 def get_collection(
     palace_path: str,
     collection_name: str = "mempalace_drawers",

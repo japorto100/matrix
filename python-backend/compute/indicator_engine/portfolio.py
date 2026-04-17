@@ -25,10 +25,13 @@ from pydantic import BaseModel, Field
 
 from indicator_engine.rust_bridge import (
     portfolio_drawdown_series as rust_drawdown,
+)
+from indicator_engine.rust_bridge import (
     portfolio_kelly_fraction as rust_kelly,
+)
+from indicator_engine.rust_bridge import (
     portfolio_rolling_sharpe as rust_rolling_sharpe,
 )
-
 
 # ---------------------------------------------------------------------------
 # Models

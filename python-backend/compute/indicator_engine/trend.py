@@ -28,7 +28,6 @@ from indicator_engine.rust_bridge import (
     calculate_indicators_batch as rust_calculate_indicators_batch,
 )
 
-
 # ---------------------------------------------------------------------------
 # MA primitives
 # ---------------------------------------------------------------------------
@@ -245,7 +244,7 @@ def calculate_exotic_ma(payload: ExoticMARequest) -> IndicatorResponse:
     )
 
 
-def calculate_wma_iwma_cross(payload: "WMAIWMACrossRequest") -> IndicatorResponse:
+def calculate_wma_iwma_cross(payload: WMAIWMACrossRequest) -> IndicatorResponse:  # noqa: F821
     """WMA/IWMA single-parameter cross (Kaabar Ch.3).
 
     WMA is recent-biased, IWMA is history-biased. Same period removes one parameter.

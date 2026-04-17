@@ -5,6 +5,11 @@ out/
 # Dependencies
 node_modules/
 
+# Playwright
+playwright-report/
+test-results/
+/playwright/.cache/
+
 # Env
 .env
 .env.local

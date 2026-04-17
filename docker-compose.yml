@@ -1,11 +1,22 @@
-# Matrix Stack — Podman Compose
-# Starten:  podman-compose up         (in Machine, ~/projects/matrix/)
-# Mit Mock: podman-compose --profile dev up
+# Matrix Stack — podman-compose / docker-compose
+# ---------------------------------------------------------------------------
+# Dev (Standard): infra-only — Homeserver + NATS + Postgres (+LiteLLM opt).
+#   podman-compose up -d   →  tuwunel, nats, postgres
+# Go/Python/Next.js laufen NICHT im Container, sondern lokal via `scripts/dev-stack.sh`.
+# Grund: Hot-Reload, lokale Debugger, schnelleres Iterieren.
+#
+# Opt-in Profiles:
+#   --profile litellm     → LiteLLM Gateway (:4000)
+#   --profile sandbox     → OpenSandbox Server (:8100) + OpenSandbox Alibaba (:8080)
+#   --profile prod        → Container-Builds fuer Go/Python/Next.js + coturn
+#   --profile merger      → frontend_merger als Container (:3003)
 
 services:
-  # ── Homeserver (Tuwunel) ─────────────────────────────────────────────────
+  # ── Homeserver (Tuwunel v1.6.0-rc default) ───────────────────────────────
+  # Image-Tag steuern via TUWUNEL_IMAGE env (default: v1.6.0-rc).
+  # Stable-Fallback: TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:latest podman-compose up -d
   tuwunel:
-    image: ghcr.io/matrix-construct/tuwunel:latest
+    image: ${TUWUNEL_IMAGE:-ghcr.io/matrix-construct/tuwunel:v1.6.0-rc}
     container_name: tuwunel
     volumes:
       - ./homeserver/tuwunel.image.toml:/etc/tuwunel/tuwunel.toml:ro
@@ -35,76 +46,30 @@ services:
       timeout: 5s
       retries: 3
 
-  # ── Go Appservice ────────────────────────────────────────────────────────
-  go-appservice:
-    build: ./go-appservice
-    container_name: go-appservice
-    env_file: ./go-appservice/.env.development
+  # ── PostgreSQL + pgvector (Memory Engine, exec-11, Port 5433) ────────────
+  # Nutzt Port 5433 (statt 5432) um Konflikte mit nativem Postgres zu vermeiden.
+  # Schema-Setup via `python -m alembic upgrade head` aus python-backend/.
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-hindsight_dev}
     ports:
-      - "8090:8090"
-    depends_on:
-      tuwunel:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-  # ── Python Agent Bridge ──────────────────────────────────────────────────
-  python-bridge:
-    build: ./python-agent-bridge
-    container_name: python-bridge
-    env_file: ./python-agent-bridge/.env
-    ports:
-      - "8097:8097"
-    depends_on:
-      nats:
-        condition: service_healthy
-      go-appservice:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ── Next.js Chat UI ──────────────────────────────────────────────────────
-  nextjs-chat:
-    build:
-      context: ./nextjs-chat
-      args:
-        - NEXT_PUBLIC_MATRIX_HOMESERVER_URL=http://localhost:8448
-    container_name: nextjs-chat
-    ports:
-      - "3000:3000"
-    depends_on:
-      tuwunel:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ── PostgreSQL + pgvector (Memory Engine, exec-11) ────────────────────────
-  # Alternative zu tools/pgsql/ (native Windows). Nutze eins von beiden.
-  # postgres:
-  #   image: pgvector/pgvector:pg17
-  #   container_name: postgres
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: hindsight_dev
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-
-  # ── LiteLLM Gateway (exec-16, Port 4000) ──────────────────────────────
+  # ── LiteLLM Gateway (exec-16, Port 4000) — opt-in ────────────────────────
   # Unified LLM proxy: model-name prefix routes to provider.
-  # Starten: docker-compose --profile litellm up
+  # Starten: podman-compose --profile litellm up -d litellm
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: litellm
@@ -123,35 +88,18 @@ services:
     profiles:
       - litellm
 
-  # ── LLM Mock Agent (Dev only) ───────────────────────────────────────────
-  llm-mock:
-    image: python:3.13-slim
-    container_name: llm-mock
-    working_dir: /app
-    volumes:
-      - ./llm-mock:/app:ro
-    environment:
-      - MOCK_HOST=0.0.0.0
-    entrypoint: ["sh", "-c", "pip install -q 'fastapi>=0.116.0' 'uvicorn>=0.35.0' && python mock_agent.py"]
-    ports:
-      - "8094:8094"
-    profiles:
-      - dev
-
-  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
-  # Isolierte Code-Execution fuer LLM-generierten Code (Data Analysis, Backtesting).
-  # Starten: docker-compose --profile sandbox up opensandbox-server
-  # Braucht Docker Socket Mount fuer Container-in-Container Lifecycle.
+  # ── OpenSandbox (Alibaba) — Code Execution, exec-12, Port 8080 ───────────
+  # Starten: podman-compose --profile sandbox up -d opensandbox-server
   opensandbox-server:
     image: opensandbox/opensandbox-server:latest
     container_name: opensandbox-server
     volumes:
       - ./python-backend/agent/sandbox/sandbox-config.toml:/etc/opensandbox/config.toml:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CONTAINER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     ports:
       - "8080:8080"
     environment:
-      - OPEN_SANDBOX_API_KEY=dev-sandbox-key
+      - OPEN_SANDBOX_API_KEY=${OPEN_SANDBOX_API_KEY:-dev-sandbox-key}
     restart: unless-stopped
     profiles:
       - sandbox
@@ -161,34 +109,13 @@ services:
       timeout: 5s
       retries: 3
 
-  # ── TURN Server (Voice/Video Call Relay) ────────────────────────────────
-  # Ohne TURN scheitern Calls wenn beide Peers hinter striktem NAT sitzen
-  # (z.B. Mobilfunk ↔ Mobilfunk). STUN allein reicht dafür nicht.
-  # Im dev-Profil nicht nötig — STUN-Server in tuwunel.toml reichen für LAN.
-  coturn:
-    image: coturn/coturn:latest
-    container_name: coturn
-    network_mode: host
-    volumes:
-      - ./homeserver/turnserver.conf:/etc/turnserver.conf:ro
-    command: ["-c", "/etc/turnserver.conf"]
-    restart: unless-stopped
-    profiles:
-      - prod
-
-  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
-  # Alibaba OpenSandbox: isolierte Sandbox fuer LLM/User-generierten Code
-  # Braucht Container-Socket Mount fuer Container-in-Container Lifecycle
-  # Podman: podman-compose --profile sandbox up opensandbox
-  # Docker: docker-compose --profile sandbox up opensandbox
+  # ── OpenSandbox (2nd flavour, :8100) ─────────────────────────────────────
   opensandbox:
     image: opensandbox/server:latest
     container_name: opensandbox
     ports:
       - "8100:8100"
     volumes:
-      # Podman: /run/podman/podman.sock oder Symlink auf /var/run/docker.sock
-      # Docker: /var/run/docker.sock direkt
       - ${CONTAINER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     environment:
       - OPEN_SANDBOX_API_KEY=${OPEN_SANDBOX_API_KEY:-E1HuYmSjtDAR1VDBPCWms3Sap62nWML3j7uAf3ohD9g}
@@ -200,6 +127,112 @@ services:
       retries: 3
     profiles:
       - sandbox
+
+  # ── LLM Mock Agent (:8094) — opt-in ──────────────────────────────────────
+  # Ersatz fuer real Python agent-service beim Isolationstest der BFF-Routen.
+  # podman-compose --profile mock up -d llm-mock
+  llm-mock:
+    image: python:3.13-slim
+    container_name: llm-mock
+    working_dir: /app
+    volumes:
+      - ./llm-mock:/app:ro
+    environment:
+      - MOCK_HOST=0.0.0.0
+    entrypoint:
+      ["sh", "-c", "pip install -q 'fastapi>=0.116.0' 'uvicorn>=0.35.0' && python mock_agent.py"]
+    ports:
+      - "8094:8094"
+    profiles:
+      - mock
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PROD-PROFIL: containerisierte Go/Python/Next.js Builds.
+  # Nur fuer produktionsnahe Tests oder CI — NICHT Dev-Standard!
+  # Dev: scripts/dev-stack.sh startet diese als lokale Prozesse.
+  # ─────────────────────────────────────────────────────────────────────────
+
+  go-appservice:
+    build: ./go-appservice
+    container_name: go-appservice
+    env_file: ./go-appservice/.env.development
+    ports:
+      - "8090:8090"
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - prod
+
+  python-bridge:
+    build: ./python-agent-bridge
+    container_name: python-bridge
+    env_file: ./python-agent-bridge/.env
+    ports:
+      - "8097:8097"
+    depends_on:
+      nats:
+        condition: service_healthy
+      go-appservice:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - prod
+
+  nextjs-chat:
+    build:
+      context: ./nextjs-chat
+      args:
+        - NEXT_PUBLIC_MATRIX_HOMESERVER_URL=http://localhost:8448
+    container_name: nextjs-chat
+    ports:
+      - "3000:3000"
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - prod
+
+  # ── frontend_merger (optional Container-Build) ───────────────────────────
+  # podman-compose --profile merger up -d frontend-merger
+  frontend-merger:
+    build: ./frontend_merger
+    container_name: frontend-merger
+    env_file: ./frontend_merger/.env.local
+    ports:
+      - "3003:3003"
+    environment:
+      - GO_GATEWAY_BASE_URL=http://go-appservice:8090
+    depends_on:
+      tuwunel:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - merger
+      - prod
+
+  # ── TURN Server (Voice/Video Call Relay, prod) ───────────────────────────
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    network_mode: host
+    volumes:
+      - ./homeserver/turnserver.conf:/etc/turnserver.conf:ro
+    command: ["-c", "/etc/turnserver.conf"]
+    restart: unless-stopped
+    profiles:
+      - prod
 
 volumes:
   tuwunel-data:

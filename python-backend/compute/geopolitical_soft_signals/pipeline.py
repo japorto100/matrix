@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from collections import Counter
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
-from math import log2
 import os
 import threading
 import time
+from collections import Counter
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from math import log2
 from typing import Literal
 
 import httpx
@@ -21,9 +21,9 @@ except Exception:
     TfidfVectorizer = None
 
 try:
-    import sentence_transformers as _st_probe  # noqa: F401
     import hdbscan as _hdbscan_probe  # noqa: F401
     import numpy as _np_probe  # noqa: F401
+    import sentence_transformers as _st_probe  # noqa: F401
     _EMBEDDING_AVAILABLE = True
 except Exception:
     _EMBEDDING_AVAILABLE = False
@@ -242,7 +242,7 @@ def parse_iso(value: str) -> datetime:
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except Exception:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
 
 def source_ref(article: ArticleInput, provider_prefix: str) -> SourceRefOutput:
@@ -272,7 +272,7 @@ def confidence_from_count(count: int, base: float = 0.42) -> float:
 
 def recency_boost(published_at: str) -> float:
     published = parse_iso(published_at)
-    age_hours = max(0.0, (datetime.now(timezone.utc) - published).total_seconds() / 3600.0)
+    age_hours = max(0.0, (datetime.now(UTC) - published).total_seconds() / 3600.0)
     return max(0.0, 0.14 - min(0.14, age_hours * 0.004))
 
 
@@ -441,9 +441,9 @@ def cluster_narratives_embedding(texts: list[str], min_cluster_size: int = 2) ->
     """
     if not _EMBEDDING_AVAILABLE:
         raise ImportError("sentence-transformers and hdbscan are required for embedding clustering")
-    from sentence_transformers import SentenceTransformer
     import hdbscan
     import numpy as np
+    from sentence_transformers import SentenceTransformer
 
     model = SentenceTransformer("all-MiniLM-L6-v2")
     embeddings = model.encode(texts)
@@ -751,7 +751,7 @@ def build_narrative_shift(payload: SignalRequest) -> SignalResponse:
 
 def _ingest_items_to_signal_request(payload: IngestClassifyRequest) -> SignalRequest:
     items = payload.items[: payload.maxCandidates * 3]
-    generated_at = datetime.now(timezone.utc).isoformat()
+    generated_at = datetime.now(UTC).isoformat()
     if not items:
         return SignalRequest(adapterId="news_cluster", generatedAt=generated_at, articles=[], maxCandidates=payload.maxCandidates)
 
@@ -810,11 +810,11 @@ def build_ingest_classification(payload: IngestClassifyRequest) -> IngestClassif
     else:
         raw = build_news_cluster(req)
 
-    generated_at = datetime.now(timezone.utc).isoformat()
+    generated_at = datetime.now(UTC).isoformat()
     enriched: list[IngestClassifiedCandidate] = []
     for candidate in raw.candidates:
         source_url = candidate.sourceRefs[0].url if candidate.sourceRefs else ""
-        dedup_hash = hashlib.sha256(f"{candidate.headline}|{source_url}".encode("utf-8")).hexdigest()
+        dedup_hash = hashlib.sha256(f"{candidate.headline}|{source_url}".encode()).hexdigest()
         enriched.append(
             IngestClassifiedCandidate(
                 headline=candidate.headline,

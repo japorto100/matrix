@@ -7,10 +7,18 @@ from dataclasses import dataclass
 from typing import Any
 
 from agent.audit.logger import AuditAction
-from memory_fusion.access_policy import assert_write_allowed, can_read_item, get_memory_access_policy
+from memory_fusion.access_policy import (
+    assert_write_allowed,
+    can_read_item,
+    get_memory_access_policy,
+)
 from memory_fusion.decay import derive_decay_metadata
 from memory_fusion.mempalace.query_sanitizer import sanitize_query
-from memory_fusion.operation_logging import extract_operation_context, log_memory_operation, start_memory_timer
+from memory_fusion.operation_logging import (
+    extract_operation_context,
+    log_memory_operation,
+    start_memory_timer,
+)
 from memory_fusion.providers import create_hindsight_engine, normalize_ref
 from memory_fusion.query_gate import decide_query_path
 from memory_fusion.semantics import (
@@ -1399,54 +1407,54 @@ class FusionMemoryEngine:
                 )
                 return result
 
-        summary_docs = await self.summary_engine.list_documents(
-            self.summary_bank_id(bank_id),
-            search_query=search_query,
-            tags=tags,
-            tags_match=tags_match,
-            limit=limit,
-            offset=offset,
-            request_context=request_context,
-        )
-        verbatim_docs = await self.verbatim_engine.list_documents(
-            self.verbatim_bank_id(bank_id),
-            search_query=search_query,
-            tags=tags,
-            tags_match=tags_match,
-            limit=limit,
-            offset=offset,
-            request_context=request_context,
-        )
+            summary_docs = await self.summary_engine.list_documents(
+                self.summary_bank_id(bank_id),
+                search_query=search_query,
+                tags=tags,
+                tags_match=tags_match,
+                limit=limit,
+                offset=offset,
+                request_context=request_context,
+            )
+            verbatim_docs = await self.verbatim_engine.list_documents(
+                self.verbatim_bank_id(bank_id),
+                search_query=search_query,
+                tags=tags,
+                tags_match=tags_match,
+                limit=limit,
+                offset=offset,
+                request_context=request_context,
+            )
 
-        merged: dict[str, dict[str, Any]] = {}
-        for route_name, result in ((SUMMARY_ROUTE, summary_docs), (VERBATIM_ROUTE, verbatim_docs)):
-            for item in result.get("items", []):
-                doc_id = str(item.get("id") or "")
-                entry = merged.setdefault(
-                    doc_id,
-                    {
-                        "id": doc_id,
-                        "bank_id": bank_id,
-                        "routes_present": [],
-                        "route_documents": {},
-                        "tags": [],
-                        "memory_unit_count": 0,
-                        "text_length": 0,
-                    },
-                )
-                entry["routes_present"] = self._dedupe_strings(list(entry["routes_present"]) + [route_name])
-                entry["route_documents"][route_name] = self._annotate_document(item, route_name, bank_id=bank_id)
-                if not self._should_surface_item(entry["route_documents"][route_name]):
-                    entry["route_documents"].pop(route_name, None)
-                    if route_name in entry["routes_present"]:
-                        entry["routes_present"] = [value for value in entry["routes_present"] if value != route_name]
-                    continue
-                entry["memory_unit_count"] = int(entry["memory_unit_count"]) + int(item.get("memory_unit_count") or 0)
-                entry["text_length"] = max(int(entry["text_length"]), int(item.get("text_length") or 0))
-                entry["tags"] = self._dedupe_strings(list(entry["tags"]) + list(item.get("tags") or []))
-                for key in ("content_hash", "created_at", "updated_at", "retain_params", "document_metadata"):
-                    if item.get(key) is not None and entry.get(key) in (None, [], {}, ""):
-                        entry[key] = item.get(key)
+            merged: dict[str, dict[str, Any]] = {}
+            for route_name, result in ((SUMMARY_ROUTE, summary_docs), (VERBATIM_ROUTE, verbatim_docs)):
+                for item in result.get("items", []):
+                    doc_id = str(item.get("id") or "")
+                    entry = merged.setdefault(
+                        doc_id,
+                        {
+                            "id": doc_id,
+                            "bank_id": bank_id,
+                            "routes_present": [],
+                            "route_documents": {},
+                            "tags": [],
+                            "memory_unit_count": 0,
+                            "text_length": 0,
+                        },
+                    )
+                    entry["routes_present"] = self._dedupe_strings(list(entry["routes_present"]) + [route_name])
+                    entry["route_documents"][route_name] = self._annotate_document(item, route_name, bank_id=bank_id)
+                    if not self._should_surface_item(entry["route_documents"][route_name]):
+                        entry["route_documents"].pop(route_name, None)
+                        if route_name in entry["routes_present"]:
+                            entry["routes_present"] = [value for value in entry["routes_present"] if value != route_name]
+                        continue
+                    entry["memory_unit_count"] = int(entry["memory_unit_count"]) + int(item.get("memory_unit_count") or 0)
+                    entry["text_length"] = max(int(entry["text_length"]), int(item.get("text_length") or 0))
+                    entry["tags"] = self._dedupe_strings(list(entry["tags"]) + list(item.get("tags") or []))
+                    for key in ("content_hash", "created_at", "updated_at", "retain_params", "document_metadata"):
+                        if item.get(key) is not None and entry.get(key) in (None, [], {}, ""):
+                            entry[key] = item.get(key)
 
             items = list(merged.values())
             items = [item for item in items if item.get("route_documents")]

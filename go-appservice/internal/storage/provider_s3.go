@@ -139,7 +139,7 @@ func (p *S3Provider) ListObjects(ctx context.Context, prefix string, maxKeys int
 	}
 	// After the clamp [1, 1000] the cast to int32 can never overflow —
 	// satisfies gosec G115.
-	maxKeys32 := int32(maxKeys) //nolint:gosec // clamped above
+	maxKeys32 := int32(maxKeys)
 	output, err := p.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket:  aws.String(p.bucket),
 		Prefix:  aws.String(strings.TrimSpace(prefix)),

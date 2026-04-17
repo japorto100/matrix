@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import json
 import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 
 def make_candle(index: int, base: float) -> dict[str, float | int]:
-    dt = datetime.now(timezone.utc) - timedelta(days=120 - index)
+    dt = datetime.now(UTC) - timedelta(days=120 - index)
     drift = (index % 17 - 8) * 0.22
     open_price = base + drift
     close_price = open_price + ((index % 5) - 2) * 0.35

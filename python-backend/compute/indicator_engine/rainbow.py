@@ -18,16 +18,15 @@ from indicator_engine.models import (
     IndicatorPoint,
     IndicatorResponse,
     OHLCVPoint,
-    RPatternRequest,
-    RPatternResponse,
     RainbowRequest,
     RainbowResponse,
     RainbowSignalSeries,
+    RPatternRequest,
+    RPatternResponse,
 )
 from indicator_engine.oscillators import rsi
 from indicator_engine.trend import hma
 from indicator_engine.volatility import calculate_atr, e_bollinger_bands
-
 
 _FIB_LAGS = (1, 2, 3, 5, 8, 13, 21)
 

@@ -39,10 +39,10 @@ from indicator_engine.models import (
     FeatureEngineeringResponse,
     HybridFusionRequest,
     HybridFusionResponse,
-    MLClassifySignalRequest,
-    MLClassifySignalResponse,
     MeanRevMomentumRequest,
     MeanRevMomentumResponse,
+    MLClassifySignalRequest,
+    MLClassifySignalResponse,
     OrderFlowStateRequest,
     OrderFlowStateResponse,
     PerformanceMetricsRequest,
@@ -52,7 +52,6 @@ from indicator_engine.models import (
 )
 from indicator_engine.oscillators import rsi
 from indicator_engine.trend import sma
-
 
 # ---------------------------------------------------------------------------
 # Feature Engineering & Classification (heuristic, NOT real ML)
@@ -370,8 +369,8 @@ def _triple_barrier_labels(closes_vals: list[float], horizon: int, tp: float, sl
 
 def calculate_eval_baseline(req: EvalBaselineRequest) -> EvalBaselineResponse:
     """Evaluate indicator baseline using triple barrier + regime detection."""
-    from indicator_engine.volatility import calculate_regime
     from indicator_engine.models import RegimeDetectRequest
+    from indicator_engine.volatility import calculate_regime
 
     labels = _triple_barrier_labels(req.closes, req.horizon, req.take_profit, req.stop_loss)
     if not labels:

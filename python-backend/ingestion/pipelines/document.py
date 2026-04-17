@@ -5,11 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import UUID
 
-from loguru import logger
-
 from ingestion.core.exceptions import DedupSkipError, IngestionError
 from ingestion.core.types import Job, JobStatus, PipelineKind
 from ingestion.pipelines.base import Pipeline
+from loguru import logger
 
 
 class DocumentPipeline(Pipeline):

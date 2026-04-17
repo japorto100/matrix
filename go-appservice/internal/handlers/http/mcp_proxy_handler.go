@@ -23,6 +23,8 @@ func McpProxyHandler(mcpBaseURL string) http.HandlerFunc {
 			targetURL += "?" + r.URL.RawQuery
 		}
 
+		// #nosec G107,G704 -- upstream is operator-configured (MCP_SERVICE_URL), not user-controlled;
+		// only path/query forwarded, normalized by net/http before proxying.
 		upstreamReq, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "mcp proxy: create request failed"})
@@ -36,7 +38,8 @@ func McpProxyHandler(mcpBaseURL string) http.HandlerFunc {
 			}
 		}
 
-		resp, err := http.DefaultClient.Do(upstreamReq)
+		// upstream bound to operator-configured MCP_SERVICE_URL, not user input.
+		resp, err := http.DefaultClient.Do(upstreamReq) //nolint:gosec // trusted upstream
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "mcp server unreachable"})
 			return

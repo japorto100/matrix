@@ -103,6 +103,16 @@ exclude = [
     "archive/**",
 ]
 
+# Ruff walks up from the CWD and picks the FIRST pyproject.toml it finds.
+# Since the repo root has one, the nested python-backend/pyproject.toml is
+# ignored by `ruff check .` — so we mirror its lint config here.
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = [
+    "E501",  # line-length (formatter handles)
+    "N999",  # invalid-module-name — false positive, repo-dir is "matrix", sub-dir is "python-backend"
+]
+
 # Rebuild rust_core:  uv run scripts/maturin_rebuild.py [--release] [--smoke]
 # On Windows also:    .\scripts\rebuild-rust-core.ps1 [-Release] [-SmokeTest]
 

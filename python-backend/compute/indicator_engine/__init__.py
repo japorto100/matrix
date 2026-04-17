@@ -6,6 +6,10 @@ from .models import (  # noqa: F401
     KsCollectionRequest,
     PatternRequest,
 )
+from .oscillators import (  # noqa: F401
+    build_composite_signal,
+    calculate_ks_collection,
+)
 from .patterns import (  # noqa: F401
     apply_chart_transform,
     build_candlestick_patterns,
@@ -15,9 +19,5 @@ from .patterns import (  # noqa: F401
     build_price_patterns,
     build_strategy_metrics,
     build_td_timing_patterns,
-)
-from .oscillators import (  # noqa: F401
-    build_composite_signal,
-    calculate_ks_collection,
 )
 from .trend import calculate_exotic_ma  # noqa: F401

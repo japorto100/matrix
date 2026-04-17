@@ -22,7 +22,6 @@ from indicator_engine.patterns import (
     zigzag,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fibonacci
 # ---------------------------------------------------------------------------
@@ -310,9 +309,9 @@ class TestZigZag:
             assert result[i]["type"] != result[i - 1]["type"], f"Non-alternating at pivot {i}"
 
     def test_higher_deviation_fewer_pivots(self, ohlcv_dict_1000: dict) -> None:
-        h, l = ohlcv_dict_1000["high"], ohlcv_dict_1000["low"]
-        pivots_5 = zigzag(h, l, deviation=5.0)
-        pivots_15 = zigzag(h, l, deviation=15.0)
+        highs, lows = ohlcv_dict_1000["high"], ohlcv_dict_1000["low"]
+        pivots_5 = zigzag(highs, lows, deviation=5.0)
+        pivots_15 = zigzag(highs, lows, deviation=15.0)
         assert len(pivots_15) <= len(pivots_5)
 
     def test_short_series(self) -> None:

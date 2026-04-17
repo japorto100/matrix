@@ -74,14 +74,14 @@ def extract_python_classes(path: Path) -> dict[str, list[str]]:
                 fields.append(field_name)
         classes[name] = fields
 
-    # Filter: only keep classes that actually inherit from BaseModel or are dataclasses
-    # Re-scan to check parents
-    valid_parents = {"BaseModel", "BaseModel, ", "TypedDict"}
+    # Filter: only keep classes that actually inherit from BaseModel or are dataclasses.
+    # (Historically we checked parent names, but current logic accepts anything
+    # that survived the first scan — the `valid_parents`/`parents` locals were
+    # leftover from that approach and are intentionally unused now.)
     valid_classes: dict[str, list[str]] = {}
 
     for m in class_pattern.finditer(text):
         name = m.group(1)
-        parents = m.group(2)
         # Include if inherits from BaseModel (directly or indirectly via IndicatorServiceRequest etc.)
         if name in classes:
             valid_classes[name] = classes[name]

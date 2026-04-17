@@ -12,6 +12,7 @@ import httpx
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
+
 from shared.config import GO_GATEWAY_URL
 
 # ---------------------------------------------------------------------------
@@ -47,7 +48,7 @@ async def fetch_ohlcv_from_go(symbol: str, timeframe: str, limit: int) -> AssetO
             data = resp.json()
             if not data.get("success") or not data.get("data"):
                 return None
-            
+
             closes = [c["close"] for c in data["data"]]
             timestamps = [str(c["time"]) for c in data["data"]]
             return AssetOHLCV(symbol=symbol, close=closes, timestamps=timestamps)
@@ -433,7 +434,7 @@ async def compute_portfolio_optimization(req: OptimizeRequest) -> OptimizeRespon
 
     # Simple heuristic fallback if data is too thin
     symbols = [a.symbol for a in assets]
-    
+
     if req.method == "equal_weight" or len(assets) < 2:
         w = 1.0 / len(symbols)
         return OptimizeResponse(weights={s: w for s in symbols}, method="equal_weight")

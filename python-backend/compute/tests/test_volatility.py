@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-
-
 from indicator_engine.models import OHLCVPoint
 from indicator_engine.volatility import (
     bollinger_bands_raw,
@@ -26,7 +24,6 @@ from indicator_engine.volatility import (
     donchian_channels,
     keltner_channels,
 )
-
 
 # ---------------------------------------------------------------------------
 # Bollinger Bands

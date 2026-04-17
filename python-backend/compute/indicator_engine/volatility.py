@@ -29,9 +29,9 @@ from indicator_engine.models import (
     KeltnerResponse,
     MarkovRegimeResponse,
     OHLCVPoint,
-    RSIVariantRequest,
     RegimeDetectRequest,
     RegimeDetectResponse,
+    RSIVariantRequest,
     VolatilitySuiteRequest,
     VolatilitySuiteResponse,
 )
@@ -39,7 +39,6 @@ from indicator_engine.rust_bridge import (
     calculate_indicators_batch as rust_calculate_indicators_batch,
 )
 from indicator_engine.trend import ema, sma
-
 
 # ---------------------------------------------------------------------------
 # Donchian Channels
@@ -736,7 +735,7 @@ def calculate_bb_aggressive(payload: BollingerVariantRequest) -> IndicatorRespon
     )
 
 
-def calculate_bb_trend_friendly(payload: "BBTrendFriendlyRequest") -> IndicatorResponse:
+def calculate_bb_trend_friendly(payload: BBTrendFriendlyRequest) -> IndicatorResponse:  # noqa: F821
     """BB Trend-Friendly: Conservative signal + SMA(100) trend filter.
 
     Kaabar Ch.3: uses SMA with 10-bar offset for trend confirmation.

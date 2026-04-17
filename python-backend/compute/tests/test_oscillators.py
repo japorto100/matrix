@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from indicator_engine.models import OHLCVPoint
 from indicator_engine.oscillators import (
     adx_series,
@@ -24,7 +23,6 @@ from indicator_engine.oscillators import (
     rsi,
     stochastic,
 )
-
 
 # ---------------------------------------------------------------------------
 # RSI

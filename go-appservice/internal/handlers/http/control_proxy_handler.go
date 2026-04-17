@@ -25,6 +25,8 @@ func ControlProxyHandler(agentBaseURL string) http.HandlerFunc {
 			targetURL += "?" + r.URL.RawQuery
 		}
 
+		// #nosec G107,G704 -- upstream is operator-configured (AGENT_SERVICE_URL), not user-controlled;
+		// only path/query is forwarded and has already been normalized by net/http.
 		upstreamReq, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{
@@ -43,7 +45,8 @@ func ControlProxyHandler(agentBaseURL string) http.HandlerFunc {
 			}
 		}
 
-		resp, err := http.DefaultClient.Do(upstreamReq)
+		// upstream bound to operator-configured AGENT_SERVICE_URL, not user input.
+		resp, err := http.DefaultClient.Do(upstreamReq) //nolint:gosec // trusted upstream
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{
 				"error": "python agent service unreachable: " + err.Error(),

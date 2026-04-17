@@ -55,7 +55,7 @@ Rules:
 
 @dataclass
 class IterativeSearchResult:
-    picked: list["Skill"]
+    picked: list[Skill]
     rounds: int
     queries: list[str]
     satisfied: bool
@@ -76,7 +76,7 @@ def _max_rounds() -> int:
 async def _judge(
     *,
     query: str,
-    candidates: list["Skill"],
+    candidates: list[Skill],
     history: list[str],
     api_key: str | None,
 ) -> tuple[bool, str | None]:
@@ -125,7 +125,7 @@ async def _judge(
 
 
 async def iterative_find(
-    skills: list["Skill"],
+    skills: list[Skill],
     query: str,
     *,
     top_k: int | None = None,
@@ -160,7 +160,7 @@ async def iterative_find(
         next_picked = find_skills_for_query(skills, reformulation, top_k=top_k)
         # Merge de-dup — prefer earlier (higher-ranked) for the same skill id.
         seen: set[str] = set()
-        merged: list["Skill"] = []
+        merged: list[Skill] = []
         for s in picked + next_picked:
             key = f"{s.tier}:{s.name}"
             if key in seen:

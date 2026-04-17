@@ -243,6 +243,6 @@ def persist_refined(result: RefineResult) -> str | None:
                 ),
             )
             return str(new_id)
-    except Exception as e:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         logger.exception("persist_refined failed")
         return None

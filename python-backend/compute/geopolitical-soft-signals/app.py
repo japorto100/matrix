@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from shared import create_service_app
 from geopolitical_soft_signals.game_theory import (
     GameTheoryImpactRequest,
     GameTheoryImpactResponse,
@@ -16,9 +15,9 @@ from geopolitical_soft_signals.game_theory import (
     TimelineRegimeResponse,
     TransmissionPathRequest,
     TransmissionPathResponse,
+    build_game_theory_impact,
     build_timeline_regimes,
     build_transmission_paths,
-    build_game_theory_impact,
     match_strategemes,
     run_monte_carlo_simulation,
     solve_nash_equilibria,
@@ -37,6 +36,7 @@ from geopolitical_soft_signals.pipeline import (  # noqa: E402
     cluster_narratives_embedding,
 )
 
+from shared import create_service_app
 
 app = create_service_app("geopolitical-soft-signals", http_port=8091)
 
