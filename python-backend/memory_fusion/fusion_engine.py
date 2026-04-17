@@ -6,12 +6,18 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from agent.audit.logger import AuditAction
+from memory_fusion.access_policy import assert_write_allowed, can_read_item, get_memory_access_policy
+from memory_fusion.decay import derive_decay_metadata
 from memory_fusion.mempalace.query_sanitizer import sanitize_query
+from memory_fusion.operation_logging import extract_operation_context, log_memory_operation, start_memory_timer
 from memory_fusion.providers import create_hindsight_engine, normalize_ref
+from memory_fusion.query_gate import decide_query_path
 from memory_fusion.semantics import (
     PERSONAL_DERIVED_LAYER,
     classify_item_semantics,
     enrich_metadata_with_semantics,
+    semantic_metadata_from_tags,
 )
 from memory_fusion.summary_builder import build_summary_item, build_verbatim_item
 
@@ -138,8 +144,12 @@ class FusionMemoryEngine:
     @staticmethod
     def _annotate_route(item: dict[str, Any], route: str, *, bank_id: str | None = None) -> dict[str, Any]:
         annotated = dict(item)
+        route_metadata = {
+            **dict(annotated.get("metadata") or {}),
+            **semantic_metadata_from_tags(list(annotated.get("tags") or [])),
+        }
         metadata = enrich_metadata_with_semantics(
-            dict(annotated.get("metadata") or {}),
+            derive_decay_metadata(route_metadata),
             fact_type=str(annotated.get("fact_type") or ""),
         )
         metadata["fusion_route"] = route
@@ -156,13 +166,33 @@ class FusionMemoryEngine:
         annotated = dict(item)
         annotated["bank_id"] = bank_id
         annotated["fusion_route"] = route
-        document_metadata = enrich_metadata_with_semantics(dict(annotated.get("document_metadata") or {}))
+        document_metadata = enrich_metadata_with_semantics(
+            derive_decay_metadata(
+                {
+                **dict(annotated.get("document_metadata") or {}),
+                **semantic_metadata_from_tags(list(annotated.get("tags") or [])),
+                }
+            )
+        )
         document_metadata["fusion_route"] = route
         annotated["document_metadata"] = document_metadata
         annotated["memory_layer"] = document_metadata.get("memory_layer")
         annotated["source_type"] = document_metadata.get("source_type")
         annotated["artifact_type"] = document_metadata.get("artifact_type")
         return annotated
+
+    @staticmethod
+    def _extract_operation_context(
+        *,
+        consumer: str | None,
+        request_context: Any,
+        kwargs: dict[str, Any],
+    ):
+        return extract_operation_context(
+            consumer=consumer,
+            request_context=request_context,
+            metadata=dict(kwargs.pop("operation_context", None) or {}),
+        )
 
     def _route_bank_id(self, bank_id: str, route: str) -> str:
         base = self._base_bank_id(bank_id)
@@ -195,7 +225,14 @@ class FusionMemoryEngine:
             and str(metadata.get("derived_without_evidence") or "").lower() == "true"
         )
 
-    def _prepare_contents(self, contents: list[dict[str, Any]], route: str, *, bank_id: str | None = None) -> list[dict[str, Any]]:
+    def _prepare_contents(
+        self,
+        contents: list[dict[str, Any]],
+        route: str,
+        *,
+        bank_id: str | None = None,
+        consumer: str = "agent_writer",
+    ) -> list[dict[str, Any]]:
         if route not in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
             raise ValueError(f"Unsupported route: {route}")
         prepared: list[dict[str, Any]] = []
@@ -206,6 +243,16 @@ class FusionMemoryEngine:
                     f"memory_fusion retain path rejected {semantics.memory_layer} item "
                     f"({semantics.artifact_type}); route it to the dedicated KB/world path instead"
                 )
+            assert_write_allowed(
+                {
+                    "metadata": enrich_metadata_with_semantics(
+                        derive_decay_metadata(dict(item.get("metadata") or {})),
+                        item=item,
+                    ),
+                    "fact_type": str(item.get("fact_type") or ""),
+                },
+                consumer=consumer,
+            )
             target_bank_id = bank_id or self._base_bank_id(str(item.get("bank_id") or "")) or None
             prepared.append(
                 build_summary_item(item, bank_id=target_bank_id)
@@ -220,20 +267,33 @@ class FusionMemoryEngine:
         return str(metadata.get("summary_text") or metadata.get("verbatim_text") or fallback_text)
 
     def _fact_metadata(self, metadata: dict[str, Any], *, route: str, fact_type: str | None = None) -> dict[str, Any]:
-        enriched = enrich_metadata_with_semantics(metadata, fact_type=fact_type)
+        enriched = enrich_metadata_with_semantics(derive_decay_metadata(metadata), fact_type=fact_type)
         enriched["fusion_route"] = route
         return enriched
 
-    def _should_surface_item(self, item: dict[str, Any]) -> bool:
+    def _should_surface_item(self, item: dict[str, Any], *, consumer: str = "llm_agent") -> bool:
         metadata = dict(item.get("metadata") or item.get("document_metadata") or {})
         fact_type = str(item.get("fact_type") or "")
-        return not self._is_ungrounded_derived(enrich_metadata_with_semantics(metadata, fact_type=fact_type))
+        enriched = enrich_metadata_with_semantics(derive_decay_metadata(metadata), fact_type=fact_type)
+        if not can_read_item({"metadata": enriched, "fact_type": fact_type}, consumer=consumer):
+            return False
+        policy = get_memory_access_policy(consumer)
+        if self._is_ungrounded_derived(enriched) and not policy.allow_ungrounded_derived:
+            return False
+        return True
 
-    def _normalized_route_results(self, facts: list[Any], route: str, *, n_results: int) -> list[FusionResult]:
+    def _normalized_route_results(
+        self,
+        facts: list[Any],
+        route: str,
+        *,
+        n_results: int,
+        consumer: str = "llm_agent",
+    ) -> list[FusionResult]:
         normalized: list[FusionResult] = []
         for rank, fact in enumerate(facts, start=1):
             result = self._result_from_fact(fact, route, rank)
-            if self._is_ungrounded_derived(result.metadata):
+            if not self._should_surface_item({"metadata": result.metadata, "fact_type": result.metadata.get("fact_type")}, consumer=consumer):
                 continue
             normalized.append(result)
             if len(normalized) >= n_results:
@@ -306,6 +366,10 @@ class FusionMemoryEngine:
 
     def _result_from_fact(self, fact: Any, route: str, rank: int) -> FusionResult:
         metadata = dict(getattr(fact, "metadata", {}) or {})
+        fact_tags = list(getattr(fact, "tags", []) or [])
+        if fact_tags:
+            metadata.setdefault("tags", fact_tags)
+        metadata = {**metadata, **semantic_metadata_from_tags(fact_tags or metadata.get("tags"))}
         document_id = getattr(fact, "document_id", None)
         chunk_id = getattr(fact, "chunk_id", None)
         if document_id is not None:
@@ -339,13 +403,14 @@ class FusionMemoryEngine:
         verbatim_facts: list[Any],
         *,
         n_results: int,
+        consumer: str = "llm_agent",
     ) -> list[FusionResult]:
         merged: dict[str, FusionResult] = {}
 
         for route, facts in ((SUMMARY_ROUTE, summary_facts), (VERBATIM_ROUTE, verbatim_facts)):
             for rank, fact in enumerate(facts[:n_results], start=1):
                 result = self._result_from_fact(fact, route, rank)
-                if self._is_ungrounded_derived(result.metadata):
+                if not self._should_surface_item({"metadata": result.metadata, "fact_type": result.metadata.get("fact_type")}, consumer=consumer):
                     continue
                 existing = merged.get(result.ref)
                 if existing is None:
@@ -412,41 +477,78 @@ class FusionMemoryEngine:
         strategy: str | None = None,
         **kwargs: Any,
     ) -> list[list[str]]:
+        consumer = str(kwargs.pop("consumer", "agent_writer") or "agent_writer")
+        op_ctx = self._extract_operation_context(consumer=consumer, request_context=request_context, kwargs=kwargs)
+        started_at = start_memory_timer()
         route = self._route_from_kwargs(kwargs)
         base_bank_id = self._base_bank_id(bank_id)
-        if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
-            return await self._delegate_route(
-                route,
-                "retain_batch_async",
-                bank_id=self._route_bank_id(bank_id, route),
-                contents=self._prepare_contents(contents, route, bank_id=base_bank_id),
+        try:
+            if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
+                result = await self._delegate_route(
+                    route,
+                    "retain_batch_async",
+                    bank_id=self._route_bank_id(bank_id, route),
+                    contents=self._prepare_contents(contents, route, bank_id=base_bank_id, consumer=consumer),
+                    request_context=request_context,
+                    document_tags=self._route_tags(document_tags, route),
+                    strategy=strategy,
+                )
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_RETAIN,
+                    bank_id=bank_id,
+                    route=route,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(contents),
+                    metadata={"policy_decision": "write_allowed"},
+                )
+                return result
+
+            summary_ids = await self.summary_engine.retain_batch_async(
+                bank_id=self.summary_bank_id(bank_id),
+                contents=self._prepare_contents(contents, SUMMARY_ROUTE, bank_id=base_bank_id, consumer=consumer),
                 request_context=request_context,
-                document_tags=self._route_tags(document_tags, route),
+                document_tags=self._route_tags(document_tags, SUMMARY_ROUTE),
+                strategy=strategy,
+            )
+            verbatim_ids = await self.verbatim_engine.retain_batch_async(
+                bank_id=self.verbatim_bank_id(bank_id),
+                contents=self._prepare_contents(contents, VERBATIM_ROUTE, bank_id=base_bank_id, consumer=consumer),
+                request_context=request_context,
+                document_tags=self._route_tags(document_tags, VERBATIM_ROUTE),
                 strategy=strategy,
             )
 
-        summary_ids = await self.summary_engine.retain_batch_async(
-            bank_id=self.summary_bank_id(bank_id),
-            contents=self._prepare_contents(contents, SUMMARY_ROUTE, bank_id=base_bank_id),
-            request_context=request_context,
-            document_tags=self._route_tags(document_tags, SUMMARY_ROUTE),
-            strategy=strategy,
-        )
-        verbatim_ids = await self.verbatim_engine.retain_batch_async(
-            bank_id=self.verbatim_bank_id(bank_id),
-            contents=self._prepare_contents(contents, VERBATIM_ROUTE, bank_id=base_bank_id),
-            request_context=request_context,
-            document_tags=self._route_tags(document_tags, VERBATIM_ROUTE),
-            strategy=strategy,
-        )
-
-        merged: list[list[str]] = []
-        for idx in range(max(len(summary_ids), len(verbatim_ids))):
-            merged.append(
-                list(summary_ids[idx] if idx < len(summary_ids) else [])
-                + list(verbatim_ids[idx] if idx < len(verbatim_ids) else [])
+            merged: list[list[str]] = []
+            for idx in range(max(len(summary_ids), len(verbatim_ids))):
+                merged.append(
+                    list(summary_ids[idx] if idx < len(summary_ids) else [])
+                    + list(verbatim_ids[idx] if idx < len(verbatim_ids) else [])
+                )
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RETAIN,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=len(contents),
+                metadata={"policy_decision": "write_allowed"},
             )
-        return merged
+            return merged
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RETAIN,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=len(contents),
+                metadata={"policy_decision": "write_rejected"},
+            )
+            raise
 
     async def submit_async_retain(
         self,
@@ -458,6 +560,7 @@ class FusionMemoryEngine:
         strategy: str | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        consumer = str(kwargs.pop("consumer", "agent_writer") or "agent_writer")
         route = self._route_from_kwargs(kwargs)
         base_bank_id = self._base_bank_id(bank_id)
         if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
@@ -465,7 +568,7 @@ class FusionMemoryEngine:
                 route,
                 "submit_async_retain",
                 self._route_bank_id(bank_id, route),
-                self._prepare_contents(contents, route, bank_id=base_bank_id),
+                self._prepare_contents(contents, route, bank_id=base_bank_id, consumer=consumer),
                 request_context=request_context,
                 document_tags=self._route_tags(document_tags, route),
                 strategy=strategy,
@@ -473,14 +576,14 @@ class FusionMemoryEngine:
 
         summary_op = await self.summary_engine.submit_async_retain(
             self.summary_bank_id(bank_id),
-            self._prepare_contents(contents, SUMMARY_ROUTE, bank_id=base_bank_id),
+            self._prepare_contents(contents, SUMMARY_ROUTE, bank_id=base_bank_id, consumer=consumer),
             request_context=request_context,
             document_tags=self._route_tags(document_tags, SUMMARY_ROUTE),
             strategy=strategy,
         )
         verbatim_op = await self.verbatim_engine.submit_async_retain(
             self.verbatim_bank_id(bank_id),
-            self._prepare_contents(contents, VERBATIM_ROUTE, bank_id=base_bank_id),
+            self._prepare_contents(contents, VERBATIM_ROUTE, bank_id=base_bank_id, consumer=consumer),
             request_context=request_context,
             document_tags=self._route_tags(document_tags, VERBATIM_ROUTE),
             strategy=strategy,
@@ -510,22 +613,96 @@ class FusionMemoryEngine:
         hall: str | None = None,
         closet: str | None = None,
         drawer: str | None = None,
+        consumer: str = "llm_agent",
+        operation_context: dict[str, Any] | None = None,
     ) -> list[FusionResult]:
-        clean_query = self._normalize_query(query)
+        started_at = start_memory_timer()
+        op_ctx = extract_operation_context(
+            consumer=consumer,
+            request_context=request_context,
+            metadata=operation_context,
+        )
+        decision = decide_query_path(query, self._normalize_query(query))
+        clean_query = decision.query
         tags = self._filter_tags(tags, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
+        if decision.action == "abstain":
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=0,
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+            )
+            return []
 
-        if route == SUMMARY_ROUTE:
-            result = await self.summary_engine.recall_async(
+        try:
+            if route == SUMMARY_ROUTE:
+                result = await self.summary_engine.recall_async(
+                    self.summary_bank_id(bank_id),
+                    clean_query,
+                    fact_type=fact_type,
+                    request_context=request_context,
+                    tags=tags,
+                )
+                normalized = self._normalized_route_results(
+                    result.results,
+                    SUMMARY_ROUTE,
+                    n_results=n_results,
+                    consumer=consumer,
+                )
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_RECALL,
+                    bank_id=bank_id,
+                    route=SUMMARY_ROUTE,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(normalized),
+                    query=query,
+                    metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+                )
+                return normalized
+
+            if route == VERBATIM_ROUTE:
+                result = await self.verbatim_engine.recall_async(
+                    self.verbatim_bank_id(bank_id),
+                    clean_query,
+                    fact_type=fact_type,
+                    include_chunks=True,
+                    request_context=request_context,
+                    tags=tags,
+                )
+                normalized = self._normalized_route_results(
+                    result.results,
+                    VERBATIM_ROUTE,
+                    n_results=n_results,
+                    consumer=consumer,
+                )
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_RECALL,
+                    bank_id=bank_id,
+                    route=VERBATIM_ROUTE,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(normalized),
+                    query=query,
+                    metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+                )
+                return normalized
+
+            summary_result = await self.summary_engine.recall_async(
                 self.summary_bank_id(bank_id),
                 clean_query,
                 fact_type=fact_type,
                 request_context=request_context,
                 tags=tags,
             )
-            return self._normalized_route_results(result.results, SUMMARY_ROUTE, n_results=n_results)
-
-        if route == VERBATIM_ROUTE:
-            result = await self.verbatim_engine.recall_async(
+            verbatim_result = await self.verbatim_engine.recall_async(
                 self.verbatim_bank_id(bank_id),
                 clean_query,
                 fact_type=fact_type,
@@ -533,24 +710,37 @@ class FusionMemoryEngine:
                 request_context=request_context,
                 tags=tags,
             )
-            return self._normalized_route_results(result.results, VERBATIM_ROUTE, n_results=n_results)
-
-        summary_result = await self.summary_engine.recall_async(
-            self.summary_bank_id(bank_id),
-            clean_query,
-            fact_type=fact_type,
-            request_context=request_context,
-            tags=tags,
-        )
-        verbatim_result = await self.verbatim_engine.recall_async(
-            self.verbatim_bank_id(bank_id),
-            clean_query,
-            fact_type=fact_type,
-            include_chunks=True,
-            request_context=request_context,
-            tags=tags,
-        )
-        return self._merge_ranked_results(summary_result.results, verbatim_result.results, n_results=n_results)
+            merged = self._merge_ranked_results(
+                summary_result.results,
+                verbatim_result.results,
+                n_results=n_results,
+                consumer=consumer,
+            )
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=len(merged),
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+            )
+            return merged
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=0,
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+            )
+            raise
 
     async def recall_async(
         self,
@@ -577,6 +767,9 @@ class FusionMemoryEngine:
     ):
         from hindsight_api.engine.response_models import ChunkInfo, MemoryFact, RecallResult  # noqa: I001
 
+        consumer = str(kwargs.pop("consumer", "llm_agent") or "llm_agent")
+        op_ctx = self._extract_operation_context(consumer=consumer, request_context=request_context, kwargs=kwargs)
+        started_at = start_memory_timer()
         route = self._route_from_kwargs(kwargs)
         wing = kwargs.pop("wing", None)
         room = kwargs.pop("room", None)
@@ -584,13 +777,119 @@ class FusionMemoryEngine:
         closet = kwargs.pop("closet", None)
         drawer = kwargs.pop("drawer", None)
         tags = self._filter_tags(tags, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
-        clean_query = self._normalize_query(query)
+        decision = decide_query_path(query, self._normalize_query(query))
+        clean_query = decision.query
+        if decision.action == "abstain":
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=0,
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+            )
+            return RecallResult(results=[], entities={}, chunks={})
 
-        if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
-            delegated = await self._delegate_route(
-                route,
-                "recall_async",
-                self._route_bank_id(bank_id, route),
+        try:
+            if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
+                delegated = await self._delegate_route(
+                    route,
+                    "recall_async",
+                    self._route_bank_id(bank_id, route),
+                    clean_query,
+                    budget=budget,
+                    max_tokens=max_tokens,
+                    enable_trace=enable_trace,
+                    fact_type=fact_type,
+                    question_date=question_date,
+                    include_entities=include_entities,
+                    max_entity_tokens=max_entity_tokens,
+                    include_chunks=include_chunks,
+                    max_chunk_tokens=max_chunk_tokens,
+                    include_source_facts=include_source_facts,
+                    max_source_facts_tokens=max_source_facts_tokens,
+                    max_source_facts_tokens_per_observation=max_source_facts_tokens_per_observation,
+                    request_context=request_context,
+                    tags=tags,
+                    tags_match=tags_match,
+                    tag_groups=tag_groups,
+                )
+                normalized_results: list[MemoryFact] = []
+                for fact in list(getattr(delegated, "results", []) or []):
+                    metadata = dict(getattr(fact, "metadata", {}) or {})
+                    document_id = getattr(fact, "document_id", None)
+                    chunk_id = getattr(fact, "chunk_id", None)
+                    if document_id is not None:
+                        metadata.setdefault("document_id", str(document_id))
+                    if chunk_id is not None:
+                        metadata.setdefault("chunk_id", str(chunk_id))
+                    metadata = self._fact_metadata(
+                        metadata,
+                        route=route,
+                        fact_type=str(getattr(fact, "fact_type", "") or ""),
+                    )
+                    if not self._should_surface_item({"metadata": metadata, "fact_type": metadata.get("fact_type")}, consumer=consumer):
+                        continue
+                    normalized_results.append(
+                        MemoryFact(
+                            id=str(getattr(fact, "id", "")),
+                            text=str(getattr(fact, "text", "") or ""),
+                            fact_type=str(metadata.get("fact_type") or getattr(fact, "fact_type", "experience")),
+                            entities=list(getattr(fact, "entities", []) or []),
+                            context=getattr(fact, "context", None),
+                            occurred_start=getattr(fact, "occurred_start", None),
+                            occurred_end=getattr(fact, "occurred_end", None),
+                            mentioned_at=getattr(fact, "mentioned_at", None),
+                            document_id=document_id,
+                            metadata=metadata,
+                            chunk_id=str(chunk_id) if chunk_id is not None else None,
+                            tags=list(getattr(fact, "tags", []) or []),
+                            source_fact_ids=getattr(fact, "source_fact_ids", None),
+                        )
+                    )
+                response = RecallResult(
+                    results=normalized_results,
+                    entities=dict(getattr(delegated, "entities", {}) or {}),
+                    chunks=dict(getattr(delegated, "chunks", {}) or {}),
+                )
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_RECALL,
+                    bank_id=bank_id,
+                    route=route,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(normalized_results),
+                    query=query,
+                    metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+                )
+                return response
+
+            summary_result = await self.summary_engine.recall_async(
+                self.summary_bank_id(bank_id),
+                clean_query,
+                budget=budget,
+                max_tokens=max_tokens,
+                enable_trace=enable_trace,
+                fact_type=fact_type,
+                question_date=question_date,
+                include_entities=include_entities,
+                max_entity_tokens=max_entity_tokens,
+                include_chunks=False,
+                max_chunk_tokens=max_chunk_tokens,
+                include_source_facts=include_source_facts,
+                max_source_facts_tokens=max_source_facts_tokens,
+                max_source_facts_tokens_per_observation=max_source_facts_tokens_per_observation,
+                request_context=request_context,
+                tags=tags,
+                tags_match=tags_match,
+                tag_groups=tag_groups,
+            )
+            verbatim_result = await self.verbatim_engine.recall_async(
+                self.verbatim_bank_id(bank_id),
                 clean_query,
                 budget=budget,
                 max_tokens=max_tokens,
@@ -609,140 +908,95 @@ class FusionMemoryEngine:
                 tags_match=tags_match,
                 tag_groups=tag_groups,
             )
-            normalized_results: list[MemoryFact] = []
-            for fact in list(getattr(delegated, "results", []) or []):
-                metadata = dict(getattr(fact, "metadata", {}) or {})
-                document_id = getattr(fact, "document_id", None)
-                chunk_id = getattr(fact, "chunk_id", None)
-                if document_id is not None:
-                    metadata.setdefault("document_id", str(document_id))
-                if chunk_id is not None:
-                    metadata.setdefault("chunk_id", str(chunk_id))
-                metadata = self._fact_metadata(
-                    metadata,
-                    route=route,
-                    fact_type=str(getattr(fact, "fact_type", "") or ""),
-                )
-                if self._is_ungrounded_derived(metadata):
-                    continue
-                normalized_results.append(
+            fused = self._merge_ranked_results(
+                summary_result.results,
+                verbatim_result.results,
+                n_results=10,
+                consumer=consumer,
+            )
+
+            results: list[MemoryFact] = []
+            chunks: dict[str, ChunkInfo] = {}
+            for idx, item in enumerate(fused):
+                metadata = dict(item.metadata)
+                chunk_id = metadata.get("chunk_id")
+                document_id = metadata.get("document_id")
+                fact_metadata = {
+                    "source_ref": str(item.ref),
+                    "providers": ",".join(item.providers),
+                    "summary_text": str(metadata.get("summary_text") or item.text),
+                    "verbatim_text": str(metadata.get("verbatim_text") or item.text),
+                    "chunk_id": str(chunk_id or ""),
+                    "document_id": str(document_id or ""),
+                    "fusion_route": FUSION_ROUTE,
+                    "memory_layer": str(metadata.get("memory_layer") or ""),
+                    "source_type": str(metadata.get("source_type") or ""),
+                    "artifact_type": str(metadata.get("artifact_type") or ""),
+                    "evidence_kind": str(metadata.get("evidence_kind") or ""),
+                    "provenance_ref": str(metadata.get("provenance_ref") or metadata.get("source_ref") or ""),
+                    "grounding_status": str(metadata.get("grounding_status") or ""),
+                    "derived_without_evidence": str(metadata.get("derived_without_evidence") or "false"),
+                    "status": str(metadata.get("status") or ""),
+                    "promotion_status": str(metadata.get("promotion_status") or ""),
+                    "source_confidence": str(metadata.get("source_confidence") or ""),
+                    "actor_role": str(metadata.get("actor_role") or ""),
+                }
+                results.append(
                     MemoryFact(
-                        id=str(getattr(fact, "id", "")),
-                        text=str(getattr(fact, "text", "") or ""),
-                        fact_type=str(metadata.get("fact_type") or getattr(fact, "fact_type", "experience")),
-                        entities=list(getattr(fact, "entities", []) or []),
-                        context=getattr(fact, "context", None),
-                        occurred_start=getattr(fact, "occurred_start", None),
-                        occurred_end=getattr(fact, "occurred_end", None),
-                        mentioned_at=getattr(fact, "mentioned_at", None),
+                        id=f"fusion:{idx}:{item.ref}",
+                        text=self._recall_fusion_text(clean_query, metadata, item.text),
+                        fact_type=str(metadata.get("fact_type") or "experience"),
+                        entities=[],
+                        context=f"providers:{','.join(item.providers)}",
+                        occurred_start=None,
+                        occurred_end=None,
+                        mentioned_at=metadata.get("filed_at") or metadata.get("event_date"),
                         document_id=document_id,
-                        metadata=metadata,
+                        metadata=fact_metadata,
                         chunk_id=str(chunk_id) if chunk_id is not None else None,
-                        tags=list(getattr(fact, "tags", []) or []),
-                        source_fact_ids=getattr(fact, "source_fact_ids", None),
+                        tags=[],
+                        source_fact_ids=None,
                     )
                 )
-            return RecallResult(
-                results=normalized_results,
-                entities=dict(getattr(delegated, "entities", {}) or {}),
-                chunks=dict(getattr(delegated, "chunks", {}) or {}),
+
+                if include_chunks and (verbatim_text := metadata.get("verbatim_text")):
+                    key = f"{document_id}_{chunk_id}" if document_id and chunk_id is not None else item.ref
+                    chunks[key] = ChunkInfo(
+                        chunk_text=str(verbatim_text),
+                        chunk_index=int(chunk_id) if str(chunk_id).isdigit() else idx,
+                        truncated=False,
+                    )
+
+            response = RecallResult(
+                results=results,
+                entities=self._merge_entities(summary_result.entities, verbatim_result.entities),
+                chunks=self._merge_chunks(verbatim_result.chunks, chunks) if include_chunks else {},
             )
-
-        summary_result = await self.summary_engine.recall_async(
-            self.summary_bank_id(bank_id),
-            clean_query,
-            budget=budget,
-            max_tokens=max_tokens,
-            enable_trace=enable_trace,
-            fact_type=fact_type,
-            question_date=question_date,
-            include_entities=include_entities,
-            max_entity_tokens=max_entity_tokens,
-            include_chunks=False,
-            max_chunk_tokens=max_chunk_tokens,
-            include_source_facts=include_source_facts,
-            max_source_facts_tokens=max_source_facts_tokens,
-            max_source_facts_tokens_per_observation=max_source_facts_tokens_per_observation,
-            request_context=request_context,
-            tags=tags,
-            tags_match=tags_match,
-            tag_groups=tag_groups,
-        )
-        verbatim_result = await self.verbatim_engine.recall_async(
-            self.verbatim_bank_id(bank_id),
-            clean_query,
-            budget=budget,
-            max_tokens=max_tokens,
-            enable_trace=enable_trace,
-            fact_type=fact_type,
-            question_date=question_date,
-            include_entities=include_entities,
-            max_entity_tokens=max_entity_tokens,
-            include_chunks=include_chunks,
-            max_chunk_tokens=max_chunk_tokens,
-            include_source_facts=include_source_facts,
-            max_source_facts_tokens=max_source_facts_tokens,
-            max_source_facts_tokens_per_observation=max_source_facts_tokens_per_observation,
-            request_context=request_context,
-            tags=tags,
-            tags_match=tags_match,
-            tag_groups=tag_groups,
-        )
-        fused = self._merge_ranked_results(summary_result.results, verbatim_result.results, n_results=10)
-
-        results: list[MemoryFact] = []
-        chunks: dict[str, ChunkInfo] = {}
-        for idx, item in enumerate(fused):
-            metadata = dict(item.metadata)
-            chunk_id = metadata.get("chunk_id")
-            document_id = metadata.get("document_id")
-            fact_metadata = {
-                "source_ref": str(item.ref),
-                "providers": ",".join(item.providers),
-                "summary_text": str(metadata.get("summary_text") or item.text),
-                "verbatim_text": str(metadata.get("verbatim_text") or item.text),
-                "chunk_id": str(chunk_id or ""),
-                "document_id": str(document_id or ""),
-                "fusion_route": FUSION_ROUTE,
-                "memory_layer": str(metadata.get("memory_layer") or ""),
-                "source_type": str(metadata.get("source_type") or ""),
-                "artifact_type": str(metadata.get("artifact_type") or ""),
-                "evidence_kind": str(metadata.get("evidence_kind") or ""),
-                "provenance_ref": str(metadata.get("provenance_ref") or metadata.get("source_ref") or ""),
-                "grounding_status": str(metadata.get("grounding_status") or ""),
-                "derived_without_evidence": str(metadata.get("derived_without_evidence") or "false"),
-            }
-            results.append(
-                MemoryFact(
-                    id=f"fusion:{idx}:{item.ref}",
-                    text=self._recall_fusion_text(clean_query, metadata, item.text),
-                    fact_type=str(metadata.get("fact_type") or "experience"),
-                    entities=[],
-                    context=f"providers:{','.join(item.providers)}",
-                    occurred_start=None,
-                    occurred_end=None,
-                    mentioned_at=metadata.get("filed_at") or metadata.get("event_date"),
-                    document_id=document_id,
-                    metadata=fact_metadata,
-                    chunk_id=str(chunk_id) if chunk_id is not None else None,
-                    tags=[],
-                    source_fact_ids=None,
-                )
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=len(results),
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
             )
-
-            if include_chunks and (verbatim_text := metadata.get("verbatim_text")):
-                key = f"{document_id}_{chunk_id}" if document_id and chunk_id is not None else item.ref
-                chunks[key] = ChunkInfo(
-                    chunk_text=str(verbatim_text),
-                    chunk_index=int(chunk_id) if str(chunk_id).isdigit() else idx,
-                    truncated=False,
-                )
-
-        return RecallResult(
-            results=results,
-            entities=self._merge_entities(summary_result.entities, verbatim_result.entities),
-            chunks=self._merge_chunks(verbatim_result.chunks, chunks) if include_chunks else {},
-        )
+            return response
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_RECALL,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=0,
+                query=query,
+                metadata={"query_gate": decision.reason, "needs_verification": decision.needs_verification},
+            )
+            raise
 
     async def reflect_async(
         self,
@@ -913,6 +1167,9 @@ class FusionMemoryEngine:
         request_context: Any,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        consumer = str(kwargs.pop("consumer", "llm_agent") or "llm_agent")
+        op_ctx = self._extract_operation_context(consumer=consumer, request_context=request_context, kwargs=kwargs)
+        started_at = start_memory_timer()
         route = self._route_from_kwargs(kwargs)
         wing = kwargs.pop("wing", None)
         room = kwargs.pop("room", None)
@@ -920,82 +1177,142 @@ class FusionMemoryEngine:
         closet = kwargs.pop("closet", None)
         drawer = kwargs.pop("drawer", None)
         tags = self._filter_tags(kwargs.pop("tags", None), wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
-        if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
-            result = await self._delegate_route(
-                route,
-                "list_memory_units",
-                self._route_bank_id(bank_id, route),
+        try:
+            if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
+                result = await self._delegate_route(
+                    route,
+                    "list_memory_units",
+                    self._route_bank_id(bank_id, route),
+                    fact_type=fact_type,
+                    search_query=search_query,
+                    limit=limit,
+                    offset=offset,
+                    request_context=request_context,
+                )
+                result["items"] = [self._annotate_route(item, route, bank_id=bank_id) for item in result.get("items", [])]
+                result["items"] = [item for item in result["items"] if self._should_surface_item(item, consumer=consumer)]
+                result["total"] = len(result["items"])
+                if tags or any(value is not None for value in (wing, room, hall, closet, drawer)):
+                    result["items"] = [
+                        item
+                        for item in result["items"]
+                        if (not tags or set(tags).issubset(set(item.get("tags") or [])))
+                        and self._matches_loci_filters(item, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
+                    ]
+                    result["total"] = len(result["items"])
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_LIST,
+                    bank_id=bank_id,
+                    route=route,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(result["items"]),
+                    metadata={"policy_decision": "read_allowed"},
+                )
+                return result
+
+            summary_items = await self.summary_engine.list_memory_units(
+                self.summary_bank_id(bank_id),
                 fact_type=fact_type,
                 search_query=search_query,
                 limit=limit,
                 offset=offset,
                 request_context=request_context,
             )
-            result["items"] = [self._annotate_route(item, route, bank_id=bank_id) for item in result.get("items", [])]
-            result["items"] = [item for item in result["items"] if self._should_surface_item(item)]
-            result["total"] = len(result["items"])
+            verbatim_items = await self.verbatim_engine.list_memory_units(
+                self.verbatim_bank_id(bank_id),
+                fact_type=fact_type,
+                search_query=search_query,
+                limit=limit,
+                offset=offset,
+                request_context=request_context,
+            )
+            items = [
+                self._annotate_route(item, SUMMARY_ROUTE, bank_id=bank_id)
+                for item in summary_items.get("items", [])
+            ] + [
+                self._annotate_route(item, VERBATIM_ROUTE, bank_id=bank_id)
+                for item in verbatim_items.get("items", [])
+            ]
+            items = [item for item in items if self._should_surface_item(item, consumer=consumer)]
             if tags or any(value is not None for value in (wing, room, hall, closet, drawer)):
-                result["items"] = [
+                items = [
                     item
-                    for item in result["items"]
+                    for item in items
                     if (not tags or set(tags).issubset(set(item.get("tags") or [])))
                     and self._matches_loci_filters(item, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
                 ]
-                result["total"] = len(result["items"])
+            result = {"items": items[offset : offset + limit], "total": len(items), "limit": limit, "offset": offset}
+            await log_memory_operation(
+                action=AuditAction.MEMORY_LIST,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=len(result["items"]),
+                metadata={"policy_decision": "read_allowed"},
+            )
             return result
-
-        summary_items = await self.summary_engine.list_memory_units(
-            self.summary_bank_id(bank_id),
-            fact_type=fact_type,
-            search_query=search_query,
-            limit=limit,
-            offset=offset,
-            request_context=request_context,
-        )
-        verbatim_items = await self.verbatim_engine.list_memory_units(
-            self.verbatim_bank_id(bank_id),
-            fact_type=fact_type,
-            search_query=search_query,
-            limit=limit,
-            offset=offset,
-            request_context=request_context,
-        )
-        items = [
-            self._annotate_route(item, SUMMARY_ROUTE, bank_id=bank_id)
-            for item in summary_items.get("items", [])
-        ] + [
-            self._annotate_route(item, VERBATIM_ROUTE, bank_id=bank_id)
-            for item in verbatim_items.get("items", [])
-        ]
-        items = [item for item in items if self._should_surface_item(item)]
-        if tags or any(value is not None for value in (wing, room, hall, closet, drawer)):
-            items = [
-                item
-                for item in items
-                if (not tags or set(tags).issubset(set(item.get("tags") or [])))
-                and self._matches_loci_filters(item, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
-            ]
-        return {"items": items[offset : offset + limit], "total": len(items), "limit": limit, "offset": offset}
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_LIST,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=0,
+                metadata={"policy_decision": "read_rejected"},
+            )
+            raise
 
     async def delete_memory_unit(self, bank_id: str, memory_unit_id: str, *, request_context: Any) -> dict[str, Any]:
+        op_ctx = extract_operation_context(consumer="agent_writer", request_context=request_context)
+        started_at = start_memory_timer()
         results = []
         errors = []
-        for route in (SUMMARY_ROUTE, VERBATIM_ROUTE):
-            try:
-                results.append(
-                    await self._delegate_route(
-                        route,
-                        "delete_memory_unit",
-                        self._route_bank_id(bank_id, route),
-                        memory_unit_id,
-                        request_context=request_context,
+        try:
+            for route in (SUMMARY_ROUTE, VERBATIM_ROUTE):
+                try:
+                    results.append(
+                        await self._delegate_route(
+                            route,
+                            "delete_memory_unit",
+                            self._route_bank_id(bank_id, route),
+                            memory_unit_id,
+                            request_context=request_context,
+                        )
                     )
-                )
-            except Exception as exc:  # noqa: BLE001
-                errors.append(f"{route}:{exc}")
-        if not results:
-            raise ValueError(f"Memory unit {memory_unit_id} not found in fusion bank {bank_id}: {'; '.join(errors)}")
-        return {"bank_id": bank_id, "memory_unit_id": memory_unit_id, "routes": results, "errors": errors}
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{route}:{exc}")
+            if not results:
+                raise ValueError(f"Memory unit {memory_unit_id} not found in fusion bank {bank_id}: {'; '.join(errors)}")
+            payload = {"bank_id": bank_id, "memory_unit_id": memory_unit_id, "routes": results, "errors": errors}
+            await log_memory_operation(
+                action=AuditAction.MEMORY_DELETE,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=1,
+                metadata={"memory_unit_id": memory_unit_id},
+            )
+            return payload
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_DELETE,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=1,
+                metadata={"memory_unit_id": memory_unit_id},
+            )
+            raise
 
     async def get_graph_data(
         self,
@@ -1034,6 +1351,9 @@ class FusionMemoryEngine:
         request_context: Any,
         **kwargs: Any,
     ) -> dict[str, Any]:
+        consumer = str(kwargs.pop("consumer", "llm_agent") or "llm_agent")
+        op_ctx = self._extract_operation_context(consumer=consumer, request_context=request_context, kwargs=kwargs)
+        started_at = start_memory_timer()
         route = self._route_from_kwargs(kwargs)
         wing = kwargs.pop("wing", None)
         room = kwargs.pop("room", None)
@@ -1041,32 +1361,43 @@ class FusionMemoryEngine:
         closet = kwargs.pop("closet", None)
         drawer = kwargs.pop("drawer", None)
         tags = self._filter_tags(tags, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
-        if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
-            result = await self._delegate_route(
-                route,
-                "list_documents",
-                self._route_bank_id(bank_id, route),
-                search_query=search_query,
-                tags=tags,
-                tags_match=tags_match,
-                limit=limit,
-                offset=offset,
-                request_context=request_context,
-            )
-            result["items"] = [
-                self._annotate_document(item, route, bank_id=bank_id)
-                for item in result.get("items", [])
-            ]
-            result["items"] = [item for item in result["items"] if self._should_surface_item(item)]
-            result["total"] = len(result["items"])
-            if any(value is not None for value in (wing, room, hall, closet, drawer)):
+        try:
+            if route in {SUMMARY_ROUTE, VERBATIM_ROUTE}:
+                result = await self._delegate_route(
+                    route,
+                    "list_documents",
+                    self._route_bank_id(bank_id, route),
+                    search_query=search_query,
+                    tags=tags,
+                    tags_match=tags_match,
+                    limit=limit,
+                    offset=offset,
+                    request_context=request_context,
+                )
                 result["items"] = [
-                    item
-                    for item in result["items"]
-                    if self._matches_loci_filters(item, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
+                    self._annotate_document(item, route, bank_id=bank_id)
+                    for item in result.get("items", [])
                 ]
+                result["items"] = [item for item in result["items"] if self._should_surface_item(item, consumer=consumer)]
                 result["total"] = len(result["items"])
-            return result
+                if any(value is not None for value in (wing, room, hall, closet, drawer)):
+                    result["items"] = [
+                        item
+                        for item in result["items"]
+                        if self._matches_loci_filters(item, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
+                    ]
+                    result["total"] = len(result["items"])
+                await log_memory_operation(
+                    action=AuditAction.MEMORY_LIST,
+                    bank_id=bank_id,
+                    route=route,
+                    operation_context=op_ctx,
+                    started_at=started_at,
+                    success=True,
+                    item_count=len(result["items"]),
+                    metadata={"document_list": True},
+                )
+                return result
 
         summary_docs = await self.summary_engine.list_documents(
             self.summary_bank_id(bank_id),
@@ -1117,20 +1448,57 @@ class FusionMemoryEngine:
                     if item.get(key) is not None and entry.get(key) in (None, [], {}, ""):
                         entry[key] = item.get(key)
 
-        items = list(merged.values())
-        items = [item for item in items if item.get("route_documents")]
-        if any(value is not None for value in (wing, room, hall, closet, drawer)):
-            items = [
-                item
-                for item in items
-                if any(
-                    self._matches_loci_filters(doc, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
-                    for doc in item.get("route_documents", {}).values()
-                )
-            ]
-        return {"items": items[offset : offset + limit], "total": len(items), "limit": limit, "offset": offset}
+            items = list(merged.values())
+            items = [item for item in items if item.get("route_documents")]
+            if any(value is not None for value in (wing, room, hall, closet, drawer)):
+                items = [
+                    item
+                    for item in items
+                    if any(
+                        self._matches_loci_filters(doc, wing=wing, room=room, hall=hall, closet=closet, drawer=drawer)
+                        for doc in item.get("route_documents", {}).values()
+                    )
+                ]
+            result = {"items": items[offset : offset + limit], "total": len(items), "limit": limit, "offset": offset}
+            await log_memory_operation(
+                action=AuditAction.MEMORY_LIST,
+                bank_id=bank_id,
+                route=FUSION_ROUTE,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=True,
+                item_count=len(result["items"]),
+                metadata={"document_list": True},
+            )
+            return result
+        except Exception:
+            await log_memory_operation(
+                action=AuditAction.MEMORY_LIST,
+                bank_id=bank_id,
+                route=route,
+                operation_context=op_ctx,
+                started_at=started_at,
+                success=False,
+                item_count=0,
+                metadata={"document_list": True},
+            )
+            raise
 
-    async def get_document(self, document_id: str, bank_id: str, *, request_context: Any) -> dict[str, Any] | None:
+    async def get_document(
+        self,
+        document_id: str,
+        bank_id: str,
+        *,
+        request_context: Any,
+        consumer: str = "llm_agent",
+        operation_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        op_ctx = extract_operation_context(
+            consumer=consumer,
+            request_context=request_context,
+            metadata=operation_context,
+        )
+        started_at = start_memory_timer()
         summary_doc = await self.summary_engine.get_document(
             document_id,
             self.summary_bank_id(bank_id),
@@ -1158,7 +1526,9 @@ class FusionMemoryEngine:
             if doc is not None
         }
         primary["route_documents"] = {
-            route: doc for route, doc in primary["route_documents"].items() if self._should_surface_item(doc)
+            route: doc
+            for route, doc in primary["route_documents"].items()
+            if self._should_surface_item(doc, consumer=consumer)
         }
         primary["routes_present"] = [
             route for route in primary["routes_present"] if route in primary["route_documents"]
@@ -1173,9 +1543,21 @@ class FusionMemoryEngine:
         primary["tags"] = self._dedupe_strings(
             list((summary_doc or {}).get("tags") or []) + list((verbatim_doc or {}).get("tags") or [])
         )
+        await log_memory_operation(
+            action=AuditAction.MEMORY_GET,
+            bank_id=bank_id,
+            route=FUSION_ROUTE,
+            operation_context=op_ctx,
+            started_at=started_at,
+            success=True,
+            item_count=1,
+            metadata={"document_id": document_id},
+        )
         return primary
 
     async def delete_document(self, document_id: str, bank_id: str, *, request_context: Any) -> dict[str, int]:
+        op_ctx = extract_operation_context(consumer="agent_writer", request_context=request_context)
+        started_at = start_memory_timer()
         summary = await self.summary_engine.delete_document(
             document_id,
             self.summary_bank_id(bank_id),
@@ -1186,13 +1568,24 @@ class FusionMemoryEngine:
             self.verbatim_bank_id(bank_id),
             request_context=request_context,
         )
-        return {
+        result = {
             "documents_deleted": int(summary.get("documents_deleted", 0)) + int(verbatim.get("documents_deleted", 0)),
             "memory_units_deleted": int(summary.get("memory_units_deleted", 0)) + int(verbatim.get("memory_units_deleted", 0)),
             "links_deleted": int(summary.get("links_deleted", 0)) + int(verbatim.get("links_deleted", 0)),
             "observations_invalidated": int(summary.get("observations_invalidated", 0))
             + int(verbatim.get("observations_invalidated", 0)),
         }
+        await log_memory_operation(
+            action=AuditAction.MEMORY_DELETE,
+            bank_id=bank_id,
+            route=FUSION_ROUTE,
+            operation_context=op_ctx,
+            started_at=started_at,
+            success=True,
+            item_count=int(result["documents_deleted"] or 0),
+            metadata={"document_id": document_id},
+        )
+        return result
 
     async def get_chunk(self, chunk_id: str, *, request_context: Any) -> dict[str, Any] | None:
         chunk = await self._primary_then_secondary(

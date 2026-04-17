@@ -15,6 +15,15 @@ SECONDARY_ARTIFACT = "secondary"
 DERIVED_EVIDENCE = "derived"
 EXTERNAL_EVIDENCE = "external"
 
+ATTRIBUTION_CONTRACT = "memory_fusion/v1"
+
+STATUS_AVAILABLE = "available"
+STATUS_CANDIDATE = "candidate"
+STATUS_GROUNDED = "grounded"
+STATUS_CONTESTED = "contested"
+STATUS_STALE = "stale"
+PROMOTION_NOT_APPLICABLE = "not_applicable"
+
 RAW_ARTIFACT_TYPES = {"chat_turn", "tool_output", "scratch_note"}
 DERIVED_ARTIFACT_TYPES = {"observation", "preference", "mental_model"}
 KB_ARTIFACT_TYPES = {
@@ -97,6 +106,37 @@ def _tag_set(item: dict[str, Any], metadata: dict[str, Any]) -> set[str]:
     return tags
 
 
+def semantic_metadata_from_tags(tags: list[Any] | None) -> dict[str, str]:
+    extracted: dict[str, str] = {}
+    for raw_tag in list(tags or []):
+        tag = _text(raw_tag)
+        if ":" not in tag:
+            continue
+        prefix, value = tag.split(":", 1)
+        key = prefix.strip().lower()
+        raw_value = value.strip()
+        normalized_value = raw_value.lower()
+        if key in {
+            "artifact_type",
+            "source_type",
+            "memory_layer",
+            "evidence_kind",
+            "guardrail",
+            "status",
+            "promotion_status",
+            "actor_role",
+            "attribution_contract",
+        } and normalized_value:
+            extracted["guardrail_reason" if key == "guardrail" else key] = normalized_value
+        if key in {"source_ref", "provenance_ref", "idempotency_key", "audit_event_id"} and raw_value:
+            extracted.setdefault(key, raw_value)
+        if key == "source_ref" and raw_value:
+            extracted.setdefault("provenance_ref", raw_value)
+        if key == "source_confidence" and raw_value:
+            extracted.setdefault("source_confidence", raw_value)
+    return extracted
+
+
 def _explicit_artifact_type(item: dict[str, Any], metadata: dict[str, Any]) -> str:
     return (
         _text(item.get("artifact_type"))
@@ -119,6 +159,10 @@ def _explicit_fact_type(item: dict[str, Any], metadata: dict[str, Any]) -> str:
         or _text(metadata.get("fact_type"))
         or ""
     ).lower()
+
+
+def _explicit_memory_layer(metadata: dict[str, Any]) -> str:
+    return _text(metadata.get("memory_layer")).lower()
 
 
 def _role(item: dict[str, Any], metadata: dict[str, Any]) -> str:
@@ -233,6 +277,45 @@ def classify_item_semantics(item: dict[str, Any], metadata: dict[str, Any] | Non
 
 def classify_result_semantics(metadata: dict[str, Any] | None, *, fact_type: str | None = None) -> MemorySemantics:
     metadata = dict(metadata or {})
+    explicit_layer = _explicit_memory_layer(metadata)
+    if explicit_layer in {
+        PERSONAL_RAW_LAYER,
+        PERSONAL_DERIVED_LAYER,
+        BRIDGE_PERSONAL_KB_LAYER,
+        BRIDGE_WORLD_LAYER,
+    }:
+        artifact_type = _text(metadata.get("artifact_type")).lower()
+        source_type = _text(metadata.get("source_type")).lower()
+        normalized_fact_type = _normalize_fact_type(
+            _text(fact_type or metadata.get("fact_type")).lower(),
+            artifact_type,
+        )
+        evidence_kind = _text(metadata.get("evidence_kind")).lower()
+        if not evidence_kind:
+            if explicit_layer == PERSONAL_DERIVED_LAYER:
+                evidence_kind = DERIVED_EVIDENCE
+            elif explicit_layer == PERSONAL_RAW_LAYER:
+                evidence_kind = PRIMARY_EVIDENCE
+            else:
+                evidence_kind = EXTERNAL_EVIDENCE
+        allow_default_memory_write = explicit_layer in {PERSONAL_RAW_LAYER, PERSONAL_DERIVED_LAYER}
+        requires_backlinks = explicit_layer == PERSONAL_DERIVED_LAYER
+        guardrail_reason = _text(metadata.get("guardrail_reason")) or None
+        if not guardrail_reason and explicit_layer == BRIDGE_PERSONAL_KB_LAYER:
+            guardrail_reason = "personal_kb_default_target"
+        if not guardrail_reason and explicit_layer == BRIDGE_WORLD_LAYER:
+            guardrail_reason = "world_model_default_target"
+        return MemorySemantics(
+            artifact_type=artifact_type or "memory_item",
+            source_type=source_type or "unknown",
+            memory_layer=explicit_layer,
+            fact_type=normalized_fact_type,
+            evidence_kind=evidence_kind,
+            allow_default_memory_write=allow_default_memory_write,
+            requires_evidence_backlinks=requires_backlinks,
+            guardrail_reason=guardrail_reason,
+        )
+
     item = {
         "artifact_type": metadata.get("artifact_type"),
         "source_type": metadata.get("source_type"),
@@ -264,6 +347,147 @@ def has_evidence_backlinks(metadata: dict[str, Any] | None) -> bool:
     return False
 
 
+def _safe_float(value: Any) -> float | None:
+    text = _text(value)
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _format_float(value: float | None) -> str:
+    if value is None:
+        return ""
+    return f"{max(0.0, min(1.0, value)):.2f}".rstrip("0").rstrip(".")
+
+
+def _normalize_status(value: Any) -> str:
+    normalized = _text(value).lower()
+    if normalized in {"", "unknown"}:
+        return ""
+    aliases = {
+        "available": STATUS_AVAILABLE,
+        "recorded": STATUS_AVAILABLE,
+        "stored": STATUS_AVAILABLE,
+        "candidate": STATUS_CANDIDATE,
+        "draft": STATUS_CANDIDATE,
+        "pending": STATUS_CANDIDATE,
+        "grounded": STATUS_GROUNDED,
+        "verified": STATUS_GROUNDED,
+        "approved": STATUS_GROUNDED,
+        "conflict": STATUS_CONTESTED,
+        "conflicting": STATUS_CONTESTED,
+        "contested": STATUS_CONTESTED,
+        "rejected": STATUS_CONTESTED,
+        "stale": STATUS_STALE,
+        "expired": STATUS_STALE,
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _canonical_source_ref(metadata: dict[str, Any]) -> str:
+    chunk_id = _text(metadata.get("chunk_id"))
+    document_id = _text(metadata.get("document_id"))
+    if explicit := _text(metadata.get("source_ref")):
+        return explicit
+    if provenance := _text(metadata.get("provenance_ref")):
+        return provenance
+    if document_id and chunk_id and "#" not in document_id:
+        return f"{document_id}#{chunk_id}"
+    return document_id
+
+
+def _canonical_provenance_ref(metadata: dict[str, Any]) -> str:
+    if provenance := _text(metadata.get("provenance_ref")):
+        return provenance
+    return _canonical_source_ref(metadata)
+
+
+def _derive_actor_role(metadata: dict[str, Any], semantics: MemorySemantics) -> str:
+    explicit = (
+        _text(metadata.get("actor_role"))
+        or _text(metadata.get("role"))
+        or _text(metadata.get("agent_role"))
+    ).lower()
+    if explicit:
+        return explicit
+    source_type = semantics.source_type
+    if source_type == "user_input":
+        return "user"
+    if source_type == "tool_output":
+        return "tool"
+    if source_type in {"agent_output", "system_observation"}:
+        return "agent"
+    if semantics.memory_layer in {BRIDGE_PERSONAL_KB_LAYER, BRIDGE_WORLD_LAYER}:
+        return "external_source"
+    return "system"
+
+
+def _derive_source_confidence(metadata: dict[str, Any], semantics: MemorySemantics) -> float:
+    explicit = _safe_float(metadata.get("source_confidence"))
+    if explicit is not None:
+        return explicit
+    source_confidence_map = {
+        "user_input": 1.0,
+        "tool_output": 0.95,
+        "external_document": 0.9,
+        "world_evidence": 0.88,
+        "agent_output": 0.8,
+        "system_observation": 0.72,
+    }
+    return source_confidence_map.get(
+        semantics.source_type,
+        0.85 if semantics.memory_layer in {BRIDGE_PERSONAL_KB_LAYER, BRIDGE_WORLD_LAYER} else 0.8,
+    )
+
+
+def _derive_promotion_status(metadata: dict[str, Any], semantics: MemorySemantics) -> str:
+    if semantics.memory_layer != PERSONAL_DERIVED_LAYER:
+        return PROMOTION_NOT_APPLICABLE
+
+    explicit = _normalize_status(metadata.get("promotion_status") or metadata.get("status"))
+    if explicit in {STATUS_CANDIDATE, STATUS_GROUNDED, STATUS_CONTESTED, STATUS_STALE}:
+        return explicit
+
+    conflict_count = _safe_float(metadata.get("conflict_count"))
+    if conflict_count is not None and conflict_count > 0:
+        return STATUS_CONTESTED
+
+    grounding_status = _text(metadata.get("grounding_status")).lower()
+    if grounding_status == "ungrounded_derived":
+        return STATUS_CANDIDATE
+
+    freshness_score = _safe_float(metadata.get("freshness_score") or metadata.get("freshness"))
+    if freshness_score is not None and freshness_score < 0.35:
+        return STATUS_STALE
+
+    if grounding_status == "grounded_derived":
+        return STATUS_GROUNDED
+    return STATUS_CANDIDATE
+
+
+def metadata_tags(metadata: dict[str, Any] | None) -> list[str]:
+    normalized = dict(metadata or {})
+    tag_pairs = [
+        ("status", _normalize_status(normalized.get("status"))),
+        ("promotion_status", _normalize_status(normalized.get("promotion_status"))),
+        ("source_ref", _text(normalized.get("source_ref"))),
+        ("provenance_ref", _text(normalized.get("provenance_ref"))),
+        ("source_confidence", _text(normalized.get("source_confidence"))),
+        ("actor_role", _text(normalized.get("actor_role")).lower()),
+        ("attribution_contract", _text(normalized.get("attribution_contract")).lower()),
+        ("idempotency_key", _text(normalized.get("idempotency_key"))),
+        ("audit_event_id", _text(normalized.get("audit_event_id"))),
+    ]
+    tags: list[str] = []
+    for key, value in tag_pairs:
+        if value:
+            tags.append(f"{key}:{value}")
+    return tags
+
+
 def enrich_metadata_with_semantics(
     metadata: dict[str, Any] | None,
     *,
@@ -277,6 +501,17 @@ def enrich_metadata_with_semantics(
         else classify_result_semantics(metadata, fact_type=fact_type)
     )
     enriched = {**metadata, **semantics.metadata_dict()}
+    source_ref = _canonical_source_ref(enriched)
+    provenance_ref = _canonical_provenance_ref(enriched)
+    if source_ref:
+        enriched["source_ref"] = source_ref
+    if provenance_ref:
+        enriched["provenance_ref"] = provenance_ref
+    enriched["actor_role"] = _derive_actor_role(enriched, semantics)
+    enriched["source_confidence"] = _format_float(_derive_source_confidence(enriched, semantics))
+    enriched["attribution_contract"] = (
+        _text(enriched.get("attribution_contract")).lower() or ATTRIBUTION_CONTRACT
+    )
     backlinks_present = has_evidence_backlinks(enriched)
     enriched["evidence_backlinks_present"] = "true" if backlinks_present else "false"
     if semantics.requires_evidence_backlinks and not backlinks_present:
@@ -288,4 +523,15 @@ def enrich_metadata_with_semantics(
     else:
         enriched["grounding_status"] = "not_applicable"
         enriched["derived_without_evidence"] = "false"
+    promotion_status = _derive_promotion_status(enriched, semantics)
+    enriched["promotion_status"] = promotion_status
+    normalized_status = _normalize_status(enriched.get("status"))
+    if semantics.memory_layer == PERSONAL_DERIVED_LAYER:
+        enriched["status"] = promotion_status
+    elif normalized_status:
+        enriched["status"] = normalized_status
+    elif (_safe_float(enriched.get("conflict_count")) or 0.0) > 0:
+        enriched["status"] = STATUS_CONTESTED
+    else:
+        enriched["status"] = STATUS_AVAILABLE
     return enriched

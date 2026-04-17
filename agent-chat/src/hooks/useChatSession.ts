@@ -33,9 +33,18 @@ export interface MessageUsage {
 	promptTokens: number;
 	completionTokens: number;
 	reasoningTokens?: number;
+	cachedTokens?: number;
 	finishReason: string;
 	/** AC104: estimated cost in USD (dynamic from ModelInfo pricing) */
 	costUsd?: number;
+}
+
+export interface ContextDiagnostics {
+	provider?: string;
+	model?: string;
+	degradationFlags: string[];
+	sourceLayerCounts: Record<string, number>;
+	contextBlocks: Array<Record<string, unknown>>;
 }
 
 export interface UseChatSessionReturn {
@@ -64,6 +73,8 @@ export interface UseChatSessionReturn {
 	sentAttachments: StagedAttachment[][];
 	/** AC64: context fill ratio 0-1 */
 	contextPressure: number;
+	/** exec-context: latest runtime context diagnostics from message.metadata */
+	contextDiagnostics: ContextDiagnostics;
 	/** AC108: reasoning effort */
 	reasoningEffort: ReasoningEffort;
 	setReasoningEffort: (effort: ReasoningEffort) => void;
@@ -195,6 +206,8 @@ export function useChatSession(): UseChatSessionReturn {
 						typeof meta?.completionTokens === "number" ? meta.completionTokens : 0;
 					const reasoningTokens =
 						typeof meta?.reasoningTokens === "number" ? meta.reasoningTokens : undefined;
+					const cachedTokens =
+						typeof meta?.cachedTokens === "number" ? meta.cachedTokens : undefined;
 					// ACR-G7: update threadId from server so follow-up requests use the same thread
 					if (typeof meta?.threadId === "string" && meta.threadId) {
 						threadIdRef.current = meta.threadId;
@@ -207,6 +220,7 @@ export function useChatSession(): UseChatSessionReturn {
 							promptTokens,
 							completionTokens,
 							reasoningTokens,
+							cachedTokens,
 							finishReason: finishReason ?? "stop",
 							costUsd,
 						});
@@ -308,9 +322,32 @@ export function useChatSession(): UseChatSessionReturn {
 	// AC64: context pressure from latest assistant usage promptTokens (dynamic from ModelInfo)
 	const latestAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
 	const latestUsage = latestAssistantMsg ? usageMap.get(latestAssistantMsg.id) : undefined;
+	const latestMeta = latestAssistantMsg?.metadata as Record<string, unknown> | undefined;
 	const contextPressure = latestUsage
 		? Math.min(latestUsage.promptTokens / (modelInfo.context_length || 200_000), 1)
 		: 0;
+	const contextDiagnostics: ContextDiagnostics = {
+		provider: typeof latestMeta?.provider === "string" ? latestMeta.provider : undefined,
+		model: typeof latestMeta?.model === "string" ? latestMeta.model : undefined,
+		degradationFlags: Array.isArray(latestMeta?.degradationFlags)
+			? latestMeta.degradationFlags
+					.map((entry) => String(entry))
+					.filter((entry) => entry.length > 0)
+			: [],
+		sourceLayerCounts:
+			latestMeta?.sourceLayerCounts &&
+			typeof latestMeta.sourceLayerCounts === "object" &&
+			!Array.isArray(latestMeta.sourceLayerCounts)
+				? Object.fromEntries(
+						Object.entries(latestMeta.sourceLayerCounts as Record<string, unknown>).map(
+							([key, value]) => [key, Number(value ?? 0)],
+						),
+					)
+				: {},
+		contextBlocks: Array.isArray(latestMeta?.contextBlocks)
+			? (latestMeta.contextBlocks as Array<Record<string, unknown>>)
+			: [],
+	};
 
 	return {
 		messages: prunedMessages,
@@ -330,6 +367,7 @@ export function useChatSession(): UseChatSessionReturn {
 		usageMap,
 		sentAttachments: sentAttachmentsRef.current,
 		contextPressure,
+		contextDiagnostics,
 		reasoningEffort,
 		setReasoningEffort,
 		supportsReasoning: modelInfo.supports_reasoning,

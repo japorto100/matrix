@@ -11,6 +11,7 @@ import { A2aTab } from "./components/A2aTab";
 import { AgentsTab } from "./components/AgentsTab";
 import { ApiModelsTab } from "./components/ApiModelsTab";
 import { AuditTab } from "./components/AuditTab";
+import { ContextTab } from "./components/ContextTab";
 import { ControlTopNav } from "./components/ControlTopNav";
 import { McpTab } from "./components/McpTab";
 import { OverviewTab } from "./components/OverviewTab";
@@ -32,6 +33,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/skills")) return <SkillsTab />;
 		if (pathname.startsWith("/control/tools")) return <ToolsTab />;
 		if (pathname.startsWith("/control/sessions")) return <SessionsTab />;
+		if (pathname.startsWith("/control/context")) return <ContextTab />;
 		if (pathname.startsWith("/control/security")) return <SecurityTab />;
 
 		// ─── Developer Mode Tabs ────────────────────────────────────────────

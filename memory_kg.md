@@ -31,6 +31,10 @@ Dieses Dokument basiert auf:
 - `Memory_with_Uncertainty`
 - `MEMORY_ARCHITECTURE.md`
 - `CONTEXT_ENGINEERING.md`
+- `AGENT_ARCHITECTURE.md`
+- `AGENT_RUNTIME_ARCHITECTURE.md`
+- `AGENT_HARNESS.md`
+- `AGENT_SECURITY.md`
 - direkt gelesenen Upstream-Webquellen fuer MemPalace und Hindsight
 - einer direkt gelesenen Survey zu Memory fuer autonome LLM-Agents
 
@@ -1634,6 +1638,11 @@ Die praktische Konsequenz:
 
 - Context Assembly ist auch eine **Policy-Entscheidung**
 - nicht nur eine Relevance-Entscheidung
+- die Root-SSOT liegt in `main_docs/root/AGENT_ARCHITECTURE.md`,
+  `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md`,
+  `main_docs/root/AGENT_SECURITY.md` und `main_docs/root/AGENT_HARNESS.md`
+- `exec-memory.md` und `exec-context.md` referenzieren diese Root-Docs und
+  duplizieren die Policy-/Harness-Regeln nicht erneut
 
 ## Was ich fuer die naechsten Iterationen explizit beachten wuerde
 

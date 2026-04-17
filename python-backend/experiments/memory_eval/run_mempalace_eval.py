@@ -38,6 +38,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from memory_fusion.query_gate import decide_query_path
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
@@ -195,6 +197,7 @@ def _run_one(
     wing = item.get("wing", defaults.get("wing"))
     room = item.get("room", defaults.get("room"))
     n_results = int(item.get("n_results") or defaults.get("n_results") or 10)
+    query_gate = decide_query_path(query, query)
 
     start = time.perf_counter()
     try:
@@ -213,11 +216,14 @@ def _run_one(
             "retrieved_ids": [],
             "retrieved_drawer_ids": [],
             "retrieved_refs": [],
+            "retrieved_statuses": [],
+            "retrieved_provenance": [],
             "latency_ms": round((time.perf_counter() - start) * 1000, 2),
             "token_cost": 0.0,
             "error": str(e),
             "wing": wing,
             "room": room,
+            "needs_verification": query_gate.needs_verification,
         }
 
     retrieved_refs = [
@@ -233,12 +239,19 @@ def _run_one(
         "retrieved_drawer_ids": drawer_ids,
         "retrieved_refs": retrieved_refs,
         "retrieved_texts": documents[:5],
+        "retrieved_statuses": [str((meta or {}).get("status") or "available") for meta in metadatas[:10]],
+        "retrieved_provenance": [
+            str((meta or {}).get("source_ref") or _normalize_source_ref(meta or {}, source_root=source_root))
+            for meta in metadatas[:10]
+        ],
         "distances": [round(float(dist), 4) for dist in distances[:10]],
         "latency_ms": round((time.perf_counter() - start) * 1000, 2),
         "token_cost": 0.0,
         "error": None,
         "wing": wing,
         "room": room,
+        "expected_substring": str(item.get("expected_substring") or item.get("answer") or ""),
+        "needs_verification": query_gate.needs_verification,
     }
 
 

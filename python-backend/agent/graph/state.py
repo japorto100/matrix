@@ -68,6 +68,22 @@ class AgentGraphState(TypedDict):
     # Reasoning effort (low/medium/high)
     reasoning_effort: str | None
 
+    # Aggregated usage across all LLM calls in the run
+    prompt_tokens: int
+    completion_tokens: int
+    reasoning_tokens: int
+    cached_tokens: int
+    token_usage: int
+
+    # Provider/model metadata for the latest run
+    llm_provider: str
+    llm_model: str
+
+    # Runtime context diagnostics surfaced to frontend/control
+    source_layer_counts: dict[str, int]
+    context_blocks: list[dict[str, Any]]
+    degradation_flags: list[str]
+
     # Final response text (set by synthesize node)
     final_response: str
 

@@ -57,6 +57,7 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 		usageMap,
 		sentAttachments,
 		contextPressure,
+		contextDiagnostics,
 		reasoningEffort,
 		setReasoningEffort,
 		autoplayTts,
@@ -190,7 +191,10 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 				<AgentChatEventRail
 					status={railStatus}
 					isStreaming={isStreaming}
+					provider={contextDiagnostics.provider}
 					contextPressure={contextPressure}
+					degradationFlags={contextDiagnostics.degradationFlags}
+					sourceLayerCounts={contextDiagnostics.sourceLayerCounts}
 				/>
 
 				<AgentChatThread

@@ -32,6 +32,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from agent.memory.engine import get_memory_engine
+from memory_fusion.query_gate import decide_query_path
 
 
 def _resolve_path(value: str | None, *, base_dir: Path) -> Path | None:
@@ -76,9 +77,11 @@ async def _run_one(
     expected_ids: list[str],
     expected_refs: list[str],
     source_root: Path | None,
+    expected_substring: str = "",
 ) -> dict[str, Any]:
     expected = expected_refs or expected_ids
     engine = await get_memory_engine()
+    query_gate = decide_query_path(query, query)
     if engine is None:
         return {
             "query": query,
@@ -86,9 +89,14 @@ async def _run_one(
             "expected_refs": expected_refs,
             "retrieved_ids": [],
             "retrieved_refs": [],
+            "retrieved_texts": [],
+            "retrieved_statuses": [],
+            "retrieved_provenance": [],
             "latency_ms": None,
             "token_cost": 0.0,
             "error": "memory engine unavailable",
+            "expected_substring": expected_substring,
+            "needs_verification": query_gate.needs_verification,
         }
 
     from hindsight_api.engine.memory_engine import Budget
@@ -111,9 +119,14 @@ async def _run_one(
             "expected_refs": expected_refs,
             "retrieved_ids": [],
             "retrieved_refs": [],
+            "retrieved_texts": [],
+            "retrieved_statuses": [],
+            "retrieved_provenance": [],
             "latency_ms": round((time.perf_counter() - start) * 1000, 2),
             "token_cost": 0.0,
             "error": str(e),
+            "expected_substring": expected_substring,
+            "needs_verification": query_gate.needs_verification,
         }
 
     retrieved_refs = [
@@ -130,9 +143,16 @@ async def _run_one(
         "retrieved_refs": retrieved_refs,
         "retrieved_raw_ids": [getattr(f, "id", "") for f in result.results[:10]],
         "retrieved_texts": [getattr(f, "text", "") for f in result.results[:5]],
+        "retrieved_statuses": [str((getattr(f, "metadata", {}) or {}).get("status") or "") for f in result.results[:10]],
+        "retrieved_provenance": [
+            str((getattr(f, "metadata", {}) or {}).get("provenance_ref") or (getattr(f, "metadata", {}) or {}).get("source_ref") or "")
+            for f in result.results[:10]
+        ],
         "latency_ms": round((time.perf_counter() - start) * 1000, 2),
         "token_cost": 0.0,
         "error": None,
+        "expected_substring": expected_substring,
+        "needs_verification": query_gate.needs_verification,
     }
 
 
@@ -156,6 +176,7 @@ async def run_eval(input_path: Path, output_path: Path) -> None:
             expected_ids=list(item.get("expected_ids") or []),
             expected_refs=list(item.get("expected_refs") or []),
             source_root=source_root,
+            expected_substring=str(item.get("expected_substring") or item.get("answer") or ""),
         )
         out["items"].append(result)
 

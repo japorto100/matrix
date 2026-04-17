@@ -21,6 +21,17 @@ from typing import Any
 
 from agent.graph.state import AgentGraphState
 from agent.roles import TRADING_ROLE_MEMORY
+from context.policy import (
+    LAYER_LABELS,
+    apply_context_policy,
+    build_degradation_flags,
+    get_context_policy,
+)
+from memory_fusion.decay import derive_decay_metadata
+from memory_fusion.query_gate import decide_query_path
+from memory_fusion.semantics import (
+    enrich_metadata_with_semantics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +45,78 @@ def _get_memory_config(role: str) -> dict:
         if r.value == role:
             return config
     return {"memory_write": True, "memory_recall_tags": None}
+
+
+def _block_from_fact(fact: Any, *, fallback_id: int) -> dict[str, Any]:
+    metadata = enrich_metadata_with_semantics(
+        derive_decay_metadata(dict(getattr(fact, "metadata", {}) or {})),
+        fact_type=str(getattr(fact, "fact_type", "") or ""),
+    )
+    text = str(getattr(fact, "text", "") or "")
+    return {
+        "id": str(getattr(fact, "id", "") or fallback_id),
+        "title": str(
+            metadata.get("artifact_type")
+            or getattr(fact, "fact_type", "")
+            or "memory item"
+        ).replace("_", " ").title(),
+        "preview": text[:240] + ("..." if len(text) > 240 else ""),
+        "sourceLayer": str(metadata.get("memory_layer") or "unknown"),
+        "sourceType": str(metadata.get("source_type") or "unknown"),
+        "artifactType": str(metadata.get("artifact_type") or "unknown"),
+        "groundingStatus": str(metadata.get("grounding_status") or "unknown"),
+        "promotionStatus": str(metadata.get("promotion_status") or "not_applicable"),
+        "provenanceRef": str(
+            metadata.get("provenance_ref")
+            or metadata.get("source_ref")
+            or metadata.get("document_id")
+            or metadata.get("chunk_id")
+            or ""
+        ),
+        "sourceConfidence": metadata.get("source_confidence"),
+        "actorRole": str(metadata.get("actor_role") or "unknown"),
+        "status": str(metadata.get("status") or "available"),
+        "freshness": metadata.get("freshness_score") or metadata.get("freshness"),
+        "supportCount": metadata.get("support_count"),
+        "conflictCount": metadata.get("conflict_count"),
+        "factType": str(getattr(fact, "fact_type", "") or metadata.get("fact_type") or ""),
+        "route": str(metadata.get("fusion_route") or ""),
+        "tokenCount": max(1, len(text.split())) if text.strip() else 0,
+    }
+
+
+def _format_prompt_line(block: dict[str, Any], fact: Any) -> str:
+    text = str(getattr(fact, "text", "") or "").strip() or str(block.get("preview") or "").strip()
+    entities = f" [{', '.join(getattr(fact, 'entities', []) or [])}]" if getattr(fact, "entities", None) else ""
+    tags = list(getattr(fact, "tags", []) or [])
+    tags_str = f" #{','.join(tags)}" if tags else ""
+
+    provenance = str(block.get("provenanceRef") or "").strip()
+    status = str(block.get("status") or "").strip()
+    if provenance and status:
+        return f"- [{status}] {text}{entities}{tags_str} ({provenance})"
+    if provenance:
+        return f"- {text}{entities}{tags_str} ({provenance})"
+    return f"- {text}{entities}{tags_str}"
+
+
+def _format_prompt_sections(blocks: list[dict[str, Any]], facts_by_id: dict[str, Any]) -> str:
+    grouped: dict[str, list[str]] = {}
+    for block in blocks:
+        fact = facts_by_id.get(str(block.get("id") or ""))
+        if fact is None:
+            continue
+        layer = str(block.get("sourceLayer") or "unknown")
+        grouped.setdefault(layer, []).append(_format_prompt_line(block, fact))
+
+    lines: list[str] = []
+    for layer, label in LAYER_LABELS.items():
+        section_lines = grouped.get(layer, [])
+        if not section_lines:
+            continue
+        lines.append(f"### {label}")
+        lines.extend(section_lines)
+    return "\n".join(lines).strip()
 
 
 async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
@@ -50,7 +133,12 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
 
     engine = await get_memory_engine()
     if engine is None:
-        return {}
+        return {
+            "degradation_flags": build_degradation_flags(
+                source_layer_counts={},
+                context_blocks=[],
+            )
+        }
 
     user_msg = ""
     for msg in reversed(state.get("messages", [])):
@@ -75,45 +163,62 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
             thread_id = state.get("thread_id", "")
             mem_config = _get_memory_config(role)
             recall_tags = mem_config.get("memory_recall_tags")
+            policy = get_context_policy("llm_agent")
+            query_gate = decide_query_path(user_msg[:500], engine._normalize_query(user_msg[:500]))
 
             kwargs: dict[str, Any] = {
                 "bank_id": bank_id,
                 "query": user_msg[:500],
-                "fact_type": ["world", "experience", "observation"],
+                "fact_type": list(policy.recall_fact_types),
                 "budget": Budget.MID,
                 "max_tokens": 2000,
                 "include_entities": True,
                 "max_entity_tokens": 500,
                 "question_date": datetime.now(UTC),
                 "request_context": RequestContext(),
+                "consumer": "llm_agent",
+                "operation_context": {
+                    "thread_id": thread_id,
+                    "user_id": state.get("user_id", ""),
+                    "agent_id": state.get("agent_id", "default"),
+                    "actor_role": role,
+                },
             }
             if recall_tags is not None:
                 kwargs["tags"] = recall_tags
 
             result = await engine.recall_async(**kwargs)
 
-            if not result.results:
-                span.set_attribute("memory.results", 0)
-                return {}
-
             # Progressive Context: nur neue Memories injizieren (Paper 3 Pattern)
             thread_key = f"{thread_id}:{role}"
             already_seen = _injected_context.get(thread_key, set())
 
-            memory_lines = []
-            new_ids = set()
-            for fact in result.results[:10]:
+            raw_blocks: list[dict[str, Any]] = []
+            facts_by_id: dict[str, Any] = {}
+            for idx, fact in enumerate(result.results[:10]):
                 if fact.id in already_seen:
                     continue
-                new_ids.add(fact.id)
-                entities = f" [{', '.join(fact.entities)}]" if fact.entities else ""
-                tags_str = f" #{','.join(fact.tags)}" if fact.tags else ""
-                type_badge = (
-                    f"[{fact.fact_type}] " if fact.fact_type == "observation" else ""
-                )
-                memory_lines.append(f"- {type_badge}{fact.text}{entities}{tags_str}")
+                block = _block_from_fact(fact, fallback_id=idx)
+                raw_blocks.append(block)
+                facts_by_id[str(block["id"])] = fact
+
+            context_blocks, source_layer_counts, degradation_flags = apply_context_policy(
+                raw_blocks,
+                consumer="llm_agent",
+            )
+            degradation_flags = list(degradation_flags)
+            for flag in query_gate.degradation_flags:
+                if flag not in degradation_flags:
+                    degradation_flags.append(flag)
+            memory_text = _format_prompt_sections(context_blocks, facts_by_id)
+            new_ids = {
+                str(block.get("id") or "")
+                for block in context_blocks
+                if str(block.get("id") or "").strip()
+            }
 
             # Entity observations
+            entity_lines: list[str] = []
             if result.entities:
                 for name, entity_state in list(result.entities.items())[:5]:
                     if (
@@ -121,16 +226,29 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                         and entity_state.observations
                     ):
                         for obs in entity_state.observations[:2]:
-                            memory_lines.append(f"- [entity:{name}] {obs.text}")
+                            entity_lines.append(f"- [entity:{name}] {obs.text}")
+
+            if entity_lines:
+                entity_section = "### Entity Observations\n" + "\n".join(entity_lines)
+                memory_text = f"{memory_text}\n\n{entity_section}".strip()
+
+            if not memory_text:
+                span.set_attribute("memory.results", 0)
+                return {
+                    "context_blocks": [],
+                    "source_layer_counts": {},
+                    "degradation_flags": degradation_flags or ["NO_PERSONAL_MEMORY"],
+                    "query_gate": {
+                        "action": query_gate.action,
+                        "reason": query_gate.reason,
+                        "needsVerification": query_gate.needs_verification,
+                        "degradationFlags": list(query_gate.degradation_flags),
+                    },
+                }
 
             # Track injected IDs (Progressive Context)
             _injected_context[thread_key] = already_seen | new_ids
 
-            if not memory_lines:
-                span.set_attribute("memory.results", 0)
-                return {}
-
-            memory_text = "\n".join(memory_lines)
             current_prompt = state.get("system_prompt", "")
 
             span.set_attribute("memory.results", len(new_ids))
@@ -164,12 +282,26 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 len(already_seen & {f.id for f in result.results[:10]}),
             )
             return {
-                "system_prompt": f"{current_prompt}\n\n## Relevant Memories\n{memory_text}"
+                "system_prompt": f"{current_prompt}\n\n## Relevant Context\n{memory_text}",
+                "context_blocks": context_blocks,
+                "source_layer_counts": source_layer_counts,
+                "degradation_flags": degradation_flags,
+                "query_gate": {
+                    "action": query_gate.action,
+                    "reason": query_gate.reason,
+                    "needsVerification": query_gate.needs_verification,
+                    "degradationFlags": list(query_gate.degradation_flags),
+                },
             }
 
         except Exception as e:
             logger.debug("Memory recall skipped: %s", e)
-            return {}
+            return {
+                "degradation_flags": build_degradation_flags(
+                    source_layer_counts={},
+                    context_blocks=[],
+                )
+            }
 
 
 async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
@@ -255,6 +387,13 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 ],
                 request_context=RequestContext(),
                 document_tags=[role] if role != "default" else [],
+                consumer="agent_writer",
+                operation_context={
+                    "thread_id": thread_id,
+                    "user_id": state.get("user_id", ""),
+                    "agent_id": state.get("agent_id", "default"),
+                    "actor_role": role,
+                },
             )
 
             span.set_attribute("memory.content_length", len(content))

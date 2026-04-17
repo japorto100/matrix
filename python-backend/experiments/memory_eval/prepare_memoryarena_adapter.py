@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -111,6 +112,19 @@ def convert_memoryarena(
     }
 
 
+def _materialize_input(path_value: str, *, download_url: str | None, cache_dir: str | None) -> Path:
+    path = Path(path_value).expanduser()
+    if path.exists():
+        return path
+    if not download_url:
+        raise FileNotFoundError(f"MemoryArena input not found: {path}")
+    target_dir = Path(cache_dir or ".tmp/memory_eval_downloads").expanduser()
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / path.name
+    urllib.request.urlretrieve(download_url, target)  # noqa: S310 - explicit user-provided dataset URL
+    return target
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input_path")
@@ -118,9 +132,16 @@ def main() -> int:
     parser.add_argument("--corpus-id", default="memoryarena-adapter")
     parser.add_argument("--bank-id", default="user_eval_memoryarena")
     parser.add_argument("--category", default="memoryarena")
+    parser.add_argument("--download-url")
+    parser.add_argument("--cache-dir")
     args = parser.parse_args()
 
-    tasks = _load_input(Path(args.input_path))
+    input_path = _materialize_input(
+        args.input_path,
+        download_url=args.download_url,
+        cache_dir=args.cache_dir,
+    )
+    tasks = _load_input(input_path)
     converted = convert_memoryarena(
         tasks,
         corpus_id=args.corpus_id,

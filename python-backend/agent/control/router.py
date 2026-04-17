@@ -12,9 +12,11 @@ from fastapi import APIRouter
 from agent.control.a2a import router as a2a_router
 from agent.control.agents import router as agents_router
 from agent.control.audit import router as audit_router
+from agent.control.context import router as context_router
 from agent.control.episodes import router as episodes_router
 from agent.control.highlights import router as highlights_router
 from agent.control.ingestion import router as ingestion_router
+from agent.control.kg_context import router as kg_context_router
 from agent.control.kg_crud import router as kg_router
 from agent.control.mcp import router as mcp_router
 from agent.control.memory import router as memory_router
@@ -38,6 +40,7 @@ router.include_router(ingestion_router)
 router.include_router(memory_router)
 router.include_router(episodes_router)
 router.include_router(highlights_router)
+router.include_router(kg_context_router)
 
 # Slice 4: Trading KG CRUD (via memory_engine/kg_store.py Kuzu backend)
 router.include_router(kg_router)
@@ -52,6 +55,7 @@ router.include_router(sandbox_router)
 # Slice 6: System Observability (system, audit, sessions, mcp, a2a)
 router.include_router(system_router)
 router.include_router(audit_router)
+router.include_router(context_router)
 router.include_router(sessions_router)
 router.include_router(mcp_router)
 router.include_router(a2a_router)

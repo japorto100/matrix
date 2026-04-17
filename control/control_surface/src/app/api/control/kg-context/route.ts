@@ -9,8 +9,64 @@ import { getErrorMessage } from "@/lib/utils";
 const DEGRADED_FALLBACK = {
 	stats: { nodeCount: 0, edgeCount: 0, health: "unknown", lastSyncAt: null },
 	recentNodes: [],
+	inspector: {
+		activeSession: null,
+		sourceLayerCounts: {},
+		contextBlocks: [],
+		worldClaims: [],
+		degradationFlags: ["NO_WORLD_KG"],
+	},
 	degraded: true,
+	degradedReasons: ["GATEWAY_ERROR"],
 };
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function normalizeHealth(value: unknown): "healthy" | "degraded" | "offline" | "unknown" {
+	const health = String(value ?? "").trim().toLowerCase();
+	if (health === "ok" || health === "ready" || health === "healthy") return "healthy";
+	if (health === "warning" || health === "degraded") return "degraded";
+	if (health === "error" || health === "offline") return "offline";
+	return "unknown";
+}
+
+function normalizePayload(body: unknown, requestId: string) {
+	const record = asRecord(body);
+	const stats = asRecord(record.stats);
+	const recentNodes = Array.isArray(record.recentNodes) ? record.recentNodes : [];
+	const degradedReasons = (
+		Array.isArray(record.degradedReasons)
+			? record.degradedReasons
+			: Array.isArray(record.degraded_reasons)
+				? record.degraded_reasons
+				: []
+	).map((entry) => String(entry));
+	const degraded = Boolean(record.degraded ?? degradedReasons.length > 0);
+	return {
+		...record,
+		stats: {
+			nodeCount: Number(stats.nodeCount ?? stats.node_count ?? 0),
+			edgeCount: Number(stats.edgeCount ?? stats.edge_count ?? 0),
+			health: normalizeHealth(stats.health),
+			lastSyncAt: (stats.lastSyncAt ?? stats.last_sync_at ?? null) as string | null,
+		},
+		recentNodes: recentNodes.map((node) => {
+			const item = asRecord(node);
+			return {
+				id: String(item.id ?? ""),
+				label: String(item.label ?? item.node ?? ""),
+				type: String(item.type ?? "unknown"),
+				connectedEdges: Number(item.connectedEdges ?? item.connected_edges ?? 0),
+			};
+		}),
+		inspector: asRecord(record.inspector),
+		degraded,
+		degradedReasons,
+		requestId,
+	};
+}
 
 function jsonResponse(body: unknown, requestId: string) {
 	return new Response(JSON.stringify(body), {
@@ -40,20 +96,24 @@ export async function GET(request: NextRequest) {
 
 		if (!res.ok) {
 			return jsonResponse(
-				{ ...DEGRADED_FALLBACK, degraded_reasons: [`GATEWAY_HTTP_${res.status}`], requestId },
+				{
+					...DEGRADED_FALLBACK,
+					degradedReasons: [`GATEWAY_HTTP_${res.status}`],
+					requestId,
+				},
 				requestId,
 			);
 		}
 
 		const body: unknown = await res.json();
-		return jsonResponse({ ...(body as object), requestId }, requestId);
+		return jsonResponse(normalizePayload(body, requestId), requestId);
 	} catch (err) {
 		const reason =
 			err instanceof Error && err.name === "TimeoutError" ? "GATEWAY_TIMEOUT" : "GATEWAY_ERROR";
 		return jsonResponse(
 			{
 				...DEGRADED_FALLBACK,
-				degraded_reasons: [reason],
+				degradedReasons: [reason],
 				message: getErrorMessage(err),
 				requestId,
 			},

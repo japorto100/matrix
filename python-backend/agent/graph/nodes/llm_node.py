@@ -17,6 +17,25 @@ from agent.tools.registry import ToolRegistry
 logger = logging.getLogger(__name__)
 
 
+def _detail_value(details: Any, key: str) -> int:
+    if details is None:
+        return 0
+    if isinstance(details, dict):
+        return int(details.get(key) or 0)
+    return int(getattr(details, key, 0) or 0)
+
+
+def _provider_label(model: str) -> str:
+    parts = [part for part in str(model or "").split("/") if part]
+    if not parts:
+        return "litellm"
+    if parts[0] == "openrouter":
+        return "openrouter"
+    if parts[0] in {"anthropic", "openai", "google", "deepseek", "groq", "mistral"}:
+        return parts[0]
+    return "litellm"
+
+
 async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     """Ruft das LLM auf und gibt tool_calls oder finale Antwort zurueck."""
     from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
@@ -87,10 +106,22 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         response = await client.chat.completions.create(**kwargs)
         choice = response.choices[0]
 
+        prompt_tokens = 0
+        completion_tokens = 0
+        reasoning_tokens = 0
+        cached_tokens = 0
         token_usage = 0
         if response.usage:
-            token_usage = (response.usage.prompt_tokens or 0) + (
-                response.usage.completion_tokens or 0
+            prompt_tokens = int(response.usage.prompt_tokens or 0)
+            completion_tokens = int(response.usage.completion_tokens or 0)
+            token_usage = prompt_tokens + completion_tokens
+            cached_tokens = _detail_value(
+                getattr(response.usage, "prompt_tokens_details", None),
+                "cached_tokens",
+            )
+            reasoning_tokens = _detail_value(
+                getattr(response.usage, "completion_tokens_details", None),
+                "reasoning_tokens",
             )
 
         tool_calls: list[ToolCall] = []
@@ -144,6 +175,12 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                     usage_extra["prompt_tokens_details"] = pt.model_dump()
                 elif isinstance(pt, dict):
                     usage_extra["prompt_tokens_details"] = pt
+            ct = getattr(response.usage, "completion_tokens_details", None)
+            if ct is not None:
+                if hasattr(ct, "model_dump"):
+                    usage_extra["completion_tokens_details"] = ct.model_dump()
+                elif isinstance(ct, dict):
+                    usage_extra["completion_tokens_details"] = ct
 
         span.track_generation(
             name="agent.llm_call",
@@ -153,22 +190,31 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             else "",
             output=choice.message.content[:5000] if choice.message.content else "",
             usage={
-                "prompt_tokens": response.usage.prompt_tokens or 0
-                if response.usage
-                else 0,
-                "completion_tokens": response.usage.completion_tokens or 0
-                if response.usage
-                else 0,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
                 "total_tokens": token_usage,
                 **usage_extra,
             },
             metadata={"thread_id": thread_id, "iteration": iteration},
         )
 
+        total_prompt_tokens = int(state.get("prompt_tokens", 0) or 0) + prompt_tokens
+        total_completion_tokens = int(state.get("completion_tokens", 0) or 0) + completion_tokens
+        total_reasoning_tokens = int(state.get("reasoning_tokens", 0) or 0) + reasoning_tokens
+        total_cached_tokens = int(state.get("cached_tokens", 0) or 0) + cached_tokens
+        total_token_usage = int(state.get("token_usage", 0) or 0) + token_usage
+        resolved_model = str(getattr(response, "model", "") or model)
+
         result: dict[str, Any] = {
             "tool_calls": tool_calls,
             "iteration": 1,
-            "token_usage": token_usage,
+            "prompt_tokens": total_prompt_tokens,
+            "completion_tokens": total_completion_tokens,
+            "reasoning_tokens": total_reasoning_tokens,
+            "cached_tokens": total_cached_tokens,
+            "token_usage": total_token_usage,
+            "llm_provider": _provider_label(resolved_model),
+            "llm_model": resolved_model,
         }
         if tool_calls:
             result["messages"] = [

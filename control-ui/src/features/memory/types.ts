@@ -13,8 +13,65 @@ export interface MemoryLayer {
 	consolidation_pending: number;
 }
 
+export interface MemoryInspectorBlock {
+	id: string;
+	title: string;
+	preview: string;
+	sourceLayer: string;
+	sourceType: string;
+	artifactType: string;
+	groundingStatus: string;
+	provenanceRef: string;
+	status: string;
+	route?: string;
+	tokenCount?: number;
+}
+
+export interface MemoryActiveSession {
+	sessionId?: string | null;
+	threadId?: string | null;
+	status?: string | null;
+	provider?: string | null;
+	model?: string | null;
+	promptTokens?: number;
+	completionTokens?: number;
+	reasoningTokens?: number;
+	cachedTokens?: number;
+	totalTokens?: number;
+	contextPressure?: number;
+	updatedAt?: string | null;
+}
+
+export interface MemoryInspector {
+	memoryProvider?: string;
+	activeSession?: MemoryActiveSession | null;
+	sourceLayerCounts?: Record<string, number>;
+	contextBlocks?: MemoryInspectorBlock[];
+	degradationFlags?: string[];
+	hasPersistedRunMetadata?: boolean;
+	liveContextBlockCount?: number;
+}
+
 export interface MemoryOverviewResponse {
 	layers: MemoryLayer[];
+	ops?: {
+		layers: Array<{
+			type: MemoryLayerType;
+			provider: string;
+			health: "healthy" | "degraded" | "offline" | "unknown";
+			itemCount: number;
+			lastSyncAt: string | null;
+			consolidationPending: number;
+		}>;
+		degraded?: boolean;
+		degradedReasons?: string[];
+	};
+	inspector?: MemoryInspector;
+	degraded?: boolean;
+	degraded_reasons?: string[];
+	degradedReasons?: string[];
+	bank_id?: string;
+	user_id?: string;
 }
 
 // ── Episode (matches agent_episodes table) ─────────────────────────────────

@@ -2,7 +2,7 @@
 
 > **Stand:** 22. Februar 2026
 > **Zweck:** Definiert das Gesamtbild fuer Caching, Persistenz, Wissensrepraesentation und Agent-Memory in TradeView Fusion. Von kurzfristigen TTL-Caches bis zu langfristigem Knowledge-Graph-basiertem Agentenwissen.
-> **Referenz-Dokumente:** [`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md), [`GAME_THEORY.md`](./GAME_THEORY.md) (Sek. 8: Knowledge Graph), [`INDICATOR_ARCHITECTURE.md`](./INDICATOR_ARCHITECTURE.md) (Sek. 0.3-0.7: Cache-Strategie), [`Advanced-architecture-for-the-future.md`](./Advanced-architecture-for-the-future.md) (Sek. 7: RAG/Reasoning), [`RAG_GRAPHRAG_STRATEGY_2026.md`](./RAG_GRAPHRAG_STRATEGY_2026.md) (Dual Pipeline, Hybrid Retrieval, GraphRAG/UQ-Strategie), [`POLITICAL_ECONOMY_KNOWLEDGE.md`](./POLITICAL_ECONOMY_KNOWLEDGE.md) (Sek. 8: KG Domain D Seed-Schema), [`archive/KG_ONTOLOGY.md`](./archive/KG_ONTOLOGY.md) (formales Schema, Ontologie-Quellen; archivierte Referenz), [`geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md`](./geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md) (Geo-spezifischer Ontologie-/Graph-Owner fuer Search-Around, Tracks und Writeback), [`EPISTEMIC.md`](./EPISTEMIC.md) (Verbindliche epistemische Systemregeln: 6-Schichten-Wissensmodell, Truth/Belief/Scenario, Promotion Gates — dieses Dokument liefert die Speicher-Infrastruktur, EPISTEMIC.md die epistemischen Regeln darueber), [`ENTROPY_NOVELTY.md`](./ENTROPY_NOVELTY.md) (Entropie-Kollaps-Risiken fuer M3 Episodic Feedback und KG-Confidence)
+> **Referenz-Dokumente:** [`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md), [`AGENT_HARNESS.md`](./AGENT_HARNESS.md), [`AGENT_RUNTIME_ARCHITECTURE.md`](./AGENT_RUNTIME_ARCHITECTURE.md), [`AGENT_SECURITY.md`](./AGENT_SECURITY.md), [`GAME_THEORY.md`](./GAME_THEORY.md) (Sek. 8: Knowledge Graph), [`INDICATOR_ARCHITECTURE.md`](./INDICATOR_ARCHITECTURE.md) (Sek. 0.3-0.7: Cache-Strategie), [`Advanced-architecture-for-the-future.md`](./Advanced-architecture-for-the-future.md) (Sek. 7: RAG/Reasoning), [`RAG_GRAPHRAG_STRATEGY_2026.md`](./RAG_GRAPHRAG_STRATEGY_2026.md) (Dual Pipeline, Hybrid Retrieval, GraphRAG/UQ-Strategie), [`POLITICAL_ECONOMY_KNOWLEDGE.md`](./POLITICAL_ECONOMY_KNOWLEDGE.md) (Sek. 8: KG Domain D Seed-Schema), [`archive/KG_ONTOLOGY.md`](./archive/KG_ONTOLOGY.md) (formales Schema, Ontologie-Quellen; archivierte Referenz), [`geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md`](./geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md) (Geo-spezifischer Ontologie-/Graph-Owner fuer Search-Around, Tracks und Writeback), [`EPISTEMIC.md`](./EPISTEMIC.md) (Verbindliche epistemische Systemregeln: 6-Schichten-Wissensmodell, Truth/Belief/Scenario, Promotion Gates — dieses Dokument liefert die Speicher-Infrastruktur, EPISTEMIC.md die epistemischen Regeln darueber), [`ENTROPY_NOVELTY.md`](./ENTROPY_NOVELTY.md) (Entropie-Kollaps-Risiken fuer M3 Episodic Feedback und KG-Confidence)
 > **Referenz-Buecher:**
 > - "The Behavior Ops Manual" (Chase Hughes, 2022) -- BTE/DRS als strukturiertes Wissen im Knowledge Graph
 > - "Die 36 Strategeme" (Prof. Rieck) -- Krisenlogik als relationales Wissen im Knowledge Graph
@@ -675,7 +675,12 @@ aber kein direkter Runtime-Standard fuer den Produktkern.
 > | **Evaluator** | Nein | Ja (Causal-Chain Check) | Nein | Nein | Nein | Ja (evaluation_log) | Prueft Fakten gegen KG |
 > | **Monitor** | Ja | Nein | Nein | Ja (Trends) | Nein | Nein | Liest M3-Aggregationen fuer Metriken |
 >
-> Die detaillierten Memory-Access-Policies sind Teil der Agent Registry (`MemoryAccessPolicy`, AGENT_ARCHITECTURE Sek. 15.1). Die Context-Assembly-Details pro Rolle finden sich in [`CONTEXT_ENGINEERING.md`](./CONTEXT_ENGINEERING.md) Sek. 8.
+> Die detaillierten Memory-Access-Policies liegen in der Root-Agent-Schicht:
+> `AGENT_ARCHITECTURE.md` beschreibt die Registry-/Rollenidee,
+> `AGENT_RUNTIME_ARCHITECTURE.md` die verbindlichen Policy-Tiers und
+> Memory-Write-Grenzen, `AGENT_SECURITY.md` den Retrieval-Broker als
+> Pflichtpfad. Die Context-Assembly-Details pro Rolle finden sich in
+> [`CONTEXT_ENGINEERING.md`](./CONTEXT_ENGINEERING.md) Sek. 8.
 
 ---
 
@@ -986,8 +991,8 @@ User klickt auf Iran-Sanctions Event in GeoMap
 | Sek. 10.6 (Vector Ingestion) | [`specs/execution/vector_ingestion_delta.md`](./specs/execution/vector_ingestion_delta.md) | Embedding-/Provenance-Vertrag fuer Retrieval-faehige Artefakte |
 | Sek. 5.5 (Working Memory) | [`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) Sek. 2 | Vier Pipeline-Agent-Rollen brauchen Context Assembly |
 | **Sek. 5.3 (M3 Erweiterung)** | **[`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) Sek. 12-13** | **routing_log, workflow_log, research_log, evaluation_log fuer Orchestration-Layer + neue Rollen** |
-| **Sek. 5.5 (M5 Erweiterung)** | **[`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) Sek. 15.1** | **MemoryAccessPolicy in Agent Registry steuert welcher Agent welche Memory-Schichten lesen/schreiben darf** |
-| **Sek. 5.5 (M5 Erweiterung)** | **[`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) Sek. 13.4** | **Monitor Agent aggregiert M3-Logs fuer sieben Monitoring-Dimensionen (Entropy, Override-Rate, etc.)** |
+| **Sek. 5.5 (M5 Erweiterung)** | **[`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) + [`AGENT_RUNTIME_ARCHITECTURE.md`](./AGENT_RUNTIME_ARCHITECTURE.md)** | **MemoryAccessPolicy in Agent Registry und Runtime-Tiers steuert, welcher Agent welche Memory-Schichten lesen/schreiben darf** |
+| **Sek. 5.5 (M5 Erweiterung)** | **[`AGENT_ARCHITECTURE.md`](./AGENT_ARCHITECTURE.md) + [`AGENT_HARNESS.md`](./AGENT_HARNESS.md)** | **Monitor-/Harness-Schicht aggregiert M3-Logs, Drift und Runtime-Metriken fuer Governance und Regression-Gates** |
 | Sek. 7 (Architektur) | [`RUST_LANGUAGE_IMPLEMENTATION.md`](./RUST_LANGUAGE_IMPLEMENTATION.md) Sek. 5b | redb OHLCV-Cache (Rust-spezifisch, komplementaer zu Redis) |
 | Sek. 5.2 M2b (Frontend User-KG) | [`GEOMAP_OVERVIEW.md`](./specs/geo/GEOMAP_OVERVIEW.md) Sek. 35.8 | TS In-Memory Entity Graph → wird durch KuzuDB WASM User-KG ersetzt |
 | Sek. 5.2 + 6 (KG Gesamtbild, Geo-Spezialisierung) | [`geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md`](./geo/GEOMAP_ONTOLOGY_GRAPH_RUNTIME.md) | Geo-Ontologie/Graph/Search-Around/Track/Writeback werden als Geo-Owner auf derselben KG-Gesamtarchitektur gefuehrt (nicht isoliert) |

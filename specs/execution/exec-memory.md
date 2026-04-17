@@ -10,7 +10,10 @@
 >   - `main_docs/root/CONTEXT_ENGINEERING.md` — Token Budget, Relevance Scoring, Entropy-Schutz, Multi-Source Merging (mit [`exec-context.md`](./exec-context.md) zur Runtime aktualisieren)
 >   - `main_docs/root/RAG_GRAPHRAG_STRATEGY_2026.md` — Dual Pipeline, Hybrid Retrieval, UQ/Bayesian Confidence-Gates
 >   - `main_docs/root/storage_layer.md` — SeaweedFS/Object Storage Entscheidung
+>   - `main_docs/root/AGENT_ARCHITECTURE.md` — Agent-Rollen, Registry-Idee, Orchestration-Default
+>   - `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md` — verbindliche Policy-Tiers und Memory-Write-Grenzen
 >   - `main_docs/root/AGENT_SECURITY.md` — Capability Envelope, Retrieval Broker, Privacy/Deletion
+>   - `main_docs/root/AGENT_HARNESS.md` — Constrain/Inform/Verify/Correct, Runtime-Governance
 
 ---
 
@@ -343,6 +346,36 @@ Praktische Folge:
 - `memory_fusion` ist **nicht** die heimliche Sammelhalde fuer KB + World Model
 - Bridges sind ok, stille Verschmelzung nicht
 
+### 3i. Frontend-Kopplung: `control_ui` zuerst, Agent-Chat danach
+
+Frontend-seitig haengt dieses Exec am staerksten an `control_ui`, nicht am
+Agent-Chat:
+
+- **kompakte Memory-Sicht:** `control-ui/src/features/memory/components/MemoryHealthCards.tsx`, `control-ui/src/features/memory/components/MemoryRuntimeInspector.tsx`
+- **primaerer Runtime-/Prompt-Inspector:** `control-ui/src/features/control/components/ContextTab.tsx`
+- **heutige BFFs:** `control-ui/src/app/api/memory/[...path]/route.ts`, `control-ui/src/app/api/control/[...path]/route.ts`
+
+Aktueller Ist-Stand:
+
+- `MemoryHealthCards` bleibt der kompakte, kompatible Memory-Health-Einstieg und
+  zeigt ueber `MemoryRuntimeInspector` bereits `Latest Runtime`,
+  `sourceLayerCounts`, `degradationFlags` und `contextBlocks`
+- `ContextTab` ist jetzt die getrennte, kanonische Inspector-Sicht fuer
+  Runtime-/Prompt-/World-Kontext und loest die Vermischung von Memory-Health und
+  Context-Diagnostik auf
+- vollstaendige Personal-KB-/World-Browser-Surfaces bleiben trotzdem noch
+  Ausbauarbeit
+
+Konsequenz:
+
+- `exec-memory` muss den **Datenvertrag** fuer `source_layer`, `source_type`,
+  `artifact_type`, `provenance_ref`, `grounding_status`, `status`, `freshness`
+  liefern
+- [`exec-15-memory-control-ui.md`](./exec-15-memory-control-ui.md) ist der
+  primaere Frontend-Owner fuer die **detaillierte** Surfacing-/Inspector-Sicht
+- Agent-Chat ist die **sekundaere**, kompaktere Laufzeit-Sicht auf denselben
+  Vertrag
+
 ---
 
 ## 4. Weitere Memory-Systeme zum Vergleich
@@ -526,7 +559,7 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 | **6.1** Ebbinghaus Forgetting Curves | Haeufig abgerufene Memories verstaerkt, vernachlaessigte verblassen | **Nein** | Decay-Score als Alternative zu starrer 90-Tage Cold-Migration. `recall_count` + `last_recalled_at` auf Memory Units. Ebbinghaus-Formel: Retention = e^(-t/S) wobei S = Strength (steigt bei jedem Recall) |
 | **6.3** Compositional Skill Reuse | Skills kreativ verketten fuer neue Probleme | **Teilweise** — Refiner kann kombinieren | → **exec-skills**: Skill Composition Framework langfristig |
 | **6.4** Uncertainty-aware Memory | Confidence-Level pro Fakt, Bayesian Update bei neuen Beweisen | **Teilweise geplant** — `RAG_GRAPHRAG_STRATEGY_2026.md` Sek. 5 (UQ/Bayesian Confidence-Gates), `CONTEXT_ENGINEERING.md` Sek. 4.4.1 (Override-Cap, Decay) | Bayesian RAG Pattern: Score = μ - λ·σ. Verbindung zu exec-ebm (Energy als Uncertainty Proxy). UQ-Leitentscheidung existiert bereits in RAG-Strategie, muss auf Memory-Ebene uebertragen werden. |
-| **6.5** Multi-Agent Access Control | Welcher Agent sieht welche Memories (ACL) | **Geplant** — MEMORY_ARCHITECTURE.md Sek. 15.1 (MemoryAccessPolicy) + `AGENT_SECURITY.md` Sek. 3 (Retrieval Broker als Pflichtpfad) | Role-based Memory Access: PM sieht Summaries, Analyst sieht Details. Retrieval Broker aus AGENT_SECURITY.md ist der Enforcement-Punkt. Nicht implementiert. |
+| **6.5** Multi-Agent Access Control | Welcher Agent sieht welche Memories (ACL) | **Geplant** — `MEMORY_ARCHITECTURE.md` + `AGENT_RUNTIME_ARCHITECTURE.md` (Policy-Tiers) + `AGENT_SECURITY.md` (Retrieval Broker als Pflichtpfad) | Role-based Memory Access: PM sieht Summaries, Analyst sieht Details. Retrieval Broker aus AGENT_SECURITY.md ist der Enforcement-Punkt. Nicht implementiert. |
 | **6.6** Schema Drift | API-Versionen in Memory versionieren | **Nicht adressiert** | → **exec-skills**: Tool-Use Memories brauchen API-Version-Tag. Invalide Records bei API-Aenderung markieren. |
 | **6.8** Modular vs. Monolith | Kein einzelnes Memory-System fuer alle Domains | **Ja** — unser Hybrid-Ansatz (Hindsight + Verbatim + KG) ist modular | Bestaetigt unsere Architektur |
 
@@ -648,6 +681,8 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 - [x] Groesserer Langkontext-Smoke fuer `summary` / `verbatim` / `fusion` existiert (`experiments/memory_eval/run_long_context_smoke.py`) und ist lokal auf Postgres verifiziert; bei `summary_llm_provider=none` liefern aktuell alle drei Routen identische Metriken, waehrend der Harness fuer spaetere LLM-backed Summary-Runs vorbereitet ist
 - [x] `memory_fusion` nutzt MemPalace-Konzepte produktiv im Postgres-Pfad: `query_sanitizer`, kanonische `source_ref`/`provenance_ref`, Method-of-Loci-Metadaten (`wing` / `room` / `hall` / `closet_id` / `drawer_id`) fuer Recall-Filter, verbatim evidence surfacing
 - [x] Langkontext-Runner kann jetzt Ingest und Recall-only trennen (`--bank-id`, `--skip-retain`, `--session-count`, `--max-queries`, `--routes`) und der Recall-only-Reuse wurde lokal verifiziert
+- [x] Echter Postgres-End-to-End-Smoke fuer Personal-Memory-Guardrails ist einmal gruen gelaufen und wird als Verify-Artefakt festgehalten (`python-backend/experiments/memory_eval/run_memory_fusion_e2e_smoke.py`; lokal verifiziert via `uv run python experiments/memory_eval/run_memory_fusion_e2e_smoke.py --out /tmp/memory-fusion-e2e-smoke.json --db-url postgresql://postgres:postgres@localhost:5433/hindsight_dev --cleanup`)
+- [~] `control_ui` haengt jetzt an einem echten Memory-/Context-Inspector-Vertrag (`control-ui/src/features/memory/components/MemoryRuntimeInspector.tsx`, `control-ui/src/features/control/components/ContextTab.tsx`, `control-ui/src/app/api/memory/[...path]/route.ts`, `control-ui/src/app/api/control/[...path]/route.ts`, `python-backend/agent/control/memory.py`, `python-backend/agent/control/context.py`); dedizierte Personal-KB-/World-Detail-Surfaces bleiben noch offen
 - [~] Cross-System-Ground-Truth fuer fehlende Public-Benchmark-Adapter ist vorbereitet (`prepare_convomem_adapter.py`, `prepare_memoryarena_adapter.py`), aber noch nicht an echte Public-Dataset-Downloads verdrahtet
 - [x] Roher User-Input wird im produktiven `memory_fusion`-Pfad explizit als Evidenzquelle markiert, nicht als implizite Observation / Wahrheit
 - [x] `derived memory`-Objekte tragen im `memory_fusion`-Pfad Evidence-/Source-Backlinks und surfacen nicht allein (`retain`, `recall`, `list_memory_units`, `list_documents`, `get_document`)

@@ -1,9 +1,10 @@
 """Memory engine selection for Agent runtime.
 
-Default bleibt Hindsight, aber MemPalace kann jetzt als echte Runtime-Engine
-aktiviert werden:
+Default bleibt Hindsight, aber weitere Runtime-Engines koennen aktiviert werden:
 
 - `AGENT_MEMORY_ENGINE=hindsight`
+- `AGENT_MEMORY_ENGINE=memory_fusion`
+- `AGENT_MEMORY_ENGINE=fusion`
 - `AGENT_MEMORY_ENGINE=mempalace`
 - `AGENT_MEMORY_ENGINE=auto` (default)
 
@@ -113,6 +114,23 @@ async def get_memory_engine():
             )
             return _engine
 
+        if provider in {"memory_fusion", "fusion"}:
+            db_url = os.environ.get("HINDSIGHT_DB_URL")
+            if not db_url:
+                logger.info("HINDSIGHT_DB_URL not set — memory_fusion disabled")
+                _init_failed = True
+                return None
+
+            _bridge_env()
+
+            from memory_fusion.fusion_engine import FusionMemoryEngine
+
+            _engine = await FusionMemoryEngine.create(db_url=db_url)
+            logger.info(
+                "memory_fusion engine initialized (db=%s)", db_url.split("@")[-1]
+            )
+            return _engine
+
         if provider == "mempalace":
             from agent.memory.mempalace_engine import MempalaceMemoryEngine
 
@@ -147,12 +165,14 @@ def get_memory_provider() -> str:
     """Resolve active memory provider from env.
 
     Order:
-    1. `AGENT_MEMORY_ENGINE` explicit (`hindsight|mempalace|auto`)
+    1. `AGENT_MEMORY_ENGINE` explicit (`hindsight|memory_fusion|fusion|mempalace|auto`)
     2. `auto`: Hindsight if DB configured, else MemPalace if palace path configured
     3. otherwise `disabled`
     """
     provider = os.environ.get("AGENT_MEMORY_ENGINE", "auto").strip().lower()
     if provider and provider != "auto":
+        if provider == "fusion":
+            return "memory_fusion"
         return provider
     if os.environ.get("HINDSIGHT_DB_URL"):
         return "hindsight"

@@ -18,6 +18,8 @@ import {
 	agentsQueries,
 	auditKeys,
 	auditQueries,
+	contextKeys,
+	contextQueries,
 	type IngestDocumentInput,
 	type IngestLinkInput,
 	type IngestNoteInput,
@@ -66,6 +68,16 @@ export function useOverview(
 		...DEFAULTS,
 		queryKey: overviewKeys.snapshot(userId),
 		queryFn: () => overviewQueries.snapshot(userId),
+	});
+}
+
+export function useContextInspector(
+	userId = "local",
+): UseQueryResult<Awaited_<ReturnType<typeof contextQueries.inspector>>> {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: contextKeys.inspector(userId),
+		queryFn: () => contextQueries.inspector(userId),
 	});
 }
 

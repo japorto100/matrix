@@ -86,6 +86,13 @@ const TABS: SubTab[] = [
 		section: "user",
 	},
 	{
+		href: "/control/context",
+		label: "Context",
+		icon: <Network className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/context"),
+		section: "user",
+	},
+	{
 		href: "/control/security",
 		label: "Security",
 		icon: <ShieldCheck className="h-3 w-3" />,
@@ -126,7 +133,7 @@ const TABS: SubTab[] = [
 	{
 		href: "/control/mcp",
 		label: "MCP",
-		icon: <Network className="h-3 w-3" />,
+		icon: <Workflow className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/mcp"),
 		section: "dev",
 	},

@@ -16,6 +16,8 @@ interface AgentChatEventRailProps {
 	isStreaming: boolean;
 	/** AC64: context fill ratio 0-1 (promptTokens / model max context) */
 	contextPressure?: number;
+	degradationFlags?: string[];
+	sourceLayerCounts?: Record<string, number>;
 }
 
 const STATUS_CONFIG: Record<RailStatus, { label: string; dot: string }> = {
@@ -38,10 +40,16 @@ export function AgentChatEventRail({
 	provider,
 	isStreaming,
 	contextPressure,
+	degradationFlags = [],
+	sourceLayerCounts = {},
 }: AgentChatEventRailProps) {
 	const { label, dot } = STATUS_CONFIG[status];
 	const showLatency = isStreaming && lastChunkMs !== undefined && lastChunkMs < 30_000;
 	const showPressure = contextPressure !== undefined && contextPressure > 0.01;
+	const layerSummary = Object.entries(sourceLayerCounts)
+		.filter(([, count]) => count > 0)
+		.map(([layer, count]) => `${layer}:${count}`)
+		.join(" ");
 
 	return (
 		<div className="flex flex-col shrink-0">
@@ -63,6 +71,16 @@ export function AgentChatEventRail({
 					</span>
 				)}
 			</div>
+			{(degradationFlags.length > 0 || layerSummary) && (
+				<div className="flex items-center gap-2 px-3 py-1 border-b border-border/20 bg-muted/10 text-[9px] font-mono text-muted-foreground/50 overflow-x-auto">
+					{degradationFlags.map((flag) => (
+						<span key={flag} className="text-amber-400">
+							{flag}
+						</span>
+					))}
+					{layerSummary && <span className="whitespace-nowrap">{layerSummary}</span>}
+				</div>
+			)}
 			{/* AC64: context pressure bar */}
 			{showPressure && (
 				<div className="h-0.5 w-full bg-border/20">

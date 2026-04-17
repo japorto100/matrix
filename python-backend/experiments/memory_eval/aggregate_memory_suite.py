@@ -21,14 +21,33 @@ def _load(path: Path) -> dict[str, Any]:
 
 def build_suite(runs: list[dict[str, Any]]) -> dict[str, Any]:
     corpus_id = next((run.get("corpus_id") for run in runs if run.get("corpus_id")), "unknown")
+    pipelines = {}
     out: dict[str, Any] = {
         "name": f"memory_suite:{corpus_id}",
         "corpus_id": corpus_id,
-        "pipelines": {},
+        "pipelines": pipelines,
     }
     for run in runs:
         name = str(run.get("pipeline") or "unknown")
-        out["pipelines"][name] = _summarize(run)
+        pipelines[name] = _summarize(run)
+    out["leaderboard"] = sorted(
+        (
+            {
+                "pipeline": name,
+                "mean_recall": metrics.get("mean_recall", 0.0),
+                "evidence_hit_rate": metrics.get("quality", {}).get("evidence_hit_rate", 0.0),
+                "candidate_leak_rate": metrics.get("governance", {}).get("candidate_leak_rate", 0.0),
+                "mean_latency_ms": metrics.get("mean_latency_ms", 0.0),
+            }
+            for name, metrics in pipelines.items()
+        ),
+        key=lambda row: (
+            -float(row["mean_recall"]),
+            -float(row["evidence_hit_rate"]),
+            float(row["candidate_leak_rate"]),
+            float(row["mean_latency_ms"]),
+        ),
+    )
     return out
 
 

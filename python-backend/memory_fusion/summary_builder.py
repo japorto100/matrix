@@ -8,6 +8,7 @@ from memory_fusion.loci import derive_loci_metadata, loci_tags
 from memory_fusion.semantics import (
     classify_item_semantics,
     enrich_metadata_with_semantics,
+    metadata_tags,
 )
 
 
@@ -27,18 +28,22 @@ def build_summary_item(item: dict[str, Any], *, bank_id: str | None = None) -> d
     """
     metadata = dict(item.get("metadata") or {})
     semantics = classify_item_semantics(item, metadata)
+    preflight_metadata = enrich_metadata_with_semantics(metadata, item=item)
+    if semantics.requires_evidence_backlinks and preflight_metadata.get("evidence_backlinks_present") != "true":
+        raise ValueError("Derived memory items require evidence backlinks in memory_fusion")
     loci = derive_loci_metadata(
         {**item, "artifact_type": semantics.artifact_type, "source_type": semantics.source_type},
         _stringify_metadata({**metadata, **semantics.metadata_dict()}),
         bank_id=bank_id,
     )
     metadata = enrich_metadata_with_semantics({**metadata, **loci}, item=item)
-    if semantics.requires_evidence_backlinks and metadata.get("evidence_backlinks_present") != "true":
-        raise ValueError("Derived memory items require evidence backlinks in memory_fusion")
     return {
         **item,
         "context": f"summary:{loci['source_ref']}" if loci["source_ref"] else str(item.get("context") or "summary"),
-        "tags": loci_tags({"tags": list(item.get("tags") or []) + semantics.tags()}, loci),
+        "tags": loci_tags(
+            {"tags": list(item.get("tags") or []) + semantics.tags() + metadata_tags(metadata)},
+            loci,
+        ),
         "metadata": {
             **_stringify_metadata(metadata),
             "fusion_route": "summary",
@@ -51,17 +56,21 @@ def build_verbatim_item(item: dict[str, Any], *, bank_id: str | None = None) -> 
     """Prepare one raw item for the verbatim route."""
     metadata = dict(item.get("metadata") or {})
     semantics = classify_item_semantics(item, metadata)
+    preflight_metadata = enrich_metadata_with_semantics(metadata, item=item)
+    if semantics.requires_evidence_backlinks and preflight_metadata.get("evidence_backlinks_present") != "true":
+        raise ValueError("Derived memory items require evidence backlinks in memory_fusion")
     loci = derive_loci_metadata(
         {**item, "artifact_type": semantics.artifact_type, "source_type": semantics.source_type},
         _stringify_metadata({**metadata, **semantics.metadata_dict()}),
         bank_id=bank_id,
     )
     metadata = enrich_metadata_with_semantics({**metadata, **loci}, item=item)
-    if semantics.requires_evidence_backlinks and metadata.get("evidence_backlinks_present") != "true":
-        raise ValueError("Derived memory items require evidence backlinks in memory_fusion")
     return {
         **item,
-        "tags": loci_tags({"tags": list(item.get("tags") or []) + semantics.tags()}, loci),
+        "tags": loci_tags(
+            {"tags": list(item.get("tags") or []) + semantics.tags() + metadata_tags(metadata)},
+            loci,
+        ),
         "metadata": {
             **_stringify_metadata(metadata),
             "fusion_route": "verbatim",

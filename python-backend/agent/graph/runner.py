@@ -121,6 +121,13 @@ async def _prepare_system_prompt(
                     budget=Budget.MID,
                     max_tokens=1500,
                     request_context=RequestContext(),
+                    consumer="llm_agent",
+                    operation_context={
+                        "thread_id": ctx.thread_id,
+                        "user_id": ctx.user_id,
+                        "agent_id": getattr(ctx, "agent_id", "default"),
+                        "actor_role": getattr(ctx, "agent_class", "advisory"),
+                    },
                 )
                 if result.results:
                     mem_lines = [f"- {f.text}" for f in result.results[:8]]
@@ -191,6 +198,16 @@ async def _run_graph(
         "model": model,
         "api_key": ctx.api_key,
         "reasoning_effort": ctx.reasoning_effort,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "reasoning_tokens": 0,
+        "cached_tokens": 0,
+        "token_usage": 0,
+        "llm_provider": "",
+        "llm_model": model,
+        "source_layer_counts": {},
+        "context_blocks": [],
+        "degradation_flags": [],
         "final_response": "",
         "done": False,
         "thread_id": ctx.thread_id,
@@ -241,7 +258,7 @@ async def _run_graph(
                         "Output anomalies in agent response: %s",
                         anomaly.anomalies,
                     )
-                yield sse(TextDeltaPacket(id=text_id, text=final))
+                yield sse(TextDeltaPacket(id=text_id, delta=final))
 
             tool_results = result.get("tool_results", [])
             if tool_results:
@@ -267,13 +284,23 @@ async def _run_graph(
                         )
 
             yield sse(TextEndPacket(id=text_id))
+            message_metadata = {
+                "threadId": ctx.thread_id,
+                "promptTokens": int(result.get("prompt_tokens", 0) or 0),
+                "completionTokens": int(result.get("completion_tokens", 0) or 0),
+                "reasoningTokens": int(result.get("reasoning_tokens", 0) or 0),
+                "cachedTokens": int(result.get("cached_tokens", 0) or 0),
+                "totalTokens": int(result.get("token_usage", 0) or 0),
+                "provider": str(result.get("llm_provider", "") or "litellm"),
+                "model": str(result.get("llm_model", "") or model),
+                "sourceLayerCounts": result.get("source_layer_counts", {}) or {},
+                "degradationFlags": result.get("degradation_flags", []) or [],
+                "contextBlocks": result.get("context_blocks", []) or [],
+                "queryGate": result.get("query_gate") or {},
+            }
             yield sse(
                 MessageMetaPacket(
-                    metadata={
-                        "threadId": ctx.thread_id,
-                        "promptTokens": 0,  # TODO: extract from graph result
-                        "completionTokens": 0,
-                    }
+                    metadata=message_metadata
                 )
             )
             set_session_summary(
@@ -288,13 +315,25 @@ async def _run_graph(
                 try:
                     from agent.sessions import update_session
 
+                    session_summary = {
+                        "total_turns": int(result.get("iteration", 0) or 0),
+                        "total_tokens": int(result.get("token_usage", 0) or 0),
+                        "totalTokens": int(result.get("token_usage", 0) or 0),
+                        "promptTokens": int(result.get("prompt_tokens", 0) or 0),
+                        "completionTokens": int(result.get("completion_tokens", 0) or 0),
+                        "reasoningTokens": int(result.get("reasoning_tokens", 0) or 0),
+                        "cachedTokens": int(result.get("cached_tokens", 0) or 0),
+                        "provider": str(result.get("llm_provider", "") or "litellm"),
+                        "model": str(result.get("llm_model", "") or model),
+                        "sourceLayerCounts": result.get("source_layer_counts", {}) or {},
+                        "degradationFlags": result.get("degradation_flags", []) or [],
+                        "queryGate": result.get("query_gate") or {},
+                    }
                     update_session(
                         db_session.session_id,
                         status="completed",
-                        summary={
-                            "total_turns": result.get("iteration", 0),
-                            "total_tokens": result.get("token_usage", 0),
-                        },
+                        summary=session_summary,
+                        metadata={"latest_run": message_metadata},
                     )
                 except Exception:  # noqa: BLE001
                     pass

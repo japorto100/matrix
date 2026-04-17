@@ -167,6 +167,11 @@ async def test_retain_batch_adds_route_tags_and_provenance() -> None:
     assert summary_item["metadata"]["source_type"] == "user_input"
     assert summary_item["metadata"]["artifact_type"] == "chat_turn"
     assert summary_item["metadata"]["evidence_kind"] == "primary"
+    assert summary_item["metadata"]["status"] == "available"
+    assert summary_item["metadata"]["promotion_status"] == "not_applicable"
+    assert summary_item["metadata"]["actor_role"] == "user"
+    assert summary_item["metadata"]["source_confidence"] == "1"
+    assert summary_item["metadata"]["attribution_contract"] == "memory_fusion/v1"
 
 
 @pytest.mark.asyncio
@@ -331,6 +336,10 @@ async def test_retain_batch_sets_semantics_for_raw_and_derived() -> None:
     assert derived_item["metadata"]["source_type"] == "system_observation"
     assert derived_item["metadata"]["requires_evidence_backlinks"] == "true"
     assert derived_item["metadata"]["evidence_backlinks_present"] == "true"
+    assert derived_item["metadata"]["status"] == "grounded"
+    assert derived_item["metadata"]["promotion_status"] == "grounded"
+    assert derived_item["metadata"]["actor_role"] == "agent"
+    assert derived_item["metadata"]["source_confidence"] == "0.72"
     assert derived_item["fact_type"] == "opinion"
 
 
@@ -387,6 +396,35 @@ async def test_retain_batch_rejects_derived_without_evidence_backlinks() -> None
                     "content": "Observed preference without any provenance.",
                     "artifact_type": "preference",
                     "metadata": {},
+                }
+            ],
+            request_context=object(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_retain_batch_rejects_derived_when_only_loci_source_ref_exists() -> None:
+    engine = FusionMemoryEngine(
+        summary_engine=_FakeEngine(),
+        verbatim_engine=_FakeEngine(),
+        summary_llm_provider="openrouter",
+        verbatim_llm_provider="openrouter",
+        summary_extraction_mode="concise",
+        verbatim_extraction_mode="verbatim",
+    )
+
+    with pytest.raises(ValueError, match="Derived memory items require evidence backlinks"):
+        await engine.retain_batch_async(
+            bank_id="user_1",
+            contents=[
+                {
+                    "content": "Observed preference without explicit evidence.",
+                    "artifact_type": "preference",
+                    "source_type": "system_observation",
+                    "metadata": {
+                        "source_file": "derived-pref.jsonl",
+                        "user_id": "u1",
+                    },
                 }
             ],
             request_context=object(),
@@ -521,6 +559,119 @@ async def test_list_memory_units_filters_ungrounded_derived_items() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_memory_units_frontend_ui_keeps_ungrounded_derived_items() -> None:
+    summary_engine = _FakeEngine(
+        memory_units={
+            "items": [
+                {
+                    "id": "derived-1",
+                    "text": "Ungrounded derived item",
+                    "fact_type": "opinion",
+                    "metadata": {"artifact_type": "preference"},
+                }
+            ],
+            "total": 1,
+        }
+    )
+    engine = FusionMemoryEngine(
+        summary_engine=summary_engine,
+        verbatim_engine=_FakeEngine(),
+        summary_llm_provider="openrouter",
+        verbatim_llm_provider="openrouter",
+        summary_extraction_mode="concise",
+        verbatim_extraction_mode="verbatim",
+    )
+
+    result = await engine.list_memory_units(
+        bank_id="user_1",
+        request_context=object(),
+        route="summary",
+        consumer="frontend_ui",
+    )
+
+    assert [item["id"] for item in result["items"]] == ["derived-1"]
+    assert result["items"][0]["metadata"]["status"] == "candidate"
+    assert result["items"][0]["metadata"]["promotion_status"] == "candidate"
+
+
+@pytest.mark.asyncio
+async def test_list_memory_units_preserves_explicit_personal_layers() -> None:
+    summary_engine = _FakeEngine(
+        memory_units={
+            "items": [
+                {
+                    "id": "derived-1",
+                    "text": "Grounded preference",
+                    "fact_type": "world",
+                    "metadata": {
+                        "artifact_type": "world_evidence",
+                        "source_type": "world_evidence",
+                        "memory_layer": "bridge_world",
+                        "evidence_kind": "external",
+                        "grounding_status": "grounded_derived",
+                        "provenance_ref": "pref.jsonl#0",
+                    },
+                    "tags": [
+                        "artifact_type:preference",
+                        "source_type:system_observation",
+                        "memory_layer:personal_derived",
+                        "evidence_kind:derived",
+                    ],
+                }
+            ],
+            "total": 1,
+        }
+    )
+    engine = FusionMemoryEngine(
+        summary_engine=summary_engine,
+        verbatim_engine=_FakeEngine(),
+        summary_llm_provider="openrouter",
+        verbatim_llm_provider="openrouter",
+        summary_extraction_mode="concise",
+        verbatim_extraction_mode="verbatim",
+    )
+
+    result = await engine.list_memory_units(
+        bank_id="user_1",
+        request_context=object(),
+        route="summary",
+    )
+
+    assert result["total"] == 1
+    assert result["items"][0]["metadata"]["memory_layer"] == "personal_derived"
+    assert result["items"][0]["metadata"]["artifact_type"] == "preference"
+    assert result["items"][0]["metadata"]["grounding_status"] == "grounded_derived"
+    assert result["items"][0]["metadata"]["status"] == "grounded"
+    assert result["items"][0]["metadata"]["promotion_status"] == "grounded"
+
+
+def test_enrich_metadata_marks_stale_and_contested_derived_states() -> None:
+    from memory_fusion.semantics import enrich_metadata_with_semantics
+
+    stale = enrich_metadata_with_semantics(
+        {
+            "artifact_type": "preference",
+            "source_ref": "pref.jsonl#0",
+            "freshness_score": "0.2",
+        },
+        item={"artifact_type": "preference"},
+    )
+    contested = enrich_metadata_with_semantics(
+        {
+            "artifact_type": "preference",
+            "source_ref": "pref.jsonl#1",
+            "conflict_count": "2",
+        },
+        item={"artifact_type": "preference"},
+    )
+
+    assert stale["promotion_status"] == "stale"
+    assert stale["status"] == "stale"
+    assert contested["promotion_status"] == "contested"
+    assert contested["status"] == "contested"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("content", "expected_fragment"),
     [
@@ -557,6 +708,31 @@ async def test_retain_batch_rejects_kb_and_world_inputs(content: dict[str, str],
             bank_id="user_1",
             contents=[content],
             request_context=object(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_retain_batch_rejects_frontend_ui_writes() -> None:
+    engine = FusionMemoryEngine(
+        summary_engine=_FakeEngine(),
+        verbatim_engine=_FakeEngine(),
+        summary_llm_provider="openrouter",
+        verbatim_llm_provider="openrouter",
+        summary_extraction_mode="concise",
+        verbatim_extraction_mode="verbatim",
+    )
+
+    with pytest.raises(ValueError, match="access policy rejected write"):
+        await engine.retain_batch_async(
+            bank_id="user_1",
+            contents=[
+                {
+                    "content": "The user said they prefer calmer execution.",
+                    "metadata": {"source_file": "session-raw.jsonl", "chunk_index": "0"},
+                }
+            ],
+            request_context=object(),
+            consumer="frontend_ui",
         )
 
 

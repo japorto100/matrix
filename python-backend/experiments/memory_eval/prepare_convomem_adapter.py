@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -89,6 +90,19 @@ def convert_convomem(
     }
 
 
+def _materialize_input(path_value: str, *, download_url: str | None, cache_dir: str | None) -> Path:
+    path = Path(path_value).expanduser()
+    if path.exists():
+        return path
+    if not download_url:
+        raise FileNotFoundError(f"ConvoMem input not found: {path}")
+    target_dir = Path(cache_dir or ".tmp/memory_eval_downloads").expanduser()
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / path.name
+    urllib.request.urlretrieve(download_url, target)  # noqa: S310 - explicit user-provided dataset URL
+    return target
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input_json")
@@ -96,9 +110,16 @@ def main() -> int:
     parser.add_argument("--corpus-id", default="convomem-adapter")
     parser.add_argument("--bank-id", default="user_eval_convomem")
     parser.add_argument("--category", default="convomem")
+    parser.add_argument("--download-url")
+    parser.add_argument("--cache-dir")
     args = parser.parse_args()
 
-    data = json.loads(Path(args.input_json).read_text(encoding="utf-8"))
+    input_path = _materialize_input(
+        args.input_json,
+        download_url=args.download_url,
+        cache_dir=args.cache_dir,
+    )
+    data = json.loads(input_path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
         raise SystemExit("Expected top-level JSON list for ConvoMem evidence file")
 

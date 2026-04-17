@@ -117,6 +117,26 @@ Code ist komplett. Nur Verify-Gates offen.
 - [ ] toModelOutput: Grosse Tool-Outputs fuer Model gekuerzt, UI zeigt volles Ergebnis
 - [ ] next.config.ts: Agent Chat startet isoliert auf eigenem Port
 
+### Phase 4b: Context Surfacing im Agent-Chat
+
+Owner fuer Merge-/Policy-Regeln bleibt [`exec-context.md`](./exec-context.md).
+Dieser Slice haelt die konkreten Agent-Chat-Surfaces fest.
+
+- [x] `agent-chat/src/hooks/useChatSession.ts`: liest jetzt Context-/Layer-Diagnostik aus `message.metadata`, nicht nur `promptTokens` / `completionTokens`
+- [x] `agent-chat/src/components/AgentChatEventRail.tsx`: zeigt jetzt sichtbare Flags fuer `NO_WORLD_KG`, `NO_WORLD_EVIDENCE`, `NO_PERSONAL_MEMORY`, `NO_PERSONAL_KB`, `WORLD_CLAIM_CONFLICT`
+- [ ] `agent-chat/src/components/AgentChatSources.tsx`: neben Web-Quellen auch Memory-/World-/KB-Provenance darstellen koennen oder separaten Provenance-Block einfuehren
+- [~] `agent-chat/src/components/AgentChatMessage.tsx`: Usage-Badge zeigt jetzt auch `cachedTokens`; echte `world`-/`personal memory`-Provenance im Message-Body bleibt offen
+- [x] `agent-chat/src/AgentChatPanel.tsx`: EventRail ist jetzt so verdrahtet, dass Context-Degradation und Layer-Herkunft fuer den User sichtbar werden
+- [~] `agent-chat/src/app/api/agent/chat/route.ts`: bestehender Stream-Pass-through traegt neue Metadata-/Context-Frames unveraendert weiter; expliziter Verify-Lauf bleibt offen
+
+### Verify-Gate Phase 4b
+
+- [ ] Assistant-Antwort mit `personal memory`-Kontext zeigt sichtbare Herkunft (`source_type` / Layer / Provenance)
+- [ ] Assistant-Antwort mit `world`-Kontext zeigt `status` + `provenance` und wird nicht wie gesicherte nackte Wahrheit gerendert
+- [x] Fehlende Schichten erzeugen sichtbare Agent-Chat-Flags (`NO_WORLD_KG`, `NO_PERSONAL_KB`, ...)
+- [ ] Bestehende Web-Sources (`source-url`, `source-document`) bleiben intakt, waehrend zusaetzliche Context-/Provenance-Surfaces dazukommen
+- [x] `contextPressure` bleibt sichtbar, ist aber nicht das einzige Context-Signal im Rail / Message-UI
+
 ### assistant-ui Evaluation (aus exec-08 Task 4.9)
 - [ ] Kann es AgentChatThread/Message/Composer ersetzen?
 - [ ] Styling-Kontrolle mit shadcn/Tailwind ausreichend?

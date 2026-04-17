@@ -26,50 +26,15 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from statistics import mean
 from typing import Any
 
+from experiments.memory_eval.metrics import summarize_eval_run
 
 def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
-
-def _recall_at_k(expected_ids: list[str], retrieved_ids: list[str]) -> float:
-    if not expected_ids:
-        return 0.0
-    exp = set(expected_ids)
-    got = set(retrieved_ids)
-    return len(exp & got) / len(exp)
-
-
 def _summarize(run: dict[str, Any]) -> dict[str, Any]:
-    items = run.get("items", [])
-    recalls: list[float] = []
-    latencies: list[float] = []
-    costs: list[float] = []
-    errors = 0
-
-    for item in items:
-        if item.get("error"):
-            errors += 1
-        recalls.append(
-            _recall_at_k(
-                list(item.get("expected_ids") or []),
-                list(item.get("retrieved_ids") or []),
-            )
-        )
-        if item.get("latency_ms") is not None:
-            latencies.append(float(item["latency_ms"]))
-        if item.get("token_cost") is not None:
-            costs.append(float(item["token_cost"]))
-
-    return {
-        "queries": len(items),
-        "mean_recall": round(mean(recalls), 4) if recalls else 0.0,
-        "mean_latency_ms": round(mean(latencies), 2) if latencies else 0.0,
-        "total_token_cost": round(sum(costs), 6),
-        "error_rate": round(errors / len(items), 4) if items else 0.0,
-    }
+    return summarize_eval_run(run)
 
 
 def build_memory_ab(hindsight: dict[str, Any], mempalace: dict[str, Any]) -> dict[str, Any]:

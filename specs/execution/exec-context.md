@@ -3,6 +3,7 @@
 > Status: Evaluation / operativer Owner fuer Runtime-Context
 > Erstellt: 2026-04-15
 > Abgrenzung: **Nicht** Memory-Storage (Schichten, Stores, Hindsight vs MemPalace) — das ist [`exec-memory.md`](./exec-memory.md) + `main_docs/root/MEMORY_ARCHITECTURE.md`. Hier: **was zur Laufzeit in welcher Reihenfolge in den Prompt geht**, Token-Budget, **Compaction-Orchestrierung**, **Provider-/Engine-Caching**, und Anbindung an `context/merge.py` / `agent/llm_client.py`.
+> Root-Agent-Referenzen: `main_docs/root/AGENT_ARCHITECTURE.md`, `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md`, `main_docs/root/AGENT_SECURITY.md`, `main_docs/root/AGENT_HARNESS.md`
 
 ---
 
@@ -30,6 +31,9 @@
 |:---------|:------|
 | `main_docs/root/CONTEXT_ENGINEERING.md` | Retrieval-Policies, Relevance, Token-Budget, Multi-Source-Merge, Consumer-Matrix |
 | `main_docs/root/MEMORY_ARCHITECTURE.md` | M1–M5, Working Memory, epistemische Trennung |
+| `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md` | verbindliche Policy-Tiers und Memory-/Retrieval-Grenzen |
+| `main_docs/root/AGENT_SECURITY.md` | Retrieval Broker, Capability Envelope, Source-/Policy-Gates |
+| `main_docs/root/AGENT_HARNESS.md` | Constrain/Inform/Verify/Correct, Runtime-Governance |
 | `main_docs/root/RAG_GRAPHRAG_STRATEGY_2026.md` | Dual Pipeline, UQ-Gates — wenn RAG-Teile in den Kontext gemerged werden |
 | `main_docs/specs/EXECUTION_PLAN.md` | ggf. `agent_memory_context_delta` / verwandte Deltas |
 
@@ -166,7 +170,19 @@ Explizite Arbeitspunkte (Inhalt früher in `exec-memory` §3f — **nicht entfer
 
 **Observability**
 
-- [ ] Usage auslesen: `cached_tokens` / Äquivalent; Logging für Compaction-Triggers + geschätzte Kontextauslastung
+- [~] Usage auslesen: `cached_tokens` / Äquivalent; `llm_node` hebt `prompt_tokens_details.cached_tokens` jetzt in Runtime-/Session-Metadaten, Logging für Compaction-Triggers + geschätzte Kontextauslastung bleibt offen
+
+**Frontend-Vertrag (nicht nur Backend)**
+
+- [~] `python-backend/agent/streaming.py`: `MessageMetaPacket` bleibt generisch, traegt jetzt aber via `runner.py` echte Context-Diagnostik (`sourceLayerCounts`, `degradationFlags`, `provider`, `contextBlocks`)
+- [x] `python-backend/agent/graph/runner.py`: Runtime-Merge-/Context-Signale gehen jetzt als echte SSE-Metadaten raus statt `threadId` + Token-Platzhalter
+- [x] `control-ui/src/app/api/control/[...path]/route.ts`: generischer BFF reicht jetzt auch `/control/context` an den Go-/Python-Pfad weiter
+- [x] `python-backend/agent/control/context.py` + `agent/control/context_runtime.py`: kanonischer Runtime-/Prompt-Inspector-Vertrag fuer `control-ui` existiert jetzt als eigener `/api/v1/control/context`-Pfad
+- [x] `control-ui/src/features/control/components/ContextTab.tsx`: eigener `Context`-Tab surfacet Layer-/Provenance-/Degradation-Signale und trennt diese Sicht bewusst von `/memory`
+- [x] `agent-chat/src/hooks/useChatSession.ts`: liest jetzt neben `promptTokens`/`completionTokens` auch Context-/Layer-Metadaten aus `message.metadata`
+- [x] `agent-chat/src/components/AgentChatEventRail.tsx`: surfacet jetzt neben `contextPressure` auch sichtbare Layer-/Degradation-Signale
+- [~] `agent-chat/src/components/AgentChatSources.tsx` und/oder `agent-chat/src/components/AgentChatMessage.tsx`: Message-Badge zeigt jetzt `cachedTokens`, eigentliche Memory-/World-/KB-Provenance im Message-Body bleibt offen
+- [~] `agent-chat/src/app/api/agent/chat/route.ts` + `go-appservice/internal/handlers/http/agent_chat_handler.go`: bestehender Pass-through bleibt intakt und neue Metadata-Frames gehen unveraendert durch; expliziter Verify-Lauf steht noch aus
 
 **Consumer- und Layer-Policies (aus `memory_kg.md`)**
 
@@ -180,7 +196,7 @@ Explizite Arbeitspunkte (Inhalt früher in `exec-memory` §3f — **nicht entfer
 
 - [ ] Sichtbare Flags fuer fehlende Schichten definieren und im Merge-Pfad mitfuehren: z. B. `NO_WORLD_KG`, `NO_WORLD_EVIDENCE`, `NO_PERSONAL_MEMORY`, `NO_PERSONAL_KB`, `WORLD_CLAIM_CONFLICT`
 - [ ] Keine stillen Fallbacks: wenn `world`/`KB`/`memory` fehlt, muss der Prompt-/Response-Metadatenpfad das markieren
-- [~] Response-/Context-Metadaten pro Block vorsehen: `source_layer`, `source_type`, `provenance_ref`, `status`, `freshness` — `memory_fusion` liefert bereits `memory_layer`/`source_type`/`provenance_ref`/`grounding_status`, echter Context-Block-Metadatenpfad fehlt noch
+- [~] Response-/Context-Metadaten pro Block vorsehen: `source_layer`, `source_type`, `provenance_ref`, `status`, `freshness` — `memory_fusion` liefert bereits `memory_layer`/`source_type`/`provenance_ref`/`grounding_status`; `control-ui` surfacet jetzt Block-Metadaten, `freshness`/vollstaendige Policy-Signale bleiben noch offen
 
 **Mittelfrist**
 
@@ -200,9 +216,15 @@ Explizite Arbeitspunkte (Inhalt früher in `exec-memory` §3f — **nicht entfer
 - Metriken: `cache_hit_rate`, Tokens pre/post Compaction, Latenz p95 pro Provider, **Kosten pro Turn** (Memory-Paper 5.5: Cost gehört ins Eval)
 - Tests: „gleiche Session, gleicher Prefix“ → erwartete `cached_tokens` > 0 (wo Provider das hergibt)
 - Gate: Kein Production-Compaction ohne definiertes Verbatim- oder Audit-Backstop (exec-memory)
+- Gate: Kein Production-Merge auf Personal-Memory-Daten, bevor der Memory-seitige Postgres-E2E-Smoke fuer Guardrails dokumentiert gruen ist (`python-backend/experiments/memory_eval/run_memory_fusion_e2e_smoke.py`)
 - Gate: Kein Production-Merge ohne sichtbare Layer-/Degradation-Flags wenn `world`, `personal KB` oder `memory` fehlen
+- [ ] Verify E2E: live `control-ui`-Request auf `/control/context` und `/memory` laeuft ueber `control-ui/src/app/api/control/[...path]/route.ts` bzw. `control-ui/src/app/api/memory/[...path]/route.ts` -> `go-appservice/internal/handlers/http/control_proxy_handler.go` -> `python-backend/agent/control/context.py` / `python-backend/agent/control/memory.py` und liefert **nicht nur Mock-Fallback**, sondern echte `activeSession`, `sourceLayerCounts`, `contextBlocks`, `degradationFlags`, `worldClaims`
+  - Blockiert bis lokale `.env`/Gateway-/Frontend-Voraussetzungen vorhanden sind: mindestens `control-ui`-Dev-Server, Go Appservice, Python Agent-Service und deren Base-URLs/Auth-Header muessen wirklich laufen
+  - Verify muss explizit pruefen, dass React Query nicht auf `mockContextInspector` / `mockMemoryOverview` faellt, sondern echte HTTP-Responses aus dem Runtime-Pfad rendert
 - Gate: `global world KG`-Treffer werden im Runtime-Output nicht ohne `status` / `provenance` verwendet
 - Gate: `personal knowledgebase` wird als eigene Schicht getestet und nicht nur ueber `memory`-Queries zufaellig mitgezogen
+- Gate: `control_ui` surfacet Context nicht nur als grobe Health-/Ops-Daten, sondern als eigener Inspector-Tab mit Layer-/Provenance-/Degradation-Signalen (`control-ui/src/features/control/components/ContextTab.tsx`, `control-ui/src/app/api/control/[...path]/route.ts`, `python-backend/agent/control/context.py`)
+- Gate: Agent-Chat surfacet Context nicht nur als Web-`Sources`, sondern kann Layer-/Provenance-/Degradation-Signale aus `message.metadata` oder gleichwertigem Vertrag sichtbar machen (`agent-chat/src/hooks/useChatSession.ts`, `agent-chat/src/components/AgentChatEventRail.tsx`, `agent-chat/src/components/AgentChatSources.tsx`, `agent-chat/src/components/AgentChatMessage.tsx`)
 
 ---
 

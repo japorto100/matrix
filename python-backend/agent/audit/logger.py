@@ -20,6 +20,9 @@ class AuditAction(StrEnum):
     # Legacy APPROVAL_* removed — replaced by CONSENT_REQUEST/CONSENT_DECISION
     MEMORY_RECALL = "memory_recall"
     MEMORY_RETAIN = "memory_retain"
+    MEMORY_LIST = "memory_list"
+    MEMORY_GET = "memory_get"
+    MEMORY_DELETE = "memory_delete"
     SANDBOX_EXEC = "sandbox_exec"
     CONSENT_REQUEST = "consent_request"
     CONSENT_DECISION = "consent_decision"

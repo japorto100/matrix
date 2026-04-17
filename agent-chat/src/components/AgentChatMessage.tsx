@@ -265,6 +265,7 @@ function AgentChatMessageInner({
 									>
 										{usage.promptTokens}↑ {usage.completionTokens}↓
 										{usage.reasoningTokens ? ` ${usage.reasoningTokens}🧠` : ""}
+										{usage.cachedTokens ? ` ${usage.cachedTokens}⚡` : ""}
 										{usage.costUsd !== undefined && (
 											<span className="ml-1 text-muted-foreground/30">
 												{formatCost(usage.costUsd)}

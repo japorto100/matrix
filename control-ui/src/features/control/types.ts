@@ -278,6 +278,55 @@ export interface OverviewSnapshot {
 	}[];
 }
 
+export interface ContextInspectorBlock {
+	id: string;
+	title: string;
+	preview: string;
+	sourceLayer: string;
+	sourceType: string;
+	artifactType: string;
+	groundingStatus: string;
+	provenanceRef: string;
+	status: string;
+	route?: string;
+	tokenCount?: number;
+}
+
+export interface ContextActiveSession {
+	sessionId?: string | null;
+	threadId?: string | null;
+	status?: string | null;
+	provider?: string | null;
+	model?: string | null;
+	promptTokens?: number;
+	completionTokens?: number;
+	reasoningTokens?: number;
+	cachedTokens?: number;
+	totalTokens?: number;
+	contextPressure?: number;
+	updatedAt?: string | null;
+}
+
+export interface ContextInspectorStats {
+	memoryProvider: string;
+	kgNodeCount: number;
+	kgEdgeCount: number;
+	kgHealth: "healthy" | "degraded" | "offline" | "unknown";
+	hasPersistedRunMetadata: boolean;
+	liveContextBlockCount: number;
+}
+
+export interface ContextInspectorResponse {
+	stats: ContextInspectorStats;
+	activeSession?: ContextActiveSession | null;
+	sourceLayerCounts: Record<string, number>;
+	contextBlocks: ContextInspectorBlock[];
+	degradationFlags: string[];
+	worldClaims: ContextInspectorBlock[];
+	userId: string;
+	bankId: string;
+}
+
 // Security Tab (TT8 - both modes)
 export type SecurityPillarStatus = "good" | "warning" | "critical";
 

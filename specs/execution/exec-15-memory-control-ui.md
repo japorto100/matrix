@@ -1759,16 +1759,40 @@ duerfen in der UI nicht als dieselbe Sache erscheinen.
 | `memory_kg.md` | Consumer-Typen, Degradation-Flags, Layer-Trennung |
 | `exec-context.md` | Runtime-Owner fuer Merge / Degradation |
 
+Aktueller `control_ui`-Ist-Stand:
+
+- `control-ui/src/features/memory/components/MemoryHealthCards.tsx` bleibt die
+  kompakte Memory-Health-Sicht
+- `control-ui/src/features/memory/components/MemoryRuntimeInspector.tsx`
+  surfacet bereits `sourceLayerCounts`, `degradationFlags` und `contextBlocks`
+- `control-ui/src/features/control/components/ContextTab.tsx` ist jetzt der
+  eigene Runtime-/Prompt-Inspector fuer Layer, Provenance und World-Claims
+- `control-ui/src/app/api/memory/[...path]/route.ts` und
+  `control-ui/src/app/api/control/[...path]/route.ts` reichen diese Vertraege
+  an Go/Python weiter
+
+Naechster Schritt ist deshalb **nicht** ein komplett neues UI erfinden, sondern
+die bestehenden `control_ui`-Surfaces vom reinen Health-/Ops-Blick zu einem
+echten Memory/KB/World-Inspector ausbauen.
+
 - [ ] **6b.3.1:** Response-/Detail-Surfaces zeigen `source_layer` badges: `world`, `personal memory`, `personal KB`
+- [x] **6b.3.1a:** `MemoryRuntimeInspector.tsx` surfacet jetzt neben Layer-Health auch `sourceLayerCounts`, `contextBlocks`, `sourceType`, `artifactType`, `groundingStatus`
 - [ ] **6b.3.2:** Sichtbare Flags fuer fehlende Schichten vorsehen: `NO_WORLD_KG`, `NO_WORLD_EVIDENCE`, `NO_PERSONAL_KB`, `WORLD_CLAIM_CONFLICT`
+- [x] **6b.3.2a:** `/api/memory/health` und `/api/control/context` liefern jetzt explizite `degradationFlags` ueber den Inspector-Vertrag, nicht mehr nur Health-Fallbacks
 - [ ] **6b.3.3:** Frontend darf `world claim` nie wie eine nackte Tatsache rendern; `status` + `provenance` sichtbar machen
+- [x] **6b.3.3a:** `ContextTab.tsx` zeigt jetzt `worldClaims` mit `status` + `provenance`; echter World-Model-Browser ueber Runtime-Claims hinaus bleibt offen
 - [ ] **6b.3.4:** KB-Treffer im UI als user-owned Artefakte markieren, nicht als globale Wahrheit
+- [x] **6b.3.4a:** `control_ui` ist jetzt die primaere Inspector-Oberflaeche fuer denselben Runtime-Vertrag, den Agent-Chat nur kompakter surfacet
 
 **Verify Gate Phase 6b:**
 - [ ] Ein gespeicherter Artikel landet sichtbar in `Personal KB`, nicht in `Episodes`
 - [ ] Ein globaler Claim ist in der UI mit Status + Provenance sichtbar
+- [ ] Live-E2E: `control-ui` zeigt unter `/memory` und `/control/context` echte Inspector-Daten aus dem Runtime-Pfad, nicht nur Mock-Fallback (`control-ui` BFF -> Go `ControlProxyHandler` -> Python `agent/control/memory.py` + `agent/control/context.py`)
+  - aktuell bewusst offen: lokale `.env`/Stack-Voraussetzungen fuer `control-ui`/Go/Python fehlen noch, daher kein valider Browser-/HTTP-Verify moeglich
+  - beim Verify explizit pruefen: `mockContextInspector` und `mockMemoryOverview` bleiben unbenutzt, Requests landen wirklich auf den BFF-Routen und liefern echte Inspector-Payloads
 - [ ] `Memory Browser`, `Personal KB` und `World Model` haben getrennte Navigation / Terminologie
 - [ ] Degradation-/Layer-Badges sind in mindestens einer Detailansicht sichtbar
+- [x] `MemoryRuntimeInspector` + `ContextTab` zeigen jetzt nicht mehr nur Health, sondern einen echten Inspector-Pfad mit `sourceLayer` / `sourceType` / `provenance`
 
 ---
 

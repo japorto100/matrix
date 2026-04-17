@@ -1,9 +1,4 @@
-"""Control Surface — Memory Layer Health (Slice 3 backend).
-
-Queries Hindsight's MemoryEngine directly (not the legacy memory_engine/episodic_store.py).
-Returns layers in the shape the frontend MemoryHealthCards expects:
-  { layers: [{type, provider, health, item_count, last_sync_at, consolidation_pending}, ...] }
-"""
+"""Control Surface — memory ops + runtime inspector payloads."""
 
 from __future__ import annotations
 
@@ -12,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
+from agent.control.context_runtime import build_runtime_inspector, normalize_health
 from agent.control.request_scope import get_effective_scope
 from agent.memory.engine import get_bank_id, get_memory_engine, get_memory_provider
 
@@ -20,100 +16,137 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["control", "memory"])
 
 
-def _health_to_frontend(health_str: str) -> str:
-    """Map backend status strings to frontend MemoryLayer.health (ok|degraded|error)."""
-    if health_str in ("ready", "ok"):
-        return "ok"
-    if health_str in ("degraded", "warning"):
-        return "degraded"
+def _layer_entry(layer_type: str, provider: str) -> dict[str, Any]:
+    return {
+        "type": layer_type,
+        "provider": provider,
+        "health": "unknown",
+        "itemCount": 0,
+        "lastSyncAt": None,
+        "consolidationPending": 0,
+    }
+
+
+def _legacy_health(value: str) -> str:
+    if value in {"healthy", "degraded", "offline", "unknown"}:
+        return {"healthy": "ok", "degraded": "degraded", "offline": "error", "unknown": "error"}[value]
     return "error"
 
 
+def _legacy_layer(entry: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": entry.get("type"),
+        "provider": entry.get("provider"),
+        "health": _legacy_health(str(entry.get("health") or "")),
+        "item_count": int(entry.get("itemCount") or 0),
+        "last_sync_at": entry.get("lastSyncAt"),
+        "consolidation_pending": int(entry.get("consolidationPending") or 0),
+    }
+
+
+@router.get("/memory")
 @router.get("/memory/health")
 async def get_memory_health(request: Request, user_id: str = "local") -> dict[str, Any]:
-    """Memory layer health for control-ui MemoryHealthCards.
+    """Memory overview for control-ui.
 
-    Returns the frontend `MemoryOverviewResponse` shape:
-      { layers: [{type, provider, health, item_count, last_sync_at,
-                   consolidation_pending}, ...] }
-
-    Layer types:
-    - episodic: memory_units via Hindsight
-    - kg: Trading KG via memory_engine/kg_store.py (Kuzu, Trading domain)
-    - vector: pgvector (Hindsight backend, same store)
+    The payload intentionally contains:
+    - `layers`: stable ops/health cards for the existing UI
+    - `ops`: same data grouped explicitly for future consumers
+    - `inspector`: semantically enriched runtime/context diagnostics
     """
     scope = get_effective_scope(request, user_id=user_id)
     bank_id = get_bank_id(scope.user_id)
-    layers: list[dict[str, Any]] = []
+    degraded_reasons: list[str] = []
 
-    # ─── Episodic + Vector (both from Hindsight) ────────────────────────────
     memory_provider = get_memory_provider()
     vector_provider = "chromadb" if memory_provider == "mempalace" else "pgvector"
+    episodic_entry = _layer_entry("episodic", memory_provider)
+    vector_entry = _layer_entry("vector", vector_provider)
+    kg_entry = _layer_entry("kg", "kuzu")
 
-    episodic_entry: dict[str, Any] = {
-        "type": "episodic",
-        "provider": memory_provider,
-        "health": "error",
-        "item_count": 0,
-        "last_sync_at": None,
-        "consolidation_pending": 0,
-    }
-    vector_entry: dict[str, Any] = {
-        "type": "vector",
-        "provider": vector_provider,
-        "health": "error",
-        "item_count": 0,
-        "last_sync_at": None,
-        "consolidation_pending": 0,
-    }
+    engine = None
     try:
         engine = await get_memory_engine()
         if engine is None:
             episodic_entry["health"] = "degraded"
             vector_entry["health"] = "degraded"
+            degraded_reasons.append("MEMORY_ENGINE_DISABLED")
         else:
             from hindsight_api.models import RequestContext
 
             req_ctx = RequestContext()
             units_result = await engine.list_memory_units(
-                bank_id=bank_id, limit=1, offset=0, request_context=req_ctx
+                bank_id=bank_id,
+                limit=1,
+                offset=0,
+                request_context=req_ctx,
+                consumer="frontend_ui",
             )
             total = int(units_result.get("total", 0))
-            episodic_entry["health"] = "ok"
-            episodic_entry["item_count"] = total
-            # pgvector shares the backend — same count
-            vector_entry["health"] = "ok"
-            vector_entry["item_count"] = total
+            episodic_entry["health"] = "healthy"
+            episodic_entry["itemCount"] = total
+            vector_entry["health"] = "healthy"
+            vector_entry["itemCount"] = total
+            if hasattr(engine, "get_bank_stats"):
+                stats = await engine.get_bank_stats(bank_id, request_context=req_ctx)
+                pending = int(stats.get("pending_consolidation", 0))
+                episodic_entry["consolidationPending"] = pending
+                vector_entry["consolidationPending"] = pending
     except Exception as e:  # noqa: BLE001
         logger.warning("episodic/vector health failed: %s", e)
+        episodic_entry["health"] = "offline"
+        vector_entry["health"] = "offline"
+        degraded_reasons.append("MEMORY_ENGINE_ERROR")
 
-    layers.append(episodic_entry)
-
-    # ─── KG (Trading KG via memory_engine/kg_store.py — NOT legacy) ────────
-    kg_entry: dict[str, Any] = {
-        "type": "kg",
-        "provider": "kuzu",
-        "health": "error",
-        "item_count": 0,
-        "last_sync_at": None,
-        "consolidation_pending": 0,
-    }
+    kg_node_count = 0
     try:
         from memory_engine.kg_store import create_kg_store
 
         kg = create_kg_store()
-        kg_entry["health"] = _health_to_frontend(kg.status())
-        kg_entry["item_count"] = kg.node_count()
+        kg_node_count = kg.node_count()
+        kg_entry["health"] = normalize_health(kg.status())
+        kg_entry["itemCount"] = kg_node_count
     except Exception as e:  # noqa: BLE001
         logger.warning("kg health failed: %s", e)
+        kg_entry["health"] = "offline"
+        degraded_reasons.append("KG_UNAVAILABLE")
 
-    layers.append(kg_entry)
-    layers.append(vector_entry)
+    inspector = await build_runtime_inspector(
+        engine=engine,
+        user_id=scope.user_id,
+        bank_id=bank_id,
+        provider=memory_provider,
+        kg_node_count=kg_node_count,
+    )
+    last_sync_at = (
+        inspector.get("activeSession", {}).get("updatedAt")
+        or inspector.get("activeSession", {}).get("completedAt")
+        or inspector.get("activeSession", {}).get("startedAt")
+    )
+    for entry in (episodic_entry, vector_entry, kg_entry):
+        if not entry.get("lastSyncAt"):
+            entry["lastSyncAt"] = last_sync_at
+
+    layers = [episodic_entry, kg_entry, vector_entry]
+    legacy_layers = [_legacy_layer(entry) for entry in layers]
+    degraded = bool(degraded_reasons)
 
     return {
-        "layers": layers,
+        "ops": {
+            "layers": layers,
+            "degraded": degraded,
+            "degradedReasons": degraded_reasons,
+        },
+        "inspector": inspector,
+        "queryGate": inspector.get("queryGate", {}),
+        "layers": legacy_layers,
+        "degraded": degraded,
+        "degraded_reasons": degraded_reasons,
+        "degradedReasons": degraded_reasons,
         "user_id": scope.user_id,
+        "userId": scope.user_id,
         "bank_id": bank_id,
+        "bankId": bank_id,
     }
 
 

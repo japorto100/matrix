@@ -13,6 +13,7 @@ import type {
 	A2ADelegation,
 	AgentRole,
 	AuditEvent,
+	ContextInspectorResponse,
 	EnvVar,
 	LlmProvider,
 	McpServer,
@@ -41,6 +42,16 @@ export const overviewKeys = {
 export const overviewQueries = {
 	snapshot: async (userId = "local"): Promise<OverviewSnapshot> =>
 		apiGet<OverviewSnapshot>(`/api/control/overview?user_id=${encodeURIComponent(userId)}`),
+};
+
+export const contextKeys = {
+	all: ["control", "context"] as const,
+	inspector: (userId = "local") => ["control", "context", "inspector", userId] as const,
+};
+
+export const contextQueries = {
+	inspector: async (userId = "local"): Promise<ContextInspectorResponse> =>
+		apiGet<ContextInspectorResponse>(`/api/control/context?user_id=${encodeURIComponent(userId)}`),
 };
 
 // ─── Agents ────────────────────────────────────────────────────────────────
