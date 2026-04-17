@@ -1,0 +1,1 @@
+export { RoomInfoPanel } from "./RoomInfoPanel";

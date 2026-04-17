@@ -1,0 +1,99 @@
+// Shared fetcher helper for useQuery — all tabs use this.
+// Returns typed data, throws on non-2xx with formatted error.
+
+export class ApiError extends Error {
+	constructor(
+		public status: number,
+		public url: string,
+		message: string,
+	) {
+		super(message);
+	}
+}
+
+export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method: "GET",
+		headers: {
+			accept: "application/json",
+			...(init?.headers ?? {}),
+		},
+		cache: "no-store",
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new ApiError(res.status, path, text || res.statusText);
+	}
+	return (await res.json()) as T;
+}
+
+export async function apiPost<T>(path: string, body?: unknown, init?: RequestInit): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method: "POST",
+		headers: {
+			accept: "application/json",
+			"content-type": "application/json",
+			...(init?.headers ?? {}),
+		},
+		body: body === undefined ? null : JSON.stringify(body),
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new ApiError(res.status, path, text || res.statusText);
+	}
+	return (await res.json()) as T;
+}
+
+export async function apiPatch<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method: "PATCH",
+		headers: {
+			accept: "application/json",
+			"content-type": "application/json",
+			...(init?.headers ?? {}),
+		},
+		body: JSON.stringify(body),
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new ApiError(res.status, path, text || res.statusText);
+	}
+	return (await res.json()) as T;
+}
+
+export async function apiPut<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method: "PUT",
+		headers: {
+			accept: "application/json",
+			"content-type": "application/json",
+			...(init?.headers ?? {}),
+		},
+		body: JSON.stringify(body),
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new ApiError(res.status, path, text || res.statusText);
+	}
+	return (await res.json()) as T;
+}
+
+export async function apiDelete<T>(path: string, init?: RequestInit): Promise<T> {
+	const res = await fetch(path, {
+		...init,
+		method: "DELETE",
+		headers: {
+			accept: "application/json",
+			...(init?.headers ?? {}),
+		},
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		throw new ApiError(res.status, path, text || res.statusText);
+	}
+	return (await res.json()) as T;
+}
