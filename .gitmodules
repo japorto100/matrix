@@ -49,3 +49,6 @@
 [submodule "_ref/EvoSkill"]
 	path = _ref/EvoSkill
 	url = https://github.com/sentient-agi/EvoSkill.git
+[submodule "_ref/hermes-agent"]
+	path = _ref/hermes-agent
+	url = https://github.com/nousresearch/hermes-agent.git
