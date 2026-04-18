@@ -18,7 +18,7 @@ from typing import Any
 import psycopg
 from fastapi import APIRouter
 
-from agent.memory.engine import get_bank_id, get_memory_engine
+from memory_fusion.engine import get_bank_id, get_memory_engine
 
 logger = logging.getLogger(__name__)
 

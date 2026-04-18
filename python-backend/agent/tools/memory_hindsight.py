@@ -50,7 +50,7 @@ class MemorySearchTool(TradingTool):
         }
 
     async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
-        from agent.memory.engine import get_bank_id, get_memory_engine
+        from memory_fusion.engine import get_bank_id, get_memory_engine
 
         engine = await get_memory_engine()
         if engine is None:
@@ -104,7 +104,7 @@ class MemoryAddTool(TradingTool):
         }
 
     async def execute(self, tool_input: dict, ctx: AgentExecutionContext) -> dict:
-        from agent.memory.engine import get_bank_id, get_memory_engine
+        from memory_fusion.engine import get_bank_id, get_memory_engine
 
         engine = await get_memory_engine()
         if engine is None:

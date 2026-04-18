@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from agent.control.request_scope import effective_user_id
-from agent.memory.engine import get_bank_id, get_memory_engine
+from memory_fusion.engine import get_bank_id, get_memory_engine
 
 router = APIRouter(tags=["control", "highlights"])
 
