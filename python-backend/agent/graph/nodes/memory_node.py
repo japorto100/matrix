@@ -317,8 +317,8 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
     Quality Gates: Hindsight built-in (coreference, self-containment, temporal).
     Read-only Rollen retainen nicht.
     """
-    from memory_fusion.engine import get_bank_id, get_memory_engine
     from agent.tracing import memory_span
+    from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
     if engine is None:
