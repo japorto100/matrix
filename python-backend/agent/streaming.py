@@ -95,7 +95,7 @@ class ErrorPacket:
     metadata: dict | None = None
 
 
-def build_error_packet_with_failover(exc: BaseException, prefix: str = "") -> "ErrorPacket":
+def build_error_packet_with_failover(exc: BaseException, prefix: str = "") -> ErrorPacket:
     """Build an ErrorPacket whose ``metadata`` carries failover taxonomy info.
 
     Telemetry-only for Phase-1 wiring (runner/refiner): downstream consumers

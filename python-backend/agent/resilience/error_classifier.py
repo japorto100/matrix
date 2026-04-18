@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import Optional
 
 from litellm import exceptions as _lexc
 
@@ -74,7 +73,7 @@ class ClassificationResult:
 
     reason: FailoverReason
     recovery: RecoveryStrategy
-    status_code: Optional[int] = None
+    status_code: int | None = None
     message: str = ""
     retryable: bool = True
 
@@ -317,13 +316,13 @@ def classify_error(exc: Exception) -> ClassificationResult:
     return _build(FailoverReason.unknown, status_code, str(exc))
 
 
-def _status_code(exc: BaseException) -> Optional[int]:
+def _status_code(exc: BaseException) -> int | None:
     """Walk the exception + cause chain for an HTTP status code.
 
     Accepts both ``int`` and numeric-string codes — some providers set
     ``status_code = "429"`` from JSON bodies.
     """
-    current: Optional[BaseException] = exc
+    current: BaseException | None = exc
     for _ in range(5):
         if current is None:
             break
@@ -347,7 +346,7 @@ def _status_code(exc: BaseException) -> Optional[int]:
 
 
 def _build(
-    reason: FailoverReason, status_code: Optional[int], message: str
+    reason: FailoverReason, status_code: int | None, message: str
 ) -> ClassificationResult:
     return ClassificationResult(
         reason=reason,

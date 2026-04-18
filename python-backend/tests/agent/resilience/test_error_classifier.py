@@ -228,8 +228,8 @@ def test_auth_message_defers_to_billing_match():
     )
 
     # Primary auth path stays first-priority: a 401 still wins.
-    class _Auth401(Exception):
+    class _Auth401Error(Exception):
         status_code = 401
 
-    result_401 = classify_error(_Auth401("irrelevant message"))
+    result_401 = classify_error(_Auth401Error("irrelevant message"))
     assert result_401.reason is FailoverReason.auth

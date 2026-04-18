@@ -9,9 +9,7 @@ Covers:
 """
 from __future__ import annotations
 
-import os
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from litellm.exceptions import (
@@ -23,7 +21,6 @@ from litellm.exceptions import (
 )
 
 from agent.streaming import ErrorPacket, build_error_packet_with_failover
-
 
 # ---------------------------------------------------------------------------
 # Phase A.1 — ErrorPacket metadata + helper

@@ -26,8 +26,9 @@ Header schema (12 headers; four windows):
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, List, Mapping, Optional
+from typing import Any
 
 __all__ = [
     "RateLimitBucket",
@@ -190,7 +191,7 @@ class RateLimitRegistry:
         user_id: str,
         provider_key_id: str,
         provider: str = "",
-    ) -> List[RateLimitBucket]:
+    ) -> list[RateLimitBucket]:
         """Parse rate-limit headers from ``response`` and store per-window buckets.
 
         Returns the list of buckets captured (always one per window — missing
@@ -200,7 +201,7 @@ class RateLimitRegistry:
         lowered = {str(k).lower(): v for k, v in raw.items()}
         now = time.time()
 
-        captured: List[RateLimitBucket] = []
+        captured: list[RateLimitBucket] = []
         for window in WINDOWS:
             bucket = _parse_window(
                 lowered,
@@ -216,10 +217,10 @@ class RateLimitRegistry:
 
     def get(
         self, user_id: str, provider_key_id: str, window: str
-    ) -> Optional[RateLimitBucket]:
+    ) -> RateLimitBucket | None:
         return self._buckets.get((user_id, provider_key_id, window))
 
-    def all(self) -> List[RateLimitBucket]:
+    def all(self) -> list[RateLimitBucket]:
         return list(self._buckets.values())
 
     def clear(self) -> None:

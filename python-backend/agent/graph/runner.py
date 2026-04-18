@@ -9,7 +9,6 @@ from collections.abc import AsyncGenerator
 from agent.context import AgentExecutionContext
 from agent.graph.agent_graph import MAX_ITERATIONS, create_agent_graph
 from agent.streaming import (
-    ErrorPacket,
     FinishPacket,
     MessageMetaPacket,
     StepStartPacket,

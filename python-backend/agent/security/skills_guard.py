@@ -31,10 +31,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import PurePath
-from typing import Iterable, List, Mapping, Tuple
 
 __all__ = [
     "Finding",
@@ -60,7 +60,7 @@ TRUSTED_REPOS = {"openai/skills", "anthropics/skills"}
 #: (safe, caution, dangerous) decision per trust-level.
 #: Enterprise adaptation: ``matrix-official`` sits between ``trusted`` and
 #: ``community``.
-INSTALL_POLICY: dict[str, Tuple[str, str, str]] = {
+INSTALL_POLICY: dict[str, tuple[str, str, str]] = {
     #                     safe     caution   dangerous
     "builtin":         ("allow", "allow",   "allow"),
     "trusted":         ("allow", "allow",   "block"),
@@ -94,7 +94,7 @@ class ScanResult:
     source: str
     trust_level: str
     verdict: str       # safe | caution | dangerous
-    findings: List[Finding] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
     scanned_at: str = ""
     summary: str = ""
 
@@ -103,7 +103,7 @@ class ScanResult:
 # Threat patterns — (regex, pattern_id, severity, category, description)
 # ---------------------------------------------------------------------------
 
-THREAT_PATTERNS: List[Tuple[str, str, str, str, str]] = [
+THREAT_PATTERNS: list[tuple[str, str, str, str, str]] = [
     # ── Exfiltration: shell commands leaking secrets ──
     (r'curl\s+[^\n]*\$\{?\w*(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|API)',
      "env_exfil_curl", "critical", "exfiltration",
@@ -430,7 +430,7 @@ INVISIBLE_CHARS = {
 # Scanning
 # ---------------------------------------------------------------------------
 
-def scan_content(content: str, rel_path: str) -> List[Finding]:
+def scan_content(content: str, rel_path: str) -> list[Finding]:
     """Scan a single file's content (as a string) for threat patterns.
 
     Args:
@@ -441,7 +441,7 @@ def scan_content(content: str, rel_path: str) -> List[Finding]:
     Returns:
         List of :class:`Finding`, deduplicated per ``(pattern_id, line)``.
     """
-    findings: List[Finding] = []
+    findings: list[Finding] = []
     lines = content.split("\n")
 
     # Invisible-unicode scan runs for ANY text file (including .rst/.adoc/.org
@@ -469,7 +469,7 @@ def scan_content(content: str, rel_path: str) -> List[Finding]:
     if pp.suffix.lower() not in SCANNABLE_EXTENSIONS and pp.name != "SKILL.md":
         return findings
 
-    seen: set[Tuple[str, int]] = set()
+    seen: set[tuple[str, int]] = set()
     for pattern, pid, severity, category, description in THREAT_PATTERNS:
         for i, line in enumerate(lines, start=1):
             if (pid, i) in seen:
@@ -492,14 +492,14 @@ def scan_content(content: str, rel_path: str) -> List[Finding]:
     return findings
 
 
-def _check_structure_in_memory(files: Mapping[str, str]) -> List[Finding]:
+def _check_structure_in_memory(files: Mapping[str, str]) -> list[Finding]:
     """Structural checks adapted for in-memory file-dicts.
 
     Drops the symlink / binary-ext / executable-bit checks from the hermes
     reference (those require filesystem introspection). Keeps: file-count,
     total-size, per-file-size.
     """
-    findings: List[Finding] = []
+    findings: list[Finding] = []
     file_count = len(files)
     total_size = 0
 
@@ -574,7 +574,7 @@ def scan_skill(skill: Mapping[str, object], source: str = "community") -> ScanRe
         files[str(k)] = v
 
     trust_level = _resolve_trust_level(source)
-    findings: List[Finding] = []
+    findings: list[Finding] = []
 
     findings.extend(_check_structure_in_memory(files))
     for rel_path, content in files.items():
@@ -589,7 +589,7 @@ def scan_skill(skill: Mapping[str, object], source: str = "community") -> ScanRe
         trust_level=trust_level,
         verdict=verdict,
         findings=findings,
-        scanned_at=datetime.now(timezone.utc).isoformat(),
+        scanned_at=datetime.now(UTC).isoformat(),
         summary=summary,
     )
 
@@ -600,7 +600,7 @@ def scan_skill(skill: Mapping[str, object], source: str = "community") -> ScanRe
 
 def should_allow_install(
     result: ScanResult, force: bool = False
-) -> Tuple[bool | None, str]:
+) -> tuple[bool | None, str]:
     """Decide whether a scanned skill may be installed.
 
     Returns:
@@ -631,7 +631,7 @@ def should_allow_install(
 
 def format_scan_report(result: ScanResult) -> str:
     """Human-readable report. Enterprise adaptation: includes ``pattern_id``."""
-    lines: List[str] = []
+    lines: list[str] = []
     verdict_display = result.verdict.upper()
     lines.append(
         f"Scan: {result.skill_name} ({result.source}/{result.trust_level})  "
@@ -663,7 +663,7 @@ def format_scan_report(result: ScanResult) -> str:
     return "\n".join(lines)
 
 
-def content_hash(files: Iterable[Tuple[str, str]]) -> str:
+def content_hash(files: Iterable[tuple[str, str]]) -> str:
     """SHA-256 of the skill's files (sorted by path) for integrity tracking."""
     h = hashlib.sha256()
     for path, content in sorted(files, key=lambda pc: pc[0]):
@@ -699,7 +699,7 @@ def _resolve_trust_level(source: str) -> str:
     return "community"
 
 
-def _determine_verdict(findings: List[Finding]) -> str:
+def _determine_verdict(findings: list[Finding]) -> str:
     """Determine overall verdict from findings list."""
     if not findings:
         return "safe"
@@ -709,7 +709,7 @@ def _determine_verdict(findings: List[Finding]) -> str:
 
 
 def _build_summary(
-    name: str, source: str, trust: str, verdict: str, findings: List[Finding]
+    name: str, source: str, trust: str, verdict: str, findings: list[Finding]
 ) -> str:
     """Build a one-line summary of the scan result."""
     if not findings:

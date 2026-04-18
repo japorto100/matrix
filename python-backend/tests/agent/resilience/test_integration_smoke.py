@@ -12,22 +12,21 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
-
 # ---------------------------------------------------------------------------
 # Imports resolve
 # ---------------------------------------------------------------------------
 
 def test_all_three_modules_importable():
     """The exact imports the harness is expected to rely on must all succeed."""
-    from agent.security.skills_guard import scan_skill  # noqa: F401
     from agent.resilience.error_classifier import (  # noqa: F401
-        classify_error,
         FailoverReason,
+        classify_error,
     )
     from agent.resilience.rate_limit_tracker import (  # noqa: F401
         RateLimitBucket,
         RateLimitRegistry,
     )
+    from agent.security.skills_guard import scan_skill  # noqa: F401
 
 
 # ---------------------------------------------------------------------------
