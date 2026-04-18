@@ -718,32 +718,38 @@ Meta-Harness ist **kein alternativer Pfad im §9.4 Flowchart**. Es ist der **Out
 
 ---
 
-## 10. Konkreter Port-Roadmap (Draft — to be discussed)
+## 10. Konkreter Port-Roadmap (Stand 2026-04-18 — Sprints 1-3 abgearbeitet)
 
-### Sprint 1 (2 Wochen) — Foundation
-- [ ] **§3.1 ContextEngine ABC** — portieren, existing compaction als Default-Impl wrappen
-- [ ] **§3.2 MemoryProvider ABC + MemoryManager** — Hindsight + MemPalace als erste zwei Provider wrappen (parallel, nicht xor!)
-- [ ] **§3.3 Skills-Guard** — standalone-Modul bauen, noch nicht gewired
-- [ ] **§3.4 Error-Classifier** — in LiteLLM-Pipeline einhaken
+### Sprint 1 — Foundation ✅ DONE
+- [x] **§3.1 ContextEngine ABC** — `context/context_engine.py` (commit `7e1d387`). DefaultContextEngine mit 80/85/95-Thresholds, Peer-Service-Pattern (SOTA 2026 hermes + OpenClaw convention).
+- [x] **§3.2 MemoryProvider ABC + MemoryManager** — `memory_fusion/memory_provider.py` (commit `7e1d387`). FusionProvider-Adapter, Error-Isolation, `auto_fusion_provider()` factory.
+- [x] **§3.3 Skills-Guard** — `agent/security/skills_guard.py` (commit `8ff8a6a`), wired in `agent/skills/importer.py` GitHub+ZIP two-pass (commit `19e50c4`). REST 422-reject in `agent/app.py`.
+- [x] **§3.4 Error-Classifier** — `agent/resilience/error_classifier.py` (commit `21fb602`), wired via `build_error_packet_with_failover` in runner.py top-level except + refiner one-retry + llm_node span-event (commit `19e50c4`).
 
-### Sprint 2 (2 Wochen) — Observability & Resilience
-- [ ] **§3.5 Rate-Limit-Tracker** — LiteLLM-Response-Header parsen, OpenObserve-Metriken
-- [ ] **§3.6 Trajectory-Export** — View über `agent.traces` + CLI-Tool
-- [ ] **§4.5 Prompt-Caching** — Anthropic cache_control in llm_client.py
-- [ ] **§6.1-6.2 UX-Gems** — manual-compression-feedback + title-generator
+### Sprint 2 — Observability & Resilience ✅ DONE
+- [x] **§3.5 Rate-Limit-Tracker** — `agent/resilience/rate_limit_tracker.py` (commit `d5fc914`), wired via `get_rate_limit_registry()` singleton + `capture_from_response()` after successful LLM calls (commit `19e50c4`). Span-attributes surface ratelimit.requests.{limit,remaining,usage_pct}.
+- [x] **§3.6 Trajectory-Export** — `agent/trajectory/exporter.py` + `scripts/export_trajectories.py` (commit `e8b3858`). Source-of-truth: `agent.spans.events` JSONB (exec-18 Migration 017), NICHT audit_events (2000-char truncated).
+- [x] **§4.5 Prompt-Caching** — in `llm_node.py` (fix commit `9fe9a58`): System-prompt-breakpoint unconditional + last-3 non-system rolling window.
+- [ ] **§6.1-6.2 UX-Gems** — manual-compression-feedback + title-generator (control-ui, 1-2h each, backlog)
 
-### Sprint 3 (2-3 Wochen) — Cron + Credentials
-- [ ] **§4.4 Credential-Pool** — multi-key per user, AESGCMVault-integriert
-- [ ] **§4.1 Cron-Scheduler** — Postgres + NATS-basiert, Matrix-Delivery
+### Sprint 3 — Credentials ✅ PARTIALLY DONE
+- [x] **§4.4 Credential-Pool** — `agent/resilience/credential_pool.py` (commit `38b9b64`). ABC + SingleKeyCredentialPool wrapping `get_user_api_key`. `apply_recovery()` dispatcher wires error_classifier → pool (rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed, overloaded/server_error → 5min). Multi-key-per-user bleibt der DB-Schema-Erweiterung überlassen.
+- [ ] **§4.1 Cron-Scheduler** — blockiert auf exec-19 DevStack-Consolidation (NATS-Konsumer-Pattern).
 
-### Sprint 4 (3+ Wochen) — Architektur-Entscheidung
+### Sprint 4 — Architektur-Entscheidung (Backlog)
 - [ ] **§9 Hybrid-Loop-Pfad** — `SimpleAgentLoop` Prototyp (nicht production)
 - [ ] Benchmarks gegen LangGraph auf 5 Task-Typen — **nutzt den gemeinsamen Evaluator aus [`exec-harness.md §4d`](./exec-harness.md#4d-evoskill-evaluator-stage-integration--expliziter-adoption-plan)** mit neuem `hermes_pattern`-Scorer
 - [ ] Entscheidung: Adoption ja/nein, welche Use-Cases via Loop
 
+### Weitere Cleanups (parallel gelandet)
+- [x] `agent/memory/` legacy-selector archiviert → `archive/legacy-agent-memory/` (commit `1338b7d`). Alle 10 call-sites migriert zu `memory_fusion/` (commit `aefce78`).
+- [x] `python-backend/memory/` toter REST-Stub archiviert → `archive/legacy-memory-service/` (commit `72044df`). Nie aktiviert laut docker-compose.yml + keine Python-Importer.
+- [x] 3 pre-existing test failures gefixt (policy.py grounded_derived → L0, kg_store guard loosened für SELECT-literals, kg_store INSERT-guard-contract als Test geschrieben).
+- [x] Memory-dirs READMEs: `memory_fusion/` (primary runtime + ABC), `context/` (ContextEngine + peer-service-pattern), `memory_engine/` (3-memory-types Taxonomie), `archive/` (retirement trail).
+
 ### Später (blockiert auf andere Execs)
-- **§4.2 Skill-Manager-Tool** — braucht exec-skills.md Spec first
-- **§4.3 Checkpoint-Manager** — wartet auf exec-12 Sandbox-Entscheidung
+- **§4.2 Skill-Manager-Tool** — `specs/execution/exec-skills.md` existiert (2026-04-13), aber `agent.agent_skills` DB-flow noch offen
+- **§4.3 Checkpoint-Manager** — wartet auf exec-12 Sandbox-Entscheidung (WASM vs Workspace-Dir)
 - **§5.x Tier-3** — niedrige Priorität, später evaluieren
 
 ---
@@ -909,6 +915,8 @@ onefetch /home/lipfi2/code/matrix/_ref/hermes-agent
 | 2026-04-18 | §9.4 Diagramm um Plan-and-Execute als vierten Pfad erweitert (LangChain-2026-Benchmark +92% accuracy). Neu: §9.6 Empirische Rückendeckung 2026 mit 9 Benchmark-Quellen. Neu: §9.7 Meta-Harness-Klarstellung (Methodologie ≠ Architektur). §13 Referenzen komplett neu aufgebaut mit 40+ URLs in 10 Unter-Abschnitten. |
 | 2026-04-18 | Sprint 4 Benchmarks explizit an gemeinsamen Evaluator aus `exec-harness §4d` gekoppelt (EvoSkill-Stage-4-Adoption). §13.7 um Feedback-Descent (arxiv 2511.07919) + EvoSkill-Adoption-Plan-Cross-Ref ergänzt. |
 | 2026-04-18 | **§3.3 Skills-Guard DONE** (commit `8ff8a6a`, wired `19e50c4`): enterprise port mit dict-input, `matrix-official` trust-level, `pattern_id` im report, invisible-unicode für alle text-files, importer-gating (422 bei reject). **§3.4 Error-Classifier DONE** (commit `21fb602`, wired `19e50c4`): `FailoverReason` incl. `upstream_unavailable`, pure `classify_error`, priority-dispatch, telemetry-only wiring in runner/refiner/llm_node span-events. **§3.5 Rate-Limit-Tracker DONE** (commit `d5fc914`, wired `19e50c4`): per-`(user, provider_key, window)` buckets, LiteLLM `_hidden_params`-shape, `to_prometheus_dict()`, wired via `get_rate_limit_registry()` in `llm_node`. **§3.6 Trajectory DONE** (commit `e8b3858`): ShareGPT JSONL exporter über `agent.spans.events` + `agent.sessions` (exec-18 Migration 017). **§4.5 Prompt-Caching DONE** (fix `9fe9a58`): system-prompt breakpoint nun unconditional + rolling-3 über non-system. Verbleibend Tier-1: §3.1 ContextEngine, §3.2 MemoryProvider. Details siehe §15 Implementation-Status. |
+| 2026-04-18 (Phase A) | **§3.1 ContextEngine ABC DONE** (commit `7e1d387`): `context/context_engine.py` mit `ContextStage` enum, `DefaultContextEngine` (80/85/95 thresholds), predicate helpers, custom-config override. 17 tests. **§3.2 MemoryProvider ABC DONE** (commit `7e1d387`): `memory_fusion/memory_provider.py` mit Fan-out `MemoryManager` + error-isolation + `FusionProvider` concrete + `auto_fusion_provider()` factory. 20 tests. Architecture-Decision: **Peer-Service-Pattern** per 2026 hermes+OpenClaw "two-surface plugin model" — context+memory sind Peers des harness, rufen sich nicht gegenseitig. Dokumentiert in `memory_fusion/README.md` + `context/README.md`. Cleanup: `agent/memory/` → `archive/legacy-agent-memory/` (alle 10 Callers migriert), `python-backend/memory/` (toter REST-Stub) → `archive/legacy-memory-service/`, 3 pre-existing test-failures gefixt, 3 Memory-Dir-READMEs (`memory_fusion/`, `memory_engine/`, `archive/`). |
+| 2026-04-18 (Phase D) | **§4.4 Credential-Pool DONE** (commit `38b9b64`): `agent/resilience/credential_pool.py` mit `CredentialPool` ABC + `SingleKeyCredentialPool` + `apply_recovery()`-dispatcher. Mappt error_classifier.RecoveryStrategy → pool-state: rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed, overloaded/server_error → 5min, no-op bei context/format/timeout/unknown. 28 tests. Bewusst skipped: OAuth-device-code (Nous/Qwen portals) — pure Komplexität für BYO-key Modell, ROI nicht gerechtfertigt. OAuth-Subklasse später als `OAuthCredentialPool(CredentialPool)` wenn SaaS-Reselling-Use-Case kommt. |
 
 ---
 
@@ -922,8 +930,8 @@ Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = i
 - [x] §3.4 `error_classifier` — `agent/resilience/error_classifier.py` (`21fb602`), wired `19e50c4`. 18 tests.
 - [x] §3.5 `rate_limit_tracker` — `agent/resilience/rate_limit_tracker.py` (`d5fc914`), wired `19e50c4`. 10 tests.
 - [x] §3.6 `trajectory` (ShareGPT JSONL) — `agent/trajectory/exporter.py` + `scripts/export_trajectories.py` (`e8b3858`). 18 tests.
-- [~] §3.1 `ContextEngine` ABC — ⬜ nicht gestartet. 3–5d. Blockiert nichts, aber bildet Basis für Hybrid-Architektur §9.
-- [~] §3.2 `MemoryProvider` ABC + MemoryManager — Module existieren (`memory_fusion/` primary unified runtime, plus `agent/memory/` Hindsight-selector und `memory_engine/` Primitives), aber ohne gemeinsames Provider-Interface über `FusionMemoryEngine` hinaus. 5–8d Refactor.
+- [x] §3.1 `ContextEngine` ABC — `context/context_engine.py` (commit `7e1d387`). Default 80/85/95 thresholds, `ContextStage` enum, predicate helpers (should_verbatim_retain / should_compact / should_emergency_compact), custom-config override. 17 tests.
+- [x] §3.2 `MemoryProvider` ABC + MemoryManager — `memory_fusion/memory_provider.py` (commit `7e1d387`). Fan-out coordinator mit per-provider error-isolation, FusionProvider concrete impl, `auto_fusion_provider()` factory, system_prompt_blocks aggregation. 20 tests. Architecture: peer-service pattern per 2026 hermes + OpenClaw "two-surface plugin model" — context+memory sind Peers des harness, rufen sich nicht gegenseitig.
 
 ### Tier 2 — Adapt-with-Adaptation
 
@@ -931,7 +939,7 @@ Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = i
 - [ ] §4.1 Cron-Scheduler — blockiert auf exec-19.
 - [ ] §4.2 Skill-Manager-Tool — exec-skills.md existiert, aber `agent.agent_skills` DB-flow noch offen.
 - [ ] §4.3 Checkpoint-Manager — blockiert auf exec-12 Sandbox-Decision.
-- [ ] §4.4 Credential-Pool — 1w, entkoppelt von anderen blocks.
+- [x] §4.4 Credential-Pool — `agent/resilience/credential_pool.py` (commit `38b9b64`). ABC `CredentialPool` + `SingleKeyCredentialPool` wrapping `get_user_api_key`. `apply_recovery()` dispatcher classifies `ClassificationResult` → rate_limit (1h) / billing (24h) / auth → mark_auth_failed / overloaded+server_error (5min) / no-op (context/format/timeout/unknown). 28 tests. Multi-key-per-user bleibt der DB-Schema-Erweiterung vorbehalten — OAuth-Provider (Nous/Qwen portal) deliberately skipped (BYO-key model macht den Aufwand nicht wett; siehe SOTA-Diskussion im ralph-Log).
 
 ### Tier 3 — Evaluate Carefully
 
@@ -956,9 +964,17 @@ Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = i
 - [x] `get_rate_limit_registry()` Accessor-Pattern in `llm_node.py` (Test-isolable).
 - [x] `_skill_to_scan_input` + `_scan_trust_source_for_tier` helpers in `agent/skills/importer.py`.
 - [x] REST 422 für skills_guard reject in `agent/app.py`.
+- [x] `get_credential_pool()` / `reset_credential_pool()` Accessor-Pattern in `agent/resilience/credential_pool.py` (Test-isolable, mirror von rate_limit_registry).
+- [x] `apply_recovery(pool, credential, classification)` — bridges error_classifier.RecoveryStrategy → pool state mutation. Ein Aufruf pro post-LLM-error.
 - [ ] Frontend TS-types für `ErrorPacket.metadata.failover_reason` — aktuell in `metadata` gebuckt (kein TS-touch nötig), aber konsumierende UI sollte später die Keys typen.
+- [ ] Call-site wiring of CredentialPool.acquire() in llm_node before LLM-call — Phase-E Arbeit (nicht in exec-hermes scope, aber Voraussetzung für "richtige" Rotation statt nur Telemetry).
+- [ ] `memory_fusion.MemoryManager` + `context.ContextEngine` wiring in runner.py/llm_node — Phase-E (analog CredentialPool).
 - [ ] HITL NotificationDrawer für skills_guard `dangerous`-verdicts — blockiert auf exec-12.
 
 ### Test-Summe
 
-- `python-backend/tests/agent/`: 102 passed in 3.82s (Stand 2026-04-18, vor PR-Merge).
+- Pre-Phase-A (resilience bundle merge): `python-backend/tests/agent/` 102 passed.
+- Post-Phase-A (ABCs landed, legacy archived): 155 passed. 37 neue tests (17 context_engine + 20 memory_provider).
+- Post-Phase-D (Credential-Pool): 183 passed. 28 neue tests (credential_pool).
+- 3 pre-existing failures vom main-branch wurden parallel gefixt (context/policy.py grounded_derived, kg_store.py guard+test).
+- ruff check: clean across all Phase-A/Phase-D-touched directories.
