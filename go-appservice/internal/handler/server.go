@@ -24,6 +24,7 @@ import (
 	"matrix/go-appservice/internal/natsbridge"
 	"matrix/go-appservice/internal/storage"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -38,6 +39,11 @@ type Server struct {
 	agent         *intent.AgentSender
 	crypto        *crypto.Machine               // nil wenn E2EE deaktiviert
 	artifactStore storage.ArtifactMetadataStore // nil wenn Artifact Storage deaktiviert
+
+	// DB is the process-wide pgxpool shared between storage, scheduler
+	// (River), and any future Postgres-backed subsystem. Created in
+	// NewServer, closed in Stop(). exec-scheduler Lane P.
+	DB *pgxpool.Pool
 
 	// roomMembers trackt Raum-Mitglieder für Mention-Filter (DM vs. Gruppe).
 	// Wird von handleMembership() aktualisiert, unabhängig von E2EE.
@@ -54,11 +60,24 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 
 	agentSender := intent.New(client, cfg.ServerName)
 
+	// exec-scheduler Lane P: shared pgxpool for storage + River. Only
+	// created when a PostgresDSN is configured. Legacy deployments without
+	// Postgres (pure SQLite crypto store + no artifact storage) keep DB=nil.
+	var sharedPool *pgxpool.Pool
+	if strings.TrimSpace(cfg.PostgresDSN) != "" {
+		pool, poolErr := app.NewSharedPgxPool(context.Background(), cfg.PostgresDSN)
+		if poolErr != nil {
+			return nil, fmt.Errorf("shared pgx pool: %w", poolErr)
+		}
+		sharedPool = pool
+	}
+
 	s := &Server{
 		cfg:         cfg,
 		client:      client,
 		nats:        natsBridge,
 		agent:       agentSender,
+		DB:          sharedPool,
 		roomMembers: make(map[id.RoomID]map[id.UserID]bool),
 	}
 
@@ -132,7 +151,13 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	if host == "" {
 		host = "127.0.0.1"
 	}
-	artifactCfg, artifactErr := app.BuildArtifactService(host, cfg.AppservicePort, cfg.PostgresDSN)
+	var artifactCfg *app.ArtifactServiceConfig
+	var artifactErr error
+	if sharedPool != nil {
+		artifactCfg, artifactErr = app.BuildArtifactService(host, cfg.AppservicePort, sharedPool)
+	} else {
+		artifactErr = fmt.Errorf("PostgresDSN not configured — artifact storage requires Postgres")
+	}
 	if artifactErr != nil {
 		slog.Warn("Artifact Storage disabled — set ARTIFACT_STORAGE_* env vars to enable",
 			"error", artifactErr)
@@ -234,7 +259,14 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop fährt den Server sauber herunter.
+// Stop fährt den Server sauber herunter. Shutdown-Ordering (exec-scheduler Lane P):
+//  1. Key backup export (E2EE)
+//  2. Scheduler stop — drain in-flight River jobs (30s timeout) — Lane B adds this
+//  3. HTTP server shutdown (stops accepting new requests, drains in-flight) — 5s timeout
+//  4. Artifact metadata store close (no-op on pool — doesn't own it)
+//  5. Shared pgxpool close — last, so nothing tries to query a dead pool
+//
+// NATS bridge is closed by defer in cmd/appservice/main.go (LIFO after Stop).
 func (s *Server) Stop() {
 	// C-8: Key Backup beim Shutdown exportieren
 	if s.crypto != nil {
@@ -243,17 +275,26 @@ func (s *Server) Stop() {
 		}
 	}
 
-	// exec-15 Slice 1: close artifact metadata store (Postgres connections)
+	// HTTP shutdown: stops accepting new requests, waits up to 5s for in-flight.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		slog.Warn("HTTP server shutdown error", "error", err)
+	}
+
+	// exec-15 Slice 1: close artifact metadata store. With a shared pool this
+	// is a no-op on the pool — only releases internal references. Pool is
+	// closed below after all pool consumers are done.
 	if s.artifactStore != nil {
 		if err := s.artifactStore.Close(); err != nil {
 			slog.Warn("Artifact metadata store close failed", "error", err)
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := s.httpServer.Shutdown(ctx); err != nil {
-		slog.Warn("HTTP server shutdown error", "error", err)
+	// exec-scheduler Lane P: close shared pool last. Everything that uses it
+	// (storage, scheduler, crypto if PG-backed) must be done by now.
+	if s.DB != nil {
+		s.DB.Close()
 	}
 }
 

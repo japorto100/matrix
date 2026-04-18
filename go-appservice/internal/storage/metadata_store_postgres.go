@@ -19,8 +19,13 @@ import (
 // exec-19 Stufe 3 (ListByUser, CountByStatus, Delete) also use background
 // context — handler layer sets per-request context inside the Service when
 // we wire that through in exec-18.
+//
+// exec-scheduler Lane P: the pool may be externally owned (shared with
+// River/scheduler) — in that case ownsPool=false and Close() is a no-op
+// so the shared pool survives metadata-store shutdown.
 type PostgresMetadataStore struct {
-	pool *pgxpool.Pool
+	pool     *pgxpool.Pool
+	ownsPool bool
 }
 
 // artifactRow mirrors artifact_metadata columns for pgx.RowToStructByName.
@@ -65,6 +70,8 @@ func (r artifactRow) toArtifact() Artifact {
 const artifactSelectCols = `id, user_id, media_type, object_key, filename, content_type,
 retention_class, status, size_bytes, sha256_hex, created_at, updated_at, expires_at`
 
+// NewPostgresMetadataStore creates its own pgxpool from dsn. Call Close()
+// to release the pool. Used by tests and legacy callers.
 func NewPostgresMetadataStore(dsn string) (*PostgresMetadataStore, error) {
 	trimmed := strings.TrimSpace(dsn)
 	if trimmed == "" {
@@ -75,12 +82,37 @@ func NewPostgresMetadataStore(dsn string) (*PostgresMetadataStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create pgx pool: %w", err)
 	}
-	store := &PostgresMetadataStore{pool: pool}
+	store := &PostgresMetadataStore{pool: pool, ownsPool: true}
 	if err := store.migrate(ctx); err != nil {
 		pool.Close()
 		return nil, err
 	}
 	return store, nil
+}
+
+// NewPostgresMetadataStoreFromPool wraps a pre-existing pool. Close() on the
+// returned store is a no-op — the caller retains ownership of the pool.
+// exec-scheduler Lane P: go-appservice owns one shared pool for storage +
+// River scheduler; lifetime is handler.Server.Stop().
+func NewPostgresMetadataStoreFromPool(pool *pgxpool.Pool) (*PostgresMetadataStore, error) {
+	if pool == nil {
+		return nil, fmt.Errorf("pgx pool required")
+	}
+	store := &PostgresMetadataStore{pool: pool, ownsPool: false}
+	if err := store.migrate(context.Background()); err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
+// Pool exposes the underlying pool (read-only handle). Used by components
+// that need raw pgx access against the same pool — e.g. the scheduler
+// package registers its River tables on this pool.
+func (s *PostgresMetadataStore) Pool() *pgxpool.Pool {
+	if s == nil {
+		return nil
+	}
+	return s.pool
 }
 
 func (s *PostgresMetadataStore) migrate(ctx context.Context) error {
@@ -210,7 +242,7 @@ WHERE media_type = 'other'`)
 }
 
 func (s *PostgresMetadataStore) Close() error {
-	if s != nil && s.pool != nil {
+	if s != nil && s.pool != nil && s.ownsPool {
 		s.pool.Close()
 	}
 	return nil

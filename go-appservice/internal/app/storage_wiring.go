@@ -13,14 +13,32 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"matrix/go-appservice/internal/storage"
 )
+
+// NewSharedPgxPool builds the process-wide pgxpool used by storage + the
+// scheduler (River). Caller owns the pool and must call Close() at shutdown.
+// exec-scheduler Lane P.
+func NewSharedPgxPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	trimmed := strings.TrimSpace(dsn)
+	if trimmed == "" {
+		return nil, fmt.Errorf("postgres dsn required")
+	}
+	pool, err := pgxpool.New(ctx, trimmed)
+	if err != nil {
+		return nil, fmt.Errorf("create shared pgx pool: %w", err)
+	}
+	return pool, nil
+}
 
 // ArtifactServiceConfig holds the constructed service + its public base URL.
 type ArtifactServiceConfig struct {
@@ -29,29 +47,30 @@ type ArtifactServiceConfig struct {
 	Store          storage.ArtifactMetadataStore // exposes Close() for graceful shutdown
 }
 
-// BuildArtifactService constructs the storage.Service from env variables.
-// Returns (cfg, nil) on success or (nil, err) if init fails.
+// BuildArtifactService constructs the storage.Service using a shared pgxpool.
+// The pool is expected to be process-wide (also used by the scheduler) so
+// this function does NOT take ownership — caller closes the pool.
+// exec-scheduler Lane P: refactored from dsn→pool for pool-sharing.
 //
 // Required:
 //   - ARTIFACT_STORAGE_SIGNING_SECRET (or AUTH_SECRET fallback in dev)
 //   - ARTIFACT_STORAGE_PROVIDER (filesystem | s3 | seaweedfs)
 //   - For s3/seaweedfs: ARTIFACT_STORAGE_S3_ENDPOINT + BUCKET + ACCESS_KEY_ID + SECRET_ACCESS_KEY
-//   - HINDSIGHT_DB_URL (or POSTGRES_DSN) — Postgres is the only metadata backend
 //
 // exec-19: the SQLite metadata store was removed in Phase 3 cleanup. The
 // devstack always has Postgres running (required by Hindsight + Agent), so
 // a SQLite fallback was dead weight.
-func BuildArtifactService(host, port, postgresDSN string) (*ArtifactServiceConfig, error) {
+func BuildArtifactService(host, port string, pool *pgxpool.Pool) (*ArtifactServiceConfig, error) {
 	signingSecret := artifactSigningSecretFromEnv()
 	if signingSecret == "" {
 		return nil, fmt.Errorf("ARTIFACT_STORAGE_SIGNING_SECRET (or AUTH_SECRET fallback) required")
 	}
 
-	if strings.TrimSpace(postgresDSN) == "" {
-		return nil, fmt.Errorf("PostgresDSN required (set HINDSIGHT_DB_URL, POSTGRES_URL, or DATABASE_URL)")
+	if pool == nil {
+		return nil, fmt.Errorf("shared pgxpool required (see app.NewSharedPgxPool)")
 	}
 
-	store, err := storage.NewPostgresMetadataStore(postgresDSN)
+	store, err := storage.NewPostgresMetadataStoreFromPool(pool)
 	if err != nil {
 		return nil, fmt.Errorf("init artifact metadata store: %w", err)
 	}
