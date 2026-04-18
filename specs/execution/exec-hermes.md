@@ -154,7 +154,7 @@ class MemoryProvider(ABC):
 - Matrix nutzt **Hindsight UND MemPalace parallel** — keine "oder"-Entscheidung. Sie sind komplementär:
   - **Hindsight** = episodische Fact-Extraction + Graph-Links (M3/M4)
   - **MemPalace** = Conversation-Mining + Palace-Graph (cross-session Palace)
-- Aktuell sind beide in `python-backend/agent/memory/{engine.py, mempalace_engine.py}` verdrahtet, aber **kein gemeinsames Provider-Interface** (die frühere `memory_fusion/` Location ist obsolet).
+- Aktuell sind beide über `python-backend/memory_fusion/` (unified) verdrahtet — `memory_fusion/FusionMemoryEngine` ist das Haupt-Runtime, das Hindsight-Summary/Fact-Pfade mit einem MemPalace-inspirierten Verbatim-Layer zusammenführt. Vorgänger `python-backend/agent/memory/` (Hindsight-Engine-Selector) und Basis-Primitives `python-backend/memory_engine/` (KG/Vector/Episodic, Phase 6) existieren parallel, aber **ohne gemeinsames Provider-Interface über `memory_fusion` hinaus** — siehe READMEs in den drei Dirs.
 - Hermes zeigt: MemoryManager erzwingt "built-in always + N externe parallel" — **exakt unser Hindsight+MemPalace+optional externe (Honcho/Mem0)-Szenario**.
 - `on_pre_compress(messages) -> str` ist der Killer-Hook: verbatim-Extract VOR Compaction (genau was exec-memory §3e fordert).
 
@@ -923,7 +923,7 @@ Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = i
 - [x] §3.5 `rate_limit_tracker` — `agent/resilience/rate_limit_tracker.py` (`d5fc914`), wired `19e50c4`. 10 tests.
 - [x] §3.6 `trajectory` (ShareGPT JSONL) — `agent/trajectory/exporter.py` + `scripts/export_trajectories.py` (`e8b3858`). 18 tests.
 - [~] §3.1 `ContextEngine` ABC — ⬜ nicht gestartet. 3–5d. Blockiert nichts, aber bildet Basis für Hybrid-Architektur §9.
-- [~] §3.2 `MemoryProvider` ABC + MemoryManager — Module existieren (`agent/memory/{engine.py, mempalace_engine.py}`), aber ohne gemeinsames Provider-Interface. 5–8d Refactor.
+- [~] §3.2 `MemoryProvider` ABC + MemoryManager — Module existieren (`memory_fusion/` primary unified runtime, plus `agent/memory/` Hindsight-selector und `memory_engine/` Primitives), aber ohne gemeinsames Provider-Interface über `FusionMemoryEngine` hinaus. 5–8d Refactor.
 
 ### Tier 2 — Adapt-with-Adaptation
 
