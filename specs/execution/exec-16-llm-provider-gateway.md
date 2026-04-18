@@ -723,3 +723,39 @@ python-backend/
 - **Embedding-Provider-Routing** — bleibt lokal (sentence-transformers), kein LiteLLM
 - **STT/TTS Provider-Routing** — bleibt in voice/providers.py, kein LiteLLM
 - **Go LLM-Proxy** — Go bleibt reiner SSE-Proxy, keine LLM-Logik
+
+---
+
+## Phase 4.5 — Reasoning / Thinking Budget End-to-End (2026-04-18)
+
+Ownership übernommen von archiviertem `exec-19 §5c` (DevStack-Consolidation).
+Implementation ist pre-transfer bereits gelandet; offene Items sind
+Live-Verify-Gates und eine Auto-Mode-Heuristik.
+
+### Done (pre-transfer)
+
+- LiteLLM `reasoning_effort` Pass-Through in `llm_node.py` (Anthropic thinking-
+  block, OpenAI `reasoning_effort`, DeepSeek — provider-specific mapping
+  auto-resolved durch LiteLLM v1.50+).
+- Reasoning-delta → SSE `ReasoningDeltaPacket` Streaming in `streaming.py`.
+- `state["reasoning_effort"]` in `llm_node.py:99` gelesen und durchgereicht.
+- Audit: `prompt_tokens_details.cached_tokens` + `completion_tokens_details.reasoning_tokens` in Runtime-/Session-Metadata (exec-17 §Stufe 2).
+
+### Open — Live-Verify-Gates (provider-access-gated)
+
+- [ ] Live-Test `openrouter/anthropic/claude-sonnet-4-6` mit `reasoning_effort: "high"` → Thinking-Content im Stream, `reasoning_tokens > 0` in Usage.
+- [ ] Live-Test `openrouter/openai/o3-mini` mit `reasoning_effort: "high"` → erfolgreich, `reasoning_tokens` in Usage.
+- [ ] Langfuse-Dashboard zeigt `reasoning_tokens` als separates Cost-Item.
+
+### Open — Auto-Mode-Heuristik (Phase 4.5.1)
+
+Pure function `_compute_auto_effort(prompt, history, model_info) -> "low"|"medium"|"high"` — picks a reasoning-budget aus Prompt-Komplexität (Länge, Tool-Call-Count, Keyword-Signals). Heute user-controlled via control-ui; Auto-Mode ermöglicht Agent-Self-Selection bei Default-Model.
+
+- [ ] Implementiere `_compute_auto_effort` in `agent/llm_client.py` oder neuem `agent/resilience/reasoning_budget.py`.
+- [ ] Control-UI Filter **"Auto-Mode Capable"** (flagt Modelle die `reasoning_effort` akzeptieren) — ersetzt den exec-19 §5b.10-Followup.
+- [ ] Sortierung nach `reasoning_quality_score` (Langfuse-basiert) — optional, post-Live-Gates.
+
+### Ownership-Marker
+
+- [x] Reasoning + Auto-Mode Ownership übernommen von archiviertem `exec-19 §5c` (2026-04-18).
+- [x] Portierungs-Marker "exec-19 Stufe 5c → exec-16 Phase 4.5" aus exec-19 Spec-Map entfernt (archive erhält Historie).

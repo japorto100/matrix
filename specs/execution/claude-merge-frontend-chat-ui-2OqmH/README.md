@@ -15,6 +15,7 @@ welche Verify-Gates durchlaufen sind, was offen bleibt.
 | `exec-02-envfiles-devstack-compose.md` | `.env.example` fuer 3 Projekte, `scripts/dev-stack.sh` (Linux-Port), `docker-compose.yml` Update mit Tuwunel v1.6 + Profile |
 | `exec-03-linter-fixes.md` | golangci-lint 12→0, ruff 51→0 (inkl. pre-existing `memory_fusion/fusion_engine.py` Indentation-Bug gefixt) |
 | `exec-04-playwright-verify.md` | Playwright headless smoke 8/8 gruen gegen Prod-Build |
+| `exec-05-ui-viewers-polish.md` | **2026-04-18** Extracted aus archiviertem `exec-19 §3.9/§5b.6-§5b.10/§5c.6`: Viewer-Packages (wavesurfer/exifr/xlsx/docx-preview/enhanced-md), Model-Discovery-Polish (URL-state/nuqs, Postgres cache, SWR, filter/sort), Reasoning-Cycle-Button im Composer. |
 | `VERIFY-GATES.md` | Verify-Gates-Log pro existierendem exec-01..15 aus `specs/execution/` — was auf diesem Branch verifiziert wurde |
 
 ## Gesamt-Status auf Branch-Ende

@@ -109,13 +109,29 @@ im naechsten Stream pruefbar).
 
 ### exec-18 Unified Agent Schema — —
 
-### exec-19 Devstack Consolidation
+### exec-19 Devstack Consolidation — **ARCHIVED 2026-04-18**
 - ✓ **Direkt betroffen:** neue `scripts/dev-stack.sh` (Linux-Port von
   `dev-stack3.ps1`) + `docker-compose.yml` Profile-Split.
 - ✓ Postgres-DSN `postgres://postgres@localhost:5433/hindsight_dev`
   dokumentiert (exec-19 fordert "Postgres only, SQLite entfernt").
 - ✗ `python -m alembic upgrade head` End-to-End gegen frischen Postgres:
   bei dir zu pruefen.
+- **Historie:** Stufe 1-2 (DevStack-Fixes + Matrix-Crypto→Postgres) wurde
+  abgeschlossen 2026-04-18. Offene Items wurden extrahiert nach drei
+  Eigentümer-Specs:
+  - `exec-media-ingestion.md` — §3.5 + §3.7 image/audio/video/batch pipelines
+  - `exec-16-llm-provider-gateway.md` §Phase 4.5 — §5c Reasoning/Auto-Mode
+  - `exec-05-ui-viewers-polish.md` (this slice) — §3.9 viewer-packages + §5b.6-§5b.10 model-discovery polish + §5c.6 reasoning-composer-button
+
+### exec-05 UI Viewers + Files/Models Polish (this slice, 2026-04-18)
+
+- ○ Neue Spec kreiert aus archiviertem `exec-19 §3.9/§5b.6-§5b.10/§5c.6`.
+  Touches auf diesem Branch sind `bun add`-Vorbereitung + Ownership-Klärung
+  wo die Features leben (Control-UI vs agent-chat vs features/files/).
+- **Bei dir zu pruefen (später Stack-Live):**
+  - Waveform / EXIF / XLSX / DOCX / enhanced-MD renderer in Files-Tab.
+  - URL-State via nuqs für Model-Filter; Postgres `agent.llm_models_cache`.
+  - Reasoning-Cycle-Button (Low/Medium/High/Auto) im Composer + Body-Forward.
 
 ### exec-20 MCP Manager
 - ○ `@mcp-b/global`, `@mcp-b/react-webmcp`, `use-mcp` in deps.
