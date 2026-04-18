@@ -25,14 +25,63 @@ import shutil
 import stat
 import tempfile
 import zipfile
+from dataclasses import asdict
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Any
 
-from agent.skills.loader import SKILLS_BASE, parse_skill_file
+from agent.security.skills_guard import scan_skill, should_allow_install
+from agent.skills.loader import SKILLS_BASE, Skill, parse_skill_file
 
 logger = logging.getLogger(__name__)
 
 MAX_ZIP_SIZE = 50 * 1024 * 1024  # 50 MB
 MAX_FILES_IN_ZIP = 100
+
+
+def _skill_to_scan_input(skill: Skill, skill_file: Path) -> dict[str, Any]:
+    """Flatten a parsed Skill + its on-disk SKILL.md into scan_skill's input shape.
+
+    The scanner wants ``{"name": str, "files": {path: content}}`` with content
+    as raw strings. We read SKILL.md from disk (so frontmatter is scannable too)
+    and flatten ``skill.assets`` (``{subdir: {fname: body}}``) into flat
+    ``"scripts/foo.sh"`` keys.
+    """
+    files: dict[str, str] = {}
+    try:
+        files["SKILL.md"] = skill_file.read_text(encoding="utf-8")
+    except OSError:
+        # Fallback to the parsed body so a missing-file doesn't break the scan
+        files["SKILL.md"] = skill.content
+    for subdir, entries in (skill.assets or {}).items():
+        if not isinstance(entries, dict):
+            continue
+        for fname, body in entries.items():
+            if isinstance(body, str):
+                files[f"{subdir}/{fname}"] = body
+    return {"name": skill.name, "files": files}
+
+
+def _findings_to_dicts(findings: list) -> list[dict[str, Any]]:
+    """Dataclass Finding → plain dict for JSON responses."""
+    return [asdict(f) for f in findings]
+
+
+def _scan_trust_source_for_tier(target_tier: str) -> str:
+    """Map the Phase-1 target_tier to a skills_guard trust source string.
+
+    - ``global`` tier installs are typically ops-curated → ``matrix-official``.
+    - ``team`` tier installs are org-curated → ``trusted``.
+    - ``personal`` tier installs are user-generated → ``agent-created``
+      (keeps ``dangerous`` at "ask", blocking install without HITL).
+    - Anything else defaults to ``community`` (strictest).
+    """
+    if target_tier == "global":
+        return "matrix-official"
+    if target_tier == "team":
+        return "trusted"
+    if target_tier == "personal":
+        return "agent-created"
+    return "community"
 
 
 # ── 5.3: GitHub / SkillsMP Import ───────────────────────────────────────────
@@ -45,11 +94,12 @@ async def import_from_github(
     repo_url: str,
     target_tier: str = "global",
     target_owner: str | None = None,
-) -> list[str]:
+) -> dict[str, Any]:
     """Importiert Skills aus einem GitHub Repository.
 
-    Klont das Repo (shallow), sucht SKILL.md Dateien, kopiert sie
-    in das passende Tier-Verzeichnis.
+    Two-pass: (1) parse + scan ALL SKILL.md candidates via skills_guard, then
+    (2) install. If ANY candidate is disallowed by the policy matrix, the
+    whole import is rejected — no partial dest_dir is written.
 
     Args:
         repo_url: GitHub URL (z.B. https://github.com/anthropics/skills)
@@ -57,8 +107,11 @@ async def import_from_github(
         target_owner: Owner-ID fuer team/personal Tier
 
     Returns:
-        Liste der importierten Skill-Namen.
+        ``{"success": bool, "imported": [...names], "rejected": [{name,
+        verdict, findings, reason}], "repo_url": str}``. REST caller maps
+        ``success=False`` to HTTP 422.
     """
+    scan_source = _scan_trust_source_for_tier(target_tier)
     import asyncio
     import subprocess
     from urllib.parse import urlparse
@@ -88,26 +141,55 @@ async def import_from_github(
         if proc.returncode != 0:
             raise RuntimeError(f"git clone failed: {stderr.decode()}")
 
-        imported = []
         tmp_path = Path(tmpdir)
 
-        # Suche SKILL.md Dateien rekursiv
+        # Pass 1: parse + scan ALL candidates before any install
+        candidates: list[tuple[Skill, Path, Path]] = []
+        rejected: list[dict[str, Any]] = []
+
         for skill_file in tmp_path.rglob("SKILL.md"):
             skill = parse_skill_file(skill_file, tier=target_tier, owner=target_owner)
             if skill is None:
                 continue
-
-            # Ziel-Verzeichnis bestimmen
-            if target_tier == "global":
-                dest_dir = SKILLS_BASE / "global" / skill.name
-            elif target_tier == "team" and target_owner:
+            scan_result = scan_skill(
+                _skill_to_scan_input(skill, skill_file), source=scan_source
+            )
+            allowed, reason = should_allow_install(scan_result)
+            if allowed is not True:
+                rejected.append(
+                    {
+                        "name": skill.name,
+                        "verdict": scan_result.verdict,
+                        "trust_level": scan_result.trust_level,
+                        "findings": _findings_to_dicts(scan_result.findings),
+                        "reason": reason,
+                    }
+                )
+                logger.warning(
+                    "skills_guard blocked import of '%s' from %s: %s",
+                    skill.name, repo_url, reason,
+                )
+                continue
+            if target_tier == "team" and target_owner:
                 dest_dir = SKILLS_BASE / "team" / target_owner / skill.name
             elif target_tier == "personal" and target_owner:
                 dest_dir = SKILLS_BASE / "personal" / target_owner / skill.name
             else:
                 dest_dir = SKILLS_BASE / "global" / skill.name
+            candidates.append((skill, skill_file, dest_dir))
 
-            # Ganzes Skill-Verzeichnis kopieren (SKILL.md + Assets)
+        # Any block → reject the whole import (no partial dest_dir on disk).
+        if rejected:
+            return {
+                "success": False,
+                "imported": [],
+                "rejected": rejected,
+                "repo_url": repo_url,
+            }
+
+        # Pass 2: install the vetted candidates
+        imported: list[str] = []
+        for skill, skill_file, dest_dir in candidates:
             skill_dir = skill_file.parent
             if dest_dir.exists():
                 shutil.rmtree(dest_dir)
@@ -117,7 +199,12 @@ async def import_from_github(
                 "Imported skill '%s' from %s → %s", skill.name, repo_url, dest_dir
             )
 
-        return imported
+        return {
+            "success": True,
+            "imported": imported,
+            "rejected": [],
+            "repo_url": repo_url,
+        }
 
 
 # ── 5.4: .skill ZIP Archive Support ─────────────────────────────────────────
@@ -233,6 +320,26 @@ def install_from_archive(
                 "success": False,
                 "skill_name": "",
                 "message": "Failed to parse SKILL.md",
+            }
+
+        # skills_guard static scan BEFORE touching the filesystem destination.
+        scan_source = _scan_trust_source_for_tier(target_tier)
+        scan_result = scan_skill(
+            _skill_to_scan_input(skill, skill_file), source=scan_source
+        )
+        allowed, reason = should_allow_install(scan_result)
+        if allowed is not True:
+            logger.warning(
+                "skills_guard blocked archive install of '%s': %s",
+                skill.name, reason,
+            )
+            return {
+                "success": False,
+                "skill_name": skill.name,
+                "message": reason,
+                "verdict": scan_result.verdict,
+                "trust_level": scan_result.trust_level,
+                "findings": _findings_to_dicts(scan_result.findings),
             }
 
         # Installieren

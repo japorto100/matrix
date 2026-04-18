@@ -349,4 +349,8 @@ async def _run_graph(
                     update_session(db_session.session_id, status="errored")
                 except Exception:  # noqa: BLE001
                     pass
-            yield sse(ErrorPacket(error=f"LangGraph error: {e}"))
+            # exec-hermes §3.4: classify for telemetry in ErrorPacket.metadata
+            # (failover orchestration itself belongs to exec-16 Provider-Fallback-Chain).
+            from agent.streaming import build_error_packet_with_failover
+
+            yield sse(build_error_packet_with_failover(e, prefix="LangGraph error: "))

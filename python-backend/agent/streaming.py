@@ -88,6 +88,35 @@ class FinishPacket:
 class ErrorPacket:
     error: str
     type: Literal["error"] = "error"
+    # Optional — populated by build_error_packet_with_failover() via the
+    # resilience.error_classifier. Default None keeps existing callers and
+    # the SSE/frontend consumers backwards-compatible (they just see an
+    # extra `metadata` key when present).
+    metadata: dict | None = None
+
+
+def build_error_packet_with_failover(exc: BaseException, prefix: str = "") -> "ErrorPacket":
+    """Build an ErrorPacket whose ``metadata`` carries failover taxonomy info.
+
+    Telemetry-only for Phase-1 wiring (runner/refiner): downstream consumers
+    can read ``packet.metadata["failover_reason"]`` /
+    ``["recovery_strategy"]`` / ``["retryable"]`` for UI hints and harness
+    analysis, but the classifier does not gate retry here — that belongs to
+    exec-16 Provider-Fallback-Chain.
+    """
+    from agent.resilience.error_classifier import classify_error
+
+    result = classify_error(exc)
+    message = f"{prefix}{exc}" if prefix else str(exc)
+    return ErrorPacket(
+        error=message,
+        metadata={
+            "failover_reason": result.reason.value,
+            "recovery_strategy": result.recovery.value,
+            "retryable": result.retryable,
+            "status_code": result.status_code,
+        },
+    )
 
 
 @dataclass
