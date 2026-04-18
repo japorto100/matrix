@@ -324,23 +324,46 @@ def _model_may_use_ephemeral_cache(model: str) -> bool:
     return False
 
 
-def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:
-    """Add ephemeral cache_control to last 3 messages for Anthropic models.
+def _mark_cache_control(msg: dict[str, Any]) -> None:
+    """Attach ephemeral cache_control to every content part of one message."""
+    content = msg.get("content")
+    if isinstance(content, str):
+        msg["content"] = [
+            {
+                "type": "text",
+                "text": content,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+    elif isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and "type" in item:
+                item["cache_control"] = {"type": "ephemeral"}
 
-    From Meta-Harness TerminalBench artifact (anthropic_caching.py).
-    Saves 60-90% prompt tokens on multi-turn conversations.
+
+def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:
+    """Add ephemeral cache_control for Anthropic models.
+
+    Plan exec-hermes §4.5 requires ``System + letzte 3 non-system messages``
+    — four breakpoints. The system prompt is always ``messages[0]`` (see
+    ``llm_node`` at the top) and must get ``cache_control`` unconditionally
+    so every long-session turn reuses the cached system prefix. The
+    rolling window then covers the last three *non-system* messages.
+
+    Saves 60–90% prompt tokens on multi-turn Anthropic conversations.
     """
-    for i in range(max(0, len(messages) - 3), len(messages)):
-        msg = messages[i]
-        if isinstance(msg.get("content"), str):
-            msg["content"] = [
-                {
-                    "type": "text",
-                    "text": msg["content"],
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ]
-        elif isinstance(msg.get("content"), list):
-            for item in msg["content"]:
-                if isinstance(item, dict) and "type" in item:
-                    item["cache_control"] = {"type": "ephemeral"}
+    if not messages:
+        return
+
+    # 1. System prompt — always cached (unconditional breakpoint).
+    system_idx: int | None = None
+    if messages[0].get("role") == "system":
+        system_idx = 0
+        _mark_cache_control(messages[0])
+
+    # 2. Last-3 rolling window over NON-system messages.
+    non_system_positions = [
+        i for i, m in enumerate(messages) if i != system_idx
+    ]
+    for idx in non_system_positions[-3:]:
+        _mark_cache_control(messages[idx])
