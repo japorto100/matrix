@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from agent.control.request_scope import resolve_scope
-from agent.memory.engine import get_bank_id, get_memory_engine
+from memory_fusion.engine import get_bank_id, get_memory_engine
 
 logger = logging.getLogger(__name__)
 

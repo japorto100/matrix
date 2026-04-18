@@ -129,7 +129,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
     - tags: Rollen-basiert aus roles.py
     - Progressive Context: Duplikat-Memories nicht nochmal injizieren
     """
-    from agent.memory.engine import get_bank_id, get_memory_engine
+    from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
     if engine is None:
@@ -317,8 +317,8 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
     Quality Gates: Hindsight built-in (coreference, self-containment, temporal).
     Read-only Rollen retainen nicht.
     """
-    from agent.memory.engine import get_bank_id, get_memory_engine
     from agent.tracing import memory_span
+    from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
     if engine is None:
@@ -347,7 +347,7 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
         try:
             from hindsight_api.models import RequestContext
 
-            from agent.memory.coherence import get_coherence_manager
+            from memory_fusion.coherence import get_coherence_manager
 
             bank_id = get_bank_id(state.get("user_id", "default"))
             thread_id = state.get("thread_id", "")

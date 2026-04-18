@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Run retrieval evaluation against an existing Hindsight bank.
 
 Input schema:
@@ -31,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.memory.engine import get_memory_engine
+from memory_fusion.engine import get_memory_engine
 from memory_fusion.query_gate import decide_query_path
 
 

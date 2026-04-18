@@ -98,7 +98,7 @@ async def _prepare_system_prompt(
 
         # exec-11: Hindsight Memory Recall (pre-LLM context enrichment)
         try:
-            from agent.memory.engine import get_bank_id, get_memory_engine
+            from memory_fusion.engine import get_bank_id, get_memory_engine
 
             engine = await get_memory_engine()
             if engine:

@@ -2,6 +2,12 @@
 # Relevance scoring, token budget, multi-source merge
 # Ref: CONTEXT_ENGINEERING.md
 
+from context.context_engine import (
+    ContextEngine,
+    ContextEngineConfig,
+    ContextStage,
+    DefaultContextEngine,
+)
 from context.merge import merge_fragments
 from context.policy import (
     apply_context_policy,
@@ -19,4 +25,8 @@ __all__ = [
     "get_context_policy",
     "apply_context_policy",
     "build_degradation_flags",
+    "ContextEngine",
+    "ContextEngineConfig",
+    "ContextStage",
+    "DefaultContextEngine",
 ]

@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from agent.control.context_runtime import build_runtime_inspector, normalize_health
 from agent.control.request_scope import get_effective_scope
-from agent.memory.engine import get_bank_id, get_memory_engine, get_memory_provider
+from memory_fusion.engine import get_bank_id, get_memory_engine, get_memory_provider
 
 logger = logging.getLogger(__name__)
 

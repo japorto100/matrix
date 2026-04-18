@@ -33,27 +33,43 @@ def test_sqlite_query_returns_list(monkeypatch, tmp_path: pathlib.Path) -> None:
 
 
 def test_sqlite_query_named_params(monkeypatch, tmp_path: pathlib.Path) -> None:
+    """query() must support named parameters for SELECTs.
+
+    Writes go through typed APIs (seed / update_node / delete_node), so we
+    seed the store first and then read back with named params.
+    """
+    import pytest
+
     monkeypatch.setenv("KG_FORCE_SQLITE", "true")
     store = create_kg_store(str(tmp_path / "kg.db"))
 
-    store.query(
-        "INSERT OR IGNORE INTO kg_nodes (id, node_type, name, properties)"
-        " VALUES (:id, :node_type, :name, :properties)",
-        {
-            "id": "test-22g",
-            "node_type": "Test",
-            "name": "Test Node",
-            "properties": "{}",
-        },
-    )
-    results = store.query(
-        "SELECT id, node_type FROM kg_nodes WHERE id = :id",
-        {"id": "test-22g"},
-    )
+    # Seed populates known Stratagem/Regime/Institution nodes.
+    seed_result = store.seed(force=True)
+    assert seed_result["seeded"] is True
+    assert seed_result["node_count"] > 0
 
+    # Named-param SELECT reads a seeded node type.
+    results = store.query(
+        "SELECT id, node_type FROM kg_nodes WHERE node_type = :nt LIMIT 1",
+        {"nt": "Stratagem"},
+    )
     assert len(results) == 1
-    assert results[0]["id"] == "test-22g"
-    assert results[0]["node_type"] == "Test"
+    assert results[0]["node_type"] == "Stratagem"
+
+    # Guard invariant: raw INSERT via query() is rejected even with named
+    # params — writes MUST go through typed APIs. This protects against SQL-
+    # injection style escapes via the query() read-only surface.
+    with pytest.raises(ValueError, match="Query not allowed"):
+        store.query(
+            "INSERT INTO kg_nodes (id, node_type, name, properties) "
+            "VALUES (:id, :node_type, :name, :properties)",
+            {
+                "id": "evil",
+                "node_type": "Test",
+                "name": "Rejected",
+                "properties": "{}",
+            },
+        )
 
 
 def test_sqlite_seed_populates_nodes(monkeypatch, tmp_path: pathlib.Path) -> None:

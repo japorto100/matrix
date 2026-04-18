@@ -17,10 +17,63 @@ MemPalace behind a single fusion engine.
 - `get_memory_engine()`, `get_memory_provider()`, `get_bank_id()` — factory
   helpers re-exported from `__init__.py`.
 
-## exec-hermes §3.2 note
+## Entry points (ABC layer — exec-hermes §3.2, landed 2026-04-18)
 
-exec-hermes §3.2 (MemoryProvider ABC + MemoryManager) targets **this** module
-— the planned refactor is to lift a shared `MemoryProvider` ABC out of the
-fusion engine so that Hindsight, MemPalace, and future providers (PersonalKB,
-WorldModel) plug in uniformly. The legacy `agent/memory/` selector is the
-migration source, not the destination.
+- **`MemoryProvider`** (ABC) — pluggable backend contract. Any provider
+  implements: `name`, `is_available`, `prefetch`, `sync_turn`, optional
+  `on_pre_compress` (the ≥80% context-window hook), `on_session_end`,
+  `system_prompt_block`.
+- **`MemoryManager`** — coordinator for N providers. Fan-out for every
+  lifecycle call with per-provider error isolation (one crashing provider
+  cannot starve the rest).
+- **`FusionProvider`** — concrete adapter over `FusionMemoryEngine`.
+- **`auto_fusion_provider()`** — factory that builds a default provider from
+  the env-configured engine.
+- `get_memory_engine()`, `get_memory_provider()`, `get_bank_id()` — legacy
+  factory helpers re-exported from `__init__.py`.
+
+Future concrete providers (dedicated `HindsightProvider`, `MemPalaceProvider`,
+`PersonalKBProvider`, `WorldModelProvider`) plug into the same ABC; no change
+to `MemoryManager` is needed.
+
+## Architecture: peer-service pattern (SOTA 2026)
+
+matrix follows the 2026 hermes + OpenClaw "two-surface plugin model":
+
+```
+   python-backend/agent/ (harness)
+         │  orchestrates
+         ├──► memory_fusion.MemoryManager   (cross-session, retrieval-first)
+         └──► context.ContextEngine         (in-session, compaction-first)
+```
+
+Important:
+
+- **Memory and Context are peer services** coordinated by the agent harness.
+  They do **not** call each other. The context engine owns threshold
+  semantics; the harness consults it and then — if the threshold is crossed —
+  invokes the memory manager's `on_pre_compress` hook.
+- This mirrors the empirical convergence in 2026: hermes publishes one slot
+  for memory plugins (cross-session) and a separate slot for context-engine
+  plugins (in-session). The two slots deliberately don't overlap, so each
+  can evolve independently.
+- Error isolation is the registry's job (see `MemoryManager` fan-out logic),
+  not the providers'.
+
+**Explicitly avoid:** making `ContextEngine` hold a reference to
+`MemoryManager`, or vice versa. That couples two independent evolution
+paths and forces every context-engine change to consider memory semantics.
+The harness is the only component that needs to know about both.
+
+## Relationship to legacy `agent/memory/` migration
+
+The ABC is the *bridge* that lets callers migrate to `memory_fusion` at
+their own pace:
+
+1. Call-sites that currently import `agent/memory/engine.py:get_memory_engine()`
+   can move to `memory_fusion.memory_provider.auto_fusion_provider()` —
+   same shape, uniform interface.
+2. Tests build a `MemoryManager([stub_provider])` directly — no Postgres /
+   palace needed for unit tests (see `tests/test_memory_provider.py`).
+3. Once all callers are on the ABC, `agent/memory/` becomes deletable
+   (planned as a follow-up archive step — see plan file).
