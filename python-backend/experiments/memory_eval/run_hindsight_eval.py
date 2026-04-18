@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Run retrieval evaluation against an existing Hindsight bank.
 
 Input schema:

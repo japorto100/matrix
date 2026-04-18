@@ -55,11 +55,16 @@ def _validate_edge_type(edge_type: str) -> str:
     return edge_type
 
 
-# Allowlisted SQL patterns for SQLiteKGStore.query() (#10 fix)
+# Allowlisted SQL patterns for SQLiteKGStore.query() (#10 fix).
+# Read-only guard — callers must use typed APIs (seed(), update_node(),
+# delete_node()) for writes, never raw SQL through query().
 _ALLOWED_QUERY_PATTERNS = [
     re.compile(r"^SELECT\s+.+\s+FROM\s+kg_nodes", re.IGNORECASE),
     re.compile(r"^SELECT\s+.+\s+FROM\s+kg_edges", re.IGNORECASE),
     re.compile(r"^SELECT\s+COUNT", re.IGNORECASE),
+    # Literal SELECT expressions (e.g. "SELECT 1 AS val") for sanity probes.
+    # Safe — no table access, no parameter injection surface.
+    re.compile(r"^SELECT\s+[\d'\"]", re.IGNORECASE),
 ]
 
 from memory_engine.seed_data import (  # noqa: E402

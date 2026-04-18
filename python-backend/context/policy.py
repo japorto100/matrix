@@ -233,6 +233,7 @@ def build_degradation_flags(
 def derive_context_tier(block: dict[str, Any]) -> str:
     layer = normalize_context_layer(block)
     status = str(block.get("status") or "").strip().lower()
+    grounding = str(block.get("groundingStatus") or block.get("grounding_status") or "").strip().lower()
     try:
         relevance = float(block.get("relevance") or 0.0)
     except (TypeError, ValueError):
@@ -243,6 +244,12 @@ def derive_context_tier(block: dict[str, Any]) -> str:
     if layer in {WORKING_MEMORY_LAYER, WORLD_KG_LAYER}:
         return "L0"
     if layer in {PERSONAL_DERIVED_LAYER, PERSONAL_RAW_LAYER}:
+        # Grounded derived content (explicit evidence backlinks per
+        # exec-memory §3b) promotes to L0 regardless of relevance score —
+        # grounding beats heuristic relevance. Ungrounded/unknown stays
+        # relevance-gated.
+        if grounding in {"grounded_derived", "grounded"}:
+            return "L0"
         return "L0" if relevance >= 0.75 else "L1"
     if layer in {BRIDGE_PERSONAL_KB_LAYER, BRIDGE_WORLD_LAYER}:
         return "L2"

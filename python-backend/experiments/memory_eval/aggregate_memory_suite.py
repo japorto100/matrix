@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Aggregate multiple memory pipeline runs (e.g. hindsight, mempalace, fusion)."""
 
 from __future__ import annotations
