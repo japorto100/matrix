@@ -208,7 +208,30 @@ def classify_error(exc: Exception) -> ClassificationResult:
     Pure: no logging, no mutation, no I/O. Returns a
     :class:`ClassificationResult` whose ``recovery`` field tells the caller
     which strategy to apply next.
+
+    Dispatch order (plan §5 Phase 2 is stated in two layers):
+
+      **Primary (isinstance + status_code)**: auth → billing → rate_limit →
+      context_overflow → overloaded → server_error → timeout → format_error.
+
+      **Message-pattern fallback**: interleaved with the primary — checked
+      after the corresponding type/status check in the same priority rank —
+      *except for auth-by-message*, which runs AFTER all other patterns so
+      a message like ``"invalid api key: payment required"`` classifies as
+      ``billing`` (the more actionable reason) rather than ``auth``. That
+      intentional deviation is pinned by
+      ``test_auth_message_defers_to_billing_match``.
+
+      Finally ``upstream_unavailable`` → ``unknown``.
+
+    Raises:
+        TypeError: if ``exc`` is not a :class:`BaseException`. Surfaces
+            call-site bugs early instead of silently classifying as unknown.
     """
+    if not isinstance(exc, BaseException):
+        raise TypeError(
+            f"classify_error expected BaseException, got {type(exc).__name__}"
+        )
     status_code = _status_code(exc)
     message = str(exc).lower()
 
@@ -294,18 +317,26 @@ def classify_error(exc: Exception) -> ClassificationResult:
     return _build(FailoverReason.unknown, status_code, str(exc))
 
 
-def _status_code(exc: Exception) -> Optional[int]:
-    """Walk the exception + cause chain for an HTTP status code."""
+def _status_code(exc: BaseException) -> Optional[int]:
+    """Walk the exception + cause chain for an HTTP status code.
+
+    Accepts both ``int`` and numeric-string codes — some providers set
+    ``status_code = "429"`` from JSON bodies.
+    """
     current: Optional[BaseException] = exc
     for _ in range(5):
         if current is None:
             break
-        code = getattr(current, "status_code", None)
-        if isinstance(code, int):
-            return code
-        code = getattr(current, "status", None)
-        if isinstance(code, int) and 100 <= code < 600:
-            return code
+        for attr in ("status_code", "status"):
+            code = getattr(current, attr, None)
+            if isinstance(code, int):
+                if attr == "status" and not (100 <= code < 600):
+                    continue
+                return code
+            if isinstance(code, str) and code.strip().isdigit():
+                parsed = int(code.strip())
+                if 100 <= parsed < 600:
+                    return parsed
         next_ = getattr(current, "__cause__", None) or getattr(
             current, "__context__", None
         )

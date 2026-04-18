@@ -441,14 +441,35 @@ def scan_content(content: str, rel_path: str) -> List[Finding]:
     Returns:
         List of :class:`Finding`, deduplicated per ``(pattern_id, line)``.
     """
-    pp = PurePath(rel_path)
-    if pp.suffix.lower() not in SCANNABLE_EXTENSIONS and pp.name != "SKILL.md":
-        return []
-
     findings: List[Finding] = []
     lines = content.split("\n")
-    seen: set[Tuple[str, int]] = set()
 
+    # Invisible-unicode scan runs for ANY text file (including .rst/.adoc/.org
+    # Sphinx/Asciidoctor/Emacs doc formats): attackers hide prompt-injection
+    # payloads in unscannable extensions, so the zero-width-space check must
+    # not be gated by the extension whitelist.
+    for i, line in enumerate(lines, start=1):
+        for char in INVISIBLE_CHARS:
+            if char in line:
+                name = _unicode_char_name(char)
+                findings.append(Finding(
+                    pattern_id="invisible_unicode",
+                    severity="high",
+                    category="injection",
+                    file=rel_path,
+                    line=i,
+                    match=f"U+{ord(char):04X} ({name})",
+                    description=f"invisible unicode character {name} (possible text hiding)",
+                ))
+                break
+
+    # Regex-pattern scan is extension-gated — the threat patterns are tuned
+    # for source/script/config file content, not e.g. raw CSV data dumps.
+    pp = PurePath(rel_path)
+    if pp.suffix.lower() not in SCANNABLE_EXTENSIONS and pp.name != "SKILL.md":
+        return findings
+
+    seen: set[Tuple[str, int]] = set()
     for pattern, pid, severity, category, description in THREAT_PATTERNS:
         for i, line in enumerate(lines, start=1):
             if (pid, i) in seen:
@@ -467,21 +488,6 @@ def scan_content(content: str, rel_path: str) -> List[Finding]:
                     match=matched,
                     description=description,
                 ))
-
-    for i, line in enumerate(lines, start=1):
-        for char in INVISIBLE_CHARS:
-            if char in line:
-                name = _unicode_char_name(char)
-                findings.append(Finding(
-                    pattern_id="invisible_unicode",
-                    severity="high",
-                    category="injection",
-                    file=rel_path,
-                    line=i,
-                    match=f"U+{ord(char):04X} ({name})",
-                    description=f"invisible unicode character {name} (possible text hiding)",
-                ))
-                break
 
     return findings
 
@@ -556,7 +562,16 @@ def scan_skill(skill: Mapping[str, object], source: str = "community") -> ScanRe
         raise TypeError(
             "skill['files'] must be a Mapping[str, str] of relpath→content"
         )
-    files: Mapping[str, str] = {str(k): str(v) for k, v in raw_files.items()}
+    # Reject bytes: silently stringifying would produce literals like b'rm -rf /'
+    # that evade the regex patterns. Callers must decode at the boundary.
+    files: dict[str, str] = {}
+    for k, v in raw_files.items():
+        if not isinstance(v, str):
+            raise TypeError(
+                f"skill['files'][{k!r}] must be str, got {type(v).__name__}; "
+                "callers must decode bytes before scanning"
+            )
+        files[str(k)] = v
 
     trust_level = _resolve_trust_level(source)
     findings: List[Finding] = []

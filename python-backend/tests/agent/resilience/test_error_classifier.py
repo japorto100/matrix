@@ -187,3 +187,49 @@ def test_classify_error_is_pure_no_logging(caplog):
     assert caplog.records == [], (
         f"classify_error emitted log records: {[r.getMessage() for r in caplog.records]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Review-driven pinning tests
+# ---------------------------------------------------------------------------
+
+def test_classify_rejects_non_exception():
+    """Regression (review I-3): passing None / non-exception used to silently
+    classify as unknown. Must raise TypeError so call-site bugs surface."""
+    import pytest
+
+    with pytest.raises(TypeError, match="expected BaseException"):
+        classify_error(None)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="expected BaseException"):
+        classify_error("not an exception")  # type: ignore[arg-type]
+
+
+def test_classify_handles_stringified_status_code():
+    """Regression (review I-3): some providers surface status_code as a
+    numeric string (from JSON bodies). The walker must parse it."""
+    class _FakeProviderError(Exception):
+        status_code = "429"
+
+    result = classify_error(_FakeProviderError("provider said 429"))
+    assert result.reason is FailoverReason.rate_limit
+    assert result.status_code == 429
+
+
+def test_auth_message_defers_to_billing_match():
+    """Pinning (review I-2): the auth-by-message check runs AFTER billing
+    patterns. A message containing both markers must classify as billing —
+    the more actionable recovery. Primary auth (isinstance / 401 / 403) is
+    still first-priority."""
+    exc = Exception("invalid api key: payment required")
+    result = classify_error(exc)
+    assert result.reason is FailoverReason.billing, (
+        "auth-by-message must defer to billing-pattern match; "
+        f"got {result.reason}"
+    )
+
+    # Primary auth path stays first-priority: a 401 still wins.
+    class _Auth401(Exception):
+        status_code = 401
+
+    result_401 = classify_error(_Auth401("irrelevant message"))
+    assert result_401.reason is FailoverReason.auth

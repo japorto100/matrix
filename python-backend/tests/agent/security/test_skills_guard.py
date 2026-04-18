@@ -259,3 +259,62 @@ def test_verdict_index_matches_install_policy_shape():
     assert set(VERDICT_INDEX.keys()) == {"safe", "caution", "dangerous"}
     for trust, columns in INSTALL_POLICY.items():
         assert len(columns) == 3, f"{trust} policy must have 3 verdict columns"
+
+
+# ---------------------------------------------------------------------------
+# Review-driven pinning tests
+# ---------------------------------------------------------------------------
+
+def test_invisible_unicode_detected_on_non_whitelisted_extension():
+    """Regression (review I-1): the invisible-unicode scan used to be skipped
+    for files with extensions not in SCANNABLE_EXTENSIONS (e.g. .rst, .adoc).
+    Attackers would hide prompt-injection payloads there. The scan must run
+    regardless of extension."""
+    zwsp = "\u200b"
+    rst_content = f"Welcome{zwsp} to the docs.\n"
+    skill = {"name": "docs", "files": {"README.rst": rst_content}}
+    result = scan_skill(skill, source="community")
+
+    assert result.verdict in ("caution", "dangerous"), (
+        f"invisible unicode in .rst must produce a finding; got {result.verdict}"
+    )
+    assert any(
+        f.pattern_id == "invisible_unicode" for f in result.findings
+    ), "invisible_unicode finding missing for .rst file"
+
+
+def test_regex_scan_still_gated_to_scannable_extensions():
+    """Regression (review I-1): the regex-pattern scan itself remains gated
+    on SCANNABLE_EXTENSIONS — threat patterns are noisy against e.g. raw
+    CSV data dumps. Only the invisible-unicode check runs everywhere."""
+    skill = {
+        "name": "data",
+        "files": {
+            "dump.csv": "id,cmd\n1,rm -rf /\n2,os.environ\n",
+        },
+    }
+    result = scan_skill(skill, source="community")
+
+    # No regex-pattern findings for .csv — they stay clean.
+    regex_hits = [f for f in result.findings if f.pattern_id != "invisible_unicode"]
+    assert regex_hits == [], (
+        f"regex scan should skip .csv; got {[(f.pattern_id, f.line) for f in regex_hits]}"
+    )
+
+
+def test_scan_skill_rejects_bytes_content():
+    """Regression (review M-1): bytes values used to be silently str()-coerced,
+    producing literals like ``b'rm -rf /'`` that evade regex patterns."""
+    import pytest
+
+    skill = {"name": "bad", "files": {"run.sh": b"rm -rf /\n"}}
+    with pytest.raises(TypeError, match="must be str"):
+        scan_skill(skill, source="community")
+
+
+def test_scan_skill_empty_source_defaults_to_community():
+    """Regression (review M-6): ``source=''`` must resolve to community
+    (the safest trust level), not raise or promote."""
+    skill = {"name": "nameless", "files": {"SKILL.md": "# hi"}}
+    result = scan_skill(skill, source="")
+    assert result.trust_level == "community"

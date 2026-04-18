@@ -170,7 +170,16 @@ def _parse_window(
 
 @dataclass
 class RateLimitRegistry:
-    """In-memory per-(user, provider-key) rate-limit bucket store."""
+    """In-memory per-(user, provider-key) rate-limit bucket store.
+
+    **Not thread-safe.** The registry uses a plain dict with no lock. Safe
+    under single-threaded async: one asyncio task per loop modifies the
+    registry, and capture calls are short non-blocking dict writes so the
+    event loop never yields inside one. If the matrix harness ever calls
+    ``capture_from_response`` from multiple OS threads or across event
+    loops, wrap the instance with ``threading.Lock`` / ``asyncio.Lock``
+    at the call site.
+    """
 
     _buckets: dict[tuple[str, str, str], RateLimitBucket] = field(default_factory=dict)
 

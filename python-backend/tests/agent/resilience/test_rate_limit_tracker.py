@@ -243,3 +243,27 @@ def test_to_prometheus_dict_has_labels():
     assert "limit" in metrics and "remaining" in metrics
     assert metrics["limit"] == 100
     assert metrics["remaining"] == 25
+
+
+# ---------------------------------------------------------------------------
+# Review-driven pinning tests
+# ---------------------------------------------------------------------------
+
+def test_remaining_seconds_now_respects_captured_at_zero():
+    """Regression (review M-2): when captured_at==0 the bucket is unpopulated
+    and remaining_seconds_now must return the raw reset_seconds — no
+    decay — so callers don't see phantom negatives from the epoch."""
+    bucket = RateLimitBucket(limit=0, remaining=0, reset_seconds=30.0, captured_at=0.0)
+    assert bucket.remaining_seconds_now == 30.0
+
+
+def test_remaining_seconds_now_decays_when_captured():
+    """When a bucket was captured in the recent past, the remaining seconds
+    must decay linearly."""
+    import time
+
+    bucket = RateLimitBucket(
+        limit=100, remaining=10, reset_seconds=30.0, captured_at=time.time() - 5,
+    )
+    # 5s of the original 30s have elapsed → roughly 25s remain.
+    assert 23.0 <= bucket.remaining_seconds_now <= 27.0
