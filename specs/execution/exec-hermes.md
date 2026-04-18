@@ -734,7 +734,7 @@ Meta-Harness ist **kein alternativer Pfad im §9.4 Flowchart**. Es ist der **Out
 
 ### Sprint 3 — Credentials ✅ PARTIALLY DONE
 - [x] **§4.4 Credential-Pool** — `agent/resilience/credential_pool.py` (commit `38b9b64`). ABC + SingleKeyCredentialPool wrapping `get_user_api_key`. `apply_recovery()` dispatcher wires error_classifier → pool (rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed, overloaded/server_error → 5min). Multi-key-per-user bleibt der DB-Schema-Erweiterung überlassen.
-- [ ] **§4.1 Cron-Scheduler** — blockiert auf exec-19 DevStack-Consolidation (NATS-Konsumer-Pattern).
+- [ ] **§4.1 Cron-Scheduler** — Blocker-Revision 2026-04-18: exec-19 ist archiviert (devstack-consolidation abgeschlossen). Realer Status: NATS läuft bereits (docker-compose.yml :50). Benötigt: Alembic Migration für `agent.scheduled_jobs` Table + Go-Implementation in go-appservice/internal/scheduler/ (Postgres `FOR UPDATE SKIP LOCKED` + NATS-publish → Python-Subscriber). **Nicht blockiert** — kann starten sobald priorisiert. Skill-Binding wartet weiterhin auf exec-skills DB-flow.
 
 ### Sprint 4 — Architektur-Entscheidung (Backlog)
 - [ ] **§9 Hybrid-Loop-Pfad** — `SimpleAgentLoop` Prototyp (nicht production)
@@ -896,7 +896,7 @@ onefetch /home/lipfi2/code/matrix/_ref/hermes-agent
 - `specs/execution/exec-18-unified-agent-schema.md` — agent.* Tabellen
 - `specs/execution/exec-12-sandbox-security.md` — Sandbox-Entscheidung (Checkpoint-Manager wartet)
 - `specs/execution/exec-10-multi-agent.md` — sollte Production-Pattern aus §9.6 benennen
-- `specs/execution/exec-19-devstack-consolidation.md` — Cron-Scheduler-Integration
+- `specs/execution/archive/exec-19-devstack-consolidation.md` — Cron-Scheduler-Integration
 - `transformersjs.md` + `specs/execution/exec-transformersjs.md` — verwandter Client-Side-ML-Plan
 - `postgres.md` — Schema-pro-Service-Pattern
 
@@ -936,7 +936,7 @@ Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = i
 ### Tier 2 — Adapt-with-Adaptation
 
 - [x] §4.5 Prompt-Caching (Anthropic cache_control) — in `llm_node.py` (`9fe9a58`). System + 3-msg rolling window. 7 tests.
-- [ ] §4.1 Cron-Scheduler — blockiert auf exec-19.
+- [ ] §4.1 Cron-Scheduler — **nicht blockiert** (exec-19 archiviert; NATS läuft; siehe §10 Sprint-3-Detail für Go-Implementation-Plan in go-appservice/internal/scheduler/).
 - [ ] §4.2 Skill-Manager-Tool — exec-skills.md existiert, aber `agent.agent_skills` DB-flow noch offen.
 - [ ] §4.3 Checkpoint-Manager — blockiert auf exec-12 Sandbox-Decision.
 - [x] §4.4 Credential-Pool — `agent/resilience/credential_pool.py` (commit `38b9b64`). ABC `CredentialPool` + `SingleKeyCredentialPool` wrapping `get_user_api_key`. `apply_recovery()` dispatcher classifies `ClassificationResult` → rate_limit (1h) / billing (24h) / auth → mark_auth_failed / overloaded+server_error (5min) / no-op (context/format/timeout/unknown). 28 tests. Multi-key-per-user bleibt der DB-Schema-Erweiterung vorbehalten — OAuth-Provider (Nous/Qwen portal) deliberately skipped (BYO-key model macht den Aufwand nicht wett; siehe SOTA-Diskussion im ralph-Log).
