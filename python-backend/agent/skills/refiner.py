@@ -15,15 +15,48 @@ prompt, never persisted.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from dataclasses import replace
 from pathlib import Path
 
 from agent.llm_helper import llm_call
+from agent.resilience.error_classifier import RecoveryStrategy, classify_error
 from agent.skills.loader import Skill
 
 logger = logging.getLogger(__name__)
+
+
+# Recovery strategies worth a single retry for short, ephemeral refiner calls.
+# Format-errors / auth / upstream_unavailable / billing go straight to fallback.
+_REFINER_RETRY_STRATEGIES: frozenset[RecoveryStrategy] = frozenset({
+    RecoveryStrategy.retry,
+    RecoveryStrategy.backoff_then_retry,
+    RecoveryStrategy.backoff_then_rotate,
+})
+
+
+def _should_retry_refiner(exc: BaseException) -> tuple[bool, str]:
+    """Classify a refiner-LLM exception and decide one-shot retry.
+
+    Returns ``(retry, reason_str)`` so the caller can log the classification
+    without pulling in classify_error itself.
+    """
+    result = classify_error(exc)
+    return (result.recovery in _REFINER_RETRY_STRATEGIES), result.reason.value
+
+
+# Keep retry backoff tiny by default — refiner blocks the system-prompt build.
+# Tests override via AGENT_SKILL_REFINE_RETRY_SLEEP=0.
+_RETRY_SLEEP_ENV = "AGENT_SKILL_REFINE_RETRY_SLEEP"
+
+
+def _retry_sleep_seconds() -> float:
+    try:
+        return max(0.0, float(os.environ.get(_RETRY_SLEEP_ENV, "0.5")))
+    except (TypeError, ValueError):
+        return 0.5
 
 
 PER_SKILL_SYSTEM = """You refine a single agent skill for a user task.
@@ -81,9 +114,29 @@ async def _refine_per_skill(
                 api_key=api_key,
             )
         except Exception as e:  # noqa: BLE001
-            logger.warning("per-skill refine failed for %s: %s", skill.name, e)
-            refined.append(skill)
-            continue
+            retry, reason = _should_retry_refiner(e)
+            logger.warning(
+                "per-skill refine failed for %s (reason=%s, retry=%s): %s",
+                skill.name, reason, retry, e,
+            )
+            if retry:
+                await asyncio.sleep(_retry_sleep_seconds())
+                try:
+                    out = await llm_call(
+                        prompt,
+                        max_tokens=1200,
+                        system=PER_SKILL_SYSTEM,
+                        api_key=api_key,
+                    )
+                except Exception as e2:  # noqa: BLE001
+                    logger.warning(
+                        "per-skill refine retry failed for %s: %s", skill.name, e2,
+                    )
+                    refined.append(skill)
+                    continue
+            else:
+                refined.append(skill)
+                continue
         content = (out or "").strip() or skill.content
         refined.append(replace(skill, content=content))
     return refined
@@ -120,8 +173,21 @@ async def _refine_compose(
             api_key=api_key,
         )
     except Exception as e:  # noqa: BLE001
-        logger.warning("compose refine failed: %s", e)
-        return skills
+        retry, reason = _should_retry_refiner(e)
+        logger.warning("compose refine failed (reason=%s, retry=%s): %s", reason, retry, e)
+        if not retry:
+            return skills
+        await asyncio.sleep(_retry_sleep_seconds())
+        try:
+            out = await llm_call(
+                prompt,
+                max_tokens=2000,
+                system=COMPOSE_SYSTEM,
+                api_key=api_key,
+            )
+        except Exception as e2:  # noqa: BLE001
+            logger.warning("compose refine retry failed: %s", e2)
+            return skills
 
     content = (out or "").strip()
     if not content:

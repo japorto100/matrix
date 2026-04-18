@@ -196,14 +196,28 @@ class SkillImportRequest(BaseModel):
 
 @app.post("/api/v1/skills/import")
 async def import_skills(req: SkillImportRequest):
-    """Import skills from a GitHub repository (exec-10 Phase 5.3)."""
+    """Import skills from a GitHub repository (exec-10 Phase 5.3).
+
+    skills_guard gates every incoming SKILL.md (exec-hermes §3.3). A blocked
+    import returns HTTP 422 with ``{success: False, rejected: [...]}`` so the
+    frontend can distinguish "policy rejected" from "internal error" (500).
+    """
     from agent.skills.importer import import_from_github
 
     try:
-        imported = await import_from_github(req.repo_url, req.tier, req.owner)
-        return {"success": True, "imported": imported, "count": len(imported)}
-    except Exception as e:
+        result = await import_from_github(req.repo_url, req.tier, req.owner)
+    except Exception as e:  # noqa: BLE001
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+    if not result.get("success"):
+        return JSONResponse(status_code=422, content=result)
+    imported = result.get("imported", [])
+    return {
+        "success": True,
+        "imported": imported,
+        "count": len(imported),
+        "rejected": result.get("rejected", []),
+    }
 
 
 class SkillInstallRequest(BaseModel):
@@ -230,7 +244,11 @@ async def install_skill_archive(req: SkillInstallRequest):
             content={"error": "path not within allowed upload directory"},
         )
     result = install_from_archive(req.path, req.tier, req.owner)
-    status = 200 if result["success"] else 400
+    if result["success"]:
+        return JSONResponse(status_code=200, content=result)
+    # 422 if rejected by skills_guard (dict carries verdict/findings),
+    # else 400 for parse/size/path errors.
+    status = 422 if "verdict" in result else 400
     return JSONResponse(status_code=status, content=result)
 
 

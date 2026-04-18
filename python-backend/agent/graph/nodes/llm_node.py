@@ -12,9 +12,35 @@ from typing import Any
 
 from agent.graph.state import AgentGraphState, ToolCall
 from agent.llm_client import get_litellm_client
+from agent.resilience.rate_limit_tracker import RateLimitRegistry
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
+
+
+# Module-private rate-limit registry. Accessor pattern (mirror of
+# agent.consent.rate_limiter.get_rate_limiter) lets tests swap the instance
+# without monkey-patching the module global — see
+# tests/agent/test_resilience_wiring.py for the pattern.
+_rl_registry: RateLimitRegistry | None = None
+
+
+def get_rate_limit_registry() -> RateLimitRegistry:
+    """Return the process-wide RateLimitRegistry singleton.
+
+    Lazy — first call constructs. Tests can reset via
+    ``reset_rate_limit_registry()``.
+    """
+    global _rl_registry
+    if _rl_registry is None:
+        _rl_registry = RateLimitRegistry()
+    return _rl_registry
+
+
+def reset_rate_limit_registry() -> None:
+    """Testing helper — drop the singleton so the next call rebuilds."""
+    global _rl_registry
+    _rl_registry = None
 
 
 def _detail_value(details: Any, key: str) -> int:
@@ -47,6 +73,11 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     api_key = state.get("api_key")
     thread_id = state.get("thread_id", "")
     iteration = state.get("iteration", 0)
+    # exec-hermes §3.5: rate-limit capture needs a caller identity. State
+    # declares user_id but code paths don't always populate it — reserved
+    # "anonymous" bucket key mirrors RateLimitBucket.user_id="" default so
+    # anonymous traffic is separate from named-user buckets.
+    user_id = state.get("user_id") or "anonymous"
 
     registry = ToolRegistry.load()
     tool_defs = [t.definition() for t in registry.all()]
@@ -103,8 +134,55 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         if extra_body:
             kwargs["extra_body"] = extra_body
 
-        response = await client.chat.completions.create(**kwargs)
+        try:
+            response = await client.chat.completions.create(**kwargs)
+        except Exception as exc:  # noqa: BLE001
+            # exec-hermes §3.4 telemetry: annotate span with failover taxonomy
+            # before re-raising. The outer runner catches + classifies again
+            # for the ErrorPacket — here we add the classification to the trace
+            # record so exec-17 Harness analysis sees the same dispatch.
+            try:
+                from agent.resilience.error_classifier import classify_error
+
+                _cls = classify_error(exc)
+                span.add_event(
+                    "llm_error",
+                    {
+                        "reason": _cls.reason.value,
+                        "recovery": _cls.recovery.value,
+                        "retryable": _cls.retryable,
+                        "status_code": _cls.status_code or -1,
+                    },
+                )
+            except Exception:  # noqa: BLE001 — classification must never mask the real error
+                pass
+            raise
         choice = response.choices[0]
+
+        # exec-hermes §3.5: capture x-ratelimit-* headers per-(user, provider-key).
+        # provider_key_id uses _provider_label(model) as a Phase-1 proxy — coarse
+        # but sufficient while exec-16 Credential-Pool is not yet wired
+        # (the bucket-key tuple includes user_id so cross-user pollution is
+        # already prevented). Swap for a hash of the real key-DB entry once
+        # credential_pool lands.
+        try:
+            _rate_buckets = get_rate_limit_registry().capture_from_response(
+                response,
+                user_id=user_id,
+                provider_key_id=_provider_label(model),
+                provider=_provider_label(model),
+            )
+            # Surface minute-window requests bucket as span attributes so exec-17
+            # Prom/OpenObserve dashboards can trace backpressure per request.
+            _rpm_bucket = next(
+                (b for b in _rate_buckets if b.window == "requests"), None
+            )
+            if _rpm_bucket is not None and _rpm_bucket.limit > 0:
+                span.set_attribute("ratelimit.requests.limit", _rpm_bucket.limit)
+                span.set_attribute("ratelimit.requests.remaining", _rpm_bucket.remaining)
+                span.set_attribute("ratelimit.requests.usage_pct", _rpm_bucket.usage_pct)
+        except Exception:  # noqa: BLE001 — rate-limit capture must never fail the call
+            logger.debug("rate-limit capture skipped", exc_info=True)
 
         prompt_tokens = 0
         completion_tokens = 0
@@ -246,23 +324,46 @@ def _model_may_use_ephemeral_cache(model: str) -> bool:
     return False
 
 
-def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:
-    """Add ephemeral cache_control to last 3 messages for Anthropic models.
+def _mark_cache_control(msg: dict[str, Any]) -> None:
+    """Attach ephemeral cache_control to every content part of one message."""
+    content = msg.get("content")
+    if isinstance(content, str):
+        msg["content"] = [
+            {
+                "type": "text",
+                "text": content,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+    elif isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict) and "type" in item:
+                item["cache_control"] = {"type": "ephemeral"}
 
-    From Meta-Harness TerminalBench artifact (anthropic_caching.py).
-    Saves 60-90% prompt tokens on multi-turn conversations.
+
+def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:
+    """Add ephemeral cache_control for Anthropic models.
+
+    Plan exec-hermes §4.5 requires ``System + letzte 3 non-system messages``
+    — four breakpoints. The system prompt is always ``messages[0]`` (see
+    ``llm_node`` at the top) and must get ``cache_control`` unconditionally
+    so every long-session turn reuses the cached system prefix. The
+    rolling window then covers the last three *non-system* messages.
+
+    Saves 60–90% prompt tokens on multi-turn Anthropic conversations.
     """
-    for i in range(max(0, len(messages) - 3), len(messages)):
-        msg = messages[i]
-        if isinstance(msg.get("content"), str):
-            msg["content"] = [
-                {
-                    "type": "text",
-                    "text": msg["content"],
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ]
-        elif isinstance(msg.get("content"), list):
-            for item in msg["content"]:
-                if isinstance(item, dict) and "type" in item:
-                    item["cache_control"] = {"type": "ephemeral"}
+    if not messages:
+        return
+
+    # 1. System prompt — always cached (unconditional breakpoint).
+    system_idx: int | None = None
+    if messages[0].get("role") == "system":
+        system_idx = 0
+        _mark_cache_control(messages[0])
+
+    # 2. Last-3 rolling window over NON-system messages.
+    non_system_positions = [
+        i for i, m in enumerate(messages) if i != system_idx
+    ]
+    for idx in non_system_positions[-3:]:
+        _mark_cache_control(messages[idx])
