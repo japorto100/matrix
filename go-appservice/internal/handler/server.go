@@ -22,6 +22,7 @@ import (
 	agenthttp "matrix/go-appservice/internal/handlers/http"
 	"matrix/go-appservice/internal/intent"
 	"matrix/go-appservice/internal/natsbridge"
+	"matrix/go-appservice/internal/scheduler"
 	"matrix/go-appservice/internal/storage"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,6 +45,11 @@ type Server struct {
 	// (River), and any future Postgres-backed subsystem. Created in
 	// NewServer, closed in Stop(). exec-scheduler Lane P.
 	DB *pgxpool.Pool
+
+	// scheduler is the River-backed cron / one-shot scheduler. nil if
+	// DB is unavailable (legacy deploys without Postgres). Started in
+	// Start(), stopped in Stop() BEFORE httpServer.Shutdown.
+	scheduler *scheduler.Scheduler
 
 	// roomMembers trackt Raum-Mitglieder für Mention-Filter (DM vs. Gruppe).
 	// Wird von handleMembership() aktualisiert, unabhängig von E2EE.
@@ -217,6 +223,28 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 		BaseContext:  func(_ net.Listener) context.Context { return context.Background() },
 	}
 
+	// ── Scheduler (exec-scheduler Lane B) ──────────────────────────────────
+	// Only wired when the shared pool exists. Routes live under
+	// /api/v1/scheduler and are proxied to from the Control-UI BFF (Lane D).
+	if sharedPool != nil {
+		sched, schedErr := scheduler.New(
+			sharedPool,
+			scheduler.Config{},
+			&scheduler.BridgeJetStreamProvider{Bridge: natsBridge},
+			nil, // MemoryPruneClient wired when Lane C Python endpoint lands.
+		)
+		if schedErr != nil {
+			slog.Warn("Scheduler disabled — construction failed",
+				"error", schedErr)
+		} else {
+			s.scheduler = sched
+			for pattern, handler := range sched.Routes() {
+				mux.HandleFunc(pattern, handler)
+			}
+			slog.Info("Scheduler routes registered")
+		}
+	}
+
 	// NATS Reply-Subscription: Agent-Antworten in Matrix-Räume senden
 	if _, err := natsBridge.SubscribeReplies(s.handleAgentReply); err != nil {
 		return nil, fmt.Errorf("nats subscribe: %w", err)
@@ -256,22 +284,45 @@ func (s *Server) Start(ctx context.Context) error {
 			slog.Error("HTTP server error", "error", err)
 		}
 	}()
+	// Start the scheduler after HTTP is listening — River workers begin
+	// fetching and cron periodic-jobs start ticking. Failure is logged
+	// but doesn't block the server (scheduler-less operation is valid
+	// for deployments that don't need it).
+	if s.scheduler != nil {
+		if err := s.scheduler.Start(ctx); err != nil {
+			slog.Error("Scheduler start failed — continuing without it",
+				"error", err)
+			s.scheduler = nil
+		} else {
+			slog.Info("Scheduler started")
+		}
+	}
 	return nil
 }
 
-// Stop fährt den Server sauber herunter. Shutdown-Ordering (exec-scheduler Lane P):
+// Stop fährt den Server sauber herunter. Shutdown-Ordering (exec-scheduler Lane P/B):
 //  1. Key backup export (E2EE)
-//  2. Scheduler stop — drain in-flight River jobs (30s timeout) — Lane B adds this
+//  2. Scheduler stop — drain in-flight River jobs (30s timeout)
 //  3. HTTP server shutdown (stops accepting new requests, drains in-flight) — 5s timeout
 //  4. Artifact metadata store close (no-op on pool — doesn't own it)
 //  5. Shared pgxpool close — last, so nothing tries to query a dead pool
 //
-// NATS bridge is closed by defer in cmd/appservice/main.go (LIFO after Stop).
+// NATS bridge is closed by defer in cmd/appservice/main.go (LIFO after Stop),
+// so JetStream publishes from the scheduler's final drain still reach the
+// server before the connection shuts.
 func (s *Server) Stop() {
 	// C-8: Key Backup beim Shutdown exportieren
 	if s.crypto != nil {
 		if err := s.crypto.ExportKeyBackup(context.Background()); err != nil {
 			slog.Warn("E2EE: key backup export on shutdown failed", "error", err)
+		}
+	}
+
+	// Scheduler stop — drain River jobs before HTTP goes away. The
+	// Scheduler's own timeout (30s) lives in scheduler.Stop.
+	if s.scheduler != nil {
+		if err := s.scheduler.Stop(context.Background()); err != nil {
+			slog.Warn("Scheduler shutdown error", "error", err)
 		}
 	}
 
