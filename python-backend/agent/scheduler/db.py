@@ -105,6 +105,30 @@ async def count_active_for_user(user_id: str) -> int:
         )
 
 
+async def count_recent_inserts_for_user(
+    user_id: str, within_ms: int = 60_000
+) -> int:
+    """Count rows the user created in the last ``within_ms`` milliseconds.
+
+    Powers the per-turn rate-limit in ``schedule_task``: a prompt-
+    injected "add 20 tasks" turn spends one INSERT per tool-call, so
+    bucketing on created_at over the last minute catches the flood
+    without needing per-turn thread-local state (which wouldn't survive
+    a worker restart mid-turn anyway).
+    """
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        return await conn.fetchval(
+            """
+            SELECT COUNT(*) FROM scheduler.scheduled_tasks
+            WHERE user_id = $1
+              AND created_at >= $2
+            """,
+            user_id,
+            now_ms() - max(int(within_ms), 1_000),
+        )
+
+
 async def insert_task(row: InsertTaskRow) -> str:
     """Insert a new scheduled task. Returns the generated task_id.
 

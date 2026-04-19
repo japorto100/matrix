@@ -143,21 +143,13 @@ Note: Use-cases 1-3 are the **primary UX feature**; users see these in a "Meine 
                                          (Go) or email/telegram (Go)
 ```
 
-### 4.3 Why not Temporal now
+### 4.3 Why not Temporal now → `exec-scheduler2.md §7`
 
-Matrix's own `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md:42` says:
-
-> `| Produkt-/Business-Workflows | Temporal spaeter gezielt | langlebige, produktkritische Ablaeufe |`
-
-Temporal is the right tool **when**:
-- Multi-step workflows need durable execution (survive worker crashes mid-flow)
-- Long-running plans (> 10min) need replay semantics
-- Saga patterns with compensations
-- Human-in-the-loop approval gates
-
-None of that is needed for cron-driven jobs or short LLM turns (<2min). Adding Temporal now means: Temporal server + its own DB + new SDK + new mental model. River gives 90% of production-cron value with zero new infra.
-
-**Migration path to Temporal (Phase 2):** River jobs become Temporal-workflows by wrapping the existing handler functions; the user-facing agent-tool API stays the same. No re-learning for users.
+Short answer: Phase-1 LLM turns are short (< 2min), cron-driven, and
+don't need saga/replay/human-approval — River covers 90% of the
+production-cron value with zero new infra. The detailed rationale +
+Temporal migration path lives in the Phase-2 spec §7 alongside the
+Phase-3 Temporal discussion.
 
 ---
 
@@ -266,21 +258,17 @@ Alembic-owned tables is safe.
   - "werktags 17 Uhr" → `0 17 * * 1-5`
 - Timezone: user's configured TZ (from `agent.user_llm_settings.timezone`); default UTC if unset.
 
-### 6.2 Event-based (NATS subjects + webhooks)
+### 6.2 — 6.3 Event-based + Condition-triggered → `exec-scheduler2.md`
 
-- NATS-subjects the scheduler listens on (and publishes to):
-  - `matrix.scheduler.job.execute` — outgoing, agent-jobs
-  - `matrix.ingestion.file.arrived` — incoming, triggers condition-eval
-  - `matrix.audit.threshold.crossed` — incoming, triggers alert-agents
-- HTTP webhook endpoint: `POST /api/v1/scheduler/trigger/{routine_id}` with bearer-token auth — Claude-Code-Routines-style external trigger.
-- GitHub-webhook endpoint: `POST /api/v1/scheduler/webhook/github` — matches Anthropic's routines-on-PR pattern.
+Phase-1 implements only the time-based trigger (§6.1). Webhook triggers
+and periodic-eval condition tasks are Phase-2 scope; their detailed
+design lives in the Phase-2 spec (D-1 for webhook auth, D-3 for rule-
+DSL choice, implementation items P2b-3 + P2c-1/2).
 
-### 6.3 Condition-triggered (eval loop)
-
-- Periodic eval: a condition-task runs every N minutes, executes a **pure-eval** rule (no LLM), and only spawns the downstream agent-job if the rule trips.
-- Rule DSL (Phase 1, minimal): `expr(metric_name, comparison, threshold)`.
-  - Example: `expr("portfolio.var_95", ">", 0.05)`.
-- Phase 2: extend to full CEL (Common Expression Language) or re-use OPA.
+The only NATS subject Phase-1 uses is `matrix.scheduler.job.execute`
+(outgoing, Go → Python subscriber). The `matrix.ingestion.file.arrived`
+and `matrix.audit.threshold.crossed` incoming subjects come online with
+the condition-eval worker in Phase-2.
 
 ---
 
@@ -365,90 +353,44 @@ Rationale documented in `~/.claude/projects/.../memory/project_scheduler_chat_en
 
 ---
 
-## 8. Developer / Admin Routines (Claude-Code-Routines pattern)
+## 8 — 9 Dev/Admin Routines + Remaining Infra Jobs → `exec-scheduler2.md`
 
-Same table, `source=api` or `source=github_webhook`, `kind=routine`.
+Phase-1 covers only **3 of the 9 infra jobs from §3**: metric-rollup
+(UC 10, landed via gap-closer migration 021), memory-prune (UC 11),
+provider health-pings (UC 15 via `HealthPingWorker`). The remaining 6
+jobs (dep-updates, seaweedFS tiering, key-rotation, cert-renewal,
+harness-eval, user-digest) are Phase-2 scope — each becomes a new
+River worker in `internal/scheduler/handlers/`, landing independently
+as demand hits them. See exec-scheduler2.md §2 Phase-2c item P2c-4.
 
-### 8.1 API-triggered routine
-
-```
-POST /api/v1/scheduler/routines
-Authorization: Bearer <admin-token>
-Body: {
-  "name": "daily-security-scan",
-  "cron_expr": "0 3 * * *",
-  "prompt": "Scan matrix-core repo for vulnerabilities. Post digest to #security.",
-  "skill_ids": ["security-audit"],
-  "delivery_target": {"kind": "matrix_room", "id": "!security:matrix.local"}
-}
-```
-
-### 8.2 Webhook-triggered routine
-
-```
-POST /api/v1/scheduler/webhook/github
-X-GitHub-Event: pull_request
-Body: (GitHub PR payload)
-→ Scheduler matches payload to a routine by filter (e.g. "event=opened AND repo=matrix").
-→ Executes routine with payload injected into prompt.
-```
-
-### 8.3 Routine registry
-
-Separate table `scheduler.routines` (not `scheduled_tasks`) for dev-admin-owned routines. Rows reference `scheduled_tasks` when they spawn instances. Separation prevents user-task limits from affecting infra routines.
-
----
-
-## 9. Infrastructure Jobs (Category 4)
-
-All 9 run as River `PeriodicJob`s registered at go-appservice startup. Each has a dedicated handler; no prompt / no LLM call.
-
-| Job | Cron | Handler |
-|---|---|---|
-| Dependency updates | `0 4 * * 1` (Mon 04:00) | `infra_dep_updates.go` — runs `bun outdated` / `uv pip list --outdated` / `go list -m -u all` / `cargo outdated` in each sub-project sandbox, publishes result-JSON to Matrix-room `#infra` OR triggers Renovate-job via GitHub-action-dispatch |
-| SeaweedFS tiering | `0 2 * * *` | `infra_storage_tier.go` — scans `storage.artifact_metadata` for age > 30d, moves to cold bucket |
-| Key rotation health | `0 5 * * 0` (Sun 05:00) | `infra_key_rotation.go` — tests all user-provider-keys, flags expiring/invalid |
-| Metric rollups | `0 0 * * *` (00:00) | `infra_metric_rollup.go` — aggregates `agent.audit_events` + `agent.traces` → `agent.metrics` for the past day |
-| Memory pruning | `0 3 * * 0` (Sun 03:00) | `infra_memory_prune.go` — archives `agent.sessions` with completed_at > 30d |
-| Cert renewal | `0 6 1 * *` (first of month 06:00) | `infra_cert_renewal.go` — LetsEncrypt ACME run (only if matrix owns certs) |
-| Harness eval | `0 2 * * 0` (Sun 02:00) | `infra_harness_eval.go` — triggers `python-backend/agent/harness/evaluator.py` benchmark suite, publishes result |
-| User digest emails | per-user cron from `agent.user_llm_settings.digest_schedule` | `infra_user_digest.go` — activity summary email |
-| Provider health pings | `*/5 * * * *` | `infra_provider_health.go` — chat-completion probe per provider, alert on failure |
-
-### 9.1 Dependency-update job — two modes
-
-Mode A — Renovate trigger (auto-PR):
-- `bun outdated` / `uv pip list --outdated` / `go list -m -u all` / `cargo outdated` run in each sub-project
-- Upload outdated-list as artifact
-- Trigger a GitHub-action that invokes Renovate with that list
-- Renovate opens PRs per Renovate-config
-- User reviews/merges normally
-- **Requires**: GitHub-token in go-appservice keyvault + Renovate config in `.github/renovate.json`
-
-Mode B — Digest message (review-first):
-- Same outdated-check
-- Post summary to Matrix-room `#infra` or `#dev` : "3 critical bun updates, 12 minor uv, 5 major cargo — react with `/reviewupdates` to open PRs"
-- User reacts → scheduler fires Mode-A path for the flagged subset
-- **Requires**: Matrix-room for `#infra` in delivery-target + simple reaction-to-trigger handler
-
-Both modes share the outdated-scan core (`infra_dep_updates.go`); mode is configured per-job in `scheduler.scheduled_tasks.metadata.update_mode`.
+Dev/admin routines (API-triggered, GitHub-webhook-triggered, Claude-
+Code-Routines pattern) are also Phase-2 — they share `scheduler.
+scheduled_tasks` with `kind=routine` (see D-6 decision in exec-
+scheduler2.md) and get their own REST endpoints (P2b-2 / P2b-3 in
+that spec).
 
 ---
 
 ## 10. Delivery Channels
 
-Go side (`delivery.go`) implements a `Deliverer` interface with 4 built-in impls:
+Phase-1 implements **Matrix-only** delivery via the existing
+`natsbridge` + Go appservice bridge (the same path used by the Matrix-
+chat reply flow). No new code — scheduled-task results land in the
+target Matrix room via `@agent:matrix.local`.
 
-- **MatrixRoomDeliverer** — uses existing Matrix-bridge client (already wired in go-appservice). Posts as agent-matrix-user.
-- **EmailDeliverer** — SMTP (matrix owns SMTP-relay creds or uses external provider). User's email from `agent.users` profile.
-- **TelegramDeliverer** — Telegram-bot-API (optional; only if `TELEGRAM_BOT_TOKEN` configured).
-- **NoopDeliverer** — for infra jobs where "done" = write to `audit_events`, no external surface.
+Alternative channels (email, telegram) are Phase-2 scope — see
+`exec-scheduler2.md` items P2a-2 (EmailDeliverer) and P2a-3
+(TelegramDeliverer). Credentials-storage decision in D-2 of that spec.
 
-Default delivery per surface (user chat-initiated tasks):
-- agent-chat surface → respond in agent-chat UI + write a matrix-message to user's personal matrix-user
+Default delivery per surface (Phase-1 user-initiated tasks):
+
+- agent-chat surface → matrix-message back to user's personal matrix-user
 - matrix DM → matrix-message to the DM room
 - matrix group → matrix-message to the group room
-- API/webhook routines → delivery-target must be explicit in request body
+
+`delivery_target` JSONB schema accepts all delivery-kinds at the
+data-layer (`matrix_room`, `matrix_dm`, `email`, `telegram`) — the
+non-Matrix kinds are just not yet wired on the dispatch side.
 
 ---
 
@@ -551,26 +493,27 @@ Phase-1 use-cases covered: **UC 1+2+3+10+11+15** from §3 (user recurring,
 user one-shot, user reminder, metric-rollup infra, memory-prune infra,
 chat-initiated creation via all three surfaces).
 
-### Phase 2 — Polish + more use-cases (~1 week)
+### Phase 2 — extracted to `exec-scheduler2.md`
 
-- [ ] Infra jobs 7+8+9+12+13+14 (dep-updates mode A+B, tiering, key-rotation, cert-renewal, harness-eval, user-digest)
-- [ ] EmailDeliverer + TelegramDeliverer
-- [ ] Dev-admin routines — API endpoint + GitHub-webhook endpoint
-- [ ] Condition-triggered jobs — minimal rule-DSL
-- [ ] Control-UI: edit delivery-target, pause/resume inline
-- [ ] Observability: Prom-metrics + River-UI admin-mount
-- [x] ~~Real `agent.metrics` table so `infra.metric_rollup` can land~~ →
-      migration 021_agent_metrics (2026-04-19) + MetricRollupWorker wired
-      as 3rd Phase-1 periodic job (hourly :05), closed in the gap-close
-      commit
-- [ ] Replace `userId="local"` placeholder across Control-UI with session-aware wiring
-- [ ] Rate-limit "create 5 tasks in one turn" (Phase-1 only enforces per-user cap, not per-turn)
+All Phase-2 implementation items — Email/Telegram delivery, dev-admin
+routines, GitHub-webhook triggers, condition-DSL, remaining infra jobs
+(dep-updates, tiering, key-rotation, cert-renewal, harness-eval,
+user-digest), Prom-metrics endpoint, Control-UI inline editing — moved
+to `specs/execution/exec-scheduler2.md` (2026-04-19). That spec also
+collects the 8 open design decisions (D-1…D-8) that block coding.
 
-### Phase 3 — Temporal migration option (future, not committed)
+Landed in Phase-1 itself (post-DONE same-day gap-closers):
 
-- Driver: user-initiated task needs > 10min runtime OR multi-step human-approval flow OR mandatory saga-compensation
-- Migrate `handle_agent_turn` handler from River worker to Temporal workflow; keep River for fire-and-forget infra jobs
-- Scheduler table unchanged (still Postgres); Temporal-workflow-id stored in `metadata.temporal_workflow_id`
+- [x] **`agent.metrics` table** — migration 021_agent_metrics (2026-04-19)
+      + MetricRollupWorker (hourly :05)
+- [x] **Per-turn rate-limit** — `schedule_task` rejects when the user
+      created > 5 tasks in the last 60s (`count_recent_inserts_for_user`)
+
+### Phase 3 — extracted to `exec-scheduler2.md §7`
+
+The Temporal migration option lives in the Phase-2 spec alongside its
+prerequisite discussions (long-running turns, saga / compensation,
+human-approval gates). Not committed, still speculative.
 
 ---
 
@@ -653,17 +596,18 @@ Still gated on a running real agent-turn (LLM API costs):
 - [ ] Live chat-to-DB via agent-chat UI
 - [ ] Live `/control/tasks` UI rendering against real DB
 
-### Phase 2 gates
+### Phase 2 gates → `exec-scheduler2.md §3`
 
-- [ ] Dep-update Mode B: scheduled weekly Monday 04:00 → matrix-room `#infra` receives summary
-- [ ] Dep-update Mode A: GitHub-action triggered, Renovate PRs visible in repo
-- [ ] Email delivery: daily 08:00 user-digest lands in email inbox
-- [ ] GitHub-webhook: PR open → routine fires → PR-comment from review-agent
-- [ ] Condition-triggered: metric crosses threshold → alert-agent-message in matrix
-- [ ] Hard-cap stress test: attempt the pause+insert+resume bypass
-      against the 020 trigger — expect `check_violation`
-- [ ] Ownership stress test: task_id leak → direct REST call with
-      wrong user_id → expect 404
+Dep-update, email/telegram delivery, GitHub-webhook, condition-triggered
+verify-gates all moved to the Phase-2 spec. The two stress-tests that
+were originally in this section are Phase-1 security regressions — they
+stayed here and are already covered by the E2E harness:
+
+- [x] ~~Hard-cap stress test~~ → `test_gate_hard_cap_trigger_blocks`
+      in `tests/e2e/test_scheduler_flow.py` — 51st INSERT + pause+insert+
+      resume bypass regression
+- [x] ~~Ownership stress test~~ → `test_gate_ownership_enforced_on_rest`
+      — wrong-user-id PATCH expects 404, correct user_id expects 200
 
 ---
 
@@ -672,51 +616,40 @@ Still gated on a running real agent-turn (LLM API costs):
 **Resolved in Phase-1:**
 
 1. ~~**Natural-language parsing**~~ → **Resolved**: the agent LLM is
-   the parser. No dedicated small-model and no rules-based parser
-   (tried briefly, dropped as redundant). The LLM parses NL in its
-   reasoning for every tool call already; adding a scheduling-specific
-   parser only coupled us to DE+EN and duplicated work. Tool
-   description guides the LLM through expected fields; the LLM
-   language-agnostically produces `cron_expr` / `scheduled_at_ms`.
-   One tool-call per creation (merged `schedule_draft` + `confirm_*`
-   into single `schedule_task`); confirmation happens in the chat
-   text of the LLM's turn before the tool is invoked.
+   the parser. Merged `schedule_draft` + `confirm_scheduled_task` into
+   one `schedule_task` tool; confirmation happens in the LLM's chat
+   turn before the call. Language-agnostic; no regex parser.
+2. ~~**Timezone UX**~~ → **Partially resolved**: `tz` is a required
+   column; LLM infers from context. Where to canonically persist a
+   user's default tz (`agent.user_llm_settings.timezone`?) is an
+   open question for when we go multi-user — not scheduler-scoped.
+3. ~~**Daylight-saving**~~ → **Resolved**: `locScheduler` wrapper in
+   `cron_registry.go` converts evaluation to the task's IANA
+   `time.Location` before `Next()`. Go's `time` package handles DST.
+4. ~~**Rate-limit per turn**~~ → **Resolved**: `schedule_task` rejects
+   when user created > 5 tasks in the last 60s (`burst_rate_limit`
+   error surfaced to the LLM).
 
-2. **Timezone UX** → **Partially resolved**: `tz` is a required column
-   (default `UTC`) on `scheduled_tasks`. The agent LLM infers it from
-   context/user-mention when present. Where to canonically store the
-   user's default tz (`agent.user_llm_settings.timezone` is the natural
-   home) is still open and only becomes relevant when multi-user.
+**Deferred to `exec-scheduler2.md`:**
 
-3. ~~**Daylight-saving**~~ → **Resolved**: Phase-1 implemented
-   per-task IANA TZ via `locScheduler` wrapper in
-   `cron_registry.go:addLocked`. `robfig/cron`'s default `time.Local`
-   would have ignored `task.tz` — the wrapper converts to the task's
-   `time.Location` before calling inner `Next()`. DST transitions are
-   handled correctly by Go's `time` package.
+5. Routine-vs-task table separation → **D-6** in exec-scheduler2.md
+6. Condition-DSL (hand-rolled vs CEL) → **D-3** in exec-scheduler2.md
+7. Skill-binding migration path → **D-7** in exec-scheduler2.md (naturally
+   resolved when exec-skills §4.2 lands; no Phase-2 work expected)
 
-**Still open (Phase-2 territory):**
+**Deferred to `exec-control-auth.md` (not yet written):**
 
-4. **Routine-vs-task distinction**: should dev-routines live in the same
-   `scheduled_tasks` table (with `kind=routine`) or a separate
-   `scheduler.routines` table? Separate gives clean user-limit scoping;
-   same gives unified listing. Phase-1 schema uses `kind=routine` in
-   the shared table.
-5. **Rate-limit for chat-initiated tasks**: user asks agent to schedule
-   5 tasks in one turn — ok? Or enforce per-turn max? Phase-1 only
-   enforces per-user cap (soft 10 / hard 50).
-6. **Condition-rule DSL**: start with hand-rolled `expr(metric, op, threshold)`
-   or adopt CEL from day 1?
-7. **Skill-binding**: when exec-skills §4.2 lands, `skill_ids[]` becomes
-   mandatory for agent-jobs — migration path?
-8. **Control-UI userId="local"**: placeholder across Control surface
-   (also in `useOverview`, `useContextInspector`). Needs session-
-   aware wiring in one repo-wide pass.
+8. Control-UI `userId="local"` placeholder is an app-wide auth wiring
+   problem, not scheduler-specific. Same placeholder appears in
+   `useOverview`, `useContextInspector`. Fix in one repo-wide sweep.
 
 ---
 
 ## 16. Cross-Refs
 
+- **`exec-scheduler2.md`** — Phase-2 (delivery, routines, conditions,
+  remaining infra jobs) + Phase-3 (Temporal option). All design-
+  decisions blocking coding are collected there as D-1..D-8.
 - `archive/exec-19-devstack-consolidation.md` — former home of §4.1 cron, archived 2026-04-18
 - `exec-hermes.md §4.1` — original pattern source, now delegated to this spec
 - `exec-16-llm-provider-gateway.md` — scheduled jobs call LLMs via LiteLLM; cost-tracking + rate-limit already integrated
@@ -737,3 +670,4 @@ Still gated on a running real agent-turn (LLM API costs):
 | 2026-04-18 | Erstversion. Spec entstanden aus Archivierung von exec-19 §4.1 + Redistribution. Stack-Entscheidung River (Phase 1) + Temporal (Phase 2). UX chat-first via agent-tools. 15 use-cases in 4 Kategorien dokumentiert. Dep-update als explizite Infra-Job-Klasse mit 2-Mode-Integration (Renovate-trigger + Matrix-digest). Scheduler-DM-Entry über `@agent:matrix.local` festgehalten — gleiches Verhalten wie agent-chat, keine separate UX. |
 | 2026-04-19 | Phase-1 Implementation **DONE** (9 commits on main). Lanes P/A/F/B/C/D/E + sota-verify fixes. Divergences from original spec: (a) Migration number is **019_scheduler_schema** (next free), not 020 as draft guessed — plus **020_scheduler_cap_trigger_fix** for the Lane-E cap-bypass fix. (b) Tool count **8** (added `schedule_edit` + `schedule_run_now`; merged `schedule_draft` + `confirm_scheduled_task` → single `schedule_task`). (c) Rules-based NL parser **removed** — LLM-native parsing in single-tool. (d) Per-task IANA tz support via `locScheduler` wrapper; DST handled correctly. (e) ack_wait 600s + 30s in_progress heartbeat for long turns. (f) ownership-gating on Go REST PATCH/DELETE/GET/runs. (g) frontend_merger `/control/tasks` uses BFF proxy `/api/scheduler/*` (new), separate from `/api/control/*`. (h) `agent.metrics` doesn't exist in Phase-1 → `metric_rollup` handler deferred, infra demos are health_ping + memory_prune. Deferred to Phase-2 live tests: cron-tick fire end-to-end, NOTIFY hot-reload, matrix-delivery. sota-verify **PASS** after fixes (commit `00fab99`). |
 | 2026-04-19 | **Phase-1 gap-closers** (post-Phase-1 same-day). Migration **021_agent_metrics** + MetricRollupWorker (hourly :05) re-enables the deferred `metric_rollup` infra handler. E2E harness at `python-backend/tests/e2e/test_scheduler_flow.py` — 5 `@pytest.mark.integration` tests covering insert-path, NOTIFY trigger, hard-cap + bypass regression, REST ownership, run_now → JetStream publish. Skip-by-default with clean TCP-probe messages; opt-in via `RUN_INTEGRATION=1` or `scripts/scheduler-e2e.sh`. No new docker-compose profile — existing default already provides nats+postgres+tuwunel. Full test suite: 212 passed + 5 integration-skipped. |
+| 2026-04-19 | **Phase-2 + Phase-3 content extracted** to new slice `exec-scheduler2.md`. This spec is now **Phase-1-complete + verify-gates-only**, archivable once the 3 remaining LLM-API-live gates are run. Extracted sections: §4.3 Temporal rationale → scheduler2 §5, §6.2–§6.3 event-based + condition-triggered triggers → scheduler2 §4a.1–4a.2, §8 dev/admin routines → scheduler2 §4a.3, §9 infra jobs (7+8+9+12+13+14) → scheduler2 §4a.4, §10 email/telegram delivery → scheduler2 §4a.5. §13 Phase-2 + Phase-3 plans → scheduler2 §2 + §5. §14 Phase-2 gates → scheduler2 §3. 8 design decisions (D-1..D-8) collected in scheduler2 §1 so coding can start once resolved. Also **per-turn rate-limit implemented** (`burst_rate_limit` in `schedule_task` — 5 tasks/60s per user). |

@@ -147,6 +147,24 @@ class ScheduleTaskTool(TradingTool):
     ) -> dict[str, Any]:
         params = ScheduleTaskInput(**tool_input)
 
+        # Per-turn rate-limit: catches prompt-injected "add 20 tasks"
+        # floods. Bucketed on created_at over the last 60s — robust
+        # against worker restarts mid-turn (no thread-local state).
+        recent = await scheduler_db.count_recent_inserts_for_user(
+            ctx.user_id, within_ms=60_000
+        )
+        burst_cap = 5
+        if recent >= burst_cap:
+            return {
+                "ok": False,
+                "error": "burst_rate_limit",
+                "message": (
+                    f"Too many scheduled tasks created in the last minute "
+                    f"({recent} ≥ {burst_cap}). Wait ~60s before adding more, "
+                    "or use schedule_edit to adjust existing ones."
+                ),
+            }
+
         # Soft-cap check before INSERT — hard cap fires as trigger if this slips.
         active = await scheduler_db.count_active_for_user(ctx.user_id)
         soft_cap = 10
