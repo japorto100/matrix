@@ -1,10 +1,12 @@
-"""Agent-facing scheduler tools (exec-scheduler §7.2).
+"""Agent-facing scheduler tools.
 
-Nine tools expose the full lifecycle without the chat-UI ever touching a
+Seven tools expose the full lifecycle without the chat-UI ever touching a
 form:
 
-* ``schedule_draft`` — parses natural-language intent to a draft; NO DB write.
-* ``confirm_scheduled_task`` — persists a previously-drafted task.
+* ``schedule_task`` — persist a new scheduled task. The agent LLM is the
+  natural-language parser: it reads the user's phrasing (any language it
+  understands), optionally echoes back for confirmation in its chat turn,
+  then calls this tool with explicit structured fields.
 * ``schedule_list`` — lists the user's scheduled tasks.
 * ``schedule_pause`` — status → paused.
 * ``schedule_resume`` — status → active.
@@ -13,10 +15,12 @@ form:
 * ``schedule_edit`` — patch prompt / cron / delivery_target without recreate.
 * ``schedule_run_now`` — manual one-off fire of an existing task.
 
-Two-step flow (``schedule_draft`` → ``confirm_scheduled_task``) is
-intentional: "morgen 9" is ambiguous in context; the agent echoes the
-parsed draft back to the user and only the user's "ja" triggers the
-INSERT.
+No language-specific parser here. The LLM already parses "jeden Montag 9
+Uhr" / "every monday at 9" / "毎週月曜9時" into the same cron expression
+``0 9 * * 1`` — handing that job to a regex-based parser duplicates
+reasoning the model already does, worse than it does, and only for the
+languages we bothered to code. Confirmation-before-write is the LLM's
+own turn, not a separate tool step.
 """
 
 from __future__ import annotations
@@ -29,7 +33,6 @@ from pydantic import BaseModel, Field
 
 from agent.scheduler import db as scheduler_db
 from agent.scheduler import service_user_id  # noqa: F401 — re-exported hint
-from agent.scheduler.nl_parser import draft_to_dict, parse
 from agent.tools.base import TradingTool
 
 if TYPE_CHECKING:
@@ -41,19 +44,7 @@ log = logging.getLogger(__name__)
 # ── Pydantic input models ────────────────────────────────────────────────
 
 
-class ScheduleDraftInput(BaseModel):
-    natural_language: str = Field(
-        min_length=1,
-        description="User's scheduling intent, e.g. 'jeden Montag 9 Uhr "
-        "Portfolio-Briefing'.",
-    )
-    user_tz: str = Field(
-        default="UTC",
-        description="IANA timezone for interpreting times (e.g. Europe/Zurich).",
-    )
-
-
-class ConfirmScheduledTaskInput(BaseModel):
+class ScheduleTaskInput(BaseModel):
     kind: str = Field(description="recurring | one_shot | reminder")
     cron_expr: str | None = Field(default=None, description="5-field cron; null for one-shot/reminder")
     scheduled_at_ms: int | None = Field(default=None, description="epoch-ms; null for recurring")
@@ -115,67 +106,46 @@ class ScheduleRunNowInput(BaseModel):
 # ── Tool implementations ──────────────────────────────────────────────────
 
 
-class ScheduleDraftTool(TradingTool):
-    """Parse natural-language scheduling intent into a draft for confirmation."""
+class ScheduleTaskTool(TradingTool):
+    """Persist a new scheduled task. Agent LLM parses user intent in its own
+    reasoning — NO regex parser, NO language coupling, confirmation happens
+    in the LLM's chat turn before calling this tool.
+    """
 
-    input_model = ScheduleDraftInput
+    input_model = ScheduleTaskInput
 
     @property
     def name(self) -> str:
-        return "schedule_draft"
+        return "schedule_task"
 
     def definition(self) -> dict:
         return {
             "name": self.name,
             "description": (
-                "Parse the user's natural-language scheduling request and return a "
-                "structured draft (kind, cron_expr or scheduled_at_ms, tz, prompt). "
-                "DOES NOT write to the database. Use this FIRST, echo the draft back "
-                "to the user for confirmation, then call confirm_scheduled_task with "
-                "the exact fields from this draft."
-            ),
-            "input_schema": ScheduleDraftInput.model_json_schema(),
-        }
-
-    async def execute(
-        self, tool_input: dict, ctx: AgentExecutionContext
-    ) -> dict[str, Any]:
-        params = ScheduleDraftInput(**tool_input)
-        draft = parse(params.natural_language, user_tz=params.user_tz)
-        return {
-            "ok": True,
-            "draft": draft_to_dict(draft),
-            "next_step": (
-                "Echo the draft back to the user, wait for confirmation, "
-                "then call confirm_scheduled_task with the same fields."
-            ),
-        }
-
-
-class ConfirmScheduledTaskTool(TradingTool):
-    """Persist a previously drafted scheduled task."""
-
-    input_model = ConfirmScheduledTaskInput
-
-    @property
-    def name(self) -> str:
-        return "confirm_scheduled_task"
-
-    def definition(self) -> dict:
-        return {
-            "name": self.name,
-            "description": (
-                "Persist a scheduled task to the database. Call this ONLY after "
-                "the user has confirmed a draft returned by schedule_draft. "
+                "Create a scheduled task. Before calling, infer the fields from "
+                "the user's natural-language request (any language you understand) "
+                "and echo a human-readable summary back in your chat reply so the "
+                "user can confirm. Only call this tool after the user explicitly "
+                "confirms.\n\n"
+                "Examples of user phrasing → fields:\n"
+                "  'jeden Montag 9 Uhr Portfolio-Briefing' →\n"
+                "    kind='recurring', cron_expr='0 9 * * 1', prompt='Portfolio-Briefing',\n"
+                "    tz=<user's IANA tz>\n"
+                "  'morgen um 8 check EUR/USD' →\n"
+                "    kind='one_shot', scheduled_at_ms=<tomorrow 08:00 in user tz, "
+                "epoch-ms>, prompt='check EUR/USD', tz=<user's IANA tz>\n"
+                "  'in 6 Monaten Passport renewal' →\n"
+                "    kind='reminder', scheduled_at_ms=<now + 6 months, epoch-ms>,\n"
+                "    prompt='Passport renewal'\n\n"
                 "Returns the generated task_id on success."
             ),
-            "input_schema": ConfirmScheduledTaskInput.model_json_schema(),
+            "input_schema": ScheduleTaskInput.model_json_schema(),
         }
 
     async def execute(
         self, tool_input: dict, ctx: AgentExecutionContext
     ) -> dict[str, Any]:
-        params = ConfirmScheduledTaskInput(**tool_input)
+        params = ScheduleTaskInput(**tool_input)
 
         # Soft-cap check before INSERT — hard cap fires as trigger if this slips.
         active = await scheduler_db.count_active_for_user(ctx.user_id)
@@ -205,7 +175,7 @@ class ConfirmScheduledTaskTool(TradingTool):
         try:
             task_id = await scheduler_db.insert_task(row)
         except Exception as exc:  # noqa: BLE001 — surface DB errors to LLM
-            log.warning("confirm_scheduled_task insert failed: %s", exc)
+            log.warning("schedule_task insert failed: %s", exc)
             return {"ok": False, "error": "insert_failed", "message": str(exc)}
 
         return {

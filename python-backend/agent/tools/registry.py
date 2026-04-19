@@ -55,15 +55,14 @@ class ToolRegistry:
         from agent.tools.sandbox_browser_tool import SandboxBrowserTool
         from agent.tools.sandbox_tool import SandboxExecuteTool
         from agent.tools.scheduler_tools import (
-            ConfirmScheduledTaskTool,
             ScheduleCancelTool,
-            ScheduleDraftTool,
             ScheduleEditTool,
             ScheduleListRunsTool,
             ScheduleListTool,
             SchedulePauseTool,
             ScheduleResumeTool,
             ScheduleRunNowTool,
+            ScheduleTaskTool,
         )
 
         registry = cls()
@@ -85,9 +84,8 @@ class ToolRegistry:
         registry.register(SandboxExecuteTool())
         registry.register(SandboxBrowserTool())
         registry.register(FileAnalyzeTool())
-        # Scheduler Tools (exec-scheduler Lane C)
-        registry.register(ScheduleDraftTool())
-        registry.register(ConfirmScheduledTaskTool())
+        # Scheduler Tools (exec-scheduler Lane C — 7 tools, LLM-native NL)
+        registry.register(ScheduleTaskTool())
         registry.register(ScheduleListTool())
         registry.register(SchedulePauseTool())
         registry.register(ScheduleResumeTool())

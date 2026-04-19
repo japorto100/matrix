@@ -267,42 +267,60 @@ All three route through `python-backend/bridge/` (Matrix) or the direct HTTP pat
 
 ### 7.2 Agent-Tools (exposed to every agent turn)
 
+**Design note (2026-04-19 revision):** the earlier two-step
+`schedule_task(nl) → confirm_scheduled_task(draft_id)` pattern has been
+collapsed into a single `schedule_task(...)` tool with explicit
+structured fields (``kind``, ``cron_expr | scheduled_at_ms``, ``prompt``,
+``tz``, ``delivery_target``, ``skill_ids``, ``max_executions``). Reason:
+the agent LLM already parses natural language in every other tool call —
+a regex- or rules-based NL-parser dedicated to scheduling duplicates
+reasoning the model does (better), only works for languages we code,
+and is redundant. Confirmation-before-write happens in the LLM's chat
+turn ("Soll ich 'jeden Montag 09:00 UTC, Portfolio-Briefing' anlegen?
+Bestätigen mit 'ja'."), not in a separate tool step.
+
+Phase-1 ships **seven** tools:
+
 ```python
-# python-backend/agent/tools/scheduling/*.py
+# python-backend/agent/tools/scheduler_tools.py
 
 @tool
 async def schedule_task(
-    natural_language: str,
+    kind: Literal["recurring", "one_shot", "reminder"],
+    prompt: str,
     *,
+    cron_expr: str | None = None,      # required for 'recurring'
+    scheduled_at_ms: int | None = None, # required for 'one_shot'/'reminder'
+    tz: str = "UTC",
+    source: str = "chat_agent",
+    delivery_target: dict | None = None,
+    skill_ids: list[str] | None = None,
+    max_executions: int | None = None,
     context: ToolContext,
 ) -> dict:
-    """Parse user's natural-language scheduling intent and return a
-    CONFIRMATION draft. Does NOT commit — user must confirm in chat.
-    """
+    """Create a scheduled task. The LLM is expected to infer the fields
+    from the user's natural-language request and echo back a summary for
+    user confirmation BEFORE calling this tool."""
 
 @tool
-async def confirm_scheduled_task(
-    draft_id: str,
-    *,
-    context: ToolContext,
-) -> dict:
-    """Commit a previously-drafted task. Returns task_id + next_run_at."""
-
+async def schedule_list(limit: int = 50, *, context: ToolContext) -> dict: ...
 @tool
-async def list_scheduled_tasks(
-    *, context: ToolContext,
-) -> list[dict]:
-    """Return the user's current active tasks for agent-readable summary."""
-
+async def schedule_pause(task_id: str, *, context: ToolContext) -> dict: ...
 @tool
-async def cancel_scheduled_task(task_id: str, *, context: ToolContext) -> dict: ...
+async def schedule_resume(task_id: str, *, context: ToolContext) -> dict: ...
 @tool
-async def pause_scheduled_task(task_id: str, *, context: ToolContext) -> dict: ...
+async def schedule_cancel(task_id: str, *, context: ToolContext) -> dict: ...
 @tool
-async def resume_scheduled_task(task_id: str, *, context: ToolContext) -> dict: ...
+async def schedule_list_runs(task_id: str, limit: int = 20, *, context: ToolContext) -> dict: ...
+@tool
+async def schedule_edit(task_id: str, *, prompt=None, cron_expr=None,
+                        scheduled_at_ms=None, tz=None, delivery_target=None,
+                        max_executions=None, context: ToolContext) -> dict:
+    """Patch editable fields (NOT kind — cancel + recreate for that)."""
+@tool
+async def schedule_run_now(task_id: str, *, context: ToolContext) -> dict:
+    """Manual one-off fire; does not touch the cron schedule."""
 ```
-
-**Draft-then-confirm pattern**: LLM-parses may be wrong ("morgen 9" could mean today 09:00 tomorrow morning or 9 PM tomorrow). Two-step prevents silent misinterpretation.
 
 ### 7.3 Control-UI — list/edit only
 
