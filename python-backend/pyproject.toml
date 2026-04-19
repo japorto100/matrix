@@ -125,6 +125,9 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+markers = [
+    "integration: requires a running full stack (Postgres+NATS+go-appservice+python-backend). Opt-in via `pytest -m integration` or `RUN_INTEGRATION=1`.",
+]
 
 [tool.ruff]
 exclude = [".venv", ".venv/**", "data/"]

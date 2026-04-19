@@ -92,6 +92,10 @@ type Config struct {
 	// MemoryPruneSchedule is the cron expression for memory-prune. Default:
 	// weekly Monday 03:00 UTC.
 	MemoryPruneSchedule string
+
+	// MetricRollupSchedule is the cron expression for hourly
+	// aggregation into agent.metrics. Default: every hour at :05.
+	MetricRollupSchedule string
 }
 
 // Scheduler is the process-level scheduler entrypoint.
@@ -131,6 +135,9 @@ func New(pool *pgxpool.Pool, cfg Config, js JetStreamProvider, prune MemoryPrune
 	}
 	if cfg.MemoryPruneSchedule == "" {
 		cfg.MemoryPruneSchedule = "0 3 * * 1" // Mon 03:00 UTC
+	}
+	if cfg.MetricRollupSchedule == "" {
+		cfg.MetricRollupSchedule = "5 * * * *" // every hour at :05
 	}
 	return &Scheduler{
 		pool:        pool,
@@ -181,6 +188,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	})
 	river.AddWorker(workers, &HealthPingWorker{JS: js})
 	river.AddWorker(workers, &MemoryPruneWorker{PruneClient: s.pruneClient})
+	river.AddWorker(workers, &MetricRollupWorker{Pool: s.pool})
 
 	// Infra periodic jobs — seeded in Config so River runs them even if
 	// scheduled_tasks has no rows yet. They are NOT represented in
@@ -193,6 +201,10 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse memory_prune schedule: %w", err)
 	}
+	rollupSched, err := parseStandardSchedule(s.cfg.MetricRollupSchedule)
+	if err != nil {
+		return fmt.Errorf("parse metric_rollup schedule: %w", err)
+	}
 	periodics := []*river.PeriodicJob{
 		river.NewPeriodicJob(
 			healthSched,
@@ -202,6 +214,11 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		river.NewPeriodicJob(
 			pruneSched,
 			func() (river.JobArgs, *river.InsertOpts) { return MemoryPruneArgs{}, nil },
+			&river.PeriodicJobOpts{},
+		),
+		river.NewPeriodicJob(
+			rollupSched,
+			func() (river.JobArgs, *river.InsertOpts) { return MetricRollupArgs{}, nil },
 			&river.PeriodicJobOpts{},
 		),
 	}
