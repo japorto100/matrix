@@ -63,10 +63,15 @@ function statusBadgeVariant(
 }
 
 export function TasksTab() {
-	const query = useScheduledTasks();
+	// TODO(auth): user_id="local" is the Control-surface placeholder —
+	// same pattern as useOverview() / useContextInspector(). When the
+	// app gets real session-aware userId wiring (BFF cookie or client-
+	// side session provider), replace this one constant in one sweep.
+	const userId = "local";
+	const query = useScheduledTasks(userId);
 	const tasks = (query.data?.tasks as ScheduledTask[] | undefined) ?? [];
-	const patch = usePatchTask();
-	const del = useDeleteTask();
+	const patch = usePatchTask(userId);
+	const del = useDeleteTask(userId);
 
 	const [drawerTask, setDrawerTask] = useState<ScheduledTask | null>(null);
 	const [confirmDelete, setConfirmDelete] = useState<ScheduledTask | null>(null);
@@ -141,7 +146,7 @@ export function TasksTab() {
 				</div>
 			)}
 
-			<TaskRunsDrawer task={drawerTask} onClose={() => setDrawerTask(null)} />
+			<TaskRunsDrawer userId={userId} task={drawerTask} onClose={() => setDrawerTask(null)} />
 
 			<AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
 				<AlertDialogContent>
@@ -241,8 +246,16 @@ function TaskRow({
 	);
 }
 
-function TaskRunsDrawer({ task, onClose }: { task: ScheduledTask | null; onClose: () => void }) {
-	const { data } = useTaskRuns(task?.task_id ?? null);
+function TaskRunsDrawer({
+	userId,
+	task,
+	onClose,
+}: {
+	userId: string;
+	task: ScheduledTask | null;
+	onClose: () => void;
+}) {
+	const { data } = useTaskRuns(userId, task?.task_id ?? null);
 	const runs = (data?.runs as TaskExecution[] | undefined) ?? [];
 	if (!task) return null;
 	return (

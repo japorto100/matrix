@@ -589,30 +589,30 @@ export function useScheduledTasks(userId = "local") {
 	});
 }
 
-export function useTaskRuns(taskId: string | null) {
+export function useTaskRuns(userId: string, taskId: string | null) {
 	return useQuery({
 		...DEFAULTS,
 		queryKey: schedulerKeys.runs(taskId ?? ""),
-		queryFn: () => schedulerQueries.runs(taskId as string),
+		queryFn: () => schedulerQueries.runs(userId, taskId as string),
 		enabled: !!taskId,
 	});
 }
 
-export function usePatchTask() {
+export function usePatchTask(userId: string) {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: ({ taskId, status }: { taskId: string; status: ScheduledTaskStatus }) =>
-			schedulerQueries.patch(taskId, status),
+			schedulerQueries.patch(userId, taskId, status),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: schedulerKeys.all });
 		},
 	});
 }
 
-export function useDeleteTask() {
+export function useDeleteTask(userId: string) {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (taskId: string) => schedulerQueries.remove(taskId),
+		mutationFn: (taskId: string) => schedulerQueries.remove(userId, taskId),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: schedulerKeys.all });
 		},

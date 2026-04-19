@@ -107,17 +107,52 @@ func (s *Scheduler) handleListTasks(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Scheduler) handleGetTask(w http.ResponseWriter, r *http.Request) {
+// requireUserID extracts the caller's user_id from query string. All
+// mutating REST endpoints require this — ownership is enforced at the
+// store layer against it. Returns "" + written 400 when missing.
+func requireUserID(w http.ResponseWriter, r *http.Request) string {
+	uid := strings.TrimSpace(r.URL.Query().Get("user_id"))
+	if uid == "" {
+		writeJSONErr(w, http.StatusBadRequest, "user_id query parameter required")
+		return ""
+	}
+	return uid
+}
+
+// loadOwnedTask loads a task and checks that it belongs to user_id.
+// Returns false (and writes 404) on mismatch or miss — identical error
+// to avoid task-id enumeration by an attacker.
+func (s *Scheduler) loadOwnedTask(w http.ResponseWriter, r *http.Request, userID string) (*ScheduledTask, bool) {
 	taskID := r.PathValue("id")
 	task, err := s.store.LoadTask(r.Context(), taskID)
 	if err != nil {
 		writeStoreErr(w, err)
+		return nil, false
+	}
+	if task.UserID != userID {
+		writeJSONErr(w, http.StatusNotFound, "task not found")
+		return nil, false
+	}
+	return task, true
+}
+
+func (s *Scheduler) handleGetTask(w http.ResponseWriter, r *http.Request) {
+	userID := requireUserID(w, r)
+	if userID == "" {
+		return
+	}
+	task, ok := s.loadOwnedTask(w, r, userID)
+	if !ok {
 		return
 	}
 	writeJSON(w, http.StatusOK, toDTO(task))
 }
 
 func (s *Scheduler) handlePatchTask(w http.ResponseWriter, r *http.Request) {
+	userID := requireUserID(w, r)
+	if userID == "" {
+		return
+	}
 	taskID := r.PathValue("id")
 	var body patchBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -125,7 +160,7 @@ func (s *Scheduler) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	nowMs := time.Now().UTC().UnixMilli()
-	if err := s.store.PatchStatus(r.Context(), taskID, body.Status, nowMs); err != nil {
+	if err := s.store.PatchStatus(r.Context(), taskID, userID, body.Status, nowMs); err != nil {
 		writeStoreErr(w, err)
 		return
 	}
@@ -138,8 +173,12 @@ func (s *Scheduler) handlePatchTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Scheduler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	userID := requireUserID(w, r)
+	if userID == "" {
+		return
+	}
 	taskID := r.PathValue("id")
-	if err := s.store.DeleteTask(r.Context(), taskID); err != nil {
+	if err := s.store.DeleteTask(r.Context(), taskID, userID); err != nil {
 		writeStoreErr(w, err)
 		return
 	}
@@ -159,11 +198,14 @@ type executionDTO struct {
 }
 
 func (s *Scheduler) handleListRuns(w http.ResponseWriter, r *http.Request) {
+	userID := requireUserID(w, r)
+	if userID == "" {
+		return
+	}
 	taskID := r.PathValue("id")
-	// Ownership-check: load the task first. Returns 404 if missing so the
-	// handler doesn't leak executions for tasks the caller can't see.
-	if _, err := s.store.LoadTask(r.Context(), taskID); err != nil {
-		writeStoreErr(w, err)
+	// Ownership-check: load the task first and compare user_id. 404 on
+	// miss OR mismatch — same response to avoid task-id enumeration.
+	if _, ok := s.loadOwnedTask(w, r, userID); !ok {
 		return
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))

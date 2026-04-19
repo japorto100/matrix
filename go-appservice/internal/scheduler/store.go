@@ -274,8 +274,11 @@ func (s *PgStore) ListExecutions(ctx context.Context, taskID string, limit int) 
 }
 
 // PatchStatus updates only the status column (used by REST pause/resume/cancel).
-// Returns ErrTaskNotFound when no row matches.
-func (s *PgStore) PatchStatus(ctx context.Context, taskID, newStatus string, nowMs int64) error {
+// Ownership-gated: the WHERE clause includes user_id so a caller with a
+// known task_id cannot touch tasks that belong to a different user.
+// Returns ErrTaskNotFound when no row matches (either missing or
+// user_id mismatch — same error to avoid task-id enumeration).
+func (s *PgStore) PatchStatus(ctx context.Context, taskID, userID, newStatus string, nowMs int64) error {
 	allowed := map[string]bool{
 		"active":    true,
 		"paused":    true,
@@ -284,11 +287,14 @@ func (s *PgStore) PatchStatus(ctx context.Context, taskID, newStatus string, now
 	if !allowed[newStatus] {
 		return fmt.Errorf("%w: status %q not allowed (active|paused|cancelled)", ErrValidation, newStatus)
 	}
+	if strings.TrimSpace(userID) == "" {
+		return fmt.Errorf("%w: user_id required", ErrValidation)
+	}
 	tag, err := s.Pool.Exec(ctx, `
 		UPDATE scheduler.scheduled_tasks
 		SET status = $1, updated_at = $2
-		WHERE task_id = $3
-	`, newStatus, nowMs, taskID)
+		WHERE task_id = $3 AND user_id = $4
+	`, newStatus, nowMs, taskID, userID)
 	if err != nil {
 		return fmt.Errorf("patch status: %w", err)
 	}
@@ -298,10 +304,14 @@ func (s *PgStore) PatchStatus(ctx context.Context, taskID, newStatus string, now
 	return nil
 }
 
-// DeleteTask removes a task row (cascades to task_executions).
-func (s *PgStore) DeleteTask(ctx context.Context, taskID string) error {
+// DeleteTask removes a task row (cascades to task_executions). Ownership-gated.
+func (s *PgStore) DeleteTask(ctx context.Context, taskID, userID string) error {
+	if strings.TrimSpace(userID) == "" {
+		return fmt.Errorf("%w: user_id required", ErrValidation)
+	}
 	tag, err := s.Pool.Exec(ctx,
-		`DELETE FROM scheduler.scheduled_tasks WHERE task_id = $1`, taskID)
+		`DELETE FROM scheduler.scheduled_tasks WHERE task_id = $1 AND user_id = $2`,
+		taskID, userID)
 	if err != nil {
 		return fmt.Errorf("delete task: %w", err)
 	}

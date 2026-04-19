@@ -127,6 +127,10 @@ class Subscriber:
         owner = payload.get("owner_user_id") or ""
         kind = payload.get("kind") or "recurring"
 
+        # Heartbeat: extend JetStream's ack_wait window every 30s while we
+        # work. Protects against redelivery-during-execution when an agent
+        # turn runs long (multi-step tool use, slow LLM provider).
+        heartbeat = asyncio.create_task(_heartbeat_loop(msg))
         try:
             if is_service_user(owner):
                 await scheduler_handlers.handle_system_task(payload)
@@ -152,6 +156,29 @@ class Subscriber:
                 log.exception("scheduler.subscriber: finish_execution failed")
             # Negative-ack so River/JetStream retry policy kicks in.
             await msg.nak(delay=30)
+        finally:
+            heartbeat.cancel()
+            try:
+                await heartbeat
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+
+
+async def _heartbeat_loop(msg, interval: float = 30.0) -> None:
+    """Call msg.in_progress() every ``interval`` seconds until cancelled.
+
+    Extends the consumer's ack_wait deadline so a long-running agent turn
+    isn't redelivered to another subscriber while still executing.
+    """
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await msg.in_progress()
+        except Exception:  # noqa: BLE001 — best-effort, don't kill dispatch
+            log.debug(
+                "scheduler.subscriber: in_progress heartbeat failed (non-fatal)"
+            )
+            return
 
 
 async def _run_user_task(payload: dict, runner) -> None:
@@ -219,7 +246,10 @@ async def _ensure_consumer(js, stream: str, durable: str) -> None:
         ConsumerConfig(
             durable_name=durable,
             deliver_policy=DeliverPolicy.ALL,
-            ack_wait=180,  # seconds — long enough for most agent turns
+            # ack_wait headroom for long agent turns. Subscriber also
+            # calls msg.in_progress() every 30s for turns > 60s so this
+            # limit rarely matters in practice, but we pad it anyway.
+            ack_wait=600,
             max_deliver=5,
         ),
     )

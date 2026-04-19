@@ -603,18 +603,36 @@ export const schedulerKeys = {
 	runs: (id: string) => ["scheduler", "runs", id] as const,
 };
 
+// All scheduler endpoints require user_id. Ownership is enforced at the
+// Go store layer (WHERE user_id = $N) so a leaked task_id is not
+// sufficient to modify another user's task. 404 is returned on mismatch
+// (same as missing — avoids task-id enumeration).
 export const schedulerQueries = {
 	list: async (userId: string, limit = 100): Promise<{ tasks: ScheduledTask[]; count: number }> =>
 		apiGet(`/api/scheduler/tasks?user_id=${encodeURIComponent(userId)}&limit=${limit}`),
-	get: async (taskId: string): Promise<ScheduledTask> =>
-		apiGet(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`),
+	get: async (userId: string, taskId: string): Promise<ScheduledTask> =>
+		apiGet(
+			`/api/scheduler/tasks/${encodeURIComponent(taskId)}?user_id=${encodeURIComponent(userId)}`,
+		),
 	patch: async (
+		userId: string,
 		taskId: string,
 		status: ScheduledTaskStatus,
 	): Promise<{ task_id: string; status: string }> =>
-		apiPatch(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`, { status }),
-	remove: async (taskId: string): Promise<void> =>
-		apiDelete(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`),
-	runs: async (taskId: string, limit = 20): Promise<{ runs: TaskExecution[]; count: number }> =>
-		apiGet(`/api/scheduler/tasks/${encodeURIComponent(taskId)}/runs?limit=${limit}`),
+		apiPatch(
+			`/api/scheduler/tasks/${encodeURIComponent(taskId)}?user_id=${encodeURIComponent(userId)}`,
+			{ status },
+		),
+	remove: async (userId: string, taskId: string): Promise<void> =>
+		apiDelete(
+			`/api/scheduler/tasks/${encodeURIComponent(taskId)}?user_id=${encodeURIComponent(userId)}`,
+		),
+	runs: async (
+		userId: string,
+		taskId: string,
+		limit = 20,
+	): Promise<{ runs: TaskExecution[]; count: number }> =>
+		apiGet(
+			`/api/scheduler/tasks/${encodeURIComponent(taskId)}/runs?user_id=${encodeURIComponent(userId)}&limit=${limit}`,
+		),
 };

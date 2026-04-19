@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -110,11 +111,26 @@ func (r *CronRegistry) Remove(taskID string) {
 }
 
 // addLocked is the shared add-path (mutex must be held).
+//
+// Timezone: robfig/cron's cron.Parser.Parse returns a SpecSchedule that
+// evaluates in time.Local. For user-owned tasks we want the IANA tz
+// column ("Europe/Zurich", "America/New_York") to drive firing — a user
+// in Zurich saying "jeden Montag 9 Uhr" should fire at 09:00 Zurich,
+// not 09:00 server-local. We wrap the parsed schedule in a locScheduler
+// that shifts the evaluation to the task's location.
 func (r *CronRegistry) addLocked(task *ScheduledTask) error {
 	schedule, err := r.parser.Parse(task.CronExpr)
 	if err != nil {
 		return fmt.Errorf("parse cron %q: %w", task.CronExpr, err)
 	}
+
+	loc, locErr := loadTaskLocation(task.TZ)
+	if locErr != nil {
+		slog.Warn("scheduler: invalid tz, falling back to UTC",
+			"task_id", task.TaskID, "tz", task.TZ, "error", locErr)
+		loc = time.UTC
+	}
+	schedule = locScheduler{inner: schedule, loc: loc}
 
 	// Bind taskID in closure to keep per-task identity.
 	taskID := task.TaskID
@@ -130,8 +146,33 @@ func (r *CronRegistry) addLocked(task *ScheduledTask) error {
 	slog.Info("scheduler: registered cron task",
 		"task_id", taskID,
 		"cron_expr", task.CronExpr,
+		"tz", loc.String(),
 		"kind", task.Kind)
 	return nil
+}
+
+// locScheduler wraps a cron.Schedule so Next() is evaluated in a specific
+// time.Location rather than time.Local. River calls Next(t time.Time);
+// we convert to the target tz, let the inner schedule compute next fire
+// in that tz, then return the resulting time in UTC.
+type locScheduler struct {
+	inner cron.Schedule
+	loc   *time.Location
+}
+
+func (s locScheduler) Next(t time.Time) time.Time {
+	return s.inner.Next(t.In(s.loc)).UTC()
+}
+
+func loadTaskLocation(tz string) (*time.Location, error) {
+	if tz == "" {
+		return time.UTC, nil
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return nil, fmt.Errorf("load tz %q: %w", tz, err)
+	}
+	return loc, nil
 }
 
 // WatchNotifications LISTENs on scheduler_task_changed (fired by the
