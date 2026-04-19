@@ -54,6 +54,17 @@ class ToolRegistry:
         from agent.tools.portfolio import GetPortfolioSummaryTool
         from agent.tools.sandbox_browser_tool import SandboxBrowserTool
         from agent.tools.sandbox_tool import SandboxExecuteTool
+        from agent.tools.scheduler_tools import (
+            ConfirmScheduledTaskTool,
+            ScheduleCancelTool,
+            ScheduleDraftTool,
+            ScheduleEditTool,
+            ScheduleListRunsTool,
+            ScheduleListTool,
+            SchedulePauseTool,
+            ScheduleResumeTool,
+            ScheduleRunNowTool,
+        )
 
         registry = cls()
         registry.register(GetChartStateTool())
@@ -74,4 +85,14 @@ class ToolRegistry:
         registry.register(SandboxExecuteTool())
         registry.register(SandboxBrowserTool())
         registry.register(FileAnalyzeTool())
+        # Scheduler Tools (exec-scheduler Lane C)
+        registry.register(ScheduleDraftTool())
+        registry.register(ConfirmScheduledTaskTool())
+        registry.register(ScheduleListTool())
+        registry.register(SchedulePauseTool())
+        registry.register(ScheduleResumeTool())
+        registry.register(ScheduleCancelTool())
+        registry.register(ScheduleListRunsTool())
+        registry.register(ScheduleEditTool())
+        registry.register(ScheduleRunNowTool())
         return registry
