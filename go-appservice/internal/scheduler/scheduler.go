@@ -23,12 +23,53 @@ package scheduler
 
 import (
 	"context"
+	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river/riverdriver"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 )
+
+// Well-known identifiers + NATS subjects used across Go + Python.
+// Keep in sync with python-backend/agent/scheduler/__init__.py.
+const (
+	// DefaultServiceUserID is the pseudo-user that owns infrastructure
+	// tasks (health-ping, memory-prune, metric-rollup, etc.). Overridable
+	// via SCHEDULER_SERVICE_USER_ID env-var.
+	DefaultServiceUserID = "scheduler-service"
+
+	// DefaultJetStreamStream is the JetStream stream name for
+	// matrix.scheduler.> subjects. Overridable via
+	// SCHEDULER_JETSTREAM_STREAM.
+	DefaultJetStreamStream = "SCHEDULER"
+
+	// DefaultQueueGroup is the NATS JetStream durable-consumer name for
+	// Python subscribers. Identical names deliver queue-group semantics
+	// (exactly-once across workers).
+	DefaultQueueGroup = "scheduler-exec"
+
+	// Schema is the Postgres schema that owns scheduler tables AND where
+	// River creates its own river_* tables (via river.Config.Schema).
+	Schema = "scheduler"
+
+	// SubjectJobExecute is the NATS subject for agent-turn dispatch.
+	// Payload: JSON { task_id, execution_id, owner_user_id, prompt,
+	//                 delivery_target, skill_ids, trace_id }.
+	SubjectJobExecute = "matrix.scheduler.job.execute"
+
+	// SubjectHeartbeat is used by the health-ping infra handler.
+	SubjectHeartbeat = "matrix.scheduler.heartbeat"
+)
+
+// ServiceUserID returns the configured infra-task user id, falling back to
+// DefaultServiceUserID if SCHEDULER_SERVICE_USER_ID is unset.
+func ServiceUserID() string {
+	if v := os.Getenv("SCHEDULER_SERVICE_USER_ID"); v != "" {
+		return v
+	}
+	return DefaultServiceUserID
+}
 
 // Scheduler is the process-level scheduler entrypoint. Holds the River
 // client and manages startup/shutdown.

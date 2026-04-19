@@ -23,6 +23,12 @@ if db_url:
 
 SCHEMA = "agent"
 
+# Zusätzliche Schemas die beim Startup existieren müssen. Migrations
+# selbst besitzen CREATE SCHEMA IF NOT EXISTS, aber manche Migrations
+# (z.B. 019 scheduler) erwarten dass das Schema schon da ist wenn
+# ihre DDL-Statements laufen. Liste sauber halten.
+EXTRA_SCHEMAS = ["scheduler"]
+
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -36,8 +42,13 @@ def run_migrations_online() -> None:
     engine = create_engine(url)
 
     with engine.connect() as connection:
-        # Schema erstellen wenn nicht vorhanden
+        # Haupt-Schema (Alembic-Version-Tabelle lebt hier)
         connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}"))
+        # Zusätzliche Schemas (scheduler, ...)
+        for extra in EXTRA_SCHEMAS:
+            connection.execute(
+                text(f"CREATE SCHEMA IF NOT EXISTS {extra}")
+            )
         connection.commit()
 
         context.configure(
