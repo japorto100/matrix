@@ -11,6 +11,7 @@
 // functional even without backend — key for Slice 7 pragmatic wiring.
 
 import { type UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ScheduledTaskStatus } from "@/features/control/types";
 import {
 	a2aKeys,
 	a2aQueries,
@@ -37,6 +38,8 @@ import {
 	permissionsQueries,
 	sandboxKeys,
 	sandboxQueries,
+	schedulerKeys,
+	schedulerQueries,
 	securityKeys,
 	securityQueries,
 	sessionsKeys,
@@ -572,6 +575,46 @@ export function useReindexDocument() {
 			ingestionQueries.reindex(fileId, input),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: memoryKeys.all });
+		},
+	});
+}
+
+// ─── Scheduler (exec-scheduler Lane D) ────────────────────────────────────
+
+export function useScheduledTasks(userId = "local") {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: schedulerKeys.list(userId),
+		queryFn: () => schedulerQueries.list(userId),
+	});
+}
+
+export function useTaskRuns(taskId: string | null) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: schedulerKeys.runs(taskId ?? ""),
+		queryFn: () => schedulerQueries.runs(taskId as string),
+		enabled: !!taskId,
+	});
+}
+
+export function usePatchTask() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ taskId, status }: { taskId: string; status: ScheduledTaskStatus }) =>
+			schedulerQueries.patch(taskId, status),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: schedulerKeys.all });
+		},
+	});
+}
+
+export function useDeleteTask() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (taskId: string) => schedulerQueries.remove(taskId),
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: schedulerKeys.all });
 		},
 	});
 }

@@ -369,3 +369,57 @@ export interface SecurityPosture {
 	recent_events: SecurityEvent[];
 	access_list: AccessEntry[];
 }
+
+// ─── Scheduler (exec-scheduler Lane D) ────────────────────────────────────
+
+export type ScheduledTaskKind =
+	| "recurring"
+	| "one_shot"
+	| "reminder"
+	| "routine"
+	| "condition"
+	| "infra";
+
+export type ScheduledTaskStatus = "active" | "paused" | "completed" | "cancelled" | "errored";
+
+export type ScheduledTaskSource =
+	| "chat_agent"
+	| "chat_matrix_dm"
+	| "chat_matrix_group"
+	| "api"
+	| "github_webhook"
+	| "system";
+
+export interface ScheduledTask {
+	task_id: string;
+	user_id: string;
+	source: ScheduledTaskSource;
+	kind: ScheduledTaskKind;
+	cron_expr?: string;
+	scheduled_at_ms?: number;
+	tz: string;
+	prompt?: string;
+	skill_ids?: string[];
+	delivery_target?: Record<string, unknown>;
+	status: ScheduledTaskStatus;
+	max_executions?: number;
+	execution_count: number;
+	next_run_at_ms?: number;
+	last_run_at_ms?: number;
+	created_at_ms: number;
+	updated_at_ms?: number;
+}
+
+export type TaskExecutionStatus = "running" | "completed" | "failed" | "cancelled" | "timeout";
+
+export interface TaskExecution {
+	execution_id: string;
+	task_id: string;
+	started_at: number; // epoch-ms
+	completed_at?: number | null;
+	status: TaskExecutionStatus;
+	result_summary?: string | null;
+	error?: string | null;
+	trace_id?: string | null;
+	duration_ms?: number | null;
+}

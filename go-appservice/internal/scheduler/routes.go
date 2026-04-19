@@ -17,19 +17,21 @@ import (
 //
 // Exposed routes (mount under /api/v1/scheduler):
 //
-//	GET    /tasks           → ListUserTasks (query: user_id, limit)
-//	GET    /tasks/{id}      → GetTask
-//	PATCH  /tasks/{id}      → PatchTask (body: {"status":"paused|active|cancelled"})
-//	DELETE /tasks/{id}      → DeleteTask
+//	GET    /tasks              → ListUserTasks (query: user_id, limit)
+//	GET    /tasks/{id}         → GetTask
+//	PATCH  /tasks/{id}         → PatchTask (body: {"status":"paused|active|cancelled"})
+//	DELETE /tasks/{id}         → DeleteTask
+//	GET    /tasks/{id}/runs    → ListRuns (query: limit)
 //
 // POST is intentionally omitted — task creation goes through the agent
 // tools in python-backend (chat-first UX rule).
 func (s *Scheduler) Routes() map[string]http.HandlerFunc {
 	return map[string]http.HandlerFunc{
-		"GET /api/v1/scheduler/tasks":        s.handleListTasks,
-		"GET /api/v1/scheduler/tasks/{id}":   s.handleGetTask,
-		"PATCH /api/v1/scheduler/tasks/{id}": s.handlePatchTask,
-		"DELETE /api/v1/scheduler/tasks/{id}": s.handleDeleteTask,
+		"GET /api/v1/scheduler/tasks":             s.handleListTasks,
+		"GET /api/v1/scheduler/tasks/{id}":        s.handleGetTask,
+		"PATCH /api/v1/scheduler/tasks/{id}":      s.handlePatchTask,
+		"DELETE /api/v1/scheduler/tasks/{id}":     s.handleDeleteTask,
+		"GET /api/v1/scheduler/tasks/{id}/runs":   s.handleListRuns,
 	}
 }
 
@@ -142,6 +144,51 @@ func (s *Scheduler) handleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type executionDTO struct {
+	ExecutionID   string `json:"execution_id"`
+	TaskID        string `json:"task_id"`
+	StartedAtMs   int64  `json:"started_at"`
+	CompletedAtMs int64  `json:"completed_at,omitempty"`
+	Status        string `json:"status"`
+	ResultSummary string `json:"result_summary,omitempty"`
+	Error         string `json:"error,omitempty"`
+	TraceID       string `json:"trace_id,omitempty"`
+	DurationMs    int    `json:"duration_ms,omitempty"`
+}
+
+func (s *Scheduler) handleListRuns(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	// Ownership-check: load the task first. Returns 404 if missing so the
+	// handler doesn't leak executions for tasks the caller can't see.
+	if _, err := s.store.LoadTask(r.Context(), taskID); err != nil {
+		writeStoreErr(w, err)
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	runs, err := s.store.ListExecutions(r.Context(), taskID, limit)
+	if err != nil {
+		// #nosec G706 -- slog structured, task_id escaped.
+		slog.Error("scheduler: list runs failed", "task_id", taskID, "error", err)
+		writeJSONErr(w, http.StatusInternalServerError, "list runs failed")
+		return
+	}
+	out := make([]executionDTO, 0, len(runs))
+	for _, r := range runs {
+		out = append(out, executionDTO{
+			ExecutionID:   r.ExecutionID,
+			TaskID:        r.TaskID,
+			StartedAtMs:   r.StartedAtMs,
+			CompletedAtMs: r.CompletedAtMs,
+			Status:        r.Status,
+			ResultSummary: r.ResultSummary,
+			Error:         r.Error,
+			TraceID:       r.TraceID,
+			DurationMs:    r.DurationMs,
+		})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"runs": out, "count": len(out)})
 }
 
 func writeStoreErr(w http.ResponseWriter, err error) {

@@ -21,6 +21,7 @@ import { SecurityTab } from "./components/SecurityTab";
 import { SessionsTab } from "./components/SessionsTab";
 import { SkillsTab } from "./components/SkillsTab";
 import { SystemTab } from "./components/SystemTab";
+import { TasksTab } from "./components/TasksTab";
 import { ToolsTab } from "./components/ToolsTab";
 
 export function ControlPage() {
@@ -33,6 +34,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/skills")) return <SkillsTab />;
 		if (pathname.startsWith("/control/tools")) return <ToolsTab />;
 		if (pathname.startsWith("/control/sessions")) return <SessionsTab />;
+		if (pathname.startsWith("/control/tasks")) return <TasksTab />;
 		if (pathname.startsWith("/control/context")) return <ContextTab />;
 		if (pathname.startsWith("/control/security")) return <SecurityTab />;
 

@@ -209,6 +209,70 @@ func (s *PgStore) BeginExecution(ctx context.Context, taskID string, firedAt tim
 	return executionID, nil
 }
 
+// TaskExecution mirrors a scheduler.task_executions row for the Control-UI
+// runs-drawer. Kept near the DB layer so REST handlers can project into
+// the wire DTO trivially.
+type TaskExecution struct {
+	ExecutionID    string
+	TaskID         string
+	StartedAtMs    int64
+	CompletedAtMs  int64
+	Status         string
+	ResultSummary  string
+	Error          string
+	TraceID        string
+	DurationMs     int
+}
+
+// ListExecutions returns up to `limit` recent executions of taskID
+// (most recent first). Ownership check lives in the REST handler — this
+// layer assumes the caller already confirmed taskID belongs to user.
+func (s *PgStore) ListExecutions(ctx context.Context, taskID string, limit int) ([]*TaskExecution, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := s.Pool.Query(ctx, `
+		SELECT execution_id,
+		       task_id,
+		       started_at,
+		       COALESCE(completed_at, 0),
+		       status,
+		       COALESCE(result_summary, ''),
+		       COALESCE(error, ''),
+		       COALESCE(trace_id, ''),
+		       COALESCE(duration_ms, 0)
+		FROM scheduler.task_executions
+		WHERE task_id = $1
+		ORDER BY started_at DESC
+		LIMIT $2`, taskID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list executions: %w", err)
+	}
+	defer rows.Close()
+	var out []*TaskExecution
+	for rows.Next() {
+		var t TaskExecution
+		if err := rows.Scan(
+			&t.ExecutionID,
+			&t.TaskID,
+			&t.StartedAtMs,
+			&t.CompletedAtMs,
+			&t.Status,
+			&t.ResultSummary,
+			&t.Error,
+			&t.TraceID,
+			&t.DurationMs,
+		); err != nil {
+			return nil, fmt.Errorf("scan execution row: %w", err)
+		}
+		out = append(out, &t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate executions: %w", err)
+	}
+	return out, nil
+}
+
 // PatchStatus updates only the status column (used by REST pause/resume/cancel).
 // Returns ErrTaskNotFound when no row matches.
 func (s *PgStore) PatchStatus(ctx context.Context, taskID, newStatus string, nowMs int64) error {

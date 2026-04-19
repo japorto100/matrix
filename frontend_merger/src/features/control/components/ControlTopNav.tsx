@@ -8,6 +8,7 @@
 import {
 	Activity,
 	Boxes,
+	CalendarClock,
 	FileSearch,
 	LayoutDashboard,
 	Network,
@@ -83,6 +84,13 @@ const TABS: SubTab[] = [
 		label: "Sessions",
 		icon: <Activity className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/sessions"),
+		section: "user",
+	},
+	{
+		href: "/control/tasks",
+		label: "Tasks",
+		icon: <CalendarClock className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/tasks"),
 		section: "user",
 	},
 	{

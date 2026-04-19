@@ -21,10 +21,13 @@ import type {
 	OverviewSnapshot,
 	PermissionCell,
 	SandboxRun,
+	ScheduledTask,
+	ScheduledTaskStatus,
 	SecurityPosture,
 	ServiceStatus,
 	Session,
 	Skill,
+	TaskExecution,
 	ToolCategory,
 	ToolDefinition,
 	UserLlmSettings,
@@ -589,4 +592,29 @@ export const memoryQueries = {
 	}> => apiGet("/api/memory/highlights"),
 	deleteEpisode: async (id: string): Promise<{ status: string }> =>
 		apiDelete(`/api/memory/episodes/${encodeURIComponent(id)}`),
+};
+
+// ─── Scheduler (exec-scheduler Lane D) ────────────────────────────────────
+
+export const schedulerKeys = {
+	all: ["scheduler"] as const,
+	list: (userId: string) => ["scheduler", "list", userId] as const,
+	detail: (id: string) => ["scheduler", "detail", id] as const,
+	runs: (id: string) => ["scheduler", "runs", id] as const,
+};
+
+export const schedulerQueries = {
+	list: async (userId: string, limit = 100): Promise<{ tasks: ScheduledTask[]; count: number }> =>
+		apiGet(`/api/scheduler/tasks?user_id=${encodeURIComponent(userId)}&limit=${limit}`),
+	get: async (taskId: string): Promise<ScheduledTask> =>
+		apiGet(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`),
+	patch: async (
+		taskId: string,
+		status: ScheduledTaskStatus,
+	): Promise<{ task_id: string; status: string }> =>
+		apiPatch(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`, { status }),
+	remove: async (taskId: string): Promise<void> =>
+		apiDelete(`/api/scheduler/tasks/${encodeURIComponent(taskId)}`),
+	runs: async (taskId: string, limit = 20): Promise<{ runs: TaskExecution[]; count: number }> =>
+		apiGet(`/api/scheduler/tasks/${encodeURIComponent(taskId)}/runs?limit=${limit}`),
 };
