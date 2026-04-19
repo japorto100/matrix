@@ -559,7 +559,10 @@ chat-initiated creation via all three surfaces).
 - [ ] Condition-triggered jobs — minimal rule-DSL
 - [ ] Control-UI: edit delivery-target, pause/resume inline
 - [ ] Observability: Prom-metrics + River-UI admin-mount
-- [ ] Real `agent.metrics` table so `infra.metric_rollup` can land (was deferred in Phase-1 because the table didn't exist)
+- [x] ~~Real `agent.metrics` table so `infra.metric_rollup` can land~~ →
+      migration 021_agent_metrics (2026-04-19) + MetricRollupWorker wired
+      as 3rd Phase-1 periodic job (hourly :05), closed in the gap-close
+      commit
 - [ ] Replace `userId="local"` placeholder across Control-UI with session-aware wiring
 - [ ] Rate-limit "create 5 tasks in one turn" (Phase-1 only enforces per-user cap, not per-turn)
 
@@ -607,28 +610,48 @@ Both runs against the scheduler implementation on main:
 - [x] **Run 2** (commit `00fab99`): **PASS** verdict — all 5 findings
       confirmed FIXED, no new defects introduced by the fixes.
 
-### Phase 1 gates — live (deferred to running-stack integration test)
+### Phase 1 gates — live (E2E harness exists, runs on-demand)
 
-These need a running Postgres + NATS-JetStream + go-appservice +
-python-backend. Not executed in CI because no full dev-stack was up
-during Phase-1 implementation; the logic-level tests + sota-verify cover
-the code paths.
+Live tests live at `python-backend/tests/e2e/test_scheduler_flow.py`
+and are marked `@pytest.mark.integration`. They skip by default with a
+helpful reason (conftest does a TCP probe on :5433 + :4222 + :9000).
+Run via:
 
-- [ ] Live: user types "jeden Montag 9 Uhr portfolio-briefing" in agent-chat
-      → `scheduler.scheduled_tasks` row with status=active, correct cron_expr,
-      tz=<user's tz>, correct kind=recurring
-- [ ] Live: matrix-DM with `@agent:matrix.local`: same natural-language
-      → same outcome, `source=chat_matrix_dm`
-- [ ] Live: wait-for-next-minute cron-tick → task fires → matrix-room
-      receives the expected message + `task_executions` row marked
-      `status=completed`
-- [ ] Live: `/control/tasks` shows the task in the Tasks tab with
-      correct prompt excerpt + next-fire ETA in user's tz
-- [ ] Live: cancel via chat (`"cancel my Monday briefing"`) →
-      `status=cancelled` + row disappears from Go's CronRegistry via
-      `LISTEN scheduler_task_changed`
-- [ ] Live: `schedule_run_now` → JetStream dedup works, subscriber picks
-      up own publish, finish_execution records success
+    ./scripts/scheduler-e2e.sh
+
+or manually:
+
+    cd python-backend
+    RUN_INTEGRATION=1 .venv/bin/python -m pytest tests/e2e/ -v -m integration
+
+Implemented gates (code path + DB assertion — no LLM mocking, exercises
+the real store/trigger/NATS/REST layers):
+
+- [x] **test_gate_insert_task_via_tool** — INSERT via `scheduler_db.insert_task`
+      (the path `schedule_task` tool uses). Asserts status=active,
+      cron_expr preserved, tz preserved.
+- [x] **test_gate_notify_trigger_fires** — asyncpg LISTEN on
+      `scheduler_task_changed`; INSERT → payload arrives within 3s with
+      correct task_id + op=INSERT. Covers Go `CronRegistry.WatchNotifications`
+      prerequisite.
+- [x] **test_gate_hard_cap_trigger_blocks** — 50 active tasks INSERT,
+      51st raises `CheckViolationError`. Plus regression: pause 30 →
+      insert 30 more → resume attempt on paused row fails with
+      CheckViolation (post-020 bypass fix).
+- [x] **test_gate_ownership_enforced_on_rest** — PATCH /tasks/{id}
+      with wrong user_id → 404 + row unchanged. Correct user_id → 200.
+- [x] **test_gate_run_now_publishes_to_jetstream** — `publish_fire`
+      path (same as `schedule_run_now` tool) emits
+      JobExecutePayload to `matrix.scheduler.job.execute`. Ephemeral
+      ad-hoc consumer asserts task_id + execution_id + owner_user_id.
+
+Still gated on a running real agent-turn (LLM API costs):
+
+- [ ] Live cron-tick end-to-end: minute-interval task fires → Python
+      subscriber runs full agent turn → matrix-room receives delivered
+      message → `task_executions` row status=completed
+- [ ] Live chat-to-DB via agent-chat UI
+- [ ] Live `/control/tasks` UI rendering against real DB
 
 ### Phase 2 gates
 
@@ -713,3 +736,4 @@ the code paths.
 |---|---|
 | 2026-04-18 | Erstversion. Spec entstanden aus Archivierung von exec-19 §4.1 + Redistribution. Stack-Entscheidung River (Phase 1) + Temporal (Phase 2). UX chat-first via agent-tools. 15 use-cases in 4 Kategorien dokumentiert. Dep-update als explizite Infra-Job-Klasse mit 2-Mode-Integration (Renovate-trigger + Matrix-digest). Scheduler-DM-Entry über `@agent:matrix.local` festgehalten — gleiches Verhalten wie agent-chat, keine separate UX. |
 | 2026-04-19 | Phase-1 Implementation **DONE** (9 commits on main). Lanes P/A/F/B/C/D/E + sota-verify fixes. Divergences from original spec: (a) Migration number is **019_scheduler_schema** (next free), not 020 as draft guessed — plus **020_scheduler_cap_trigger_fix** for the Lane-E cap-bypass fix. (b) Tool count **8** (added `schedule_edit` + `schedule_run_now`; merged `schedule_draft` + `confirm_scheduled_task` → single `schedule_task`). (c) Rules-based NL parser **removed** — LLM-native parsing in single-tool. (d) Per-task IANA tz support via `locScheduler` wrapper; DST handled correctly. (e) ack_wait 600s + 30s in_progress heartbeat for long turns. (f) ownership-gating on Go REST PATCH/DELETE/GET/runs. (g) frontend_merger `/control/tasks` uses BFF proxy `/api/scheduler/*` (new), separate from `/api/control/*`. (h) `agent.metrics` doesn't exist in Phase-1 → `metric_rollup` handler deferred, infra demos are health_ping + memory_prune. Deferred to Phase-2 live tests: cron-tick fire end-to-end, NOTIFY hot-reload, matrix-delivery. sota-verify **PASS** after fixes (commit `00fab99`). |
+| 2026-04-19 | **Phase-1 gap-closers** (post-Phase-1 same-day). Migration **021_agent_metrics** + MetricRollupWorker (hourly :05) re-enables the deferred `metric_rollup` infra handler. E2E harness at `python-backend/tests/e2e/test_scheduler_flow.py` — 5 `@pytest.mark.integration` tests covering insert-path, NOTIFY trigger, hard-cap + bypass regression, REST ownership, run_now → JetStream publish. Skip-by-default with clean TCP-probe messages; opt-in via `RUN_INTEGRATION=1` or `scripts/scheduler-e2e.sh`. No new docker-compose profile — existing default already provides nats+postgres+tuwunel. Full test suite: 212 passed + 5 integration-skipped. |
