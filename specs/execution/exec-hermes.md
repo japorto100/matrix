@@ -1,30 +1,73 @@
-# exec-hermes — Adoption-Analyse von `_ref/hermes-agent` für matrix
+# exec-hermes — Gems-Index für `_ref/hermes-agent/` Ports nach matrix
 
-> ## STATUS: **ENTWURF — NICHT FREIGEGEBEN**
+> ## STATUS: **Index + aktive Adoption** (Phase-1 + Phase-B P1 DONE)
 >
-> **Dies ist eine Analyse und Adoption-Roadmap, kein genehmigter Plan.** Muss vor Implementierung **deeper besprochen** werden, insbesondere:
+> Dieser Spec ist das **Source-of-Truth-Index-Dokument** für jede Hermes-Agent-Adoption in matrix. Jede Zeile in §0 **Gems Coverage Matrix** hat einen absoluten Pfad zu `_ref/hermes-agent/`, einen matrix-Zielpfad, Status und owning-exec. Implementierungsdetails leben in den owning-execs, nicht hier.
 >
-> 1. CLI-vs-Enterprise-Übersetzung pro Pattern (siehe §2)
-> 2. Priorisierung gegen bestehende Execs (exec-memory, exec-harness, exec-context, exec-11, exec-15, exec-17, exec-18)
-> 3. **Architekturfrage "Graph vs Loop vs Hybrid"** — offene Diskussion (§9)
-> 4. Test-Budget und Maintenance-Cost pro adoption-Pattern
->
-> **Hermes ist ein CLI-Agent (Single-Tenant-Selfhost), matrix ist Enterprise (Multi-Tenant-fähig).** Jede Adoption muss diese Substratverschiebung bewusst mitdenken — siehe Translation-Matrix in §2.
+> Wenn ein Gem "WIRED" oder "PLANNED" in einem anderen exec ist, ist dieser Spec **Index**; die Arbeit geschieht dort. Wenn ein Gem "REJECTED" ist, erklärt §5 warum.
 
-> Erstellt: 2026-04-18
+> Erstellt: 2026-04-18 · Phase-1 abgeschlossen 2026-04-18 · Phase-B P1 abgeschlossen 2026-04-20
 > Referenz-Index: `_ref/hermes-agent/` via gitnexus (47,734 nodes, 1,707 Files)
 > Hermes-Commits 2026-04, Hermes 4 Paper: arxiv 2508.15204
-> Querverweise: exec-harness, exec-context, exec-memory, exec-11, exec-15, exec-16, exec-17, exec-18, exec-12, exec-10, exec-skills
+> Querverweise: exec-harness, exec-context, exec-memory, exec-11, exec-15, exec-16, exec-17, exec-18, exec-12, exec-10, exec-skills, exec-security, exec-scheduler, exec-scheduler2
 
 ---
 
-## 0. TL;DR
+## 0. Gems Coverage Matrix — alle 24 Patterns mit Status
 
-Hermes-Agent ist ein **enormer Fundus an produktionsgetesteten Mikro-Patterns** (47k nodes über 326 Python-Files). Die interessanten Teile sind **nicht das Framework als Ganzes** (CLI-zentriert), sondern isolierbare Subsysteme: `ContextEngine`-ABC, `MemoryProvider`-ABC, Cron-Scheduler, Skills-Guard, Checkpoint-Manager, Credential-Pool, Error-Classifier, Rate-Limit-Tracker, Prompt-Caching.
+**Legend:** WIRED = in production-path + activated; PLANNED = scheduled in a Phase-B phase; BLOCKED = needs another exec's decision first; REJECTED = evaluated and declined; DEFERRED = post-Phase-B unblocked.
 
-**Adoption-Strategie:** Cherry-pick **nach Pattern, nicht nach File**. Jedes adaptierte Stück wird auf matrix-Substrate (Postgres, NATS, go-appservice, Valkey) übersetzt — nicht 1:1 kopiert.
+### Active (ported or planned)
 
-**Architekturfrage:** Hermes ist klar **Agno-Style** (linearer Loop + pluggable Engines), nicht LangGraph. Matrix nutzt aktuell LangGraph. Empfehlung (detail §9): **Hybrid** — LangGraph für komplexe deterministische Flows behalten, parallel einen agno-style `SimpleAgentLoop` für einfache Chat-Task einführen. Evaluieren, welches bei welchem Use-Case robuster ist.
+| Gem | Hermes Path (absolut) | matrix Target | Status | Owning Exec |
+|---|---|---|---|---|
+| Skills-Guard | `_ref/hermes-agent/tools/skills_guard.py` | `python-backend/agent/security/skills_guard.py` | **WIRED** (commit `8ff8a6a` + `19e50c4`) | `exec-security.md §2` |
+| Error-Classifier | `_ref/hermes-agent/agent/error_classifier.py` + `retry_utils.py` | `python-backend/agent/resilience/error_classifier.py` | **WIRED** (`21fb602` + `19e50c4`) | this spec §3.4 |
+| Rate-Limit-Tracker | `_ref/hermes-agent/agent/rate_limit_tracker.py` | `python-backend/agent/resilience/rate_limit_tracker.py` | **WIRED** (`d5fc914` + `19e50c4`) | this spec §3.5 |
+| Trajectory-Export | `_ref/hermes-agent/agent/trajectory.py` | `python-backend/agent/trajectory/exporter.py` | **WIRED** (`e8b3858`) | `exec-17.md` |
+| Prompt-Caching | hermes-wide `cache_control` pattern | `python-backend/agent/graph/nodes/llm_node.py` | **WIRED** (fix `9fe9a58`) | `exec-context.md §1.2` |
+| ContextEngine ABC | `_ref/hermes-agent/agent/context_engine.py` | `python-backend/context/context_engine.py` | **WIRED Phase-B P1** (commit `09988de`) | `exec-context.md` |
+| MemoryProvider ABC | `_ref/hermes-agent/agent/memory_provider.py` | `python-backend/memory_fusion/memory_provider.py` | **WIRED Phase-B P1** (commit `09988de`) | `exec-memory.md` |
+| CredentialPool ABC | `_ref/hermes-agent/agent/credential_pool.py` (1431 LOC hermes → 300 LOC matrix) | `python-backend/agent/resilience/credential_pool.py` | **WIRED Phase-B P1** (ABC `38b9b64`, call-site `09988de`) | `exec-16.md §2.C` |
+| redact.py | `_ref/hermes-agent/agent/redact.py` | `python-backend/agent/security/redact.py` | **PLANNED Phase-B P3** | `exec-security.md §1` |
+| scan_cron_prompt | `_ref/hermes-agent/tools/cronjob_tools.py` (+ tests) | `python-backend/agent/security/prompt_scanner.py` | **PLANNED Phase-B P3** | `exec-security.md §4` |
+| usage_pricing.py | `_ref/hermes-agent/agent/usage_pricing.py` (687 LOC → 150 LOC slim-port) | `python-backend/agent/billing/usage_pricing.py` | **PLANNED Phase-B P4** | `exec-16.md §2.10` |
+| insights.py | `_ref/hermes-agent/agent/insights.py` (dual-path) | `python-backend/agent/billing/insights.py` | **PLANNED Phase-B P4** | `exec-16.md §2.10` + `exec-harness.md §4f` |
+| model_metadata.py | `_ref/hermes-agent/agent/model_metadata.py` (1116 LOC → 80 LOC LiteLLM-wrapper) | `python-backend/agent/llm/model_metadata.py` | **PLANNED Phase-B P4** | `exec-16.md §3.1` |
+| context_compressor.py | `_ref/hermes-agent/agent/context_compressor.py` | split → `python-backend/agent/middleware/compaction.py` + `compression.py` | **PLANNED Phase-B P5** | `exec-context.md §6.3` + `exec-memory.md §3h` |
+| title_generator.py | `_ref/hermes-agent/agent/title_generator.py` | `python-backend/agent/titles/generator.py` | **PLANNED Phase-B P6** | `exec-06.md §4d` + `exec-transformersjs.md §3.5` |
+| manual_compression_feedback.py | `_ref/hermes-agent/agent/manual_compression_feedback.py` | `frontend_merger/src/features/agent/CompressionFeedback.tsx` | **PLANNED Phase-B P6b** | `exec-06.md §4c` |
+| Cron-Scheduler | `_ref/hermes-agent/cron/scheduler.py` + `jobs.py` | matrix-Go-River rewrite (NOT direct port) | **OWNERSHIP TRANSFERRED** | `exec-scheduler.md` (Phase-1 DONE) + `exec-scheduler2.md` (Phase-2) |
+
+### Blocked (need other exec-decision)
+
+| Gem | Hermes Path (absolut) | Blocker |
+|---|---|---|
+| Skill-Manager-Tool | `_ref/hermes-agent/tools/skill_manager_tool.py` | `exec-skills.md` `agent.agent_skills` DB-flow not yet landed |
+| Checkpoint-Manager | `_ref/hermes-agent/tools/checkpoint_manager.py` | `exec-12` Sandbox-Decision (WASM vs Workspace-Dir) |
+| HITL skills_guard drawer | `_ref/hermes-agent/tools/skills_guard.py` (UI follow-up) | `exec-12` frontend HITL-dialog pattern |
+
+### Deferred (unblocked post-Phase-B)
+
+| Gem | Hermes Path (absolut) | Unblocks after |
+|---|---|---|
+| Hybrid Agno-Loop | `_ref/hermes-agent/environments/agent_loop.py` | **Phase-C** (separate plan, §9 architecture-question) |
+| Smart-Model-Routing | `_ref/hermes-agent/agent/smart_model_routing.py` | Phase-B P4 cost-tracking (then route cheap-vs-strong informed) |
+| Batch-Runner | `_ref/hermes-agent/batch_runner.py` | NATS-JetStream-Worker-Pool pattern lands for exec-harness evals |
+
+### Rejected (documented-and-declined)
+
+| Gem | Hermes Path (absolut) | Reason |
+|---|---|---|
+| auxiliary_client.py | `_ref/hermes-agent/agent/auxiliary_client.py` | LiteLLM covers 80%, unique 20% = CLI-OAuth-hack irrelevant for matrix's BYO-API-key model |
+| OpenAI-compat HTTP | `_ref/hermes-agent/gateway/platforms/api_server.py` | `go-appservice` is our REST layer — defer to v2.0+ if ever |
+| ACP-Adapter | `_ref/hermes-agent/acp_adapter/` | NATS-native A2A preferred |
+| HRR Memory plugin | `_ref/hermes-agent/plugins/memory/holographic/` | Research-track; `memory_fusion/` already more mature |
+| Process-Registry | `_ref/hermes-agent/tools/process_registry.py` | NATS + go-appservice cover this |
+| Context-References parser | `_ref/hermes-agent/agent/context_references.py` | `exec-9` has own `@file`-parser |
+| Subdirectory-Hints | `_ref/hermes-agent/agent/subdirectory_hints.py` | CLI-specific |
+| Nous-Rate-Guard | `_ref/hermes-agent/agent/nous_rate_guard.py` | Valkey `SetNX` + TTL preferred |
+| mini_swe_runner.py | `_ref/hermes-agent/mini_swe_runner.py` | superseded by `agent/harness/evaluator.py` |
 
 ---
 
@@ -917,64 +960,52 @@ onefetch /home/lipfi2/code/matrix/_ref/hermes-agent
 | 2026-04-18 | **§3.3 Skills-Guard DONE** (commit `8ff8a6a`, wired `19e50c4`): enterprise port mit dict-input, `matrix-official` trust-level, `pattern_id` im report, invisible-unicode für alle text-files, importer-gating (422 bei reject). **§3.4 Error-Classifier DONE** (commit `21fb602`, wired `19e50c4`): `FailoverReason` incl. `upstream_unavailable`, pure `classify_error`, priority-dispatch, telemetry-only wiring in runner/refiner/llm_node span-events. **§3.5 Rate-Limit-Tracker DONE** (commit `d5fc914`, wired `19e50c4`): per-`(user, provider_key, window)` buckets, LiteLLM `_hidden_params`-shape, `to_prometheus_dict()`, wired via `get_rate_limit_registry()` in `llm_node`. **§3.6 Trajectory DONE** (commit `e8b3858`): ShareGPT JSONL exporter über `agent.spans.events` + `agent.sessions` (exec-18 Migration 017). **§4.5 Prompt-Caching DONE** (fix `9fe9a58`): system-prompt breakpoint nun unconditional + rolling-3 über non-system. Verbleibend Tier-1: §3.1 ContextEngine, §3.2 MemoryProvider. Details siehe §15 Implementation-Status. |
 | 2026-04-18 (Phase A) | **§3.1 ContextEngine ABC DONE** (commit `7e1d387`): `context/context_engine.py` mit `ContextStage` enum, `DefaultContextEngine` (80/85/95 thresholds), predicate helpers, custom-config override. 17 tests. **§3.2 MemoryProvider ABC DONE** (commit `7e1d387`): `memory_fusion/memory_provider.py` mit Fan-out `MemoryManager` + error-isolation + `FusionProvider` concrete + `auto_fusion_provider()` factory. 20 tests. Architecture-Decision: **Peer-Service-Pattern** per 2026 hermes+OpenClaw "two-surface plugin model" — context+memory sind Peers des harness, rufen sich nicht gegenseitig. Dokumentiert in `memory_fusion/README.md` + `context/README.md`. Cleanup: `agent/memory/` → `archive/legacy-agent-memory/` (alle 10 Callers migriert), `python-backend/memory/` (toter REST-Stub) → `archive/legacy-memory-service/`, 3 pre-existing test-failures gefixt, 3 Memory-Dir-READMEs (`memory_fusion/`, `memory_engine/`, `archive/`). |
 | 2026-04-18 (Phase D) | **§4.4 Credential-Pool DONE** (commit `38b9b64`): `agent/resilience/credential_pool.py` mit `CredentialPool` ABC + `SingleKeyCredentialPool` + `apply_recovery()`-dispatcher. Mappt error_classifier.RecoveryStrategy → pool-state: rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed, overloaded/server_error → 5min, no-op bei context/format/timeout/unknown. 28 tests. Bewusst skipped: OAuth-device-code (Nous/Qwen portals) — pure Komplexität für BYO-key Modell, ROI nicht gerechtfertigt. OAuth-Subklasse später als `OAuthCredentialPool(CredentialPool)` wenn SaaS-Reselling-Use-Case kommt. |
+| 2026-04-20 (Phase-B P1) | **Dead Code aktiviert** (commit `09988de`): CredentialPool + MemoryManager + ContextEngine waren Phase-1 geported aber nie aufgerufen. Phase-B P1 wiring: (1) `get_context_engine()` + `get_memory_manager()` + `set_memory_manager()` Accessors (Contrarian BLOCKER-3 fix). (2) Migration 022 `agent.sync_failures` Tabelle (ops-visibility für fire-and-forget memory-sync-errors). (3) `agent/resilience/init_stack.py` mit `init_agent_resilience_stack()` als FastAPI startup-handler + `resilience_health()` + `GET /health/resilience` endpoint (HTTP 503 wenn degraded). (4) `CredentialPool.acquire()` + `apply_recovery()` + `mark_success()` call-sites in `llm_node.py` vor/nach LLM-call; rate-limit-bucket nutzt jetzt `credential.key_id` statt `_provider_label(model)` (per-key isolation). (5) `CredentialExhaustedError` neue `RepairableError` subclass raised wenn `acquire()` None returns + user != "anonymous". (6) `MemoryManager.system_prompt_blocks()` + `prefetch()` ersetzen hardcoded Hindsight-recall in `runner._prepare_system_prompt` (Hindsight-direct als legacy-fallback). (7) Fire-and-forget `asyncio.create_task(_safe_sync_turn())` post-graph mit ADR-comment + INSERT into `agent.sync_failures` für ops-visibility. (8) `ContextEngine.stage_for(tokens, window)` span-attribute-emit in `_prepare_messages` (Contrarian-2 CRITICAL-1: signature stays stable, stage_for_model additiv in P5). 15 neue unit-tests. sota-verify: PASS on all 27 probes. 192/192 tests pass, 0 regressions. |
+| 2026-04-20 (Phase-B P2) | **exec-hermes.md als Source-of-Truth-Index restructured.** §0 TL;DR ersetzt durch Gems Coverage Matrix (24 items, absolute hermes paths, status, owning-exec). §14 changelog + §15 implementation-status updated. Cross-exec stubs eingefügt in exec-context, exec-memory, exec-16, exec-17, exec-harness, exec-06, exec-transformersjs. Neue umbrella spec `exec-security.md` für redact + HITL skills_guard + audit-integrity. |
 
 ---
 
-## 15. Implementation-Status (as of 2026-04-18)
+## 15. Implementation-Status
 
-Checkbox-Konvention mimickt `exec-10-multi-agent.md` §Status-Section. `[x]` = in main/dev branches gelandet, `[~]` = partial/blocked, `[ ]` = offen. Commit-SHAs verlinken zu `ralph/resilience-bundle` branch (noch nicht gemerged).
+**Vollständige Status-Liste pro Gem:** §0 Gems Coverage Matrix oben.
 
-### Tier 1 — Must-Adopt
+**Was in exec-hermes.md DIREKT owned bleibt** (nicht in andere execs migriert):
 
-- [x] §3.3 `skills_guard` — `agent/security/skills_guard.py` (`8ff8a6a`), wired `19e50c4`. 34 tests.
+- [x] §3.3 `skills_guard` — `agent/security/skills_guard.py` (`8ff8a6a`), wired `19e50c4`. 34 tests. (Referenced from `exec-security.md §2`.)
 - [x] §3.4 `error_classifier` — `agent/resilience/error_classifier.py` (`21fb602`), wired `19e50c4`. 18 tests.
-- [x] §3.5 `rate_limit_tracker` — `agent/resilience/rate_limit_tracker.py` (`d5fc914`), wired `19e50c4`. 10 tests.
-- [x] §3.6 `trajectory` (ShareGPT JSONL) — `agent/trajectory/exporter.py` + `scripts/export_trajectories.py` (`e8b3858`). 18 tests.
-- [x] §3.1 `ContextEngine` ABC — `context/context_engine.py` (commit `7e1d387`). Default 80/85/95 thresholds, `ContextStage` enum, predicate helpers (should_verbatim_retain / should_compact / should_emergency_compact), custom-config override. 17 tests.
-- [x] §3.2 `MemoryProvider` ABC + MemoryManager — `memory_fusion/memory_provider.py` (commit `7e1d387`). Fan-out coordinator mit per-provider error-isolation, FusionProvider concrete impl, `auto_fusion_provider()` factory, system_prompt_blocks aggregation. 20 tests. Architecture: peer-service pattern per 2026 hermes + OpenClaw "two-surface plugin model" — context+memory sind Peers des harness, rufen sich nicht gegenseitig.
+- [x] §3.5 `rate_limit_tracker` — `agent/resilience/rate_limit_tracker.py` (`d5fc914`), wired `19e50c4`. Phase-B P1 (`09988de`) wechselt rate-limit-bucket auf `credential.key_id`. 10+ tests.
+- [x] §3.6 `trajectory` (ShareGPT JSONL) — `agent/trajectory/exporter.py` + `scripts/export_trajectories.py` (`e8b3858`). 18 tests. (Will be extended in `exec-17.md` §2.5 with redact-hook.)
 
-### Tier 2 — Adapt-with-Adaptation
+**Was in andere execs migriert ist** (details dort, nicht duplizieren):
 
-- [x] §4.5 Prompt-Caching (Anthropic cache_control) — in `llm_node.py` (`9fe9a58`). System + 3-msg rolling window. 7 tests.
-- [ ] §4.1 Cron-Scheduler — **Ownership transferred zu `exec-scheduler.md`** (2026-04-18). Go+River+NATS-Architektur, 15 use-cases, chat-first UX. Nicht blockiert.
-- [ ] §4.2 Skill-Manager-Tool — exec-skills.md existiert, aber `agent.agent_skills` DB-flow noch offen.
-- [ ] §4.3 Checkpoint-Manager — blockiert auf exec-12 Sandbox-Decision.
-- [x] §4.4 Credential-Pool — `agent/resilience/credential_pool.py` (commit `38b9b64`). ABC `CredentialPool` + `SingleKeyCredentialPool` wrapping `get_user_api_key`. `apply_recovery()` dispatcher classifies `ClassificationResult` → rate_limit (1h) / billing (24h) / auth → mark_auth_failed / overloaded+server_error (5min) / no-op (context/format/timeout/unknown). 28 tests. Multi-key-per-user bleibt der DB-Schema-Erweiterung vorbehalten — OAuth-Provider (Nous/Qwen portal) deliberately skipped (BYO-key model macht den Aufwand nicht wett; siehe SOTA-Diskussion im ralph-Log).
+- §3.1 ContextEngine → `exec-context.md` (ABC ported Phase-1 `7e1d387`, WIRED Phase-B P1 `09988de`)
+- §3.2 MemoryProvider → `exec-memory.md` (ABC ported Phase-1 `7e1d387`, WIRED Phase-B P1 `09988de`)
+- §4.1 Cron-Scheduler → `exec-scheduler.md` (Phase-1 DONE) + `exec-scheduler2.md` (Phase-2+)
+- §4.4 Credential-Pool → `exec-16.md §2.C` (ABC `38b9b64`, call-sites `09988de`)
+- §4.5 Prompt-Caching → `exec-context.md §1.2` (fix `9fe9a58`)
+- §5.4 Smart-Model-Routing → deferred, unblocks after `exec-16.md §2.10` cost-tracking (Phase-B P4)
+- §5.6 Batch-Runner → deferred, `exec-harness.md` evaluator use-case first
 
-### Tier 3 — Evaluate Carefully
+**Phase-B P1 (Dead Code → Live) — commit `09988de`:**
 
-- [ ] §5.1 OpenAI-compat HTTP-Endpoint — defer to v2.0.
-- [ ] §5.2 ACP-Adapter — NATS-native bevorzugt.
-- [ ] §5.3 Holographic Memory — research-track, entkoppelt.
-- [ ] §5.4 Smart Model Routing — post exec-16 Cost-Tracking.
-- [ ] §5.5 Process-Registry — NATS-Pattern bevorzugt.
-- [ ] §5.6 Batch-Runner — NATS-Worker-Pool bevorzugt.
+- [x] `get_context_engine()` + `get_memory_manager()` + `set_memory_manager()` Accessors (context/context_engine.py + memory_fusion/memory_provider.py)
+- [x] Migration 022_agent_sync_failures (ops-visibility table for fire-and-forget sync-errors)
+- [x] `agent/resilience/init_stack.py` — init_agent_resilience_stack() + resilience_health() + GET /health/resilience endpoint
+- [x] CredentialPool.acquire() + apply_recovery() + mark_success() call-sites in llm_node.py
+- [x] CredentialExhaustedError exception-type (RepairableError subclass)
+- [x] MemoryManager.system_prompt_blocks() + prefetch() in runner._prepare_system_prompt (+ Hindsight legacy-fallback)
+- [x] Fire-and-forget `_safe_sync_turn` + `_record_sync_failure` in runner post-graph
+- [x] ContextEngine.stage_for() span-attribute emit in runner._prepare_messages
+- [x] 15 new unit tests (tests/agent/test_phase_b_wiring.py), sota-verify PASS on 27 probes
 
-### Tier 4 — Kleine Gems
+**Phase-B P2–P6 (remaining):** tracked in `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md`. Summary:
 
-- [ ] §6.1 Manual-Compression-Feedback UX — 1h control-ui.
-- [ ] §6.2 Title-Generator — 2h control-ui.
-- [~] §6.3 Insights-Report — exec-17 OpenObserve deckt das ab.
-- [ ] §6.4 scan_cron_prompt (Injection-Defense) — koppeln mit §4.1.
-- [~] §6.5 Prompt-Builder + Hints — exec-context §5 deckt das ab.
+- **P2** (current): exec-hermes INDEX + cross-exec stubs + new `exec-security.md`
+- **P3**: redact.py + scan_cron_prompt + exec-security §1 full content
+- **P4**: usage_pricing + insights + model_metadata (→ `exec-16.md` §2.10 + `exec-harness.md` §4f)
+- **P5**: compaction/compression split + ContextEngine LiteLLM-refresh (→ `exec-context.md` §6.3 + `exec-memory.md` §3h)
+- **P6**: compression-UI + title-gen (→ `exec-06.md` §4c/§4d + `exec-transformersjs.md` §3.5)
 
-### Wiring / Infrastruktur
+**Phase-C (deferred, separate plan):** Hybrid-Loop A/B (§9 architecture-question), plus any Phase-B items that turn out to need separate contrarian-review.
 
-- [x] `ErrorPacket.metadata` Back-compat-Erweiterung (runner SSE flow tragt classification) — `streaming.py`.
-- [x] `get_rate_limit_registry()` Accessor-Pattern in `llm_node.py` (Test-isolable).
-- [x] `_skill_to_scan_input` + `_scan_trust_source_for_tier` helpers in `agent/skills/importer.py`.
-- [x] REST 422 für skills_guard reject in `agent/app.py`.
-- [x] `get_credential_pool()` / `reset_credential_pool()` Accessor-Pattern in `agent/resilience/credential_pool.py` (Test-isolable, mirror von rate_limit_registry).
-- [x] `apply_recovery(pool, credential, classification)` — bridges error_classifier.RecoveryStrategy → pool state mutation. Ein Aufruf pro post-LLM-error.
-- [ ] Frontend TS-types für `ErrorPacket.metadata.failover_reason` — aktuell in `metadata` gebuckt (kein TS-touch nötig), aber konsumierende UI sollte später die Keys typen.
-- [ ] Call-site wiring of CredentialPool.acquire() in llm_node before LLM-call — Phase-E Arbeit (nicht in exec-hermes scope, aber Voraussetzung für "richtige" Rotation statt nur Telemetry).
-- [ ] `memory_fusion.MemoryManager` + `context.ContextEngine` wiring in runner.py/llm_node — Phase-E (analog CredentialPool).
-- [ ] HITL NotificationDrawer für skills_guard `dangerous`-verdicts — blockiert auf exec-12.
-
-### Test-Summe
-
-- Pre-Phase-A (resilience bundle merge): `python-backend/tests/agent/` 102 passed.
-- Post-Phase-A (ABCs landed, legacy archived): 155 passed. 37 neue tests (17 context_engine + 20 memory_provider).
-- Post-Phase-D (Credential-Pool): 183 passed. 28 neue tests (credential_pool).
-- 3 pre-existing failures vom main-branch wurden parallel gefixt (context/policy.py grounded_derived, kg_store.py guard+test).
-- ruff check: clean across all Phase-A/Phase-D-touched directories.
+**Test-Summe (as of Phase-B P1):** 192 passed (155 agent + 37 ABC-tests). 0 regressions from Phase-1 baseline. Ruff clean on all Phase-B-touched files.

@@ -237,3 +237,55 @@ exec-06 Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
 (Package Setup → Backend Verify → Voice Verify → Frontend Verify → Shared Components)
 Phase 6 (Dual-Panel) optional, unabhaengig
 ```
+
+---
+
+## §4c Compression-Health-Indicator UI (Phase-B P6 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P6.
+**Cross-ref:** `exec-hermes.md §0` (context_compressor + manual_compression_feedback rows), `exec-context.md §11`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P6`.
+
+User-facing **subtle indicator + expand-on-click** (NOT forced-dialog). Enterprise auditability default on — user must see when/what was summarized.
+
+**Backend (P6a):** `GET /api/v1/agent/context/compression-status?thread_id=X` → `{stage: "normal|compaction|emergency", usage_pct: 0.73, last_compact_at: epoch-ms, last_compress_at: epoch-ms, compressed_turn_count: int}`.
+
+**Frontend (P6a):** `frontend_merger/src/features/agent/CompressionIndicator.tsx` — status-dot in chat-header:
+- Green: `normal`
+- Yellow: `compaction` active
+- Red: `emergency` + badge with `compressed_turn_count`
+
+**Expand-on-click** panel shows `{stage, usage_pct%, "12 earlier turns summarized"}` + link "show raw (from mempalace)" for reversibility via MemPalace verbatim-archive.
+
+**Inline indicator** in chat-body at the compression-point: `📎 32 earlier turns summarized → click to expand`.
+
+Design-rationale: enterprise contexts (trading/research/legal) need auditable compression. ChatGPT-seamless is good for casual; we're trust-by-audit.
+
+## §4d Title-Gen display + API (Phase-B P6 stub)
+
+**Status:** STUB — filled in P6.
+**Cross-ref:** `exec-hermes.md §0` (title_generator row), `exec-transformersjs.md §3.5` (local-model upgrade path), plan §P6.
+
+Hermes-port: `_ref/hermes-agent/agent/title_generator.py` (~50 LOC).
+
+**Backend (P6a):** `POST /api/v1/agent/sessions/{session_id}/title` → triggers LLM-summary of first 3 messages → writes to `agent.sessions.title` (column added via migration 024 — Contrarian BLOCKER-2 fix).
+
+**Credential isolation (Contrarian-2 MAJOR-5):** Title-gen does NOT use user's API key. Dedicated env-var `MATRIX_TITLE_GEN_KEY` + `MATRIX_TITLE_GEN_MODEL` (default `gpt-4o-mini` or `claude-haiku-4-5` for cost). Absent env-var → title-gen **skipped** (session remains without title, UI fallback to truncated first-message). Title-gen calls NOT in user's InsightsEngine billing.
+
+**Frontend (P6a):** async trigger after first assistant-response, SSE-push title when ready. Chat-list UI (when it lands) displays titles in session-list.
+
+**Transformers.js upgrade path** (separately in `exec-transformersjs.md §3.5`): swap remote-LLM call for local WebGPU small-model, <200ms, no remote cost, no service-key needed. Phase-C likely.
+
+## §4c.b Manual Compression Feedback UX (Phase-B P6b stub, nice-to-have)
+
+**Status:** STUB — Phase-2 nice-to-have, not default-visible.
+**Cross-ref:** `exec-hermes.md §0` (manual_compression_feedback row).
+
+`frontend_merger/src/features/agent/CompressionFeedback.tsx` — opt-in button "improve this summary" in the compression-indicator expand-panel. Modal with textarea for user-correction; POST `/api/v1/agent/compression/{compression_id}/feedback`.
+
+NICHT default-visible (no forced feedback-dialog after every compression). Ingested as fine-tuning-dataset signal in exec-harness backlog.
+
+## Changelog-append (Phase-B)
+
+| Date | Change |
+|---|---|
+| 2026-04-20 | exec-hermes Phase-B P2 stubs added: §4c (compression-health indicator UI), §4d (title-gen), §4c.b (manual-compression-feedback, Phase-2 nice-to-have). All filled during P6. Title-gen credential-isolation via `MATRIX_TITLE_GEN_KEY` per Contrarian-2 MAJOR-5 fix. |

@@ -242,3 +242,37 @@ Explizite Arbeitspunkte (Inhalt früher in `exec-memory` §3f — **nicht entfer
 |:------|:---------|
 | 2026-04-15 | Erstversion; ausgelagert aus exec-memory §3f (Compaction + Token Caching) mit SOTA-Referenzen |
 | 2026-04-15 | §1.1/1.2 LiteLLM + OpenRouter; provider-agnostisches Caching; §7 Checkliste explizit (gleiche Punkte wie früher exec-memory, zentral hier) |
+| 2026-04-20 | exec-hermes Phase-B P2 stubs added: §11 pre_compression-event contract (P5), §12 cost-metrics hooks (P4), §13 LiteLLM model_info-based thresholds TODO. |
+
+---
+
+## 11. `pre_compression` event contract (Phase-B P5 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P5.
+**Cross-ref:** `exec-hermes.md §0` (context_compressor row), plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P5`.
+
+When `ContextEngine.stage_for(tokens, window) == ContextStage.emergency`, `middleware/compression.py` (P5 new) MUST emit a `pre_compression` hook BEFORE running LLM-summary reduction. Two consumer-tiers:
+
+- **Data-preserving** (MemPalace verbatim-retain) — synchronously awaited with 500ms timeout (`memory_manager.on_pre_compress(messages, timeout=0.5)`). If MemoryManager is None OR timeout exceeded → emit `archive.miss` metric and continue compression. Never silently lose context-content.
+- **Observational** (metrics, audit-log, exec-17) — span-event `pre_compression` (fire-and-forget), attributes `messages_count` + `tokens_estimate` + `stage`.
+
+Full contract + consumer-ordering guarantee filled during P5 implementation. Implementation-ref: `exec-memory.md §3h` (MemoryProvider.on_pre_compress ABC addition).
+
+## 12. Cost-metrics hooks (Phase-B P4 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P4.
+**Cross-ref:** `exec-hermes.md §0` (usage_pricing + insights rows), `exec-16.md §2.10`.
+
+After P4 lands:
+- `llm_node.py` emits span-attribute `llm.cost_usd` + `llm.cost_status` + `llm.prompt_cache_tokens` per call
+- `InsightsEngine.generate(user_id, days)` aggregates CanonicalUsage across spans for billing-API
+- `agent/harness/scorer.py` uses same InsightsEngine for meta-harness cost-per-task fitness signal
+- Cache-savings (prompt-cache-hit tokens × cost-delta) tracked as `ratelimit.cache.saved_usd` span-attribute
+
+Full schema + API-shape filled in `exec-16.md §2.10` when P4 implements.
+
+## 13. LiteLLM model_info-based thresholds TODO (Phase-B P4/P5)
+
+Current `ContextEngineConfig.default_window: int = 200_000` is a hardcoded fallback. P4 introduces `agent/llm/model_metadata.py::get_model_context_window(model)` wrapper over `litellm.get_model_info()`. P5 then adds `DefaultContextEngine.stage_for_model(*, tokens, model) -> ContextStage` (additive, ABC signature stays stable per Contrarian-2 CRITICAL-1 fix) that resolves window via the wrapper. Hardcoded `default_window` remains as absolute-fallback for LiteLLM-unknown models.
+
+Runner.py temporary `_fallback_model_max_tokens(model)` helper (introduced P1) gets replaced by `get_model_context_window()` in P4.

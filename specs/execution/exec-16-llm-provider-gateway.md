@@ -759,3 +759,61 @@ Pure function `_compute_auto_effort(prompt, history, model_info) -> "low"|"mediu
 
 - [x] Reasoning + Auto-Mode Ownership übernommen von archiviertem `exec-19 §5c` (2026-04-18).
 - [x] Portierungs-Marker "exec-19 Stufe 5c → exec-16 Phase 4.5" aus exec-19 Spec-Map entfernt (archive erhält Historie).
+
+---
+
+## 2.10 Billing Ledger — CanonicalUsage + InsightsEngine (Phase-B P4 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P4.
+**Cross-ref:** `exec-hermes.md §0` (usage_pricing + insights rows), `exec-harness.md §4f` (dual-path fitness), plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P4`.
+
+Hermes-port: `_ref/hermes-agent/agent/usage_pricing.py` (687 LOC → slim-port 150 LOC) + `_ref/hermes-agent/agent/insights.py` (dual-path).
+
+**Pipeline:**
+1. `llm_node.py` post-LLM-call: extract `prompt_tokens`/`completion_tokens`/`cached_tokens`/`reasoning_tokens` → build `CanonicalUsage` dataclass
+2. `estimate_usage_cost(usage, model, provider) -> (Decimal, CostStatus)`:
+   - **Primary**: `litellm.get_model_info(model)` cost-fields (input/output rate per token, prompt-cache-discount)
+   - **Fallback**: hermes-Snapshot-dict for LiteLLM-unknown models
+3. Emit as span-attributes: `llm.cost_usd`, `llm.cost_status`, `llm.prompt_cache_tokens`, `ratelimit.cache.saved_usd`
+4. `InsightsEngine(db: AsyncSession)` reads `agent.spans` JSONB events (NOT SQLite like hermes) — aggregates per-user per-day
+5. **Dual-path**:
+   - REST endpoint `GET /api/v1/billing/insights?user_id=X&days=7` → Control-UI
+   - `agent/harness/scorer.py` imports `InsightsEngine.cost_for_session()` → meta-harness fitness (exec-harness §4f)
+6. **Tier-1 redact** applied in aggregation loop before API-serialization (Contrarian-2 MAJOR-4 fix)
+
+Slim-port philosophy: `CanonicalUsage` dataclass kept 1:1 from hermes (good ergonomic), `estimate_usage_cost` logic ~50 LOC, no OAuth-token-refresh (hermes-CLI-specific), no SQLite-state (hermes-CLI-specific).
+
+## 3.1 model_metadata wrapper — LiteLLM-proxy (Phase-B P4 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P4.
+**Cross-ref:** `exec-hermes.md §0` (model_metadata row), `exec-context.md §13`, plan §P4.
+
+Hermes-port: `_ref/hermes-agent/agent/model_metadata.py` (1116 LOC → 80 LOC wrapper).
+
+New `agent/llm/model_metadata.py`:
+- `get_model_info(model_id) -> ModelInfo` — wrapper über `litellm.get_model_info()`, in-memory TTL-cached 1h
+- `normalize_model_id(raw) -> str` — `"claude-sonnet-4-6"` ↔ `"anthropic/claude-sonnet-4-6"` canonical form
+- `get_model_context_window(model) -> int` — replaces 3 hardcoded locations in the repo
+- **No sync `requests.get()`** (hermes anti-pattern) — LiteLLM caches model-info internally
+
+Phase-B P4 replaces these three hardcoded lookups:
+1. `middleware/summarization.py:35` — `MODEL_MAX_TOKENS: dict[str, int]` → function call
+2. `harness/scorer.py:24` — `MODEL_COST_PER_MTOK: dict[str, float]` → `estimate_usage_cost()` call
+3. `context/context_engine.py` — `ContextEngineConfig.default_window: int = 200_000` → dataclass-method `window_for_model(model)` + fallback
+
+## 2.C CredentialPool call-site (Phase-B P1 DONE)
+
+**Status:** DONE — commit `09988de`.
+**Cross-ref:** `exec-hermes.md §0` (CredentialPool row), plan §P1.
+
+`llm_node.py` now calls `get_credential_pool().acquire(user_id, provider)` before each LLM call + `apply_recovery(pool, credential, classify_error(exc))` on exception + `mark_success(credential)` post-response. Rate-limit bucket uses `credential.key_id` (opaque SHA-256 prefix) instead of `_provider_label(model)` — per-key isolation.
+
+`CredentialExhaustedError` raised when `acquire()` returns None AND user != "anonymous" — propagates through runner's top-level `except Exception` → `build_error_packet_with_failover` for user-facing SSE error.
+
+---
+
+## 2.11 Changelog-append (Phase-B)
+
+| Date | Change |
+|---|---|
+| 2026-04-20 | exec-hermes Phase-B P1 stubs §2.C (CredentialPool call-site DONE `09988de`). Phase-B P4 stubs §2.10 (Billing Ledger) + §3.1 (model_metadata wrapper) added. |

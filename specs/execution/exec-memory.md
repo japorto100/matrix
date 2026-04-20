@@ -691,3 +691,103 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 - [~] Memory-Evals trennen Verbatim-, Derived-, Cross-Session- und Forgetting-Fragen — aktuell im Langkontext-Smoke / `run_fusion_eval.py`, noch nicht als vollstaendige Suite ueber alle Eval-Pfade
 - [ ] Kein produktiver Hybrid-Fallback aktiv, bis Eval auf echten Daten abgeschlossen ist
 - [ ] Referenz-Papers sind ArXiv-kanonisch; lokale PDF-Pfade nur nutzen, wenn Artefakte im Clone wirklich vorhanden sind
+
+---
+
+## Known Issues & Future Architecture (2026-04-17 Addendum)
+
+### Issue: MemPalace nutzt Filesystem statt Postgres
+
+**Problem**: MemPalace als Memory-Engine aktuell auf Filesystem-basierte Storage (`MEMPALACE_PALACE_PATH=./data/memory/palace`) statt gemeinsam mit Hindsight in PostgreSQL.
+
+**Warum ein Problem**:
+- War ursprünglich **nicht das Ziel**. Memory-Layer sollte konsistent in einer relationalen Storage-Schicht sein (PostgreSQL mit pgvector).
+- Inkonsistente Backup-Strategien: Hindsight über pg_dump, MemPalace nur über filesystem-snapshot.
+- Keine ACID-Garantien bei parallelen Reads/Writes über die beiden Engines.
+- Mempalace-Konzepte (Method-of-Loci, wing/room/hall Hierarchie) sind in `memory_fusion` bereits produktiv nach Postgres portiert — daher ist die Filesystem-MemPalace-Engine doppelt mit memory_fusion-Postgres-Pfad.
+
+**Status**: 🚧 **NICHT weiter verfolgen** in aktueller Session-Scope. Dokumentiert für spätere Evaluation.
+
+**Wenn später angegangen**:
+- MemPalace-Engine refactoren auf PG (analog memory_fusion's erfolgreicher Portierung)
+- Oder: MemPalace deprecaten zugunsten von memory_fusion (das MemPalace-Konzepte bereits nutzt)
+- Filesystem-Pfad nur als ephemeral cache / snapshot-export behalten
+
+### Future Option: Eigene Postgres-Instance für Memory-Layer
+
+**Aktuelle Architecture** (2026-04-17):
+```
+postgres :5433 (hindsight_dev DB)
+  ├─ public         (Hindsight — external package, vector-heavy)
+  ├─ storage        (Go-appservice: artifact_metadata)
+  ├─ matrix_crypto  (Go-appservice: Matrix E2EE)
+  ├─ agent          (Python: audit, skills, sessions, ...)
+  └─ ingestion      (Python: ingestion_jobs, chunk_hashes)
+```
+
+**Option für Skale**: Memory-Layer (Hindsight + eventuell Mempalace-DB-Migration) auf eigene Postgres-Instance ausziehen:
+
+```
+postgres-core :5433 (hindsight_dev)        postgres-memory :5434 (memory)
+  ├─ storage                                 ├─ public (Hindsight pgvector)
+  ├─ matrix_crypto                           ├─ memory_fusion (summary/verbatim)
+  ├─ agent                                   └─ (later: mempalace DB-port)
+  └─ ingestion
+```
+
+**Code-seitig bereits vorbereitet**:
+```python
+# memory_fusion/runtime_env.py:24
+os.environ.setdefault("HINDSIGHT_API_DATABASE_URL", db_url)
+```
+Wenn `HINDSIGHT_API_DATABASE_URL` (separate URL) gesetzt → Hindsight nutzt eigene DB.
+Wenn nicht → Fallback auf shared `HINDSIGHT_DB_URL`.
+
+**Scale-Trigger für Migration**:
+- >10k Memory-Conversations (~100k+ embedding-rows)
+- Vector-search-Latency beeinträchtigt OLTP-Queries (cache-eviction)
+- Differenzierte Backup-Strategie nötig (Memory append-only vs. transactional read-heavy)
+- Multi-tenant-Isolation wird relevant
+
+**Aktuell**: NICHT nötig bei Dev-/Solo-Scale. Vermerkt als Future-Option.
+
+**Verantwortlichkeit**:
+- Infrastructure-Changes in `docker-compose.yml` + `.env.development` (wenn aktiviert)
+- Code-Change: nur `HINDSIGHT_API_DATABASE_URL` setzen — kein Refactor nötig
+- Migration-Strategy: pg_dump Hindsight-tables + restore in neue DB
+
+---
+
+## 3h. Hindsight compression-fact-ingest + MemPalace pre_compression-archive (Phase-B P5 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P5.
+**Cross-ref:** `exec-hermes.md §0` (context_compressor row), `exec-context.md §11`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P5`.
+
+When `ContextEngine.stage_for == ContextStage.emergency`, `middleware/compression.py` MUST emit a `pre_compression` hook BEFORE LLM-summary reduction. The MemoryProvider ABC gains a new method in P5:
+
+```python
+class MemoryProvider(ABC):
+    async def on_pre_compress(
+        self, messages: list[dict], *, user_id: str, bank_id: str,
+        timeout: float = 0.5,
+    ) -> None:
+        """Archive verbatim content before compression irreversibly shrinks it.
+
+        Called synchronously-awaited by compression.py with a 500ms timeout.
+        If this raises or times out, the compression-caller emits an
+        `archive.miss` metric and continues — context-preservation is
+        best-effort, not blocking.
+        """
+```
+
+**MemPalace concrete impl** — persists full message-history verbatim into MemPalace (long-term retrievable raw log). Caller awaits with 500ms timeout.
+
+**Hindsight concrete impl** — takes the LLM-compression-summary output (fired *after* pre_compression) and ingests as Fact-rows with confidence-decay. Hindsight = "destilled facts from compression"; MemPalace = "raw log before compression".
+
+**Ordering contract:**
+1. `pre_compression` event emitted + data-preserving consumers awaited
+2. LLM-summary call runs (compression)
+3. Compression-summary fed to Hindsight as fact-list-ingest
+4. Agent turn continues with compressed messages
+
+Full schema + ingest-API filled during P5 implementation.

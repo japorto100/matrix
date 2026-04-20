@@ -173,13 +173,97 @@ Basis-Analyse, aber Meta-Harness's Kern-Ablation zeigt dass **raw Traces der ent
 **Status:** Proposer schreibt aktuell ins Filesystem (`data/harness/candidates/v{NNN}/`).
 exec-18 plant Migration nach `agent.component_configs` mit `pareto_frontier` Flag.
 
-### 4d. EvoSkill Evaluator-Stage Integration
+### 4d. EvoSkill Evaluator-Stage Integration — **expliziter Adoption-Plan**
 
-**Status:** Nicht gebaut. EvoSkill's Stage 4 (Evaluator: Score Varianten gegen Validation-Set)
-ist das fehlende Stueck zwischen unserem Proposer (Stage 2) und Frontier-Tracking (Stage 5).
+**Status:** Evaluator-Code-Scaffold existiert (`agent/harness/evaluator.py`, exec-17 Stufe 6.1),
+aber **läuft nicht end-to-end** in Production. Dieses Exec ist ab jetzt expliziter **Owner**
+für die generische Evaluator-Machinery (nicht skill-spezifisch, nicht harness-spezifisch).
 
-Fuer Skills: `exec-skills.md §8b.3` (Composition A/B Eval) ist genau diese Evaluator-Stage.
-Fuer Harness: `agent/harness/evaluator.py` existiert bereits (exec-17 Stufe 6.1).
+**Adoption-Entscheidung (2026-04-18):** **Pattern nachbauen, Code nicht forken.**
+- EvoSkill (`_ref/EvoSkill/`, 91 Files, 629 gitnexus-nodes) ist klein genug, aber trading-spezifisch gescored (sealqa/dabstep/livecodebench). Forking bringt keinen langfristigen Vorteil.
+- Stattdessen: EvoSkill-Patterns extrahieren, auf matrix-Substrate (Postgres `agent.evals`, `agent.component_configs`, LiteLLM) mappen.
+
+#### 4d.1 File-Mapping — EvoSkill → matrix
+
+| EvoSkill-Source (`_ref/EvoSkill/src/`) | Pattern extrahiert | matrix-Target | Status |
+|---|---|---|---|
+| `evaluation/evaluate.py` (`evaluate_agent_parallel`) | Async-parallel mit Semaphore + 17-min Timeout + RunCache | `agent/harness/evaluator.py` erweitern | Scaffold da, Async-Parallel fehlt |
+| `cache/run_cache.py` | Git-tree-hash-basiertes Caching (re-eval vermeiden) | `agent/harness/evaluator_cache.py` **neu** (Content-Hash statt Git, wir persistieren Configs in DB nicht im Repo) | ❌ |
+| `evaluation/reward.py` | Reward-Computation (numerisch + textuell) | In `agent/harness/scorer.py` bereits teilweise | Scoring vorhanden, Integration offen |
+| `evaluation/eval_full.py` | End-to-End-Loop: load set → run variants → aggregate | `agent/harness/evaluator.py:run_full_eval()` **neu** | ❌ |
+| `evaluation/sealqa_scorer.py` / `dabstep_scorer.py` | Domain-spezifische Scorer | `agent/harness/scorers/{skills,hermes_pattern,memory}.py` **neu** | ❌ — Split vorgesehen |
+| `feedback_descent.py` (arxiv 2511.07919) | **NEU entdeckt**: Pairwise-Comparison statt absolute Scores, text-rationale-basiert | `agent/harness/feedback_descent.py` **optional neu** (§4d.4) | Prüfen |
+| `schemas/proposer.py` + `skill_proposer.py` + `prompt_proposer.py` | Proposer-Varianten pro Domäne | `agent/harness/proposer.py` hat bereits Basis, weitere Varianten bei Bedarf | teilweise |
+| `registry/manager.py` + `models.py` | Skill-Registry mit `generation` + `parent_skill_id` | bereits in `agent.agent_skills` Schema vorhanden | ✅ |
+| `cli/main.py` + `scripts/run_loop.py` | CLI-Orchestrierung des 5-Stage-Loop | `agent/harness/proposer.py:propose_loop()` existiert | ✅ |
+| `agent_profiles/` | Agent-Config pro Use-Case | `agent.component_configs` (exec-18) | ✅ |
+
+#### 4d.2 Das 5-Stage-Loop-Mapping — wo wir stehen
+
+| EvoSkill-Stage | matrix-Status |
+|---|---|
+| **Stage 1 — Base Agent** | ✅ LangGraph-Runner (`agent/graph/runner.py`) |
+| **Stage 2 — Proposer** | ✅ `agent/harness/proposer.py` (exec-17 Stufe 5+6), schreibt Candidates in `agent.component_configs` |
+| **Stage 3 — Generator** | ⚠️ teilweise — Candidate-Materialization als runnable Config fehlt |
+| **Stage 4 — Evaluator** | ❌ **DAS IST DER GAP** — Scaffold da, Full-Loop nicht |
+| **Stage 5 — Frontier** | ✅ `agent/harness/pareto.py` |
+
+Dieser Abschnitt fokussiert auf **Stage 4 + Bridge Stage 3→4**.
+
+#### 4d.3 Drei Konsumenten für denselben Evaluator
+
+Der Evaluator ist **generisch** — drei Konsumenten mit unterschiedlichen Eval-Sets und Scorern:
+
+| Konsument | Eval-Set-Source | Domain-Scorer | Exec-Owner für Eval-Set-Inhalt |
+|---|---|---|---|
+| **Harness-Candidate-Scoring** | `data/harness/search_set/queries.json` (exec-17) | generisch LLM-Judge + Pareto-Dimensionen (Accuracy × Cost × Latency × Grounding) | exec-harness (dieses Exec) |
+| **Skill-A/B-Composition-Eval** | synthetische Trading-Queries (exec-skills §8b.3) | Skill-Compliance-Judge | **exec-skills §8b.3** (Input/Metriken), nutzt unseren Evaluator |
+| **Hermes-Pattern-Benchmarks** (Hybrid-Architektur) | 5 Task-Typen aus exec-hermes §10 Sprint 4 | Latenz + LOC + Trace-Quality + Audit-Trail-Completeness | **exec-hermes §9.6 Phase 2**, nutzt unseren Evaluator |
+
+**Architektonische Konsequenz:** `agent/harness/scorers/` wird neu eingeführt, domain-spezifisch geteilt, aber Evaluator-Machinery (Parallelism, Caching, Aggregation) ist shared.
+
+#### 4d.4 Bonus: Feedback Descent (arxiv 2511.07919) — neu entdeckt
+
+Beim Deep-Dive in `_ref/EvoSkill/src/feedback_descent.py` ist aufgefallen: EvoSkill **benutzt** Feedback Descent (arxiv **2511.07919**, Nov 2025) als alternative Optimierungs-Methode. Statt skalarer Rewards → **Pairwise-Comparison** mit Text-Rationale.
+
+**Warum interessant für matrix:**
+- Skalare LLM-Judge-Scores (0-5) sind verrauscht und modell-biased.
+- Pairwise "A oder B besser + warum?" ist **empirisch stabiler** (hybrid cross-encoder-style reasoning).
+- Rationale liefert qualitative Failure-Mode-Analyse, die der Proposer nutzen kann.
+
+**Entscheidung:** Als **Option** in den Evaluator einbauen (Mode-Flag `scoring_mode: "absolute" | "pairwise"`). Nicht default, aber verfügbar. Datenaufwand ist doppelt so hoch (N×(N-1)/2 statt N Calls), lohnt nur bei kleinen Kandidaten-Sets (<10).
+
+**Referenz:** https://arxiv.org/abs/2511.07919 — neu in §13 Referenzen zu ergänzen.
+
+#### 4d.5 Sprint-Plan (Evaluator-Full-Loop)
+
+**Sprint A (1 Woche)** — Scaffold vervollständigen
+- [ ] `agent/harness/evaluator.py` — `evaluate_search_set()` async-parallel mit Semaphore + Timeout (EvoSkill-Pattern)
+- [ ] `agent/harness/evaluator_cache.py` — Content-Hash-basiertes Caching (key = hash(config + query + model))
+- [ ] `agent/harness/scorers/` — Ordner, Default-Scorer + Interface-ABC
+- [ ] Smoke: 3 Candidates × 5 Queries × 2 Modelle läuft durch, persistent in `agent.evals` (exec-18 Migration 019)
+
+**Sprint B (1 Woche)** — Domain-Scorer + Integration
+- [ ] `agent/harness/scorers/harness_default.py` — Pareto-Dimensionen (accuracy, cost, latency, grounding)
+- [ ] `agent/harness/scorers/skill_compliance.py` — für exec-skills §8b.3
+- [ ] `agent/harness/scorers/hermes_pattern.py` — für exec-hermes §9.6 Hybrid-Benchmark
+- [ ] Proposer-Loop-Integration: `propose_loop()` ruft echten Evaluator, nicht Mock
+
+**Sprint C (Optional, 1 Woche)** — Feedback Descent
+- [ ] `agent/harness/feedback_descent.py` — Pairwise-Comparison-Mode
+- [ ] A/B-Eval zwischen absolute vs pairwise auf demselben Set, messen ob Signal-zu-Rausch besser
+
+**Abnahme-Kriterien:**
+- Pareto-Frontier bewegt sich nach 5+ echten Proposer-Iterationen (nicht Mock)
+- Skill-A/B-Eval aus exec-skills §8b.3 läuft durch denselben Evaluator
+- Hermes-Pattern-Benchmark aus exec-hermes §9.6 läuft durch denselben Evaluator
+- `agent.evals` Tabelle (exec-18 Migration 019) existiert + wird befüllt
+
+**Cross-Ref:**
+- **Input/Metriken für Skill-Eval** → `exec-skills.md §8b.3`
+- **Input/Metriken für Hermes-Pattern** → `exec-hermes.md §9.6 Phase 2 + §10 Sprint 4`
+- **Tabelle `agent.evals`** → `exec-18.md` Migration 019 (noch zu erstellen)
+- **Trace-Input (Meta-Harness-Pattern)** → `exec-17.md` Stufe 5+6 + exec-18 `agent.traces`
 
 ### 4e. Verbindung Skills ↔ Harness
 
@@ -294,3 +378,30 @@ Fehlende Arbeit:
 - [ ] Search-Set deckt `world` / `personal_memory` / `personal_kb` / `mixed` Queries ab
 - [ ] Harness-Evals bestrafen `world` ohne Provenance und `derived` ohne Evidence-Join
 - [ ] Consumer-spezifische Harness-Configs sind separat messbar
+
+---
+
+## 4f. Fitness-scoring via InsightsEngine (Phase-B P4 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P4.
+**Cross-ref:** `exec-hermes.md §0` (insights.py row, dual-path), `exec-16.md §2.10`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P4`.
+
+P4 adds `agent/billing/insights.py` (port of `_ref/hermes-agent/agent/insights.py`) with **dual-path architecture**:
+
+- **Production billing-path** (owned by `exec-16.md §2.10`): REST endpoint `GET /api/v1/billing/insights?user_id=X&days=7` serves Control-UI dashboards
+- **Meta-harness fitness-path** (owned here): `agent/harness/scorer.py` imports `InsightsEngine.cost_for_session(session_id)` to get `total_cost_usd` + `cost_per_task` as Pareto-fitness dimensions
+
+**Important distinction (user emphasized):** `agent/harness/` is **meta-harness** (EvoSkill-style, optimizes the harness itself). It is NOT the "agent-harness" (production runtime — exec-16 billing). Both need cost-data, different aggregation semantics:
+
+- Meta-harness: per-proposer-iteration cost, per-candidate-config cost — fitness signal for "which harness-variant is cheaper for same accuracy"
+- Production billing: per-user-per-day cost — billing signal for "what does this user owe"
+
+Same `CanonicalUsage` data, same `estimate_usage_cost()` function, different aggregation windows + surfaces.
+
+**Replace hardcoded pricing in `scorer.py:24`:** `MODEL_COST_PER_MTOK: dict[str, float]` → `estimate_usage_cost(usage, model, provider)` call. Ditch the 5-model snapshot — LiteLLM covers 50+ models.
+
+## Changelog-append (Phase-B)
+
+| Date | Change |
+|---|---|
+| 2026-04-20 | exec-hermes Phase-B P2 stub added: §4f (fitness via InsightsEngine, filled P4). Clarified meta-harness-vs-production-billing dual-path. |

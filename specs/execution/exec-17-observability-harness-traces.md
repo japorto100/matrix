@@ -655,4 +655,29 @@ Meta-Harness: "~60 harnesses over ~20 iterations"
 | **5** | Harness Feedback Loop (Proposer + Scorer + Config + MCP) | ✅ Komplett |
 | **6** | Meta-Harness Insights (Evaluator + Pareto + Caching + Loop) | ✅ Komplett |
 
+---
+
+## 2.5 Span-Redaction Hooks (Phase-B P3 stub)
+
+**Status:** STUB — filled in exec-hermes Phase-B P3.
+**Owner of redact.py port:** `exec-security.md §1`.
+**This spec owns:** the hook-point in `PostgresSpanProcessor.on_end` + `trajectory/exporter.py`.
+
+**Contrarian BLOCKER-1 design:** `PostgresSpanProcessor.on_end` (current `agent/tracing.py:255`) is sync-blocking (`with psycopg.connect(...)` sync). Async DB-backed pattern-lookup cannot run in this hook. Solution is **two-tier redact**:
+
+- **Tier 1 (sync regex)** applied in `on_end` before DB INSERT — pure-CPU, 48+ static patterns snapshot-at-import. API: `redact_span_event(event: dict) -> dict`. Emits `audit.redaction_count` span-attribute.
+- **Tier 2 (async DB-patterns)** runs in separate background consumer AFTER INSERT — UPDATEs spans in-place. NOT in the sync `on_end` hook. Enabled via `MATRIX_REDACT_CONSUMER_ENABLED=true`.
+
+**Trajectory export hook:** `trajectory/exporter.py::export_to_jsonl` applies Tier-1 redact to every span-row before writing ShareGPT JSONL. Prevents fine-tuning-dataset leakage.
+
+**Admin-bypass:** `GET /api/v1/audit/spans/{id}?raw=true&reason=<string>` returns un-redacted span. Admin-role-gated, reason required, audit-logged as `action=AUDIT_RAW_ACCESS`.
+
+Full pattern-list + migration 023_agent_redaction_patterns filled during P3 implementation.
+
+## Changelog-append (Phase-B)
+
+| Date | Change |
+|---|---|
+| 2026-04-20 | exec-hermes Phase-B P2 stub added: §2.5 (span-redaction hooks, filled P3). Hook-point owned here, pattern-library owned by exec-security.md. |
+
 Alle 6 Stufen implementiert. 11 MCP Tools. Ausstehend: DevStack Verify-Runs + Langfuse Account.
