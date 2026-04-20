@@ -52,3 +52,12 @@
 [submodule "_ref/hermes-agent"]
 	path = _ref/hermes-agent
 	url = https://github.com/nousresearch/hermes-agent.git
+[submodule "_ref/cinny"]
+	path = _ref/cinny
+	url = https://github.com/cinnyapp/cinny.git
+[submodule "_ref/t3code"]
+	path = _ref/t3code
+	url = https://github.com/pingdotgg/t3code.git
+[submodule "_ref/onyx"]
+	path = _ref/onyx
+	url = https://github.com/onyx-dot-app/onyx.git
