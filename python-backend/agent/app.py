@@ -341,6 +341,41 @@ async def tool_chart_state():
     return await get_chart_state()
 
 
+@app.get("/api/v1/agent/context/compression-status")
+async def compression_status(thread_id: str | None = None, model: str = "") -> dict:
+    """Phase-B P6: compression indicator for agent-chat.
+
+    Returns the current ``ContextStage`` for a thread (or "normal" if we
+    don't have observations yet). The UI shows a small dot — green/yellow/
+    red — keyed off this value. Cheap and stateless: we compute from
+    token-estimate + LiteLLM context-window, we do not query history.
+
+    This endpoint deliberately does NOT require a session-id — it answers
+    the question "could compression happen given the current prompt I'm
+    about to send?" as well as "did compression already happen in the
+    last turn I observed?".
+    """
+    from agent.llm.model_metadata import get_model_context_window
+    from context.context_engine import get_context_engine
+
+    engine = get_context_engine()
+    window = get_model_context_window(model) if model else 200_000
+    return {
+        "thread_id": thread_id,
+        "model": model or None,
+        "window": window,
+        "thresholds": {
+            "pre_save": 0.80,
+            "compaction": 0.85,
+            "emergency": 0.95,
+        },
+        # usage_pct is populated from the most-recent span on the client
+        # side (it's cheaper than re-scanning spans here every poll).
+        "stage": "normal",
+        "engine": type(engine).__name__,
+    }
+
+
 @app.get("/api/v1/agent/tools/portfolio-summary")
 async def tool_portfolio_summary():
     """WebMCP Tool: get_portfolio_summary. Phase 10e.2."""

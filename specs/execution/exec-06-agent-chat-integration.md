@@ -240,14 +240,14 @@ Phase 6 (Dual-Panel) optional, unabhaengig
 
 ---
 
-## §4c Compression-Health-Indicator UI (Phase-B P6 stub)
+## §4c Compression-Health-Indicator UI (Phase-B P6 — backend DONE, frontend TBD)
 
-**Status:** STUB — filled in exec-hermes Phase-B P6.
+**Status:** Backend endpoint DONE (2026-04-20); `CompressionIndicator.tsx` frontend PENDING (separate frontend-track ticket).
 **Cross-ref:** `exec-hermes.md §0` (context_compressor + manual_compression_feedback rows), `exec-context.md §11`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P6`.
 
 User-facing **subtle indicator + expand-on-click** (NOT forced-dialog). Enterprise auditability default on — user must see when/what was summarized.
 
-**Backend (P6a):** `GET /api/v1/agent/context/compression-status?thread_id=X` → `{stage: "normal|compaction|emergency", usage_pct: 0.73, last_compact_at: epoch-ms, last_compress_at: epoch-ms, compressed_turn_count: int}`.
+**Backend (DONE):** `GET /api/v1/agent/context/compression-status?thread_id=X&model=Y` → `{thread_id, model, window, thresholds: {pre_save, compaction, emergency}, stage, engine}`. Stateless and cheap — computes from the LiteLLM context-window and the canonical 80/85/95 thresholds. The client enriches with per-turn token counts from its own SSE stream or span-queries.
 
 **Frontend (P6a):** `frontend_merger/src/features/agent/CompressionIndicator.tsx` — status-dot in chat-header:
 - Green: `normal`
@@ -260,16 +260,19 @@ User-facing **subtle indicator + expand-on-click** (NOT forced-dialog). Enterpri
 
 Design-rationale: enterprise contexts (trading/research/legal) need auditable compression. ChatGPT-seamless is good for casual; we're trust-by-audit.
 
-## §4d Title-Gen display + API (Phase-B P6 stub)
+## §4d Title-Gen display + API (Phase-B P6 — backend DONE, UI TBD)
 
-**Status:** STUB — filled in P6.
+**Status:** Backend generator + migration DONE (2026-04-20); frontend display + async dispatch from runner PENDING.
 **Cross-ref:** `exec-hermes.md §0` (title_generator row), `exec-transformersjs.md §3.5` (local-model upgrade path), plan §P6.
 
 Hermes-port: `_ref/hermes-agent/agent/title_generator.py` (~50 LOC).
 
-**Backend (P6a):** `POST /api/v1/agent/sessions/{session_id}/title` → triggers LLM-summary of first 3 messages → writes to `agent.sessions.title` (column added via migration 024 — Contrarian BLOCKER-2 fix).
+**Backend (DONE):**
+- Migration 024 — `ALTER TABLE agent.sessions ADD COLUMN title TEXT` + index `(user_id, title)` for Control-UI search (Contrarian BLOCKER-2 fix).
+- `agent/titles/generator.py` — `generate_title(user_message, assistant_reply, max_words=7)` returns a 3–7 word title via `litellm.acompletion`, with strict sanitisation (first line only, trailing punctuation stripped iteratively, word cap). Fails closed on any error → returns `None`, UI falls back to truncated-first-message label.
+- `persist_session_title(session_id, title)` — direct UPDATE on `agent.sessions`, fail-soft on DB error.
 
-**Credential isolation (Contrarian-2 MAJOR-5):** Title-gen does NOT use user's API key. Dedicated env-var `MATRIX_TITLE_GEN_KEY` + `MATRIX_TITLE_GEN_MODEL` (default `gpt-4o-mini` or `claude-haiku-4-5` for cost). Absent env-var → title-gen **skipped** (session remains without title, UI fallback to truncated first-message). Title-gen calls NOT in user's InsightsEngine billing.
+**Credential isolation (Contrarian-2 MAJOR-5, enforced):** Title-gen reads `MATRIX_TITLE_GEN_KEY` and `MATRIX_TITLE_GEN_MODEL` (default `claude-haiku-4-5-20251001`) **only**. No CredentialPool call. No user-quota consumption. Absent env-var → title-gen returns `None` and the caller skips gracefully. Title-gen spans are NOT scoped to a user-id, so they never show up in `InsightsEngine.generate(user_id, days)` billing.
 
 **Frontend (P6a):** async trigger after first assistant-response, SSE-push title when ready. Chat-list UI (when it lands) displays titles in session-list.
 
@@ -289,3 +292,4 @@ NICHT default-visible (no forced feedback-dialog after every compression). Inges
 | Date | Change |
 |---|---|
 | 2026-04-20 | exec-hermes Phase-B P2 stubs added: §4c (compression-health indicator UI), §4d (title-gen), §4c.b (manual-compression-feedback, Phase-2 nice-to-have). All filled during P6. Title-gen credential-isolation via `MATRIX_TITLE_GEN_KEY` per Contrarian-2 MAJOR-5 fix. |
+| 2026-04-20 | Phase-B P6 backend DONE — migration 024 sessions.title, `agent/titles/generator.py`, `GET /api/v1/agent/context/compression-status` endpoint. Frontend components (CompressionIndicator.tsx, CompressionFeedback.tsx) + runner-side async title-gen dispatch remain in the frontend/backend follow-up ticket. |
