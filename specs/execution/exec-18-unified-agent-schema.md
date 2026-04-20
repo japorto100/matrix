@@ -7,23 +7,16 @@
 
 ## ⚠️ Outdated-Header (2026-04-20)
 
-Dieser spec wurde geschrieben als es ~10 migrations gab und wir dachten "exec-18 fügt 8 neue Tabellen hinzu". Tatsächlich hat matrix jetzt **26 alembic-migrations** (`001_audit_events` … `026_smart_routing_config`) mit signifikant mehr tables als hier geplant war.
+**Dieser spec ist veraltet.** Er wurde geschrieben als wir dachten "exec-18 fügt 8 neue Tabellen hinzu" — tatsächlich haben wir **26 alembic-migrations** gelandet (`001_audit_events` … `026_smart_routing_config`). Die "Phase 1–N: build these tables"-sections unten sind überholt.
 
-**Deshalb darf dieser spec NICHT mehr als to-do-liste benutzt werden.** Er enthält wertvollen historischen kontext (bounded-contexts, schema-trennung zwischen `public` / `agent` / `ingestion` / `storage` / `matrix_crypto`) — aber der "Phase 1–N: build these tables"-teil ist überholt.
+**Wir machen es möglicherweise komplizierter als nötig** — statt in einem statischen doc die erwartete DB-struktur zu pflegen, sollten wir den **agno-index** (schema-introspection via `inspect()` aus agno cookbook) als authoritativen schema-check benutzen. Ground-truth ist die DB, nicht dieser spec.
 
-**Statt hier neu planen:**
+**Konkret:**
+- Neue tables → neue alembic-migration im owning-spec-slice (exec-hermes, exec-scheduler, exec-16, etc.), **nicht** hier neu planen
+- Schema-check → agno's `introspect_schema` pattern aus `_ref/agno/cookbook/01_demo/agents/dash/tools/introspect.py` als matrix agent-tool einbauen
+- exec-18 bleibt wertvoll für den **bounded-context-kontext** (warum `public` / `agent` / `ingestion` / `storage` / `matrix_crypto` getrennt sind) — aber nicht als laufende to-do-liste
 
-1. **Ground-truth ist die DB selbst**, nicht dieser spec. Agno bringt ein runtime-introspection-tool mit:
-   - `_ref/agno/cookbook/01_demo/agents/dash/tools/introspect.py` — `introspect_schema` via SQLAlchemy `inspect()` liefert current tables/columns/fks/sample-data zur laufzeit.
-   - Matrix sollte diesen tool als **agent-tool** einbauen (category: schema-introspection) statt hier in einem statischen doc zu pflegen was in der DB "sollte" sein.
-
-2. **Für neue tables: neue alembic-migration** im owning-spec-slice (exec-hermes, exec-scheduler, etc.). exec-18 war nie der owner für neue features; es war ein planning-doc.
-
-3. **Schema-aware ADRs** gehen in den owning-spec + ein kurzer 1-zeiler cross-ref hier falls nötig.
-
-**Wir machen es möglicherweise komplizierter als nötig** wenn wir exec-18 als zentrales "schema-spec" halten. Vorschlag: diesen spec als **historisches dokument + bounded-context-ADR** markieren, §2-§5 technical-planning archivieren, und runtime-introspection als authoritativen schema-check benutzen.
-
-**Open decision:** komplett archivieren (→ `archive/`) mit §0-§1 als standalone bounded-context-ADR? Oder header + dieser outdated-warnung bewahren? Aktuell: **letzteres** bis wir konsolidieren.
+**Open decision:** komplett archivieren mit §0-§1 als standalone ADR, oder diesen warning-header weitertragen? Aktuell: header bleibt bis konsolidierungs-entscheidung.
 
 ---
 
