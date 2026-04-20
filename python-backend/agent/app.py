@@ -82,6 +82,19 @@ async def _health_resilience() -> JSONResponse:
     return JSONResponse(content=body, status_code=status_code)
 
 
+@app.get("/api/v1/agent/ab/status")
+async def _ab_status() -> JSONResponse:
+    """Phase-C P3: report current A/B dispatcher configuration.
+
+    Returns ``{active, percentage, kill_switch, ...}`` so ops can sanity-
+    check rollout state and verify kill-switch responsiveness during an
+    incident without reading env-vars or Valkey directly.
+    """
+    from agent.runners.dispatcher import ab_status
+
+    return JSONResponse(await ab_status())
+
+
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
 from agent.control import router as _control_router  # noqa: E402
 
@@ -566,7 +579,7 @@ async def _stream_agent_loop(
     Builds AgentExecutionContext, loads ToolRegistry, runs run_agent_loop()."""
     try:
         from agent.context import AgentExecutionContext
-        from agent.graph.runner import run_agent_loop
+        from agent.runners.dispatcher import run_agent_loop_with_variant
         from agent.tools.registry import ToolRegistry
     except ImportError as e:
         from agent.streaming import ErrorPacket, sse
@@ -621,7 +634,9 @@ async def _stream_agent_loop(
     user_content = _build_user_content(req)
     messages = [{"role": "user", "content": user_content}]
 
-    async for chunk in run_agent_loop(ctx, messages):
+    # Phase-C P3: dispatcher picks LangGraph vs SimpleLoop per-user.
+    # Default PCT=0 → 100% LangGraph, kill-switch safe by design.
+    async for chunk in run_agent_loop_with_variant(ctx, messages):
         yield chunk
 
 
