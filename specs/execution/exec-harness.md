@@ -400,8 +400,68 @@ Same `CanonicalUsage` data, same `estimate_usage_cost()` function, different agg
 
 **Replace hardcoded pricing in `scorer.py`:** `MODEL_COST_PER_MTOK` dict removed. `_estimate_cost(model, total_tokens)` now delegates to `estimate_usage_cost` from `agent/billing/usage_pricing.py`. Since audit-events only preserve `total_tokens` (not the input/output split), the scorer applies a 60/40 heuristic — exact costs are still available via `InsightsEngine.cost_for_session(session_id)` which aggregates spans directly. If LiteLLM has no data AND the model isn't in the snapshot, the scorer falls back to `DEFAULT_COST_PER_MTOK=3.0` for fitness-scoring continuity (production billing prefers `status='unknown'` instead).
 
-## Changelog-append (Phase-B)
+---
+
+## 4g. A/B Experiment Fitness Backfill (Phase-C DONE)
+
+**Status:** DONE — 2026-04-20.
+**Cross-ref:** `exec-hermes.md §0` (Hybrid Agno-Loop row), migration 025 `agent.ab_experiments`, `agent/runners/dispatcher.py`.
+
+Phase-C ships the A/B dispatcher (SimpleLoop vs LangGraph). For any A/B experiment to yield a go/no-go decision we need a **quality signal** per turn — not just latency/cost/errors. This section documents how meta-harness provides that signal.
+
+### 4g.1 Composite fitness scalar
+
+`scorer.py::composite_fitness(score_dict) -> float` collapses the multi-dimensional score into a scalar in `[0, 1]` so SQL aggregation works:
+
+| Dimension | Weight | Source |
+|---|---|---|
+| `tool_success_rate` | 0.30 | `tool_successes / tool_calls` (1.0 if no tool calls) |
+| `completed` | 0.25 | `session_status == "completed"` (0.0 if "errored") |
+| `turn_efficiency` | 0.20 | `1 / turns` |
+| `memory_utilization` | 0.15 | 1.0 if any `memory_recall` audit events |
+| `cost_inverse` | 0.10 | `1 / (1 + cost_usd)` — cheap = better |
+
+Raw dimensions remain in the `score_session(thread_id)` return dict for anyone who wants per-axis Pareto analysis. The scalar is the convenience-path for SQL aggregation.
+
+### 4g.2 Backfill contract
+
+`scorer.py::backfill_ab_experiment_fitness(thread_id, fitness_score, eval_id, session_id)` UPDATEs `agent.ab_experiments.harness_fitness_score`. Matches on `thread_id` by default (scorer's natural key, set by the dispatcher at INSERT time) or on `session_id` when explicitly passed.
+
+`score_session(thread_id)` dispatches the backfill via `asyncio.create_task` — fire-and-forget so scorer latency is unaffected. DB errors are caught and logged (fail-soft; missing harness_fitness_score is tolerated by the aggregation query).
+
+### 4g.3 Decision query
+
+Once data is flowing, the canonical A/B evaluation is:
+
+```sql
+SELECT variant,
+       COUNT(*)                           AS n,
+       AVG(harness_fitness_score)         AS mean_fitness,
+       STDDEV(harness_fitness_score)      AS std_fitness,
+       AVG(duration_ms)                   AS mean_latency_ms,
+       AVG(cost_usd)                      AS mean_cost_usd,
+       SUM(CASE WHEN fallback_triggered THEN 1 ELSE 0 END) AS fallbacks
+FROM agent.ab_experiments
+WHERE experiment_id = 'phase-c-hybrid-loop'
+  AND finished_at IS NOT NULL
+  AND harness_fitness_score IS NOT NULL
+GROUP BY variant;
+```
+
+Statistical significance via Welch's t-test on `harness_fitness_score` between `variant='simple'` and `variant='langgraph'` rows once N > 100 per variant (Phase-D analysis task, not automated here).
+
+### 4g.4 TODO — post-landing integration
+
+- [ ] **Scheduled scorer job** — a background worker that polls `agent.ab_experiments` for rows where `finished_at IS NOT NULL AND harness_fitness_score IS NULL` and calls `score_session(thread_id)` for each. Today `score_session` must be invoked explicitly; without a scheduler the column stays NULL for turns that no one scored manually. Candidate: NATS-JetStream consumer OR pg_cron OR a `/admin/harness/backfill` REST endpoint.
+- [ ] **Harness-run eval_id wiring** — when scorer runs as part of a specific meta-harness evaluation (not an ad-hoc turn score), pass the eval's identifier through so rows can be grouped by `harness_eval_id`. Currently always NULL.
+- [ ] **Per-variant Pareto dashboards** — Control-UI panel that reads the decision query above and renders fitness vs. cost vs. latency per variant. Uses existing exec-17 Grafana/OpenObserve stack.
+- [ ] **Fitness weights tuning** — the 30/25/20/15/10 split is an informed default, not empirically validated. Phase-D should let harness itself propose weight candidates and validate against held-out sessions.
+
+---
+
+## Changelog-append (Phase-B + Phase-C)
 
 | Date | Change |
 |---|---|
 | 2026-04-20 | exec-hermes Phase-B P2 stub added: §4f (fitness via InsightsEngine, filled P4). Clarified meta-harness-vs-production-billing dual-path. |
+| 2026-04-20 | **§4g added (Phase-C DONE):** A/B experiment fitness backfill. `composite_fitness` scalar + `backfill_ab_experiment_fitness` wired into `score_session`, fire-and-forget UPDATE on `agent.ab_experiments.harness_fitness_score`. Resolves Contrarian-CRITICAL-3: harness provides the user-satisfaction signal instead of self-built `suspected_retry` heuristic. TODOs: scheduled scorer job (NATS/pg_cron), eval_id wiring, Pareto dashboards, weights tuning. 12 new unit tests. |
