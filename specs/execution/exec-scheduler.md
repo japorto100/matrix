@@ -369,6 +369,23 @@ scheduled_tasks` with `kind=routine` (see D-6 decision in exec-
 scheduler2.md) and get their own REST endpoints (P2b-2 / P2b-3 in
 that spec).
 
+### 8.1 Harness A/B backfill worker (new, Phase-2 scope)
+
+**Status:** Consumer-TODO — scheduler infra exists (River), worker code not yet written.
+**Cross-ref:** `exec-harness.md §4g.4`.
+
+Phase-C (2026-04-20) shipped the A/B dispatcher (`agent/runners/dispatcher.py`) which INSERTs rows into `agent.ab_experiments` with `harness_fitness_score` NULL. `agent/harness/scorer.py::backfill_ab_experiment_fitness` fills that column when `score_session(thread_id)` is invoked — but nobody calls it automatically today.
+
+This is a **periodic backfill worker** that belongs in `internal/scheduler/handlers/`:
+
+* **Trigger:** cron `*/15 * * * *` (every 15 min) — tunable via Phase-2 admin-surface.
+* **Query:** `SELECT thread_id FROM agent.ab_experiments WHERE finished_at IS NOT NULL AND harness_fitness_score IS NULL LIMIT 200`.
+* **Action:** POST to a new internal endpoint `/admin/harness/score-session` (lives in python-backend, not go-appservice — scorer is Python) with `{thread_id}`; endpoint calls `score_session(thread_id)` which internally dispatches the backfill UPDATE.
+* **Idempotency:** natural — the UPDATE only sets the column when fitness is computable; re-running on an already-scored row just re-UPDATEs the same value.
+* **Scope:** add as Phase-2c item P2c-5 (new), or inline under P2c-4 "harness-eval" if preferred — that item was originally for full harness evaluation runs, this is the lighter periodic-scorer variant that's a strict prerequisite for any A/B analysis.
+
+Without this worker the A/B experiment table accumulates rows with no quality signal. The dispatcher is shipped; the consumer is the last blocker for end-to-end A/B data flow.
+
 ---
 
 ## 10. Delivery Channels
@@ -664,6 +681,7 @@ stayed here and are already covered by the E2E harness:
 - `exec-18-unified-agent-schema.md` — schema conventions (kind=scheduler_task_execution)
 - `exec-memory.md` — persisted tasks are long-lived; their prompts are user-evidence
 - `exec-skills.md` — skill-binding (pending)
+- `exec-harness.md §4g` — Phase-C A/B fitness backfill; §8.1 here documents the scheduled-worker consumer
 - `exec-6-agent-chat-integration.md` — chat-surface (primary entry point)
 - `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md §42` — Temporal-as-Phase-2 validation
 - Frontend-merge slice `claude-merge-frontend-chat-ui-2OqmH/README.md` — confirms `frontend_merger/src/features/control/` is where `/control/tasks` lives

@@ -452,7 +452,7 @@ Statistical significance via Welch's t-test on `harness_fitness_score` between `
 
 ### 4g.4 TODO — post-landing integration
 
-- [ ] **Scheduled scorer job** — a background worker that polls `agent.ab_experiments` for rows where `finished_at IS NOT NULL AND harness_fitness_score IS NULL` and calls `score_session(thread_id)` for each. Today `score_session` must be invoked explicitly; without a scheduler the column stays NULL for turns that no one scored manually. Candidate: NATS-JetStream consumer OR pg_cron OR a `/admin/harness/backfill` REST endpoint.
+- [ ] **Scheduled scorer job** — **owner:** `exec-scheduler.md §8.1`. A periodic worker polls `agent.ab_experiments WHERE finished_at IS NOT NULL AND harness_fitness_score IS NULL` and calls `score_session(thread_id)`. Target runtime: the River-based scheduler stack (Phase-1 DONE); this is a new Phase-2c handler in `internal/scheduler/handlers/`. Cron default `*/15 * * * *`. Without this worker the column stays NULL for turns that no one scored manually and A/B analysis has no data — it is the **last blocker** for end-to-end Phase-C data flow.
 - [ ] **Harness-run eval_id wiring** — when scorer runs as part of a specific meta-harness evaluation (not an ad-hoc turn score), pass the eval's identifier through so rows can be grouped by `harness_eval_id`. Currently always NULL.
 - [ ] **Per-variant Pareto dashboards** — Control-UI panel that reads the decision query above and renders fitness vs. cost vs. latency per variant. Uses existing exec-17 Grafana/OpenObserve stack.
 - [ ] **Fitness weights tuning** — the 30/25/20/15/10 split is an informed default, not empirically validated. Phase-D should let harness itself propose weight candidates and validate against held-out sessions.
