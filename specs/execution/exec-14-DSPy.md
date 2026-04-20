@@ -1,17 +1,47 @@
 # exec-14-DSPy — Declarative Self-improving Language Programs als matrix-optimization-layer
 
-**Datum:** 2026-04-20
+**Datum:** 2026-04-20 (paper-kopien erweitert 2026-04-20)
 **Status:** Draft / Research
 **Abhängig von:** exec-14-pddl-formal-planning (thematisch verwandt), exec-harness (DSPy's primäres zuhause in matrix), exec-skills (direkter overlap mit `agent/skills/pareto.py` + `evolver.py`), exec-a2fm (DSPy als routing-optimizer-upgrade), exec-16 (LiteLLM als DSPy-target-layer)
 
-**Referenzen (alle PDFs in `docs/papers/`):**
-- DSPy original: Khattab et al 2023 — `docs/papers/DSPy-2310.03714.pdf` (ICLR 2024, 32 pages)
-- MIPROv2: Opsahl-Ong et al 2024 — `docs/papers/MIPRO-2406.11695.pdf` (EMNLP 2024, 28 pages)
-- GEPA: Agrawal et al 2025 — `docs/papers/GEPA-2507.19457.pdf` (**ICLR 2026 Oral**, 21 pages)
-- LLMs as Planning Formalizers Survey 2025 — `docs/papers/LLMs-Planning-Formalizers-Survey-2025.pdf`
-- Generalized Planning with LLMs + Strategy Refinement — `docs/papers/Generalized-Planning-LLMs-2508.13876.pdf` (27 pages)
-- DSPy framework: [dspy.ai](https://dspy.ai/) · GitHub [stanfordnlp/dspy](https://github.com/stanfordnlp/dspy) (160k monthly downloads, 16k stars, 250+ contributors)
-- GEPA standalone package: [github.com/gepa-ai/gepa](https://github.com/gepa-ai/gepa)
+---
+
+## Lokale Paper-Kopien (2026-04-20)
+
+Alle foundation- + comparison-papers sind jetzt in `docs/papers/` verfügbar für offline-review:
+
+| arXiv ID | Titel | Venue | Pages | Lokale datei |
+|---|---|---|---|---|
+| **2310.03714** | **DSPy: Compiling Declarative Language Model Calls into Self-Improving Pipelines** — Khattab et al 2023 (Stanford) — **Kern-paper** | ICLR 2024 | 32 | `docs/papers/DSPy-2310.03714.pdf` |
+| **2406.11695** | **Optimizing Instructions and Demonstrations for Multi-Stage Language Model Programs** (MIPROv2) — Opsahl-Ong et al 2024 | EMNLP 2024 | 28 | `docs/papers/MIPRO-2406.11695.pdf` |
+| **2507.19457** | **GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning** — Agrawal et al 2025 — **current SOTA** (+10% vs MIPROv2, +20% vs GRPO at 35× fewer rollouts) | **ICLR 2026 Oral** | 21 | `docs/papers/GEPA-2507.19457.pdf` |
+| **2309.03409** | **Large Language Models as Optimizers** (OPRO) — Yang/Wang/Lu/Liu/Le/Zhou/Chen, **Google DeepMind** — konzeptioneller vorgänger, +8% GSM8K / +50% BBH vs human-designed prompts | ICLR 2024 | 42 | `docs/papers/DSPy-2309.03409.pdf` |
+| **2406.07496** | **TextGrad: Automatic "Differentiation" via Text** — Yuksekgonul/Bianchi/Zou et al (Stanford) — parallel framework, backprops textual feedback through compound AI systems, +4pp GPT-4o auf GPQA, +20% LeetCode-Hard | arXiv 2024 | 41 | `docs/papers/DSPy-2406.07496.pdf` |
+| **2502.16923** | **A Systematic Survey of Automatic Prompt Optimization Techniques** — 2025 | arXiv 2025 | 31 | `docs/papers/DSPy-2502.16923.pdf` |
+| **2603.20667** | **REVERE: Reflective Evolving Research Engineer for Scientific Workflows** — **arXiv 2026-03** — DSPy-style reflective evolution applied to research-engineering agent | arXiv 2026 | 24 | `docs/papers/DSPy-2603.20667.pdf` |
+| 2025 ACL findings | **LLMs as Planning Formalizers: A Survey for Leveraging LLMs to Construct Automated Planning Models** | ACL 2025 findings | — | `docs/papers/LLMs-Planning-Formalizers-Survey-2025.pdf` |
+| **2508.13876** | **Improved Generalized Planning with LLMs through Strategy Refinement and Reflection** | arXiv 2025 | 27 | `docs/papers/Generalized-Planning-LLMs-2508.13876.pdf` |
+
+**2026-arxiv papers** (aktivste forschungs-front, beide specs):
+- `2507.19457` GEPA — ICLR 2026 **Oral** (venue 2026, arxiv 2025 submission)
+- `2603.20667` REVERE — reflective evolution scientific workflows
+- (plus PDDL-side 2026-papers — siehe `exec-14-pddl-formal-planning.md §Lokale Paper-Kopien`)
+
+**Reading-reihenfolge für team (entry → deep):**
+1. DSPy original (2310.03714) — programming-model, signatures/modules/compile
+2. MIPROv2 (2406.11695) — erste systematic optimizer (Bayesian, +13% vs manual)
+3. GEPA (2507.19457) — current SOTA reflective-pareto, aktives forschungs-frontier
+4. OPRO (2309.03409) — Google DeepMind's parallel-ansatz, verstehe wie die big-labs ähnlich denken
+5. TextGrad (2406.07496) — wichtig für "kein framework-lock-in" positionierung — auch Stanford, Zou-lab, direkt vergleichbar zu DSPy
+6. Prompt-Opt-Survey (2502.16923) — breitere literatur-situation
+
+Cross-ref: `exec-14-pddl-formal-planning.md` hat parallele "Lokale Paper-Kopien"-tabelle für PDDL-forschung (11 papers). Gleiche `docs/papers/` struktur.
+
+**Framework-links (online):**
+- DSPy: [dspy.ai](https://dspy.ai/) · [GitHub stanfordnlp/dspy](https://github.com/stanfordnlp/dspy) (160k monthly downloads, 16k stars, 250+ contributors, April 2026)
+- GEPA standalone: [github.com/gepa-ai/gepa](https://github.com/gepa-ai/gepa)
+- OPRO code: [github.com/google-deepmind/opro](https://github.com/google-deepmind/opro)
+- TextGrad: Stanford-Zou-lab repository (linked in paper)
 
 ---
 
@@ -36,10 +66,10 @@ Vor dem "sollen wir DSPy übernehmen?"-entscheid:
 | Firma | Nutzt DSPy intern? | Realität (2026-04) |
 |---|---|---|
 | **Anthropic** | Nein (kein public signal) | Claude ist ein DSPy-target (provider) via Anthropic SDK. Anthropic-internal: Claude Skills, Claude Code, nicht DSPy. |
-| **Google DeepMind** | Nein direkt — aber OPRO ist konzeptionell nah | Gemini ist DSPy-target. DeepMind hat eigene internal-tools. |
+| **Google DeepMind** | Nein direkt — aber **OPRO (arxiv 2309.03409)** ist konzeptioneller vorgänger | Gemini ist DSPy-target. DeepMind hat OPRO als eigenes paper + [google-deepmind/opro](https://github.com/google-deepmind/opro) code. OPRO zeigt: **DSPy-ähnliche ideen sind auch im big-lab-research-stream**, nur nicht unter DSPy-framework-brand. Siehe `docs/papers/DSPy-2309.03409.pdf`. |
 | **OpenAI** | Nein | GPT-5 "router" ist konzeptionell ähnlich zu DSPy's compile. OpenAI-API ist DSPy-target. |
 | **Databricks** | Ja, integration via Lakehouse | Enterprise-production-user + anthropic-partner |
-| **Stanford HAI** | Development-origin | Forschungsheim |
+| **Stanford HAI** | Development-origin | Forschungsheim. Siehe auch **TextGrad** (arxiv 2406.07496, Zou-lab Stanford) — paralleles framework zu DSPy. Gibt dem team optionen: DSPy lock-in vermeidbar wenn TextGrad besser passt. |
 | **Enterprise** (Haize, Weaviate, MLflow, Langfuse) | Ja (production / observability / tutorials) | Community-driven adoption |
 
 **Fazit:** DSPy ist **community-framework, nicht big-tech-internal-tool**. Die grossen labs bauen **konzeptionell ähnliches intern** (Google OPRO, OpenAI routing, Anthropic skills). DSPy ist der **offene framework-standard** für das gleiche paradigm.
@@ -199,6 +229,18 @@ GEPA: 35× fewer rollouts als RL, aber **MIPROv2 + GEPA sind selbst LLM-calls** 
 - compile-budget per-user limitieren (via `agent.user_llm_settings.dspy_compile_budget_usd_per_month`)
 - compile-results **cachen** (nicht jede turn neu compile)
 
+### D-6. Framework-choice: DSPy vs TextGrad vs own-OPRO-style?
+
+Wir haben heute **drei realistische optionen** für matrix's optimization-layer:
+
+| Option | Framework | Pro | Contra |
+|---|---|---|---|
+| **a)** | DSPy + GEPA | SOTA optimizer (ICLR 2026 Oral), grösste community (160k downloads), klare programming-abstractions (Signature/Module) | Framework-commitment; matrix's eigene `agent/skills/pareto.py` müsste refactored |
+| **b)** | TextGrad | Stanford/Zou-lab, "PyTorch-autograd für text", gleiche Stanford-ökosystem wie DSPy, kein prompt-struktur-commitment nötig | Kleinere community als DSPy; compound-AI-fokus unterschiedlich |
+| **c)** | OPRO-style own impl | Kein external dependency, matrix's custom-domain-keywords voll unter kontrolle, direkt adaptiert auf matrix's scorer/fitness | Wir re-building what's in DSPy/TextGrad; maintenance-burden; missen 2026+ research-progress |
+
+**Empfehlung bis contrarian-review:** Option (a) DSPy+GEPA als **baseline-evaluation**, Option (b) TextGrad als **comparison-baseline** in Phase 1. Option (c) nur wenn beides measurable schlecht abschneidet gegenüber unser eigenem `agent/skills/pareto.py` — sehr unwahrscheinlich.
+
 ---
 
 ## 6. Phase plan (skizze, nicht commitment)
@@ -273,3 +315,5 @@ GEPA: 35× fewer rollouts als RL, aber **MIPROv2 + GEPA sind selbst LLM-calls** 
 | Datum | Änderung |
 |---|---|
 | 2026-04-20 | Erstversion. 5 foundation-papers in `docs/papers/` heruntergeladen (DSPy 2023 + MIPROv2 2024 + GEPA 2025 ICLR-2026-oral + Planning-Formalizers-Survey 2025 + Generalized-Planning-LLMs 2025). Integration-map über 4 matrix-häuser (harness/skills/a2fm/PDDL). 5 offene entscheidungs-punkte (D-1..D-5) für sota-contrarian stakes=high review. Phase-plan skizziert. NOT committed to implementation — research/eval phase. |
+| 2026-04-20 | **Paper-kopien erweitert + konsolidierte tabelle** (analog zu exec-14-pddl-formal-planning.md). 3 zusatz-papers: **OPRO arxiv 2309.03409** (Google DeepMind, ICLR 2024, DSPy's konzeptioneller vorgänger), **TextGrad arxiv 2406.07496** (Stanford/Zou-lab, paralleles framework), **Prompt-Opt-Survey arxiv 2502.16923** (broader literature-situation). Total 8 papers für DSPy-track. **Neue decision D-6**: framework-choice DSPy+GEPA vs TextGrad vs own-OPRO-style (empfehlung Phase-1: a + b als comparison, c nur fallback). |
+| 2026-04-20 | **2026-arxiv papers ergänzt.** `2603.20667` REVERE (reflective evolution für scientific workflows, 24 pages). Plus PDDL-side bekommt 5 × 2026-papers inkl. **2602.21670 TextGrad+PDDL-direct-composition** (validiert das in beiden specs skizzierte pattern), **2603.23844 "Language Model Planners do not Scale, but do Formalizers?"** (kritischer finding für spec-richtung), **2603.06064 PDDL via MCP-interface** (matrix hat bereits MCP!). Cross-ref in `exec-14-pddl-formal-planning.md §2026-arxiv-papers`. Total 9 papers im DSPy-track + 16 im PDDL-track = **25 papers in `docs/papers/`**. |

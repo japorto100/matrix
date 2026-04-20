@@ -27,6 +27,20 @@ Alle kern- und weiteren zitierten papers sind jetzt in `docs/papers/` verfügbar
 | 2509.21543 | Plan2Evolve: LLM Self-Evolution via PDDL Domain Generation | 31 | `docs/papers/PDDL-2509.21543.pdf` |
 | 2505.12501 | ALAS: Stateful Multi-LLM Agent for Disruption Recovery | 36 | `docs/papers/PDDL-2505.12501.pdf` |
 
+### 2026-arxiv papers (aktueller forschungs-front)
+
+Diese kamen später dazu (scan 2026-04-20) und ergänzen die 2023-2025-basis:
+
+| arXiv ID | Titel | Relevanz für matrix | Pages | Lokale datei |
+|---|---|---|---|---|
+| **2602.21670** | Hierarchical LLM-Based Multi-Agent Framework with **Prompt Optimization** (TextGrad-inspired) for Multi-Robot Task Planning | **Direkte DSPy+PDDL-komposition** — das pattern das beide specs skizzieren, bereits validiert. Success-rates 0.95 / 0.84 / 0.60 auf MAT-THOR. | 8 | `docs/papers/PDDL-2602.21670.pdf` |
+| **2603.23844** | **Language Model Planners do not Scale, but do Formalizers?** | **Kritischer befund**: LLM-formalizers (→ PDDL) scale weit besser als LLM-planners. Unterstützt unsere gesamte spec-richtung (LLM generiert PDDL, solver validiert). BlocksWorld mit 10^165 states solvable via formalizer-approach. | 16 | `docs/papers/PDDL-2603.23844.pdf` |
+| **2603.06064** | **Agentic LLM Planning via Step-Wise PDDL Simulation — PyPDDLEngine + MCP interface** | **Matrix-relevant**: PDDL operations als LLM-tool-calls über **Model Context Protocol (MCP)**. Matrix hat MCP-integration schon → direkter integrations-pfad für exec-14 impl. | 8 | `docs/papers/PDDL-2603.06064.pdf` |
+| **2603.23909** | **DUPLEX: Agentic Dual-System Planning** (Fast + Slow LLM) | Fast-system mapping NL→PDDL, slow-system (high-capacity LLM) nur bei planning-failure für reflection+repair. Gute architektur-vorlage. | 8 | `docs/papers/PDDL-2603.23909.pdf` |
+| **2604.02910** | **Analysis of Optimality of LLMs on Planning Problems** — April 2026 | Empirischer befund: 47 tokens per optimal plan step, systematic serial-algorithmic-simulation hypothesis. Baseline für matrix's eigene planning-benchmarks. | 24 | `docs/papers/PDDL-2604.02910.pdf` |
+
+---
+
 **Nicht geportet** (URL-only verbleibend):
 - PDDL+ Wiki (planning.wiki), HDDL AAAI-paper (ojs.aaai.org), HDDL Extension (uni-ulm), RDDL Spec (anu.edu.au), LTL Wiki (hhu.de) — web-resources, keine arxiv-preprints
 - Zwei ACL-anthology surveys (2025.findings-acl.1291, 2025.acl-long.958) + Metagent-P (2025.findings-acl.1169) — auf bedarf downloaden
