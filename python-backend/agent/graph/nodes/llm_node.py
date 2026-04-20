@@ -85,10 +85,51 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     # anonymous traffic is separate from named-user buckets.
     user_id = state.get("user_id") or "anonymous"
 
+    # exec-a2fm: smart cheap-vs-strong routing. Only runs on the FIRST
+    # turn of a chat (iteration == 0) because tool-continuation turns
+    # shouldn't silently switch models mid-conversation. Conservative
+    # heuristic — falls through to primary on any complex-looking input.
+    routing_reason = "not_evaluated"
+    if iteration == 0 and user_id != "anonymous":
+        try:
+            from agent.llm.smart_routing import resolve_model_for_turn
+            from agent.security.credentials import (
+                get_user_smart_routing_config,
+            )
+
+            routing_cfg = await get_user_smart_routing_config(user_id)
+            user_msg_text = ""
+            for msg in reversed(messages):
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    content = msg.get("content")
+                    if isinstance(content, str):
+                        user_msg_text = content
+                        break
+                    if isinstance(content, list):
+                        user_msg_text = " ".join(
+                            blk.get("text", "")
+                            for blk in content
+                            if isinstance(blk, dict) and blk.get("type") == "text"
+                        )
+                        break
+            decision = resolve_model_for_turn(
+                user_message=user_msg_text,
+                primary_model=model,
+                routing_config=routing_cfg,
+            )
+            routing_reason = decision.reason
+            if decision.used_cheap:
+                model = decision.model
+                state["model"] = model  # propagate for downstream span-attrs
+                state["llm_model"] = model
+        except Exception:  # noqa: BLE001 — routing must never break the call
+            logger.debug("smart_routing skipped", exc_info=True)
+
     registry = ToolRegistry.load()
     tool_defs = [t.definition() for t in registry.all()]
 
     with turn_span("llm_call", model, iteration) as span:
+        span.set_attribute("llm.routing_reason", routing_reason)
         start = audit_timer()
         await audit_log(
             action=AuditAction.LLM_REQUEST,

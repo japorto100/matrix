@@ -16,6 +16,8 @@
 Skills sind wiederverwendbare, domaenenspezifische Wissensartefakte (Workflows, Anleitungen,
 Prozeduren) die Agents bei der Aufgabenbearbeitung unterstuetzen.
 
+> **Plan-skill landed 2026-04-20:** New global skill `agent/skills/global/plan/SKILL.md` (category: `meta`) — domain-agnostic planning mode (nicht nur coding). Trigger-description matches DE + EN cues (`entwurf`, `vorschlag`, `draft`, `proposal`, `plan`, `how would we`, etc.) across all matrix domains (trading, research, ops, coding). 7-section plan-template (Ziel, Annahmen, Ansatz, Schritte, Risiken, Verifizierbarkeit, Offene Fragen) enforces read-only planning + user-confirmation gate before execution. Adopts hermes' skill-based plan-mode pattern (prompt-injection, no runner-level branching) adapted to matrix's multi-domain use-cases.
+
 **Problem (Studie 2604.04323):** Der Nutzen von Skills bricht unter realistischen Bedingungen
 stark ein. Nicht das Skill-Format ist der Engpass, sondern:
 1. **Skill-Auswahl** — Agent findet den richtigen Skill nicht
@@ -466,6 +468,12 @@ Skills sind **procedural memory** (Paper **2603.07670**) und landen idealerweise
 **Referenzen.** MiniMax M2.7 Model Card (Hugging Face), MiniMax News Blog `minimax-m27-en` — beide erwaehnen die 97% Compliance-Zahl ohne Verfahren zu detaillieren. Wir bauen das Verfahren selbst.
 
 ### 3) Composition-on-top-of-offline-refined — A/B Evaluation
+
+> **Evaluator-Machinery:** Dieses §8b.3 definiert nur **Eval-Set + Skill-spezifische Metriken**.
+> Die generische Evaluator-Infrastruktur (async-parallel, Caching, Aggregation, Pareto-Integration)
+> liegt in [`exec-harness.md §4d`](./exec-harness.md#4d-evoskill-evaluator-stage-integration--expliziter-adoption-plan).
+> Dort ist der EvoSkill-Stage-4-Adoption-Plan explizit.
+> Hier: Input-Queries + Skill-Compliance-Scorer für den gemeinsamen Evaluator.
 
 **Kontext.** Zwei Paper-Hebel laufen jetzt parallel:
 - Offline Refinement (Paper §4.1 query-agnostic, `scripts/refine_skills_offline.py`) — hebt initial Skill-Qualitaet als Preprocessing.

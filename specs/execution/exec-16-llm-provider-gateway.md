@@ -820,9 +820,56 @@ Phase-B P4 replaced three hardcoded lookups:
 
 ---
 
+## 2.D Smart cheap-vs-strong routing (Phase-C tail, 2026-04-20) — **NEEDS HOLISTIC REVIEW**
+
+**Status:** Code landed but **must be revisited as a whole** before rollout. Owner-spec is `exec-a2fm-adaptive-routing.md` (Draft/Research) — this §2.D is the LiteLLM-gateway-side cross-ref.
+
+**What shipped:**
+- `python-backend/agent/llm/smart_routing.py` — port of hermes `choose_cheap_model_route` heuristic, expanded keyword set for matrix's multi-domain context (coding + trading + research + data + ops). Conservative: false-negatives (pay for primary) are cheap, false-positives (weaker reply) degrade UX.
+- Migration 026 — new JSONB column `agent.user_llm_settings.smart_routing` with schema `{enabled, cheap_model, max_simple_chars, max_simple_words}`. Default `{}` = off, no behaviour change.
+- `agent.security.credentials.get_user_smart_routing_config(user_id)` accessor.
+- `llm_node.py` wires it on **iteration == 0 only** (first turn per chat; tool-continuation turns do NOT silently switch models). Emits span-attribute `llm.routing_reason`.
+
+**Why "needs holistic review" before we rely on it:**
+
+1. **Interaction with Phase-C A/B dispatcher not designed.** Today smart-routing runs inside both runners (LangGraph + SimpleLoop) unconditionally when config is enabled. But the dispatcher's variant is orthogonal — should "smart-routed" be a third A/B variant (`variant="langgraph_cheap_routed"`)? Or always-on per user-config? Decision shapes what the meta-harness fitness-regression actually measures.
+
+2. **LiteLLM gateway-routing vs per-user routing overlap.** This gateway spec defines wildcard routing (`anthropic/*`, `openai/*`). Smart-routing layers a second routing decision per turn. If both are active, LiteLLM's model-group fallback (provider outages) interacts with smart-routing's cheap-vs-strong picks in ways nobody has sketched. Must be walked through end-to-end.
+
+3. **User-settings surface unbuilt.** The Control-UI has no panel to enable smart-routing, set cheap-model, tune thresholds. Migration 026 is a silent column — it can only be populated via direct SQL today. Before this is "usable" a frontend ticket on `frontend_merger/src/features/control/` is needed.
+
+4. **Cost-attribution in InsightsEngine (§2.10) may undercount.** When a turn is cheap-routed, `estimate_usage_cost(model, usage)` correctly uses the cheap model's rate — but the `InsightsEngine.generate()` aggregation doesn't split "routed-to-cheap vs primary" as a separate metric. Ops dashboards can't see "how much did smart-routing save this week" without new column or join.
+
+5. **Keyword list is English-only for triggers.** The complex-keyword frozenset has German words mixed in (`entwurf`, `vorschlag` — wait, those are in the plan-skill, not here). smart_routing keywords are only English + domain-trading-English (`sharpe`, `var`, `drawdown`). A user asking a complex question in Deutsch (e.g. "analysiere mein Portfolio") routes to cheap because `analysiere` is not matched. Multilingual keyword-set or embedding-based heuristic is the right long-term.
+
+6. **exec-a2fm.md spec is still Draft/Research.** This implementation runs ahead of the spec. Either the spec needs filling with the shipped design, or the code needs adjusting to match a revised spec — we haven't chosen which direction.
+
+**Before declaring smart-routing "active":**
+- Review §2.D against exec-a2fm.md (fill or adjust)
+- Decide A/B-variant integration (Phase-C dispatcher)
+- Ship Control-UI smart-routing panel
+- Extend `llm.routing_reason` into InsightsEngine per-variant aggregation
+- Decide multilingual / embedding-based upgrade path
+- sota-contrarian review against the walked-through end-to-end design
+
+**Files to revisit in the holistic walk-through:**
+- `agent/llm/smart_routing.py` (heuristic)
+- `agent/graph/nodes/llm_node.py` (wire-point, iteration==0 gate)
+- `agent/security/credentials.py` (config accessor)
+- `alembic/versions/026_smart_routing_config.py` (schema)
+- `agent/runners/dispatcher.py` (potential variant-integration site)
+- `agent/billing/insights.py` (cost-attribution split)
+- `specs/execution/exec-a2fm-adaptive-routing.md` (owner spec)
+- `frontend_merger/src/features/control/components/ApiModelsTab.tsx` (UI ticket, not yet created)
+
+**Migration 026** is safe to ship with empty config (`{}` default = off). It does not commit us to any of the open decisions above.
+
+---
+
 ## 2.11 Changelog-append (Phase-B)
 
 | Date | Change |
 |---|---|
 | 2026-04-20 | exec-hermes Phase-B P1 stubs §2.C (CredentialPool call-site DONE `09988de`). Phase-B P4 stubs §2.10 (Billing Ledger) + §3.1 (model_metadata wrapper) added. |
 | 2026-04-20 | Phase-B P4 DONE. `agent/billing/usage_pricing.py` (CanonicalUsage + LiteLLM-primary estimate_usage_cost + snapshot fallback), `agent/billing/insights.py` (InsightsEngine reading agent.spans, dual-path REST + harness, Tier-1 redact in aggregation), `agent/llm/model_metadata.py` (LiteLLM wrapper + 1h TTL cache). Cost span-attributes now emitted on every agent.turn. Three hardcoded model-lookup sites replaced (summarization, scorer, runner). 24 new unit tests. |
+| 2026-04-20 | §2.D added — smart cheap-vs-strong routing **code landed but flagged NEEDS HOLISTIC REVIEW**. New `agent/llm/smart_routing.py` + migration 026 + `user_llm_settings.smart_routing` JSONB + `llm_node.py` wire on iteration==0. 6 unresolved design questions listed (A/B-variant integration, LiteLLM-fallback interaction, Control-UI ticket, cost-attribution split, multilingual keywords, spec alignment with exec-a2fm). Do not flip user settings to enabled until the walk-through happens. |

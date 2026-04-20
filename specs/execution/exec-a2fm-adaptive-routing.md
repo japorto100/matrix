@@ -1,8 +1,11 @@
 # exec-a2fm: Adaptive Model & Reasoning Routing
 
 **Datum:** 13.04.2026
-**Status:** Draft / Research
+**Status:** Draft / Research — **Stufe 0 heuristic landed 2026-04-20, NEEDS HOLISTIC REVIEW**
 **Abhaengig von:** exec-19 (Stufe 5b/5c fertig), exec-16 (LiteLLM Integration)
+
+> **Implementation-stub (2026-04-20):** A conservative keyword-heuristic cheap-vs-strong router landed as an MVP: `python-backend/agent/llm/smart_routing.py` + migration 026 (`user_llm_settings.smart_routing` JSONB column). Details + 6 unresolved design questions live in `exec-16-llm-provider-gateway.md §2.D`. **This is NOT yet the A2FM-paper ML-router** — it's a hermes port with multi-domain keyword expansion (trading/research/ops/coding). Feature is off by default (`{}` = disabled). Do not flip `enabled: true` on user settings until the holistic review in §2.D has happened. A2FM-paper ML-router remains this spec's long-term target.
+
 **Referenzen:**
 - Paper: [A2FM: An Adaptive Agent Foundation Model for Tool-Aware Hybrid Reasoning](https://arxiv.org/abs/2510.12838) (arXiv 2510.12838v3, Oct 2025)
 - Local: `docs/papers/A2FM-2510.12838v3.pdf`

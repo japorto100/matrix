@@ -113,6 +113,36 @@ def get_env_default_model() -> str:
     return os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
 
 
+async def get_user_smart_routing_config(user_id: str) -> dict | None:
+    """Return the user's smart_routing policy dict from user_llm_settings.
+
+    Returns ``None`` on DB error, missing user, or empty policy. Callers
+    pass the result straight into
+    :func:`agent.llm.smart_routing.resolve_model_for_turn`.
+    """
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url or not user_id:
+        return None
+    try:
+        import psycopg
+
+        async with await psycopg.AsyncConnection.connect(db_url) as conn:
+            row = await (
+                await conn.execute(
+                    "SELECT smart_routing FROM agent.user_llm_settings "
+                    "WHERE user_id = %s",
+                    (user_id,),
+                )
+            ).fetchone()
+            if row and isinstance(row[0], dict) and row[0]:
+                return row[0]
+    except Exception as e:  # noqa: BLE001
+        logger.debug(
+            "get_user_smart_routing_config failed for %s: %s", user_id, e
+        )
+    return None
+
+
 def provider_from_model(model: str) -> str:
     """Extrahiert Provider aus Model-Name. 'anthropic/claude-sonnet-4-6' -> 'anthropic'."""
     if "/" in model:
