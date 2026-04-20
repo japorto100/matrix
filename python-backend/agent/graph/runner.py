@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from collections.abc import AsyncGenerator
 
 from agent.context import AgentExecutionContext
@@ -21,6 +23,29 @@ from agent.streaming import (
     ToolStartPacket,
     sse,
 )
+
+logger = logging.getLogger(__name__)
+
+
+# exec-hermes Phase-B P1: fallback model-context-window for ContextEngine.
+# P4 replaces this hardcoded dict with a LiteLLM model_metadata wrapper.
+# Keep keys in sync with middleware/summarization.py until then.
+_FALLBACK_MODEL_MAX_TOKENS: dict[str, int] = {
+    "claude-sonnet-4-6": 200_000,
+    "claude-opus-4-6": 200_000,
+    "claude-opus-4-7": 200_000,
+    "claude-haiku-4-5": 200_000,
+    "gpt-4o": 128_000,
+    "gpt-4o-mini": 128_000,
+}
+_DEFAULT_FALLBACK_WINDOW = 200_000
+
+
+def _fallback_model_max_tokens(model: str) -> int:
+    """Best-effort hardcoded lookup until P4 LiteLLM wrapper lands."""
+    # Model IDs sometimes carry provider prefixes ("anthropic/claude-sonnet-4-6")
+    tail = model.split("/")[-1] if model else ""
+    return _FALLBACK_MODEL_MAX_TOKENS.get(tail, _DEFAULT_FALLBACK_WINDOW)
 
 
 async def run_agent_loop(
@@ -96,46 +121,89 @@ async def _prepare_system_prompt(
         except Exception:
             pass
 
-        # exec-11: Hindsight Memory Recall (pre-LLM context enrichment)
+        # exec-hermes Phase-B P1: Memory recall via MemoryManager (new path)
+        # with Hindsight-direct (legacy path) as fallback. MemoryManager is
+        # None until init_stack seeds it — callers must handle that case.
+        memory_injected = False
         try:
-            from memory_fusion.engine import get_bank_id, get_memory_engine
+            from memory_fusion.memory_provider import get_memory_manager
 
-            engine = await get_memory_engine()
-            if engine:
-                from hindsight_api.engine.memory_engine import Budget
-                from hindsight_api.models import RequestContext
+            manager = get_memory_manager()
+            if manager is not None:
+                # Static provider blocks (always present regardless of query)
+                blocks = manager.system_prompt_blocks()
+                for block in blocks:
+                    if block:
+                        system_prompt = f"{system_prompt}\n\n{block}"
 
-                bank_id = get_bank_id(ctx.user_id)
-                user_query = ""
-                for msg in reversed(getattr(ctx, "_messages", [])):
-                    if isinstance(msg, dict) and msg.get("role") == "user":
-                        user_query = str(msg.get("content", ""))[:300]
-                        break
-                if not user_query:
-                    user_query = ctx.system_prompt[:200]
-                result = await engine.recall_async(
-                    bank_id=bank_id,
-                    query=user_query,
-                    fact_type=["world", "experience", "observation"],
-                    budget=Budget.MID,
-                    max_tokens=1500,
-                    request_context=RequestContext(),
-                    consumer="llm_agent",
-                    operation_context={
-                        "thread_id": ctx.thread_id,
-                        "user_id": ctx.user_id,
-                        "agent_id": getattr(ctx, "agent_id", "default"),
-                        "actor_role": getattr(ctx, "agent_class", "advisory"),
-                    },
+                # Dynamic prefetch (query-based recall)
+                user_query = _last_user_text(messages) or ctx.system_prompt[:200]
+                recalls = await manager.prefetch(
+                    user_query,
+                    user_id=ctx.user_id,
+                    bank_id=f"user-{ctx.user_id}" if ctx.user_id else "",
+                    limit_per_provider=5,
                 )
-                if result.results:
-                    mem_lines = [f"- {f.text}" for f in result.results[:8]]
-                    system_prompt = (
-                        f"{system_prompt}\n\n## Relevant Memories\n"
-                        + "\n".join(mem_lines)
+                if recalls:
+                    mem_lines = [f"- {r.content}" for r in recalls[:8] if r.content]
+                    if mem_lines:
+                        system_prompt = (
+                            f"{system_prompt}\n\n## Relevant Memories\n"
+                            + "\n".join(mem_lines)
+                        )
+                memory_injected = True
+                span.set_attribute(
+                    "memory.manager.providers", len(manager.providers)
+                )
+                span.set_attribute("memory.manager.recalls", len(recalls))
+        except Exception:  # noqa: BLE001 — memory path mustn't break the turn
+            logger.debug("MemoryManager prefetch skipped", exc_info=True)
+
+        # exec-11 LEGACY fallback — MemoryManager not yet seeded (or failed)
+        # → fall through to direct Hindsight recall. Once MemoryManager
+        # reaches production stability this block can be deleted; P1 keeps
+        # both paths to guarantee no regression during rollout.
+        if not memory_injected:
+            try:
+                from memory_fusion.engine import get_bank_id, get_memory_engine
+
+                engine = await get_memory_engine()
+                if engine:
+                    from hindsight_api.engine.memory_engine import Budget
+                    from hindsight_api.models import RequestContext
+
+                    bank_id = get_bank_id(ctx.user_id)
+                    user_query = ""
+                    for msg in reversed(getattr(ctx, "_messages", [])):
+                        if isinstance(msg, dict) and msg.get("role") == "user":
+                            user_query = str(msg.get("content", ""))[:300]
+                            break
+                    if not user_query:
+                        user_query = ctx.system_prompt[:200]
+                    result = await engine.recall_async(
+                        bank_id=bank_id,
+                        query=user_query,
+                        fact_type=["world", "experience", "observation"],
+                        budget=Budget.MID,
+                        max_tokens=1500,
+                        request_context=RequestContext(),
+                        consumer="llm_agent",
+                        operation_context={
+                            "thread_id": ctx.thread_id,
+                            "user_id": ctx.user_id,
+                            "agent_id": getattr(ctx, "agent_id", "default"),
+                            "actor_role": getattr(ctx, "agent_class", "advisory"),
+                        },
                     )
-        except Exception:
-            pass
+                    if result.results:
+                        mem_lines = [f"- {f.text}" for f in result.results[:8]]
+                        system_prompt = (
+                            f"{system_prompt}\n\n## Relevant Memories\n"
+                            + "\n".join(mem_lines)
+                        )
+                    span.set_attribute("memory.fallback.hindsight_recall", True)
+            except Exception:
+                pass
 
         span.set_attribute("prompt.length", len(system_prompt))
         return system_prompt
@@ -145,23 +213,46 @@ async def _prepare_messages(
     messages: list[dict], ctx: AgentExecutionContext
 ) -> list[dict]:
     """Apply middleware to messages before graph execution."""
-    # exec-10 Phase 5.5: Context Summarization
-    try:
-        from agent.middleware.summarization import apply_context_management
+    from agent.tracing import turn_span
 
-        messages = await apply_context_management(messages, model=ctx.model)
-    except Exception:
-        pass
+    with turn_span("prepare_messages", ctx.model, 0) as span:
+        # exec-hermes Phase-B P1: ContextEngine.stage_for emits the current
+        # context-fill stage as a span-attribute so exec-17 dashboards can
+        # trace compaction pressure per turn. P5 wires the actual
+        # compaction/compression router on top of this signal; P1 only
+        # emits observability so the rollout is safe to roll back if the
+        # attribute turns out to mispredict.
+        try:
+            from agent.middleware.summarization import estimate_tokens
+            from context.context_engine import get_context_engine
 
-    # exec-10 Phase 5.1: Dangling Tool Calls patchen
-    try:
-        from agent.middleware.dangling_tool_call import patch_dangling_tool_calls
+            engine = get_context_engine()
+            est_tokens = estimate_tokens(messages)
+            window = _fallback_model_max_tokens(ctx.model)
+            stage = engine.stage_for(tokens=est_tokens, window=window)
+            span.set_attribute("context.stage", stage.value)
+            span.set_attribute("context.estimated_tokens", est_tokens)
+            span.set_attribute("context.window", window)
+        except Exception:  # noqa: BLE001 — observability mustn't break the turn
+            logger.debug("ContextEngine.stage_for skipped", exc_info=True)
 
-        messages = patch_dangling_tool_calls(messages)
-    except Exception:
-        pass
+        # exec-10 Phase 5.5: Context Summarization (stand-in until P5 split)
+        try:
+            from agent.middleware.summarization import apply_context_management
 
-    return messages
+            messages = await apply_context_management(messages, model=ctx.model)
+        except Exception:
+            pass
+
+        # exec-10 Phase 5.1: Dangling Tool Calls patchen
+        try:
+            from agent.middleware.dangling_tool_call import patch_dangling_tool_calls
+
+            messages = patch_dangling_tool_calls(messages)
+        except Exception:
+            pass
+
+        return messages
 
 
 async def _run_graph(
@@ -337,6 +428,23 @@ async def _run_graph(
                 except Exception:  # noqa: BLE001
                     pass
 
+            # exec-hermes Phase-B P1: fire-and-forget memory sync. ADR:
+            # turn-latency wins over strong-persistence in Phase-B; errors
+            # surface via agent.sync_failures table + span-event.
+            # Phase-C migrates to at-least-once delivery via NATS if
+            # measured data-loss impact justifies the complexity.
+            try:
+                asyncio.create_task(
+                    _safe_sync_turn(
+                        user_id=ctx.user_id,
+                        thread_id=ctx.thread_id,
+                        messages=messages,
+                        final_response=final,
+                    )
+                )
+            except Exception:  # noqa: BLE001 — task-create must never block response
+                logger.debug("sync_turn task dispatch failed", exc_info=True)
+
             yield sse(FinishPacket(finish_reason="stop"))
 
         except Exception as e:
@@ -353,3 +461,100 @@ async def _run_graph(
             from agent.streaming import build_error_packet_with_failover
 
             yield sse(build_error_packet_with_failover(e, prefix="LangGraph error: "))
+
+
+async def _safe_sync_turn(
+    *,
+    user_id: str,
+    thread_id: str,
+    messages: list[dict],
+    final_response: str,
+) -> None:
+    """Fire-and-forget memory-sync wrapper.
+
+    exec-hermes Phase-B P1: runs as ``asyncio.create_task`` after the
+    LangGraph turn finishes. The happy-path writes user-message +
+    assistant-response to every :class:`MemoryProvider` in the
+    :class:`MemoryManager` fan-out. Failures are caught + logged +
+    optionally recorded in ``agent.sync_failures`` for ops-visibility
+    (the table is probed at startup; when missing the INSERT branch is
+    skipped so rolling-deploy pod-starts-before-migration don't produce
+    a second failure).
+
+    ADR: see migration ``022_agent_sync_failures`` header-doc for the
+    Phase-B debt and Phase-C NATS-JetStream migration path.
+    """
+    from memory_fusion.memory_provider import get_memory_manager
+
+    manager = get_memory_manager()
+    if manager is None:
+        return
+
+    # Extract last user + assistant exchange
+    last_user = ""
+    for msg in reversed(messages):
+        if isinstance(msg, dict) and msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                last_user = content
+                break
+
+    try:
+        await manager.sync_turn(
+            user_message=last_user,
+            assistant_message=final_response,
+            user_id=user_id,
+            bank_id=f"user-{user_id}" if user_id else "",
+        )
+    except Exception as exc:  # noqa: BLE001 — fire-and-forget contract
+        logger.warning(
+            "memory sync_turn failed user_id=%s thread_id=%s: %s",
+            user_id, thread_id, exc,
+        )
+        await _record_sync_failure(
+            user_id=user_id, thread_id=thread_id, error=str(exc),
+        )
+
+
+async def _record_sync_failure(
+    *, user_id: str, thread_id: str, error: str
+) -> None:
+    """Best-effort INSERT into ``agent.sync_failures`` for ops-visibility.
+
+    Only runs when the table was probed successfully at startup (see
+    ``agent.resilience.init_stack._probe_sync_failures_table``) — avoids
+    silent double-failure during rolling deploys where the pod starts
+    before the migration runs.
+    """
+    try:
+        from agent.resilience.init_stack import init_status
+
+        status = init_status()
+        if not status.sync_failures_table.up:
+            return
+    except Exception:
+        return
+
+    try:
+        import os
+
+        import asyncpg
+
+        dsn = (
+            os.environ.get("SCHEDULER_DB_URL")
+            or os.environ.get("HINDSIGHT_DB_URL")
+            or os.environ.get("AUDIT_DB_URL")
+        )
+        if not dsn:
+            return
+        conn = await asyncpg.connect(dsn=dsn, timeout=2.0)
+        try:
+            await conn.execute(
+                "INSERT INTO agent.sync_failures "
+                "(user_id, thread_id, error) VALUES ($1, $2, $3)",
+                user_id, thread_id, error[:2000],
+            )
+        finally:
+            await conn.close()
+    except Exception:  # noqa: BLE001 — visibility-log must not raise
+        logger.debug("sync_failures INSERT skipped", exc_info=True)

@@ -45,3 +45,24 @@ class MaxIterationsExceededError(CriticalError):
 
     def __init__(self, max_iter: int) -> None:
         super().__init__(f"Agent loop exceeded maximum iterations ({max_iter})")
+
+
+class CredentialExhaustedError(RepairableError):
+    """exec-hermes Phase-B P1: :class:`CredentialPool.acquire` returned
+    ``None`` — no usable API key for the requested ``(user, provider)``.
+
+    Possible causes:
+    * The only key was rate-limited and its cooldown TTL hasn't expired
+    * The only key was auth-rejected (user needs to replace it)
+    * No key configured for this provider (``agent.user_credentials`` empty)
+
+    The runner translates this into a user-facing ``ErrorPacket`` with
+    ``failover_reason=billing`` or similar so the UI can prompt the user.
+    """
+
+    def __init__(self, user_id: str, provider: str, reason: str = "no usable credential") -> None:
+        self.user_id = user_id
+        self.provider = provider
+        super().__init__(
+            f"CredentialPool exhausted for user={user_id!r} provider={provider!r}: {reason}"
+        )

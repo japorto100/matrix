@@ -57,6 +57,31 @@ from agent.startup_migrations import run_migrations_if_enabled  # noqa: E402
 
 app.add_event_handler("startup", run_migrations_if_enabled)
 
+# exec-hermes Phase-B P1: seed CredentialPool + MemoryManager + ContextEngine
+# singletons + probe agent.sync_failures table. Failures are soft (service
+# stays up) — every failure surfaces via OTel span + /health/resilience.
+from agent.resilience.init_stack import (  # noqa: E402
+    init_agent_resilience_stack,
+    resilience_health,
+)
+
+app.add_event_handler("startup", init_agent_resilience_stack)
+
+
+@app.get("/health/resilience")
+async def _health_resilience() -> JSONResponse:
+    """Ops-visible status of the exec-hermes resilience singletons.
+
+    HTTP 200 when all four subsystems (credential_pool, memory_manager,
+    context_engine, sync_failures_table) are up. HTTP 503 otherwise so
+    load-balancers can mark the pod unhealthy. Body always includes the
+    per-subsystem ``up`` flag + ``detail`` string.
+    """
+    body = resilience_health()
+    status_code = 200 if body["status"] == "up" else 503
+    return JSONResponse(content=body, status_code=status_code)
+
+
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
 from agent.control import router as _control_router  # noqa: E402
 

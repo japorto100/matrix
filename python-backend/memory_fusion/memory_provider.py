@@ -35,6 +35,9 @@ __all__ = [
     "MemoryManager",
     "FusionProvider",
     "auto_fusion_provider",
+    "get_memory_manager",
+    "set_memory_manager",
+    "reset_memory_manager",
 ]
 
 
@@ -379,3 +382,34 @@ async def auto_fusion_provider(*, system_block: str | None = None) -> FusionProv
     if engine is None:
         return None
     return FusionProvider(engine, system_block=system_block)
+
+
+# ---------------------------------------------------------------------------
+# Module-level accessor (mirror of get_credential_pool in resilience/)
+# ---------------------------------------------------------------------------
+
+_manager: MemoryManager | None = None
+
+
+def get_memory_manager() -> MemoryManager | None:
+    """Return the process-wide :class:`MemoryManager` singleton.
+
+    Unlike :func:`get_credential_pool`, this accessor can legitimately
+    return ``None`` — it is seeded by
+    ``agent.resilience.init_stack._init_agent_resilience_stack`` only
+    after ``auto_fusion_provider()`` succeeds. Callers must handle the
+    ``None`` case (fall back to legacy hindsight-recall path).
+    """
+    return _manager
+
+
+def set_memory_manager(manager: MemoryManager | None) -> None:
+    """Seed or clear the singleton. Called exclusively by init_stack."""
+    global _manager
+    _manager = manager
+
+
+def reset_memory_manager() -> None:
+    """Testing helper — drop the singleton so the next seed takes effect."""
+    global _manager
+    _manager = None

@@ -10,8 +10,14 @@ import json
 import logging
 from typing import Any
 
+from agent.errors import CredentialExhaustedError
 from agent.graph.state import AgentGraphState, ToolCall
 from agent.llm_client import get_litellm_client
+from agent.resilience.credential_pool import (
+    Credential,
+    apply_recovery,
+    get_credential_pool,
+)
 from agent.resilience.rate_limit_tracker import RateLimitRegistry
 from agent.tools.registry import ToolRegistry
 
@@ -120,9 +126,48 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         if openai_tools:
             kwargs["tools"] = openai_tools
 
+        # exec-hermes Phase-B P1: consult CredentialPool BEFORE the LLM call.
+        # When a usable credential exists we pass it through extra_body
+        # (overriding any state.api_key fallback) AND use its opaque
+        # key_id as the rate-limit bucket identifier — that gives us
+        # per-key isolation instead of per-provider coarse-grain.
+        # When acquire() returns None the key is blocked (rate-limited
+        # / auth-rejected) — surface CredentialExhaustedError so the
+        # runner produces a user-facing ErrorPacket rather than silently
+        # sending a broken key through.
+        credential: Credential | None = None
+        try:
+            credential = await get_credential_pool().acquire(
+                user_id=user_id,
+                provider=_provider_label(model),
+            )
+        except Exception:  # noqa: BLE001 — pool must never break the call
+            logger.debug("credential_pool.acquire skipped", exc_info=True)
+
         extra_body: dict[str, Any] = {}
-        if api_key:
+        if credential is not None:
+            extra_body["api_key"] = credential.api_key
+            span.set_attribute("credential.key_id", credential.key_id)
+        elif api_key:
+            # Legacy fallback — no pool entry found but the state has
+            # a prefetched api_key. Happens on code-paths that haven't
+            # yet migrated to the credential-pool flow (tests, harness).
             extra_body["api_key"] = api_key
+        else:
+            # Neither pool nor state has a key. If user is configured
+            # to need one, upstream will 401; let the call go and surface
+            # the provider error. Anonymous routes without user creds
+            # (dev mode) are allowed to fall through.
+            if user_id != "anonymous":
+                span.add_event(
+                    "credential_exhausted",
+                    {"user_id": user_id, "provider": _provider_label(model)},
+                )
+                raise CredentialExhaustedError(
+                    user_id=user_id,
+                    provider=_provider_label(model),
+                    reason="pool.acquire returned None",
+                )
 
         # exec-19 Stufe 5c: Reasoning/Thinking pipeline
         # LiteLLM handles per-provider mapping natively (v1.50+):
@@ -154,22 +199,36 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                         "status_code": _cls.status_code or -1,
                     },
                 )
+                # exec-hermes Phase-B P1: dispatch credential-pool recovery
+                # (rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed,
+                # overloaded/server_error → 5min). apply_recovery is a no-op
+                # for non-credential classifications (context-overflow etc.).
+                if credential is not None:
+                    try:
+                        await apply_recovery(
+                            get_credential_pool(), credential, _cls,
+                        )
+                    except Exception:  # noqa: BLE001 — recovery failure mustn't hide root cause
+                        logger.debug("apply_recovery failed", exc_info=True)
             except Exception:  # noqa: BLE001 — classification must never mask the real error
                 pass
             raise
         choice = response.choices[0]
 
         # exec-hermes §3.5: capture x-ratelimit-* headers per-(user, provider-key).
-        # provider_key_id uses _provider_label(model) as a Phase-1 proxy — coarse
-        # but sufficient while exec-16 Credential-Pool is not yet wired
-        # (the bucket-key tuple includes user_id so cross-user pollution is
-        # already prevented). Swap for a hash of the real key-DB entry once
-        # credential_pool lands.
+        # exec-hermes Phase-B P1: when a CredentialPool credential is available,
+        # use its opaque key_id as the rate-limit bucket identifier. This gives
+        # us per-key isolation (same user rotating between 2 keys = separate
+        # buckets) instead of the coarse per-provider grain. Fallback to
+        # _provider_label(model) for legacy paths without a pool credential.
+        _bucket_key_id = (
+            credential.key_id if credential is not None else _provider_label(model)
+        )
         try:
             _rate_buckets = get_rate_limit_registry().capture_from_response(
                 response,
                 user_id=user_id,
-                provider_key_id=_provider_label(model),
+                provider_key_id=_bucket_key_id,
                 provider=_provider_label(model),
             )
             # Surface minute-window requests bucket as span attributes so exec-17
@@ -183,6 +242,16 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 span.set_attribute("ratelimit.requests.usage_pct", _rpm_bucket.usage_pct)
         except Exception:  # noqa: BLE001 — rate-limit capture must never fail the call
             logger.debug("rate-limit capture skipped", exc_info=True)
+
+        # exec-hermes Phase-B P1: the call succeeded — mark the credential
+        # healthy again. Resets any lingering exhausted/auth_failed state
+        # (e.g. a provider just recovered from a 429 backoff). No-op for
+        # credentials in ok-state.
+        if credential is not None:
+            try:
+                await get_credential_pool().mark_success(credential)
+            except Exception:  # noqa: BLE001 — bookkeeping mustn't break the response path
+                logger.debug("credential_pool.mark_success failed", exc_info=True)
 
         prompt_tokens = 0
         completion_tokens = 0

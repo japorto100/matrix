@@ -31,7 +31,10 @@ from dataclasses import dataclass
 __all__ = [
     "ContextStage",
     "ContextEngine",
+    "ContextEngineConfig",
     "DefaultContextEngine",
+    "get_context_engine",
+    "reset_context_engine",
 ]
 
 
@@ -136,3 +139,30 @@ class DefaultContextEngine(ContextEngine):
         if ratio >= self._cfg.pre_save:
             return ContextStage.pre_save
         return ContextStage.normal
+
+
+# ---------------------------------------------------------------------------
+# Module-level accessor (mirror of get_credential_pool in resilience/)
+# ---------------------------------------------------------------------------
+
+_engine: ContextEngine | None = None
+
+
+def get_context_engine() -> ContextEngine:
+    """Return the process-wide :class:`ContextEngine` singleton (lazy).
+
+    Seeded by ``agent.resilience.init_stack._init_agent_resilience_stack``
+    at FastAPI startup, but callable before that for early imports — the
+    first call builds a :class:`DefaultContextEngine` with canonical
+    thresholds, subsequent calls return the same instance.
+    """
+    global _engine
+    if _engine is None:
+        _engine = DefaultContextEngine()
+    return _engine
+
+
+def reset_context_engine() -> None:
+    """Testing helper — drop the singleton so the next call rebuilds."""
+    global _engine
+    _engine = None
