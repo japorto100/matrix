@@ -33,6 +33,7 @@ from pydantic import BaseModel, Field
 
 from agent.scheduler import db as scheduler_db
 from agent.scheduler import service_user_id  # noqa: F401 — re-exported hint
+from agent.security.prompt_scanner import scan_scheduled_task_prompt
 from agent.tools.base import TradingTool
 
 if TYPE_CHECKING:
@@ -146,6 +147,24 @@ class ScheduleTaskTool(TradingTool):
         self, tool_input: dict, ctx: AgentExecutionContext
     ) -> dict[str, Any]:
         params = ScheduleTaskInput(**tool_input)
+
+        # exec-security §4: scheduler prompts run in fresh agent sessions
+        # with full tool access — a prompt-injected task is far more
+        # dangerous than an injection in a normal turn. Refuse critical
+        # shapes up-front (sync regex, no I/O).
+        scan = scan_scheduled_task_prompt(params.prompt)
+        if scan.blocked:
+            log.warning(
+                "schedule_task prompt blocked user_id=%s patterns=%s",
+                ctx.user_id,
+                scan.matched_patterns,
+            )
+            return {
+                "ok": False,
+                "error": "prompt_blocked",
+                "message": scan.reason,
+                "matched_patterns": list(scan.matched_patterns),
+            }
 
         # Per-turn rate-limit: catches prompt-injected "add 20 tasks"
         # floods. Bucketed on created_at over the last 60s — robust
@@ -350,6 +369,27 @@ class ScheduleEditTool(TradingTool):
         self, tool_input: dict, ctx: AgentExecutionContext
     ) -> dict[str, Any]:
         params = ScheduleEditInput(**tool_input)
+
+        # If the edit changes the prompt, run the same scanner as INSERT.
+        # Skipping this would let an attacker bypass the gate by creating a
+        # benign task and then PATCH'ing in the payload.
+        if params.prompt is not None:
+            scan = scan_scheduled_task_prompt(params.prompt)
+            if scan.blocked:
+                log.warning(
+                    "schedule_edit prompt blocked user_id=%s task_id=%s patterns=%s",
+                    ctx.user_id,
+                    params.task_id,
+                    scan.matched_patterns,
+                )
+                return {
+                    "ok": False,
+                    "error": "prompt_blocked",
+                    "task_id": params.task_id,
+                    "message": scan.reason,
+                    "matched_patterns": list(scan.matched_patterns),
+                }
+
         ok = await scheduler_db.patch_task_fields(
             params.task_id,
             ctx.user_id,

@@ -112,7 +112,18 @@ def build_sharegpt_conversation(
             role = role_from_span_and_event(span_kind, name)
             if role is None:
                 continue
-            turns.append({"from": role, "value": body})
+            # exec-security §1.2 Tier-1: redact secrets from body BEFORE
+            # emitting to the ShareGPT conversation. ShareGPT JSONL is a
+            # fine-tuning-dataset format — un-redacted secrets here would
+            # be baked into model weights (permanent leak). No-op when
+            # MATRIX_REDACT_SECRETS=false.
+            try:
+                from agent.security.redact import redact_sensitive_text
+
+                redacted_body = redact_sensitive_text(body) or body
+            except Exception:  # noqa: BLE001
+                redacted_body = body
+            turns.append({"from": role, "value": redacted_body})
 
     if not turns:
         return None

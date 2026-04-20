@@ -398,9 +398,16 @@ non-Matrix kinds are just not yet wired on the dispatch side.
 
 ### 11.1 Prompt-injection defense
 
-- **Scan cron-bound prompts** with `skills_guard.scan_skill()` at task-creation (treats the `prompt` field as content, scans for exfiltration / injection / destructive patterns).
-- Reject with 422 (user-surfaced) if `verdict == "dangerous"`.
-- `ask` verdict → confirm-loop in chat: "this prompt has some questionable patterns — confirm you want to schedule it anyway?" before commit.
+**Implementation:** `python-backend/agent/security/prompt_scanner.py::scan_scheduled_task_prompt` (Phase-B P3 DONE, 2026-04-20).
+**Owning-spec:** `exec-security.md §4` (pattern inventory, rationale, out-of-scope items).
+
+Wired in both `ScheduleTaskTool.execute` (INSERT path) and `ScheduleEditTool.execute` (UPDATE-with-prompt-change path, prevents `insert benign → patch malicious` bypass).
+
+Two-state gate: `PromptRisk.LOW` → pass; `PromptRisk.HIGH` → tool returns `{"ok": false, "error": "prompt_blocked", "message": reason, "matched_patterns": [...]}`. WARN-level log includes `user_id` + pattern-ids for audit.
+
+Covered shapes: invisible/bidi-override unicode, prompt-injection phrases (`ignore previous instructions`), shell-exfil (`curl $API_KEY`), secret-file reads (`cat .env`), host-takeover (`authorized_keys`, `/etc/sudoers`), destructive filesystem (`rm -rf /`, `rm -rf ~`), subprocess-spawn keywords, credential-leak phrases.
+
+No MEDIUM/`ask` tier — hot-path wants an on/off gate. Partial-match warnings belong in an async audit consumer (Phase-C).
 
 ### 11.2 Per-user scoping
 

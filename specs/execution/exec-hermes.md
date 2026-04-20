@@ -1,12 +1,12 @@
 # exec-hermes — Gems-Index für `_ref/hermes-agent/` Ports nach matrix
 
-> ## STATUS: **Index + aktive Adoption** (Phase-1 + Phase-B P1 DONE)
+> ## STATUS: **Index + aktive Adoption** (Phase-1 + Phase-B P1–P3 DONE)
 >
 > Dieser Spec ist das **Source-of-Truth-Index-Dokument** für jede Hermes-Agent-Adoption in matrix. Jede Zeile in §0 **Gems Coverage Matrix** hat einen absoluten Pfad zu `_ref/hermes-agent/`, einen matrix-Zielpfad, Status und owning-exec. Implementierungsdetails leben in den owning-execs, nicht hier.
 >
 > Wenn ein Gem "WIRED" oder "PLANNED" in einem anderen exec ist, ist dieser Spec **Index**; die Arbeit geschieht dort. Wenn ein Gem "REJECTED" ist, erklärt §5 warum.
 
-> Erstellt: 2026-04-18 · Phase-1 abgeschlossen 2026-04-18 · Phase-B P1 abgeschlossen 2026-04-20
+> Erstellt: 2026-04-18 · Phase-1 abgeschlossen 2026-04-18 · Phase-B P1 + P2 + P3 abgeschlossen 2026-04-20
 > Referenz-Index: `_ref/hermes-agent/` via gitnexus (47,734 nodes, 1,707 Files)
 > Hermes-Commits 2026-04, Hermes 4 Paper: arxiv 2508.15204
 > Querverweise: exec-harness, exec-context, exec-memory, exec-11, exec-15, exec-16, exec-17, exec-18, exec-12, exec-10, exec-skills, exec-security, exec-scheduler, exec-scheduler2
@@ -29,8 +29,8 @@
 | ContextEngine ABC | `_ref/hermes-agent/agent/context_engine.py` | `python-backend/context/context_engine.py` | **WIRED Phase-B P1** (commit `09988de`) | `exec-context.md` |
 | MemoryProvider ABC | `_ref/hermes-agent/agent/memory_provider.py` | `python-backend/memory_fusion/memory_provider.py` | **WIRED Phase-B P1** (commit `09988de`) | `exec-memory.md` |
 | CredentialPool ABC | `_ref/hermes-agent/agent/credential_pool.py` (1431 LOC hermes → 300 LOC matrix) | `python-backend/agent/resilience/credential_pool.py` | **WIRED Phase-B P1** (ABC `38b9b64`, call-site `09988de`) | `exec-16.md §2.C` |
-| redact.py | `_ref/hermes-agent/agent/redact.py` | `python-backend/agent/security/redact.py` | **PLANNED Phase-B P3** | `exec-security.md §1` |
-| scan_cron_prompt | `_ref/hermes-agent/tools/cronjob_tools.py` (+ tests) | `python-backend/agent/security/prompt_scanner.py` | **PLANNED Phase-B P3** | `exec-security.md §4` |
+| redact.py | `_ref/hermes-agent/agent/redact.py` | `python-backend/agent/security/redact.py` (Tier-1) + `redact_consumer.py` (Tier-2) + migration 023 | **DONE Phase-B P3** (2026-04-20) | `exec-security.md §1` |
+| scan_cron_prompt | `_ref/hermes-agent/tools/cronjob_tools.py` (+ tests) | `python-backend/agent/security/prompt_scanner.py` | **DONE Phase-B P3** (2026-04-20) | `exec-security.md §4` |
 | usage_pricing.py | `_ref/hermes-agent/agent/usage_pricing.py` (687 LOC → 150 LOC slim-port) | `python-backend/agent/billing/usage_pricing.py` | **PLANNED Phase-B P4** | `exec-16.md §2.10` |
 | insights.py | `_ref/hermes-agent/agent/insights.py` (dual-path) | `python-backend/agent/billing/insights.py` | **PLANNED Phase-B P4** | `exec-16.md §2.10` + `exec-harness.md §4f` |
 | model_metadata.py | `_ref/hermes-agent/agent/model_metadata.py` (1116 LOC → 80 LOC LiteLLM-wrapper) | `python-backend/agent/llm/model_metadata.py` | **PLANNED Phase-B P4** | `exec-16.md §3.1` |
@@ -962,6 +962,7 @@ onefetch /home/lipfi2/code/matrix/_ref/hermes-agent
 | 2026-04-18 (Phase D) | **§4.4 Credential-Pool DONE** (commit `38b9b64`): `agent/resilience/credential_pool.py` mit `CredentialPool` ABC + `SingleKeyCredentialPool` + `apply_recovery()`-dispatcher. Mappt error_classifier.RecoveryStrategy → pool-state: rate_limit → 1h cooldown, billing → 24h, auth → mark_auth_failed, overloaded/server_error → 5min, no-op bei context/format/timeout/unknown. 28 tests. Bewusst skipped: OAuth-device-code (Nous/Qwen portals) — pure Komplexität für BYO-key Modell, ROI nicht gerechtfertigt. OAuth-Subklasse später als `OAuthCredentialPool(CredentialPool)` wenn SaaS-Reselling-Use-Case kommt. |
 | 2026-04-20 (Phase-B P1) | **Dead Code aktiviert** (commit `09988de`): CredentialPool + MemoryManager + ContextEngine waren Phase-1 geported aber nie aufgerufen. Phase-B P1 wiring: (1) `get_context_engine()` + `get_memory_manager()` + `set_memory_manager()` Accessors (Contrarian BLOCKER-3 fix). (2) Migration 022 `agent.sync_failures` Tabelle (ops-visibility für fire-and-forget memory-sync-errors). (3) `agent/resilience/init_stack.py` mit `init_agent_resilience_stack()` als FastAPI startup-handler + `resilience_health()` + `GET /health/resilience` endpoint (HTTP 503 wenn degraded). (4) `CredentialPool.acquire()` + `apply_recovery()` + `mark_success()` call-sites in `llm_node.py` vor/nach LLM-call; rate-limit-bucket nutzt jetzt `credential.key_id` statt `_provider_label(model)` (per-key isolation). (5) `CredentialExhaustedError` neue `RepairableError` subclass raised wenn `acquire()` None returns + user != "anonymous". (6) `MemoryManager.system_prompt_blocks()` + `prefetch()` ersetzen hardcoded Hindsight-recall in `runner._prepare_system_prompt` (Hindsight-direct als legacy-fallback). (7) Fire-and-forget `asyncio.create_task(_safe_sync_turn())` post-graph mit ADR-comment + INSERT into `agent.sync_failures` für ops-visibility. (8) `ContextEngine.stage_for(tokens, window)` span-attribute-emit in `_prepare_messages` (Contrarian-2 CRITICAL-1: signature stays stable, stage_for_model additiv in P5). 15 neue unit-tests. sota-verify: PASS on all 27 probes. 192/192 tests pass, 0 regressions. |
 | 2026-04-20 (Phase-B P2) | **exec-hermes.md als Source-of-Truth-Index restructured.** §0 TL;DR ersetzt durch Gems Coverage Matrix (24 items, absolute hermes paths, status, owning-exec). §14 changelog + §15 implementation-status updated. Cross-exec stubs eingefügt in exec-context, exec-memory, exec-16, exec-17, exec-harness, exec-06, exec-transformersjs. Neue umbrella spec `exec-security.md` für redact + HITL skills_guard + audit-integrity. |
+| 2026-04-20 (Phase-B P3) | **Security-Gems portiert.** (1) `agent/security/redact.py` — Tier-1 sync regex, 35 prefix-patterns (sk-, sk-ant-, AKIA, ghp_, hf_, Stripe, SendGrid, PyPI, Tavily, Groq, syt_ Matrix-tokens, etc.) + 8 pattern-classes (ENV assignments, JSON fields, Authorization headers, Telegram bot tokens, private-key PEM, DB URLs, JWT, Discord mentions, E.164 phones). Snapshot-at-import via `MATRIX_REDACT_SECRETS` env. Public API `redact_sensitive_text` / `redact_dict` / `redact_span_event` / `RedactingFormatter`, jeweils mit `RedactionResult(value, count)` für `audit.redaction_count` span-attribute. (2) Migration 023 `agent.redaction_patterns` (id, pattern_regex, replacement='[REDACTED]', severity CHECK in ('info','warn','critical'), org_scope, is_active, notes, created_at, created_by). (3) `agent/security/redact_consumer.py` — Tier-2 async consumer für DB-backed custom-patterns. ReDoS-defense: 100ms per-match timeout (SIGALRM POSIX / thread-fallback). Default **disabled** via `MATRIX_REDACT_CONSUMER_ENABLED=true`. (4) Hook in `PostgresSpanProcessor._persist()` — Tier-1 redact attrs+events BEFORE `INSERT`, setzt `attrs["audit.redaction_count"]` bei >0. (5) Hook in `trajectory/exporter.py::build_sharegpt_conversation` — redact body BEFORE appending zu ShareGPT JSONL (fine-tuning-dataset hygiene = permanent). (6) `agent/security/prompt_scanner.py` — `scan_scheduled_task_prompt(prompt) -> PromptScanResult(risk, matched_patterns, reason)`. Two-state gate (LOW/HIGH, no medium). Portiert alle hermes `_CRON_THREAT_PATTERNS` + matrix-additions (`rm -rf ~`, subprocess-spawn keywords, credential-phrases). Invisible/bidi-override unicode blocked (ZWSP, RLO, etc.). Wired in `ScheduleTaskTool.execute` (INSERT) + `ScheduleEditTool.execute` (UPDATE — verhindert insert-benign-patch-malicious-bypass). 65 neue unit tests (test_redact.py + test_prompt_scanner.py). 273/273 tests pass, 0 regressions. Cross-exec-doc-fill: `exec-security.md §1 + §4` mit implementation-details; `exec-scheduler.md §11.1` verweist auf prompt_scanner. |
 
 ---
 
@@ -998,14 +999,29 @@ onefetch /home/lipfi2/code/matrix/_ref/hermes-agent
 - [x] ContextEngine.stage_for() span-attribute emit in runner._prepare_messages
 - [x] 15 new unit tests (tests/agent/test_phase_b_wiring.py), sota-verify PASS on 27 probes
 
-**Phase-B P2–P6 (remaining):** tracked in `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md`. Summary:
+**Phase-B P2 (doc-restructure) — 2026-04-20:**
 
-- **P2** (current): exec-hermes INDEX + cross-exec stubs + new `exec-security.md`
-- **P3**: redact.py + scan_cron_prompt + exec-security §1 full content
+- [x] Gems Coverage Matrix in §0 (24 rows, absolute hermes-paths, per-item status + owning-exec)
+- [x] Cross-exec stubs: exec-context §11–§13, exec-memory §3h, exec-16 §2.10 + §3.1, exec-17 §2.5, exec-harness §4f, exec-06 §4c + §4d, exec-transformersjs §3.5
+- [x] `exec-security.md` (NEW umbrella spec) §1 redaction + §2 HITL + §3 audit-integrity + §4 prompt-injection
+
+**Phase-B P3 (Security-Gems) — 2026-04-20:**
+
+- [x] `agent/security/redact.py` — Tier-1 sync regex, 35 prefix + 8 pattern-classes, snapshot-at-import
+- [x] Migration 023 `agent.redaction_patterns` (Tier-2 DB-backed custom-patterns)
+- [x] `agent/security/redact_consumer.py` — Tier-2 async consumer, ReDoS-guarded (100ms per-match), default-disabled
+- [x] `PostgresSpanProcessor._persist` hook — Tier-1 redact before INSERT + `audit.redaction_count` attr
+- [x] `trajectory/exporter.py::build_sharegpt_conversation` hook — redact bodies before ShareGPT JSONL
+- [x] `agent/security/prompt_scanner.py` — `scan_scheduled_task_prompt` two-state gate, wired in ScheduleTaskTool + ScheduleEditTool
+- [x] 65 new unit tests (tests/agent/security/test_redact.py + test_prompt_scanner.py). 273 total pass, 0 regressions.
+- [x] `exec-security.md §1 + §4` filled with implementation-details, `exec-scheduler.md §11.1` cross-ref
+
+**Phase-B P4–P6 (remaining):** tracked in `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md`. Summary:
+
 - **P4**: usage_pricing + insights + model_metadata (→ `exec-16.md` §2.10 + `exec-harness.md` §4f)
 - **P5**: compaction/compression split + ContextEngine LiteLLM-refresh (→ `exec-context.md` §6.3 + `exec-memory.md` §3h)
 - **P6**: compression-UI + title-gen (→ `exec-06.md` §4c/§4d + `exec-transformersjs.md` §3.5)
 
 **Phase-C (deferred, separate plan):** Hybrid-Loop A/B (§9 architecture-question), plus any Phase-B items that turn out to need separate contrarian-review.
 
-**Test-Summe (as of Phase-B P1):** 192 passed (155 agent + 37 ABC-tests). 0 regressions from Phase-1 baseline. Ruff clean on all Phase-B-touched files.
+**Test-Summe (as of Phase-B P3):** 273 passed + 5 skipped (65 new security tests this phase, 15 from P1, 193 pre-existing). 0 regressions from Phase-1 baseline. Ruff clean on all Phase-B-touched files.

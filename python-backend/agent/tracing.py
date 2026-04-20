@@ -243,6 +243,36 @@ class PostgresSpanProcessor:
                     "attributes": dict(ev.attributes) if ev.attributes else {},
                 })
 
+        # exec-security §1.2 Tier-1: sync regex-based redaction BEFORE DB INSERT.
+        # Must be sync — this processor runs inside OTel's sync on_end hook
+        # and psycopg.connect below is blocking. Tier-2 DB-backed custom
+        # patterns (agent.redaction_patterns) run in a separate async
+        # consumer post-INSERT; see agent/security/redact_consumer.py.
+        # No-op when MATRIX_REDACT_SECRETS=false (snapshot-at-import).
+        try:
+            from agent.security.redact import redact_dict, redact_span_event
+
+            attrs_result = redact_dict(attrs)
+            total_redactions = attrs_result.count
+            attrs = attrs_result.value if attrs_result.count else attrs
+            if events:
+                redacted_events = []
+                for ev in events:
+                    ev_result = redact_span_event(ev)
+                    total_redactions += ev_result.count
+                    redacted_events.append(
+                        ev_result.value if ev_result.count else ev
+                    )
+                events = redacted_events
+            if total_redactions > 0:
+                # Embed the count as a span-attribute on the persisted row
+                # so the Control-UI AuditTab can filter "spans with
+                # redacted content". Span is already ended; we mutate the
+                # attrs dict we're about to INSERT.
+                attrs["audit.redaction_count"] = total_redactions
+        except Exception:  # noqa: BLE001 — redaction must never break span-persist
+            pass
+
         status_code = "ok"
         if hasattr(span, "status") and span.status:
             status_code = str(span.status.status_code.name).lower()
