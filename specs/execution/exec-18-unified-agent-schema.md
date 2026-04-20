@@ -1,13 +1,40 @@
 # exec-18: Unified Agent Schema (Agno-inspired, Hindsight-coexistent)
 
 **Datum:** 10.04.2026
-**Status:** Draft
+**Status:** ⚠️ **OUTDATED (2026-04-20) — frozen at the "8 new tables planned" snapshot. Reality has moved on: 26 migrations shipped.**
+
+---
+
+## ⚠️ Outdated-Header (2026-04-20)
+
+Dieser spec wurde geschrieben als es ~10 migrations gab und wir dachten "exec-18 fügt 8 neue Tabellen hinzu". Tatsächlich hat matrix jetzt **26 alembic-migrations** (`001_audit_events` … `026_smart_routing_config`) mit signifikant mehr tables als hier geplant war.
+
+**Deshalb darf dieser spec NICHT mehr als to-do-liste benutzt werden.** Er enthält wertvollen historischen kontext (bounded-contexts, schema-trennung zwischen `public` / `agent` / `ingestion` / `storage` / `matrix_crypto`) — aber der "Phase 1–N: build these tables"-teil ist überholt.
+
+**Statt hier neu planen:**
+
+1. **Ground-truth ist die DB selbst**, nicht dieser spec. Agno bringt ein runtime-introspection-tool mit:
+   - `_ref/agno/cookbook/01_demo/agents/dash/tools/introspect.py` — `introspect_schema` via SQLAlchemy `inspect()` liefert current tables/columns/fks/sample-data zur laufzeit.
+   - Matrix sollte diesen tool als **agent-tool** einbauen (category: schema-introspection) statt hier in einem statischen doc zu pflegen was in der DB "sollte" sein.
+
+2. **Für neue tables: neue alembic-migration** im owning-spec-slice (exec-hermes, exec-scheduler, etc.). exec-18 war nie der owner für neue features; es war ein planning-doc.
+
+3. **Schema-aware ADRs** gehen in den owning-spec + ein kurzer 1-zeiler cross-ref hier falls nötig.
+
+**Wir machen es möglicherweise komplizierter als nötig** wenn wir exec-18 als zentrales "schema-spec" halten. Vorschlag: diesen spec als **historisches dokument + bounded-context-ADR** markieren, §2-§5 technical-planning archivieren, und runtime-introspection als authoritativen schema-check benutzen.
+
+**Open decision:** komplett archivieren (→ `archive/`) mit §0-§1 als standalone bounded-context-ADR? Oder header + dieser outdated-warnung bewahren? Aktuell: **letzteres** bis wir konsolidieren.
+
+---
+
 **Abhaengig von:** exec-11 (Memory Engine / Hindsight), exec-12 (Audit), exec-17 (Observability), `exec-world-model.md`, `exec-personal-kb.md`, `exec-context.md`
 **Referenzen:**
 - Agno Framework: https://github.com/agno-agi/agno (lokal als submodule: `_ref/agno`)
 - Agno Docs: https://docs.agno.com
+- **Agno schema-introspection tool**: `_ref/agno/cookbook/01_demo/agents/dash/tools/introspect.py` (runtime `inspect()` via SQLAlchemy — future matrix agent-tool)
 - Hindsight: `_ref/hindsight/hindsight-api-slim/`
 - Schema Ownership: `specs/17-schema-ownership.md` (siehe Phase 0 unten)
+- Alembic migrations heute: `python-backend/alembic/versions/001–026` (26 migrations, nicht 8 wie §1 sagt)
 
 ---
 

@@ -3,6 +3,15 @@
 Operative Umsetzungspläne mit Checkboxen und Verify Gates.
 Werden abgearbeitet und als Referenz behalten.
 
+## 🎯 Priorisierter Durchlauf → [`EXECUTION-ORDER.md`](./EXECUTION-ORDER.md)
+
+Living document mit 3-wellen plan:
+- **Welle 1**: verify-gates für exec-05/06/09/10/12/15/17 (existing code prüfen)
+- **Welle 2**: Phase-C tail + Option-3 features (smart-routing review, frontend, title-gen)
+- **Welle 3**: planning-arbeit für isolation / A2FM-ML-router / EBM / world-model / personal-kb
+
+Die "Empfohlene Reihenfolge" unten ist die **domänen-orientierte** sicht (memory/context/harness). `EXECUTION-ORDER.md` ist die **phasen-orientierte** sicht für den tagesgeschäft-durchlauf.
+
 ## Empfohlene Reihenfolge (Memory / World Model / Personal KB / Context / Harness — 2026-04)
 
 1. **Specs abstimmen:** [`exec-memory.md`](./exec-memory.md), [`exec-world-model.md`](./exec-world-model.md), [`exec-personal-kb.md`](./exec-personal-kb.md), [`exec-context.md`](./exec-context.md), [`exec-harness.md`](./exec-harness.md), [`exec-skills.md`](./exec-skills.md) — Refs `_ref/mempalace`, `_ref/agno` (siehe [`exec-18-unified-agent-schema.md`](./exec-18-unified-agent-schema.md)).
