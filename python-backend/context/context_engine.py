@@ -140,6 +140,21 @@ class DefaultContextEngine(ContextEngine):
             return ContextStage.pre_save
         return ContextStage.normal
 
+    def stage_for_model(self, *, tokens: int, model: str) -> ContextStage:
+        """Convenience wrapper: resolve ``model → window`` via LiteLLM then classify.
+
+        Phase-B P5 addition (Contrarian-2 CRITICAL-1 safe): the ABC
+        :meth:`stage_for(tokens, window)` signature stays permanently
+        stable — this method is additive on :class:`DefaultContextEngine`
+        only. Callers that already have the window (tests, custom engines)
+        keep using ``stage_for``; callers that just have a model id can
+        use this helper.
+        """
+        from agent.llm.model_metadata import get_model_context_window
+
+        window = get_model_context_window(model) if model else 0
+        return self.stage_for(tokens=tokens, window=window)
+
 
 # ---------------------------------------------------------------------------
 # Module-level accessor (mirror of get_credential_pool in resilience/)

@@ -1,140 +1,63 @@
-"""Context Summarization Middleware (exec-10 Phase 5.5).
+"""Deprecated — delegates to :mod:`agent.middleware.compaction` + :mod:`agent.middleware.compression`.
 
-Wenn das Context-Window sich dem Limit naehert, werden aeltere Messages
-zusammengefasst. Die letzten N Messages bleiben vollstaendig erhalten.
+Phase-B P5 split this module into a mechanical-compaction stage
+(:mod:`compaction`) and an LLM-compression stage (:mod:`compression`)
+triggered separately by :class:`context.context_engine.ContextStage`.
 
-3-Stufen Kompression (SOTA "Deep Agents" Pattern):
-1. Offload: Grosse Tool-Results → gekuerzter Placeholder
-2. Summarize: Aeltere Messages → LLM-generierte Zusammenfassung
-3. Truncate: Falls immer noch zu gross → aelteste Messages entfernen
-
-Konfiguration via ENV:
-  AGENT_SUMMARIZE_THRESHOLD=0.7     # 70% des Context-Windows
-  AGENT_SUMMARIZE_KEEP_MESSAGES=20  # Letzte 20 Messages behalten
-  AGENT_SUMMARIZE_MODEL=  # Optional: eigenes Model fuer Summaries (sonst User's Model)
+This module remains as a shim so existing callers
+(``apply_context_management``, ``should_summarize``, ``estimate_tokens``,
+``offload_large_tool_results``, ``summarize_old_messages``) keep working
+through 1–2 release cycles. New callers should import from ``compaction``
+or ``compression`` directly.
 """
-
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any
 
+from agent.middleware.compaction import (
+    CHARS_PER_TOKEN,
+    TOOL_RESULT_MAX_CHARS,
+    compact,
+    estimate_tokens,
+    offload_large_tool_results,
+)
+from agent.middleware.compression import (
+    KEEP_MESSAGES,
+    SUMMARY_PROMPT,
+    compress,
+    summarize_old_messages,
+)
+
 logger = logging.getLogger(__name__)
 
-# Defaults
 THRESHOLD_FRACTION = float(os.environ.get("AGENT_SUMMARIZE_THRESHOLD", "0.7"))
-KEEP_MESSAGES = int(os.environ.get("AGENT_SUMMARIZE_KEEP_MESSAGES", "20"))
-SUMMARIZE_MODEL = os.environ.get(
-    "AGENT_SUMMARIZE_MODEL", ""
-)  # aus ENV oder control-ui, kein hardcoded Default
-TOOL_RESULT_MAX_CHARS = int(os.environ.get("AGENT_TOOL_RESULT_MAX_CHARS", "2000"))
+SUMMARIZE_MODEL = os.environ.get("AGENT_SUMMARIZE_MODEL", "")
 
-# P4: replaced hardcoded MODEL_MAX_TOKENS dict with LiteLLM wrapper. Keep a
-# fallback constant for the (rare) case where LiteLLM has no metadata.
 DEFAULT_MAX_TOKENS = 200_000
-CHARS_PER_TOKEN = 4  # Rough estimate
-
-SUMMARY_PROMPT = """Summarize the following conversation history concisely.
-Preserve: key decisions, tool results, important facts, user preferences.
-Discard: greetings, repeated questions, verbose tool outputs.
-Output a single paragraph summary.
-
-Conversation:
-{conversation}"""
 
 
-def estimate_tokens(messages: list[dict[str, Any]]) -> int:
-    """Grobe Token-Schaetzung basierend auf Zeichenlaenge."""
-    total_chars = 0
-    for msg in messages:
-        content = msg.get("content", "")
-        if isinstance(content, str):
-            total_chars += len(content)
-        elif isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict):
-                    total_chars += len(json.dumps(block, default=str))
-                else:
-                    total_chars += len(str(block))
-        else:
-            total_chars += len(str(content))
-    return total_chars // CHARS_PER_TOKEN
-
-
-def offload_large_tool_results(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Stufe 1: Grosse Tool-Results durch Kurzfassung ersetzen.
-
-    Tool-Results ueber TOOL_RESULT_MAX_CHARS werden auf die ersten N Zeichen gekuerzt
-    mit einem "[truncated]" Marker.
-    """
-    result = []
-    for msg in messages:
-        if msg.get("role") == "tool":
-            content = msg.get("content", "")
-            if isinstance(content, str) and len(content) > TOOL_RESULT_MAX_CHARS:
-                truncated = (
-                    content[:TOOL_RESULT_MAX_CHARS]
-                    + f"\n[... truncated, full result was {len(content)}chars]"
-                )
-                result.append({**msg, "content": truncated})
-                continue
-        result.append(msg)
-    return result
-
-
-async def summarize_old_messages(
-    messages: list[dict[str, Any]],
-    keep: int = KEEP_MESSAGES,
-) -> list[dict[str, Any]]:
-    """Stufe 2: Aeltere Messages durch LLM-Summary ersetzen.
-
-    Die letzten `keep` Messages bleiben vollstaendig.
-    Alles davor wird zu einer einzelnen Summary-Message zusammengefasst.
-    """
-    if len(messages) <= keep:
-        return messages
-
-    old_messages = messages[:-keep]
-    recent_messages = messages[-keep:]
-
-    # Conversation-Text aus alten Messages extrahieren
-    conv_parts = []
-    for msg in old_messages:
-        role = msg.get("role", "unknown")
-        content = msg.get("content", "")
-        if isinstance(content, str) and content.strip():
-            conv_parts.append(f"[{role}]: {content[:200]}")
-
-    if not conv_parts:
-        return recent_messages
-
-    conversation_text = "\n".join(conv_parts)
-
-    try:
-        from agent.llm_helper import llm_call
-
-        summary = await llm_call(
-            SUMMARY_PROMPT.format(conversation=conversation_text[:4000]),
-            max_tokens=512,
-        )
-        if not summary:
-            summary = "Previous conversation context."
-    except Exception as e:
-        logger.warning("Summarization failed, using truncation fallback: %s", e)
-        summary = "Previous conversation: " + conversation_text[:500]
-
-    summary_message = {
-        "role": "user",
-        "content": f"[Context Summary of {len(old_messages)} earlier messages]:\n{summary}",
-    }
-
-    return [summary_message] + recent_messages
+__all__ = [
+    "CHARS_PER_TOKEN",
+    "DEFAULT_MAX_TOKENS",
+    "KEEP_MESSAGES",
+    "SUMMARIZE_MODEL",
+    "SUMMARY_PROMPT",
+    "THRESHOLD_FRACTION",
+    "TOOL_RESULT_MAX_CHARS",
+    "apply_context_management",
+    "compact",
+    "compress",
+    "estimate_tokens",
+    "offload_large_tool_results",
+    "should_summarize",
+    "summarize_old_messages",
+]
 
 
 def should_summarize(messages: list[dict[str, Any]], model: str = "") -> bool:
-    """Prueft ob Summarization noetig ist basierend auf Token-Threshold."""
+    """Legacy threshold check. New code should use ``ContextEngine.stage_for``."""
     from agent.llm.model_metadata import get_model_context_window
 
     max_tokens = get_model_context_window(model) if model else DEFAULT_MAX_TOKENS
@@ -147,25 +70,23 @@ async def apply_context_management(
     messages: list[dict[str, Any]],
     model: str = "",
 ) -> list[dict[str, Any]]:
-    """Vollstaendige Context-Management Pipeline.
+    """Legacy 3-stage pipeline. New code should use the ContextEngine router.
 
-    Stufe 1: Offload grosse Tool-Results
-    Stufe 2: Summarize alte Messages (wenn noetig)
-    Stufe 3: Truncate (falls immer noch zu gross)
+    Kept as a shim so existing tests and callers keep passing. Internally
+    delegates to compact() + compress() + final hard-truncate.
     """
-    # Stufe 1: Offload
-    messages = offload_large_tool_results(messages)
+    messages = compact(messages)
 
-    # Stufe 2: Summarize (wenn Threshold ueberschritten)
     if should_summarize(messages, model):
-        logger.info("Context threshold reached, summarizing %d messages", len(messages))
-        messages = await summarize_old_messages(messages)
+        logger.info(
+            "Context threshold reached, compressing %d messages", len(messages)
+        )
+        messages = await compress(messages)
 
-    # Stufe 3: Hard Truncate (Fallback)
     from agent.llm.model_metadata import get_model_context_window
 
     max_tokens = get_model_context_window(model) if model else DEFAULT_MAX_TOKENS
     while estimate_tokens(messages) > max_tokens * 0.9 and len(messages) > 2:
-        messages = messages[1:]  # Aelteste Message entfernen
+        messages = messages[1:]
 
     return messages

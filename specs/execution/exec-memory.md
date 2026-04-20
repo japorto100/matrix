@@ -758,36 +758,41 @@ Wenn nicht → Fallback auf shared `HINDSIGHT_DB_URL`.
 
 ---
 
-## 3h. Hindsight compression-fact-ingest + MemPalace pre_compression-archive (Phase-B P5 stub)
+## 3h. Hindsight compression-fact-ingest + MemPalace pre_compression-archive (Phase-B P5 DONE)
 
-**Status:** STUB — filled in exec-hermes Phase-B P5.
-**Cross-ref:** `exec-hermes.md §0` (context_compressor row), `exec-context.md §11`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P5`.
+**Status:** ABC + wiring DONE (2026-04-20); concrete MemPalace verbatim-archive + Hindsight fact-ingest implementations PENDING (exec-memory follow-up tickets).
+**Cross-ref:** `exec-hermes.md §0` (context_compressor row), `exec-context.md §11`.
 
-When `ContextEngine.stage_for == ContextStage.emergency`, `middleware/compression.py` MUST emit a `pre_compression` hook BEFORE LLM-summary reduction. The MemoryProvider ABC gains a new method in P5:
+### 3h.1 ABC contract (shipped)
 
 ```python
 class MemoryProvider(ABC):
     async def on_pre_compress(
-        self, messages: list[dict], *, user_id: str, bank_id: str,
-        timeout: float = 0.5,
-    ) -> None:
-        """Archive verbatim content before compression irreversibly shrinks it.
-
-        Called synchronously-awaited by compression.py with a 500ms timeout.
-        If this raises or times out, the compression-caller emits an
-        `archive.miss` metric and continues — context-preservation is
-        best-effort, not blocking.
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        user_id: str,
+        bank_id: str,
+    ) -> str | None:
+        """Fire at the ≥80% context-window threshold BEFORE compaction shrinks
+        visible history. Providers persist verbatim content and MAY return
+        a short digest snippet for post-compact re-injection. Default no-op.
         """
 ```
 
-**MemPalace concrete impl** — persists full message-history verbatim into MemPalace (long-term retrievable raw log). Caller awaits with 500ms timeout.
+`MemoryManager.on_pre_compress` fans out over all available providers, swallows per-provider failures, and returns the list of non-None snippets. `agent/middleware/compression.py::notify_pre_compression` calls it under `asyncio.wait_for(..., timeout=0.5)` (configurable via `AGENT_PRE_COMPRESS_TIMEOUT_S`) — timeout or exception emits archive-miss and the LLM compression proceeds.
 
-**Hindsight concrete impl** — takes the LLM-compression-summary output (fired *after* pre_compression) and ingests as Fact-rows with confidence-decay. Hindsight = "destilled facts from compression"; MemPalace = "raw log before compression".
+### 3h.2 Ordering contract (enforced by runner)
 
-**Ordering contract:**
-1. `pre_compression` event emitted + data-preserving consumers awaited
-2. LLM-summary call runs (compression)
-3. Compression-summary fed to Hindsight as fact-list-ingest
-4. Agent turn continues with compressed messages
+1. `runner._prepare_messages` classifies stage via `ContextEngine.stage_for`.
+2. On `emergency`: runner emits span-event `pre_compression` (observational).
+3. `compression.compress(...)` → `summarize_old_messages` → `notify_pre_compression(old_messages, ...)` (data-preserving consumers awaited with bounded timeout).
+4. LLM summary call runs → replaces old messages.
+5. Agent turn continues with compressed messages.
 
-Full schema + ingest-API filled during P5 implementation.
+### 3h.3 Concrete-provider TODOs (NOT P5 scope)
+
+- **MemPalace** — `on_pre_compress` persists the full pre-compaction message-list as a long-term retrievable raw log, keyed by `(user_id, bank_id, session_id, timestamp)`. Returns `None` (no post-compact digest needed — mempalace retrieval is surfaced through its own recall path).
+- **Hindsight** — consumes the LLM-compression-summary output **after** step 4 as a fact-list ingest (post-compact hook, not `on_pre_compress` itself). Confidence-decay applies. This is a separate hook — `on_compression_complete(summary, ...)` — not yet added to the ABC.
+
+The runner treats the returned snippet list as reserved for future re-injection; currently ignored. When concrete impls land, runner will splice the snippets back into the message-list post-compression.

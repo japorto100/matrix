@@ -200,34 +200,59 @@ async def _prepare_messages(
     from agent.tracing import turn_span
 
     with turn_span("prepare_messages", ctx.model, 0) as span:
-        # exec-hermes Phase-B P1: ContextEngine.stage_for emits the current
-        # context-fill stage as a span-attribute so exec-17 dashboards can
-        # trace compaction pressure per turn. P5 wires the actual
-        # compaction/compression router on top of this signal; P1 only
-        # emits observability so the rollout is safe to roll back if the
-        # attribute turns out to mispredict.
+        # exec-hermes Phase-B P1 + P5: ContextEngine classifies + routes.
+        # P1 emitted the stage as observability; P5 uses it to dispatch
+        # between compaction (mechanical, cheap) and compression (LLM,
+        # lossy, pre_compression event).
+        stage_value = "normal"
+        stage = None
+        context_stage_cls = None
         try:
             from agent.llm.model_metadata import get_model_context_window
-            from agent.middleware.summarization import estimate_tokens
-            from context.context_engine import get_context_engine
+            from agent.middleware.compaction import estimate_tokens
+            from context.context_engine import ContextStage, get_context_engine
 
+            context_stage_cls = ContextStage
             engine = get_context_engine()
             est_tokens = estimate_tokens(messages)
             window = get_model_context_window(ctx.model)
             stage = engine.stage_for(tokens=est_tokens, window=window)
-            span.set_attribute("context.stage", stage.value)
+            stage_value = stage.value
+            span.set_attribute("context.stage", stage_value)
             span.set_attribute("context.estimated_tokens", est_tokens)
             span.set_attribute("context.window", window)
         except Exception:  # noqa: BLE001 — observability mustn't break the turn
             logger.debug("ContextEngine.stage_for skipped", exc_info=True)
 
-        # exec-10 Phase 5.5: Context Summarization (stand-in until P5 split)
+        # P5 router — two-tier consumer contract per exec-context §6.3:
+        #   normal / pre_save → no-op (observational)
+        #   compaction        → mechanical compact() (no LLM, no archive)
+        #   emergency         → compress() with bounded pre_compression hook
         try:
-            from agent.middleware.summarization import apply_context_management
+            if stage is not None and context_stage_cls is not None:
+                from agent.middleware.compaction import compact
+                from agent.middleware.compression import compress
 
-            messages = await apply_context_management(messages, model=ctx.model)
+                if stage is context_stage_cls.emergency:
+                    span.add_event(
+                        "pre_compression",
+                        {"messages_count": len(messages), "context.stage": stage_value},
+                    )
+                    messages = await compress(
+                        messages,
+                        user_id=getattr(ctx, "user_id", None),
+                        bank_id=getattr(ctx, "bank_id", None) or getattr(ctx, "user_id", None),
+                    )
+                elif stage is context_stage_cls.compaction:
+                    messages = compact(messages)
+            else:
+                # Fall-back path when ContextEngine is unavailable — retain
+                # legacy unconditional pipeline for correctness.
+                from agent.middleware.summarization import apply_context_management
+
+                messages = await apply_context_management(messages, model=ctx.model)
         except Exception:
-            pass
+            logger.debug("context-management skipped", exc_info=True)
 
         # exec-10 Phase 5.1: Dangling Tool Calls patchen
         try:

@@ -243,20 +243,53 @@ Explizite Arbeitspunkte (Inhalt früher in `exec-memory` §3f — **nicht entfer
 | 2026-04-15 | Erstversion; ausgelagert aus exec-memory §3f (Compaction + Token Caching) mit SOTA-Referenzen |
 | 2026-04-15 | §1.1/1.2 LiteLLM + OpenRouter; provider-agnostisches Caching; §7 Checkliste explizit (gleiche Punkte wie früher exec-memory, zentral hier) |
 | 2026-04-20 | exec-hermes Phase-B P2 stubs added: §11 pre_compression-event contract (P5), §12 cost-metrics hooks (P4), §13 LiteLLM model_info-based thresholds TODO. |
+| 2026-04-20 | Phase-B P4 DONE — §12 + §13 filled: cost span-attributes + LiteLLM-backed context windows. |
+| 2026-04-20 | Phase-B P5 DONE — §11 filled: compaction/compression split, ContextEngine router in runner, `pre_compression` event + bounded `MemoryManager.on_pre_compress` hook, summarization shim retained. |
 
 ---
 
-## 11. `pre_compression` event contract (Phase-B P5 stub)
+## 11. `pre_compression` event contract (Phase-B P5 DONE)
 
-**Status:** STUB — filled in exec-hermes Phase-B P5.
-**Cross-ref:** `exec-hermes.md §0` (context_compressor row), plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P5`.
+**Status:** DONE — 2026-04-20.
+**Cross-ref:** `exec-hermes.md §0` (context_compressor row), `exec-memory.md §3h`.
+**Implementation:** `agent/middleware/compaction.py` (mechanical) + `agent/middleware/compression.py` (LLM + pre_compress hook).
 
-When `ContextEngine.stage_for(tokens, window) == ContextStage.emergency`, `middleware/compression.py` (P5 new) MUST emit a `pre_compression` hook BEFORE running LLM-summary reduction. Two consumer-tiers:
+### 11.1 Router
 
-- **Data-preserving** (MemPalace verbatim-retain) — synchronously awaited with 500ms timeout (`memory_manager.on_pre_compress(messages, timeout=0.5)`). If MemoryManager is None OR timeout exceeded → emit `archive.miss` metric and continue compression. Never silently lose context-content.
-- **Observational** (metrics, audit-log, exec-17) — span-event `pre_compression` (fire-and-forget), attributes `messages_count` + `tokens_estimate` + `stage`.
+`agent/graph/runner.py::_prepare_messages` classifies the current window-fill via `ContextEngine.stage_for(tokens, window)` and dispatches:
 
-Full contract + consumer-ordering guarantee filled during P5 implementation. Implementation-ref: `exec-memory.md §3h` (MemoryProvider.on_pre_compress ABC addition).
+| Stage | Action |
+|---|---|
+| `normal` / `pre_save` | no-op (observational only — `context.stage` span-attribute set) |
+| `compaction` (≥85%) | `compaction.compact(messages)` — mechanical tool-result truncation, idempotent, no LLM, no archive |
+| `emergency` (≥95%) | `compression.compress(messages, user_id, bank_id)` — LLM summary + bounded pre_compress hook |
+
+The compaction path is cheap enough to run every turn that hits it; the compression path is reserved for the emergency threshold where we accept lossy reduction.
+
+### 11.2 Two-tier consumer contract
+
+**Data-preserving (sync-awaited, bounded):**
+
+`compression.summarize_old_messages` calls `notify_pre_compression(old_messages, user_id=..., bank_id=...)` which invokes `MemoryManager.on_pre_compress(messages, user_id=, bank_id=)` under `asyncio.wait_for` with a 500ms timeout (overridable via `AGENT_PRE_COMPRESS_TIMEOUT_S`).
+
+- If `get_memory_manager()` returns None → skip silently (logged at DEBUG)
+- If `user_id` / `bank_id` missing → skip (can't archive without tenant scope)
+- On `TimeoutError` → log WARN, emit archive-miss, compression continues
+- On any other exception → log WARN, emit archive-miss, compression continues
+
+Return value (`list[str]` of snippets) is reserved for future re-injection of post-compact digests; currently the runner ignores it.
+
+**Observational (fire-and-forget span-event):**
+
+`runner._prepare_messages` emits `span.add_event("pre_compression", {"messages_count": N, "context.stage": "emergency"})` BEFORE invoking `compress()`. Exec-17 dashboards filter spans that carry this event. No ordering guarantees between this event and the MemoryManager hook — they are independent signals for independent consumers.
+
+### 11.3 MemoryProvider hook signature
+
+`MemoryProvider.on_pre_compress(messages, *, user_id, bank_id) -> str | None` — default no-op returning `None`. Implementations persist verbatim content and MAY return a short digest string; MemoryManager collects non-None snippets into `list[str]`. See `exec-memory.md §3h` for Hindsight-ingest + MemPalace-archive semantics.
+
+### 11.4 Legacy shim
+
+`middleware/summarization.py` retains `apply_context_management` / `should_summarize` / `summarize_old_messages` as a thin delegation layer over the P5 modules for 1–2 release cycles. Call-sites are encouraged to migrate to the explicit compact / compress API (or the ContextEngine-router path in runner).
 
 ## 12. Cost-metrics hooks (Phase-B P4 stub)
 
@@ -271,8 +304,12 @@ After P4 lands:
 
 Full schema + API-shape filled in `exec-16.md §2.10` when P4 implements.
 
-## 13. LiteLLM model_info-based thresholds TODO (Phase-B P4/P5)
+## 13. LiteLLM model_info-based thresholds (Phase-B P4 + P5 DONE)
 
-Current `ContextEngineConfig.default_window: int = 200_000` is a hardcoded fallback. P4 introduces `agent/llm/model_metadata.py::get_model_context_window(model)` wrapper over `litellm.get_model_info()`. P5 then adds `DefaultContextEngine.stage_for_model(*, tokens, model) -> ContextStage` (additive, ABC signature stays stable per Contrarian-2 CRITICAL-1 fix) that resolves window via the wrapper. Hardcoded `default_window` remains as absolute-fallback for LiteLLM-unknown models.
+**Status:** DONE — 2026-04-20.
 
-Runner.py temporary `_fallback_model_max_tokens(model)` helper (introduced P1) gets replaced by `get_model_context_window()` in P4.
+`agent/llm/model_metadata.py::get_model_context_window(model)` is the single source of truth for context-window sizing across the codebase. Uses `litellm.get_model_info` with a 1-hour TTL cache; falls back to `DEFAULT_CONTEXT_WINDOW = 200_000` for LiteLLM-unknown models.
+
+`DefaultContextEngine.stage_for_model(*, tokens, model)` was added in P5 as an **additive** convenience on the concrete class (not the ABC) — callers that already know the window keep using `stage_for(tokens, window)`, callers with only a model id use this helper. The ABC signature `stage_for(tokens, window)` stays permanently stable (Contrarian-2 CRITICAL-1 guarantee).
+
+P1's transitional `runner.py::_fallback_model_max_tokens` helper was deleted in P4 — runner calls `get_model_context_window(ctx.model)` directly.
