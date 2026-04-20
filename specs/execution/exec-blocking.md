@@ -95,3 +95,64 @@
 - C1: Mehrere Matrix-Accounts gleichzeitig + Account-Switcher
 
 **Verify-Gates** bleiben in `exec2-04-verify-gates.md` (Gates A/B/C) — werden erst aktiv wenn die entsprechende Phase gestartet wird.
+
+---
+
+## C7. Streaming SSE default (Phase-D) — derzeit batch, SOTA wäre token-stream
+
+- **Quelle**: session 2026-04-20, plus `agent/runners/simple.py` docstring-lock
+- **Status**: Backend ruft `graph.ainvoke()` + sendet 1 × `TextDeltaPacket(final)` (batch-mit-SSE-transport). Frontend (`@ai-sdk/react::useChat`) handelt token-streaming nativ — aber backend liefert kein token-stream. SimpleLoop hat `STREAMING DISABLED — see Phase-D` marker.
+- **Warum jetzt blockiert**: Streaming aktivieren invalidiert Phase-C A/B-parity (LangGraph batch vs SimpleLoop stream = apples-vs-oranges). Beide runner müssen simultan migriert werden, oder A/B-dispatcher muss beide als batch behalten bis langgraph-streaming sauber funktioniert.
+- **Trigger zum Wiederaufnehmen**:
+  - Phase-C A/B liefert reale Daten (braucht erst `exec-scheduler §8.1` scorer-worker).
+  - Konsens dass streaming sowohl simple.py als auch runner.py (via `graph.astream_events()`) parallel aktiviert wird.
+  - SSE-contract-validierung mit AI-SDK für echte token-stream (frontend hat noch nie echten stream gehandelt).
+- **Anker-Dateien bei Wiederaufnahme**: `agent/graph/nodes/llm_node.py:183` (litellm call), `agent/graph/runner.py:346` (graph.ainvoke), `agent/runners/simple.py` (streaming-lock docstring).
+
+---
+
+## C8. NATS JetStream für `sync_turn` at-least-once delivery
+
+- **Quelle**: session 2026-04-20, `agent/graph/runner.py:444-456` ADR-comment, Phase-B §15 debt-list
+- **Status**: Heute `asyncio.create_task(_safe_sync_turn(...))` fire-and-forget. Bei process-crash mid-turn ist memory-sync verloren. `agent.sync_failures` table fängt behandelte exceptions, nicht crash-loss. JetStream-infra läuft schon (`docker-compose.yml: nats --js`), scheduler nutzt es.
+- **Warum jetzt nicht bauen**: noch keine messbaren memory-loss-incidents. NATS-publish adds ~1-3ms hot-path. Komplexität (DLQ-monitoring, consumer-deployment) ohne nachgewiesenen schmerz nicht gerechtfertigt.
+- **Trigger**: harness §4g A/B-data zeigt memory-loss korreliert mit fitness-regressions, ODER konkreter incident.
+- **Dann zu bauen**: neuer NATS stream `AGENT_MEMORY` (WorkQueue retention, 24h TTL, file storage) + `agent/memory/sync_consumer.py` + DLQ endpoint. ~200 LOC.
+
+---
+
+## C9. Tracing (agent.spans) + Audit (agent.audit_events) — parallel mit ADR, nicht mergen
+
+- **Quelle**: session 2026-04-20 desktop-file
+- **Status**: Two parallel stores. Tracing = `agent/tracing.py` + `agent.spans` JSONB (performance, 30d retention, Grafana/OpenObserve). Audit = `agent/audit/` + `agent.audit_events` (compliance, 1y retention, Control-UI AuditTab). Overlap: beide emittieren bei LLM-call + tool-call.
+- **Entscheidung**: Nicht mergen. Unterschiedliche consumers, retention-policies, query-pattern. ABER: cross-write elimination nötig (heute double-write wo span + audit-event gleiche infos halten).
+- **TODO (nicht deferred, aber nicht kritisch)**: ADR in `exec-17-observability-harness-traces.md` die dokumentiert warum parallel + ~50 LOC cross-write-removal.
+
+---
+
+## C10. Per-model ContextEngine thresholds — meta-harness statt hardcoded
+
+- **Quelle**: session 2026-04-20 (user rejected hardcoded dict 2026-04-20)
+- **Status**: Heute globales 80/85/95 für alle modelle. Kein per-model-override im code.
+- **Warum**: Keine empirische grundlage für modell-spezifische thresholds ohne benchmarking. Hardcoded dict ist pseudo-empirie.
+- **Richtiger pfad**: meta-harness (`agent/harness/scorer.py` + exec-harness §4g) soll via fitness-score-regression lernen welche thresholds je modell optimal sind — sobald Phase-C A/B daten liefert (braucht `exec-scheduler §8.1` scorer-worker).
+- **Trigger**: A/B-data + harness fitness-regression-analysis zeigt threshold-sensitivität per model.
+
+---
+
+## C11. Phase-B carried-forward debt (aus `exec-hermes.md §15`)
+
+- **Quelle**: exec-hermes Phase-B §15 debt-list, confirmed 2026-04-20
+- **Offene items**:
+  - `agent.user_llm_settings.preferred_runner` column — Hook im Phase-C dispatcher reserved (`variant_policy` TODO comment in `agent/runners/dispatcher.py`), aber nicht implementiert. Triggert sich selbst wenn user-facing variant-picker gebraucht wird.
+  - CredentialPool multi-key-per-(user, provider) — heute nur `SingleKeyCredentialPool`. Key-rotation + pool-warmup-strategie unimplemented. Triggert bei SaaS-reselling-use-case.
+  - InsightsEngine periodic aggregation — läuft on-demand in `score_session`. Event-driven rollup via NATS-consumer not built. Triggert wenn billing-dashboards latenz-sensitiv werden.
+  - MemPalace/Hindsight concrete `on_pre_compress` impls — ABC contract steht (`exec-memory.md §3h`), concrete impls deferred. Triggert wenn compression ohne verbatim-archive-path als datenverlust auffällt.
+
+---
+
+## Session-Audit 2026-04-20 — spec landscape
+
+- **Duplicate resolved**: `exec-transformers-js.md` → `archive/exec-transformers-js-SUPERSEDED.md` (duplicate of `exec-transformersjs.md`, latter ist active primary).
+- **Superseded resolved**: `exec-merge-chat.md` → `archive/exec-merge-chat-SUPERSEDED.md` (realized on branch `claude/merge-frontend-chat-ui-2OqmH`, code on main via `frontend_merger/`).
+- **Rest 47 specs**: status scan in session notes, not duplicated here.

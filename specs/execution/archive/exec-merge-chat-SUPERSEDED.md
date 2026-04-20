@@ -1,7 +1,9 @@
-# exec-merge-chat: Chat UI Merge + Dual-Panel Layout
+# exec-merge-chat: Chat UI Merge + Dual-Panel Layout [SUPERSEDED]
+
+> **SUPERSEDED 2026-04-20** — The planning content below was realised on the `claude/merge-frontend-chat-ui-2OqmH` branch and merged into main. The actual implementation + verify-gate log lives in `specs/execution/claude-merge-frontend-chat-ui-2OqmH/` (exec-01..exec-05 + README + VERIFY-GATES.md). `frontend_merger/` is the resulting monolith — agent-chat, matrix-chat, control-ui, files, memory all live there now. This file is preserved for the design rationale (why dual-panel, layout decisions); do not use it as a to-do list.
 
 **Datum:** 10.04.2026
-**Status:** Geplant
+**Status:** SUPERSEDED (merged 2026-04-18 via branch `claude/merge-frontend-chat-ui-2OqmH`)
 **Abhaengig von:** exec-06 Phase 5 (Shared Components) ✅, exec-15 (control-ui) ✅, Devstack E2E
 **Herkunft:** Extrahiert aus exec-06 Phase 1 + Phase 6 (10.04.2026)
 

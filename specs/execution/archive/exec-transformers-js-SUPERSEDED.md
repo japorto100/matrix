@@ -1,7 +1,9 @@
-# exec-transformers-js: Client-Side AI (WebLLM / transformers.js)
+# exec-transformers-js: Client-Side AI (WebLLM / transformers.js) [SUPERSEDED]
+
+> **SUPERSEDED 2026-04-20** — This spec (exec-transformers-**js**.md, 13.04.2026) has been replaced by the newer `exec-transformersjs.md` (without the hyphen) which is the active client-side ML spec with broader scope (transformers.js + WebLLM + magika + voicebox). The newer spec also holds the re-scoped title-gen ownership (§3.5, primary path). Content here preserved for historical reference only — do not implement from this file.
 
 **Datum:** 13.04.2026
-**Status:** Draft / Research
+**Status:** SUPERSEDED (archived 2026-04-20) — see `specs/execution/exec-transformersjs.md`
 **Abhaengig von:** exec-19 (Agent-Chat Baseline), exec-a2fm (Routing Konzept)
 **Referenzen:**
 - [transformers.js v3](https://huggingface.co/docs/transformers.js) — Hugging Face models in browser via ONNX/WebGPU
