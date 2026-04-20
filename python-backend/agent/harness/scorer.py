@@ -20,25 +20,28 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Rough cost per 1M tokens (input/output averaged) — update as pricing changes
-MODEL_COST_PER_MTOK: dict[str, float] = {
-    "claude-sonnet-4-6": 6.0,
-    "claude-haiku-4-5": 1.0,
-    "claude-opus-4-6": 30.0,
-    "gpt-4o": 5.0,
-    "gpt-4o-mini": 0.3,
-}
+# P4: replaced hardcoded MODEL_COST_PER_MTOK with LiteLLM-backed
+# estimate_usage_cost. Keep a conservative fallback rate for models
+# LiteLLM doesn't know (harness eval scenarios with fake/local models).
 DEFAULT_COST_PER_MTOK = 3.0
 
 
 def _estimate_cost(model: str, total_tokens: int) -> float:
-    """Rough USD cost estimate."""
-    rate = DEFAULT_COST_PER_MTOK
-    for prefix, cost in MODEL_COST_PER_MTOK.items():
-        if prefix in model:
-            rate = cost
-            break
-    return round(total_tokens * rate / 1_000_000, 6)
+    """Rough USD cost estimate.
+
+    Splits ``total_tokens`` 60/40 input/output (empirical avg across matrix
+    eval workloads) since audit-events don't preserve the split. For exact
+    costs use :class:`agent.billing.insights.InsightsEngine` over spans.
+    """
+    from agent.billing.usage_pricing import CanonicalUsage, estimate_usage_cost
+
+    input_tokens = int(total_tokens * 0.6)
+    output_tokens = total_tokens - input_tokens
+    usage = CanonicalUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+    result = estimate_usage_cost(model, usage)
+    if result.amount_usd is not None:
+        return round(float(result.amount_usd), 6)
+    return round(total_tokens * DEFAULT_COST_PER_MTOK / 1_000_000, 6)
 
 
 async def score_session(thread_id: str) -> dict[str, Any]:

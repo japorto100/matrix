@@ -27,25 +27,9 @@ from agent.streaming import (
 logger = logging.getLogger(__name__)
 
 
-# exec-hermes Phase-B P1: fallback model-context-window for ContextEngine.
-# P4 replaces this hardcoded dict with a LiteLLM model_metadata wrapper.
-# Keep keys in sync with middleware/summarization.py until then.
-_FALLBACK_MODEL_MAX_TOKENS: dict[str, int] = {
-    "claude-sonnet-4-6": 200_000,
-    "claude-opus-4-6": 200_000,
-    "claude-opus-4-7": 200_000,
-    "claude-haiku-4-5": 200_000,
-    "gpt-4o": 128_000,
-    "gpt-4o-mini": 128_000,
-}
-_DEFAULT_FALLBACK_WINDOW = 200_000
-
-
-def _fallback_model_max_tokens(model: str) -> int:
-    """Best-effort hardcoded lookup until P4 LiteLLM wrapper lands."""
-    # Model IDs sometimes carry provider prefixes ("anthropic/claude-sonnet-4-6")
-    tail = model.split("/")[-1] if model else ""
-    return _FALLBACK_MODEL_MAX_TOKENS.get(tail, _DEFAULT_FALLBACK_WINDOW)
+# exec-hermes Phase-B P4: LiteLLM model_metadata wrapper. The hardcoded
+# dict and _fallback_model_max_tokens helper have been removed in favour
+# of the TTL-cached LiteLLM lookup.
 
 
 async def run_agent_loop(
@@ -223,12 +207,13 @@ async def _prepare_messages(
         # emits observability so the rollout is safe to roll back if the
         # attribute turns out to mispredict.
         try:
+            from agent.llm.model_metadata import get_model_context_window
             from agent.middleware.summarization import estimate_tokens
             from context.context_engine import get_context_engine
 
             engine = get_context_engine()
             est_tokens = estimate_tokens(messages)
-            window = _fallback_model_max_tokens(ctx.model)
+            window = get_model_context_window(ctx.model)
             stage = engine.stage_for(tokens=est_tokens, window=window)
             span.set_attribute("context.stage", stage.value)
             span.set_attribute("context.estimated_tokens", est_tokens)

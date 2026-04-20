@@ -762,44 +762,49 @@ Pure function `_compute_auto_effort(prompt, history, model_info) -> "low"|"mediu
 
 ---
 
-## 2.10 Billing Ledger — CanonicalUsage + InsightsEngine (Phase-B P4 stub)
+## 2.10 Billing Ledger — CanonicalUsage + InsightsEngine (Phase-B P4 DONE)
 
-**Status:** STUB — filled in exec-hermes Phase-B P4.
-**Cross-ref:** `exec-hermes.md §0` (usage_pricing + insights rows), `exec-harness.md §4f` (dual-path fitness), plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P4`.
-
-Hermes-port: `_ref/hermes-agent/agent/usage_pricing.py` (687 LOC → slim-port 150 LOC) + `_ref/hermes-agent/agent/insights.py` (dual-path).
+**Status:** DONE — 2026-04-20.
+**Cross-ref:** `exec-hermes.md §0` (usage_pricing + insights rows), `exec-harness.md §4f` (dual-path fitness).
+**Implementation:** `agent/billing/usage_pricing.py` + `agent/billing/insights.py`. Hermes-port from `_ref/hermes-agent/agent/usage_pricing.py` (687 → 180 LOC) and `_ref/hermes-agent/agent/insights.py` (768 → 230 LOC).
 
 **Pipeline:**
-1. `llm_node.py` post-LLM-call: extract `prompt_tokens`/`completion_tokens`/`cached_tokens`/`reasoning_tokens` → build `CanonicalUsage` dataclass
-2. `estimate_usage_cost(usage, model, provider) -> (Decimal, CostStatus)`:
-   - **Primary**: `litellm.get_model_info(model)` cost-fields (input/output rate per token, prompt-cache-discount)
-   - **Fallback**: hermes-Snapshot-dict for LiteLLM-unknown models
-3. Emit as span-attributes: `llm.cost_usd`, `llm.cost_status`, `llm.prompt_cache_tokens`, `ratelimit.cache.saved_usd`
-4. `InsightsEngine(db: AsyncSession)` reads `agent.spans` JSONB events (NOT SQLite like hermes) — aggregates per-user per-day
-5. **Dual-path**:
-   - REST endpoint `GET /api/v1/billing/insights?user_id=X&days=7` → Control-UI
-   - `agent/harness/scorer.py` imports `InsightsEngine.cost_for_session()` → meta-harness fitness (exec-harness §4f)
-6. **Tier-1 redact** applied in aggregation loop before API-serialization (Contrarian-2 MAJOR-4 fix)
 
-Slim-port philosophy: `CanonicalUsage` dataclass kept 1:1 from hermes (good ergonomic), `estimate_usage_cost` logic ~50 LOC, no OAuth-token-refresh (hermes-CLI-specific), no SQLite-state (hermes-CLI-specific).
+1. `llm_node.py` post-LLM-call: `usage_from_litellm(response.usage.model_dump())` → `CanonicalUsage` (normalises OpenAI/Anthropic/Google usage shapes including cache-read/cache-write/reasoning-tokens).
+2. `estimate_usage_cost(model, usage) -> CostResult(amount_usd, status, source, notes)`:
+   - **Primary**: `agent.llm.model_metadata.get_model_info(model)` (LiteLLM wrapper) → `input_cost_per_token` / `output_cost_per_token` / `cache_read_input_token_cost` / `cache_creation_input_token_cost`. Zero-token requests return `Decimal(0)` cleanly.
+   - **Fallback**: minimal static snapshot (`claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5`) — only for cases where LiteLLM has not yet shipped metadata for a new flagship. The moment the snapshot grows past ~20 entries, push changes upstream to LiteLLM instead.
+3. Emits span-attributes on `agent.turn` span: `llm.input_tokens`, `llm.cache_read_tokens`, `llm.cache_write_tokens`, `llm.reasoning_tokens`, `llm.cost_status` ∈ {`estimated`, `included`, `unknown`}, `llm.cost_usd` (str-encoded Decimal), `llm.cost_source` ∈ {`litellm`, `snapshot`, `none`}.
+4. `InsightsEngine(conn)` reads `agent.spans` JSONB (exec-18 Migration 017) — **never SQLite like hermes**. Aggregates per-user per-day via `generate(user_id, days=7)`.
+5. **Dual-path** both consume the same aggregation:
+   - REST endpoint (exec-16, TODO next phase): `GET /api/v1/billing/insights?user_id=X&days=7` → Control-UI
+   - `agent/harness/scorer.py::_estimate_cost` delegates to `estimate_usage_cost` for meta-harness fitness (exec-harness §4f)
+6. **Tier-1 redact** applied per-span inside `InsightsEngine._aggregate` BEFORE pulling billing fields — prevents leaking custom-pattern content via billing API if Tier-2 async consumer is lagging.
 
-## 3.1 model_metadata wrapper — LiteLLM-proxy (Phase-B P4 stub)
+**InsightsReport shape:** `{user_id, since, until, total_sessions, total_turns, total_input_tokens, total_output_tokens, total_cache_read_tokens, total_cache_write_tokens, total_cost_usd, cost_status ∈ {known, partial, unknown}, per_model_cost, per_model_tokens}`. JSON-serialisable via `to_json()`.
 
-**Status:** STUB — filled in exec-hermes Phase-B P4.
-**Cross-ref:** `exec-hermes.md §0` (model_metadata row), `exec-context.md §13`, plan §P4.
+**Slim-port philosophy:** `CanonicalUsage` kept 1:1 from hermes (excellent ergonomic), estimate-cost logic ~50 LOC, no OAuth-token-refresh (hermes-CLI-specific), no SQLite-state (spans are the source of truth).
 
-Hermes-port: `_ref/hermes-agent/agent/model_metadata.py` (1116 LOC → 80 LOC wrapper).
+## 3.1 model_metadata wrapper — LiteLLM-proxy (Phase-B P4 DONE)
 
-New `agent/llm/model_metadata.py`:
-- `get_model_info(model_id) -> ModelInfo` — wrapper über `litellm.get_model_info()`, in-memory TTL-cached 1h
-- `normalize_model_id(raw) -> str` — `"claude-sonnet-4-6"` ↔ `"anthropic/claude-sonnet-4-6"` canonical form
-- `get_model_context_window(model) -> int` — replaces 3 hardcoded locations in the repo
-- **No sync `requests.get()`** (hermes anti-pattern) — LiteLLM caches model-info internally
+**Status:** DONE — 2026-04-20.
+**Cross-ref:** `exec-hermes.md §0` (model_metadata row), `exec-context.md §13`.
+**Implementation:** `agent/llm/model_metadata.py`. Hermes-port from `_ref/hermes-agent/agent/model_metadata.py` (1116 LOC → 110 LOC wrapper).
 
-Phase-B P4 replaces these three hardcoded lookups:
-1. `middleware/summarization.py:35` — `MODEL_MAX_TOKENS: dict[str, int]` → function call
-2. `harness/scorer.py:24` — `MODEL_COST_PER_MTOK: dict[str, float]` → `estimate_usage_cost()` call
-3. `context/context_engine.py` — `ContextEngineConfig.default_window: int = 200_000` → dataclass-method `window_for_model(model)` + fallback
+Public API:
+
+- `get_model_info(model) -> dict | None` — wrapper around `litellm.get_model_info(...)` with 1-hour TTL cache keyed by normalised model id. Returns LiteLLM's full ModelInfo dict (`max_input_tokens`, `max_tokens`, `input_cost_per_token`, `output_cost_per_token`, `cache_read_input_token_cost`, `cache_creation_input_token_cost`, etc.) or `None` if unknown.
+- `normalize_model_id(raw) -> str` — `"openai:gpt-4o"` → `"openai/gpt-4o"`, strips whitespace, leaves provider/model forms intact.
+- `get_model_context_window(model) -> int` — prefers `max_input_tokens`, falls back to `max_tokens`, finally `DEFAULT_CONTEXT_WINDOW = 200_000`.
+- `reset_cache()` — test hook.
+
+**No sync `requests.get()`** (hermes anti-pattern) — LiteLLM caches model-info internally; our TTL is a thin process-local layer on top so the same ID resolved twice in one minute doesn't re-run LiteLLM's dispatch.
+
+Phase-B P4 replaced three hardcoded lookups:
+
+1. `middleware/summarization.py` — `MODEL_MAX_TOKENS: dict[str, int]` removed → `get_model_context_window(model)` at call site in `should_summarize` + `apply_context_management`.
+2. `harness/scorer.py` — `MODEL_COST_PER_MTOK: dict[str, float]` removed → `_estimate_cost` now delegates to `estimate_usage_cost` (60/40 input/output split as rough heuristic since audit events don't preserve the split; exact costs still available via `InsightsEngine.cost_for_session`).
+3. `graph/runner.py` — `_FALLBACK_MODEL_MAX_TOKENS` dict + `_fallback_model_max_tokens()` helper (introduced in P1 as a transitional shim) deleted; runner now calls `get_model_context_window(ctx.model)` directly in `_prepare_messages` for the ContextEngine stage-lookup.
 
 ## 2.C CredentialPool call-site (Phase-B P1 DONE)
 
@@ -817,3 +822,4 @@ Phase-B P4 replaces these three hardcoded lookups:
 | Date | Change |
 |---|---|
 | 2026-04-20 | exec-hermes Phase-B P1 stubs §2.C (CredentialPool call-site DONE `09988de`). Phase-B P4 stubs §2.10 (Billing Ledger) + §3.1 (model_metadata wrapper) added. |
+| 2026-04-20 | Phase-B P4 DONE. `agent/billing/usage_pricing.py` (CanonicalUsage + LiteLLM-primary estimate_usage_cost + snapshot fallback), `agent/billing/insights.py` (InsightsEngine reading agent.spans, dual-path REST + harness, Tier-1 redact in aggregation), `agent/llm/model_metadata.py` (LiteLLM wrapper + 1h TTL cache). Cost span-attributes now emitted on every agent.turn. Three hardcoded model-lookup sites replaced (summarization, scorer, runner). 24 new unit tests. |

@@ -381,9 +381,9 @@ Fehlende Arbeit:
 
 ---
 
-## 4f. Fitness-scoring via InsightsEngine (Phase-B P4 stub)
+## 4f. Fitness-scoring via InsightsEngine (Phase-B P4 DONE)
 
-**Status:** STUB — filled in exec-hermes Phase-B P4.
+**Status:** DONE — 2026-04-20.
 **Cross-ref:** `exec-hermes.md §0` (insights.py row, dual-path), `exec-16.md §2.10`, plan `~/.claude/plans/ja-mach-explore-daf-r-glimmering-gizmo.md §P4`.
 
 P4 adds `agent/billing/insights.py` (port of `_ref/hermes-agent/agent/insights.py`) with **dual-path architecture**:
@@ -398,7 +398,7 @@ P4 adds `agent/billing/insights.py` (port of `_ref/hermes-agent/agent/insights.p
 
 Same `CanonicalUsage` data, same `estimate_usage_cost()` function, different aggregation windows + surfaces.
 
-**Replace hardcoded pricing in `scorer.py:24`:** `MODEL_COST_PER_MTOK: dict[str, float]` → `estimate_usage_cost(usage, model, provider)` call. Ditch the 5-model snapshot — LiteLLM covers 50+ models.
+**Replace hardcoded pricing in `scorer.py`:** `MODEL_COST_PER_MTOK` dict removed. `_estimate_cost(model, total_tokens)` now delegates to `estimate_usage_cost` from `agent/billing/usage_pricing.py`. Since audit-events only preserve `total_tokens` (not the input/output split), the scorer applies a 60/40 heuristic — exact costs are still available via `InsightsEngine.cost_for_session(session_id)` which aggregates spans directly. If LiteLLM has no data AND the model isn't in the snapshot, the scorer falls back to `DEFAULT_COST_PER_MTOK=3.0` for fitness-scoring continuity (production billing prefers `status='unknown'` instead).
 
 ## Changelog-append (Phase-B)
 

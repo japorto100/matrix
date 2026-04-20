@@ -31,13 +31,8 @@ SUMMARIZE_MODEL = os.environ.get(
 )  # aus ENV oder control-ui, kein hardcoded Default
 TOOL_RESULT_MAX_CHARS = int(os.environ.get("AGENT_TOOL_RESULT_MAX_CHARS", "2000"))
 
-# Token estimates (rough, fuer Threshold-Check)
-MODEL_MAX_TOKENS: dict[str, int] = {
-    "claude-sonnet-4-6": 200_000,
-    "claude-opus-4-6": 200_000,
-    "claude-haiku-4-5": 200_000,
-    "gpt-4o": 128_000,
-}
+# P4: replaced hardcoded MODEL_MAX_TOKENS dict with LiteLLM wrapper. Keep a
+# fallback constant for the (rare) case where LiteLLM has no metadata.
 DEFAULT_MAX_TOKENS = 200_000
 CHARS_PER_TOKEN = 4  # Rough estimate
 
@@ -140,7 +135,9 @@ async def summarize_old_messages(
 
 def should_summarize(messages: list[dict[str, Any]], model: str = "") -> bool:
     """Prueft ob Summarization noetig ist basierend auf Token-Threshold."""
-    max_tokens = MODEL_MAX_TOKENS.get(model, DEFAULT_MAX_TOKENS)
+    from agent.llm.model_metadata import get_model_context_window
+
+    max_tokens = get_model_context_window(model) if model else DEFAULT_MAX_TOKENS
     threshold = int(max_tokens * THRESHOLD_FRACTION)
     current = estimate_tokens(messages)
     return current > threshold
@@ -165,7 +162,9 @@ async def apply_context_management(
         messages = await summarize_old_messages(messages)
 
     # Stufe 3: Hard Truncate (Fallback)
-    max_tokens = MODEL_MAX_TOKENS.get(model, DEFAULT_MAX_TOKENS)
+    from agent.llm.model_metadata import get_model_context_window
+
+    max_tokens = get_model_context_window(model) if model else DEFAULT_MAX_TOKENS
     while estimate_tokens(messages) > max_tokens * 0.9 and len(messages) > 2:
         messages = messages[1:]  # Aelteste Message entfernen
 

@@ -290,6 +290,34 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
 
             get_rate_limiter().record_tokens(thread_id, token_usage)
 
+        # P4: emit cost + cache-hit span-attributes so InsightsEngine can
+        # aggregate without re-running LiteLLM per row. Fail-soft — a bad
+        # pricing lookup must never break the LLM turn.
+        try:
+            from agent.billing.usage_pricing import (
+                estimate_usage_cost,
+                usage_from_litellm,
+            )
+
+            usage_dict = (
+                response.usage.model_dump()
+                if hasattr(response.usage, "model_dump")
+                else None
+            )
+            canonical = usage_from_litellm(usage_dict)
+            cost = estimate_usage_cost(model, canonical)
+            span.set_attribute("llm.input_tokens", canonical.input_tokens)
+            span.set_attribute("llm.cache_read_tokens", canonical.cache_read_tokens)
+            span.set_attribute("llm.cache_write_tokens", canonical.cache_write_tokens)
+            span.set_attribute("llm.reasoning_tokens", canonical.reasoning_tokens)
+            span.set_attribute("llm.cost_status", cost.status)
+            if cost.amount_usd is not None:
+                span.set_attribute("llm.cost_usd", str(cost.amount_usd))
+            if cost.source:
+                span.set_attribute("llm.cost_source", cost.source)
+        except Exception:  # noqa: BLE001
+            logger.debug("cost-estimation failed", exc_info=True)
+
         elapsed = audit_duration(start)
         await audit_log(
             action=AuditAction.LLM_RESPONSE,
