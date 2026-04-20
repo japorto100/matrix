@@ -1,11 +1,39 @@
 # exec-14: PDDL Formale Plan-Validierung fuer Agent-Workflows
 
-**Datum:** 01.04.2026
+**Datum:** 01.04.2026 (paper-kopien ergänzt 2026-04-20)
 **Status:** Geplant
 **Abhaengig von:** exec-10 (Multi-Agent/LangGraph), exec-12 (Sandbox/Security)
 **Herkunft:** exec-12 Phase 5 (ausgelagert), `pddl_phase22b_delta.md`
 **Research-Basis:** arXiv `2603.12188` (ICAPS 2026), arXiv `2512.09629`, VeriPlan (CHI 2025),
 SagaLLM (VLDB 2025), L2P, GenePlan, NeSIG
+
+---
+
+## Lokale Paper-Kopien (2026-04-20)
+
+Alle kern- und weiteren zitierten papers sind jetzt in `docs/papers/` verfügbar für offline-review + reproduzierbarkeit:
+
+| arXiv ID | Titel | Pages | Lokale datei |
+|---|---|---|---|
+| 2603.12188 | Compiling Temporal Numeric Planning into Discrete PDDL+ (ICAPS 2026) — **Kern-paper das die spec getriggert hat** | 7 | `docs/papers/PDDL-2603.12188.pdf` |
+| 2512.09629 | End-to-end Planning Framework with Agentic LLMs and PDDL | 18 | `docs/papers/PDDL-2512.09629.pdf` |
+| 2502.17898 | VeriPlan: Integrating Formal Verification and LLMs into End-User Planning (CHI 2025) | 19 | `docs/papers/PDDL-2502.17898.pdf` |
+| 2503.11951 | SagaLLM: Context Management, Validation, and Transaction Guarantees for Multi-Agent LLM Planning (VLDB 2025) | 13 | `docs/papers/PDDL-2503.11951.pdf` |
+| 2404.11891 | LLMs Can Solve Real-World Planning Rigorously with Formal Verification Tools (NAACL 2025) | 50 | `docs/papers/PDDL-2404.11891.pdf` |
+| 2510.03469 | Bridging LLM Planning Agents and Formal Methods: A Case Study in Plan Verification | 4 | `docs/papers/PDDL-2510.03469.pdf` |
+| 1106.4561 | PDDL 2.1 original (Fox/Long 2003) — historische grundlage | 64 | `docs/papers/PDDL-1106.4561.pdf` |
+| 2505.22597 | HDDLGym: Multi-Agent HTN (2025) | 10 | `docs/papers/PDDL-2505.22597.pdf` |
+| 2509.13691 | SPAR: LLM → PDDL für Aerial Robotics | 8 | `docs/papers/PDDL-2509.13691.pdf` |
+| 2509.21543 | Plan2Evolve: LLM Self-Evolution via PDDL Domain Generation | 31 | `docs/papers/PDDL-2509.21543.pdf` |
+| 2505.12501 | ALAS: Stateful Multi-LLM Agent for Disruption Recovery | 36 | `docs/papers/PDDL-2505.12501.pdf` |
+
+**Nicht geportet** (URL-only verbleibend):
+- PDDL+ Wiki (planning.wiki), HDDL AAAI-paper (ojs.aaai.org), HDDL Extension (uni-ulm), RDDL Spec (anu.edu.au), LTL Wiki (hhu.de) — web-resources, keine arxiv-preprints
+- Zwei ACL-anthology surveys (2025.findings-acl.1291, 2025.acl-long.958) + Metagent-P (2025.findings-acl.1169) — auf bedarf downloaden
+- PDDL-INSTRUCT (pulkitverma.net) — workshop-pdf, auf bedarf
+- L2P + GenePlan + NeSIG — framework-code-refs, keine papers
+
+Cross-ref: `exec-14-DSPy.md` nutzt dieselbe `docs/papers/` struktur für DSPy-foundation-papers.
 
 ---
 
