@@ -369,22 +369,34 @@ scheduled_tasks` with `kind=routine` (see D-6 decision in exec-
 scheduler2.md) and get their own REST endpoints (P2b-2 / P2b-3 in
 that spec).
 
-### 8.1 Harness A/B backfill worker (new, Phase-2 scope)
+### 8.1 Harness A/B backfill worker — **DONE** (2026-04-20, commit `f027e8f`)
 
-**Status:** Consumer-TODO — scheduler infra exists (River), worker code not yet written.
+**Status:** Implemented. 4th infra-handler alongside health-ping, memory-prune, metric-rollup.
 **Cross-ref:** `exec-harness.md §4g.4`.
 
-Phase-C (2026-04-20) shipped the A/B dispatcher (`agent/runners/dispatcher.py`) which INSERTs rows into `agent.ab_experiments` with `harness_fitness_score` NULL. `agent/harness/scorer.py::backfill_ab_experiment_fitness` fills that column when `score_session(thread_id)` is invoked — but nobody calls it automatically today.
+**Problem solved:** Phase-C dispatcher (`agent/runners/dispatcher.py`) INSERTs rows into `agent.ab_experiments` with `harness_fitness_score` NULL. `agent/harness/scorer.py::backfill_ab_experiment_fitness` fills that column when `score_session(thread_id)` is invoked — but before this worker nobody called it automatically so the column stayed NULL and A/B analysis was blind.
 
-This is a **periodic backfill worker** that belongs in `internal/scheduler/handlers/`:
+**Implementation:**
 
-* **Trigger:** cron `*/15 * * * *` (every 15 min) — tunable via Phase-2 admin-surface.
-* **Query:** `SELECT thread_id FROM agent.ab_experiments WHERE finished_at IS NOT NULL AND harness_fitness_score IS NULL LIMIT 200`.
-* **Action:** POST to a new internal endpoint `/admin/harness/score-session` (lives in python-backend, not go-appservice — scorer is Python) with `{thread_id}`; endpoint calls `score_session(thread_id)` which internally dispatches the backfill UPDATE.
-* **Idempotency:** natural — the UPDATE only sets the column when fitness is computable; re-running on an already-scored row just re-UPDATEs the same value.
-* **Scope:** add as Phase-2c item P2c-5 (new), or inline under P2c-4 "harness-eval" if preferred — that item was originally for full harness evaluation runs, this is the lighter periodic-scorer variant that's a strict prerequisite for any A/B analysis.
+* **Go worker** (`go-appservice/internal/scheduler/workers.go`): `HarnessBackfillArgs` + `HarnessBackfillWorker` + `HarnessBackfillClient` interface. Pattern mirrors `MemoryPruneWorker` — gracefully no-ops when client is nil.
+* **Go HTTP client** (`go-appservice/internal/scheduler/harness_client.go`, new): `HarnessBackfillHTTPClient` POSTs to `{AGENT_SERVICE_URL}/internal/harness/backfill` (default `http://localhost:8088`). 5-minute timeout, parses `{scored, skipped}` JSON response.
+* **Scheduler wiring** (`scheduler.go`): new `Config.HarnessBackfillSchedule` field (default `*/15 * * * *`), new constructor arg `HarnessBackfillClient`, `AddWorker` call + `PeriodicJob` entry.
+* **Server wiring** (`handler/server.go`): default-constructs `NewHarnessBackfillHTTPClient("")` so the worker is active out-of-the-box.
+* **Python endpoint** (`python-backend/agent/app.py`): `POST /internal/harness/backfill` queries `agent.ab_experiments WHERE harness_fitness_score IS NULL AND finished_at IS NOT NULL` (distinct thread_id, LIMIT `HARNESS_BACKFILL_LIMIT` default 200), calls `score_session(thread_id)` per row, returns `{scored, skipped}`. 50ms drain before return so subsequent polls don't see stragglers-in-flight.
 
-Without this worker the A/B experiment table accumulates rows with no quality signal. The dispatcher is shipped; the consumer is the last blocker for end-to-end A/B data flow.
+**Idempotency:** natural — UPDATE only writes when fitness is computable; re-running on an already-scored row re-UPDATEs the same value.
+
+**Verify gates (commit `f027e8f`):**
+- `go build -tags goolm ./...` clean
+- `go test -tags goolm ./...` all packages pass (inkl. `internal/scheduler`)
+- `golangci-lint run --build-tags=goolm ./...` 0 issues
+- `pytest tests/agent/` 275 pass, 0 regressions
+- `ruff check` clean
+
+**Open TODOs** (nicht blocker für data flow, siehe exec-harness §4g.4):
+- `harness_eval_id` wiring wenn scorer im meta-harness-eval-kontext läuft
+- Control-UI Pareto dashboards
+- Fitness-weights tuning via harness-self-proposal
 
 ---
 
