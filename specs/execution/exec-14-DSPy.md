@@ -27,13 +27,27 @@ Alle foundation- + comparison-papers sind jetzt in `docs/papers/` verfügbar fü
 - `2603.20667` REVERE — reflective evolution scientific workflows
 - (plus PDDL-side 2026-papers — siehe `exec-14-pddl-formal-planning.md §Lokale Paper-Kopien`)
 
-**Reading-reihenfolge für team (entry → deep):**
-1. DSPy original (2310.03714) — programming-model, signatures/modules/compile
-2. MIPROv2 (2406.11695) — erste systematic optimizer (Bayesian, +13% vs manual)
-3. GEPA (2507.19457) — current SOTA reflective-pareto, aktives forschungs-frontier
-4. OPRO (2309.03409) — Google DeepMind's parallel-ansatz, verstehe wie die big-labs ähnlich denken
-5. TextGrad (2406.07496) — wichtig für "kein framework-lock-in" positionierung — auch Stanford, Zou-lab, direkt vergleichbar zu DSPy
-6. Prompt-Opt-Survey (2502.16923) — breitere literatur-situation
+**Reading-priorität für team** (P1 = must-read, P2 = wichtig für entscheidung, P3 = context/reference):
+
+### 🔴 P1 — foundational (muss jeder lesen bevor irgendwas)
+
+1. **DSPy original (2310.03714)** — programming-model, signatures/modules/compile. Ohne das versteht niemand was GEPA/MIPRO überhaupt optimieren.
+2. **GEPA (2507.19457, ICLR 2026 Oral)** — current SOTA, aktives forschungs-frontier, reflective-pareto-evolution. Das ist *der* optimizer auf den wir wenn-dann committen.
+
+### 🟡 P2 — entscheidungs-relevant (für D-1..D-6 review)
+
+3. **MIPROv2 (2406.11695, EMNLP 2024)** — bridge von DSPy-v1 zu GEPA, bayesian-optimization-variant. Nötig für verständnis der GEPA-improvements (+10%) und was heutige production-DSPy-deployments einsetzen.
+4. **TextGrad (2406.07496, Stanford/Zou-lab 2024)** — **direkter konkurrent zu DSPy**. Kritisch für **D-6 framework-choice decision** (DSPy vs TextGrad vs own-OPRO-style). Ohne dieses paper können wir Option B nicht evaluieren.
+
+### 🟢 P3 — context / reference (skimmbar, nicht blocker)
+
+5. **OPRO (2309.03409, Google DeepMind ICLR 2024)** — zeigt dass DSPy-style ideen im big-lab-research-stream auch laufen. Gut für "ist das auf dauer relevant?"-argument.
+6. **Prompt-Opt-Survey (2502.16923, 2025)** — breitere literatur-situation, 31 pages. Index zum nachschlagen, nicht linear-lesen.
+7. **REVERE (2603.20667, arxiv 2026-03)** — anwendungs-beispiel (scientific workflows). Domain-transfer-evidenz für DSPy-style reflective evolution.
+8. **LLMs-as-Planning-Formalizers-Survey (ACL 2025 findings)** — cross-reference zu PDDL-track, nur relevant wenn DSPy+PDDL integration (exec-14-DSPy Layer 2) angegangen wird.
+9. **Generalized-Planning-LLMs (2508.13876, 2025)** — dito, PDDL-cross-reference, optional.
+
+**Wenn knapp an zeit:** nur P1 (2 papers, ~53 pages total). Das reicht für sota-contrarian-input zu D-1..D-5. Für D-6 (framework-choice) muss zusätzlich P2 durch.
 
 Cross-ref: `exec-14-pddl-formal-planning.md` hat parallele "Lokale Paper-Kopien"-tabelle für PDDL-forschung (11 papers). Gleiche `docs/papers/` struktur.
 
