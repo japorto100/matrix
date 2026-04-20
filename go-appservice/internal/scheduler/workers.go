@@ -51,6 +51,17 @@ type MetricRollupArgs struct{}
 // Kind returns the job kind name.
 func (MetricRollupArgs) Kind() string { return "scheduler.metric_rollup" }
 
+// HarnessBackfillArgs triggers the Phase-C A/B-experiment scorer backfill
+// (exec-scheduler §8.1, exec-harness §4g.4). Calls the Python endpoint
+// /internal/harness/backfill which polls agent.ab_experiments for rows
+// with harness_fitness_score NULL and runs score_session() for each.
+// Idempotent — re-running on already-scored rows just re-UPDATEs the
+// same value.
+type HarnessBackfillArgs struct{}
+
+// Kind returns the job kind name.
+func (HarnessBackfillArgs) Kind() string { return "scheduler.harness_backfill" }
+
 // ── River Workers ────────────────────────────────────────────────────────
 
 // jsContext is the minimal NATS JetStream surface the workers need. Kept
@@ -250,6 +261,37 @@ func (w *MetricRollupWorker) Work(ctx context.Context, _ *river.Job[MetricRollup
 		"bucket_start", bucketStart,
 		"rows_upserted", len(seen))
 	return nil
+}
+
+// HarnessBackfillWorker calls the Python /internal/harness/backfill endpoint
+// which runs the Phase-C scorer against any agent.ab_experiments rows
+// whose harness_fitness_score is still NULL. Idempotent; cheap when no
+// rows need scoring.
+type HarnessBackfillWorker struct {
+	river.WorkerDefaults[HarnessBackfillArgs]
+
+	Client HarnessBackfillClient
+	Now    func() time.Time
+}
+
+// Work implements river.Worker.
+func (w *HarnessBackfillWorker) Work(ctx context.Context, _ *river.Job[HarnessBackfillArgs]) error {
+	if w.Client == nil {
+		slog.Warn("scheduler: harness_backfill skipped — no client wired")
+		return nil
+	}
+	n, err := w.Client.Backfill(ctx)
+	if err != nil {
+		return fmt.Errorf("harness backfill: %w", err)
+	}
+	slog.Info("scheduler: harness backfill completed", "rows_scored", n)
+	return nil
+}
+
+// HarnessBackfillClient is the narrow surface the worker needs. Returns
+// the number of rows that were scored so the worker can log visibility.
+type HarnessBackfillClient interface {
+	Backfill(ctx context.Context) (int, error)
 }
 
 // Helpers so tests can inject time.

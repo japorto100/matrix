@@ -232,6 +232,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 			scheduler.Config{},
 			&scheduler.BridgeJetStreamProvider{Bridge: natsBridge},
 			nil, // MemoryPruneClient wired when Lane C Python endpoint lands.
+			scheduler.NewHarnessBackfillHTTPClient(""), // exec-scheduler §8.1 / harness §4g
 		)
 		if schedErr != nil {
 			slog.Warn("Scheduler disabled — construction failed",

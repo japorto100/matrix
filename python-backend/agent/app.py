@@ -95,6 +95,77 @@ async def _ab_status() -> JSONResponse:
     return JSONResponse(await ab_status())
 
 
+@app.post("/internal/harness/backfill")
+async def _harness_backfill() -> JSONResponse:
+    """exec-scheduler §8.1 + exec-harness §4g.4 — scorer-backfill endpoint.
+
+    Polls ``agent.ab_experiments`` for rows where
+    ``harness_fitness_score IS NULL AND finished_at IS NOT NULL``, then
+    calls ``agent.harness.scorer.score_session(thread_id)`` for each.
+    The scorer's own fire-and-forget UPDATE path writes the fitness
+    score back into the same row.
+
+    Driven by the Go River worker ``HarnessBackfillWorker`` on a cron
+    (default every 15 minutes). Without this endpoint running the
+    ab_experiments column stays NULL and Phase-C A/B analysis is blind.
+
+    Returns ``{scored, skipped}``. Never raises — partial failure is
+    better than a worker-retry-storm.
+    """
+    import asyncio
+    import os
+
+    scored = 0
+    skipped = 0
+    limit = int(os.environ.get("HARNESS_BACKFILL_LIMIT", "200"))
+
+    try:
+        import psycopg
+
+        dsn = os.environ.get(
+            "HINDSIGHT_DB_URL",
+            "postgresql://postgres@localhost:5433/hindsight_dev",
+        )
+        async with await psycopg.AsyncConnection.connect(dsn) as conn:
+            rows = await (await conn.execute(
+                """
+                SELECT DISTINCT thread_id
+                FROM agent.ab_experiments
+                WHERE harness_fitness_score IS NULL
+                  AND finished_at IS NOT NULL
+                  AND thread_id IS NOT NULL
+                ORDER BY thread_id
+                LIMIT %s
+                """,
+                (limit,),
+            )).fetchall()
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse(
+            {"scored": 0, "skipped": 0, "error": str(exc)[:200]},
+            status_code=500,
+        )
+
+    if not rows:
+        return JSONResponse({"scored": 0, "skipped": 0})
+
+    from agent.harness.scorer import score_session
+
+    for (thread_id,) in rows:
+        try:
+            await score_session(thread_id)
+            scored += 1
+        except Exception:  # noqa: BLE001 — single-session fail must not abort batch
+            skipped += 1
+
+    # score_session dispatches the UPDATE as create_task — give it a
+    # moment to drain before returning so subsequent polls see the
+    # writes. Not a correctness requirement (next tick picks up any
+    # stragglers), just reduces false-positive "still NULL" on re-scan.
+    await asyncio.sleep(0.05)
+
+    return JSONResponse({"scored": scored, "skipped": skipped})
+
+
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)
 from agent.control import router as _control_router  # noqa: E402
 

@@ -96,6 +96,11 @@ type Config struct {
 	// MetricRollupSchedule is the cron expression for hourly
 	// aggregation into agent.metrics. Default: every hour at :05.
 	MetricRollupSchedule string
+
+	// HarnessBackfillSchedule is the cron expression for the Phase-C
+	// A/B-experiment scorer backfill (exec-scheduler §8.1). Calls Python
+	// /internal/harness/backfill. Default: every 15 minutes.
+	HarnessBackfillSchedule string
 }
 
 // Scheduler is the process-level scheduler entrypoint.
@@ -106,9 +111,10 @@ type Scheduler struct {
 	cronReg     *CronRegistry
 	watchCancel context.CancelFunc
 	watchDone   chan struct{}
-	cfg         Config
-	jsProvider  JetStreamProvider
-	pruneClient MemoryPruneClient
+	cfg            Config
+	jsProvider     JetStreamProvider
+	pruneClient    MemoryPruneClient
+	harnessClient  HarnessBackfillClient
 }
 
 // JetStreamProvider abstracts the path that produces the JetStream
@@ -120,7 +126,13 @@ type JetStreamProvider interface {
 }
 
 // New constructs a Scheduler. client is nil until Start() runs.
-func New(pool *pgxpool.Pool, cfg Config, js JetStreamProvider, prune MemoryPruneClient) (*Scheduler, error) {
+func New(
+	pool *pgxpool.Pool,
+	cfg Config,
+	js JetStreamProvider,
+	prune MemoryPruneClient,
+	harness HarnessBackfillClient,
+) (*Scheduler, error) {
 	if pool == nil {
 		return nil, fmt.Errorf("pool required")
 	}
@@ -139,12 +151,16 @@ func New(pool *pgxpool.Pool, cfg Config, js JetStreamProvider, prune MemoryPrune
 	if cfg.MetricRollupSchedule == "" {
 		cfg.MetricRollupSchedule = "5 * * * *" // every hour at :05
 	}
+	if cfg.HarnessBackfillSchedule == "" {
+		cfg.HarnessBackfillSchedule = "*/15 * * * *" // every 15 minutes
+	}
 	return &Scheduler{
-		pool:        pool,
-		store:       &PgStore{Pool: pool},
-		cfg:         cfg,
-		jsProvider:  js,
-		pruneClient: prune,
+		pool:          pool,
+		store:         &PgStore{Pool: pool},
+		cfg:           cfg,
+		jsProvider:    js,
+		pruneClient:   prune,
+		harnessClient: harness,
 	}, nil
 }
 
@@ -189,6 +205,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	river.AddWorker(workers, &HealthPingWorker{JS: js})
 	river.AddWorker(workers, &MemoryPruneWorker{PruneClient: s.pruneClient})
 	river.AddWorker(workers, &MetricRollupWorker{Pool: s.pool})
+	river.AddWorker(workers, &HarnessBackfillWorker{Client: s.harnessClient})
 
 	// Infra periodic jobs — seeded in Config so River runs them even if
 	// scheduled_tasks has no rows yet. They are NOT represented in
@@ -205,6 +222,10 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parse metric_rollup schedule: %w", err)
 	}
+	harnessSched, err := parseStandardSchedule(s.cfg.HarnessBackfillSchedule)
+	if err != nil {
+		return fmt.Errorf("parse harness_backfill schedule: %w", err)
+	}
 	periodics := []*river.PeriodicJob{
 		river.NewPeriodicJob(
 			healthSched,
@@ -219,6 +240,11 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		river.NewPeriodicJob(
 			rollupSched,
 			func() (river.JobArgs, *river.InsertOpts) { return MetricRollupArgs{}, nil },
+			&river.PeriodicJobOpts{},
+		),
+		river.NewPeriodicJob(
+			harnessSched,
+			func() (river.JobArgs, *river.InsertOpts) { return HarnessBackfillArgs{}, nil },
 			&river.PeriodicJobOpts{},
 		),
 	}
