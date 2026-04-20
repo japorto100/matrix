@@ -29,7 +29,7 @@ G  sandbox + security umbrella (exec-12 + exec-security)
 H  LLM gateway + observability + harness + hermes (exec-16 + exec-17 + exec-harness + exec-hermes + exec-a2fm + exec-eval)
 I  schema + scheduler (exec-18 + exec-scheduler + scheduler2)
 J  Control-UI cross-cutting (frontend_merger/src/features/control/ — 15 tabs spanning clusters E/F/G/H/Welle-3)
-K  planning + skill-system (exec-14 PDDL + exec-skills + plan-skill)
+K  planning + skill-system (exec-14 PDDL + exec-14-DSPy + exec-skills + plan-skill)
 ```
 
 Archiviert + nicht-scope: exec-02/03/04/07/08/13/19 + merge-chat + transformers-js-SUPERSEDED. Details in §2.
@@ -207,19 +207,21 @@ Dateien im directory:
 
 ---
 
-### Cluster K — Planning + skill-system (exec-14, exec-skills, plan-skill)
+### Cluster K — Planning + skill-system + DSPy-optimization-layer
 
-**Warum als eigenes cluster:** matrix-plan-mode ist **zwei-schichtig**:
+**Warum als eigenes cluster:** matrix-plan-mode ist **drei-schichtig**:
 
 1. **Skill-layer (Stufe 0, DONE 2026-04-20):** `agent/skills/global/plan/SKILL.md` — domain-agnostic, prompt-injection-basiert, für einfache planning-tasks. Gehört zu `exec-skills`.
 2. **Formal-layer (Stufe 1, planned):** `exec-14-pddl-formal-planning` — PDDL-basierte formal-plan-validierung. Für irreversible operationen (trading-orders, data-migrations, sandbox-escalations). Nicht das gleiche wie die skill-variante.
+3. **Optimization-layer (Stufe 2, Draft/Research):** `exec-14-DSPy` — DSPy-compiled NL→PDDL translator + self-improving optimizer (GEPA/MIPRO). Baut auf layer 1. Forschungs-research-trend 2025/26 "hybrid neuro-symbolic planning". DSPy spannt auch in exec-harness / exec-skills / exec-a2fm — umbrella-spec.
 
 **Dateien:**
 - `exec-14-pddl-formal-planning` — Geplant (PDDL-based plan validation)
+- `exec-14-DSPy` — Draft/Research (DSPy framework evaluation, 5 foundation-papers in `docs/papers/`)
 - `exec-skills` — Evaluation / Phase 1 implementierbar (plan-skill landed)
 - `agent/skills/global/plan/SKILL.md` — landed skill-definition
 
-**Verify-path:** skill-layer ist live — testen durch chat-prompt ("plane wie ich X angehe"). PDDL-layer braucht exec-14 phase-planning zuerst.
+**Verify-path:** skill-layer ist live — testen durch chat-prompt ("plane wie ich X angehe"). PDDL-layer braucht exec-14 phase-planning. DSPy-layer hat sota-contrarian stakes=high review als gate vor jeder impl (5 decisions D-1..D-5).
 
 ---
 
