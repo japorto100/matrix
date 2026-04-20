@@ -14,7 +14,29 @@ Dieses doc ist **ein cluster-index mit priorität**, keine to-do-liste. Konkrete
 
 ---
 
-## 1. Die 9 cluster
+## 1. Die 11 cluster (A–K)
+
+Reihenfolge:
+
+```
+A  frontend-merger branch-exec  (landed, live-smoke offen)
+B  matrix-chat core (exec2-01..04)
+C  NATS + E2EE pipeline (exec-05/05b/05c)
+D  agent-chat integration (exec-06)
+E  protocols + multi-agent (exec-09 + exec-10)  ← A2A live-test heiss
+F  memory + memory-control-ui (exec-11 + exec-15 + exec-memory)
+G  sandbox + security umbrella (exec-12 + exec-security)
+H  LLM gateway + observability + harness + hermes (exec-16 + exec-17 + exec-harness + exec-hermes + exec-a2fm + exec-eval)
+I  schema + scheduler (exec-18 + exec-scheduler + scheduler2)
+J  Control-UI cross-cutting (frontend_merger/src/features/control/ — 15 tabs spanning clusters E/F/G/H/Welle-3)
+K  planning + skill-system (exec-14 PDDL + exec-skills + plan-skill)
+```
+
+Archiviert + nicht-scope: exec-02/03/04/07/08/13/19 + merge-chat + transformers-js-SUPERSEDED. Details in §2.
+
+Welle-3 research specs (nach K): exec-20, exec-ebm, exec-world-model, exec-personal-kb, exec-openworldlib, exec-media-ingestion, exec-notifications, exec-rust, exec-transformersjs, exec-context.
+
+
 
 ### Cluster A — Frontend Merger Branch-Exec (erste priorität)
 
@@ -152,27 +174,94 @@ Dateien im directory:
 
 ---
 
-## 2. Nach cluster I — weitere specs (Welle 3)
+### Cluster J — Control-UI (cross-cutting über clusters E/F/G/H/Welle-3)
 
-Nach den 9 clustern (A–I) bleiben research/planung-specs:
+**Wichtiger struktur-punkt:** control-UI ist **kein einzelner spec**. Die `frontend_merger/src/features/control/` hat mehrere tabs, jeder gehört einem anderen backend-spec. Cluster J ist die **frontend-sammelstelle** — die tabs müssen zusammen verify-tested werden, sonst fehlt integrationsübersicht.
 
-- `exec-14-pddl-formal-planning` — Geplant (PDDL ist matrix's echte plan-mode-antwort, nicht hermes-skill-port)
-- `exec-20-mcp-manager` — Evaluation
-- `exec-ebm` — Evaluation / Prototyp (energy-based scoring)
-- `exec-world-model` — Planung (global knowledge layers)
+| Tab | Owning backend-spec | Backend-status | Frontend-status |
+|---|---|---|---|
+| `OverviewTab` | cross-cut, kein dedicated spec | — | Phase-1 done |
+| `MemoryTab` (+ KGGraphPage) | `exec-15-memory-control-ui` (cluster F) | Phase 1-3 frontend done, backend-wiring pending | Phase 1-3 done |
+| `ApiModelsTab` + `ProviderCard` + `ModelExplorer` | `exec-16-llm-provider-gateway` (cluster H) | In Progress | Phase-1 done |
+| `EditApiKeyModal` | `exec-16 §2.7` credentials encryption | DONE | Phase-1 done |
+| `UtilityModelsSection` | `exec-16 §2.13` utility models | DONE | Phase-1 done |
+| `SpendDashboard` | `exec-16 §2.10` billing insights | Phase-B P4 DONE | Phase-1 done, data-flow needs Phase-C scorer (DONE) |
+| `AuditTab` | `exec-17-observability-harness-traces` (cluster H) | Infra live, spec lags | Phase-1 done |
+| `SessionsTab` | `exec-18` + exec-hermes `agent.sessions` | DONE | Phase-1 done |
+| `AgentsTab` | `exec-10-multi-agent` (cluster E) | Phase 1-4 impl, verify pending | Phase-1 done |
+| `SkillsTab` | `exec-skills` | Evaluation / Phase 1 impl | Phase-1 done |
+| `SandboxTab` | `exec-12-sandbox-security` (cluster G) | Phase 1+2 impl | Phase-1 done |
+| `PermissionsTab` | `exec-12 §permissions` | cross-cut | Phase-1 done |
+| `SecurityTab` | `exec-security` (cluster G) | Draft (Phase-B P2 creation) | Phase-1 done |
+| `ToolsTab` | cross-cut tool-registry (no owner-spec) | — | Phase-1 done |
+| `McpTab` | `exec-20-mcp-manager` (Welle 3) | Evaluation | Phase-1 done |
+| `SystemTab` | cross-cut platform (no owner-spec) | — | Phase-1 done |
+| `A2aTab` | `exec-10 §A2A` + `agent/a2a/agent_card.py` | Phase 4 impl, A2A never live-tested | Phase-1 done |
+| `ContextTab` | `exec-context` | Evaluation | Phase-1 done |
+
+**Warum als eigenes cluster:** each backend-spec updates their own piece, aber der **end-to-end-control-UI-walk-through** (user navigates all tabs, each shows real data from its backend) ist eine eigene verify-dimension die niemand owned. Ohne diesen walk-through fällt auf dass AuditTab leer ist wenn exec-17 infra nicht seedet, SkillsTab leer wenn exec-skills Phase-1 nicht lebt, etc.
+
+**Verify-path:** nach clustern B-H einmal **control-UI E2E-smoke** — durch jeden tab navigieren, datenquelle überprüfen. Items mit "no data" → owning-spec issue.
+
+**Code-ort:** `frontend_merger/src/features/control/ControlPage.tsx` + `ControlTopNav.tsx` + `components/*Tab.tsx` (15 tabs).
+
+---
+
+### Cluster K — Planning + skill-system (exec-14, exec-skills, plan-skill)
+
+**Warum als eigenes cluster:** matrix-plan-mode ist **zwei-schichtig**:
+
+1. **Skill-layer (Stufe 0, DONE 2026-04-20):** `agent/skills/global/plan/SKILL.md` — domain-agnostic, prompt-injection-basiert, für einfache planning-tasks. Gehört zu `exec-skills`.
+2. **Formal-layer (Stufe 1, planned):** `exec-14-pddl-formal-planning` — PDDL-basierte formal-plan-validierung. Für irreversible operationen (trading-orders, data-migrations, sandbox-escalations). Nicht das gleiche wie die skill-variante.
+
+**Dateien:**
+- `exec-14-pddl-formal-planning` — Geplant (PDDL-based plan validation)
+- `exec-skills` — Evaluation / Phase 1 implementierbar (plan-skill landed)
+- `agent/skills/global/plan/SKILL.md` — landed skill-definition
+
+**Verify-path:** skill-layer ist live — testen durch chat-prompt ("plane wie ich X angehe"). PDDL-layer braucht exec-14 phase-planning zuerst.
+
+---
+
+## 2. Archive — abgehakt, nicht mehr laufend
+
+Vollständigkeitshalber (user-frage 2026-04-20):
+
+- `archive/exec-02-missing-features.md` — alte phase
+- `archive/exec-03-review-fixes.md` — alte review-runde
+- `archive/exec-04-ui-rework.md` — superseded durch exec2-03
+- **`archive/exec-07-refactoring.md`** — historical refactor-slice, done
+- **`archive/exec-08-agent-backend-voice.md`** — voice-integration merged in exec-06 / exec-media-ingestion
+- `archive/exec-13-ui-kg-extensions.md` — wörtlich "Archiviert" (content in exec-15 / exec-memory aufgegangen)
+- `archive/exec-19-devstack-consolidation.md` — content verteilt auf exec-media-ingestion + exec-transformersjs + `claude-merge-frontend-chat-ui-2OqmH/`
+- `archive/exec-merge-chat-SUPERSEDED.md` — merged via branch-exec 2026-04-18
+- `archive/exec-transformers-js-SUPERSEDED.md` — duplicate, kanonischer spec ist `exec-transformersjs.md`
+- `archive/opensandbox-gemini-usecases.txt` — reference-material
+- `archive/pddl_phase22b_delta.md` — delta-log, content in exec-14 aufgegangen
+
+**Damit: exec-07, exec-08, exec-13, exec-19 alle archiviert und nicht mehr scope.** exec-10, exec-14, exec-15 sind aktiv in clusters E, K, F respectively.
+
+---
+
+## 3. Nach cluster K — weitere specs (Welle 3 research/planung)
+
+Nach clustern A–K bleiben research/planung-specs (NICHT in haupt-flow, aber aktiv):
+
+- `exec-20-mcp-manager` — Evaluation (→ ControlUI McpTab, cluster J)
+- `exec-ebm` — Evaluation / Prototyp (energy-based scoring, kommt zu exec-harness dazu)
+- `exec-world-model` — Planung (global knowledge layers — evidence/claims/adjudication)
 - `exec-personal-kb` — Planung (user-curated KB)
 - `exec-openworldlib` — Evaluation
 - `exec-media-ingestion` — Draft (transferred from archived exec-19)
 - `exec-notifications` — Draft
 - `exec-rust` — Portiert / Integration geplant
-- `exec-skills` — Evaluation / Phase 1 implementierbar (plan-skill landed 2026-04-20)
-- `exec-transformersjs` — Entwurf — primary title-gen owner
-- `exec-context` — Evaluation / operativer owner
-- `exec-blocking` — sammelstelle C1–C11
+- `exec-transformersjs` — Entwurf — primary title-gen owner (cluster D tail)
+- `exec-context` — Evaluation / operativer owner (cross-cut mit cluster H)
+- `exec-blocking` — sammelstelle C1–C11 (living)
 
 ---
 
-## 3. Status-map — wo steht jeder spec jetzt
+## 4. Status-map — wo steht jeder spec jetzt
 
 **DONE (✅) — keine laufende arbeit:**
 - `exec-postgres-tuning-2026-04-17` ✅ implementiert
@@ -204,7 +293,7 @@ Nach den 9 clustern (A–I) bleiben research/planung-specs:
 
 ---
 
-## 4. Welle-1-playbook — wie ein cluster "abhaken"
+## 5. Cluster-playbook — wie ein cluster "abhaken"
 
 Für cluster A (Frontend Merger) und B (Matrix Chat Core) — alles andere folgt dem gleichen pattern:
 
@@ -214,21 +303,23 @@ Für cluster A (Frontend Merger) und B (Matrix Chat Core) — alles andere folgt
    - Python: `pytest` für das modul
    - Go: `go test -tags goolm ./internal/<module>/...`
 3. **Integration-smoke** — spezifisch für dieses cluster:
-   - Cluster A: `bun run build` clean + playwright-smoke green
+   - Cluster A: `bun run build` clean + playwright-smoke green (done auf branch) + 6 live-smoke items aus VERIFY-GATES.md §177-186 mit user's lokaler .env
    - Cluster B: `exec2-04` gate-liste durchgehen, tuwunel-compose + matrix-chat-login + text-send + encryption-handshake
    - Cluster C: A4 E2E-test run (publish → subscribe → decrypt)
    - Cluster D: agent-chat SSE-roundtrip (hello → stream → tool-call → response)
-   - Cluster E: A2A live-test (agent A delegates to agent B via AgentCard)
+   - Cluster E: A2A live-test (agent A delegates to agent B via AgentCard) + exec-09 generative-UI gates
    - Cluster F: memory-control-ui backend wiring (list sessions / read KG / search episodes)
    - Cluster G: sandbox-decision + skills-guard-drawer
    - Cluster H: smart-routing §2.D walk-through; C9 ADR; §4g.4 open TODOs
    - Cluster I: exec-18 decision; scheduler Phase-2 scoping
+   - **Cluster J: E2E control-UI walk-through** — alle 15 tabs durchnavigieren, prüfen welche leer sind. Leere tabs → zurück ins owning-cluster (E/F/G/H). Dieser schritt findet integration-lücken die kein einzelcluster sieht.
+   - Cluster K: plan-skill chat-smoke ("plane wie ich X angehe"); exec-14 PDDL scoping als Welle-3-follow-up
 4. **Commit** alle cluster-änderungen als **ein commit** (batch), nicht einzelnen pro file. Status-blocks im spec + verify-gates-checkmarks.
 5. **Move** zum nächsten cluster.
 
 ---
 
-## 5. Referenz-links
+## 6. Referenz-links
 
 - Aktuelle migrations (ground truth): `python-backend/alembic/versions/001–026`
 - Spec-audit 2026-04-20: commit `f518e5d`
@@ -237,9 +328,10 @@ Für cluster A (Frontend Merger) und B (Matrix Chat Core) — alles andere folgt
 
 ---
 
-## 6. Changelog
+## 7. Changelog
 
 | Datum | Änderung |
 |---|---|
 | 2026-04-20 | Erstversion als 3-wellen-plan (verify-gates → Phase-C tail → Welle-3-planung). |
 | 2026-04-20 | **Restrukturiert als 9-cluster-flow** (A frontend-merger → B matrix-chat → C NATS → D agent-chat → E multi-agent → F memory → G sandbox → H LLM+observability+harness → I schema+scheduler → Welle-3). Cluster-reihenfolge orientiert an feature-abhängigkeiten, nicht an spec-nummern. |
+| 2026-04-20 | **Erweitert auf 11 cluster** nach user-feedback: Cluster J (Control-UI cross-cutting über 15 tabs spanning E/F/G/H/Welle-3) + Cluster K (Planning zwei-schichtig: plan-skill Stufe 0 DONE + exec-14 PDDL Stufe 1 planned) als eigene cluster. Archive-section explizit gelistet (exec-07/08/13/19 alle archiviert). exec-10 + exec-15 prominenter verortet. |
