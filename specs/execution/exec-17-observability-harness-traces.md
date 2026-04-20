@@ -3,6 +3,9 @@
 **Datum:** 10.04.2026
 **Status:** Draft
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-16 (LLM Provider Gateway)
+
+> **Deferred (2026-04-20):** Tracing (`agent.spans`) + Audit (`agent.audit_events`) bleiben bewusst parallel — ADR + cross-write-cleanup (~50 LOC) lebt in `exec-blocking.md §C9`. Beide stores haben unterschiedliche consumers, retention-policies, query-patterns. Merge ist NICHT geplant; heute beide emittieren bei LLM-call + tool-call (double-write), das muss weg.
+
 **Referenzen:**
 - Meta-Harness Paper: https://arxiv.org/html/2603.28052v1 (Stanford/KRAFTON/MIT)
 - Meta-Harness Artifact: https://github.com/stanford-iris-lab/meta-harness-tbench2-artifact

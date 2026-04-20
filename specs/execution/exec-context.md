@@ -5,6 +5,8 @@
 > Abgrenzung: **Nicht** Memory-Storage (Schichten, Stores, Hindsight vs MemPalace) — das ist [`exec-memory.md`](./exec-memory.md) + `main_docs/root/MEMORY_ARCHITECTURE.md`. Hier: **was zur Laufzeit in welcher Reihenfolge in den Prompt geht**, Token-Budget, **Compaction-Orchestrierung**, **Provider-/Engine-Caching**, und Anbindung an `context/merge.py` / `agent/llm_client.py`.
 > Root-Agent-Referenzen: `main_docs/root/AGENT_ARCHITECTURE.md`, `main_docs/root/AGENT_RUNTIME_ARCHITECTURE.md`, `main_docs/root/AGENT_SECURITY.md`, `main_docs/root/AGENT_HARNESS.md`
 
+> **Deferred (2026-04-20):** Per-model ContextEngine thresholds (heute global 80/85/95) → `exec-blocking.md §C10`. Hardcoded dict rejected — richtiger pfad ist meta-harness-regression (exec-harness §4g) sobald Phase-C A/B-data fließt. `agent/llm/model_metadata.py` gibt weiterhin nur `context_window` aus LiteLLM, keine thresholds.
+
 ---
 
 ## 0. Warum ein eigenes Exec

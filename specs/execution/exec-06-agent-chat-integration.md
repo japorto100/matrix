@@ -6,8 +6,11 @@
 **Zusammengefuehrt aus:** exec-06 (Agent Chat UI) + exec-08 offene Items (Verify-Gates)
 
 > **Restructuring 10.04.2026:** Phase 1 (Package Setup) + Phase 6 (Dual-Panel + Layout)
-> verschoben nach `exec-merge-chat.md`. Dieser Slice fokussiert auf Shared Components
-> und Verify-Gates.
+> verschoben nach `exec-merge-chat.md` (→ 2026-04-20 nach `archive/exec-merge-chat-SUPERSEDED.md`
+> da in branch `claude/merge-frontend-chat-ui-2OqmH` realisiert).
+> Dieser Slice fokussiert auf Shared Components und Verify-Gates.
+
+> **Deferred (2026-04-20):** True token-streaming (SSE token-by-token statt batch-mit-SSE) lebt in `exec-blocking.md §C7`. Backend ruft heute `graph.ainvoke()` + sendet 1 × `TextDeltaPacket(final)`; AI-SDK-frontend handelt das als "streaming state" ohne token-stream zu sehen. Phase-D-entscheidung.
 
 ---
 

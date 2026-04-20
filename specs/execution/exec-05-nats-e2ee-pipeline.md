@@ -3,6 +3,8 @@
 **Datum:** 26.03.2026 (Review 30.03.2026, Implementation 30.03.2026)
 **Status:** Phase A+B implementiert — E2E-Test (A4) ausstehend
 
+> **Deferred (2026-04-20):** NATS JetStream für `MemoryManager.sync_turn` at-least-once delivery (Phase-B P1-ADR in `agent/graph/runner.py:444-456`) lebt in `exec-blocking.md §C8`. Heute fire-and-forget via `asyncio.create_task`; JetStream-pattern vorbereitet aber ungebaut bis messbarer memory-loss.
+
 ---
 
 ## Warum

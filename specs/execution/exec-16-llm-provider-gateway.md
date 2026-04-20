@@ -3,6 +3,9 @@
 **Datum:** 10.04.2026
 **Status:** In Progress
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-15 (control-ui ApiModelsTab)
+
+> **Phase-B carried-forward debt (2026-04-20):** Siehe `exec-blocking.md §C11` für die vier offenen items: (a) `agent.user_llm_settings.preferred_runner` column als hook für Phase-C dispatcher user-override, (b) CredentialPool multi-key-per-(user, provider) jenseits von `SingleKeyCredentialPool`, (c) InsightsEngine event-driven rollup, (d) MemPalace/Hindsight concrete `on_pre_compress` impls.
+
 **Referenzen:**
 - OpenRouter API: https://openrouter.ai/docs (Models, Pricing, Provider Routing)
 - LiteLLM Docs: https://docs.litellm.ai/docs/simple_proxy
