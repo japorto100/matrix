@@ -13,6 +13,7 @@ import { FilesOverviewTab } from "./components/FilesOverviewTab";
 import { FilesTopNav } from "./components/FilesTopNav";
 import { FilesUploadsTab } from "./components/FilesUploadsTab";
 import { FilesVideoTab } from "./components/FilesVideoTab";
+import { FilesPageCopilot } from "./FilesPageCopilot";
 
 export function FilesPage() {
 	const pathname = usePathname();
@@ -44,6 +45,7 @@ export function FilesPage() {
 
 	return (
 		<div className="flex h-full flex-col bg-background">
+			<FilesPageCopilot />
 			<FilesTopNav />
 			<div className="flex flex-1 flex-col overflow-y-auto">{renderTab()}</div>
 		</div>
