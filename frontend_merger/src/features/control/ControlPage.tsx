@@ -7,6 +7,7 @@
 // URL is source of truth via usePathname; Mode via useControlMode (URL param + localStorage, D20).
 
 import { usePathname } from "next/navigation";
+import { ControlPageCopilot } from "./ControlPageCopilot";
 import { A2aTab } from "./components/A2aTab";
 import { AgentsTab } from "./components/AgentsTab";
 import { ApiModelsTab } from "./components/ApiModelsTab";
@@ -55,6 +56,7 @@ export function ControlPage() {
 
 	return (
 		<div className="flex flex-col h-full">
+			<ControlPageCopilot />
 			<ControlTopNav />
 			<div className="flex-1 overflow-auto">{renderSubtab()}</div>
 		</div>
