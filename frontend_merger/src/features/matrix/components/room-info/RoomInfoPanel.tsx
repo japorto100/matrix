@@ -3,7 +3,7 @@
 import { usePinnedMessages } from "@matrix/lib/hooks/usePinnedMessages";
 import { useRoomMembers } from "@matrix/lib/hooks/useRoomMembers";
 import { mxcToHttp } from "@matrix/lib/utils";
-import { Bell, BellOff, Camera, Check, Copy, Pencil, Pin, PinOff, Trash2, X } from "lucide-react";
+import { Camera, Check, Copy, Pencil, Pin, PinOff, Trash2, X } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { EventType } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";

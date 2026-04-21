@@ -10,7 +10,7 @@
 //   [Agent]   → Toggle der GlobalChatOverlay Sheet/Split/Rail (kein Route-Change)
 //   [Control] → Link auf /control (Fullscreen Control UI)
 
-import { Bot, Clock, MessageSquare, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Bot, Brain, Clock, Files, MessageSquare, SlidersHorizontal, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -33,6 +33,18 @@ const NAV_LINKS: NavLink[] = [
 		label: "Matrix",
 		icon: <MessageSquare className="h-3.5 w-3.5" />,
 		match: (p) => p.startsWith("/matrix"),
+	},
+	{
+		href: "/files",
+		label: "Files",
+		icon: <Files className="h-3.5 w-3.5" />,
+		match: (p) => p.startsWith("/files"),
+	},
+	{
+		href: "/memory",
+		label: "Memory",
+		icon: <Brain className="h-3.5 w-3.5" />,
+		match: (p) => p.startsWith("/memory"),
 	},
 	{
 		href: "/control",

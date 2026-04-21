@@ -67,7 +67,7 @@ export function getRoomNotificationMode(
  */
 export function getPushRuleForMode(
 	mode: RoomNotificationMode,
-	roomId: string,
+	_roomId: string,
 ): { kind: PushRuleKind; actions: IPushRule["actions"] } | null {
 	if (mode === "default") return null;
 

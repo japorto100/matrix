@@ -129,7 +129,6 @@ export function MediaLightbox({ item, onClose }: Props) {
 					/>
 				)}
 				{item.msgtype === "m.video" && (
-					// biome-ignore lint/a11y/useMediaCaption: User-Content ohne Captions
 					<video src={fullUrl} controls autoPlay className="max-w-full max-h-[90vh] rounded" />
 				)}
 				{(item.msgtype === "m.audio" ||
@@ -139,7 +138,6 @@ export function MediaLightbox({ item, onClose }: Props) {
 						<div className="text-lg font-medium">{displayName}</div>
 						{item.mimeType && <div className="text-xs text-muted-foreground">{item.mimeType}</div>}
 						{item.msgtype === "m.audio" ? (
-							// biome-ignore lint/a11y/useMediaCaption: Audio ohne Captions
 							<audio src={fullUrl} controls className="w-full" />
 						) : (
 							<Button onClick={() => void handleDownload()} className="w-full">
