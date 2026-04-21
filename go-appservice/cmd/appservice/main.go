@@ -111,6 +111,11 @@ func run() int {
 		return 1
 	}
 
+	// Pre-materialize default agents im user-directory (non-blocking, best-effort).
+	// Erst nach Start() damit der appservice-listener oben ist falls EnsureProfile
+	// einen callback vom homeserver triggert.
+	go srv.BootstrapAgents(ctx)
+
 	<-ctx.Done()
 	slog.Info("shutting down")
 	srv.Stop()

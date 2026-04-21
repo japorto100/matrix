@@ -83,7 +83,7 @@ mkdir -p "$LOG_DIR" "$PID_DIR"
 # ─── Default: alles OFF ───────────────────────────────────────────────────────
 # Compose services
 WANT_TUWUNEL=false
-TUWUNEL_IMAGE_TAG="v1.5.2"
+TUWUNEL_IMAGE_TAG="v1.6.0"   # stable seit 2026-04-12, default
 WANT_NATS=false
 WANT_POSTGRES=false
 STORAGE_BACKEND="off"     # off | garage | seaweedfs
@@ -172,7 +172,8 @@ for arg in "$@"; do
 
     # Infra compose
     --tuwunel)         WANT_TUWUNEL=true ;;
-    --tuwunel16)       WANT_TUWUNEL=true; TUWUNEL_IMAGE_TAG="v1.6.0-rc" ;;
+    --tuwunel16)       WANT_TUWUNEL=true ;;   # legacy no-op: v1.6.0 stable ist default
+    --tuwunel15)       WANT_TUWUNEL=true; TUWUNEL_IMAGE_TAG="v1.5.1" ;;   # legacy fallback
     --nats)            WANT_NATS=true ;;
     --postgres)        WANT_POSTGRES=true ;;
     --storage=garage)    STORAGE_BACKEND="garage" ;;
@@ -470,6 +471,24 @@ fi
 
 # ─── START services (additiv) ────────────────────────────────────────────────
 log "DevStack: additive start"
+
+# Garage-Preflight: Wenn Tuwunel + Garage gewählt → prüfe ob Keys in tuwunel.v1.6.toml
+# schon gesetzt sind (setup-garage.sh wurde gelaufen). Sonst würde Tuwunel beim
+# startup_check=true crashen weil Placeholder-Keys ungültig sind.
+if $WANT_TUWUNEL && [ "$STORAGE_BACKEND" = "garage" ]; then
+  TUWUNEL_TOML="$REPO_ROOT/homeserver/tuwunel.v1.6.toml"
+  if [ -f "$TUWUNEL_TOML" ] && grep -q "GARAGE_ACCESS_KEY_PLACEHOLDER\|GARAGE_SECRET_KEY_PLACEHOLDER" "$TUWUNEL_TOML"; then
+    warn "Garage-keys sind noch Placeholder in tuwunel.v1.6.toml"
+    warn "Erst setup laufen lassen:"
+    warn "  ./scripts/setup-garage.sh"
+    warn "Dann dev-stack erneut starten."
+    die "abort: garage-setup muss einmalig gelaufen sein"
+  fi
+fi
+
+# Tuwunel-Config-Datei für compose volume-mount (aktuell nur v1.6)
+export TUWUNEL_CONFIG="tuwunel.v1.6.toml"
+export TUWUNEL_IMAGE="ghcr.io/matrix-construct/tuwunel:${TUWUNEL_IMAGE_TAG}"
 
 # Compose-services aus WANT-flags ableiten
 COMPOSE_SVCS=()

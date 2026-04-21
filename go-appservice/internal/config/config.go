@@ -39,6 +39,12 @@ type Config struct {
 	// Agent-Namespace Prefix (z.B. "agent-" → @agent-trading:matrix.local)
 	AgentPrefix string
 
+	// Default-Agents die beim Start via EnsureProfile materialisiert werden
+	// (erscheinen dann im Tuwunel user-directory für autocomplete).
+	// z.B. "bot,system" → @agent-bot, @agent-system werden beim Start registriert.
+	// Leer = keine pre-materialisation (user materialisieren sich on-demand bei first-invite).
+	DefaultAgents []string
+
 	// E2EE (Option C: Go übernimmt Crypto, Python bekommt Klartext)
 	E2EEEnabled       bool   // MATRIX_E2EE_ENABLED=false (Standard: deaktiviert für Tests)
 	CryptoDBPath      string // MATRIX_CRYPTO_DB_PATH=./data/crypto.sqlite3 (SQLite fallback only)
@@ -95,6 +101,7 @@ func Load() *Config {
 		LogLevel:         getenv("LOG_LEVEL", "info"),
 		RegistrationPath: getenv("REGISTRATION_PATH", "../homeserver/registration.yaml"),
 		AgentPrefix:      getenv("MATRIX_AGENT_PREFIX", "agent-"),
+		DefaultAgents:    parseCSV(getenv("DEFAULT_AGENTS", "bot")),
 		E2EEEnabled:      getenv("MATRIX_E2EE_ENABLED", "false") == "true",
 		CryptoDBPath:     getenv("MATRIX_CRYPTO_DB_PATH", "./data/crypto.sqlite3"),
 		CryptoPickleKey:   getenv("MATRIX_CRYPTO_PICKLE_KEY", "changeme-use-random-32-chars"),
@@ -138,6 +145,23 @@ func getenvInt(key string, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+// parseCSV trimt die kommagetrennten Werte und filtert leere Einträge raus.
+// z.B. "bot, system ,  " → []string{"bot", "system"}.
+func parseCSV(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	raw := strings.Split(s, ",")
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		t := strings.TrimSpace(item)
+		if t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func mustenv(key string) string {

@@ -484,3 +484,32 @@ agent/skills/importer.py                — GEAENDERT: URL host validation (SSRF
 - [x] **Bridge dynamic reply routing** — `bridge/nats_handler.py:_resolve_reply_user_id()` nutzt `target_agent` aus payload, fallback auf config
 - [x] **Env-loader** lädt `.env.development` via `APP_ENV` (für OpenRouter-key)
 - [x] **ADR-lites** in `exec2-04 §O` (bridge architecture decision C, orchestrator target-pattern)
+- [x] **Authentication-Cleanup (partial)**: `setup-users.sh` legt `@agent-bot` nicht mehr explizit an — Appservice-Namespace + auto-invite-accept (`server.go:641-650`) materialisiert jeden `@agent-*` on-demand. Alice + Bob bleiben password-users (kein MAS/OIDC im matrix-repo, das hat trading-project).
+- [x] **Go-Appservice BootstrapAgents (rudimentär, env-basiert)**: `handler/server.go:BootstrapAgents()` aufgerufen aus `main.go` nach `Start()`, iteriert `cfg.DefaultAgents` aus env-var `DEFAULT_AGENTS=alice,bob`, ruft `EnsureProfile` pro name → `@agent-<name>` im Tuwunel user-directory sichtbar, autocomplete funktioniert. Nutzt dead-code `intent/agent.go:EnsureProfile` den es schon gab.
+  - **⚠️ Rudimentär:** Env-var ist nur für dev/test. In prod muss das **dynamisch pro user-registration** passieren (siehe §7.6 "BootstrapAgents dynamisch").
+  - Benennungs-convention: `alice → @agent-alice`, `bob → @agent-bob`. **Kein shared general-agent** (widerspricht Orchestrator-Pattern mit user-isolation).
+  - **⚠️ Kein ownership-check:** bob könnte `@agent-alice` mentionen → würde fälschlicherweise antworten. Access-control in §7.6 "User-Agent-Ownership" scope.
+
+### 7.6 Authentication-Cleanup (open, in Phase 7 scope)
+
+**Kontext:** setup-users.sh war legacy (inklusive `@agent-bot`-register mit password + token-write in python-backend/.env.development). Teilweise entrümpelt (2026-04-21). Noch offen:
+
+- [ ] **Frontend-Login-UX** — aktuell wird alice-Token in `frontend_merger/.env.local:MATRIX_ACCESS_TOKEN` injiziert (dev-convenience, one-click-login). SOTA: Browser-Login-Flow (email+password → token in localStorage, prod-parity). Frontend_merger braucht Login-Komponente (prüfen ob cinny-basierte vorhanden).
+- [ ] **`MATRIX_BOT_ACCESS_TOKEN` feature-flag refactor** — `python-backend/agent/control/security.py:63` checkt `bool(os.environ.get("MATRIX_BOT_ACCESS_TOKEN"))` als "is matrix wired up". SOTA: stattdessen `appservice.registered` aus go-appservice-state lesen (via health-endpoint). Token-based-check ist legacy aus matrix-nio-era.
+- [ ] **Trading-project per-user-provisioning** — wenn OIDC/MAS-blocker (`exec-matrix-monitor §M4`) gelöst: user-registration hook → sanitize(username) → auto-create `@<userid>:matrix.local` (password oder MAS) + namespace-managed `@agent-<userid>:matrix.local` (on-demand) + auto-DM-room. Siehe §7.2 username-sanitizer.
+- [ ] **User-Agent-Ownership + Access-Control** (🚨 security-relevant, muss vor prod) — aktuell weiß das system nicht automatisch welcher human-user welchem agent gehört:
+  - Heute: Alice muss explizit `@agent-alice` mentionen. Bob könnte auch `@agent-alice` adressieren — kein owner-check. Cross-access ist offen.
+  - **Neue DB-table** `agent_ownership` (owner_user_id PRIMARY KEY → agent_user_id). Go-appservice pflegt das.
+  - **DM-based auto-routing:** Go-handler erkennt "DM zwischen @alice und @agent-alice" → `target_agent=alice` automatisch gesetzt, keine mention nötig. Alice chattet natürlich ohne `@`.
+  - **Cross-access-block:** Mention von `@agent-alice` durch bob → Message nicht an bridge weitergeleitet, optional warn-reply "Nicht dein agent".
+  - **Auto-DM bei registration:** dev-script (setup-users.sh) oder trading-project registration-hook → createDM(user, @agent-user) + INSERT agent_ownership. User sieht seinen agent sofort in der room-list.
+  - Cross-ref: ownership-tabelle wird auch von BootstrapAgents dynamisch (§7.6 erster bullet) beim agent-register-call gefüllt.
+
+- [ ] **BootstrapAgents dynamisch statt env-basiert** — aktueller `DEFAULT_AGENTS` env-var ist nur für dev-test workable (fixed liste beim go-start). Prod-pattern:
+  - Admin-HTTP-API `POST /admin/agents/register` am go-appservice (authenticated via HS_TOKEN oder internal-secret)
+  - Payload: `{"username": "alice.smith", "display_name": "Alice"}`
+  - Handler: `sanitize_matrix_localpart(username)` → `AgentSender.EnsureProfile(@agent-<sanitized>, display_name)` + optionales auto-DM-create mit human-user
+  - Trading-project user-registration-hook calls diesen endpoint bei jedem neuen account
+  - Delete-counterpart: `DELETE /admin/agents/<username>` → tear down auf account-löschung (GDPR compliance)
+  - Persistence: liste der registered agents in postgres (`agent.registered_agents` table) → survived über restarts, kein env-var-reload nötig
+  - BootstrapAgents beim go-start liest DB statt env → rehydratisiert user-directory falls tuwunel DB mal gewiped wurde

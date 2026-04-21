@@ -31,10 +31,10 @@
 services:
   # ── Homeserver (Tuwunel — siehe Version-Switcher im Header-Comment) ──────
   tuwunel:
-    image: ${TUWUNEL_IMAGE:-ghcr.io/matrix-construct/tuwunel:v1.6.0-rc}
+    image: ${TUWUNEL_IMAGE:-ghcr.io/matrix-construct/tuwunel:v1.6.0}
     container_name: tuwunel
     volumes:
-      - ./homeserver/tuwunel.image.toml:/etc/tuwunel/tuwunel.toml:ro
+      - ./homeserver/${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}:/etc/tuwunel/tuwunel.toml:ro
       - tuwunel-data:/var/lib/tuwunel
     ports:
       - "8448:8448"
@@ -460,7 +460,7 @@ services:
   # Initial Setup: `podman exec garage /garage key create` für S3-creds
   # ─────────────────────────────────────────────────────────────────────────
   garage:
-    image: dxflrs/garage:v2.0.0
+    image: dxflrs/garage:v2.3.0
     container_name: garage
     environment:
       # Default: Memory-backed (dev). Für Persistenz: LMDB/Sled.

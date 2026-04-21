@@ -301,6 +301,33 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
+// BootstrapAgents materialisiert die konfigurierten Default-Agents im Tuwunel
+// user-directory (via EnsureProfile ⇒ Appservice-Intent). Macht `@agent-<name>`
+// sofort per autocomplete auffindbar, ohne dass ein User ihn erst inviten muss.
+//
+// Best-effort: failures werden geloggt, aber Server läuft weiter. Idempotent —
+// Tuwunel akzeptiert mehrfachen EnsureProfile-Call ohne Fehler.
+func (s *Server) BootstrapAgents(ctx context.Context) {
+	if len(s.cfg.DefaultAgents) == 0 {
+		return
+	}
+	for _, name := range s.cfg.DefaultAgents {
+		agentID := s.agent.UserID(name)
+		displayName := "Agent " + capitalize(name)
+		s.agent.EnsureProfile(ctx, agentID, displayName)
+		slog.Info("agent pre-materialised", "agent", agentID, "display_name", displayName)
+	}
+}
+
+// capitalize macht den ersten Buchstaben groß (ASCII-safe, deterministic).
+// Ersetzt das deprecated strings.Title (würde sowieso nur das erste Wort brauchen).
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 // Stop fährt den Server sauber herunter. Shutdown-Ordering (exec-scheduler Lane P/B):
 //  1. Key backup export (E2EE)
 //  2. Scheduler stop — drain in-flight River jobs (30s timeout)

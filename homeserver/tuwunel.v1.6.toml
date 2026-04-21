@@ -1,23 +1,23 @@
-# Tuwunel v1.6.0-rc — Dev Config (Testing Release Candidate)
+# Tuwunel v1.6.0 stable — Container Config (Linux + podman + Garage)
 #
-# Starten:  .\scripts\dev-stack2.ps1 -Tuwunel16
-# Oder manuell:
-#   wsl -d Ubuntu -u root bash -c "cd /mnt/d/matrix && ./tools/tuwunel-v1.6 --config ./homeserver/tuwunel.v1.6.toml"
+# Starten: ./scripts/dev-stack.sh  (lädt diese via docker-compose volume mount)
+# Manuell: podman compose up -d tuwunel
 #
-# Status: Release Candidate seit 2026-04-06, noch nicht stable.
-# Siehe _ref/tuwunel-v1.6.0-rc/COMPARISON.md fuer Feature-Vergleich v1.5.1 -> v1.6.0-rc.
+# Status: v1.6.0 stable, released 2026-04-12.
+# Bekannte issue: S3 large-uploads (~200 MiB) → fixed in v1.6.1.
+# Workaround: max_request_size = 100 MB (siehe unten).
+#
+# Siehe _ref/tuwunel-v1.6.0-rc/COMPARISON.md fuer Feature-Vergleich v1.5.1 -> v1.6.0.
 # Siehe _ref/tuwunel-v1.6.0-rc/TESTING.md fuer Test-Runbook.
-#
-# !!! WICHTIG: Diese Config nutzt die GETEILTE DB mit v1.5.1 (./homeserver/data/db).
-# !!! VOR dem ersten Start: .\scripts\backup-before-v1.6.ps1 ausfuehren!
-# !!! v1.6.0-rc fuehrt Schema-Migration durch — Rollback ohne Backup nicht moeglich.
+# Diff rc → stable: FreeBSD fix, rand crate pin, `allowed_remote_server_names` experimental rename.
 
 [global]
 server_name = "matrix.local"
-database_path = "./homeserver/data/db"   # GETEILT mit v1.5.1
+# Container-pfad (volume mount zu tuwunel-data volume).
+database_path = "/var/lib/tuwunel/db"
 address = "0.0.0.0"
 port = 8448
-log = "info"   # release-all Binary hat max_level_info — DEBUG nicht verfuegbar.
+log = "info"                          # release-all Binary hat max_level_info — DEBUG nicht verfuegbar.
 # Fuer echte DEBUG-Traces: release-logging Binary-Variante runterladen.
 
 # ─── RC-Safety: schlage Start ab bei unbekannten Config-Keys ────────────────
@@ -49,7 +49,7 @@ federate_created_rooms = false
 encryption_enabled_by_default_for_room_type = "none"
 
 # ─── Presence ────────────────────────────────────────────────────────────────
-allow_local_presence    = true
+allow_local_presence = true
 allow_incoming_presence = false
 allow_outgoing_presence = false
 
@@ -57,7 +57,7 @@ allow_outgoing_presence = false
 # 100 MB = Cloudflare Free/Pro Plan Request-Body-Cap.
 # Wenn MSC2246-Async-Upload stabil ist, koennen wir spaeter Chunking nutzen und
 # den Wert in Test-Phase 5 probehalber auf 500 MB erhoehen.
-max_request_size = 104857600  # 100 MB (Cloudflare Free Plan Limit)
+max_request_size = 104857600 # 100 MB (Cloudflare Free Plan Limit)
 
 # ─── Media: Async Upload (MSC2246) — NEU in v1.6.0 ──────────────────────────
 # Client kann per POST /_matrix/media/v1/create eine MXC-URI reservieren und
@@ -66,10 +66,10 @@ max_request_size = 104857600  # 100 MB (Cloudflare Free Plan Limit)
 # in Clients die es unterstuetzen (Element X teilweise, FluffyChat nicht).
 #
 # Defaults sind vernuenftig — explizit gesetzt fuer Dokumentation.
-max_pending_media_uploads           = 5       # gleichzeitige offene MXC-URIs pro User
-media_create_unused_expiration_time = 86400   # 24h bis ungenutzte MXC-URI recycled wird
-media_rc_create_per_second          = 10      # Rate-Limit pro User
-media_rc_create_burst_count         = 50      # Burst-Cap
+max_pending_media_uploads = 5               # gleichzeitige offene MXC-URIs pro User
+media_create_unused_expiration_time = 86400 # 24h bis ungenutzte MXC-URI recycled wird
+media_rc_create_per_second = 10             # Rate-Limit pro User
+media_rc_create_burst_count = 50            # Burst-Cap
 
 # ─── Media: Legacy-URLs erlauben (QW-4 / MSC3916) ───────────────────────────
 allow_legacy_media = true
@@ -85,52 +85,47 @@ prune_missing_media = false
 #
 # Reihenfolge in media_storage_providers = Such-Reihenfolge beim Lesen
 # (erster Treffer gewinnt). store_media_on_providers = wo NEUE Uploads landen.
-media_storage_providers = ["media", "seaweedfs"]
-# Phase 3 aktiv: Neue Uploads landen in SeaweedFS.
-# "media" bleibt als Read-Fallback fuer alte Bilder in ./homeserver/data/db/media/.
-store_media_on_providers = ["seaweedfs"]
+media_storage_providers = ["media", "garage"]
+# Neue Uploads landen in Garage (S3).
+# "media" bleibt als Read-Fallback fuer alte Bilder in /var/lib/tuwunel/db/media/.
+store_media_on_providers = ["garage"]
 
 # Provider 1: Lokales Filesystem
 # WICHTIG: v1.5 Tuwunel/conduwuit speichert Media im Default unter <database_path>/media/
 # also ./homeserver/data/db/media/. Damit v1.6 alte Bilder findet, MUSS der Pfad darauf zeigen.
 # (Nicht ./homeserver/data/media — das ist leer, dort liegen keine historischen Files.)
 [global.storage_provider.media.local]
-base_path              = "./homeserver/data/db/media"
-create_if_missing      = true
+base_path = "/var/lib/tuwunel/db/media"
+create_if_missing = true
 delete_empty_directories = true
-startup_check          = true
+startup_check = true
 
-# Provider 2: SeaweedFS S3 (laeuft im devstack auf :8333, Credentials aus tools/seaweedfs/s3.json)
-# WICHTIG — Netzwerk-Annahme:
-# Devstack startet SeaweedFS mit -ip.bind=127.0.0.1 (Windows-Localhost).
-# Tuwunel laeuft in WSL1 — WSL1 teilt den Windows-Netzwerk-Stack, also ist
-# 127.0.0.1 aus WSL1 identisch mit Windows' 127.0.0.1. Direkt erreichbar.
-# Bei WSL2-Migration oder Podman-Deployment: entweder hier host.docker.internal
-# setzen, oder devstack auf -ip.bind=0.0.0.0 umstellen (siehe dev-stack2.ps1:416).
-[global.storage_provider.seaweedfs.S3]
-endpoint               = "http://127.0.0.1:8333"
-bucket                 = "matrix-media"
-region                 = "us-east-1"
-key                    = "uqiEZ3ivbqCXKEXcBMkZ"
-secret                 = "Qfx6XdG0HjJIo1P1mk0WKY5PUzTTSAmuUjq9dowV"
-base_path              = "tuwunel-v1.6/"   # Prefix damit v1.6-Uploads im Bucket separat liegen
-use_https              = false
+# Provider 2: Garage S3 (default in unserem Linux+Podman setup)
+# Endpoint = compose-service-name "garage" im selben network → Port 3900 intern.
+# Keys werden beim ersten Start von scripts/setup-garage.sh erzeugt und via sed
+# hier eingefuegt (ersetzt GARAGE_*_PLACEHOLDER, markiert mit "# garage-managed").
+[global.storage_provider.garage.S3]
+endpoint = "http://garage:3900"
+bucket = "matrix-media"
+region = "garage"
+key = "GKf1db02b2c9b15a5b99e69d44"    # garage-managed
+secret = "1f4f755673a956d435f17d654cd04d589d6566624cf5079a34057455b90fc17a" # garage-managed
+base_path = "tuwunel-v1.6/"
+use_https = false
 use_payload_signatures = true
-startup_check          = true
+startup_check = true
 
-# Provider 2-ALTERNATIVE: Garage (lightweight Rust-S3, AGPLv3) — OPT-IN
-# Zum Switchen (Garage statt SeaweedFS):
-#   1. In media_storage_providers + store_media_on_providers oben: "seaweedfs" → "garage"
-#   2. [seaweedfs.S3]-Block oben auskommentieren, diesen Block unten aktivieren
-#   3. Garage-Container starten: `podman-compose --profile storage-garage up -d garage`
-#   4. S3-Credentials generieren: `podman exec garage /garage key create matrix-key`
-#      (Access Key + Secret aus Output in key/secret unten eintragen)
-# [global.storage_provider.garage.S3]
-# endpoint               = "http://127.0.0.1:3900"
+# Provider 2-ALTERNATIVE: SeaweedFS (AUSKOMMENTIERT — opt-in statt Garage)
+# Zum Switchen:
+#   1. media_storage_providers + store_media_on_providers oben: "garage" → "seaweedfs"
+#   2. [garage.S3]-Block oben auskommentieren, diesen Block unten aktivieren
+#   3. ./scripts/dev-stack.sh --storage=seaweedfs (stoppt garage, startet seaweedfs)
+# [global.storage_provider.seaweedfs.S3]
+# endpoint               = "http://seaweedfs:8333"
 # bucket                 = "matrix-media"
-# region                 = "garage"
-# key                    = "GKot8ljSiCkDeOlfpbTZOoLhBg"
-# secret                 = "xPd0tydyy1C5IcEwj4KtDNRxLIeTZLWyiq7QcLvn"
+# region                 = "us-east-1"
+# key                    = "uqiEZ3ivbqCXKEXcBMkZ"
+# secret                 = "Qfx6XdG0HjJIo1P1mk0WKY5PUzTTSAmuUjq9dowV"
 # base_path              = "tuwunel-v1.6/"
 # use_https              = false
 # use_payload_signatures = true
@@ -138,12 +133,12 @@ startup_check          = true
 
 # ─── STUN/TURN (Voice/Video Calls) ──────────────────────────────────────────
 turn_uris = [
-    "stun:stun.cloudflare.com:3478",
-    "stun:stun.l.google.com:19302",
-    "turn:a.relay.metered.ca:80",
-    "turn:a.relay.metered.ca:80?transport=tcp",
-    "turn:a.relay.metered.ca:443?transport=tcp",
-    "turns:a.relay.metered.ca:443?transport=tcp"
+  "stun:stun.cloudflare.com:3478",
+  "stun:stun.l.google.com:19302",
+  "turn:a.relay.metered.ca:80",
+  "turn:a.relay.metered.ca:80?transport=tcp",
+  "turn:a.relay.metered.ca:443?transport=tcp",
+  "turns:a.relay.metered.ca:443?transport=tcp",
 ]
 turn_username = "openrelayproject"
 turn_password = "openrelayproject"
@@ -152,31 +147,42 @@ turn_password = "openrelayproject"
 show_all_local_users_in_user_directory = true
 
 # ─── RocksDB / Storage ──────────────────────────────────────────────────────
-rocksdb_direct_io = false   # WSL2+NTFS
-database_backup_path      = "./homeserver/data/db-backups"
-database_backups_to_keep  = 3
+# Linux container ext4 → direct I/O sicher und schneller.
+rocksdb_direct_io = true
+database_backup_path = "/var/lib/tuwunel/db-backups"
+database_backups_to_keep = 3
 
 # ─── .well-known (Client-Discovery) ──────────────────────────────────────────
+# localhost funktioniert für Desktop-Browser (port-mapped auf host:8448).
+# Für Mobile-im-LAN: ersetzen mit LAN-IP. Für Mobile-extern: CF-tunnel-URL.
 [global.well_known]
-client = "http://192.168.1.34:8448"
-server = "192.168.1.34:8448"
+client = "http://localhost:8448"
+server = "localhost:8448"
 
 # ─── MatrixRTC / LiveKit ─────────────────────────────────────────────────────
+# lk-jwt-service läuft im compose (Port 8080 auf host gemapped).
 [[global.well_known.rtc_transports]]
 type = "livekit"
-livekit_service_url = "http://192.168.1.34:8080"
+livekit_service_url = "http://localhost:8080"
 
 # ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
 # v1.6 Breaking: explicit id field required and must match TOML section key.
 # Vorher (v1.5) wurde der Section-Name implizit als id uebernommen.
+#
+# Go-Appservice läuft LOKAL (nicht im compose) — via host.containers.internal.
+# Tokens aus go-appservice/.env.development (MATRIX_AS_TOKEN / MATRIX_HS_TOKEN).
 [global.appservice.trading-agent]
-id         = "trading-agent"
-url        = "http://127.0.0.1:8090"
-as_token   = "1afe887982fea51764e0c144f01b80c246673be07f1af00fac717ce04bf1b1ba"
-hs_token   = "14eb01ae88e2eafa0b3ce31fe80970ca51a5dc4e0c1e914b6e9bb532d810076d"
+id = "trading-agent"
+url = "http://host.containers.internal:8090"
+as_token = "a95a7500ff11932501a7a7edb230f97851a3a3fa30eefd34dfcd939d99a32bc2"
+hs_token = "870c5b1e91dff748fefafa24a2e34b17a36aaadd7b605780c1c963b8dcb80da2"
 sender_localpart = "appservice-bot"
 rate_limited = false
 
 [[global.appservice.trading-agent.namespaces.users]]
 exclusive = true
 regex = "@agent-.*:matrix\\.local"
+
+[[global.appservice.trading-agent.namespaces.users]]
+exclusive = true
+regex = "@appservice-bot:matrix\\.local"

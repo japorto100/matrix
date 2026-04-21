@@ -7,10 +7,18 @@
 # Erstellt:
 #   @alice:matrix.local        — Test-User (Browser/Element-X, optional SSR in frontend_merger)
 #   @bob:matrix.local          — Zweiter Test-User (für Chat-Tests)
-#   @agent-bot:matrix.local    — Python agent bot (access_token → python-backend/.env.development)
 #
 # Nicht erstellt (werden via Appservice Pattern dynamisch erzeugt):
-#   @appservice-bot, @agent-trading, @agent-research, ...
+#   @appservice-bot              — appservice-sender (via as_token)
+#   @agent-alice, @agent-bob     — pro-user-orchestrator-agents, pre-materialized
+#                                  beim go-appservice-Start via DEFAULT_AGENTS env-var
+#                                  (exec-10 §7.5)
+#   @agent-<userid> (prod)       — dynamisch pro user-registration (exec-10 §7.6)
+#
+# Hintergrund: `homeserver/tuwunel.v1.6.toml` registriert den Namespace
+# `@agent-.*` als exclusive für den trading-agent appservice. Pro-user-pattern:
+# jeder human-user hat seinen eigenen @agent-<username> (memory/state-isolation).
+# Kein shared general-bot — widerspricht Orchestrator-Architektur.
 #
 # Usage:
 #   ./scripts/setup-users.sh
@@ -139,8 +147,9 @@ update_env() {
 # ─── Create users ──────────────────────────────────────────────────────────
 USERS=(
     "alice:alice-dev-password-2026:frontend_merger/.env.local:MATRIX_ACCESS_TOKEN:MATRIX_DEVICE_ID:MATRIX_USER_ID"
-    "bob:bob-dev-password-2026::::"  # no env-write for bob
-    "agent-bot:$(grep '^MATRIX_BOT_PASSWORD=' python-backend/.env.development | cut -d= -f2-):python-backend/.env.development:MATRIX_BOT_ACCESS_TOKEN:MATRIX_BOT_DEVICE_ID:MATRIX_BOT_USER_ID"
+    "bob:bob-dev-password-2026::::"  # no env-write for bob (manual mobile login)
+    # @agent-bot wird NICHT hier registriert — Appservice-namespace @agent-.*
+    # materialisiert ihn on-demand bei erstem Invite (server.go:641-650).
 )
 
 for user_spec in "${USERS[@]}"; do
@@ -182,9 +191,12 @@ echo -e "${G}═══ Setup komplett ═══${R}"
 echo ""
 echo "Erstellte User:"
 echo "  - @alice:matrix.local       → token in frontend_merger/.env.local"
-echo "  - @bob:matrix.local         → Test-User (kein env-write)"
-echo "  - @agent-bot:matrix.local   → token in python-backend/.env.development"
+echo "  - @bob:matrix.local         → Test-User (kein env-write, manual mobile login)"
+echo ""
+echo "Nicht erstellt (appservice-namespace handled on-demand):"
+echo "  - @agent-bot:matrix.local   → materialisiert bei erstem Invite von alice"
+echo "  - @agent-<userid>:...       → pro-user agents (trading-project provisioning)"
 echo ""
 echo "Next:"
-echo "  - Restart python-agent damit neuer MATRIX_BOT_ACCESS_TOKEN geladen wird"
-echo "  - Login als alice in Element-X: http://localhost:8448"
+echo "  - Login als alice im Browser: http://localhost:3003"
+echo "  - DM mit @agent-bot → go-appservice auto-joint → mention + chat funktioniert"
