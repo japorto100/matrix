@@ -282,6 +282,7 @@ Realistischer Workflow:
 - Personal Memory: [`exec-memory.md`](./exec-memory.md)
 - Runtime / Context: [`exec-context.md`](./exec-context.md)
 - World Model / Global KG: [`exec-world-model.md`](./exec-world-model.md)
+  _(Fast Lane / Slow Lane Tiering, IE Pipeline, Promotion Gate — §4.5–4.9)_
 - UI / Control Surfaces: [`exec-15-memory-control-ui.md`](./exec-15-memory-control-ui.md)
 - Schema / Persistenz: [`exec-18-unified-agent-schema.md`](./exec-18-unified-agent-schema.md)
 - Traces / Replay: [`exec-17-observability-harness-traces.md`](./exec-17-observability-harness-traces.md)

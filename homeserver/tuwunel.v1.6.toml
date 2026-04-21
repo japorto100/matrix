@@ -111,12 +111,30 @@ startup_check          = true
 endpoint               = "http://127.0.0.1:8333"
 bucket                 = "matrix-media"
 region                 = "us-east-1"
-key                    = "seaweedfs"
-secret                 = "seaweedfs-secret"
+key                    = "uqiEZ3ivbqCXKEXcBMkZ"
+secret                 = "Qfx6XdG0HjJIo1P1mk0WKY5PUzTTSAmuUjq9dowV"
 base_path              = "tuwunel-v1.6/"   # Prefix damit v1.6-Uploads im Bucket separat liegen
 use_https              = false
 use_payload_signatures = true
 startup_check          = true
+
+# Provider 2-ALTERNATIVE: Garage (lightweight Rust-S3, AGPLv3) — OPT-IN
+# Zum Switchen (Garage statt SeaweedFS):
+#   1. In media_storage_providers + store_media_on_providers oben: "seaweedfs" → "garage"
+#   2. [seaweedfs.S3]-Block oben auskommentieren, diesen Block unten aktivieren
+#   3. Garage-Container starten: `podman-compose --profile storage-garage up -d garage`
+#   4. S3-Credentials generieren: `podman exec garage /garage key create matrix-key`
+#      (Access Key + Secret aus Output in key/secret unten eintragen)
+# [global.storage_provider.garage.S3]
+# endpoint               = "http://127.0.0.1:3900"
+# bucket                 = "matrix-media"
+# region                 = "garage"
+# key                    = "GKot8ljSiCkDeOlfpbTZOoLhBg"
+# secret                 = "xPd0tydyy1C5IcEwj4KtDNRxLIeTZLWyiq7QcLvn"
+# base_path              = "tuwunel-v1.6/"
+# use_https              = false
+# use_payload_signatures = true
+# startup_check          = true
 
 # ─── STUN/TURN (Voice/Video Calls) ──────────────────────────────────────────
 turn_uris = [

@@ -4,10 +4,8 @@ import type { NextConfig } from "next";
  * frontend_merger — Next.js 16.2 Config
  *
  * Mountet Matrix Chat, Agent Chat und Control UI unter einer App.
- * Vereint die Konfigurationen der drei Quellen:
- *   - nextjs-chat (Matrix, braucht WASM fuer matrix-sdk-crypto-wasm)
- *   - agent-chat (AI SDK DevTools, MCP)
- *   - control-ui (Query-Heavy, react-pdf)
+ * Urspruenge (jetzt unter archive/): nextjs-chat (Matrix, matrix-sdk-crypto-wasm),
+ * agent-chat (AI SDK DevTools, MCP), control-ui (Query-Heavy, react-pdf).
  */
 const nextConfig: NextConfig = {
 	typedRoutes: true,

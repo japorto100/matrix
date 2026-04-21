@@ -1,18 +1,38 @@
 "use client";
 
+import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { useRoomNotificationMode } from "@matrix/lib/hooks/useRoomNotificationMode";
+import type { RoomNotificationMode } from "@matrix/lib/notificationMode";
 import type { RoomInfo } from "@matrix/lib/types";
 import { hashColor, mxcToHttp } from "@matrix/lib/utils";
-import { LogOut, MoreVertical, Star, Trash2 } from "lucide-react";
+import {
+	AtSign,
+	Bell,
+	BellOff,
+	Check,
+	CheckCircle2,
+	LogOut,
+	MoreVertical,
+	Server,
+	Star,
+	Trash2,
+} from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { LeaveRoomConfirm } from "../shared/LeaveRoomConfirm";
 
 const AVATAR_COLORS = [
 	"bg-blue-500",
@@ -53,6 +73,17 @@ interface Props {
 	client?: MatrixClient | null;
 }
 
+const MODE_OPTIONS: Array<{
+	mode: RoomNotificationMode;
+	label: string;
+	icon: typeof Bell;
+}> = [
+	{ mode: "default", label: "Standard", icon: Server },
+	{ mode: "all", label: "Alle Nachrichten", icon: Bell },
+	{ mode: "mentions_keywords", label: "Nur Erwähnungen", icon: AtSign },
+	{ mode: "mute", label: "Stumm", icon: BellOff },
+];
+
 export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 	const initials = room.name.slice(0, 2).toUpperCase();
 	const timeAgo = room.lastTimestamp ? shortTimeAgo(room.lastTimestamp) : null;
@@ -62,22 +93,38 @@ export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 	const lastMsg = formatLastMessage(room.lastMessage);
 	const isEncryptedMsg = lastMsg === "Verschlüsselte Nachricht";
 	const isDM = !!room.dmUserId;
+	const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+	const [dragging, setDragging] = useState(false);
+	const dragRef = useRef<HTMLDivElement>(null);
+	const notifMode = useRoomNotificationMode(client ?? null, room.roomId);
 
-	const handleLeave = async () => {
+	// Lobby-DnD: RoomItem als draggable registrieren. Drop wird global in
+	// RoomList.tsx via monitorForElements gehandhabt (Tag-Mutation).
+	useEffect(() => {
+		const el = dragRef.current;
+		if (!el) return;
+		return draggable({
+			element: el,
+			getInitialData: () => ({ type: "matrix.room-item", roomId: room.roomId }),
+			onDragStart: () => setDragging(true),
+			onDrop: () => setDragging(false),
+		});
+	}, [room.roomId]);
+	const NotifIcon = MODE_OPTIONS.find((m) => m.mode === notifMode.mode)?.icon ?? Bell;
+
+	const handleMarkAsRead = async () => {
 		if (!client) return;
 		try {
 			const matrixRoom = client.getRoom(room.roomId);
-			if (matrixRoom?.getMyMembership() !== "join") {
-				client.store.removeRoom(room.roomId);
-				toast.success(isDM ? "Chat entfernt." : "Raum entfernt.");
-				return;
+			const events = matrixRoom?.getLiveTimeline().getEvents() ?? [];
+			const lastEvent = events[events.length - 1];
+			if (lastEvent) {
+				await client.sendReadReceipt(lastEvent);
+				toast.success("Als gelesen markiert.");
 			}
-			await client.leave(room.roomId);
-			await client.forget(room.roomId).catch(() => {});
-			toast.success(isDM ? "Chat gelöscht." : "Raum verlassen.");
 		} catch (err) {
-			toast.error("Verbindungsfehler.");
-			console.error("[RoomList] leave failed:", err);
+			toast.error("Konnte nicht als gelesen markiert werden.");
+			console.error("[RoomList] mark-as-read failed:", err);
 		}
 	};
 
@@ -99,11 +146,13 @@ export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 	return (
 		<div className="relative group">
 			<div
+				ref={dragRef}
 				onClick={() => onSelect(room.roomId)}
 				className={cn(
 					"w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-left transition-colors overflow-hidden cursor-pointer",
 					"hover:bg-accent/50",
 					isSelected && "bg-accent",
+					dragging && "opacity-40",
 				)}
 			>
 				<div className="relative shrink-0">
@@ -156,7 +205,13 @@ export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 										<MoreVertical className="h-3 w-3" />
 									</button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end" className="min-w-[160px]">
+								<DropdownMenuContent align="end" className="min-w-[180px]">
+									{room.unreadCount > 0 && (
+										<DropdownMenuItem onClick={handleMarkAsRead}>
+											<CheckCircle2 className="h-3.5 w-3.5 mr-2" />
+											Als gelesen markieren
+										</DropdownMenuItem>
+									)}
 									<DropdownMenuItem onClick={handleToggleFavourite}>
 										<Star
 											className={cn(
@@ -166,9 +221,38 @@ export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 										/>
 										{room.isFavourite ? "Favorit entfernen" : "Favorit"}
 									</DropdownMenuItem>
+									<DropdownMenuSub>
+										<DropdownMenuSubTrigger className="text-sm">
+											<NotifIcon className="h-3.5 w-3.5 mr-2" />
+											Benachrichtigungen
+										</DropdownMenuSubTrigger>
+										<DropdownMenuSubContent className="min-w-[200px]">
+											{MODE_OPTIONS.map((entry) => {
+												const Icon = entry.icon;
+												const isActive = notifMode.mode === entry.mode;
+												return (
+													<DropdownMenuItem
+														key={entry.mode}
+														disabled={notifMode.isSetting}
+														onSelect={() => {
+															void notifMode.setMode(entry.mode);
+														}}
+													>
+														<Icon className="h-3.5 w-3.5 mr-2" />
+														<span className="flex-1">{entry.label}</span>
+														{isActive && <Check className="h-3 w-3 ml-2 text-primary" />}
+													</DropdownMenuItem>
+												);
+											})}
+										</DropdownMenuSubContent>
+									</DropdownMenuSub>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem
 										className="text-destructive focus:text-destructive"
-										onClick={handleLeave}
+										onSelect={(e) => {
+											e.preventDefault();
+											setLeaveDialogOpen(true);
+										}}
 									>
 										{isDM ? (
 											<Trash2 className="h-3.5 w-3.5 mr-2" />
@@ -198,6 +282,16 @@ export function RoomItem({ room, isSelected, onSelect, client }: Props) {
 					</div>
 				</div>
 			</div>
+
+			{client && (
+				<LeaveRoomConfirm
+					client={client}
+					roomId={leaveDialogOpen ? room.roomId : null}
+					roomName={room.name}
+					onLeft={() => toast.success(isDM ? "Chat gelöscht." : "Raum verlassen.")}
+					onClose={() => setLeaveDialogOpen(false)}
+				/>
+			)}
 		</div>
 	);
 }

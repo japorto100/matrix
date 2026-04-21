@@ -6,12 +6,23 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+_ROOT = Path(__file__).resolve().parents[1]
+_ENV_BASE = _ROOT / ".env"
 
 
 def _load_env() -> None:
-    """Lädt .env falls vorhanden. Shell-Env hat Vorrang."""
-    load_dotenv(dotenv_path=_ENV_PATH, override=False)
+    """Lädt .env als baseline, dann .env.<APP_ENV> als override (analog GO_ENV).
+
+    Shell-Env hat weiterhin Vorrang (nicht überschrieben). `.env.<APP_ENV>` override=True
+    ersetzt nur zuvor aus Datei geladene Werte.
+    """
+    if _ENV_BASE.exists():
+        load_dotenv(dotenv_path=_ENV_BASE, override=False)
+
+    app_env = os.getenv("APP_ENV", "development").strip().lower()
+    env_specific = _ROOT / f".env.{app_env}"
+    if env_specific.exists():
+        load_dotenv(dotenv_path=env_specific, override=True)
 
 
 @dataclass

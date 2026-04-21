@@ -291,5 +291,6 @@ export function resolveRoom(room: Room, client?: MatrixClient): RoomInfo {
 		inviterUserId,
 		isOnline: dmUser?.currentlyActive ?? false,
 		isFavourite: !!room.tags?.["m.favourite"],
+		isLowPriority: !!room.tags?.["m.lowpriority"],
 	};
 }

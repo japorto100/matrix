@@ -323,53 +323,14 @@
 - [ ] Upload erfolgreich, als Blob in SeaweedFS sichtbar
 - [ ] Wert **zurueck auf 100 MB** wenn CF-Tunnel wieder genutzt wird (sonst 413 downstream)
 
-### J6. Merge-Entscheidung (Phase 5)
-- [ ] Mindestens 3 Tage Betrieb ohne Regression
-- [ ] v1.6.0 stable Release verfolgt (erwartet Ende April / Anfang Mai 2026)
-- [ ] Entscheidung dokumentiert: RC produktiv nutzen ODER auf stable warten
-- [ ] `tools/tuwunel` und `homeserver/tuwunel.toml` werden konsolidiert wenn Merge erfolgt
-- [ ] `-Tuwunel16` Flag aus `dev-stack2.ps1` entfernt wenn Merge erfolgt
-- [ ] `homeserver/data/db-pre-v1.6` und `media-pre-v1.6` erst loeschen wenn v1.6 stable laeuft
+### J6. Merge-Entscheidung + J7. Upstream-Bugs — verschoben nach `exec-matrix-monitor.md`
 
-### J7. Bekannte v1.6 Upstream-Bugs — Tracking (Stand 11.04.2026)
-
-> Diese Bugs existieren upstream in Tuwunel v1.6.0-rc. Wir koennen sie nicht selbst fixen,
-> aber muessen sie beim Testing und bei der Go-Appservice-Integration beruecksichtigen.
-> Upstream-Links tracken, bei Merge-Entscheidung (J6) erneut pruefen ob gefixt.
-
-**[tuwunel#411](https://github.com/matrix-construct/tuwunel/issues/411) — S3 Large File Timeout (CRITICAL)**
-- S3-Client nutzt single-stream PUT/GET mit 180s Hard-Timeout
-- Files > ~200 MB → Transport-Timeout → 500 Internal Server Error
-- Betrifft alle S3-kompatiblen Stores (R2, SeaweedFS, MinIO)
-- **Workaround:** `max_request_size ≤ 100 MB` (bei uns gesetzt via CF-Cap-Alignment)
-- **Blockiert:** Gate J5 (max_request_size erhoehen)
-- **Go-Layer Impact:** Keiner direkt — Go Appservice nutzt eigene S3-Calls fuer Artifacts (nicht via Tuwunel)
-
-**[tuwunel#401](https://github.com/matrix-construct/tuwunel/issues/401) — Appservice E2EE: kein device_id in /whoami (HIGH)**
-- MSC3202 (Appservice E2EE) braucht `device_id` in `/whoami` Response
-- Tuwunel liefert es nicht → bridges/bots die matrix-bot-sdk nutzen crashen
-- **Go-Layer Impact:** MUSS GEPRUEFT WERDEN. Unser Go Appservice nutzt mautrix-go, nicht matrix-bot-sdk. mautrix-go hat einen anderen Auth-Flow — moeglicherweise nicht betroffen. Beim naechsten Go-Appservice-Test gegen v1.6 explizit pruefen ob `/whoami` device_id zurueckgibt.
-- [ ] Go Appservice gegen v1.6 getestet: /whoami Response enthaelt device_id
-- [ ] Falls nicht: Workaround in Go (device_id aus Config/Startup-State statt /whoami) ODER auf upstream fix warten
-
-**[tuwunel#377](https://github.com/matrix-construct/tuwunel/issues/377) — device_lists.changed fehlt in /sync (MEDIUM)**
-- Cross-Signing Key-Aenderungen und neue Device-Keys nicht im Sync-Response
-- Clients sehen neuen Verifikations-Status erst nach Full-Resync
-- **Go-Layer Proaktiver Workaround angewendet (11.04.2026):**
-  `go-appservice/internal/crypto/machine.go:EnsureSession()` ruft jetzt `olm.FetchKeys(ctx, members, true)` auf bevor eine Megolm-Session geteilt wird. Das force-refreshed Device-Keys via `/keys/query` direkt, statt sich auf `/sync` device_lists.changed zu verlassen.
-  - Non-fatal: Wenn FetchKeys fehlschlaegt, wird mit vorhandenen (evt. veralteten) Keys weitergearbeitet
-  - Targeted: Nur fuer User im aktuellen Raum, nur wenn verschluesselt wird (kein idle Polling)
-  - Forward-compatible: Wenn #377 upstream gefixt wird, ist der extra FetchKeys-Call ein harmloser No-Op
-  - `go build ./...` kompiliert ohne Fehler
-- [x] Proaktiver Workaround in Go-Layer implementiert
-- [ ] Verification Flow testen: nach Cross-Signing-Bootstrap prufen ob Element X das Go-Device sofort als verified sieht
-- [ ] Falls verzoegert trotz Workaround: auf upstream fix warten
-
-**[tuwunel#372](https://github.com/matrix-construct/tuwunel/issues/372) — /room_keys/version 500 statt 404 (LOW)**
-- Key Backup API gibt 500 wenn kein Backup existiert (sollte 404 sein)
-- Clients die Key Backup Feature Detection nutzen interpretieren 500 als Server-Error statt "kein Backup"
-- **Go-Layer Impact:** Go Appservice Key-Backup-Bootstrap prueft ob Backup existiert. 500 statt 404 koennte den Bootstrap-Flow abbrechen. mautrix-go wrapped den Error aber — zu pruefen ob der Fallback greift.
-- [ ] Go Key-Backup-Init gegen v1.6 testen: startet ohne Crash trotz 500 auf /room_keys/version
+> J6 (Tuwunel v1.6 stable merge-decision) und J7 (upstream-bug-tracking #411/#401/#377/#372)
+> sind **passive Monitor-Items** — wir warten auf upstream, keine aktiven Verify-Tests.
+> Siehe `exec-matrix-monitor.md §M1 + §M2` für Details und Trigger-Bedingungen.
+>
+> J4 (MSC2246 Async Upload) bleibt oben — ist echter Client-Test sobald Element X v0.8+ verfügbar.
+> J5 (`max_request_size` ≥ 500 MB) bleibt oben — BLOCKED by #411, aber der Gate ist konkret testbar sobald unblocked.
 
 ---
 
@@ -410,3 +371,438 @@ Zusaetzliche Gates fuer die Arbeit die im ersten RC-Test aufgedeckt wurde.
 ### K6. WSL1-Quirk Dokumentation
 - [x] `WARN tcp set_tcp_user_timeout error: Protocol not available (os error 92)` als harmlos dokumentiert in exec2-03b
 - [x] Devstack-Kommentar zur WSL1 vs. WSL2 Netzwerk-Semantik (relevant fuer Podman-Migration)
+
+---
+
+## L. Cinny-Integration Gates (exec2-03c / 2026-04-19)
+
+> Neue Gates aus der Cinny-Pattern-Uebernahme. Bestehende B2/B3-Gates (QR/SAS Cross-Signing, Key-Backup Grundfunktion) bleiben — werden durch diese Gates erweitert, nicht superseeded. Reihenfolge: Tier A (Utilities) → Tier B (UI-Extensions) → Tier C (E2EE-Recovery).
+
+### L1. FeatureCheck (A1, Tier A)
+- [ ] `/matrix` Route im Firefox Private-Browsing-Mode zeigt Fallback-UI mit MDN-Link statt weißem Screen
+- [ ] IndexedDB verfuegbar → FeatureCheck rendert transparent `children` durch (kein Loading-Flash > 500ms)
+- [ ] Probe-DB `matrix-idb-probe-<timestamp>` wird nach Check geloescht (im DevTools → Application → IndexedDB kontrollieren)
+
+### L2. verifiedDevice Helper (A2, Tier A)
+- [ ] Bei Send-Entscheidung wird Helper aufgerufen (Call-Site pruefen via `grep verifiedDevice`)
+- [ ] `null`-Return bei unbekanntem Device (Device nicht im Device-Store)
+- [ ] `true` fuer cross-signed Devices, `false` sonst — via Element X Mobile (cross-signed) und Browser-2-Session (unverified)
+
+### L3. useAlive Hook (A3, Tier A)
+- [ ] Unit-smoke: Component mit `useAlive` mounten + unmounten → Callback returnt `false` nach Unmount
+- [ ] In `ManualVerification.tsx` (B2) verwendet — kein setState-after-unmount-warning nach Modal-Close waehrend laufendem `bootstrapSecretStorage`
+
+### L4. useAccountData (A4, Tier A)
+- [ ] `m.direct`-Change von Element X (User markiert Raum als DM) → unsere Raumliste updated ohne Refresh
+- [ ] `m.push_rules`-Change via Element X → Notification-State ohne Refresh aktualisiert
+- [ ] EventType-Literal-Change im Hook-Parameter → initial-state wird neu aus `getAccountData` gelesen (kein Hold-Over-Wert)
+- [ ] `getAccountData`-Wurf in JSDOM → `console.warn` ohne Tree-Crash
+
+### L5. useCommands (A5, Tier A — integriert in MessageComposer)
+- [ ] `/me winkt` → Emote-Event (m.emote) in Timeline, rendered mit "• winkt"
+- [ ] `/shrug` → Sendet `¯\_(ツ)_/¯` als m.text
+- [ ] `/tableflip` + `/unflip` senden korrekt
+- [ ] `/kick @user:server reason` → Kick + reason gesendet (via `client.kick`)
+- [ ] `/ban @user:server`, `/unban @user:server`, `/invite @user:server` funktional
+- [ ] `/plain text` → m.text ohne `formatted_body` auch wenn Editor HTML hat
+- [ ] `/html <body>` → m.text mit `formatted_body=body`
+- [ ] Unbekannter Command → Toast-Error, Message bleibt im Editor (kein Senden)
+- [ ] Commands in Edit/Reply/Thread-Modus → normaler Text-Send (Commands uebergangen), als dokumentierte Intent
+- [ ] `//text` mit doppeltem Slash → Nicht als Command interpretiert, normaler Send
+
+### L6. JoinBeforeNavigateDialog (A6, Tier A)
+- [ ] Klick auf Matrix-Room-Permalink (noch nicht joined) → Preview-Dialog oeffnet
+- [ ] Avatar, Name, Topic, Member-Count, Join-Rule sichtbar (aus `client.getRoomSummary`)
+- [ ] „Beitreten" → `client.joinRoom` erfolgreich, `onJoined(roomId)` Callback triggert Navigation
+- [ ] „Abbrechen" / Klick ausserhalb → Dialog schliesst, kein Join
+- [ ] Fehlgeschlagene Summary (z.B. Forbidden, Server-nicht-erreichbar) → Error-UI im Dialog
+
+### L7. SplashScreen (B1, Tier B)
+- [ ] Erster Page-Load `/matrix` zeigt Brand-Splash (Logo + Spinner + „Verbinde mit Matrix…") bis `isReady=true`
+- [ ] Detail-Text „Initial-Sync laeuft…" waehrend `client!==null && !isReady`
+- [ ] Nach `SyncState.Prepared` → Splash wird durch MatrixChat ersetzt
+
+### L8. ManualVerification Passphrase-Fallback (B2, Tier B, erweitert exec2-04 B2)
+- [ ] Banner-Button „Passphrase" oeffnet ManualVerification-Modal
+- [ ] Passphrase-Input → Recovery-Key via PBKDF2 ableiten → `secretStorage.checkKey` validiert
+- [ ] Falsche Passphrase → Error „Falsche Passphrase" in rotem Banner, Retry moeglich
+- [ ] Richtige Passphrase → `bootstrapCrossSigning` + `bootstrapSecretStorage` + `loadSessionBackupPrivateKeyFromSecretStorage` erfolgreich → Toast „Verifikation per Recovery-Passphrase erfolgreich"
+- [ ] Recovery-Key-Modus: 48-Character Key mit/ohne Spaces → `decodeRecoveryKey` parsed korrekt
+- [ ] Aktive QR/SAS-Session laeuft → Submit blockiert, Warn-UI sichtbar („Eine QR-/SAS-Verifikation laeuft bereits")
+- [ ] Kein 4S auf Server → klare Fehlermeldung „Kein Secret-Storage-Key eingerichtet"
+
+### L9. Upload-Queue Multi-File + Retry (B3, Tier B)
+- [ ] Drag-Drop von 3 Files auf Composer → Queue-UI zeigt 3 Items mit Thumbnails
+- [ ] File-Input (Paperclip) mit `multiple` → mehrere Files gleichzeitig moeglich
+- [ ] Per-File Progress-Bar waehrend Upload
+- [ ] 1 File failt (Homeserver-429 oder Netzwerkfehler) → Error-Status mit Retry-Button, andere 2 gehen durch
+- [ ] Retry-Button → Item zurueck auf `pending`, bei `uploadAll` erneut probiert
+- [ ] Cancel-Button pro Item → Item aus Queue entfernt, Object-URL revoziert (kein Memory-Leak)
+- [ ] Fertige Items werden nach `uploadAll` aus der Leiste entfernt (`clearDone()`)
+- [ ] Drag-Over visualisierung: Composer bekommt Ring-Border
+
+### L10. BackupRestore UI (C2, Tier C, feature-gated)
+- [ ] Mit `NEXT_PUBLIC_CINNY_TIER_C=false` (Default) → Komponente rendert nichts, auch bei open=true
+- [ ] Mit `NEXT_PUBLIC_CINNY_TIER_C=true` → Status-Panel zeigt korrekt: Kein Backup / Nicht vertrauenswuerdig / Nicht aktiv / Aktiv
+- [ ] „Restore via Passphrase" → Passphrase-Input, bei Submit `restoreKeyBackupWithPassphrase`, Progress-Bar (`loaded/total`)
+- [ ] Restore-Success → Toast mit total/imported-Zaehlern
+- [ ] Ohne Backup auf Server: Hinweis „Kein Backup eingerichtet, richte zuerst eine Recovery-Passphrase ein"
+- [ ] Backup existiert aber nicht aktiv: „Backup-Sync aktivieren"-Button ruft `checkKeyBackupAndEnable`
+- [ ] Reactive: externer `CryptoEvent.KeyBackupStatus` triggert UI-Refresh (via Hook-Listener)
+
+### L11. SecretStorage Setup-UI (C1, Tier C)
+- [ ] Banner-Button „Passphrase einrichten" oeffnet SecretStorage-Modal
+- [ ] Passphrase-Input + Confirm-Input; mismatched oder < 8 Chars → Error-UI
+- [ ] Submit → `createRecoveryKeyFromPassphrase` + `bootstrapSecretStorage({setupNewSecretStorage, setupNewKeyBackup})`
+- [ ] Success → 48-Character Recovery-Key in Mono-Font sichtbar, Copy + Download Buttons funktional
+- [ ] Download erzeugt `matrix-recovery-key-YYYY-MM-DD.txt` mit Key + Erklaertext
+- [ ] Re-Setup mit `alreadySetup=true` → Amber-Warning sichtbar vor Submit
+- [ ] Nach Close wird `generatedKey` aus State geloescht (nicht wieder abrufbar ohne Re-Setup)
+
+---
+
+## Gate-Severity & Reihenfolge
+
+- **Severity CRITICAL** fuer L8, L10, L11 (E2EE-Recovery, direkte Security-Auswirkung bei Fehlfunktion)
+- **Severity HIGH** fuer L1, L5, L6 (User-sichtbare Features, Crash-Risiko ohne)
+- **Severity MEDIUM** fuer L2, L3, L4, L7, L9 (Infrastruktur / UX-Polish)
+
+Empfohlene Reihenfolge beim manuellen Test:
+1. L1 (ohne FeatureCheck-Pass ist alles andere unsicher)
+2. L4 (ohne Account-Data reactive sind L8/L10/L11 nicht verlaesslich)
+3. L5, L7, L9 (parallel — alle UI-Visible)
+4. L2, L3 (Smoke-Checks)
+5. L8 (erfordert zweites Device fuer Cross-Signing-Vergleich)
+6. L11 → L10 (in Reihenfolge: SecretStorage muss vor BackupRestore getestet sein weil Backup die Recovery-Passphrase benoetigt)
+7. L6 (optional — erfordert Test-Room)
+
+---
+
+## M. Cinny-Vollausbau Gates (exec2-03c Phase 2, 2026-04-19)
+
+> Tier D/E/F/G Vollausbau (Sidebar Unread-Aggregation, Notification-Modes, Settings-Tabs, Spaces-Lobby, etc.). Alle drei Gates (typecheck+biome+build) sind gruen. Gates hier = manuelle Browser-Tests gegen echten Homeserver.
+
+### M1. AsyncSearch (F0)
+- [ ] Unit-smoke: `createAsyncSearch({searchFields: (m) => [m.name]})` matcht Whitespace-normalisiert (case-insensitive, multi-token-AND)
+- [ ] Leere Query → unveraenderte Eingabeliste
+
+### M2. useCapabilities (F2)
+- [ ] Homeserver-Capabilities geladen (React-Query-Cache `staleTime: Infinity`)
+- [ ] `m.set_displayname.enabled` korrekt als boolean verfuegbar in G3 AccountTab
+
+### M3. Space Unread-Aggregation Badge (D1)
+- [ ] Space mit 3 unread-Rooms: rotes "3"-Pill am Space-Icon rechts-oben
+- [ ] Nach Room-Mark-as-Read: Badge aktualisiert ohne Refresh
+- [ ] > 99 Unreads: Label "99+"
+- [ ] Tooltip zeigt Anzahl: "SpaceName (5 · 3 ungelesen)"
+
+### M4. D7 Leave-Confirm (shared)
+- [ ] RoomItem-Context-Menu "Raum verlassen" → AlertDialog (nicht silent leave)
+- [ ] Bestaetigung → `client.leave` + `client.forget`
+- [ ] Abbrechen → Dialog schliesst, kein Leave
+
+### M5. D2 NotificationMode (+ DM-Mute)
+- [ ] 4 Modes auswaehlbar: Standard / Alle / Nur Erwaehnungen / Stumm
+- [ ] Mode-Wechsel persistiert in `m.push_rules` account_data
+- [ ] Zweiter Browser-Tab: Mode-Aenderung reactive via AccountData-Event
+- [ ] **DM-Mute via DMInfoPanel**: boolean-toggle (useMuteRoom) funktioniert weiterhin, setzt Override-Rule mit DontNotify (= "mute"-Mode)
+
+### M6. D5 Mark-as-Read Context-Menu
+- [ ] RoomItem mit unread>0: Context-Menu zeigt "Als gelesen markieren"
+- [ ] Klick → `client.sendReadReceipt` auf latest event, unreadCount→0
+
+### M7. D5 Mute-Submenu
+- [ ] "Benachrichtigungen" SubTrigger mit 4 Modes
+- [ ] Active-Mode mit Check-Icon markiert
+- [ ] Keyboard-nav: ArrowRight oeffnet Sub, Enter selektiert
+
+### M8. D4 MemberList (Search + Sort + Virt)
+- [ ] Search-Input filtert live auf Name + UserID
+- [ ] Sort-Dropdown (Rolle/Name/UserID) persistiert nicht (session-state)
+- [ ] \> 30 Members: Virtualizer aktiv (kein DOM-Lag bei 500+ Members)
+
+### M9. D6 SharedMedia (Lightbox + Download)
+- [ ] Klick auf Media-Thumbnail → Full-Screen-Modal
+- [ ] Download-Button → Browser-Download mit Filename
+- [ ] Open-in-new-tab → Neuer Tab mit Media-URL
+- [ ] ESC → Modal schliesst
+- [ ] File-Tab: Download-Button pro Row sichtbar beim Hover
+
+### M10. G1 RoomInfoPanel-Tabs
+- [ ] 5 Tabs: Info / Mitglieder / Benachrichtigungen / Admin (nur PL>=100) / Erweitert
+- [ ] Tab-Switch: Edit-States (editingName/editingTopic) werden reset
+- [ ] Scroll-Position pro Tab unabhaengig
+
+### M11. G2 SpaceSettings-Tabs
+- [ ] 4 Tabs: Allgemein / Mitglieder / Raeume / Berechtigungen
+- [ ] Raeume-Tab zeigt hierarchy + addRoomId-Form (vor F1-Modal-Migration)
+
+### M12. G3 AppSettingsSheet
+- [ ] Trigger: UserProfileDialog oeffnen → "Einstellungen"-Button (nicht Avatar-direkt!)
+- [ ] Sheet oeffnet rechts (sm:max-w-lg)
+- [ ] 5 Tabs: Konto / Aussehen / Alerts / Geraete / Info
+- [ ] Close via ESC oder Outside-Click
+
+### M13. G4 RoomNotificationsTab
+- [ ] 4 Mode-Cards visuell mit Icon + Titel + Description
+- [ ] Active-Mode hervorgehoben (primary-border + Check)
+- [ ] Mode-Click waehrend `isSetting` → Buttons disabled
+
+### M14. G5 Devices
+- [ ] Aktuelle Session mit "Aktuell"-Badge markiert, nicht logout-fähig
+- [ ] Verified vs. unverified per Device sichtbar (Shield-Icons)
+- [ ] Logout-Other: `client.logoutSingleUserDevice` erfolgreich (oder UIA-Hinweis-Toast bei Fail)
+
+### M15. G6 Encryption-Enable (Doppel-Confirm)
+- [ ] Raum ohne E2EE: "Verschluesselung aktivieren"-Button sichtbar fuer Admins
+- [ ] Klick: AlertDialog mit 5-Punkte-Liste + Checkbox "Ich verstehe"
+- [ ] Checkbox nicht angehakt → Action-Button disabled
+- [ ] Nach Aktivierung: Badge wechselt zu "E2EE aktiv" (emerald)
+- [ ] Irreversibel: Downgrade-UI existiert nicht
+
+### M16-18. D8 Admin-Extensions
+- **M16 Join-Rule**: Dropdown (invite/public/knock/restricted) → State-Event `m.room.join_rules` geaendert
+- **M17 History-Visibility**: Dropdown (shared/invited/joined/world_readable) → State-Event `m.room.history_visibility`
+- **M18 Aliases**: Create (`#alias:domain` Format-Check) / Delete / List live aus `getLocalAliases`
+
+### M19. E5 Invite-Users-Dialog
+- [ ] searchUserDirectory liefert Treffer ab 2 Zeichen
+- [ ] Multi-Select mit Chip-Preview der Selected-Liste
+- [ ] Submit: invite pro User, Partial-Success-Toast bei gemischten Ergebnissen
+
+### M20. E4 Suggested-Rooms
+- [ ] Space mit `suggested: true` Child → Sparkles-Icon in SpaceLobby HierarchyRow
+- [ ] Amber-Background (bg-amber-500/5) leicht sichtbar
+
+### M21. E3 Sub-Spaces (nur Data-Model)
+- [ ] `SpaceChildRoom.isSpace=true` fuer nested-Space-Kinder aus `getRoomHierarchy`
+- [ ] UI-Nested-Rendering in SpaceSelector: **DEFERRED** zu naechstem Sprint
+
+### M22. E1 Space-Lobby
+- [ ] Space ohne vorher-Interaktion: Lobby collapsed (localStorage leer)
+- [ ] Nach Expand: Lobby persist via localStorage `matrix.lobby.{id}.expanded`
+- [ ] Hierarchie max 5 Rows, "Alle N anzeigen"-Button bei mehr
+- [ ] Join-Button pro ungejointer Row, Beitritt aktualisiert Liste
+
+### M23. E2 DnD-Reorder
+- **DEFERRED**: pragmatic-drag-and-drop Dep + Element-Web-Event-Type-Recherche
+
+### M24. D3 RoomList Categories
+- **DEFERRED**: Globaler flat-Virtualizer Refactor eigene Iteration
+
+### M25. F1 add-existing Room Picker
+- [ ] Virtualizer aktiv bei `>30` Candidate-Rooms
+- [ ] Filter: existing childIds + Self excluded
+- [ ] Multi-Select → `sendStateEvent(m.space.child)` pro Room
+
+---
+
+## L-Gate Review nach Phase 2
+
+Keine L-Gates sind **obsolet** oder **superseded**. L-Gates bleiben gueltig. Erweiterungen:
+
+- **L2 verifiedDevice** → jetzt auch in G5 DevicesTab sichtbar als Verify-Badge
+- **L3 useAlive** → zusaetzlich in MediaLightbox, InviteUsersToSpaceDialog, AddRoomToSpaceDialog, useDevices, useRoomNotificationMode verwendet (Phase-2-Expansion)
+- **L4 useAccountData** → Konsument-Erweiterung: G3 NotificationsTab (Keywords), useRoomNotificationMode (Push-Rules reactive)
+- **L8/L10/L11** (ManualVerification/BackupRestore/SecretStorage) → unveraendert aktiv. `NEXT_PUBLIC_CINNY_TIER_C` bleibt Rollback-Flag.
+
+---
+
+## Section N — Phase 3 Gates (N1-N4, 2026-04-20)
+
+Phase 3 Final Polish (Tier-H). 4 Items implementiert + verifiziert (sota-verify Run #2 PASS). P3-Block (N5-N7) bewusst skipped per Plan.
+
+### N1 — AutoRestoreBackupOnVerification
+
+- [ ] Erster Verify-Flow nach Fresh-Login: Restore-Toast erscheint ("Alte Nachrichten werden entschluesselt..."), Key-Progress-Bar sichtbar
+- [ ] Alte verschluesselte Nachrichten werden ohne weiteren User-Input entschluesselt (bei trusted Backup)
+- [ ] Second-Verify in selber Session: kein Double-Restore (sessionStorage-Flag blockt, Dual-Guard aktiv)
+- [ ] Verify ohne vorhandenes Backup: keine Error-Toasts, silent skip via try/catch
+- [ ] Beim Cancel der Verify-Request: kein AutoRestore-Trigger (Phase=Cancelled detach-Handler aktiv)
+- [ ] Error-Pfad: bei `restoreWithCachedKey`-Reject wird `restoreStartedRef` + sessionStorage rollbacked, Retry moeglich
+
+### N2 — Cross-Room Message-Search
+
+- [ ] SearchPanel hat Cross-Room-Toggle (Default OFF = per-room-Modus)
+- [ ] Toggle an: Suche laeuft ueber alle joined, non-encrypted Rooms
+- [ ] Jedes Result zeigt Room-Avatar + Name + Sender + Message-Preview + timestamp
+- [ ] Click auf Result navigiert zum Event via `matrix:navigate`-Custom-Event
+- [ ] Encrypted-Room-Hinweis "Verschluesselte Raeume werden nicht durchsucht (Matrix-Protokoll-Limitation)" sichtbar bei aktivem Toggle
+- [ ] Toggle disabled mit Tooltip wenn alle Raeume verschlüsselt
+- [ ] Results-Footer: "X Raeume durchsucht, Y uebersprungen" bei encryptedSkipped > 0
+- [ ] Pagination "Mehr laden"-Button erscheint bei `nextBatch != null`, disabled waehrend in-flight
+- [ ] Toggle-Flip mid-flight invalidiert stale responses via Request-Generation-Counter (kein Stale-Data-Render)
+
+### N3 — RoomList-Categories
+
+- [ ] 5 Groups angezeigt: Einladungen / Favoriten / Personen / Raeume / Niedrige Prioritaet (in dieser Reihenfolge)
+- [ ] Collapse per-Group via ChevronRight/ChevronDown-Toggle funktioniert
+- [ ] Collapse-State persistiert in `localStorage.matrix.roomList.collapsedGroups`
+- [ ] Globaler flat-Virtualizer mit heterogenen Heights (Header 26px, Item 60px) rendert korrekt
+- [ ] Pfeiltasten-Nav springt zwischen Room-Items, Group-Header werden uebersprungen
+- [ ] Space-Filter (wenn Space ausgewaehlt): Groups zeigen nur Rooms aus `space.childRoomIds`
+- [ ] Leere Groups werden im Space-Kontext ausgeblendet (kein "leer"-Placeholder)
+- [ ] Search-Input filtert global ueber alle Groups, leere Groups dann auch ausgeblendet
+- [ ] `m.lowpriority`-Tag wird korrekt aus Room-Tags gelesen und kategorisiert
+- [ ] Playwright-Minimal-Test `tests/roomlist-keyboard-nav.spec.ts` laeuft (skipped ohne Matrix-Credentials)
+
+### N4 — Image-Editor Crop/Rotate
+
+- [ ] Image-Upload in der Queue zeigt Crop-Button bei `status === "pending" || "error"` UND `image/*` UND NICHT `image/gif`
+- [ ] Animated GIF: Crop-Button disabled mit Tooltip "Animated GIFs koennen nicht bearbeitet werden"
+- [ ] Click Crop-Button oeffnet ImageEditor-Modal mit Cropper
+- [ ] Aspect-Ratio Select: 4 Optionen (4:3 Standard / 1:1 Quadrat / 16:9 Breitbild / 3:4 Hochformat), keine "Frei"-Option
+- [ ] Rotate-Buttons 90° links/rechts funktional, kombiniert mit Crop
+- [ ] Zoom-Slider 1.0×—4.0× aktiv
+- [ ] Save: modifiziertes Image (JPEG oder PNG basierend auf Source) ersetzt Original via `replaceFile(id, newFile)`
+- [ ] Cancel: unveraendert, original File bleibt in Queue
+- [ ] ObjectURL-Lifecycle: Editor-useEffect-Cleanup revoked image-URL; `replaceFile` revoked alten preview-URL vor Ersatz
+- [ ] Re-Upload nach Replace: upload-Progress laeuft ab status=pending
+
+### N5-N7 (DEFERRED)
+
+N5 Sidebar-DnD-Reorder, N6 PPTX Preview, N7 Space-Members-Drawer wurden per Plan-Entscheidung skipped. Bei Re-Aktivierung: sub-Gates N5.x / N6.x / N7.x hier ergaenzen.
+
+### Phase-3-Fixes-Log
+
+- **N2 Stale-Data-Race** (sota-verify Run #1 finding) → Fix in SearchPanel.tsx via `requestIdRef`-Counter: pre-await capture, post-await check, toggle-handler invalidate. Verified PASS.
+- **N4 "Frei"-Aspect-UX-Bug** (sota-verify Run #1 finding) → Fix in ImageEditor.tsx: strict Union ohne "free", klarere Labels, kein `??`-Fallback-Deadcode mehr. Verified PASS.
+
+### Review der M-Gates (Section M bleibt aktiv)
+
+- **M5** (D2 NotificationMode Push-Rules) — unveraendert aktiv. DMInfoPanel-Migration auf useRoomNotificationMode bleibt DEFERRED (funktional identisch).
+- **M24** (D3 Categories Flat-Virtualizer) — durch N3 **implementiert** (war in Phase 2 als Deferred dokumentiert). M24 wird jetzt in N3.x-Gates abgedeckt. M24 bleibt als Alias-Pointer zur N3-Section.
+
+### Review der L-Gates
+
+- **L1 Crypto-Bootstrap** → N1 nutzt `useKeyBackup` (Tier-C0), selber Crypto-Path; keine Regression.
+- **L10 BackupRestore** → N1 konsumiert `restoreWithCachedKey` aus Tier-C2, erweitert Silent-Auto-Flow (ohne Passphrase-UI).
+- Alle L-Gates bleiben aktiv unveraendert.
+
+---
+
+## Section N Add-On — Phase 3.5 Gates (2026-04-20)
+
+Phase 3.5 ergaenzt 2 Items aus dem vorher deferred P3-Block.
+
+### N5 — Sidebar DnD-Reorder (Space-Icons)
+- [ ] Space-Icon ist draggable, Cursor-Indikation sichtbar
+- [ ] Drop-Target zeigt top/bottom-Edge-Indikator (2px Linie) je nach Maus-Position
+- [ ] Drop auf sich selbst: no-op
+- [ ] Order persistiert in `localStorage.matrix.spaceOrder`
+- [ ] Einmaliger Toast "Reihenfolge nur auf diesem Geraet gespeichert." bei erstem Drop (via `matrix.spaceOrderToastShown`)
+- [ ] Neuer Space (nach Setup-Order erstellt) erscheint am Ende der Liste
+- [ ] Home-Icon, Create-Button, Activity-Bell, Profil-Avatar nicht draggable
+- [ ] localStorage corrupt: fallback auf default-order, kein Crash
+
+### N-Lobby — Room-Item DnD zwischen Categories
+- [ ] Room-Item ist draggable (outer div als drag-handle), opacity-40 waehrend drag
+- [ ] Favoriten/Niedrige-Prio/Raeume/Personen-Header: ring-highlight bei drag-over
+- [ ] Einladungen-Header: **kein** drop-target (keine ring-highlight)
+- [ ] Drop auf Favoriten: setRoomTag(m.favourite) + deleteRoomTag(m.lowpriority) + Toast
+- [ ] Drop auf Niedrige Priorität: setRoomTag(m.lowpriority) + deleteRoomTag(m.favourite) + Toast
+- [ ] Drop auf Raeume/Personen: beide Tags deleted + Toast "Kategorie entfernt"
+- [ ] Drop auf Einladungen: no-op (skipped in monitorForElements)
+- [ ] Drop auf same category: early return, keine API-Calls, kein Toast
+- [ ] Network-Fail auf setRoomTag: Error-Toast "Verschieben fehlgeschlagen"
+
+### Phase 3.5 Fixes-Log
+- **Invites als visuelles Drop-Target** (sota-verify Run #1 finding) → Fix: `groupId`-Prop in RoomList.tsx conditional durchreichen, "invites" bekommt gar nicht erst DropTarget-Capability. PASS.
+- **Same-Category API-Call-Waste** (sota-verify Run #1 finding) → Fix: roomsRef + categorize-Lookup-Guard in onDrop. PASS.
+
+---
+
+## Section O — Architektur-Decisions (ADR-lite, 2026-04-21)
+
+> Keine Verify-Gates, sondern Decisions die zum Verständnis der Matrix-Chat-Tests
+> nötig sind. Verknüpft mit exec-06 (agent-chat bridge) und exec-10 (multi-agent orchestration).
+
+### O.1 Bridge-Architektur (Go-Appservice ↔ Python-Agent)
+
+**Context:** go-appservice kommuniziert über NATS, python-agent spricht HTTP/SSE. Irgendetwas muss übersetzen.
+
+**Options:**
+
+| Option | Wie | Pro | Contra |
+|---|---|---|---|
+| **A — Go ruft Agent direkt via HTTP** | go-appservice konsumiert `/api/v1/agent/chat` SSE-Stream direkt | kein NATS im agent-chat-pfad, 1 hop weniger | Go braucht SSE-client impl, kein buffer wenn agent down, streng gekoppelt |
+| **B — Agent subscribed selber auf NATS** | python-agent hat eigenen NATS-consumer für `matrix.message.inbound` | kein bridge-prozess, direkt | agent verliert "pure HTTP"-interface, mixing transports im agent-code, frontend + matrix-pfad teilen dieselbe handler-logic |
+| **C — Bridge (status quo)** | `python-backend/bridge/` ist dünner Translator: NATS inbound → HTTP POST → SSE collect → NATS reply | decoupled (Go + Agent unabhängig restart-bar), NATS als buffer, agent bleibt pure-HTTP, frontend + matrix share 0 code | extra prozess, extra hop (~5-10ms latency), doppelte (de)serialization |
+
+**Decision: C (bridge behalten) — 2026-04-21**
+
+**Gründe:**
+- Bridge ist klein (~120 LOC in 3 files: `nats_handler.py` + `agent_client.py` + `config.py`), Wartungsaufwand minimal
+- Decoupling hat echten Wert: frontend nutzt agent-HTTP direkt, matrix-pfad nutzt NATS — zwei orthogonale Transports am selben agent. Sauber.
+- Architektur-Refactor wäre eigene Iteration (exec-06 territory), nicht blockierend für Verify-Lauf
+
+**Re-evaluate wenn:**
+- Bridge-Prozess wird performance-bottleneck (>50ms overhead je request)
+- Bridge crasht >1×/Monat ohne Trigger (reliability-problem)
+- matrix-pfad braucht features die HTTP/SSE nicht kann (z.B. bidirektionales streaming von tool-calls)
+
+**Cleanup TODO (low prio):** `docker-compose.yml:261` zeigt `python-bridge` auf nicht-existierendes `./python-agent-bridge`. Dev-stack.sh startet bridge lokal korrekt. Compose-Eintrag ist dead weight — entfernen oder auf `./python-backend` mit korrektem Dockerfile umbiegen.
+
+---
+
+### O.2 Agent-Orchestration (User ↔ Agent Matrix-Topologie)
+
+**Context:** Heute multi-agent-mention-routing (`@agent-trading`, `@agent-research`) via body-regex in `go-appservice/internal/handler/server.go:extractAgentName()`. User will: **single orchestrator-agent** der subagents intern delegiert.
+
+**Options:**
+
+| Option | Pattern | Status |
+|---|---|---|
+| **Multi-Agent-Mention (aktuell)** | User schreibt `@agent-trading ...` → go-appservice extract name → bridge → agent-service → reply als `@agent-<name>` | implementiert, body-parsing, NICHT SOTA 2026 |
+| **Orchestrator + interne Subagents** | User spricht mit 1 agent pro user (`@agent-<userid>`). Agent ist LangGraph-Supervisor der subagents (als Graph-Nodes) routet. Subagents haben KEINE Matrix-Identity. | **Target-Pattern**, exec-10 Phase 1-4 impl, A2A nie live-getestet |
+| **Orchestrator + sichtbare A2A-Subagents** | Wie oben, aber subagents haben eigene Matrix-UserIDs und posten Zwischenschritte in einen "workspace"-Room. Transparency für User. | exec-10 Phase 4 (A2A-protocol), verfügbar aber optional |
+
+**Decision: Target = Orchestrator-Pattern, Refactor in exec-10 (nicht jetzt) — 2026-04-21**
+
+**Gründe:**
+- Body-parsing `extractAgentName` ist dispatcher-logic die eigentlich in den agent gehört
+- Pro-user-agent ist skalierungstechnisch richtig (user_llm_settings, memory-isolation, eigene preferences)
+- Subagent-Struktur ist **noch in Entwicklung** (welche Subagents, welche Routing-Regeln, Transparency-Level) → jetzt nicht festzementieren
+- Matrix-Appservice-Namespace `@agent-.*:matrix.local` deckt beide Patterns bereits ab — refactor ist server-side ohne Matrix-Protokoll-Änderung
+
+**Offene Design-Fragen (exec-10 scope):**
+- Ein Singleton python-agent-prozess, der AS verschiedene `@agent-<userid>` antwortet (Appservice-Intent-Pattern) — oder ein prozess pro user-agent (n Prozesse, memory-heavy)?
+- Subagents als LangGraph-Nodes (kein Matrix-Identity, aktuell) vs. A2A-Matrix-Agents (eigene Identity, transparency-Option)
+- Wie bestimmt der orchestrator welche subagents er triggert? (intent-classifier-LLM, tool-use-routing, rule-based)
+- E2EE-Scaling: Shared OlmMachine für alle agent-users (status quo, mautrix-go Appservice E2EE MSC3202) vs. per-agent OlmMachine (`exec-05c agent-isolation`, deferred)
+
+**Für trading-project integration:**
+- User-Registration → `@<userid>:matrix.local` via MAS/OIDC-provisioning (blockiert: `exec-matrix-monitor §M4`)
+- User-Registration → `@agent-<userid>:matrix.local` **NICHT explizit registrieren** — appservice-namespace `@agent-.*` deckt das ab, lazy on-demand beim ersten SendText
+- DM-Room(@user, @agent-user) auto-create nach Matrix-Init (exec2-03b §A2 Post-Login Matrix Init)
+
+**Cross-refs:**
+- Namespace-Pattern: `homeserver/registration.yaml`, `homeserver/tuwunel.toml [appservice.trading-agent.namespaces.users]`
+- Intent-API: `go-appservice/internal/intent/agent.go:AgentSender` (`?user_id=@agent-xxx` query-param pattern)
+- Body-Parsing (zu deprecaten): `go-appservice/internal/handler/server.go:extractAgentName()` (L776ff), `isAgentUser()` (L798ff)
+- Per-user-model-routing (bereits implementiert): `python-backend/bridge/nats_handler.py:82-89` (`get_user_default_model(sender)` aus `agent.security.credentials`)
+
+---
+
+### O.3 Scope für aktuellen Verify-Lauf (2026-04-21)
+
+**Implementiert in dieser Session (aus Prod-Readiness-Gründen, nicht aufschiebbar):**
+
+- ✅ **Bridge Option C** — läuft
+- ✅ **Env-loader** (`shared/app_factory.py` + `bridge/config.py`) lädt `.env.development` via `APP_ENV` default — OpenRouter-key wird geladen
+- ✅ **Dynamic reply-routing in bridge** (`bridge/nats_handler.py:_resolve_reply_user_id()`) — nutzt `target_agent` aus NATS-payload, fallback auf config-default. Damit respondet das system schon heute pro-user korrekt (`@agent-alice` antwortet alice, `@agent-bob` antwortet bob), sobald body mention oder konfig das so sagt. **Go-seite war bereits dynamic-ready** (`InboundMessage.TargetAgent` wird von `extractAgentName()` gefüllt), nur die bridge hatte statischen reply-user.
+
+**Test-Setup für diesen Lauf:**
+
+- **User-Setup:** `@alice` (Webclient + Mobile), `@bob` (Mobile für Calls), `@agent-bot` (default orchestrator)
+- **Testflow Phase 1:** alice mentioniert verschiedene agent-namen (`@agent-bot`, `@agent-alice`, `@agent-bob`) → bridge respondet lazy als entsprechender virtueller user (via appservice-namespace). Validiert dynamic-routing live.
+- **Testflow Phase 2 (Calls):** alice ↔ bob 1:1 und Gruppe, keine agent-interaktion
+
+**Nicht in dieser Session (verschoben nach `exec-10 Phase 7`):**
+
+- DM-room-based default-routing (body-parsing deprecaten)
+- Username-sanitizer für trading-project integration
+- Orchestrator-supervisor-refactor mit subagent-design-session
+- Per-user `user_agent_settings` (system-prompt, memory-scope, skills, tools gated by user_id)
+
+**Architektonische Begründung:** Der minimale dynamic-routing-fix war unumgänglich weil Static-Routing per definition nicht skaliert (prod hat nicht 1-2 sondern n user). Der restliche refactor (orchestrator-pattern + subagent-design) ist substantiell genug für eigene exec-10-Iteration mit contrarian-review — Subagent-Topologie ist explizit WIP und darf nicht ad-hoc festgeklopft werden.

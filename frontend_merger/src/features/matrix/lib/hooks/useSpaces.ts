@@ -11,6 +11,12 @@ export interface SpaceChildRoom {
 	isJoined: boolean;
 	/** true wenn dieses Kind selbst ein Space ist (Sub-Space) */
 	isSpace?: boolean;
+	/** true wenn dieser Child als "empfohlen" markiert ist (m.space.child.suggested) */
+	suggested?: boolean;
+	/** Topic des Child-Rooms aus getRoomHierarchy-Response. */
+	topic?: string;
+	/** Avatar-URL (mxc://) aus getRoomHierarchy-Response. */
+	avatarUrl?: string;
 }
 
 export interface SpaceInfo {
@@ -96,7 +102,7 @@ export function useSpaces(client: MatrixClient | null): {
 	}, [client]);
 
 	/**
-	 * Server-seitige Hierarchie laden (getRoomHierarchy).
+	 * Server-seitige Hierarchie laden (getRoomHierarchy) inkl. suggested-Flags.
 	 * Zeigt auch Raeume die der User noch nicht gejoint hat.
 	 */
 	const fetchHierarchy = useCallback(
@@ -111,6 +117,17 @@ export function useSpaces(client: MatrixClient | null): {
 						.filter((r) => r.getMyMembership() === "join")
 						.map((r) => r.roomId),
 				);
+
+				// Suggested-Flag aus dem m.space.child State-Event des Parent-Spaces lesen.
+				const spaceRoom = client.getRoom(spaceId);
+				const childEvents = spaceRoom?.currentState.getStateEvents("m.space.child") ?? [];
+				const suggestedMap = new Map<string, boolean>();
+				for (const ev of Array.isArray(childEvents) ? childEvents : [childEvents]) {
+					const key = ev.getStateKey();
+					const content = ev.getContent();
+					if (key) suggestedMap.set(key, !!content?.suggested);
+				}
+
 				const children: SpaceChildRoom[] = (result.rooms ?? [])
 					.filter((r) => r.room_id !== spaceId)
 					.map((r) => ({
@@ -119,6 +136,9 @@ export function useSpaces(client: MatrixClient | null): {
 						memberCount: r.num_joined_members ?? 0,
 						isJoined: joinedRoomIds.has(r.room_id),
 						isSpace: r.room_type === "m.space",
+						suggested: suggestedMap.get(r.room_id) ?? false,
+						topic: r.topic,
+						avatarUrl: r.avatar_url,
 					}));
 
 				setSpaces((prev) =>

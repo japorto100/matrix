@@ -1,0 +1,50 @@
+$ next build
+▲ Next.js 16.2.2 (Turbopack)
+- Environments: .env.local, .env.production
+- Experiments (use with caution):
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 42s
+  Running TypeScript ...
+  Finished TypeScript in 20.2s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/16) ...
+  Generating static pages using 7 workers (4/16) 
+  Generating static pages using 7 workers (8/16) 
+  Generating static pages using 7 workers (12/16) 
+✓ Generating static pages using 7 workers (16/16) in 1540ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/agent/approve
+├ ƒ /api/agent/chat
+├ ƒ /api/agent/completion
+├ ƒ /api/agent/models
+├ ƒ /api/audio/synthesize
+├ ƒ /api/audio/transcribe
+├ ƒ /api/control/[...path]
+├ ƒ /api/files
+├ ƒ /api/files/[id]
+├ ƒ /api/files/[id]/ingest
+├ ƒ /api/files/[id]/mark-ready
+├ ƒ /api/files/[id]/reindex
+├ ƒ /api/files/[id]/url
+├ ƒ /api/files/overview
+├ ƒ /api/files/search
+├ ƒ /api/files/upload-intent
+├ ƒ /api/matrix/credentials
+├ ƒ /api/matrix/media
+├ ƒ /api/memory/[...path]
+├ ƒ /api/scheduler/[...path]
+├ ƒ /control/[[...tab]]
+├ ƒ /files/[[...tab]]
+├ ○ /matrix
+└ ƒ /memory/[[...tab]]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

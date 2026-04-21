@@ -12,6 +12,9 @@ const (
 	ProviderFilesystem ProviderKind = "filesystem"
 	ProviderS3         ProviderKind = "s3"
 	ProviderSeaweedFS  ProviderKind = "seaweedfs"
+	// ProviderGarage: Garage (Rust, AGPLv3) — S3-API-kompatibel, lightweight.
+	// Nutzt gleichen NewS3Provider unter der Haube (nur semantic distinction).
+	ProviderGarage ProviderKind = "garage"
 )
 
 type ArtifactStatus string

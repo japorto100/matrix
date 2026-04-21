@@ -409,3 +409,78 @@ agent/skills/importer.py                — GEAENDERT: URL host validation (SSRF
 ## Code Review (31.03.2026)
 
 32 Issues gefunden, 8 gefixt in exec-10. Offene Issues verteilt auf exec-11/12.
+
+---
+
+## Phase 7: Orchestrator-Refactor + Per-User-Agent-Routing (Planned, 2026-04-21)
+
+> **Auslöser:** Diskussion 2026-04-21 (siehe `exec2-04 §O.2`). Heute routet go-appservice
+> multi-agent-mentions (`@agent-trading`, `@agent-research`) via body-regex. Ziel-Architektur:
+> **ein orchestrator-agent pro user**, der subagents intern (LangGraph-Nodes) delegiert.
+
+### 7.1 Status-Bestandsaufnahme (was existiert bereits)
+
+- ✅ **LangGraph Orchestrator-Graph** (Phase 1-3) — Supervisor-Pattern möglich
+- ✅ **Per-user LLM-settings** (`agent/control/user_llm.py:get_user_default_model(sender)`) — bridge berücksichtigt bereits
+- ✅ **Appservice-Namespace** (`@agent-.*:matrix.local`) — deckt beliebige agent-user-IDs on-demand ab
+- ✅ **NATS `target_agent` im InboundMessage** — Go extractet den agent-namen und publisht ihn
+- ✅ **Bridge dynamic reply routing** (2026-04-21): `bridge/nats_handler.py:_resolve_reply_user_id()` baut reply-user-id aus `target_agent`, fallback auf config-default
+- ✅ **A2A-Protokoll** (Phase 4) — agent-to-agent delegation infrastruktur, nie live-getestet (heiß!)
+
+### 7.2 Was fehlt für vollen Orchestrator-Pattern
+
+**Body-Parsing deprecaten:**
+- [ ] `go-appservice/internal/handler/server.go:extractAgentName()` — obsolet sobald orchestrator-default-routing steht
+- [ ] `isAgentUser()` bleibt (Namespace-check)
+- [ ] Alternative: `target_agent` wird aus DM-room-member abgeleitet (falls room ein DM zwischen user und `@agent-<user>` ist), nicht aus body
+
+**Default-agent-routing (in absence of explicit mention):**
+- [ ] Convention: User alice DM-t ihren `@agent-alice` direkt — keine mention nötig, go leitet automatisch `target_agent=alice`
+- [ ] Go-handler: neue helper `resolveTargetAgentForRoom(roomID, sender)` — prüft room-members, extrahiert `@agent-*` member falls DM oder kleiner room
+- [ ] Fallback: falls no agent-member → default-mention-routing (body regex, legacy) oder skip
+
+**Username-Sanitization (trading-project integration):**
+- [ ] Neue `agent/identity/matrix_names.py` utility:
+  - `sanitize_matrix_localpart(raw: str) -> str` — Matrix-Spec: lowercase + `[a-z0-9._=\-/]` erlaubt; ersetze ungültige chars mit `_`
+  - `matrix_user_id(username, server) -> str` — `@<sanitized>:<server>`
+  - `agent_user_id(username, server, prefix="agent-") -> str` — `@agent-<sanitized>:<server>`
+- [ ] Test-cases: `alice.smith`, `alice_smith`, `ALICE`, `alice+smith`, `müller` (unicode), leading-digit, extremely-long
+- [ ] Trading-project registration-hook ruft beide mapping-funktionen auf, speichert in `user_settings.matrix_user_id` + `user_settings.agent_user_id`
+
+**Orchestrator-Default-Model pro user:**
+- [ ] Heute: `get_user_default_model(sender)` liefert model pro human-user-id
+- [ ] Erweiterung: per-user-agent auch eigenen system-prompt, memory-scope, skill-set, tool-allowlist — alles gated durch user_id
+- [ ] `user_agent_settings` Tabelle (neu) oder Erweiterung von `user_llm_settings`
+
+**Subagent-Design (explizit als WIP markiert):**
+- [ ] **OFFEN:** welche Subagents gibt's? (trading, research, memory, planning, skills)
+- [ ] **OFFEN:** Subagent-Routing-Logik — intent-classifier-LLM (meta-agent klassifiziert first) vs. tool-based-routing (jeder tool-call entspricht subagent) vs. rule-based (keywords → subagent)
+- [ ] **OFFEN:** Subagent-Visibility — LangGraph-Nodes-only (unsichtbar für user) vs. A2A-Matrix-Identity (eigene `@subagent-<type>` user die im workspace-room posten) vs. hybrid
+- [ ] **OFFEN:** Parallel vs. sequential subagent-execution
+- [ ] **OFFEN:** Wie teilen Subagents state/memory? (shared conversation-state in graph vs. isolated per subagent)
+- [ ] Design-Session vor Implementation notwendig — sota-contrarian stakes=high review
+
+**E2EE-Scaling-Entscheidung:**
+- [ ] Status quo: Shared OlmMachine im go-appservice handled alle `@agent-*` users (MSC3202 Appservice E2EE). Skaliert gut bis ~1000s agent-users.
+- [ ] Alternative (deferred nach `exec-05c`): per-agent-user OlmMachine für echte crypto-isolation. Nur triggern wenn Security-Audit es fordert.
+- [ ] **Entscheidung:** Status quo ausreichend bis 1000+ concurrent agent-users oder compliance-trigger — siehe `exec-blocking §C4`.
+
+### 7.3 Abhängigkeiten + Sequence
+
+1. **Username-sanitizer** (`agent/identity/matrix_names.py`) — unabhängig, kann jederzeit gebaut
+2. **DM-room-based default-routing** in go-appservice — unabhängig, kleine change
+3. **Subagent-design-session** + sota-contrarian — blockierend für 7.4
+4. **Orchestrator-supervisor-refactor** in LangGraph — nach Design-Session
+5. **Body-parsing deprecate** — letzter Schritt, wenn default-routing + orchestrator stabil
+
+### 7.4 Cross-ref mit trading-project
+
+- MAS/OIDC-provisioning für matrix-user blockiert (siehe `exec-matrix-monitor §M4`)
+- Sobald entblockt: trading-registration → `sanitize_matrix_localpart(trading_username)` → matrix-user erstellt → `@agent-<sanitized>` namespace-virtuell verfügbar ohne weiteren call
+- DM-room zwischen beiden auto-create beim ersten Login (exec2-03b §A2)
+
+### 7.5 Done in dieser Session (2026-04-21)
+
+- [x] **Bridge dynamic reply routing** — `bridge/nats_handler.py:_resolve_reply_user_id()` nutzt `target_agent` aus payload, fallback auf config
+- [x] **Env-loader** lädt `.env.development` via `APP_ENV` (für OpenRouter-key)
+- [x] **ADR-lites** in `exec2-04 §O` (bridge architecture decision C, orchestrator target-pattern)

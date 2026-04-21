@@ -22,11 +22,20 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 
-# Load .env
+# Load env files — analog zu GO_ENV pattern:
+#   1. .env als baseline (leere Defaults / committed-safe values)
+#   2. .env.<APP_ENV> override (real keys, gitignored) — gewinnt
+# Shell-Env gewinnt über beides (wird nicht überschrieben weil override=True nur file→file wirkt,
+# load_dotenv mit override=True ersetzt NUR zuvor aus Datei geladene Werte, nicht os.environ-preset).
 _root = Path(__file__).resolve().parents[1]
-_env_dev = _root / ".env"
-if _env_dev.exists():
-    load_dotenv(dotenv_path=_env_dev, override=False)
+_env_base = _root / ".env"
+if _env_base.exists():
+    load_dotenv(dotenv_path=_env_base, override=False)
+
+_app_env = os.getenv("APP_ENV", "development").strip().lower()
+_env_specific = _root / f".env.{_app_env}"
+if _env_specific.exists():
+    load_dotenv(dotenv_path=_env_specific, override=True)
 
 REQUEST_ID_HEADER = "X-Request-ID"
 

@@ -1,26 +1,18 @@
 "use client";
 
+import { useCommands } from "@matrix/lib/hooks/useCommands";
 import { useRoomMembers } from "@matrix/lib/hooks/useRoomMembers";
 import { sendTyping } from "@matrix/lib/hooks/useTyping";
+import { useUploadQueue } from "@matrix/lib/hooks/useUploadQueue";
 import type { RoomInfo } from "@matrix/lib/types";
-import { FileIcon, Mic, MicOff, Paperclip, Pencil, Reply, Send, SmilePlus, X } from "lucide-react";
+import { Mic, MicOff, Paperclip, Pencil, Reply, Send, SmilePlus, X } from "lucide-react";
 import { EventType, type MatrixClient, MsgType, RelationType } from "matrix-js-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { UploadQueueBar } from "./composer/UploadQueueBar";
 import { WysiwygEditor, type WysiwygEditorRef } from "./composer/WysiwygEditor";
 import { EmojiPicker } from "./EmojiPicker";
-
-async function compressImage(file: File): Promise<File> {
-	// Nur Bilder > 5MB komprimieren
-	if (!file.type.startsWith("image/") || file.size <= 5 * 1024 * 1024) return file;
-	const imageCompression = (await import("browser-image-compression")).default;
-	return imageCompression(file, {
-		maxSizeMB: 5,
-		maxWidthOrHeight: 3840,
-		useWebWorker: true,
-	});
-}
 
 export interface EditState {
 	eventId: string;
@@ -40,65 +32,6 @@ interface Props {
 
 const TYPING_TIMEOUT_MS = 4000;
 
-// ─── Datei → Matrix msgtype ──────────────────────────────────────────────────
-
-function mimeToMsgtype(mime: string): MsgType {
-	if (mime.startsWith("image/")) return MsgType.Image;
-	if (mime.startsWith("video/")) return MsgType.Video;
-	if (mime.startsWith("audio/")) return MsgType.Audio;
-	return MsgType.File;
-}
-
-async function readFileDimensions(
-	file: File,
-): Promise<{ w?: number; h?: number; duration?: number }> {
-	return new Promise((resolve) => {
-		if (file.type.startsWith("image/")) {
-			const img = new Image();
-			const url = URL.createObjectURL(file);
-			img.onload = () => {
-				URL.revokeObjectURL(url);
-				resolve({ w: img.naturalWidth, h: img.naturalHeight });
-			};
-			img.onerror = () => {
-				URL.revokeObjectURL(url);
-				resolve({});
-			};
-			img.src = url;
-		} else if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
-			const media = document.createElement(file.type.startsWith("video/") ? "video" : "audio") as
-				| HTMLVideoElement
-				| HTMLAudioElement;
-			const url = URL.createObjectURL(file);
-			const timeout = setTimeout(() => {
-				URL.revokeObjectURL(url);
-				resolve({});
-			}, 5000);
-			media.onloadedmetadata = () => {
-				clearTimeout(timeout);
-				URL.revokeObjectURL(url);
-				const result: { w?: number; h?: number; duration?: number } = {
-					duration: Math.round(media.duration * 1000),
-				};
-				if ("videoWidth" in media) {
-					result.w = media.videoWidth;
-					result.h = media.videoHeight;
-				}
-				resolve(result);
-			};
-			media.onerror = () => {
-				clearTimeout(timeout);
-				URL.revokeObjectURL(url);
-				resolve({});
-			};
-			media.preload = "metadata";
-			media.src = url;
-		} else {
-			resolve({});
-		}
-	});
-}
-
 // ─── Komponente ───────────────────────────────────────────────────────────────
 
 export function MessageComposer({
@@ -114,19 +47,23 @@ export function MessageComposer({
 	const editorRef = useRef<WysiwygEditorRef>(null);
 	const [hasContent, setHasContent] = useState(false);
 	const [isSending, setIsSending] = useState(false);
-	const [isUploading, setIsUploading] = useState(false);
-	const [pendingFile, setPendingFile] = useState<File | null>(null);
-	const [pendingFilePreview, setPendingFilePreview] = useState<string | undefined>();
-	const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+	const [isRecordingUploading, setIsRecordingUploading] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [recordingDuration, setRecordingDuration] = useState(0);
 	const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+	const [isDragOver, setIsDragOver] = useState(false);
 	const emojiPickerRef = useRef<HTMLDivElement>(null);
 	const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const recorderRef = useRef<MediaRecorder | null>(null);
 	const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const audioChunksRef = useRef<Blob[]>([]);
+
+	// Multi-file Upload-Queue: Drag-Drop, Per-Item-Progress, Retry bei Fehler.
+	const uploadQueue = useUploadQueue(client, roomId, (message) => toast.error(message));
+
+	// Slash-Command-Parser: /me, /shrug, /kick, /ban, /invite, /plain, /html etc.
+	const runCommand = useCommands(client, roomId);
 
 	// Room-Members für @-Mention-Autocomplete
 	const { members } = useRoomMembers(client, roomId);
@@ -196,7 +133,7 @@ export function MessageComposer({
 				if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
 				const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType });
 				if (blob.size < 100) return; // zu kurz
-				setIsUploading(true);
+				setIsRecordingUploading(true);
 				try {
 					const file = new File([blob], "voice-message.ogg", { type: recorder.mimeType });
 					const uploadRes = await client.uploadContent(file, { name: file.name });
@@ -216,7 +153,7 @@ export function MessageComposer({
 					console.error("[composer] voice upload failed:", err);
 					toast.error("Sprachnachricht konnte nicht gesendet werden.");
 				} finally {
-					setIsUploading(false);
+					setIsRecordingUploading(false);
 					setRecordingDuration(0);
 				}
 			};
@@ -261,8 +198,36 @@ export function MessageComposer({
 		const editor = editorRef.current;
 		if (!editor || editor.isEmpty() || isSending) return;
 
-		const text = editor.getText().trim();
-		const html = editor.getHTML();
+		let text = editor.getText().trim();
+		let html = editor.getHTML();
+
+		// Slash-Command-Handling (Edit/Reply/Thread ueberspringen Commands —
+		// Commands sind nur im "freien" Send-Modus relevant).
+		const currentEditState = editState;
+		const currentReplyState = replyState;
+		const inSpecialMode = !!currentEditState || !!currentReplyState || !!threadId;
+
+		if (!inSpecialMode) {
+			const outcome = await runCommand(text);
+			if (outcome) {
+				if (outcome.kind === "handled") {
+					// Command hat selbst gesendet — Editor leeren und fertig.
+					editor.clear();
+					setHasContent(false);
+					if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+					sendTyping(client, roomId, false);
+					return;
+				}
+				if (outcome.kind === "error") {
+					toast.error(outcome.message);
+					return;
+				}
+				// "pass-through": Text durch Command-Output ersetzen (Shrug/Tableflip/Plain).
+				text = outcome.body;
+				html = outcome.htmlBody ?? "";
+			}
+		}
+
 		const mentionedUserIds = editor.getMentionedUserIds();
 		const isRoomMention = editor.hasRoomMention();
 		// Nur formatted senden wenn tatsächlich HTML-Formatierung vorliegt
@@ -270,10 +235,6 @@ export function MessageComposer({
 
 		if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
 		sendTyping(client, roomId, false);
-
-		// Capture current mode BEFORE clearing state to prevent double-send
-		const currentEditState = editState;
-		const currentReplyState = replyState;
 
 		setIsSending(true);
 		editor.clear();
@@ -346,92 +307,80 @@ export function MessageComposer({
 		} finally {
 			setIsSending(false);
 		}
-	}, [client, roomId, isSending, editState, onEditCancel, replyState, onReplyCancel, threadId]);
+	}, [
+		client,
+		roomId,
+		isSending,
+		editState,
+		onEditCancel,
+		replyState,
+		onReplyCancel,
+		threadId,
+		runCommand,
+	]);
 
-	const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		e.target.value = "";
-		// Max 500MB (Tuwunel Config)
-		if (file.size > 500 * 1024 * 1024) {
-			toast.error("Datei zu groß (max. 500 MB).");
-			return;
+	const handleFileChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const files = e.target.files;
+			if (!files || files.length === 0) return;
+			uploadQueue.addFiles(files);
+			e.target.value = "";
+			// Fokus zurueck auf Editor damit Enter direkt funktioniert.
+			setTimeout(() => editorRef.current?.focus(), 50);
+		},
+		[uploadQueue],
+	);
+
+	const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+		if (e.dataTransfer.types.includes("Files")) {
+			e.preventDefault();
+			setIsDragOver(true);
 		}
-		setPendingFile(file);
-		if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
-			setPendingFilePreview(URL.createObjectURL(file));
-		} else {
-			setPendingFilePreview(undefined);
-		}
-		// Fokus zurück auf Editor damit Enter direkt funktioniert
-		setTimeout(() => editorRef.current?.focus(), 50);
 	}, []);
 
-	const cancelPendingFile = useCallback(() => {
-		if (pendingFilePreview) URL.revokeObjectURL(pendingFilePreview);
-		setPendingFile(null);
-		setPendingFilePreview(undefined);
-	}, [pendingFilePreview]);
+	const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+		// Nur wenn Drag den kompletten Container verlaesst (nicht Child-Kreuzung).
+		if (e.currentTarget === e.target) setIsDragOver(false);
+	}, []);
 
-	const sendPendingFile = useCallback(async () => {
-		if (!pendingFile) return;
+	const handleDrop = useCallback(
+		(e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			setIsDragOver(false);
+			const files = e.dataTransfer.files;
+			if (files && files.length > 0) {
+				uploadQueue.addFiles(files);
+				setTimeout(() => editorRef.current?.focus(), 50);
+			}
+		},
+		[uploadQueue],
+	);
+
+	const sendQueuedFiles = useCallback(async () => {
 		const caption = editorRef.current?.getText().trim() ?? "";
-		setIsUploading(true);
 		editorRef.current?.clear();
 		setHasContent(false);
-		try {
-			// 1. Bilder > 5MB komprimieren
-			const fileToUpload = await compressImage(pendingFile);
-			// 2. Dimensions lesen (mit 5s Timeout für Videos)
-			const dims = await readFileDimensions(fileToUpload);
-			const info: Record<string, unknown> = {
-				mimetype: fileToUpload.type,
-				size: fileToUpload.size,
-			};
-			if (dims.w) info.w = dims.w;
-			if (dims.h) info.h = dims.h;
-			if (dims.duration) info.duration = dims.duration;
-			// 3. Upload mit Progress (kann bei großen Videos dauern)
-			setUploadProgress(0);
-			const uploadRes = await client.uploadContent(fileToUpload, {
-				name: pendingFile.name,
-				progressHandler: ({ loaded, total }) => {
-					setUploadProgress(total > 0 ? Math.round((loaded / total) * 100) : 0);
-				},
-			});
-			// 4. Event senden — Caption als body (unter dem Bild angezeigt)
-			await (client.sendEvent as (r: string, t: string, c: unknown) => Promise<unknown>)(
-				roomId,
-				EventType.RoomMessage,
-				{
-					msgtype: mimeToMsgtype(pendingFile.type),
-					body: caption || pendingFile.name,
-					url: uploadRes.content_uri,
-					filename: pendingFile.name,
-					info,
-				},
-			);
-			cancelPendingFile();
-		} catch (err) {
-			console.error("[composer] upload failed:", err);
-			toast.error("Datei konnte nicht hochgeladen werden.");
-		} finally {
-			setIsUploading(false);
-			setUploadProgress(null);
-		}
-	}, [client, roomId, pendingFile, cancelPendingFile]);
+		await uploadQueue.uploadAll(caption);
+		// Fertige Items nach Upload aus der Leiste entfernen, Fehler bleiben sichtbar.
+		uploadQueue.clearDone();
+	}, [uploadQueue]);
 
 	const handleEditorSubmit = useCallback(() => {
-		if (pendingFile) {
-			sendPendingFile();
+		if (uploadQueue.hasItems) {
+			void sendQueuedFiles();
 		} else {
 			send();
 		}
-	}, [send, pendingFile, sendPendingFile]);
+	}, [send, uploadQueue.hasItems, sendQueuedFiles]);
 
 	const handleEditorEscape = useCallback(() => {
-		if (pendingFile) {
-			cancelPendingFile();
+		if (uploadQueue.hasItems) {
+			// Esc leert alle pendenten Items; laufende Uploads bleiben, Fehler werden entfernt.
+			for (const item of uploadQueue.items) {
+				if (item.status === "pending" || item.status === "error") {
+					uploadQueue.removeItem(item.id);
+				}
+			}
 		} else if (replyState) {
 			onReplyCancel?.();
 		} else if (editState) {
@@ -439,12 +388,17 @@ export function MessageComposer({
 			editorRef.current?.clear();
 			setHasContent(false);
 		}
-	}, [editState, onEditCancel, replyState, onReplyCancel, pendingFile, cancelPendingFile]);
+	}, [editState, onEditCancel, replyState, onReplyCancel, uploadQueue]);
 
-	const isDisabled = disabled || isSending || isUploading;
+	const isDisabled = disabled || isSending || isRecordingUploading || uploadQueue.isUploading;
 
 	return (
-		<div className="flex flex-col bg-background">
+		<div
+			className={`flex flex-col bg-background ${isDragOver ? "ring-2 ring-primary ring-inset" : ""}`}
+			onDragOver={handleDragOver}
+			onDragLeave={handleDragLeave}
+			onDrop={handleDrop}
+		>
 			{/* Reply-Banner */}
 			{replyState && (
 				<div className="flex items-center justify-between px-3 pt-2 pb-1 text-xs text-muted-foreground border-b border-border/30">
@@ -486,65 +440,21 @@ export function MessageComposer({
 					</button>
 				</div>
 			)}
-			{/* File Preview Banner (WhatsApp-Style) */}
-			{pendingFile && (
-				<div className="flex items-center gap-3 px-3 pt-2 pb-1 border-b border-border/30">
-					{pendingFilePreview && pendingFile.type.startsWith("video/") ? (
-						<video
-							src={pendingFilePreview}
-							className="h-16 w-16 object-cover rounded-lg shrink-0"
-							muted
-							preload="metadata"
-						/>
-					) : pendingFilePreview ? (
-						// biome-ignore lint/performance/noImgElement: Blob-URL, next/image nicht geeignet
-						<img
-							src={pendingFilePreview}
-							alt={pendingFile.name}
-							className="h-16 w-16 object-cover rounded-lg shrink-0"
-						/>
-					) : (
-						<div className="h-16 w-16 flex items-center justify-center rounded-lg bg-muted shrink-0">
-							<FileIcon className="h-6 w-6 text-muted-foreground" />
-						</div>
-					)}
-					<div className="flex-1 min-w-0">
-						<p className="text-sm font-medium truncate">{pendingFile.name}</p>
-						<p className="text-[10px] text-muted-foreground">
-							{pendingFile.size < 1024 * 1024
-								? `${(pendingFile.size / 1024).toFixed(1)} KB`
-								: `${(pendingFile.size / (1024 * 1024)).toFixed(1)} MB`}
-							{uploadProgress !== null
-								? ` — Upload ${uploadProgress}%`
-								: " — Enter zum Senden, Esc zum Abbrechen"}
-						</p>
-						{uploadProgress !== null && (
-							<div className="w-full h-1 bg-muted rounded-full mt-1 overflow-hidden">
-								<div
-									className="h-full bg-primary rounded-full transition-all duration-300"
-									style={{ width: `${uploadProgress}%` }}
-								/>
-							</div>
-						)}
-					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="shrink-0 h-8 w-8"
-						onClick={cancelPendingFile}
-						title="Abbrechen (Esc)"
-					>
-						<X className="h-4 w-4" />
-					</Button>
-				</div>
-			)}
+			{/* Upload-Queue (mehrere Files, Retry, Per-Item-Progress) */}
+			<UploadQueueBar
+				items={uploadQueue.items}
+				onRemove={uploadQueue.removeItem}
+				onRetry={uploadQueue.retryItem}
+				onReplaceFile={uploadQueue.replaceFile}
+			/>
 			<div className="flex items-end gap-2 p-3">
-				{/* Datei-Upload */}
+				{/* Datei-Upload (mehrere Files gleichzeitig erlaubt) */}
 				<input
 					ref={fileInputRef}
 					type="file"
 					accept="*/*"
 					className="hidden"
+					multiple
 					onChange={handleFileChange}
 					disabled={isDisabled}
 				/>
@@ -625,7 +535,13 @@ export function MessageComposer({
 								rooms={joinedRooms}
 								roomId={roomId}
 								myUserId={myUserId}
-								placeholder={isUploading ? "Datei wird hochgeladen…" : "Nachricht schreiben..."}
+								placeholder={
+									uploadQueue.isUploading
+										? "Dateien werden hochgeladen…"
+										: uploadQueue.hasItems
+											? "Bildunterschrift (optional) — Enter zum Senden"
+											: "Nachricht schreiben..."
+								}
 								disabled={isDisabled}
 								onUpdate={(isEmpty) => {
 									setHasContent(!isEmpty);

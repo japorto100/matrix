@@ -46,9 +46,7 @@ With the `ml` extra, `news_cluster` switches to TF-IDF + MiniBatchKMeans cluster
 Optional FinBERT (HuggingFace Inference API) for `social_surge` confidence boosting:
 
 ```env
-FINBERT_HF_API_TOKEN=
 # optional override (default shown)
-# FINBERT_HF_API_URL=https://api-inference.huggingface.co/models/ProsusAI/finbert
 FINBERT_HF_TIMEOUT_MS=2500
 FINBERT_HF_CACHE_TTL_MS=600000
 FINBERT_HF_CACHE_MAX_ENTRIES=2000

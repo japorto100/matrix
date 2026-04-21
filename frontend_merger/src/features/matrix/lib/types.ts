@@ -78,6 +78,8 @@ export interface RoomInfo {
 	isOnline?: boolean;
 	// Favourites (m.favourite Tag)
 	isFavourite?: boolean;
+	// Low-Priority (m.lowpriority Tag)
+	isLowPriority?: boolean;
 }
 
 export { isAgentUser, resolveMessage, resolveRoom } from "./resolvers";

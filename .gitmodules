@@ -61,3 +61,9 @@
 [submodule "_ref/onyx"]
 	path = _ref/onyx
 	url = https://github.com/onyx-dot-app/onyx.git
+[submodule "_ref/NornicDB"]
+	path = _ref/NornicDB
+	url = https://github.com/orneryd/NornicDB.git
+[submodule "_ref/Researchwatcher"]
+	path = _ref/Researchwatcher
+	url = https://github.com/japorto100/research-project.git

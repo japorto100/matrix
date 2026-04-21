@@ -6,8 +6,14 @@
 > Hauptreferenzen:
 >   - `memory_kg.md` — aktuelles Zielbild fuer Memory + Context + KG
 >   - `main_docs/root/MEMORY_ARCHITECTURE.md` — M2/M4, Self-Baking, Confidence Dampening
+>     _(Trading-Project-Doc, aelter als dieser Exec — unser Modell ist weiter)_
 >   - `main_docs/root/CONTEXT_ENGINEERING.md` — Retrieval-Policies, Ranking, Merge
 >   - `main_docs/root/RAG_GRAPHRAG_STRATEGY_2026.md` — Dual Pipeline, UQ-Gates, GraphRAG
+>   - arXiv:2604.11364 (Roynard 2026, peer-reviewed TMLR) — 4-Layer Cognitive Architecture
+>     _(Knowledge / Memory / Wisdom / Intelligence — unser Exec folgt diesem Zielbild)_
+>   - `_ref/NornicDB` — Global KG Backend-Kandidat (Graph+Vector+Temporal+Bolt, MIT)
+>   - `_ref/Researchwatcher/kg-module` — IE-Pipeline Referenz (GLiNER2, ReLiK, FalkorDB/Neo4j)
+>   - `trading-project/docs/MEMORY_ARCHITECTURE.md` §6.3 — Fast/Slow-Lane-KG, GraphMERT-Verweis
 
 ---
 
@@ -208,6 +214,208 @@ uebergehen, aber:
 - additiv
 - auditierbar
 - nicht destruktiv
+
+### 4.5 Roynard 4-Layer Mapping (arXiv:2604.11364, TMLR 2026)
+
+| Roynard Layer | Funktion | Unser Aequivalent |
+|---|---|---|
+| **Knowledge** | stabil, geteilt, weltweit | Slow Lane KG |
+| **Memory** | episodisch, temporal, personell | Fast Lane KG + Personal KG |
+| **Wisdom** | evidence-gated, validiert | GraphMERT-Validierungsschicht (Slow Lane) |
+| **Intelligence** | ephemer, session-lokal | Agent-Context / exec-context |
+
+Konsequenz: unser Exec ist Owner fuer Knowledge + Memory (weltliche Haelfte) und
+die Wisdom-Gate-Logik (Adjudikation). Intelligence bleibt bei exec-context.
+
+### 4.6 KG Tiering: Fast Lane / Slow Lane
+
+Zwei operative Lanes, kein einheitlicher globaler KG-Monolith.
+
+#### Fast Lane — temporale Ereignisdaten
+
+| Themenbereich | Quellen (Beispiele) |
+|---|---|
+| Geopolitische Ereignisse | ACLED, GDELT, Reuters, AP |
+| Live-Marktdaten | Boersen-Feeds, Options-Flow |
+| Nachrichten / Breaking | News-API, RSS-Aggregatoren |
+| Sanktionen / Regulierung | OFAC, EUR-Lex, BIS |
+| Wirtschaftsindikatoren | FRED, Eurostat, Bloomberg |
+| Ernaennungen / Personalwechsel | Cabinet/Board-Change-Feeds |
+
+Regeln:
+- kurze TTL (Stunden bis wenige Tage)
+- Temporal Weight Decay (Kalman-Filter-Ansatz wie in NornicDB vorhanden)
+- **kein GraphMERT** — Latenz und Instabilitaet nicht vereinbar
+- Status `candidate -> supported -> stale` im Schnelltakt
+
+#### Slow Lane — Strukturwissen
+
+| Themenbereich | Quellen (Beispiele) |
+|---|---|
+| Game-Theory / Stratagemen | Fachliteratur, kuratierte Wissensbasis |
+| Strukturelle Geopolitik | Regionale Machtmuster, Allianz-Cluster |
+| Sektor-Relationen | Lieferketten, Abhaengigkeiten, Substitution |
+| Makro-Regime-Merkmale | Inflationsregimes, Rate-Cycles, Krisenmuster |
+| Selective Research | Zentralbank-Papiere (Fed, ECB, BIS), Biotech-Trials (wenn Trading-relevant), Quant-Finance-Papers |
+
+Regeln:
+- lange TTL (Wochen bis Monate)
+- Confidence Decay (nicht linear: strukturelle Kanten langsamer als Event-Kanten)
+- **GraphMERT als Batch-Validator** — Triples werden nach Aufnahme async validiert
+- Status `candidate -> supported -> stable`; Downgrade via Contradiction Detection
+
+#### Personal KG
+
+- Overlay ueber Fast+Slow Lane — kein eigener Truth-Store
+- user-kuratierte Annotationen, Highlights, eigene Hypothesen
+- Owner: exec-personal-kb (nicht dieses Exec)
+
+### 4.7 IE Pipeline
+
+Standardpfad fuer globale Quellen (Fast Lane ohne GraphMERT, Slow Lane mit):
+
+Klassisches 4-Schritt-Modell (konzeptuell, Anpassungen vorbehalten):
+
+```
+source selection → fetch/normalize → IE (Entity + Relation) → KG write
+```
+
+Detaillierte Layerstruktur (Researchwatcher-Referenzimpl.):
+
+```
+Dokument / Event-Feed
+    │
+    ▼
+L0  Heuristic Layer     → Metadaten-Entities + strukturierte Relationen (immer aktiv)
+    │
+    ▼
+L1  ReLiK EL            → Freetext-Entities mit KB-Links (Wikipedia/Wikidata)
+    │
+L2  GLiNER NER          → Zero-Shot-Schema-Entities (alternativ/ergaenzend zu L1)
+    │
+    ▼
+L3  GLiREL RE           → Zero-Shot-Relationsextraktion auf ML-Entities mit Char-Offsets
+    │
+    ▼
+L4  Post-Processing     → Merge, Deduplizierung, Normalisierung auf KGSchema
+    │
+    ▼
+L5  Claim Reification   → High-Confidence-Relationen → ExtractedClaim-Nodes
+                          (subject / predicate / object / confidence / status=asserted)
+    │
+    ▼ (nur Slow Lane)
+L6  GraphMERT Validation → Tail-Predictor (head + relation → tail), Score-Filter
+                           validiert Plausibilitaet, demotiert unwahrscheinliche Triples
+```
+
+Empfohlener Backend-Stack (`StructuredExtractor`, `relik_glirel`):
+- ReLiK (L1) + GLiREL (L3) — maximale Qualitaet fuer strukturierte Domains
+- Fastino GLiNER2 (L1+L3 in einem Modell) — schneller, fuer High-Throughput
+
+GraphMERT-Details (L6):
+- RoBERTa-Backbone (~80M Parameter), TMLR-peer-reviewed Maerz 2026
+- kein oeffentliches Community-Checkpoint fuer Financial/Geopolitical Domain
+- Deployment-Plan: Fine-Tune auf UMLS-/Wikidata5M-Basis mit domain-spezifischen Negativen
+- Batch-Modus: laeuft nicht inline, sondern als async Refinement-Job
+
+Referenz-Impl: `_ref/Researchwatcher/kg-module`
+- `StructuredExtractor` — L0-L5 implementiert (`extraction.py:137`)
+- `FalkorIngestor` — Graph-Write (Entities → Relations → Chunks → Reified Claims, `falkordb/ingest.py:22`)
+- `Neo4jIngestor` — analoges Backend fuer Neo4j (`neo4j/ingest.py`)
+- `KGEngine._reify_and_persist_claims()` — orchestriert L5-Persistenz (`engine.py`)
+- `PIIGuardService` — PII-Filter vor Ingest (`ragbits_custom/basic/guardrails/pii.py`)
+- L6 GraphMERT — noch **nicht implementiert** (offene Aufgabe)
+
+**Wichtige Einschraenkung:** Researchwatcher kg-module ist aktuell auf Paper-Ingest
+ausgerichtet (Paper-Schema, arxiv-IDs als source_id, akademische Relationstypen).
+
+**Wir muessen weiter denken als nur fuer Papers.**
+
+Unser Zielbild ist ein Global World KG fuer Trading / Geopolitik / Makro — das
+bedeutet vollkommen andere Quelltypen, Entities und Relationen. Die IE-Pipeline
+aus Researchwatcher ist eine wertvolle Referenz fuer die Extraktionslogik, aber
+das Schema und die Source-Abstraktion muessen von Grund auf fuer unseren Domain
+neu gedacht werden:
+
+- **neue Entity-Typen:** Event, Asset, Country, Organization, Regulation, Indicator, Person (Amt)
+- **neue Relationstypen:** SANCTIONS, AFFECTS\_MARKET, CAUSES\_EVENT, MEMBER\_OF, REPLACES, ISSUED\_BY, CORRELATED\_WITH
+- **neue Source-Types:** news feed, regulatory filing, market data, geopolitical event, central bank statement, earnings report
+- **TTL / Decay-Felder** fuer Fast-Lane-Entities (nicht im Paper-Schema vorhanden)
+- **Event-Temporalitaet:** Start/End-Zeitstempel, Ongoing-Flag — Papers haben das nicht
+- **Provenance-Tiefe:** Quellenglaubwuerdigkeit, Region-Bias, Agentur vs. Primaerquelle
+
+### 4.8 NornicDB — Global KG Backend
+
+NornicDB (`_ref/NornicDB`, MIT) ist der primaere Backend-Kandidat fuer den Global World KG.
+
+Relevante Eigenschaften:
+- **Bolt-Protokoll** (Port 7687) + Cypher — drop-in kompatibel zu Neo4j/FalkorDB/Kuzu
+- **Temporal Weight Decay** — Kalman-Filter-basiert, native fuer Fast-Lane-TTL
+- **Vector Index** — semantischer Einstieg integriert (kein separater Store noetig)
+- **MVCC** — konsistente Reads unter parallelen Writes
+- **Heimdall** — LLM-Guardian (Anomalie-Detektion, Memory Curation) — optional, CGo
+- **BadgerDB** — LSM+Value-Log Storage, performant fuer hohe Write-Rates
+- **MIT-Lizenz** — keine Vendor-Lock-Probleme
+
+Anbindung an matrix:
+- `python-backend/memory_engine/kg_store.py` — `KGStore` Protocol (Z. 88–96)
+- geplante Impl: `NornicDBKGStore` via `neo4j` Python Driver (Bolt/7687)
+- Cypher-Kompatibilitaet erlaubt spaeteres Wechseln zu FalkorDB/Kuzu ohne API-Aenderung
+
+Einschraenkung: `executor.go` (Query-Planung) noch in frueherer Entwicklungsphase —
+komplexe Joins / Multi-Hop bis zur Produktionsreife evaluieren.
+
+### 4.9 Promotion Gate — Offene Forschungsfrage
+
+Der automatische Transfer Fast Lane → Slow Lane ist **kein geloestes Problem**.
+
+Bekannte Kriterien aus Literatur:
+- Multi-Source-Corroboration (>= N unabhaengige Quellen bestaetigen Claim)
+- Zeitspanne (Claim haelt sich ueber T ohne Widerspruch)
+- Contradiction Absence (keine konfligierenden Evidenzen in Fenster W)
+- Confidence-Score ueber Schwelle θ nach GraphMERT-Validation
+
+Offene Fragen:
+- Wie gross N, T, W, θ in unserem Domain (Financial/Geopolitical)?
+- Automatisch vs. kuratorisch — wo ist die Grenze fuer autonome Promotion?
+- Wie Promotion rueckgaengig machen (Demotion / Supersession)?
+- Wie Promotion-Entscheidung auditierbar machen?
+
+Referenzen fuer Brainstorming:
+- **AriGraph** (IJCAI-2025) — episodic-to-semantic transfer via recurrence
+- **Zep / Graphiti** — Validity Windows, temporal scoping fuer episodic facts
+- **MAGMA 2026** — Lambda-Architektur auf KGs (Batch + Speed Layer)
+- **Synapse 2026** — Multi-Lane KG mit automatischen Promotion-Heuristiken
+
+Naechster Schritt: Brainstorming-Session mit sota-contrarian vor Implementation.
+
+#### [BRAINSTORM — keine Anweisung] User-/Agent-Interaktion als Promotions-Signal?
+
+_Das Folgende ist ein offener Gedanke, kein Design-Entscheid._
+
+Frage: Sollten User-Gespraeche oder Agent-Queries mitbestimmen, was von Fast nach
+Slow befoerdert wird?
+
+Argument dafuer (kollektives Signal):
+- Viele unabhaengige Agents/User referenzieren denselben Claim konsistent
+  → koennte als schwaches Korroborationsindiz zaehlen
+- Query-Frequenz als Relevanz-Signal: was oft gebraucht wird, verdient stabilen Status
+
+Argument dagegen (und wahrscheinlich staerker):
+- Global KG repraesentiert Weltwahrheit, nicht Nutzerinteresse
+- haeufig gefragt ≠ faktisch stabil (Manipulation, Selection Bias, Noise)
+- Roynard Wisdom-Layer ist explizit *evidence-gated* — epistemischer, kein sozialer Prozess
+- ein aktiver User / Agent koennte Signal unverhältnismaessig dominieren
+
+Wahrscheinliche Trennung:
+- **Personal KG**: User-Interaktion darf stark gewichtet werden (persoenliches Interesse,
+  eigene Hypothesen, Annotation)
+- **Global KG**: User/Agent-Signal maximal als tiebreaker oder Relevanz-Indikator,
+  nie als primaerer Promotion-Trigger — Primaer bleibt multi-source corroboration +
+  Zeitspanne + GraphMERT
+
+Offen: ob und wie ein kollektives Signal (nicht ein einzelner User) sauber
+definierbar ist, ohne Manipulation-Vektoren aufzumachen.
 
 ---
 

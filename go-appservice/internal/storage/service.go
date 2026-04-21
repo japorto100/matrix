@@ -54,7 +54,7 @@ func NewService(cfg Config) (*Service, error) {
 			return nil, err
 		}
 		provider = fsProvider
-	case ProviderS3, ProviderSeaweedFS:
+	case ProviderS3, ProviderSeaweedFS, ProviderGarage:
 		s3Provider, err := NewS3Provider(context.Background(), cfg.S3)
 		if err != nil {
 			return nil, err

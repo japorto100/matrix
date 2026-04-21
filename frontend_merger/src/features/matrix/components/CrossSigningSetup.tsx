@@ -1,7 +1,10 @@
 "use client";
 
 import type { UseCrossSigningReturn } from "@matrix/lib/hooks/useCrossSigning";
-import { ShieldAlert, ShieldCheck, X } from "lucide-react";
+import { useMatrixClient } from "@matrix/lib/hooks/useMatrixClient";
+import { DatabaseBackup, KeyRound, ShieldAlert, ShieldCheck, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,6 +13,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { BackupRestore } from "./BackupRestore";
+import { ManualVerification } from "./ManualVerification";
+import { SecretStorage } from "./SecretStorage";
 
 interface Props {
 	cs: UseCrossSigningReturn;
@@ -22,10 +28,21 @@ interface Props {
  */
 export function CrossSigningSetup({ cs }: Props) {
 	const { state, qrPng, sasData, qrConfirmData, startVerification, cancelVerification } = cs;
+	const { client } = useMatrixClient();
+	const [manualOpen, setManualOpen] = useState(false);
+	const [secretStorageOpen, setSecretStorageOpen] = useState(false);
+	const [backupOpen, setBackupOpen] = useState(false);
+	const tierCEnabled = process.env.NEXT_PUBLIC_CINNY_TIER_C === "true";
 
 	if (state === "done" || state === "checking" || state === "ready") return null;
 
 	const isVerifying = state !== "needs_verification";
+	// Race-Guard fuer ManualVerification — blockiert Submit wenn QR/SAS laeuft.
+	const otherFlowActive =
+		state === "verifying_wait" ||
+		state === "verifying_qr" ||
+		state === "verifying_sas" ||
+		state === "verifying_confirm";
 
 	return (
 		<>
@@ -35,8 +52,17 @@ export function CrossSigningSetup({ cs }: Props) {
 					<ShieldAlert className="h-4 w-4 text-destructive shrink-0" />
 					<span className="flex-1 text-destructive/90">
 						Cross-Signing nicht eingerichtet — verbinde ein zweites Gerät (z.B. Element X) um Geräte
-						zu verifizieren.
+						zu verifizieren, oder nutze deine Recovery-Passphrase.
 					</span>
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7 text-xs border-destructive/40 hover:bg-destructive/10"
+						onClick={() => setManualOpen(true)}
+					>
+						<KeyRound className="h-3.5 w-3.5 mr-1" />
+						Passphrase
+					</Button>
 					<Button
 						size="sm"
 						variant="outline"
@@ -46,6 +72,62 @@ export function CrossSigningSetup({ cs }: Props) {
 						<ShieldCheck className="h-3.5 w-3.5 mr-1" />
 						Einrichten
 					</Button>
+				</div>
+			)}
+
+			{/* ManualVerification Modal — Passphrase/Recovery-Key-Pfad */}
+			{client && (
+				<ManualVerification
+					client={client}
+					open={manualOpen}
+					onClose={() => setManualOpen(false)}
+					onSuccess={() => {
+						setManualOpen(false);
+						toast.success("Verifikation per Recovery-Passphrase erfolgreich.");
+					}}
+					activeOtherFlow={otherFlowActive}
+				/>
+			)}
+
+			{/* SecretStorage Setup Modal — C1 */}
+			{client && (
+				<SecretStorage
+					client={client}
+					open={secretStorageOpen}
+					onClose={() => setSecretStorageOpen(false)}
+					onSuccess={() => toast.success("4S Recovery eingerichtet.")}
+				/>
+			)}
+
+			{/* BackupRestore Modal — C2 (gated by NEXT_PUBLIC_CINNY_TIER_C) */}
+			{client && tierCEnabled && (
+				<BackupRestore client={client} open={backupOpen} onClose={() => setBackupOpen(false)} />
+			)}
+
+			{/* Recovery-Actions Leiste — unterhalb des Banners, nur wenn needs_verification */}
+			{state === "needs_verification" && (
+				<div className="flex items-center gap-2 px-4 py-1.5 text-xs border-b border-border/30 bg-muted/20">
+					<span className="text-muted-foreground">Recovery:</span>
+					<Button
+						size="sm"
+						variant="ghost"
+						className="h-6 text-xs"
+						onClick={() => setSecretStorageOpen(true)}
+					>
+						<KeyRound className="h-3 w-3 mr-1" />
+						Passphrase einrichten
+					</Button>
+					{tierCEnabled && (
+						<Button
+							size="sm"
+							variant="ghost"
+							className="h-6 text-xs"
+							onClick={() => setBackupOpen(true)}
+						>
+							<DatabaseBackup className="h-3 w-3 mr-1" />
+							Backup verwalten
+						</Button>
+					)}
 				</div>
 			)}
 

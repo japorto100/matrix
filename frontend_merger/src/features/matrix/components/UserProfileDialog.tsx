@@ -2,7 +2,7 @@
 
 import { getAutoAcceptDMs, setAutoAcceptDMs } from "@matrix/lib/hooks/useAutoAcceptInvites";
 import { mxcToHttp } from "@matrix/lib/utils";
-import { Camera, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Camera, Settings, ShieldAlert, ShieldCheck } from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,9 +21,11 @@ import { Switch } from "@/components/ui/switch";
 interface Props {
 	client: MatrixClient;
 	trigger: React.ReactNode;
+	/** Callback wenn User "Einstellungen" im Dialog klickt — Parent zeigt AppSettingsSheet. */
+	onOpenSettings?: () => void;
 }
 
-export function UserProfileDialog({ client, trigger }: Props) {
+export function UserProfileDialog({ client, trigger, onOpenSettings }: Props) {
 	const [open, setOpen] = useState(false);
 	const [displayName, setDisplayName] = useState("");
 	const [avatarMxc, setAvatarMxc] = useState<string | undefined>();
@@ -187,7 +189,20 @@ export function UserProfileDialog({ client, trigger }: Props) {
 					</label>
 				</div>
 
-				<DialogFooter>
+				<DialogFooter className="flex-col sm:flex-row gap-2">
+					{onOpenSettings && (
+						<Button
+							variant="outline"
+							onClick={() => {
+								setOpen(false);
+								onOpenSettings();
+							}}
+							className="sm:mr-auto"
+						>
+							<Settings className="h-3.5 w-3.5 mr-1.5" />
+							Einstellungen
+						</Button>
+					)}
 					<Button variant="ghost" onClick={() => setOpen(false)}>
 						Abbrechen
 					</Button>

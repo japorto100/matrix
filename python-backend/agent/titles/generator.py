@@ -1,4 +1,10 @@
-"""Remote-LLM session-title generator (Phase-B P6).
+"""Remote-LLM session-title generator — **OFFLINE-FALLBACK ONLY**.
+
+**Primary title-gen path is transformers.js** in the browser — see
+``exec-transformersjs.md §3.5`` (owner re-scoped 2026-04-20). This module
+exists as the server-side degradation path for environments where WebGPU
+and WASM are both unavailable or disabled. When the frontend can run the
+local model, it SHOULD NOT call this module at all.
 
 Port of ``_ref/hermes-agent/agent/title_generator.py`` adapted for matrix
 enterprise guarantees:
@@ -14,9 +20,11 @@ enterprise guarantees:
 * Non-blocking dispatch: runner should invoke via ``asyncio.create_task``
   after the first assistant turn is streamed back to the user.
 
-A future upgrade-path (``exec-transformersjs.md §3.5``) replaces the
-remote call with a local small-model inference in the browser (<200ms,
-no remote cost, no service-key needed).
+Why remote is the fallback (not primary): a remote LLM call per session
+is a cost-and-latency tax that makes no sense when a 0.5–1B parameter
+model runs locally in the browser in <200ms. See exec-transformersjs.md
+§3.5 for the primary path + the degradation chain (WebGPU → WASM →
+this module).
 """
 from __future__ import annotations
 

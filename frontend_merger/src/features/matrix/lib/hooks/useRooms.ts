@@ -19,7 +19,8 @@ function roomInfoEqual(a: RoomInfo, b: RoomInfo): boolean {
 		a.dmUserId === b.dmUserId &&
 		a.membership === b.membership &&
 		a.isOnline === b.isOnline &&
-		a.isFavourite === b.isFavourite
+		a.isFavourite === b.isFavourite &&
+		a.isLowPriority === b.isLowPriority
 	);
 }
 

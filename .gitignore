@@ -42,12 +42,12 @@ python-backend/agent/state/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
 node_modules/
-nextjs-chat/.next/
-nextjs-chat/out/
-nextjs-chat/.turbo/
-nextjs-chat/.cache/
-agent-chat/.next/
-agent-chat/out/
+archive/nextjs-chat/.next/
+archive/nextjs-chat/out/
+archive/nextjs-chat/.turbo/
+archive/nextjs-chat/.cache/
+archive/agent-chat/.next/
+archive/agent-chat/out/
 
 # ─── Homeserver ───────────────────────────────────────────────────────────────
 homeserver/tuwunel
@@ -91,13 +91,13 @@ tools/seaweedfs/data/
 *.exe
 !homeserver/tuwunel.exe
 
-# ─── control-ui (Memory & Control UI app, exec-15) ──────────────────────────
-control-ui/.next/
-control-ui/out/
-control-ui/.turbo/
-control-ui/.cache/
-control-ui/node_modules/
-control-ui/.env.local
+# ─── control-ui (archiviert unter archive/, exec-15) ────────────────────────
+archive/control-ui/.next/
+archive/control-ui/out/
+archive/control-ui/.turbo/
+archive/control-ui/.cache/
+archive/control-ui/node_modules/
+archive/control-ui/.env.local
 
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
@@ -123,3 +123,4 @@ target-local/
 python-backend/rust_core/target/
 python-backend/rust_core/target-local/
 python-backend/rust_core/target-host/
+

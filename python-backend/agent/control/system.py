@@ -97,7 +97,10 @@ async def get_system_health() -> dict[str, Any]:
     go_url = os.environ.get("GO_GATEWAY_BASE_URL", "http://127.0.0.1:8090")
     open_sandbox_url = os.environ.get("OPEN_SANDBOX_URL", "http://127.0.0.1:8100")
     litellm_url = os.environ.get("LITELLM_BASE_URL", "http://127.0.0.1:4000")
-    seaweedfs_url = "http://127.0.0.1:8333"
+    # SEAWEEDFS_HEALTH_URL: nur für health-ping im system-status endpoint.
+    # Der Agent greift NICHT direkt auf S3 zu (capability-based, via go-gateway signed URLs).
+    # Default deckt beide Provider ab: seaweedfs :8333 / garage :3900 via env-override.
+    seaweedfs_url = os.environ.get("SEAWEEDFS_HEALTH_URL", "http://127.0.0.1:8333")
     tuwunel_url = os.environ.get("MATRIX_HOMESERVER_URL", "http://127.0.0.1:8448")
 
     tasks = [

@@ -24,7 +24,7 @@ func NewObjectStoreFromEnv(ctx context.Context, filesystemBaseDir string) (Objec
 			return nil, fmt.Errorf("filesystem base dir required")
 		}
 		return NewFilesystemProvider(baseDir)
-	case ProviderS3, ProviderSeaweedFS:
+	case ProviderS3, ProviderSeaweedFS, ProviderGarage:
 		return NewS3Provider(ctx, S3Config{
 			Endpoint:        strings.TrimSpace(os.Getenv("ARTIFACT_STORAGE_S3_ENDPOINT")),
 			Region:          defaultString(strings.TrimSpace(os.Getenv("ARTIFACT_STORAGE_S3_REGION")), "us-east-1"),

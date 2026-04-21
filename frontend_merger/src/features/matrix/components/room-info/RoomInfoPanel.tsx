@@ -1,6 +1,5 @@
 "use client";
 
-import { useMuteRoom } from "@matrix/lib/hooks/useMuteRoom";
 import { usePinnedMessages } from "@matrix/lib/hooks/usePinnedMessages";
 import { useRoomMembers } from "@matrix/lib/hooks/useRoomMembers";
 import { mxcToHttp } from "@matrix/lib/utils";
@@ -12,9 +11,13 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EncryptionBadge } from "../shared/EncryptionBadge";
 import { PermissionsPanel, RoleManagement } from "./AdminSettings";
+import { EncryptionSection } from "./EncryptionSection";
 import { MemberList } from "./MemberList";
+import { RoomAdminExtensions } from "./RoomAdminExtensions";
+import { RoomNotificationsTab } from "./RoomNotificationsTab";
 import { SharedMedia } from "./SharedMedia";
 
 interface Props {
@@ -32,7 +35,6 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const [leaveConfirm, setLeaveConfirm] = useState(false);
 	const [avatarPreview, setAvatarPreview] = useState<string | undefined>();
 	const avatarInputRef = useRef<HTMLInputElement>(null);
-	const { isMuted, toggleMute } = useMuteRoom(client, roomId);
 	const { pinnedIds } = usePinnedMessages(client, roomId);
 	const { members, refresh: refreshMembers } = useRoomMembers(client, roomId);
 
@@ -153,228 +155,304 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 				</Button>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-4 space-y-5">
-				{/* Header: Avatar + Name + Encryption */}
-				<div className="flex flex-col items-center text-center gap-2">
-					<div className="relative">
-						<Avatar className="h-[72px] w-[72px]">
-							{avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
-							<AvatarFallback className="text-lg font-semibold bg-muted">{initials}</AvatarFallback>
-						</Avatar>
-						{canEditRoomInfo && (
-							<button
-								type="button"
-								className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-								title="Raum-Avatar ändern"
-								onClick={() => avatarInputRef.current?.click()}
-							>
-								<Camera className="h-3.5 w-3.5" />
-							</button>
-						)}
-						<input
-							ref={avatarInputRef}
-							type="file"
-							accept="image/*"
-							className="hidden"
-							onChange={handleAvatarUpload}
-						/>
-					</div>
-					<div className="w-full">
-						{editingName ? (
-							<Input
-								value={roomName}
-								onChange={(e) => setRoomName(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") saveName();
-									if (e.key === "Escape") setEditingName(false);
-								}}
-								onBlur={saveName}
-								autoFocus
-								className="text-center font-semibold text-base"
-							/>
-						) : (
-							<div className="flex items-center justify-center gap-1">
-								<p className="font-semibold text-base">{displayName}</p>
-								{canEditRoomInfo && (
-									<button
-										type="button"
-										onClick={() => setEditingName(true)}
-										className="text-muted-foreground hover:text-foreground transition-colors"
-									>
-										<Pencil className="h-3 w-3" />
-									</button>
-								)}
-							</div>
-						)}
-						<p className="text-xs text-muted-foreground mt-0.5">{members.length} Mitglieder</p>
-					</div>
-					<EncryptionBadge isEncrypted={isEncrypted} />
-				</div>
-
-				{/* Mute */}
-				<button
-					type="button"
-					onClick={toggleMute}
-					className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-				>
-					{isMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-					{isMuted ? "Benachrichtigungen aktivieren" : "Stummschalten"}
-				</button>
-
-				{/* Topic */}
-				<div>
-					<div className="flex items-center gap-1 mb-1">
-						<label className="text-xs font-medium text-muted-foreground">Thema</label>
-						{!editingTopic && canEditRoomInfo && (
-							<button
-								type="button"
-								onClick={() => setEditingTopic(true)}
-								className="text-muted-foreground hover:text-foreground transition-colors"
-							>
-								<Pencil className="h-2.5 w-2.5" />
-							</button>
-						)}
-					</div>
-					{editingTopic ? (
-						<textarea
-							value={roomTopic}
-							onChange={(e) => setRoomTopic(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && !e.shiftKey) {
-									e.preventDefault();
-									saveTopic();
-								}
-								if (e.key === "Escape") setEditingTopic(false);
-							}}
-							onBlur={saveTopic}
-							rows={2}
-							placeholder="Worum geht es in diesem Raum?"
-							autoFocus
-							className="w-full rounded-lg border border-primary bg-muted/30 px-3 py-1.5 text-sm resize-none placeholder:text-muted-foreground/60 focus:outline-none"
-						/>
-					) : (
-						<p
-							className={
-								canEditRoomInfo
-									? "text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-									: "text-sm text-muted-foreground"
-							}
-							onClick={canEditRoomInfo ? () => setEditingTopic(true) : undefined}
-						>
-							{roomTopic || (canEditRoomInfo ? "Thema hinzufügen…" : "Kein Thema")}
-						</p>
+			<Tabs
+				defaultValue="info"
+				className="flex-1 flex flex-col overflow-hidden"
+				onValueChange={() => {
+					// Tab-Switch soll offene Edit-States resetten (UX-Fix vom Verify).
+					setEditingName(false);
+					setEditingTopic(false);
+				}}
+			>
+				<TabsList className="shrink-0 w-full justify-start rounded-none h-9 border-b bg-background px-2">
+					<TabsTrigger value="info" className="text-xs h-7">
+						Info
+					</TabsTrigger>
+					<TabsTrigger value="members" className="text-xs h-7">
+						Mitglieder
+					</TabsTrigger>
+					<TabsTrigger value="notifications" className="text-xs h-7">
+						Benachrichtigungen
+					</TabsTrigger>
+					{myPowerLevel >= 100 && (
+						<TabsTrigger value="admin" className="text-xs h-7">
+							Admin
+						</TabsTrigger>
 					)}
-				</div>
+					<TabsTrigger value="advanced" className="text-xs h-7">
+						Erweitert
+					</TabsTrigger>
+				</TabsList>
 
-				{/* Members */}
-				<MemberList
-					members={members}
-					myUserId={myUserId}
-					myPowerLevel={myPowerLevel}
-					onKick={kickMember}
-					onBan={banMember}
-				/>
-
-				{/* Invite Link */}
-				{(() => {
-					const alias = room?.getCanonicalAlias();
-					const link = alias ? `https://matrix.to/#/${alias}` : `https://matrix.to/#/${roomId}`;
-					return (
-						<div>
-							<label className="text-xs font-medium text-muted-foreground mb-1 block">
-								Einladungslink
-							</label>
-							<div className="flex items-center gap-2">
-								<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">
-									{link}
-								</code>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-7 w-7 shrink-0"
-									title="Kopieren"
-									onClick={() => {
-										navigator.clipboard.writeText(link);
-										toast.success("Link kopiert");
-									}}
+				<TabsContent
+					value="info"
+					className="flex-1 overflow-y-auto p-4 space-y-5 mt-0 data-[state=inactive]:hidden"
+				>
+					{/* Header: Avatar + Name + Encryption */}
+					<div className="flex flex-col items-center text-center gap-2">
+						<div className="relative">
+							<Avatar className="h-[72px] w-[72px]">
+								{avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
+								<AvatarFallback className="text-lg font-semibold bg-muted">
+									{initials}
+								</AvatarFallback>
+							</Avatar>
+							{canEditRoomInfo && (
+								<button
+									type="button"
+									className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+									title="Raum-Avatar ändern"
+									onClick={() => avatarInputRef.current?.click()}
 								>
-									<Copy className="h-3 w-3" />
-								</Button>
-							</div>
+									<Camera className="h-3.5 w-3.5" />
+								</button>
+							)}
+							<input
+								ref={avatarInputRef}
+								type="file"
+								accept="image/*"
+								className="hidden"
+								onChange={handleAvatarUpload}
+							/>
 						</div>
-					);
-				})()}
-
-				{/* Pinned Messages */}
-				{pinnedIds.length > 0 &&
-					(() => {
-						const timeline = room?.getLiveTimeline().getEvents() ?? [];
-						const pinnedMessages = pinnedIds
-							.map((id) => timeline.find((ev) => ev.getId() === id))
-							.filter(Boolean)
-							.slice(0, 5);
-						const handleUnpin = (eventId: string) => {
-							const newPinned = pinnedIds.filter((id) => id !== eventId);
-							client
-								.sendStateEvent(roomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
-								.then(() => toast.success("Nachricht entpinnt."))
-								.catch(() => toast.error("Entpinnen fehlgeschlagen."));
-						};
-						return (
-							<div>
-								<label className="text-xs font-medium text-muted-foreground mb-2 block">
-									<Pin className="h-3 w-3 inline mr-1" />
-									Angepinnt ({pinnedIds.length})
-								</label>
-								<div className="flex flex-col gap-1">
-									{pinnedMessages.map((ev) => (
-										<div
-											key={ev!.getId()}
-											className="group flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5"
+						<div className="w-full">
+							{editingName ? (
+								<Input
+									value={roomName}
+									onChange={(e) => setRoomName(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") saveName();
+										if (e.key === "Escape") setEditingName(false);
+									}}
+									onBlur={saveName}
+									autoFocus
+									className="text-center font-semibold text-base"
+								/>
+							) : (
+								<div className="flex items-center justify-center gap-1">
+									<p className="font-semibold text-base">{displayName}</p>
+									{canEditRoomInfo && (
+										<button
+											type="button"
+											onClick={() => setEditingName(true)}
+											className="text-muted-foreground hover:text-foreground transition-colors"
 										>
-											<div className="truncate flex-1">
-												<span className="font-medium">
-													{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
-												</span>{" "}
-												{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
-											</div>
-											{canEditRoomInfo && (
-												<button
-													type="button"
-													className="hidden group-hover:block shrink-0 text-muted-foreground hover:text-destructive"
-													onClick={() => handleUnpin(ev!.getId()!)}
-													title="Entpinnen"
-												>
-													<PinOff className="h-3 w-3" />
-												</button>
-											)}
-										</div>
-									))}
-									{pinnedIds.length > pinnedMessages.length && (
-										<p className="text-[10px] text-muted-foreground">
-											+{pinnedIds.length - pinnedMessages.length} weitere (nicht in Timeline)
-										</p>
+											<Pencil className="h-3 w-3" />
+										</button>
 									)}
 								</div>
-							</div>
-						);
-					})()}
+							)}
+							<p className="text-xs text-muted-foreground mt-0.5">{members.length} Mitglieder</p>
+						</div>
+						<EncryptionBadge isEncrypted={isEncrypted} />
+					</div>
 
-				{/* Shared Media */}
-				<SharedMedia room={room} />
+					{/* Topic */}
+					<div>
+						<div className="flex items-center gap-1 mb-1">
+							<label className="text-xs font-medium text-muted-foreground">Thema</label>
+							{!editingTopic && canEditRoomInfo && (
+								<button
+									type="button"
+									onClick={() => setEditingTopic(true)}
+									className="text-muted-foreground hover:text-foreground transition-colors"
+								>
+									<Pencil className="h-2.5 w-2.5" />
+								</button>
+							)}
+						</div>
+						{editingTopic ? (
+							<textarea
+								value={roomTopic}
+								onChange={(e) => setRoomTopic(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && !e.shiftKey) {
+										e.preventDefault();
+										saveTopic();
+									}
+									if (e.key === "Escape") setEditingTopic(false);
+								}}
+								onBlur={saveTopic}
+								rows={2}
+								placeholder="Worum geht es in diesem Raum?"
+								autoFocus
+								className="w-full rounded-lg border border-primary bg-muted/30 px-3 py-1.5 text-sm resize-none placeholder:text-muted-foreground/60 focus:outline-none"
+							/>
+						) : (
+							<p
+								className={
+									canEditRoomInfo
+										? "text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+										: "text-sm text-muted-foreground"
+								}
+								onClick={canEditRoomInfo ? () => setEditingTopic(true) : undefined}
+							>
+								{roomTopic || (canEditRoomInfo ? "Thema hinzufügen…" : "Kein Thema")}
+							</p>
+						)}
+					</div>
 
-				{/* Admin: Roles + Permissions */}
+					{/* Pinned Messages */}
+					{pinnedIds.length > 0 &&
+						(() => {
+							const timeline = room?.getLiveTimeline().getEvents() ?? [];
+							const pinnedMessages = pinnedIds
+								.map((id) => timeline.find((ev) => ev.getId() === id))
+								.filter(Boolean)
+								.slice(0, 5);
+							const handleUnpin = (eventId: string) => {
+								const newPinned = pinnedIds.filter((id) => id !== eventId);
+								client
+									.sendStateEvent(roomId, EventType.RoomPinnedEvents, { pinned: newPinned }, "")
+									.then(() => toast.success("Nachricht entpinnt."))
+									.catch(() => toast.error("Entpinnen fehlgeschlagen."));
+							};
+							return (
+								<div>
+									<label className="text-xs font-medium text-muted-foreground mb-2 block">
+										<Pin className="h-3 w-3 inline mr-1" />
+										Angepinnt ({pinnedIds.length})
+									</label>
+									<div className="flex flex-col gap-1">
+										{pinnedMessages.map((ev) => (
+											<div
+												key={ev!.getId()}
+												className="group flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 rounded px-2 py-1.5"
+											>
+												<div className="truncate flex-1">
+													<span className="font-medium">
+														{ev!.getSender()?.split(":")[0]?.replace("@", "")}:
+													</span>{" "}
+													{(ev!.getContent()?.body as string)?.slice(0, 60) ?? "..."}
+												</div>
+												{canEditRoomInfo && (
+													<button
+														type="button"
+														className="hidden group-hover:block shrink-0 text-muted-foreground hover:text-destructive"
+														onClick={() => handleUnpin(ev!.getId()!)}
+														title="Entpinnen"
+													>
+														<PinOff className="h-3 w-3" />
+													</button>
+												)}
+											</div>
+										))}
+										{pinnedIds.length > pinnedMessages.length && (
+											<p className="text-[10px] text-muted-foreground">
+												+{pinnedIds.length - pinnedMessages.length} weitere (nicht in Timeline)
+											</p>
+										)}
+									</div>
+								</div>
+							);
+						})()}
+
+					{/* Shared Media */}
+					<SharedMedia room={room} />
+				</TabsContent>
+
+				{/* Members Tab */}
+				<TabsContent
+					value="members"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					<MemberList
+						members={members}
+						myUserId={myUserId}
+						myPowerLevel={myPowerLevel}
+						onKick={kickMember}
+						onBan={banMember}
+					/>
+				</TabsContent>
+
+				{/* Notifications Tab (G4): 4-Mode-Selector via useRoomNotificationMode */}
+				<TabsContent
+					value="notifications"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					<RoomNotificationsTab client={client} roomId={roomId} />
+				</TabsContent>
+
+				{/* Admin Tab: Roles + Permissions (nur fuer Admins sichtbar) */}
 				{myPowerLevel >= 100 && (
-					<>
+					<TabsContent
+						value="admin"
+						className="flex-1 overflow-y-auto p-4 space-y-5 mt-0 data-[state=inactive]:hidden"
+					>
 						<RoleManagement members={members} myUserId={myUserId} client={client} roomId={roomId} />
 						<PermissionsPanel
 							powerLevelsContent={powerLevelsContent}
 							client={client}
 							roomId={roomId}
 						/>
-					</>
+						<RoomAdminExtensions client={client} roomId={roomId} canEdit={canEditRoomInfo} />
+						<EncryptionSection
+							client={client}
+							roomId={roomId}
+							isEncrypted={isEncrypted}
+							canEdit={canEditRoomInfo}
+						/>
+					</TabsContent>
 				)}
-			</div>
+
+				{/* Advanced Tab: Invite-Link + Room-ID */}
+				<TabsContent
+					value="advanced"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					{(() => {
+						const alias = room?.getCanonicalAlias();
+						const link = alias ? `https://matrix.to/#/${alias}` : `https://matrix.to/#/${roomId}`;
+						return (
+							<div>
+								<label className="text-xs font-medium text-muted-foreground mb-1 block">
+									Einladungslink
+								</label>
+								<div className="flex items-center gap-2">
+									<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">
+										{link}
+									</code>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7 shrink-0"
+										title="Kopieren"
+										onClick={() => {
+											navigator.clipboard.writeText(link);
+											toast.success("Link kopiert");
+										}}
+									>
+										<Copy className="h-3 w-3" />
+									</Button>
+								</div>
+							</div>
+						);
+					})()}
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-1 block">Raum-ID</label>
+						<div className="flex items-center gap-2">
+							<code className="flex-1 text-[10px] text-muted-foreground bg-muted/30 px-2 py-1 rounded truncate">
+								{roomId}
+							</code>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-7 w-7 shrink-0"
+								title="Kopieren"
+								onClick={() => {
+									navigator.clipboard.writeText(roomId);
+									toast.success("Raum-ID kopiert");
+								}}
+							>
+								<Copy className="h-3 w-3" />
+							</Button>
+						</div>
+					</div>
+					<p className="text-xs text-muted-foreground">
+						Weitere Einstellungen (Join-Rule, History-Visibility, Aliases) folgen in D8.
+					</p>
+				</TabsContent>
+			</Tabs>
 
 			{/* Footer */}
 			<div className="p-3 border-t border-border shrink-0">

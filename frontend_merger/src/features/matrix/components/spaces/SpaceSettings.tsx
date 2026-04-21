@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Props {
 	client: MatrixClient;
@@ -121,133 +122,182 @@ export function SpaceSettings({ client, space, hierarchy, onFetchHierarchy, onCl
 				</Button>
 			</div>
 
-			<div className="flex-1 overflow-y-auto p-4 space-y-5">
-				{/* Avatar + Name */}
-				<div className="flex flex-col items-center text-center gap-2">
-					<div className="relative">
-						<Avatar className="h-[72px] w-[72px]">
-							{avatarSrc && <AvatarImage src={avatarSrc} alt={space.name} />}
-							<AvatarFallback className="text-lg font-semibold bg-muted">{initials}</AvatarFallback>
-						</Avatar>
-						<button
-							type="button"
-							className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-							onClick={() => avatarInputRef.current?.click()}
-						>
-							<Camera className="h-3.5 w-3.5" />
-						</button>
-						<input
-							ref={avatarInputRef}
-							type="file"
-							accept="image/*"
-							className="hidden"
-							onChange={handleAvatarUpload}
-						/>
-					</div>
-					<div className="w-full">
-						{editingName ? (
-							<Input
-								value={spaceName}
-								onChange={(e) => setSpaceName(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") saveName();
-									if (e.key === "Escape") setEditingName(false);
-								}}
-								onBlur={saveName}
-								autoFocus
-								className="text-center font-semibold text-base"
-							/>
-						) : (
-							<div className="flex items-center justify-center gap-1">
-								<p className="font-semibold text-base">{space.name}</p>
-								<button
-									type="button"
-									onClick={() => setEditingName(true)}
-									className="text-muted-foreground hover:text-foreground transition-colors"
-								>
-									<Pencil className="h-3 w-3" />
-								</button>
-							</div>
-						)}
-						<p className="text-xs text-muted-foreground mt-0.5">
-							{space.childRoomIds.length} Räume
-						</p>
-					</div>
-				</div>
+			<Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
+				<TabsList className="shrink-0 w-full justify-start rounded-none h-9 border-b bg-background px-2">
+					<TabsTrigger value="general" className="text-xs h-7">
+						Allgemein
+					</TabsTrigger>
+					<TabsTrigger value="members" className="text-xs h-7">
+						Mitglieder
+					</TabsTrigger>
+					<TabsTrigger value="rooms" className="text-xs h-7">
+						Räume
+					</TabsTrigger>
+					<TabsTrigger value="permissions" className="text-xs h-7">
+						Berechtigungen
+					</TabsTrigger>
+				</TabsList>
 
-				{/* Räume im Space */}
-				<div>
-					<label className="text-xs font-medium text-muted-foreground mb-2 block">
-						Räume in diesem Space
-					</label>
-					<div className="flex flex-col gap-1">
-						{(hierarchy ?? []).map((child) => (
-							<div
-								key={child.roomId}
-								className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/50 group/room"
+				<TabsContent
+					value="general"
+					className="flex-1 overflow-y-auto p-4 space-y-5 mt-0 data-[state=inactive]:hidden"
+				>
+					{/* Avatar + Name */}
+					<div className="flex flex-col items-center text-center gap-2">
+						<div className="relative">
+							<Avatar className="h-[72px] w-[72px]">
+								{avatarSrc && <AvatarImage src={avatarSrc} alt={space.name} />}
+								<AvatarFallback className="text-lg font-semibold bg-muted">
+									{initials}
+								</AvatarFallback>
+							</Avatar>
+							<button
+								type="button"
+								className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+								onClick={() => avatarInputRef.current?.click()}
 							>
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium truncate">{child.name}</p>
-									<p className="text-[10px] text-muted-foreground">
-										{child.memberCount} Mitglieder{!child.isJoined && " · Nicht beigetreten"}
-									</p>
-								</div>
-								{!child.isJoined ? (
-									<Button
-										size="sm"
-										variant="outline"
-										className="shrink-0 h-6 text-[10px]"
-										onClick={() => joinRoom(child.roomId)}
-									>
-										Beitreten
-									</Button>
-								) : (
+								<Camera className="h-3.5 w-3.5" />
+							</button>
+							<input
+								ref={avatarInputRef}
+								type="file"
+								accept="image/*"
+								className="hidden"
+								onChange={handleAvatarUpload}
+							/>
+						</div>
+						<div className="w-full">
+							{editingName ? (
+								<Input
+									value={spaceName}
+									onChange={(e) => setSpaceName(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") saveName();
+										if (e.key === "Escape") setEditingName(false);
+									}}
+									onBlur={saveName}
+									autoFocus
+									className="text-center font-semibold text-base"
+								/>
+							) : (
+								<div className="flex items-center justify-center gap-1">
+									<p className="font-semibold text-base">{space.name}</p>
 									<button
 										type="button"
-										className="shrink-0 opacity-0 group-hover/room:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-										onClick={() => removeRoomFromSpace(child.roomId)}
-										title="Aus Space entfernen"
+										onClick={() => setEditingName(true)}
+										className="text-muted-foreground hover:text-foreground transition-colors"
 									>
-										<Trash2 className="h-3.5 w-3.5" />
+										<Pencil className="h-3 w-3" />
 									</button>
-								)}
-							</div>
-						))}
-						{(!hierarchy || hierarchy.length === 0) && (
-							<p className="text-xs text-muted-foreground py-2 text-center">
-								Keine Räume in diesem Space
+								</div>
+							)}
+							<p className="text-xs text-muted-foreground mt-0.5">
+								{space.childRoomIds.length} Räume
 							</p>
-						)}
+						</div>
 					</div>
-				</div>
+				</TabsContent>
 
-				{/* Raum hinzufügen */}
-				<div>
-					<label className="text-xs font-medium text-muted-foreground mb-1 block">
-						Raum hinzufügen
-					</label>
-					<div className="flex gap-2">
-						<Input
-							value={addRoomId}
-							onChange={(e) => setAddRoomId(e.target.value)}
-							placeholder="!roomId:matrix.local"
-							className="flex-1 h-8 text-xs"
-							onKeyDown={(e) => {
-								if (e.key === "Enter") addRoomToSpace();
-							}}
-						/>
-						<Button
-							size="sm"
-							variant="outline"
-							className="shrink-0 h-8"
-							onClick={addRoomToSpace}
-							disabled={!addRoomId.trim()}
-						>
-							<Plus className="h-3.5 w-3.5" />
-						</Button>
+				{/* Members Tab — Platzhalter, wird in G2-Content-Phase mit MemberList gefuellt */}
+				<TabsContent
+					value="members"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					<p className="text-xs text-muted-foreground">
+						Space-Mitglieder-Verwaltung folgt. Aktuell nutze den Raum-Info-Bereich einzelner Raeume.
+					</p>
+				</TabsContent>
+
+				{/* Rooms Tab — enthaelt die existierende Raum-Hierarchie + Add-Form */}
+				<TabsContent
+					value="rooms"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					{/* Räume im Space */}
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-2 block">
+							Räume in diesem Space
+						</label>
+						<div className="flex flex-col gap-1">
+							{(hierarchy ?? []).map((child) => (
+								<div
+									key={child.roomId}
+									className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted/50 group/room"
+								>
+									<div className="flex-1 min-w-0">
+										<p className="text-sm font-medium truncate">{child.name}</p>
+										<p className="text-[10px] text-muted-foreground">
+											{child.memberCount} Mitglieder{!child.isJoined && " · Nicht beigetreten"}
+										</p>
+									</div>
+									{!child.isJoined ? (
+										<Button
+											size="sm"
+											variant="outline"
+											className="shrink-0 h-6 text-[10px]"
+											onClick={() => joinRoom(child.roomId)}
+										>
+											Beitreten
+										</Button>
+									) : (
+										<button
+											type="button"
+											className="shrink-0 opacity-0 group-hover/room:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+											onClick={() => removeRoomFromSpace(child.roomId)}
+											title="Aus Space entfernen"
+										>
+											<Trash2 className="h-3.5 w-3.5" />
+										</button>
+									)}
+								</div>
+							))}
+							{(!hierarchy || hierarchy.length === 0) && (
+								<p className="text-xs text-muted-foreground py-2 text-center">
+									Keine Räume in diesem Space
+								</p>
+							)}
+						</div>
 					</div>
-				</div>
-			</div>
+
+					{/* Raum hinzufügen — wird in F1 durch AddRoomToSpaceDialog (Modal + Picker) ersetzt */}
+					<div>
+						<label className="text-xs font-medium text-muted-foreground mb-1 block">
+							Raum hinzufügen
+						</label>
+						<div className="flex gap-2">
+							<Input
+								value={addRoomId}
+								onChange={(e) => setAddRoomId(e.target.value)}
+								placeholder="!roomId:matrix.local"
+								className="flex-1 h-8 text-xs"
+								onKeyDown={(e) => {
+									if (e.key === "Enter") addRoomToSpace();
+								}}
+							/>
+							<Button
+								size="sm"
+								variant="outline"
+								className="shrink-0 h-8"
+								onClick={addRoomToSpace}
+								disabled={!addRoomId.trim()}
+							>
+								<Plus className="h-3.5 w-3.5" />
+							</Button>
+						</div>
+					</div>
+				</TabsContent>
+
+				{/* Permissions Tab — Platzhalter, wird mit Power-Levels-Editor gefuellt */}
+				<TabsContent
+					value="permissions"
+					className="flex-1 overflow-y-auto p-4 space-y-4 mt-0 data-[state=inactive]:hidden"
+				>
+					<p className="text-xs text-muted-foreground">
+						Space-Power-Levels-Editor folgt (Admin/Moderator/Mitglied-Schwellen fuer Events wie
+						m.space.child).
+					</p>
+				</TabsContent>
+			</Tabs>
 		</div>
 	);
 }

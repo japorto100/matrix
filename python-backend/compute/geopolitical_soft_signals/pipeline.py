@@ -28,6 +28,40 @@ try:
 except Exception:
     _EMBEDDING_AVAILABLE = False
 
+# FinBERT via local transformers pipeline (not HF Inference API).
+# Model "ProsusAI/finbert" (~440MB) auto-downloads to HF_HOME on first use.
+# Cached per HF cache behaviour + eigenem Score-Cache (siehe _FINBERT_CACHE unten).
+_FINBERT_PIPELINE = None
+_FINBERT_LOAD_ATTEMPTED = False
+
+
+def _get_finbert_pipeline():
+    """Lazy-load FinBERT pipeline. Returns None if transformers not available.
+
+    Controlled via env vars:
+      FINBERT_DISABLED=1       → gibt immer None zurück (feature off)
+      FINBERT_MODEL_NAME       → override default (ProsusAI/finbert)
+      HF_HOME                  → standard HF cache dir (modelle werden dort gespeichert)
+    """
+    global _FINBERT_PIPELINE, _FINBERT_LOAD_ATTEMPTED
+    if _FINBERT_LOAD_ATTEMPTED:
+        return _FINBERT_PIPELINE
+    _FINBERT_LOAD_ATTEMPTED = True
+    if os.getenv("FINBERT_DISABLED", "").strip().lower() in ("1", "true", "yes"):
+        return None
+    try:
+        from transformers import pipeline as hf_pipeline
+        model_name = os.getenv("FINBERT_MODEL_NAME", "ProsusAI/finbert").strip() or "ProsusAI/finbert"
+        _FINBERT_PIPELINE = hf_pipeline(
+            task="sentiment-analysis",
+            model=model_name,
+            top_k=None,  # return all labels with scores
+        )
+        return _FINBERT_PIPELINE
+    except Exception:
+        # Transformers/torch missing or model download failed — degrade gracefully.
+        return None
+
 
 SourceTier = Literal["A", "B", "C"]
 
@@ -294,8 +328,9 @@ def _finbert_cache_get(key: str, now: float) -> float | None:
 
 
 def _finbert_cache_put(key: str, score: float, now: float) -> None:
-    ttl_seconds = env_int("FINBERT_HF_CACHE_TTL_MS", 600000) / 1000.0
-    max_entries = env_int("FINBERT_HF_CACHE_MAX_ENTRIES", 2000)
+    # Backwards-compat: also accept old FINBERT_HF_CACHE_* names.
+    ttl_seconds = env_int("FINBERT_CACHE_TTL_MS", env_int("FINBERT_HF_CACHE_TTL_MS", 600000)) / 1000.0
+    max_entries = env_int("FINBERT_CACHE_MAX_ENTRIES", env_int("FINBERT_HF_CACHE_MAX_ENTRIES", 2000))
     with _FINBERT_CACHE_LOCK:
         if len(_FINBERT_CACHE) >= max_entries:
             # FIFO-like eviction based on insertion order is sufficient here.
@@ -306,13 +341,19 @@ def _finbert_cache_put(key: str, score: float, now: float) -> None:
 
 
 def finbert_polarity_score(text: str) -> float | None:
-    token = os.getenv("FINBERT_HF_API_TOKEN", "").strip()
-    if not token:
-        return None
-    api_url = os.getenv(
-        "FINBERT_HF_API_URL", "https://api-inference.huggingface.co/models/ProsusAI/finbert"
-    ).strip()
-    if not api_url:
+    """Financial-sentiment polarity [-1, 1] via local FinBERT (no HF API token needed).
+
+    Nutzt transformers-library mit lokal gecachtem Model (HF_HOME).
+    Rückgabe: score in [-1, 1] oder None wenn Model nicht verfügbar.
+
+    Env-Vars:
+      FINBERT_DISABLED=1         → feature off
+      FINBERT_MODEL_NAME         → override model (default: ProsusAI/finbert)
+      FINBERT_CACHE_TTL_MS       → Score-Cache TTL in ms (default: 600000)
+      FINBERT_CACHE_MAX_ENTRIES  → max Cache-Einträge (default: 2000)
+    """
+    pipeline = _get_finbert_pipeline()
+    if pipeline is None:
         return None
 
     cache_key = _finbert_cache_key(text)
@@ -321,41 +362,33 @@ def finbert_polarity_score(text: str) -> float | None:
     if cached is not None:
         return cached
 
-    timeout_seconds = env_int("FINBERT_HF_TIMEOUT_MS", 2500) / 1000.0
-
     try:
-        with httpx.Client(timeout=timeout_seconds) as client:
-            response = client.post(
-                api_url,
-                headers={"Authorization": f"Bearer {token}"},
-                json={"inputs": text[:800]},
-            )
-            if response.status_code >= 400:
-                return None
-            payload = response.json()
-            labels = payload[0] if isinstance(payload, list) and payload else []
-            if not isinstance(labels, list):
-                return None
-            positive = 0.0
-            negative = 0.0
-            neutral = 0.0
-            for item in labels:
-                if not isinstance(item, dict):
-                    continue
-                label = normalize_text(str(item.get("label", "")))
-                score = float(item.get("score", 0.0))
-                if "positive" in label:
-                    positive = score
-                elif "negative" in label:
-                    negative = score
-                elif "neutral" in label:
-                    neutral = score
-            if positive == 0.0 and negative == 0.0 and neutral == 0.0:
-                return None
-            # [-1, 1] where positive is bullish and negative is bearish.
-            score = max(-1.0, min(1.0, positive - negative))
-            _finbert_cache_put(cache_key, score, now)
-            return score
+        # Model inferenz lokal — kein HTTP-call
+        results = pipeline(text[:800])
+        # results = [[{"label": "positive", "score": 0.xx}, {"label": "negative", ...}, ...]]
+        labels = results[0] if isinstance(results, list) and results else []
+        if not isinstance(labels, list):
+            return None
+        positive = 0.0
+        negative = 0.0
+        neutral = 0.0
+        for item in labels:
+            if not isinstance(item, dict):
+                continue
+            label = normalize_text(str(item.get("label", "")))
+            score = float(item.get("score", 0.0))
+            if "positive" in label:
+                positive = score
+            elif "negative" in label:
+                negative = score
+            elif "neutral" in label:
+                neutral = score
+        if positive == 0.0 and negative == 0.0 and neutral == 0.0:
+            return None
+        # [-1, 1] where positive is bullish and negative is bearish.
+        score = max(-1.0, min(1.0, positive - negative))
+        _finbert_cache_put(cache_key, score, now)
+        return score
     except Exception:
         return None
 

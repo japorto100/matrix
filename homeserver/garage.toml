@@ -1,0 +1,30 @@
+# Garage Dev-Config (single-node, simple)
+# Production-Multi-Node: siehe https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+
+# Dev: single-node cluster
+replication_mode = "none"
+
+# Zufälliger secret — garage generates one at startup if empty
+rpc_secret = ""
+rpc_bind_addr = "[::]:3902"
+rpc_public_addr = "127.0.0.1:3902"
+
+[s3_api]
+api_bind_addr = "[::]:3900"
+s3_region = "garage"
+root_domain = ".s3.garage.local"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.local"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = ""   # leer = no auth für dev; in prod setzen!
+
+[k2v_api]
+api_bind_addr = "[::]:3901"

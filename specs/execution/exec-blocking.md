@@ -58,6 +58,39 @@
   - Per-Agent Crypto-Store funktioniert
   - NATS Subject-Routing (exec-05c) als Voraussetzung verifiziert
 
+### Warum Agents ueberhaupt OLM-Keys brauchen (FAQ-Antwort, 2026-04-21)
+
+**Frage:** "Wenn Agents sowieso Matrix-User sind — warum muessen *wir* ihnen OLM-Keys geben? Sollten sie die nicht wie normale User selbst managen?"
+
+**Antwort:**
+
+Matrix macht **keinen Unterschied** zwischen human und bot users. Jeder Teilnehmer in einem E2EE-Raum braucht device_keys (curve25519 fuer Olm, ed25519 fuer Signing). Ohne Keys sieht der Agent nur `m.room.encrypted` blobs, kann nicht entschluesseln, kann nicht antworten.
+
+Was sich unterscheidet ist **wer die Keys managed**:
+
+| Human User (alice via Element-Client) | Agent User (`@agent-*`) |
+|---|---|
+| Client-App (Element/Cinny) haelt Keys in IndexedDB / native secure store | `go-appservice` haelt Keys in zentraler OlmMachine + postgres |
+| `/keys/upload` beim Login | `/keys/upload` im Appservice-Startup |
+| User cross-signs eigene Devices | Appservice cross-signs alle Agent-Devices |
+| Key-Backup via `m.megolm_backup.v1` | `megolm_keys_backup.bin` im appservice key-backup-Pfad |
+
+Das go-appservice **ist der Client** fuer alle Agent-User — es spielt dieselbe Rolle die Element fuer alice spielt, aber fuer n Agent-Identitaeten gleichzeitig. Das ist Matrix-Spec-konform via **MSC3202 (Appservice E2EE)**, implementiert in mautrix-go.
+
+**Warum heute shared OlmMachine statt per-agent:**
+
+1. **Skalierbarkeit** — ein Prozess handled 1000+ Agent-Users vs. 1000+ Prozesse mit je eigener OlmMachine
+2. **Key-Bootstrap einmalig** — zentraler cross-signing-setup einmal im Appservice, nicht pro-Agent-MFA-ritual
+3. **Backup-Konsolidierung** — ein `megolm_keys_backup.bin` statt n files
+4. **Device-Namespace** — die Appservice ist **autorisiert fuer den gesamten `@agent-*` namespace** (siehe `registration.yaml`), kann also on-demand neue Agent-User anlegen + fuer sie signen ohne weitere Authentifizierung
+
+**Wann das NICHT mehr reicht** (Trigger fuer Option B/C Refactor):
+- Memory-isolation-Anforderung: prozess-crash in einem Agent-context darf andere nicht korrumpieren
+- Compliance (z.B. Finanz/Health): per-agent crypto-audit-trail, forensische Trennung
+- Multi-Tenant-SaaS: anderer Kunde, anderer crypto-store
+
+Bis dahin ist der shared-OlmMachine-ansatz (Option A) der SOTA-Weg. Siehe auch `exec-05c-agent-isolation §1-3` fuer das Routing darüber.
+
 ---
 
 ## C5. Tuwunel v1.6 Upstream Bugs — Tracking (Stand 11.04.2026)

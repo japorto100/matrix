@@ -182,26 +182,52 @@ Jeder Phase-Start muss ein eigenes detail-Planning durchlaufen.
 
 ---
 
-## §3.5 Title-Gen via lokales Small-Model (Phase-B P6 stub)
+## §3.5 Title-Gen via lokales Small-Model (PRIMARY OWNER)
 
-**Status:** STUB — Phase-B ships remote-LLM fallback first, this is the local-model upgrade.
-**Cross-ref:** `exec-hermes.md §0` (title_generator row), `exec-06.md §4d` (remote-LLM implementation).
+**Status:** PRIMARY implementation target — transformers.js ownership confirmed 2026-04-20 (user decision).
+**Cross-ref:** `exec-hermes.md §0` (title_generator row), `exec-06.md §4d` (legacy remote-LLM fallback — kept as offline-degradation path only).
 
-Hermes-port of `_ref/hermes-agent/agent/title_generator.py` (~50 LOC) ships in Phase-B P6 with **remote LLM** (matrix's LiteLLM gateway + dedicated `MATRIX_TITLE_GEN_KEY` for cost-isolation from user quota). That's the baseline.
+### Ownership re-scoped
 
-**Upgrade path via this spec:** swap the remote-LLM call in `agent/titles/generator.py` for a local WebGPU small model (e.g. Llama-3.2-1B or Qwen-2.5-0.5B) running in the user's browser. Benefits:
+Phase-B P6 shipped `agent/titles/generator.py` as a **remote-LLM** title-gen (LiteLLM via `MATRIX_TITLE_GEN_KEY`). That remains as a **fallback** for environments where WebGPU is unavailable or disabled — but the **primary title-gen path belongs in this spec** (browser-side transformers.js small-model). A remote LLM call per session is a cost-and-latency tax that makes no sense when a 0.5–1B parameter model runs locally in <200ms.
 
-- **Latency**: <200ms vs ~1-2s for remote LLM
-- **Cost**: zero (no LLM-cost per session)
-- **Privacy**: first 2-3 messages never leave the user's device
-- **Scale**: removes a per-session remote call (titles are high-volume)
+### Why local > remote for title-gen specifically
 
-Fits the spec's existing thesis (line 19): "Local-Model-Zugang reduzieren → Server-Kosten senken, UX-Latenz, Privacy-First."
+| Dimension | Remote LLM (agent/titles/generator.py) | Local transformers.js |
+|---|---|---|
+| Latency | 800ms–2s (network + LiteLLM + model queue) | <200ms on WebGPU, <500ms on WASM |
+| Cost | 1 call per session × user-count × turnover | zero |
+| Privacy | first 2–3 messages + assistant-reply cross the wire | never leave the user's device |
+| Scale | per-session remote call, hits rate-limits | client-side, no server impact |
+| Failure mode | silent skip (absent `MATRIX_TITLE_GEN_KEY`) | graceful WebGPU → WASM fallback |
 
-**Phase-Start:** needs detail-planning — which model (Llama-3.2-1B quantized vs Qwen-2.5-0.5B), tokenizer support, WebGPU fallback to WASM, prompt-template for title-generation, quality-vs-speed benchmarks on the i7-2600/8GB baseline. Likely Phase-C or later as the remote-LLM fallback is sufficient for initial rollout.
+### Implementation targets
+
+**Primary path (this spec):**
+
+- **Model:** Qwen-2.5-0.5B-Instruct quantized (q4_0 or q8_0) via `@huggingface/transformers`. Fallback to Llama-3.2-1B if qwen-0.5B quality is insufficient for 3–7-word title extraction.
+- **Host:** `frontend_merger/src/features/agent/lib/titleGen.ts` — new module. Lazy-load the model on first session, reuse across sessions per tab.
+- **Trigger:** `useChatSession.ts::onFinish` — after the first assistant reply in a new thread (`threadId` seen for the first time), run `generateTitle(userMsg, assistantReply)` in a Worker or idle-callback.
+- **Persist:** `POST /api/v1/agent/sessions/{id}/title` (already exists as a contract in `exec-06.md §4d`) with the generated title. Backend writes to `agent.sessions.title` column (migration 024).
+- **Graceful degradation:** if WebGPU and WASM both unavailable, fall through to the backend `/api/v1/agent/titles/generate` endpoint which uses `agent/titles/generator.py` (remote LLM). That endpoint currently doesn't exist but is a ~20 LOC addition to `agent/app.py`.
+
+**Legacy path (backend):**
+
+`agent/titles/generator.py` stays in place as the offline-degradation fallback, NOT the primary. Docstring should note this ownership split — pointing at this spec as the primary. Existing `MATRIX_TITLE_GEN_KEY` env-var logic remains untouched.
+
+### Decision-points still open
+
+- Worker vs main-thread: Worker isolates the model and prevents UI jank, but has model-load latency on every new tab. Main-thread with idle-callback is simpler but can jank scroll.
+- When to pre-warm the model: on app-boot (background cost for all users) vs on-first-session (latency on first-ever title).
+- Quality floor: a 0.5B model sometimes produces weak titles for niche domains (trading vocabulary, multi-language). We need an empirical quality check before declaring local-only.
+
+### Phase-Start
+
+Prerequisites: transformers.js already a planned dependency in this spec. The only new code is the title-gen module + useChatSession integration + backend fallback endpoint. Estimated ~200 LOC TypeScript + ~20 LOC Python backend (fallback endpoint). Not a large project — the blocker is prior local-model-loading infrastructure landing first (per this spec's main plan).
 
 ## Changelog-append (Phase-B)
 
 | Date | Change |
 |---|---|
 | 2026-04-20 | exec-hermes Phase-B P2 stub added: §3.5 (title-gen local-model upgrade path). Remote-LLM baseline ships P6, local-model upgrade separately. |
+| 2026-04-20 | **§3.5 ownership re-scoped (user decision).** transformers.js is now the **primary** title-gen path; `agent/titles/generator.py` (Phase-B P6) demoted to offline-degradation fallback. Rationale: remote-LLM per session is unnecessary cost/latency when a 0.5–1B model runs locally. Concrete implementation targets documented (Qwen-2.5-0.5B via `@huggingface/transformers`, lazy-load, WebGPU→WASM→backend fallback chain). |

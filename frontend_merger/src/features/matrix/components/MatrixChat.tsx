@@ -12,12 +12,14 @@ import { useRooms } from "@matrix/lib/hooks/useRooms";
 import { useSpaces } from "@matrix/lib/hooks/useSpaces";
 import { useTimeline } from "@matrix/lib/hooks/useTimeline";
 import { useTyping } from "@matrix/lib/hooks/useTyping";
-import { AlertCircle, BarChart2, Loader2, MessageCircle, Pin, WifiOff } from "lucide-react";
+import { aggregateSpaceUnread } from "@matrix/lib/utils";
+import { AlertCircle, BarChart2, MessageCircle, Pin, WifiOff } from "lucide-react";
 import { ClientEvent, NotificationCountType, SyncState } from "matrix-js-sdk";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ActivityCentre } from "./ActivityCentre";
+import { AutoRestoreBackupOnVerification } from "./AutoRestoreBackupOnVerification";
 import { CallOverlay } from "./CallOverlay";
 import { CreatePollDialog } from "./CreatePollDialog";
 import { CrossSigningSetup } from "./CrossSigningSetup";
@@ -28,6 +30,7 @@ import { RoomHeader } from "./RoomHeader";
 import { RoomInfoPanel } from "./room-info/RoomInfoPanel";
 import { RoomList } from "./room-list/RoomList";
 import { SearchPanel } from "./SearchPanel";
+import { SplashScreen } from "./SplashScreen";
 import { SpaceSelector } from "./spaces/SpaceSelector";
 import { SpaceSettings } from "./spaces/SpaceSettings";
 import { Timeline } from "./Timeline";
@@ -83,6 +86,9 @@ export function MatrixChat() {
 	const typers = useTyping(isReady ? client : null, selectedRoomId);
 
 	const selectedRoom = rooms.find((r) => r.roomId === selectedRoomId) ?? null;
+
+	// D1: Pro Space die Summe der unread-counts aller Child-Rooms.
+	const spaceUnread = useMemo(() => aggregateSpaceUnread(spaces, rooms), [spaces, rooms]);
 
 	// B-8: Thread-Panel schließen bei Raumwechsel
 	// biome-ignore lint/correctness/useExhaustiveDependencies: setState-Funktionen sind stabil (React-Garantie)
@@ -205,17 +211,20 @@ export function MatrixChat() {
 	// Lade-State
 	if (!isReady) {
 		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="flex flex-col items-center gap-3">
-					<Loader2 className="h-8 w-8 animate-spin text-primary" />
-					<p className="text-sm text-muted-foreground">Verbinde mit Matrix…</p>
-				</div>
-			</div>
+			<SplashScreen
+				message={client ? "Raumliste wird geladen…" : "Verbinde mit Matrix…"}
+				detail={
+					client ? "Initial-Sync läuft, das kann beim ersten Start einen Moment dauern." : undefined
+				}
+			/>
 		);
 	}
 
 	return (
 		<>
+			{/* N1: Auto-Restore Key-Backup nach Verifikation (passive Sibling) */}
+			<AutoRestoreBackupOnVerification client={client} />
+
 			{/* Cross-Signing Banner + Modal */}
 			<CrossSigningSetup cs={crossSigning} />
 
@@ -250,6 +259,7 @@ export function MatrixChat() {
 							setActiveThreadId(null);
 						}}
 						activityCount={activityItems.length}
+						spaceUnread={spaceUnread}
 						client={client}
 					/>
 				)}

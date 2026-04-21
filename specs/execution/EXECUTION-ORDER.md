@@ -36,6 +36,8 @@ Archiviert + nicht-scope: exec-02/03/04/07/08/13/19 + merge-chat + transformers-
 
 Welle-3 research specs (nach K): exec-20, exec-ebm, exec-world-model, exec-personal-kb, exec-openworldlib, exec-media-ingestion, exec-notifications, exec-rust, exec-transformersjs, exec-context.
 
+**Passive Monitor-Liste (matrix-spezifisch):** `exec-matrix-monitor.md` — Tuwunel v1.6 stable merge, upstream-bug-tracking (#411/#401/#377/#372), MSC3414/MSC4362, OIDC/MAS, Federation-Prod-Readiness. Re-check monatlich.
+
 
 
 ### Cluster A — Frontend Merger Branch-Exec (erste priorität)

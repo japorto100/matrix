@@ -691,6 +691,7 @@ User-Notizen archiviert: `docs/archive/memory_notes.txt`
 - [~] Memory-Evals trennen Verbatim-, Derived-, Cross-Session- und Forgetting-Fragen — aktuell im Langkontext-Smoke / `run_fusion_eval.py`, noch nicht als vollstaendige Suite ueber alle Eval-Pfade
 - [ ] Kein produktiver Hybrid-Fallback aktiv, bis Eval auf echten Daten abgeschlossen ist
 - [ ] Referenz-Papers sind ArXiv-kanonisch; lokale PDF-Pfade nur nutzen, wenn Artefakte im Clone wirklich vorhanden sind
+- [ ] Verify: Hindsight nutzt PostgreSQL nativ; MemPalace nutzt standard SQLite/ChromaDB, ist aber via memory_fusion auf Postgres portiert (memory_fusion/fusion_engine.py). Beides auf Postgres bestätigen → kein separater Graph-Engine (Kuzu / NornicDB) für Personal KG nötig. Personal KG-Volumen ist per Definition klein, SQLite-Triple-Store (MemPalace-Pattern) oder Postgres reicht. NornicDB bleibt Global KG (großes shared Volumen, multi-agent, Cypher/Bolt).
 
 ---
 

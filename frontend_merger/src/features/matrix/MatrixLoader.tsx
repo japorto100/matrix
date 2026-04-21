@@ -1,5 +1,6 @@
 "use client";
 
+import { FeatureCheck } from "@matrix/components/FeatureCheck";
 import type { MatrixCredentials } from "@matrix/lib/types";
 import { lazy } from "react";
 
@@ -15,5 +16,9 @@ interface Props {
 }
 
 export function MatrixLoader({ credentials }: Props) {
-	return <MatrixAppClient credentials={credentials} />;
+	return (
+		<FeatureCheck>
+			<MatrixAppClient credentials={credentials} />
+		</FeatureCheck>
+	);
 }

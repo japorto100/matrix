@@ -1,20 +1,35 @@
 # Matrix Stack — podman-compose / docker-compose
 # ---------------------------------------------------------------------------
-# Dev (Standard): infra-only — Homeserver + NATS + Postgres (+LiteLLM opt).
-#   podman-compose up -d   →  tuwunel, nats, postgres
+# Dev (Standard): infra-only — Homeserver + NATS + Postgres + SeaweedFS (+LiteLLM opt).
+#   podman-compose up -d   →  tuwunel, nats, postgres, seaweedfs
 # Go/Python/Next.js laufen NICHT im Container, sondern lokal via `scripts/dev-stack.sh`.
 # Grund: Hot-Reload, lokale Debugger, schnelleres Iterieren.
 #
 # Opt-in Profiles:
 #   --profile litellm     → LiteLLM Gateway (:4000)
 #   --profile sandbox     → OpenSandbox Server (:8100) + OpenSandbox Alibaba (:8080)
-#   --profile prod        → Container-Builds fuer Go/Python/Next.js + coturn
+#   --profile prod        → Container-Builds fuer Go/Python/Next.js + coturn (full-container Mode)
 #   --profile merger      → frontend_merger als Container (:3003)
+#   --profile calls        → livekit-server + lk-jwt-service + coturn (Video/Voice-Calls)
+#   --profile cache        → valkey (Redis-BSD-Fork, :6379)
+#   --profile tunnel       → cloudflared quick-tunnel (free, wechselnde *.trycloudflare.com URL)
+#   --profile tunnel-named → cloudflared named-tunnel (paid/CF-Account, custom domain)
+#   --profile observability → OpenObserve + OTel-Collector (logs/metrics/traces UI :5080)
+#   --profile kg-falkor    → FalkorDB (Redis-basierte Graph-DB, :6380, alternative zu Kuzu)
+#   --profile kg-nornic    → NornicDB (MIT, Graph+Vector unified, Neo4j-Bolt-kompatibel, :7687)
+#   --profile storage-garage → Garage (leichtgewichtiger Rust-S3, alternative zu seaweedfs)
+#   --profile pooler       → PgBouncer (connection-pooler vor postgres, :6432)
+#
+# KG-Provider-Default: Kuzu (embedded, MIT, zero-RAM) — KEIN Service nötig.
+#
+# Tuwunel-Version-Switcher (via TUWUNEL_IMAGE env):
+#   Default:  v1.6.0-rc   (features, aktuelles Release-Candidate)
+#   Stable:   v1.5.2      (vorheriger stable release, Fallback bei Bugs)
+#   Bleeding: latest      (bleeding edge, main branch)
+#   Nutzung:  TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:v1.5.2 podman-compose up -d
 
 services:
-  # ── Homeserver (Tuwunel v1.6.0-rc default) ───────────────────────────────
-  # Image-Tag steuern via TUWUNEL_IMAGE env (default: v1.6.0-rc).
-  # Stable-Fallback: TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:latest podman-compose up -d
+  # ── Homeserver (Tuwunel — siehe Version-Switcher im Header-Comment) ──────
   tuwunel:
     image: ${TUWUNEL_IMAGE:-ghcr.io/matrix-construct/tuwunel:v1.6.0-rc}
     container_name: tuwunel
@@ -56,14 +71,63 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-hindsight_dev}
+    # Dev-optimized tuning für 8GB RAM System + pg_stat_statements für Observability.
+    # Details + Rationale: siehe postgres.md im repo-root.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=128MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - track_io_timing=on
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_size=2GB
     ports:
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── SeaweedFS (S3-compatible Media Storage) ──────────────────────────────
+  # Matrix-Homeserver (tuwunel.v1.6.toml) konfiguriert als Media-Storage-Provider.
+  # Default aktiv — ohne seaweedfs kann tuwunel keine Media speichern.
+  # S3 API :8333, Master :9333, Admin-UI :8888.
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweedfs
+    command: "server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data -master.volumeSizeLimitMB=1024"
+    ports:
+      - "8333:8333"  # S3 API
+      - "9333:9333"  # Master
+      - "8888:8888"  # Admin UI
+    volumes:
+      - seaweedfs-data:/data
+      - ./tools/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9333/cluster/status"]
+      interval: 15s
       timeout: 5s
       retries: 3
 
@@ -146,83 +210,102 @@ services:
     profiles:
       - mock
 
-  # ─────────────────────────────────────────────────────────────────────────
-  # PROD-PROFIL: containerisierte Go/Python/Next.js Builds.
-  # Nur fuer produktionsnahe Tests oder CI — NICHT Dev-Standard!
-  # Dev: scripts/dev-stack.sh startet diese als lokale Prozesse.
-  # ─────────────────────────────────────────────────────────────────────────
-
-  go-appservice:
-    build: ./go-appservice
-    container_name: go-appservice
-    env_file: ./go-appservice/.env.development
+  # ── Valkey (Redis-BSD-Fork, Cache/Session-Store) — opt-in ────────────────
+  # Drop-in Replacement fuer Redis. BSD-lizenziert (Linux Foundation Fork).
+  # podman-compose --profile cache up -d valkey
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: valkey
     ports:
-      - "8090:8090"
-    depends_on:
-      tuwunel:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    command: ["valkey-server", "--appendonly", "yes"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
     profiles:
-      - prod
+      - cache
 
-  python-bridge:
-    build: ./python-agent-bridge
-    container_name: python-bridge
-    env_file: ./python-agent-bridge/.env
-    ports:
-      - "8097:8097"
-    depends_on:
-      nats:
-        condition: service_healthy
-      go-appservice:
-        condition: service_healthy
-    restart: unless-stopped
-    profiles:
-      - prod
+  # ─────────────────────────────────────────────────────────────────────────
+  # PROD-PROFIL (AUSKOMMENTIERT, 2026-04-21):
+  # go-appservice + python-bridge wurden als Container-Builds gepflegt, aber
+  # im Dev laufen sie via scripts/dev-stack.sh als lokale Prozesse.
+  # Doppelstart (lokal + container) würde Port-/NATS-/E2EE-Key-Konflikte erzeugen.
+  # Auskommentiert damit kein `--profile prod` + kein `compose up` sie versehentlich
+  # startet. Reaktivieren wenn prod/CI wirklich benötigt — dazu muss:
+  #   - python-agent-bridge/ angelegt werden (aktuell nicht im repo)
+  #   - NATS/Postgres/Tuwunel-URLs auf Container-DNS-Namen umgestellt werden
+  # Dev: scripts/dev-stack.sh --go --bridge
+  # ─────────────────────────────────────────────────────────────────────────
 
-  nextjs-chat:
-    build:
-      context: ./nextjs-chat
-      args:
-        - NEXT_PUBLIC_MATRIX_HOMESERVER_URL=http://localhost:8448
-    container_name: nextjs-chat
-    ports:
-      - "3000:3000"
-    depends_on:
-      tuwunel:
-        condition: service_healthy
-    restart: unless-stopped
-    profiles:
-      - prod
+  # go-appservice:
+  #   build: ./go-appservice
+  #   container_name: go-appservice
+  #   env_file: ./go-appservice/.env.development
+  #   ports:
+  #     - "8090:8090"
+  #   depends_on:
+  #     tuwunel:
+  #       condition: service_healthy
+  #     nats:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-qO-", "http://localhost:8090/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   profiles:
+  #     - prod
 
-  # ── frontend_merger (optional Container-Build) ───────────────────────────
-  # podman-compose --profile merger up -d frontend-merger
-  frontend-merger:
-    build: ./frontend_merger
-    container_name: frontend-merger
-    env_file: ./frontend_merger/.env.local
-    ports:
-      - "3003:3003"
-    environment:
-      - GO_GATEWAY_BASE_URL=http://go-appservice:8090
-    depends_on:
-      tuwunel:
-        condition: service_healthy
-    restart: unless-stopped
-    profiles:
-      - merger
-      - prod
+  # python-bridge:
+  #   build: ./python-agent-bridge
+  #   container_name: python-bridge
+  #   env_file: ./python-agent-bridge/.env
+  #   ports:
+  #     - "8097:8097"
+  #   depends_on:
+  #     nats:
+  #       condition: service_healthy
+  #     go-appservice:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles:
+  #     - prod
 
-  # ── TURN Server (Voice/Video Call Relay, prod) ───────────────────────────
+  # ── frontend_merger ──────────────────────────────────────────────────────────
+  # Dev wird via scripts/dev-stack.sh gestartet (bun run dev :3003, nativ).
+  # Compose-Service unten auskommentiert — reaktivieren wenn Container-Build
+  # fuer prod/CI gewollt ist.
+  #
+  # frontend-merger:
+  #   build: ./frontend_merger
+  #   container_name: frontend-merger
+  #   env_file: ./frontend_merger/.env.local
+  #   ports:
+  #     - "3003:3003"
+  #   environment:
+  #     - GO_GATEWAY_BASE_URL=http://go-appservice:8090
+  #   depends_on:
+  #     tuwunel:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles:
+  #     - merger
+  #     - prod
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # CALLS-PROFIL: Matrix Video/Voice Calls via LiveKit + STUN/TURN via coturn.
+  # podman-compose --profile calls up -d
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # ── TURN Server (Voice/Video Call Relay) ─────────────────────────────────
   coturn:
     image: coturn/coturn:latest
     container_name: coturn
@@ -232,8 +315,255 @@ services:
     command: ["-c", "/etc/turnserver.conf"]
     restart: unless-stopped
     profiles:
+      - calls
       - prod
+
+  # ── LiveKit Server (Video/Voice Media Stack) ─────────────────────────────
+  # Nutzt coturn als TURN-Backend. Konfiguration via homeserver/livekit.yaml.
+  livekit-server:
+    image: livekit/livekit-server:v1.8
+    container_name: livekit
+    ports:
+      - "7880:7880"       # RTC/WebSocket
+      - "7881:7881"       # RTC-TCP Fallback
+      - "7882:7882/udp"   # RTC-UDP Mux
+    volumes:
+      - ./homeserver/livekit.yaml:/etc/livekit.yaml:ro
+    command: ["--config", "/etc/livekit.yaml"]
+    depends_on:
+      - coturn
+    restart: unless-stopped
+    profiles:
+      - calls
+
+  # ── LiveKit JWT Service (Room-Token-Issuer fuer Matrix Clients) ──────────
+  # Matrix Homeserver bezieht LiveKit-Tokens von diesem Service (:8080).
+  # Frontend-ENV: NEXT_PUBLIC_LK_JWT_SERVICE_URL=http://localhost:8080
+  lk-jwt-service:
+    image: ghcr.io/livekit/lk-jwt-service:latest
+    container_name: lk-jwt
+    ports:
+      - "8080:8080"
+    environment:
+      - LIVEKIT_URL=ws://livekit-server:7880
+      - LIVEKIT_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_SECRET=${LIVEKIT_API_SECRET:-devsecret-change-me}
+    depends_on:
+      - livekit-server
+    restart: unless-stopped
+    profiles:
+      - calls
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # TUNNEL-PROFIL: External Exposure via Cloudflare Tunnel
+  # Quick Tunnel (Default, Free, wechselnde *.trycloudflare.com URL):
+  #   podman-compose --profile tunnel up -d cloudflared
+  # Named Tunnel (paid/CF-Account, custom domain, statischer URL):
+  #   CLOUDFLARED_TUNNEL_TOKEN=eyJhbG... podman-compose --profile tunnel-named up -d cloudflared-named
+  # ─────────────────────────────────────────────────────────────────────────
+
+  # Quick Tunnel — kein Account/Token nötig, URL in `podman logs cloudflared`
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    # Default target: tuwunel. Override via CF_TUNNEL_TARGET env (z.B. http://host.containers.internal:3003).
+    command: tunnel --no-autoupdate --url ${CF_TUNNEL_TARGET:-http://tuwunel:8448}
+    restart: unless-stopped
+    depends_on:
+      - tuwunel
+    profiles:
+      - tunnel
+
+  # Named Tunnel — braucht TUNNEL_TOKEN von dashboard.cloudflare.com
+  cloudflared-named:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-named
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
+    restart: unless-stopped
+    profiles:
+      - tunnel-named
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # OBSERVABILITY-PROFIL: OpenTelemetry + OpenObserve
+  # Ersetzt separate docker-compose.otel.yml (jetzt hier integriert).
+  # podman-compose --profile observability up -d openobserve otel-collector
+  # OpenObserve UI: http://localhost:5080 (admin@example.com / ${OPENOBSERVE_PASSWORD})
+  # Services: set OTEL_ENABLED=true + OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+  # ─────────────────────────────────────────────────────────────────────────
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: openobserve
+    environment:
+      ZO_ROOT_USER_EMAIL: ${OPENOBSERVE_USER:-admin@example.com}
+      ZO_ROOT_USER_PASSWORD: ${OPENOBSERVE_PASSWORD}
+      ZO_DATA_DIR: /data
+      ZO_GRPC_PORT: "5081"
+    ports:
+      - "5080:5080"   # HTTP UI + OTLP/HTTP
+      - "5081:5081"   # OTLP/gRPC
+    volumes:
+      - openobserve-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    profiles:
+      - observability
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP/gRPC
+      - "4318:4318"   # OTLP/HTTP
+    depends_on:
+      openobserve:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # Postgres Prometheus Exporter — scraped von Prometheus/Grafana oder via OTel nach OpenObserve.
+  # Metriken: connections, cache-hit-ratio, lock-waits, pg_stat_statements summaries, replica-lag.
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.17.0
+    container_name: postgres-exporter
+    environment:
+      # SSLMODE=disable für Dev (plain TCP). In Prod: "require" mit Certs.
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hindsight_dev}?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres-exporter/queries.yaml
+    ports:
+      - "9187:9187"   # /metrics endpoint für Prometheus-scrape
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - observability
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # STORAGE-GARAGE-PROFIL: Garage (Rust, AGPLv3) als lightweight S3-Alternative
+  # Vorteile vs SeaweedFS: ~1-2GB RAM (vs 2-4GB), single binary, simpler config.
+  # Zum Switchen: `podman-compose stop seaweedfs` + `podman-compose --profile storage-garage up -d garage`
+  #   Dann in go-appservice/.env.* : ARTIFACT_STORAGE_S3_ENDPOINT=http://localhost:3900
+  #                                  ARTIFACT_STORAGE_S3_ACCESS_KEY_ID=<garage-generated>
+  #                                  ARTIFACT_STORAGE_S3_SECRET_ACCESS_KEY=<garage-generated>
+  # Initial Setup: `podman exec garage /garage key create` für S3-creds
+  # ─────────────────────────────────────────────────────────────────────────
+  garage:
+    image: dxflrs/garage:v2.0.0
+    container_name: garage
+    environment:
+      # Default: Memory-backed (dev). Für Persistenz: LMDB/Sled.
+      GARAGE_CONFIG_FILE: /etc/garage/garage.toml
+    ports:
+      - "3900:3900"   # S3 API
+      - "3901:3901"   # K2V API (key-value, optional)
+      - "3902:3902"   # RPC (cluster-interne Kommunikation)
+      - "3903:3903"   # Web-Admin UI
+    volumes:
+      - garage-data:/var/lib/garage/data
+      - garage-meta:/var/lib/garage/meta
+      - ./homeserver/garage.toml:/etc/garage/garage.toml:ro
+    restart: unless-stopped
+    profiles:
+      - storage-garage
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # KG-FALKOR-PROFIL: FalkorDB als alternative KG-Backend zu Kuzu
+  # Nutzt Redis-Protocol, gut für query-intensive workloads.
+  # Aktivieren via KG_PROVIDER=falkordb in python-backend/.env
+  # podman-compose --profile kg-falkor up -d falkordb
+  # ─────────────────────────────────────────────────────────────────────────
+  falkordb:
+    image: falkordb/falkordb:latest
+    container_name: falkordb
+    ports:
+      - "6380:6379"   # Redis-Protocol (6380 um Konflikt mit valkey zu vermeiden)
+      - "3000:3000"   # FalkorDB Web UI
+    volumes:
+      - falkordb-data:/data
+    restart: unless-stopped
+    profiles:
+      - kg-falkor
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # POOLER-PROFIL: PgBouncer Connection-Pool vor Postgres
+  # Dev-Mode: session-pool (kompatibel mit ALLEM — LISTEN/NOTIFY, prepared stmts)
+  # Wenn aktiviert, Apps über :6432 statt :5433 (HINDSIGHT_DB_URL updaten!)
+  # Bei Scale-Trigger: POOL_MODE=transaction für 5-10× Throughput-Gain
+  #   → dann in go-pgxpool/asyncpg: prepared_statements=false
+  # podman-compose --profile pooler up -d pgbouncer
+  # ─────────────────────────────────────────────────────────────────────────
+  pgbouncer:
+    image: edoburu/pgbouncer:1.24.1-p1
+    container_name: pgbouncer
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-hindsight_dev}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: ${PGBOUNCER_POOL_MODE:-session}    # session = zero-breaking-change
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      RESERVE_POOL_SIZE: 5
+      MIN_POOL_SIZE: 2
+      SERVER_IDLE_TIMEOUT: 600
+      SERVER_LIFETIME: 3600
+      QUERY_TIMEOUT: 0                               # disable (app handles timeouts)
+      QUERY_WAIT_TIMEOUT: 120
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits,search_path,options
+      SERVER_RESET_QUERY: DISCARD ALL
+      STATS_PERIOD: 60
+    ports:
+      - "6432:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - pooler
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # KG-NORNIC-PROFIL: NornicDB (MIT license, Graph+Vector unified)
+  # Neo4j-Bolt-kompatibel + Qdrant-gRPC-kompatibel — drop-in für beide Protokolle.
+  # Mimir/Mnemosyne-pattern: Canonical truth store + semantic search in einem.
+  # Noch jung (v1.0.x 2026), Q3/Q4 2026 re-evaluieren vs Kuzu.
+  # Aktivieren: KG_PROVIDER=nornic + BOLT-URL in python-backend/.env
+  # ─────────────────────────────────────────────────────────────────────────
+  nornic:
+    image: orneryd/nornicdb:latest
+    container_name: nornic
+    ports:
+      - "7687:7687"   # Neo4j Bolt Protocol
+      - "6334:6334"   # Qdrant gRPC (vector)
+      - "7474:7474"   # Web UI / REST (if exposed)
+    volumes:
+      - nornic-data:/data
+    environment:
+      - NORNIC_DATA_DIR=/data
+    restart: unless-stopped
+    profiles:
+      - kg-nornic
 
 volumes:
   tuwunel-data:
   postgres-data:
+  seaweedfs-data:
+  valkey-data:
+  openobserve-data:
+  falkordb-data:
+  nornic-data:
+  garage-data:
+  garage-meta:

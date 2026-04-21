@@ -68,14 +68,16 @@ class NATSHandler:
         sender = data.get("sender", "")
         body = data.get("body", "")
         thread_id = data.get("thread_id")
+        target_agent = data.get("target_agent", "")
 
         if not body:
             return
 
         logger.info(
-            "NATS inbound: room=%s sender=%s body_len=%d",
+            "NATS inbound: room=%s sender=%s target_agent=%s body_len=%d",
             room_id,
             sender,
+            target_agent or "(default)",
             len(body),
         )
 
@@ -97,10 +99,14 @@ class NATSHandler:
             model=model,
         )
 
+        # Reply-UserID: dynamisch pro target_agent aus dem incoming-payload.
+        # Fallback auf config-default wenn kein target_agent parsed wurde (z.B. DM ohne mention).
+        reply_agent_user_id = self._resolve_reply_user_id(target_agent)
+
         # Reply an Go Appservice zurück senden
         reply = {
             "room_id": room_id,
-            "agent_user_id": self._config.agent_user_id,
+            "agent_user_id": reply_agent_user_id,
             "text": reply_text,
             "is_streaming": False,
         }
@@ -110,6 +116,26 @@ class NATSHandler:
             logger.info(
                 "NATS reply published: room=%s text_len=%d", room_id, len(reply_text)
             )
+
+    def _resolve_reply_user_id(self, target_agent: str) -> str:
+        """Baut die reply-Matrix-User-ID aus dem target_agent aus dem NATS-payload.
+
+        Go-Appservice parst `@agent-<name>` aus dem message-body via `extractAgentName()` und
+        setzt `target_agent="<name>"` im InboundMessage. Wir mappen das zurück auf die volle
+        Matrix-User-ID via Appservice-Namespace-Pattern `@agent-<name>:<server>`.
+
+        Fallback: config-default (`AGENT_USER_ID` env-var) wenn target_agent leer — deckt
+        DMs ohne expliziten mention ab.
+
+        Server-Name wird aus der config-default abgeleitet um Format-Drift zu vermeiden.
+        """
+        if not target_agent:
+            return self._config.agent_user_id
+
+        # Server-name aus default user_id extrahieren: "@agent-trading:matrix.local" → "matrix.local"
+        default = self._config.agent_user_id
+        server_name = default.split(":", 1)[1] if ":" in default else "matrix.local"
+        return f"@agent-{target_agent}:{server_name}"
 
     async def _on_disconnect(self) -> None:
         logger.warning("NATS disconnected")
