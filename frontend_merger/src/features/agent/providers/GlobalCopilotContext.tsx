@@ -1,10 +1,10 @@
 "use client";
 
+import { useCurrentRoute } from "@agent/hooks/useCurrentRoute";
+import { useGlobalChat } from "@agent/stores/globalChatStore";
 import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useCurrentRoute } from "@agent/hooks/useCurrentRoute";
-import { useGlobalChat } from "@agent/stores/globalChatStore";
 
 interface Props {
 	children: ReactNode;
