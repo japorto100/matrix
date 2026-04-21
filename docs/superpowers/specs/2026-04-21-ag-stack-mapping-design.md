@@ -340,6 +340,158 @@ New tests:
 | Live-data patterns unspecified in A2UI docs | Defer to phase-2; start with static widgets only |
 | `@copilotkit/react-ui` styles.css conflict with globals.css | Import order: `react-ui/styles.css` BEFORE `globals.css` (done) |
 
+## 16. Deep-Dive Findings (Addendum 2026-04-21)
+
+After writing the initial spec, a deep-dive through `frontend_merger/`, `go-appservice/`, and `python-backend/` revealed concrete current-state that affects implementation choices. Addendum rather than rewrite, because the overall mapping is still sound.
+
+### 16.1 Python-Agent SSE Packet Format (existing)
+
+`python-backend/agent/streaming.py` defines the **Vercel AI-SDK v6 Data-Stream-Protocol** packets:
+
+- `thread-id` — session identifier
+- `text-start` / `text-delta` / `text-end` — progressive text
+- `tool-start` / `tool-result` / `tool-error` — tool execution
+- `step-start` — graph-step marker
+- `reasoning-delta` — chain-of-thought tokens
+- `message-meta` — metadata (tokens, usage)
+- `finish` / `error` / `approval-request` — terminal states
+
+**No `a2ui-part` or `widget-update` packet exists.** SSE response-header is `text/event-stream` with `x-vercel-ai-ui-message-stream: v1` (set by BFF route `frontend_merger/src/app/api/agent/chat/route.ts`).
+
+**Endpoint:** `POST /api/v1/agent/chat` in `python-backend/agent/app.py:605`, returning `StreamingResponse` via `_stream_agent_loop`.
+
+### 16.2 Go-Appservice Proxy Layer (existing)
+
+`go-appservice/internal/handler/server.go:111-146` mounts:
+
+- `/api/v1/agent/chat` → proxy to python-agent
+- `/api/v1/agent/approve` — HITL approval
+- `/api/v1/agent/tools/chart-state` — GET chart data
+- `/api/v1/agent/tools/portfolio-summary` — GET portfolio data
+- `/api/v1/agent/tools/set_chart_state` — PUT chart-state mutation
+- `/api/v1/mcp/*` — MCP tool-proxy
+- `/api/v1/control/*` — Control-UI proxy
+- `/api/v1/memory/*` — Memory-KG endpoints (seed, query, nodes, sync, episode, episodes, search, health)
+
+**No `/api/copilotkit` endpoint** — must be added. Placement options:
+- (a) In go-appservice (Go proxy layer — consistent with existing `/api/v1/*`)
+- (b) In Next.js BFF (`frontend_merger/src/app/api/copilotkit/route.ts` — closer to CopilotKit-runtime lib)
+
+Recommendation: **(b)** — CopilotKit-runtime is JS/TS-native (`@copilotkit/runtime`), lives naturally in Next.js. Go-appservice remains protocol-agnostic.
+
+### 16.3 Existing Tool-Output → Widget Pattern (in frontend)
+
+`frontend_merger/src/features/agent/components/ToolOutputRenderer.tsx` already maps tool-names to React components:
+
+```ts
+const TOOL_RENDERERS = {
+  get_chart_state:     ChartWidget,     // from a2ui/ChartWidget (ex-tambo/)
+  get_portfolio_summary: PortfolioCard,  // from a2ui/PortfolioCard
+  sandbox_execute:     SandboxArtifact, // exec-12
+  file_analyze:        SandboxArtifact, // exec-12
+};
+```
+
+**Implication:** We have the "agent emits → rich widget" pattern already. Tambo-removal preserved the widgets; A2UI just extends the rendering target.
+
+### 16.4 No Prior A2UI or CopilotKit Integration
+
+Grep confirmed: no `a2ui-agent-sdk` in python-backend, no `@copilotkit/*` imports outside of the just-installed provider/renderer files. This is a **greenfield addition**, not a migration.
+
+**Implication:** No legacy API-contracts to preserve; we can pick the cleanest pattern.
+
+## 17. A2UI Integration: Ansatz X vs. Y
+
+Two ways to carry A2UI-widget-messages from python-agent to frontend:
+
+### Ansatz X — New packet-types (SOTA, first-class A2UI)
+
+Add new dataclasses to `python-backend/agent/streaming.py`:
+
+```python
+@dataclass
+class A2UISurfaceStartPacket:
+    surface_id: str
+    catalog: str = "basic"
+    type: Literal["a2ui-surface-start"] = "a2ui-surface-start"
+
+@dataclass
+class A2UIUpdateComponentsPacket:
+    surface_id: str
+    components: dict  # A2UI component-tree JSON
+    type: Literal["a2ui-update-components"] = "a2ui-update-components"
+
+@dataclass
+class A2UIUpdateDataModelPacket:
+    surface_id: str
+    path: str         # JSONPath
+    value: dict       # JSON value
+    type: Literal["a2ui-update-data-model"] = "a2ui-update-data-model"
+
+@dataclass
+class A2UISurfaceEndPacket:
+    surface_id: str
+    type: Literal["a2ui-surface-end"] = "a2ui-surface-end"
+```
+
+Frontend SSE-parser (`useChatSession`) must recognize these types and dispatch to `A2UIProvider` via `useA2UIActions`. Cleaner separation, A2UI is first-class stream citizen.
+
+- **Pros:** SOTA 2026 pattern; direct A2UI v0.9 spec mapping; no tool-dispatch overhead; streamable diffs for live-data
+- **Cons:** More python + frontend code; two parallel "render paths" (text + A2UI)
+- **Effort:** 5-10 files touched
+
+### Ansatz Y — A2UI-via-tool-result (incremental, minimal diff)
+
+Agent emits A2UI-tree as the **`output` of a virtual tool-call** `render_a2ui_surface`:
+
+```python
+# In agent loop:
+yield sse(ToolStartPacket(tool_name="render_a2ui_surface", tool_call_id=uuid4()))
+yield sse(ToolResultPacket(
+    tool_call_id=tcid,
+    result={"type": "a2ui", "surface_id": "main", "tree": {...}}
+))
+```
+
+Frontend `ToolOutputRenderer` gets extended: when `tool_name == "render_a2ui_surface"` → `<A2UIRenderer surfaceId={result.surface_id} inlineTree={result.tree} />`.
+
+- **Pros:** Reuses existing tool-infrastructure; one render-path; minimal diff; no SSE-parser changes
+- **Cons:** "Virtual tool" is a semantic hack; updateDataModel for live-data requires new packet-types anyway (bandaid; can't stream incremental updates cleanly)
+- **Effort:** 2-3 files touched
+
+### Recommendation: Hybrid
+
+**Phase-1 (this implementation):** Ansatz Y for static widgets (MVP).
+- Reuses `ToolOutputRenderer`
+- Python-agent emits tree as tool-result
+- Works out-of-the-box with `A2UIRenderer`'s `fallback` component
+
+**Phase-2 (when live-data lands):** Migrate to Ansatz X for streaming.
+- Add `a2ui-*` packet-types
+- Frontend SSE-parser dispatches via `useA2UIActions`
+- `updateDataModel` packets enable live price/metric updates
+
+This keeps initial diff small, defers complexity to when it's needed, and the Phase-2 migration is additive (new packet-types alongside existing). §12 implementation-sequence adjusts accordingly.
+
+### 17.1 Updated §12 Implementation Sequence (applying Y-first)
+
+Revised steps (replace original §12):
+
+1. **Provider hierarchy** — CopilotKit + A2UI wrap in `layout.tsx` + env-gated
+2. **GlobalCopilotContext** — global `useCopilotAction/Readable`
+3. **A2uiMessageRenderer** wired into `AgentChatPanel` (ingest-point for A2UI-tool-result)
+4. **ToolOutputRenderer extension** — new case `tool_name === "render_a2ui_surface"` → A2UIRenderer with inline tree
+5. **TopBar: Files + Memory buttons**
+6. **Python-agent: add system-prompt A2UI-catalog-awareness** — python side doesn't need new SDK yet; LLM is instructed to emit A2UI-trees via existing tool-output channel
+7. **FileCard "Add to Chat" context-menu**
+8. **Files-page: `saveAttachmentToStorage` action + `recentFiles` readable**
+9. **Control-page: `openControlTab` action + `activeControlTab` readable**
+10. **`/api/copilotkit` runtime endpoint** — Next.js BFF, `OpenAIAdapter` + LiteLLM `baseURL`
+11. **Persistent surface hook + `/api/surfaces/[surfaceId]` BFF** + Alembic migration `027_user_surfaces`
+12. **Main-canvas A2uiCanvas** (already done; surface-dispatch from agent still Y-pattern)
+13. **Tests** — unit + E2E incremental
+14. **(Phase-2) A2UI native packet-types + SSE-parser-extend** — only when live-data patterns needed
+
 ## 15. References
 
 - A2UI v0.9 spec: https://a2ui.org/specification/v0.9-a2ui/
