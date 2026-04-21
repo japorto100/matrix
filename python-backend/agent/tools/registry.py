@@ -40,6 +40,7 @@ class ToolRegistry:
         """Build the default registry with all standard trading tools.
         ctx is optional — passed through for future context-aware tool selection.
         """
+        from agent.tools.a2ui_surface import RenderA2uiSurfaceTool
         from agent.tools.canvas import (
             CreateCanvasShapeTool,
             CreateNovelBlockTool,
@@ -84,6 +85,8 @@ class ToolRegistry:
         registry.register(SandboxExecuteTool())
         registry.register(SandboxBrowserTool())
         registry.register(FileAnalyzeTool())
+        # A2UI surface rendering (Ansatz Y — virtual tool emitting widget envelope)
+        registry.register(RenderA2uiSurfaceTool())
         # Scheduler Tools (exec-scheduler Lane C — 7 tools, LLM-native NL)
         registry.register(ScheduleTaskTool())
         registry.register(ScheduleListTool())
