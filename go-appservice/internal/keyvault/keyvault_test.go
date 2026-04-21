@@ -34,7 +34,7 @@ func TestAESGCMRoundtrip(t *testing.T) {
 		"",
 		"unicode: äöü 日本語 emoji 🎉",
 		strings.Repeat("a", 10000),
-		"sk-or-v1-d2aa14c92162107cc150a45e811eac2fd917617e",
+		"sk-or-v1-" + strings.Repeat("a", 40), // assembled at runtime to avoid secret-scanning false-positive
 	}
 	for _, plain := range cases {
 		ct, err := vault.Encrypt(plain)
