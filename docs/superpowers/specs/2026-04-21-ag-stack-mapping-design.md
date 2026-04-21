@@ -492,6 +492,92 @@ Revised steps (replace original §12):
 13. **Tests** — unit + E2E incremental
 14. **(Phase-2) A2UI native packet-types + SSE-parser-extend** — only when live-data patterns needed
 
+## 18. Addendum 2 — Frontend/Backend Clarification + Gitnexus Findings
+
+After gitnexus reindex (21250 symbols, 300 execution flows), targeted queries surfaced additional current-state details. Also resolves a conceptual clarification requested mid-design.
+
+### 18.1 Frontend- vs. Backend-Split of the 6 Packages
+
+The 6 packages are **primarily frontend tools** — not "backend tools". Only `@copilotkit/runtime` lives backend-side (as a thin BFF-proxy), nothing else.
+
+| Package | Side | Role |
+|---|---|---|
+| `@copilotkit/react-core` | **Frontend** | React provider + hooks |
+| `@copilotkit/react-ui` | **Frontend** | UI components (CopilotChat, Sidebar, Popup, Markdown) |
+| `@copilotkit/a2ui-renderer` | **Frontend** | Consumes A2UI JSON → React widgets |
+| `@a2ui/react` | **Frontend** | Google A2UI renderer (alternative) |
+| `@a2ui/web_core` | **Frontend** | A2UI protocol parsing + state |
+| `@copilotkit/runtime` | **Backend (Next.js BFF)** | Thin proxy/adapter to LLM/agent — no logic |
+| `a2ui-agent-sdk` (python, NOT installed) | Backend | Helper for agent-side widget-JSON emission (deferred to phase-2) |
+
+**The agent "brain" stays in python-agent.** CopilotKit + A2UI are the lingua franca between the brain and the user's browser.
+
+### 18.2 Python-Agent Runner Duality (gitnexus finding)
+
+Two runners exist, selected by `agent/runners/dispatcher.py` via `AGENT_USE_LANGGRAPH` env:
+
+- `python-backend/agent/graph/runner.py:run_agent_loop` — LangGraph StateGraph runner (default in dev)
+- `python-backend/agent/runners/simple.py:run_simple_agent_loop` — legacy simple-loop fallback
+
+**Implication for A2UI-emission (Ansatz Y):** The virtual tool-result `render_a2ui_surface` needs to work in **both runners** — emitted via `ToolResultPacket` from the streaming layer that both runners share (`python-backend/agent/streaming.py`). No runner-specific code needed; streaming-layer extension covers both.
+
+### 18.3 Go-Appservice Proxy Test Coverage (gitnexus finding)
+
+`go-appservice/internal/handlers/http/agent_chat_handler_test.go` covers:
+- `TestAgentChatHandler_MethodNotAllowed`
+- `TestAgentChatHandler_ProxiesSSEStream` (SSE pass-through)
+
+**Implication:** SSE-proxy pattern is production-ready and tested. Flow B (Chat-Widget-Antwort) can ride on existing `/api/v1/agent/chat` → no Go-side changes needed if A2UI-packets are sent as `ToolResultPacket` (transparent to proxy).
+
+**New `/api/copilotkit` endpoint lives in Next.js BFF only**, not in Go — consistent with §16.2 recommendation.
+
+### 18.4 Archive-Code Duplicates (ignore during implementation)
+
+Gitnexus finds duplicates of `ToolOutputRenderer.tsx` and related files in `archive/agent-chat/*` and `archive/nextjs-chat/*`. These are **pre-merger legacy** and **must NOT be touched** — modifications to frontend_merger only.
+
+**Implication:** Grep-based refactors must exclude `archive/` directory explicitly.
+
+### 18.5 TradingTool Base-Class Pattern (python-agent)
+
+`python-backend/agent/tools/base.py:TradingTool` is the abstract base for all agent-side tools. Existing pattern:
+
+```python
+class TradingTool(abc.ABC):
+    @abc.abstractmethod
+    def name(self) -> str: ...
+    @abc.abstractmethod
+    async def execute(self, ...) -> dict: ...
+```
+
+Tools are registered via `agent/tools/registry.py:ToolRegistry`.
+
+**Implication for Ansatz Y:** The virtual `render_a2ui_surface` tool should extend `TradingTool` for consistency. Its `execute()` returns `{"type": "a2ui", "surface_id": ..., "tree": ...}`. No new tool-infrastructure needed.
+
+## 19. Updated §12/§17.1 Implementation Sequence (final)
+
+Combining all clarifications:
+
+1. **Provider hierarchy** — `layout.tsx` wraps children with `<CopilotKit runtimeUrl>` (env-gated) → `<A2UIProvider catalog={basicCatalog}>` → `<GlobalCopilotContext>`
+2. **GlobalCopilotContext** — `useCopilotAction(navigateTo, toggleAgentSidebar)` + `useCopilotReadable(currentRoute, currentChatAttachments)`
+3. **A2uiMessageRenderer** — wired into `AgentChatPanel` as ingest-point for A2UI-tool-result (via existing `ToolOutputRenderer` extension, NOT new SSE-parser)
+4. **ToolOutputRenderer extension** — new case `tool_name === "render_a2ui_surface"` → delegates to `<A2UIRenderer surfaceId={result.surface_id} inlineTree={result.tree} fallback={WidgetError}/>`
+5. **TopBar: Files + Memory buttons** — `GlobalTopBar.tsx` NAV_LINKS extended
+6. **Python-agent tool registration** — new `RenderA2uiSurfaceTool(TradingTool)` in `python-backend/agent/tools/a2ui_surface.py`, registered via `ToolRegistry`. System-prompt gets A2UI-catalog-awareness (which widgets exist, how to emit).
+7. **FileCard "Add to Chat"** — context-menu item triggers `globalChat.openChat({type:"file", id})`
+8. **Files-page actions** — `useCopilotAction(saveAttachmentToStorage)` + `useCopilotReadable(recentFiles)` in `FilesPage.tsx`
+9. **Control-page actions** — `useCopilotAction(openControlTab)` + `useCopilotReadable(activeControlTab)` in `ControlPage.tsx`
+10. **`/api/copilotkit` runtime endpoint** — Next.js BFF `src/app/api/copilotkit/route.ts` using `@copilotkit/runtime` `CopilotRuntime` + `OpenAIAdapter` with `baseURL=http://localhost:4000` (LiteLLM gateway). Provider-agnostic via LiteLLM.
+11. **Persistent surface infrastructure** — `usePersistentSurface` hook + `/api/surfaces/[surfaceId]` BFF (GET/PUT) + Alembic migration `027_user_surfaces` (python-backend)
+12. **Main-canvas** — `<A2uiCanvas surfaceId="main" />` on `/` (done ✓), integrates with persistent surface hook
+13. **Tests** — Playwright #9-#12 + Vitest unit/component for new hooks/components, incremental as features land
+14. **(Phase-2 / deferred)** — native A2UI SSE-packets (`a2ui-surface-start/update-components/update-data-model/end`) when live-data-streaming becomes necessary; `a2ui-agent-sdk` python install; A2UI-catalog-extension via `createReactComponent`
+
+### Non-touched (explicit)
+
+- `archive/agent-chat/*`, `archive/nextjs-chat/*` — ignore
+- `/matrix` route — out-of-scope, phase-2
+- Go-appservice — no changes; existing proxy handles SSE transparently
+
 ## 15. References
 
 - A2UI v0.9 spec: https://a2ui.org/specification/v0.9-a2ui/
