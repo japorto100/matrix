@@ -497,7 +497,68 @@ async def tool_set_chart_state(req: SetChartStateRequest):
         )
 
 
-def _build_system_prompt(context: str | None) -> str:
+# Ansatz Y: A2UI widget emission is opt-in per request to save tokens on small
+# models. The heuristic is intentionally loose — false positives just cost a
+# paragraph of tokens, false negatives mean the agent cannot render widgets.
+_A2UI_KEYWORDS = (
+    "chart",
+    "card",
+    "dashboard",
+    "visual",
+    "visualize",
+    "zeig",
+    "show",
+    "render",
+    "graph",
+    "widget",
+    "plot",
+    "tabelle",
+    "table",
+)
+
+_A2UI_INSTRUCTIONS = """
+You can render rich UI widgets using the `render_a2ui_surface` tool. Use it when
+the user asks for visual data (charts, portfolio cards, tables, forms, etc.).
+
+Call signature:
+  render_a2ui_surface(surface_id="main" | "chat-<id>", tree=<A2UI-JSON>)
+
+Allowed component types (A2UI v0.9 basicCatalog + Chart):
+  Card, Column, Row, List, Text, Image, Icon, Video, AudioPlayer, Button,
+  TextField, CheckBox, ChoicePicker, Slider, DateTimeInput, Divider, Modal,
+  Tabs, Chart.
+
+Example:
+  render_a2ui_surface(
+    surface_id="main",
+    tree={
+      "type": "Card",
+      "children": [
+        {"type": "Text", "text": "NVDA"},
+        {"type": "Text", "text": "$142.50"}
+      ]
+    }
+  )
+
+Use exact type names (case-sensitive). Use "main" as surface_id for the
+landing-page dashboard, or "chat-<uuid>" for inline chat widgets.
+""".strip()
+
+
+def _wants_a2ui(*hints: str | None) -> bool:
+    """True if any hint string contains an A2UI-widget keyword."""
+    for h in hints:
+        if not h:
+            continue
+        lower = h.lower()
+        if any(kw in lower for kw in _A2UI_KEYWORDS):
+            return True
+    return False
+
+
+def _build_system_prompt(
+    context: str | None, user_message: str | None = None
+) -> str:
     parts = [
         "You are a professional trading assistant for TradeView Fusion.",
         "You provide market analysis, strategy insights, and research.",
@@ -506,6 +567,8 @@ def _build_system_prompt(context: str | None) -> str:
     ]
     if context:
         parts.append(f"Current context: {context}")
+    if _wants_a2ui(context, user_message):
+        parts.append(_A2UI_INSTRUCTIONS)
     return "\n".join(parts)
 
 
@@ -613,7 +676,7 @@ async def agent_chat(req: AgentChatRequest, request: Request):
         (set OPENAI_BASE_URL, e.g. http://localhost:11434/v1 for Ollama)
     Architecture: Frontend → Go Gateway (control) → here (LLM calls).
     Phase 22d AC7 / Phase 22g ABP.1."""
-    system_prompt = _build_system_prompt(req.context)
+    system_prompt = _build_system_prompt(req.context, req.message)
     thread_id = req.thread_id or str(uuid.uuid4())
 
     # exec-12 Phase 2.6: Read user role + id from Go Gateway headers
