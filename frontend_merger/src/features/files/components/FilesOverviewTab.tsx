@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Clock, FileText, Loader2, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileCard } from "./FileCard";
 
 interface FilesOverviewData {
 	total_documents: number;
@@ -161,21 +162,11 @@ export function FilesOverviewTab() {
 					) : (
 						<div className="flex flex-col divide-y divide-border/50">
 							{overview.recent_uploads.map((file) => (
-								<div key={file.id} className="flex items-center justify-between gap-2 py-1.5">
-									<div className="flex items-center gap-2 min-w-0">
-										<FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-										<span className="text-xs truncate font-medium">{file.name}</span>
-										<span className="text-[10px] text-muted-foreground shrink-0 font-mono uppercase">
-											{file.type}
-										</span>
-									</div>
-									<div className="flex items-center gap-2 shrink-0">
-										<StatusBadge status={file.status} />
-										<span className="text-[10px] text-muted-foreground/60 font-mono">
-											{new Date(file.created_at).toLocaleDateString()}
-										</span>
-									</div>
-								</div>
+								<FileCard
+									key={file.id}
+									file={file}
+									renderStatus={(s) => <StatusBadge status={s} />}
+								/>
 							))}
 						</div>
 					)}
