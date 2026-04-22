@@ -378,10 +378,15 @@ func (s *Server) Stop() {
 }
 
 // hsTokenMiddleware verifiziert den HS-Token von Tuwunel.
+//
+// Scope: only guards /_matrix/app/* (the appservice endpoint). BFF routes
+// /api/v1/* are called by the Next.js frontend and go-appservice itself is
+// the trust boundary for them (actor id carried in X-Actor-User-Id set by
+// the BFF). Health check + /api/v1/* + any non-matrix path is open.
 func (s *Server) hsTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Health-Check ohne Auth
-		if r.URL.Path == "/health" {
+		// Only the matrix appservice endpoint needs the HSToken.
+		if !strings.HasPrefix(r.URL.Path, "/_matrix/") {
 			next.ServeHTTP(w, r)
 			return
 		}
