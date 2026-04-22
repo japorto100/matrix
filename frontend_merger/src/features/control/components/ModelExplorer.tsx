@@ -22,7 +22,8 @@ const INITIAL_FILTERS: ModelFilters = {
 	providerFilter: "",
 	minContext: "0",
 	maxPrice: "0",
-	modalityFilter: "",
+	// Sentinel value "any" — empty string is reserved by Radix Select.
+	modalityFilter: "any",
 	minOutput: "0",
 	sortBy: "name",
 };
@@ -46,7 +47,9 @@ export function ModelExplorer() {
 		if (filters.visionOnly) f.supports_vision = "true";
 		if (filters.reasoningOnly) f.supports_reasoning = "true";
 		if (filters.structuredOnly) f.supports_structured_output = "true";
-		if (filters.modalityFilter) f.modality = filters.modalityFilter;
+		if (filters.modalityFilter && filters.modalityFilter !== "any") {
+			f.modality = filters.modalityFilter;
+		}
 		if (filters.providerFilter) f.provider = filters.providerFilter;
 		if (filters.minContext !== "0") f.min_context = filters.minContext;
 		if (filters.affordableOnly && creditsRemaining != null && creditsRemaining > 0) {

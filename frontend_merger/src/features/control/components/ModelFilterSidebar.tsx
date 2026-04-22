@@ -54,8 +54,12 @@ const OUTPUT_OPTIONS = [
 	{ label: "128k+", value: "128000" },
 ];
 
+// Radix Select rejects empty-string values (reserved for placeholder clearing),
+// so "Any" uses the sentinel "any" — callers that read filters.modalityFilter
+// should treat "any" as "no filter".
+const MODALITY_ANY = "any";
 const MODALITY_OPTIONS = [
-	{ label: "Any", value: "" },
+	{ label: "Any", value: MODALITY_ANY },
 	{ label: "Text only", value: "text" },
 	{ label: "Multimodal", value: "image" },
 ];
