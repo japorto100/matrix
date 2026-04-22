@@ -47,9 +47,25 @@ async def run_agent_loop(
     yield sse(StartPacket(message_id=ctx.thread_id))
     yield sse(MessageMetaPacket(message_metadata={"threadId": ctx.thread_id}))
 
-    # Pre-processing: Skills, Temporal Context, Summarization, Dangling Tool Calls
-    system_prompt = await _prepare_system_prompt(ctx, messages)
-    messages = await _prepare_messages(messages, ctx)
+    # Pre-processing: Skills, Temporal Context, Summarization, Dangling Tool
+    # Calls. Each sub-step hits the DB or HuggingFace hub — a single stuck
+    # call would otherwise hang the SSE stream indefinitely. We wrap both
+    # pre-processing phases in a per-phase timeout and fall back to a plain
+    # system_prompt / untouched messages when they time out. The stream
+    # thereby proceeds even when hindsight/memory are saturated.
+    try:
+        system_prompt = await asyncio.wait_for(
+            _prepare_system_prompt(ctx, messages), timeout=12.0
+        )
+    except TimeoutError:
+        logger.warning("_prepare_system_prompt timed out — using bare prompt")
+        system_prompt = ctx.system_prompt
+    try:
+        messages = await asyncio.wait_for(
+            _prepare_messages(messages, ctx), timeout=8.0
+        )
+    except TimeoutError:
+        logger.warning("_prepare_messages timed out — using raw messages")
 
     # Run LangGraph
     async for chunk in _run_graph(ctx, messages, system_prompt):
