@@ -1,6 +1,6 @@
 // control-proxy.ts — shared helper for all /api/control/* + /api/memory/* BFF routes.
 //
-// Pattern: forward request 1:1 to Go Appservice (:8090) /api/v1/control/* or
+// Pattern: forward request 1:1 to Go Appservice (:29318) /api/v1/control/* or
 // /api/v1/memory/*. Go Appservice then forwards to Python Agent (:8094) via
 // ControlProxyHandler.
 //

@@ -519,7 +519,7 @@ export const mockServices: ServiceStatus[] = [
 		name: "Go Appservice (Matrix Bridge + Storage)",
 		tier: "app",
 		port: 8090,
-		url: "http://127.0.0.1:8090",
+		url: "http://127.0.0.1:29318",
 		health: "healthy",
 		uptime_s: 12340,
 		version: "0.4.1",
@@ -642,7 +642,7 @@ export const mockEnvVars: EnvVar[] = [
 	},
 	{
 		key: "ARTIFACT_GATEWAY_BASE_URL",
-		value: "http://127.0.0.1:8090",
+		value: "http://127.0.0.1:29318",
 		is_sensitive: false,
 		source: "env",
 	},

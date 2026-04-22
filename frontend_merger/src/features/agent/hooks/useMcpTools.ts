@@ -11,7 +11,7 @@
 
 import { useMcp } from "use-mcp/react";
 
-const MCP_ENDPOINT = process.env.NEXT_PUBLIC_MCP_URL ?? "http://localhost:8090/api/v1/mcp";
+const MCP_ENDPOINT = process.env.NEXT_PUBLIC_MCP_URL ?? "http://localhost:29318/api/v1/mcp";
 
 export function useMcpTools() {
 	const { tools, callTool, resources, state } = useMcp({

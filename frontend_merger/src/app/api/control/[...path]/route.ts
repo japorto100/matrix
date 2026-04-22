@@ -1,4 +1,4 @@
-// Catch-all BFF proxy for /api/control/* → Go Appservice (:8090) → Python Agent (:8094)
+// Catch-all BFF proxy for /api/control/* → Go Appservice (:29318) → Python Agent (:8094)
 // Slice 7 Phase H — single thin proxy for all 54 control routes.
 
 import { controlProxy } from "@/lib/server/control-proxy";

@@ -1,4 +1,4 @@
-// BFF proxy for /api/scheduler/* → Go Appservice (:8090) /api/v1/scheduler/*.
+// BFF proxy for /api/scheduler/* → Go Appservice (:29318) /api/v1/scheduler/*.
 // Reuses the existing control-proxy machinery (header forwarding, gateway URL
 // resolution). The Go side handles auth via hsTokenMiddleware.
 

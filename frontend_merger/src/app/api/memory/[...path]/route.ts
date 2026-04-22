@@ -1,4 +1,4 @@
-// Catch-all BFF proxy for /api/memory/* → Go Appservice (:8090) → Python Agent (:8094)
+// Catch-all BFF proxy for /api/memory/* → Go Appservice (:29318) → Python Agent (:8094)
 // Slice 7 Phase H. Memory sub-routes map to /api/v1/control/memory/* and
 // /api/v1/control/episodes/* and /api/v1/control/kg/* on the python backend.
 //
