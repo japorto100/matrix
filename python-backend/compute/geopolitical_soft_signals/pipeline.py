@@ -10,7 +10,6 @@ from datetime import UTC, datetime
 from math import log2
 from typing import Literal
 
-import httpx
 from pydantic import BaseModel, Field
 
 try:
