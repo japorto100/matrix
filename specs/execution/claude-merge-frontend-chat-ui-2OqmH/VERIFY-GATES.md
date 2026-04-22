@@ -59,17 +59,27 @@ im naechsten Stream pruefbar).
 
 ## Generative UI + Multi-Agent
 
-### exec-09 Protocols + Generative UI
-- ✓ Tambo: `features/agent/components/tambo/registry.ts` mit ChartWidget +
-  PortfolioCard gemountet.
-- ✓ CopilotKit: `AgentProviders` wrappt Root-Layout; `runtimeUrl=/api/copilotkit`.
-  (Route existiert noch nicht → 404, CopilotKit degradiert silent — offen
-  fuer eigenen Slice.)
-- ✓ AG-UI a2ui-renderer: Pakete geladen (`@copilotkit/a2ui-renderer`,
-  `@a2ui/web/core/src/v0_9`).
+### exec-09 Protocols + Generative UI  *(updated 2026-04-22, plan-v2 merged)*
+- ✓ **Tambo komplett entfernt** — ersetzt durch Google A2UI v0.9. Old
+  `features/agent/components/tambo/` archiviert nach
+  `features/agent/components/a2ui/` + `A2uiCanvas.tsx` + `A2uiProvider.tsx`.
+- ✓ CopilotKit: `AgentProviders` env-gated (`NEXT_PUBLIC_COPILOTKIT_ENABLED`),
+  `runtimeUrl=/api/copilotkit` — **route existiert jetzt**
+  (`src/app/api/copilotkit/route.ts`, OpenAIAdapter → LiteLLM).
+- ✓ AG-UI a2ui-renderer: `@copilotkit/a2ui-renderer` + `@a2ui/web_core` v0.9.
 - ✓ WebMCP Polyfill: `@agent/lib/webmcp-polyfill` Side-Effect-Import in Layout.
-- ○ Live Generative-UI Demo (Agent emittiert Tambo-Component auf
-  `#tambo-canvas`): braucht Agent-Service + LLM.
+- ✓ **A2UI tree validation** — `a2uiTreeSchema.ts` (Zod + whitelist) guards
+  Malformed LLM output.
+- ✓ **`render_a2ui_surface` python tool** registered in ToolRegistry.load()
+  with TradingTool ABC signature (`execute(tool_input, ctx)`).
+- ✓ **Conditional A2UI system-prompt** — keyword-gated injection.
+- ✓ **`usePersistentSurface`** — localStorage Phase-1, Postgres sync deferred
+  to Phase-2 pending `/api/v1/surfaces/*` in go-appservice.
+- ✓ **Playwright tests #9-#12** in `tests/a2ui-integration.spec.ts`.
+- ○ Live Generative-UI Demo (Agent emittiert A2UI widget auf main-canvas
+  oder chat-inline): Backend-tool verified via unit tests; full LLM
+  round-trip blocked on `_prepare_system_prompt` timeout (commit b90fad3
+  added guard) + agent dispatcher path — see findings doc.
 
 ### exec-10 Multi-Agent — —
 ### exec-11 Memory Evolution — —
@@ -80,28 +90,45 @@ im naechsten Stream pruefbar).
 - ○ OpenSandbox Compose-Service in `docker-compose.yml` bleibt unter
   `--profile sandbox`. Nicht default.
 
-### exec-13 UI KG Extensions
+### exec-13 UI KG Extensions  *(archived — content in exec-15)*
 - ✓ KG-Graph Feature aus `control-ui/src/features/memory/` kopiert nach
   `features/memory/`, inkl. `lib/kg-graph/` + `@xyflow/react` + d3-force deps.
-- ✗ Live KG-Graph Render (Nodes/Edges von Python `/api/v1/memory/kg/*`):
-  braucht Agent-Service.
+- ✓ **Live page load verified 2026-04-22** — Memory tab renders Knowledge
+  Graph card (kuzu, Healthy) + tab link. Full graph-viz with nodes+edges
+  blocked on seeded KG data (ingestion-worker not in --matrix-chat preset).
 
 ### exec-14 PDDL — —
 
-### exec-15 Memory Control UI
+### exec-15 Memory Control UI  *(live-verified 2026-04-22)*
 - ✓ Control + Files + Memory Features kopiert + Routen verdrahtet:
-  - `/control/[[...tab]]` → 8+ Control Surfaces
-  - `/files/[[...tab]]`
+  - `/control/[[...tab]]` → 8 Control Surfaces in sidenav (Overview/Agents/
+    Permissions/Skills/Tools/Sessions/Tasks/Context/Security) + 4 Developer
+    tabs (Sandbox/Audit/Mcp/A2a/System/Api)
+  - `/files/[[...tab]]` + FileCard "Add to Chat" context-menu
   - `/memory/[[...tab]]`
-- ✓ Playwright Tests #5/#6/#7 gruen (HTTP 200 + TopBar sichtbar).
-- ✗ Live Memory Browser Data Load: braucht Gateway + Python memory-service.
+- ✓ Playwright Tests #5/#6/#7 + neue #9-#12 (A2UI integration) gruen.
+- ✓ **Live Memory Browser Data Load PASS** — 3 layer cards (Episodic fusion /
+  KG kuzu / Vector pgvector) alle Healthy mit Items=0 / Last Sync=never,
+  Runtime Context mit Prompt/Completion/Cached/Total Zähler, degradation
+  flags (NO_PERSONAL_MEMORY/KB/WORLD_EVIDENCE/WORLD_KG) korrekt. BFF →
+  go-appservice → python memory-service wiring verified end-to-end.
 
 ## LLM / Observability / Schema / Devstack / MCP
 
-### exec-16 LLM Provider Gateway
-- ○ `LITELLM_BASE_URL` etc. in `.env.example` dokumentiert. LiteLLM unter
-  `--profile litellm` im compose.
-- ✗ User-Model-Picker Wiring (Control-UI ↔ Agent-Chat): braucht backend.
+### exec-16 LLM Provider Gateway  *(mostly live 2026-04-22)*
+- ✓ `LITELLM_BASE_URL=http://localhost:4000` + `COPILOTKIT_DEFAULT_MODEL`
+  dokumentiert in `.env.example`.
+- ✓ **LiteLLM tool-call smoke PASS** (plan-v2 Task 0): OpenRouter
+  `inclusionai/ling-2.6-flash:free` über LiteLLM → tool_calls mit
+  arguments als JSON-string (OpenAI-standard). Streaming SSE deltas
+  verified.
+- ✓ **Model Explorer live render — 346 / 346 Modelle** geladen über
+  LiteLLM `/v1/models` proxied by python-agent.
+- ✓ Model Routing Table mit 6 Trading Roles + per-role Override-Dropdown.
+- ✗ LiteLLM Spend Tracking: Usage & Spend Panel zeigt "No spend data yet.
+  Requires LITELLM_DATABASE_URL to be configured."
+- ✗ User-Model-Picker Wiring live in Agent-Chat: backend agent hangt auf
+  LLM call (siehe findings doc), streaming-format-fix committed (31f2bb5).
 
 ### exec-17 Observability
 - ○ `OTEL_*` + `OPENOBSERVE_*` Env-Vars in `.env.example` vermerkt.
@@ -114,8 +141,9 @@ im naechsten Stream pruefbar).
   `dev-stack3.ps1`) + `docker-compose.yml` Profile-Split.
 - ✓ Postgres-DSN `postgres://postgres@localhost:5433/hindsight_dev`
   dokumentiert (exec-19 fordert "Postgres only, SQLite entfernt").
-- ✗ `python -m alembic upgrade head` End-to-End gegen frischen Postgres:
-  bei dir zu pruefen.
+- ✓ **`python -m alembic upgrade head` PASS 2026-04-22** against running
+  postgres container — head = `026_smart_routing_config`. Schemas: agent,
+  ingestion, scheduler, storage, public.
 - **Historie:** Stufe 1-2 (DevStack-Fixes + Matrix-Crypto→Postgres) wurde
   abgeschlossen 2026-04-18. Offene Items wurden extrahiert nach drei
   Eigentümer-Specs:
@@ -156,17 +184,27 @@ exec-blocking, exec-ebm, exec-notifications, exec-openworldlib, exec-rust,
 exec-skills, exec-transformers-js, exec-a2fm-adaptive-routing,
 exec2-*, exec-merge-chat: nicht beruehrt.
 
-## Zusammenfassung der tatsaechlich gelaufenen Gates
+## Zusammenfassung der tatsaechlich gelaufenen Gates  *(updated 2026-04-22)*
 
 | Gate | Command | Ergebnis |
 |---|---|---|
-| Go build | `go build ./...` | ✓ |
-| Go vet | `go vet ./...` | ✓ |
-| Go tests | `go test -short ./...` | ✓ 9/9 |
+| Go build | `go build -tags goolm ./...` | ✓ |
+| Go vet | `go vet -tags goolm ./...` | ✓ |
+| Go tests | `go test -tags goolm -short ./...` | ✓ 9/9 packages |
 | Go lint | `golangci-lint run ./...` | ✓ 0 issues (war 12) |
-| Python lint | `ruff check .` | ✓ 0 issues (war 51) |
-| Frontend install | `bun install` | ✓ |
+| Python lint (my files) | `uv run ruff check agent/tools/a2ui_surface.py …` | ✓ 0 issues |
+| Python lint (full) | `uv run ruff check .` | 🟡 73 pre-existing issues in `compute/indicator_engine/*` (N815 mixed-case, F401) — separate slice |
+| Python tests | `uv run pytest tests/agent/` | ✓ 304/304 |
+| Frontend install | `bun install --ignore-scripts` | ✓ |
 | Frontend typecheck | `bunx tsc --noEmit` | ✓ |
+| Frontend vitest | `bunx vitest run` | ✓ 20/20 unit tests |
+| Frontend build | `bun run build` | ✓ 18 routes (incl. `/api/copilotkit`, `/api/files/save-attachment`) |
+| Frontend biome | `bunx biome check ./src` | ✓ 368 files, 0 errors |
+| Alembic migrations | `uv run alembic upgrade head` | ✓ head=026_smart_routing_config |
+| Compose parse | `python3 -c 'yaml.safe_load(docker-compose.yml)'` | ✓ 21 services, 18 profiles |
+| Shell syntax | `bash -n scripts/*.sh` | ✓ |
+| LiteLLM tool-call smoke (plan-v2 Task 0) | `curl localhost:4000/v1/chat/completions` | ✓ streaming SSE deltas with tool_calls |
+| Frontend prod smoke (plan-v2 Task 15) | `next start` → 5 surfaces via chrome-devtools MCP | ✓ all pages render, gateway URL 29318 |
 | Frontend lint | `bunx biome check ./src` | ✓ |
 | Frontend build | `bun run build` | ✓ 25 Routen |
 | Frontend standalone | `node .next/standalone/server.js` | ✓ HTTP 200 auf 5 Routen |
