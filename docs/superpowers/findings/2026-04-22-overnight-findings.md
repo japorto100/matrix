@@ -101,17 +101,34 @@ nach jedem stack-start. Oder: config-flag um auto-zu registrieren.
 
 ## Backend / Python
 
-### 🔬 Agent chat sometimes hangs with only `start`+`message-metadata`
-Direct curl an `/api/v1/agent/chat` liefert manchmal nur die ersten 2
-packets, dann Stille. Kein error im log. Vermutete Ursachen:
-- model-config for `default-dev-user` fehlt in postgres → credential-lookup
-  hängt
-- OPENROUTER_API_KEY ist in LiteLLM container gesetzt, aber agent versucht
-  direkt an OpenRouter zu gehen statt über LiteLLM-gateway?
-- HuggingFace-warmup blockiert event-loop beim ersten Request
+### 🔬 Agent chat always hangs after `start`+`message-metadata` packets
+Direct curl an `/api/v1/agent/chat` liefert konsistent nur die ersten 2
+packets (start + message-metadata), dann Stille. Kein error im log.
 
-**Action:** Explizit `AGENT_USE_LITELLM=true` + `LITELLM_BASE_URL=...` für
-agent-process setzen. Agent sollte alle LLM calls durch LiteLLM routen.
+Code-walk (`agent/graph/runner.py:44-48`): die 2 packets werden VOR
+`_prepare_system_prompt(ctx, messages)` emittiert. Diese function macht:
+skill-loader fetch → temporal_context → MemoryManager.prefetch → Hindsight
+fallback recall. Jede dieser operations kann DB-pool blockieren (siehe
+"Slow acquire" warnings) oder HTTP-calls hängen lassen (HF hub).
+
+Vermutete Hauptursachen:
+- `_prepare_system_prompt` wartet auf slow memory-recall mit exhausted DB
+  pool (nur 2 connections; skill+memory+temporal parallel)
+- `get_user_api_key("default-dev-user", "openrouter")` hängt weil
+  credential-encrypt table-row fehlt
+- HuggingFace sentence-transformers fetch beim ersten memory embedding
+
+**Actions (priorisiert):**
+1. `_prepare_system_prompt` mit asyncio.timeout(10s) wrappen → fallback zu
+   plain system_prompt bei timeout, damit stream nicht hängt.
+2. `AGENT_USE_LITELLM=true` + `LITELLM_BASE_URL` in dev-stack.sh exportieren
+   für python-agent process, damit agent alle LLM calls durch LiteLLM routet
+   (credentials dort bereits configured, keine DB-lookups nötig).
+3. Pre-seed postgres für default-dev-user mit dummy credential-row
+   (provider=openrouter, encrypted_key=<via LiteLLM>), damit cred-lookup
+   nicht N/A returnt.
+4. DB pool size von 2 → 10 für hindsight_api tunen (ENV
+   `HINDSIGHT_DB_POOL_SIZE=10`).
 
 ### ℹ️ `_snake_to_camel` in streaming.py
 Wenn ein packet-field mit underscore _prefix benannt ist (z.B.
