@@ -1,14 +1,18 @@
 /**
  * Frontend Tools via CopilotKit AG-UI Protocol — exec-09 Phase 2.2
  *
- * Ersetzt das eigene FrontendTool Interface (lib/frontend-tools.ts)
- * mit dem standardisierten CopilotKit useCopilotAction() Pattern.
+ * Previously this was a hook. That was a bug: `useCopilotAction` reads
+ * `useCopilotContext()` which throws "Remember to wrap your app in a
+ * <CopilotKit>" when the runtime provider is absent. With our env-gated
+ * AgentProviders (NEXT_PUBLIC_COPILOTKIT_ENABLED=false by default),
+ * the provider isn't mounted and the hook crashed every page load.
  *
- * Agent steuert Frontend-State via AG-UI Protocol:
- *   - SET_CHART_SYMBOL → Agent wechselt Chart-Symbol
- *   - SET_TIMEFRAME → Agent wechselt Timeframe
- *   - OPEN_PANEL → Agent öffnet Sidebar-Tab
- *   - NAVIGATE_TO → Agent navigiert zu anderer Page
+ * Fix: expose a `<FrontendToolsBridge>` component instead. The env-gate
+ * happens in the outer component; the inner component (which actually calls
+ * the CopilotKit hooks) only mounts when the provider is active.
+ *
+ * For backwards compat the previous hook-style API `useFrontendTools` is
+ * kept but now returns the component (callers should render it).
  */
 
 import { useCopilotAction } from "@copilotkit/react-core";
@@ -20,13 +24,15 @@ interface FrontendToolCallbacks {
 	onNavigate: (path: string) => void;
 }
 
-export function useFrontendTools(callbacks: FrontendToolCallbacks) {
+function FrontendToolsInner(props: FrontendToolCallbacks) {
+	const { onSymbolChange, onTimeframeChange, onPanelOpen, onNavigate } = props;
+
 	useCopilotAction({
 		name: "set_chart_symbol",
 		description: "Wechselt das aktive Chart-Symbol (z.B. 'EUR/USD', 'BTC/USD').",
 		parameters: [{ name: "symbol", type: "string", description: "Trading symbol", required: true }],
 		handler: ({ symbol }) => {
-			callbacks.onSymbolChange(symbol);
+			onSymbolChange(symbol);
 			return `Chart symbol changed to ${symbol}`;
 		},
 	});
@@ -43,7 +49,7 @@ export function useFrontendTools(callbacks: FrontendToolCallbacks) {
 			},
 		],
 		handler: ({ timeframe }) => {
-			callbacks.onTimeframeChange(timeframe);
+			onTimeframeChange(timeframe);
 			return `Timeframe changed to ${timeframe}`;
 		},
 	});
@@ -53,7 +59,7 @@ export function useFrontendTools(callbacks: FrontendToolCallbacks) {
 		description: "Öffnet einen Sidebar-Tab (indicators, news, macro, orders, portfolio, strategy).",
 		parameters: [{ name: "panel", type: "string", description: "Panel name", required: true }],
 		handler: ({ panel }) => {
-			callbacks.onPanelOpen(panel);
+			onPanelOpen(panel);
 			return `Panel ${panel} opened`;
 		},
 	});
@@ -70,8 +76,21 @@ export function useFrontendTools(callbacks: FrontendToolCallbacks) {
 			},
 		],
 		handler: ({ path }) => {
-			callbacks.onNavigate(path);
+			onNavigate(path);
 			return `Navigated to ${path}`;
 		},
 	});
+
+	return null;
+}
+
+/**
+ * Bridge component that registers the four frontend AG-UI actions. Must be
+ * rendered inside <CopilotKit>. The env-gate guards against running without
+ * the provider (in which case useCopilotContext() would throw).
+ */
+export function FrontendToolsBridge(props: FrontendToolCallbacks) {
+	const enabled = process.env.NEXT_PUBLIC_COPILOTKIT_ENABLED === "true";
+	if (!enabled) return null;
+	return <FrontendToolsInner {...props} />;
 }

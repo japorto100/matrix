@@ -1,7 +1,8 @@
 "use client";
 
-import { A2UIRenderer } from "@copilotkit/a2ui-renderer";
+import { A2UIRenderer, useA2UIActions } from "@copilotkit/a2ui-renderer";
 import { AlertTriangle } from "lucide-react";
+import { useEffect } from "react";
 
 interface Props {
 	surfaceId: string;
@@ -9,12 +10,34 @@ interface Props {
 }
 
 /**
- * Wrapper around @copilotkit/a2ui-renderer's A2UIRenderer with a sensible
- * fallback for chat-inline use. When an inlineTree is provided (from the
- * validated render_a2ui_surface tool-result) we pass it via initialTree so
- * the widget paints immediately without waiting for a live A2UI stream.
+ * Wrapper around @copilotkit/a2ui-renderer's A2UIRenderer. When an inlineTree
+ * is provided (from the validated render_a2ui_surface tool-result), we inject
+ * it into the A2UI store via useA2UIActions().processMessages so the surface
+ * paints immediately.
+ *
+ * Note: A2UIRenderer does NOT accept a tree prop in v0.9 — the MessageProcessor
+ * is the only entry point. Passing {initialTree} as a prop is silently dropped.
  */
 export function A2uiMessageRenderer({ surfaceId, inlineTree }: Props) {
+	const { processMessages } = useA2UIActions();
+
+	useEffect(() => {
+		if (!inlineTree) return;
+		try {
+			processMessages([
+				{
+					version: "v0.9",
+					createSurface: {
+						surfaceId,
+						tree: inlineTree,
+					},
+				},
+			]);
+		} catch (err) {
+			console.warn("[A2uiMessageRenderer] processMessages failed:", err);
+		}
+	}, [surfaceId, inlineTree, processMessages]);
+
 	return (
 		<A2UIRenderer
 			surfaceId={surfaceId}
@@ -24,7 +47,6 @@ export function A2uiMessageRenderer({ surfaceId, inlineTree }: Props) {
 					<span>Widget wird geladen…</span>
 				</div>
 			}
-			{...(inlineTree ? { initialTree: inlineTree } : {})}
 		/>
 	);
 }

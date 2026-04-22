@@ -13,8 +13,8 @@ import { AgentChatHeader } from "./components/AgentChatHeader";
 import { AgentChatReconnectBanner } from "./components/AgentChatReconnectBanner";
 import { AgentChatThread } from "./components/AgentChatThread";
 import { AgentChatToolbar } from "./components/AgentChatToolbar";
+import { FrontendToolsBridge } from "./hooks/FrontendToolsBridge";
 import { useChatSession } from "./hooks/useChatSession";
-import { useFrontendTools } from "./hooks/useFrontendTools";
 import { useMcpTools } from "./hooks/useMcpTools";
 import { useWebMcpBridge } from "./hooks/useWebMcpBridge";
 import { useWebMcpTools } from "./hooks/useWebMcpTools";
@@ -82,14 +82,6 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 	useEffect(() => {
 		setBrowserTools(browserToolDefs);
 	}, [browserToolDefs, setBrowserTools]);
-
-	// exec-09: CopilotKit Frontend-Tools (Agent steuert UI-State via AG-UI)
-	useFrontendTools({
-		onSymbolChange: (symbol) => console.log("[AG-UI] Symbol changed:", symbol),
-		onTimeframeChange: (tf) => console.log("[AG-UI] Timeframe changed:", tf),
-		onPanelOpen: (panel) => console.log("[AG-UI] Panel opened:", panel),
-		onNavigate: (path) => console.log("[AG-UI] Navigate to:", path),
-	});
 
 	// exec-09 Phase 4: WebMCP Tools via navigator.modelContext registrieren
 	useWebMcpTools({
@@ -252,6 +244,14 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 					<AgentCanvas ref={canvasRef} onCanvasChange={handleCanvasChange} />
 				</div>
 			)}
+
+			{/* exec-09: CopilotKit Frontend-Tools (env-gated — registers AG-UI actions) */}
+			<FrontendToolsBridge
+				onSymbolChange={(symbol) => console.log("[AG-UI] Symbol changed:", symbol)}
+				onTimeframeChange={(tf) => console.log("[AG-UI] Timeframe changed:", tf)}
+				onPanelOpen={(panel) => console.log("[AG-UI] Panel opened:", panel)}
+				onNavigate={(path) => console.log("[AG-UI] Navigate to:", path)}
+			/>
 		</div>
 	);
 }
