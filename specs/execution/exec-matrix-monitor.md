@@ -10,19 +10,19 @@
 
 ---
 
-## M1. Tuwunel v1.6 stable Merge-Entscheidung
+## M1. Tuwunel v1.6 stable Merge-Entscheidung  ✅ UNBLOCKED 2026-04-22
 
 - **Quelle:** `exec2-04-verify-gates.md §J6` (ursprünglich)
-- **Aktuell:** v1.6.0-rc läuft produktiv im devstack, Phase 1 smoke-test PASS (11.04.2026)
-- **Warten auf:** Tuwunel v1.6.0 **stable** Release (erwartet Ende April / Anfang Mai 2026)
-- **Trigger zum Handeln:**
-  - v1.6.0 stable released
-  - Mindestens 3 Tage Betrieb ohne Regression nachgewiesen
-- **Dann zu tun:**
-  - [ ] Entscheidung dokumentieren: RC produktiv nutzen ODER auf stable upgraden
-  - [ ] `tools/tuwunel` und `homeserver/tuwunel.toml` konsolidieren (RC + stable Konfigs mergen)
-  - [ ] `-Tuwunel16` Flag aus `dev-stack2.ps1` + `--tuwunel16` aus `dev-stack.sh` entfernen
-  - [ ] `homeserver/data/db-pre-v1.6` und `media-pre-v1.6` löschen (erst wenn stable stabil läuft)
+- **Update 2026-04-22 (gh release check):**
+  - Tuwunel **v1.6.0 stable released 2026-04-12** (10 Tage alt, isPrerelease:false)
+  - dev-stack.sh `TUWUNEL_IMAGE_TAG="v1.6.0"` stable ist bereits default
+  - Laufender Container in aktueller Session = `v1.6.0-rc` (aus älterer session,
+    image persistent in podman storage; `podman pull v1.6.0` + restart holt stable)
+- **Offene Aktionen:**
+  - [ ] `podman pull ghcr.io/matrix-construct/tuwunel:v1.6.0` + `podman restart tuwunel`
+  - [ ] `--tuwunel16` als deprecated markieren (schon als legacy no-op in dev-stack.sh
+    kommentiert, aber kann künftig entfernt werden)
+  - [ ] `homeserver/data/db-pre-v1.6` + `media-pre-v1.6` cleanup wenn vorhanden
 
 ---
 
@@ -33,7 +33,7 @@
 
 | Bug | Severity | Unser Workaround | Status | Unblocks |
 |---|---|---|---|---|
-| [#411](https://github.com/matrix-construct/tuwunel/issues/411) S3 Large File Timeout (180s hard) | CRITICAL | `max_request_size ≤ 100 MB` | Upstream offen | exec2-04 J5 (`max_request_size` erhöhen) |
+| [#411](https://github.com/matrix-construct/tuwunel/issues/411) S3 Large File Timeout (180s hard) | CRITICAL | `max_request_size ≤ 100 MB` | ✅ **CLOSED upstream 2026-04-18** — workaround kann rückgebaut werden (zeile ausschneiden nach config-pass) | — |
 | [#401](https://github.com/matrix-construct/tuwunel/issues/401) Appservice /whoami fehlt device_id | HIGH | Prüfen ob mautrix-go betroffen; ggf. device_id aus lokaler Config laden | Go-Appservice-Test gegen v1.6 ausstehend | E2EE-Handoff bei Restart |
 | [#377](https://github.com/matrix-construct/tuwunel/issues/377) device_lists.changed fehlt in /sync | MEDIUM | `FetchKeys()` Workaround in `go-appservice/internal/crypto/machine.go:EnsureSession()` — proaktiv gesetzt 11.04.2026 | ✅ gefixt (unser workaround), upstream offen | — |
 | [#372](https://github.com/matrix-construct/tuwunel/issues/372) /room_keys/version 500 statt 404 | LOW | Prüfen ob mautrix-go den 500 als "kein Backup" handled | Go-Appservice-Test gegen v1.6 ausstehend | Key-Backup-Bootstrap |
