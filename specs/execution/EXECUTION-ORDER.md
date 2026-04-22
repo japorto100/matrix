@@ -166,13 +166,13 @@ Dateien im directory:
 ### Cluster I — Unified Schema + Scheduler (exec-18, exec-scheduler)
 
 **Dateien:**
-- `exec-18-unified-agent-schema` — ⚠️ **OUTDATED** — decision: archive or keep
+- `exec-18-unified-agent-schema` — ✅ **ARCHIVED 2026-04-22** (`archive/exec-18-unified-agent-schema-SUPERSEDED.md`). 26 migrations shipped in slice-owned increments (exec-hermes, exec-scheduler, exec-16, etc.) — no longer relevant as central planning doc. Schema ground-truth is the DB itself; agno-introspection tool captures the runtime state when needed.
 - `exec-scheduler` — Phase-1 DONE + §8.1 DONE
 - `exec-scheduler2` — Draft (Phase-2 + Phase-3)
 
 **Warum zusammen:** exec-18 war der "schema-spec"; inzwischen owned jeder slice seine eigenen migrations. exec-scheduler hat ganz eigene migrations (019/020/021) — klarer counter-beweis dass exec-18 als zentraler schema-spec überholt ist.
 
-**Decision:** agno-introspect-tool als runtime-check statt statisches spec-doc. exec-18 archivieren oder als bounded-context-ADR behalten.
+**Decision (2026-04-22):** ✅ exec-18 archiviert nach `archive/`. Ground-truth ist die DB + slice-owned alembic migrations; agno-introspect-tool steht als optionaler runtime-check zur Verfügung wenn gebraucht.
 
 ---
 
