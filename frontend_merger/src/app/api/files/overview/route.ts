@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		const data: unknown = await upstream.json();
+		const raw = (await upstream.json()) as Record<string, unknown>;
+		// go-appservice wraps responses in `{success, data}` — unwrap so the
+		// frontend sees the flat shape its type definitions expect.
+		const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
 		return NextResponse.json(data, {
 			headers: { "cache-control": "no-store", "x-request-id": requestId },
 		});

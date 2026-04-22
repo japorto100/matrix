@@ -1,7 +1,11 @@
-// GET /api/files — list files + metadata
-// BFF boundary: proxies to Go Gateway /api/v1/files
-// Forwards all query params (type, status, search, limit, offset) + X-Actor-User-Id.
-// exec-19 Stufe 3: proxy.ts injects X-Actor-User-Id before this route runs.
+// GET /api/files — file list for the various Files tabs. Frontend tabs
+// (Images/Audio/Video/Data/Documents/Overview) expect
+// `{ recent_uploads: FileRecord[] }` — the overview shape. We proxy to
+// /api/v1/files/overview (not /api/v1/files paginated list) and unwrap the
+// `{success, data}` envelope the go-appservice returns.
+//
+// Query params (search, type, status) are forwarded in case the user paged
+// deeper, but overview is the default.
 
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -13,8 +17,7 @@ export async function GET(request: NextRequest) {
 	const actorUserId = request.headers.get("x-actor-user-id") ?? "";
 
 	try {
-		// Forward all query params transparently (type, status, search, limit, offset)
-		const upstreamUrl = new URL(`${getGatewayBaseURL()}/api/v1/files`);
+		const upstreamUrl = new URL(`${getGatewayBaseURL()}/api/v1/files/overview`);
 		for (const [key, value] of request.nextUrl.searchParams.entries()) {
 			upstreamUrl.searchParams.set(key, value);
 		}
@@ -36,12 +39,12 @@ export async function GET(request: NextRequest) {
 			);
 		}
 
-		const data: unknown = await upstream.json();
+		const raw = (await upstream.json()) as Record<string, unknown>;
+		// go-appservice wraps all /api/v1/* in `{success, data}` — unwrap so the
+		// frontend sees the flat `{recent_uploads, total_files, ...}` shape.
+		const data = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
 		return NextResponse.json(data, {
-			headers: {
-				"cache-control": "no-store",
-				"x-request-id": requestId,
-			},
+			headers: { "cache-control": "no-store", "x-request-id": requestId },
 		});
 	} catch (error: unknown) {
 		return NextResponse.json(
