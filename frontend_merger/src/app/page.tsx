@@ -1,3 +1,4 @@
+import { A2uiCanvas } from "@agent/components/A2uiCanvas";
 import { Bot, MessageSquare, SlidersHorizontal, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,12 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
  * Landing / Agent Testbed.
  *
  * Der Merger-Shell ist bewusst minimal gehalten. Dieser Bereich dient als
- * Buehne fuer Generative-UI-Experimente:
+ * Buehne fuer Generative-UI-Experimente via A2UI v0.9 (Google-standard):
  *
- *   - Tambo-Components (AgentProviders → TamboProvider → registry) rendern hier
- *     basierend auf Agent-Output (siehe features/agent/components/tambo).
+ *   - A2UI-Widgets (python-agent streamed Widget-Messages → @a2ui/web/core v0.9
+ *     renderer → components aus features/agent/components/a2ui/registry.ts).
  *   - CopilotKit AG-UI Actions koennen Frontend-State mutieren (z.B. Karten
- *     einblenden, Layouts umschalten).
+ *     einblenden, Layouts umschalten) — via BFF /api/copilotkit → python-agent.
  *   - Agent-Sheet wird ueber den Agent-Button in der TopBar geoeffnet und
  *     emittiert UI-Fragmente gegen diesen Slot.
  */
@@ -26,7 +27,7 @@ export default function LandingPage() {
 					</div>
 					<p className="text-muted-foreground">
 						Test-Harness, der Matrix Chat, Agent Chat und Control UI unter einer Shell mountet.
-						Diese Seite ist absichtlich leer — hier rendern Tambo- und CopilotKit-Komponenten, die
+						Diese Seite ist absichtlich leer — hier rendern A2UI- und CopilotKit-Komponenten, die
 						der Agent generiert. Agent-Sheet oeffnen via{" "}
 						<kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">
 							Agent
@@ -35,20 +36,8 @@ export default function LandingPage() {
 					</p>
 				</header>
 
-				{/* Generative-UI Drop-Zone — hier mounten Tambo-Components via registry */}
-				<section
-					id="tambo-canvas"
-					aria-label="Generative UI canvas"
-					className="min-h-[280px] rounded-lg border border-dashed border-border bg-card/30 p-6"
-				>
-					<div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-						<Bot className="h-8 w-8 text-muted-foreground/60" />
-						<p className="text-sm text-muted-foreground">
-							Canvas bereit. Sobald <code>features/agent/</code> gemountet ist, erscheinen hier
-							ChartWidget, PortfolioCard und a2ui-Outputs.
-						</p>
-					</div>
-				</section>
+				{/* Main Canvas — standalone dashboard, surfaceId="main" */}
+				<A2uiCanvas surfaceId="main" />
 
 				<section className="grid gap-4 md:grid-cols-3">
 					<Link href="/matrix" className="group">
@@ -87,7 +76,7 @@ export default function LandingPage() {
 						<CardContent>
 							<ul className="space-y-1 font-mono text-xs text-muted-foreground">
 								<li>· ai v6 / AI SDK</li>
-								<li>· Tambo + CopilotKit</li>
+								<li>· A2UI v0.9 + CopilotKit</li>
 								<li>· use-mcp / WebMCP</li>
 							</ul>
 						</CardContent>
@@ -124,8 +113,8 @@ export default function LandingPage() {
 							3000/3001/3002
 						</li>
 						<li>
-							<span className="font-mono">Scope:</span> Tambo / CopilotKit / a2ui Experimente +
-							Shared Shell ohne Hauptprojekt-Abhaengigkeit
+							<span className="font-mono">Scope:</span> CopilotKit + A2UI v0.9 (Google-Standard)
+							Generative-UI + Shared Shell ohne Hauptprojekt-Abhaengigkeit
 						</li>
 						<li>
 							<span className="font-mono">Branch:</span>{" "}

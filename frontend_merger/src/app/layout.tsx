@@ -7,6 +7,8 @@ import { GlobalChatOverlay } from "@agent/components/GlobalChatOverlay";
 import { AgentProviders } from "@agent/providers/AgentProviders";
 import { GlobalTopBar } from "@/components/GlobalTopBar";
 import { Providers } from "@/components/providers";
+// CopilotKit styles — required once, before globals.css for cascade-overrides
+import "@copilotkit/react-ui/styles.css";
 import "./globals.css";
 
 const dmSans = DM_Sans({
