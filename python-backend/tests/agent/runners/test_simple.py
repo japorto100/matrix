@@ -77,11 +77,13 @@ async def test_simple_loop_single_turn_no_tools(monkeypatch):
             chunks.append(c)
 
     joined = "\n".join(chunks)
-    # Required SSE packet markers (Vercel AI SDK protocol shape — look for type keys).
+    # Required SSE packet markers (AI-SDK v6 protocol shape — look for type keys).
     assert any("thread" in c.lower() for c in chunks[:2])
     assert "Hallo" in joined
-    # Order: ThreadId is first event, Finish is last event
-    assert "thread" in chunks[0].lower() or "threadid" in chunks[0].lower()
+    # Order: AI-SDK v6 'start' is the first event (messageId carries thread id),
+    # followed by a 'message-metadata' packet exposing threadId explicitly.
+    assert '"type": "start"' in chunks[0] or "thread" in chunks[0].lower()
+    assert "thread" in chunks[1].lower() or "threadid" in chunks[1].lower()
     # Final chunk carries finish_reason
     assert "finish" in chunks[-1].lower() or "stop" in chunks[-1].lower()
 

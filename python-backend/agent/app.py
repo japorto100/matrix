@@ -718,7 +718,7 @@ async def _stream_agent_loop(
     except ImportError as e:
         from agent.streaming import ErrorPacket, sse
 
-        yield sse(ErrorPacket(error=f"Agent loop import error: {e}"))
+        yield sse(ErrorPacket(error_text=f"Agent loop import error: {e}"))
         return
 
     # exec-16: Model + Key aus DB (control-ui), ENV als Fallback.
@@ -734,7 +734,7 @@ async def _stream_agent_loop(
 
         yield sse(
             ErrorPacket(
-                error="Kein Model konfiguriert. Bitte in control-ui ein Model waehlen."
+                error_text="Kein Model konfiguriert. Bitte in control-ui ein Model waehlen."
             )
         )
         return

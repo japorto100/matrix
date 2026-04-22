@@ -13,11 +13,11 @@ from agent.graph.agent_graph import MAX_ITERATIONS, create_agent_graph
 from agent.streaming import (
     FinishPacket,
     MessageMetaPacket,
+    StartPacket,
     StepStartPacket,
     TextDeltaPacket,
     TextEndPacket,
     TextStartPacket,
-    ThreadIdPacket,
     ToolErrorPacket,
     ToolResultPacket,
     ToolStartPacket,
@@ -41,8 +41,11 @@ async def run_agent_loop(
     Yields SSE strings (Vercel AI Data Stream Protocol).
     Called from agent/app.py via _stream_agent_loop().
     """
-    # ACR-G7: thread-id as first event
-    yield sse(ThreadIdPacket(thread_id=ctx.thread_id))
+    # ACR-G7: AI-SDK v6 requires `start` as first packet. Thread-id flows
+    # through start.messageId + a follow-up message-metadata for explicit
+    # access on the frontend.
+    yield sse(StartPacket(message_id=ctx.thread_id))
+    yield sse(MessageMetaPacket(message_metadata={"threadId": ctx.thread_id}))
 
     # Pre-processing: Skills, Temporal Context, Summarization, Dangling Tool Calls
     system_prompt = await _prepare_system_prompt(ctx, messages)
@@ -373,13 +376,13 @@ async def _run_graph(
                     if tr.get("error"):
                         yield sse(
                             ToolErrorPacket(
-                                tool_call_id=tr["tool_call_id"], error=tr["error"]
+                                tool_call_id=tr["tool_call_id"], error_text=tr["error"]
                             )
                         )
                     else:
                         yield sse(
                             ToolResultPacket(
-                                tool_call_id=tr["tool_call_id"], result=tr["result"]
+                                tool_call_id=tr["tool_call_id"], output=tr["result"]
                             )
                         )
 
@@ -400,7 +403,7 @@ async def _run_graph(
             }
             yield sse(
                 MessageMetaPacket(
-                    metadata=message_metadata
+                    message_metadata=message_metadata
                 )
             )
             set_session_summary(

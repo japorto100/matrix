@@ -42,11 +42,11 @@ from agent.context import AgentExecutionContext
 from agent.streaming import (
     FinishPacket,
     MessageMetaPacket,
+    StartPacket,
     StepStartPacket,
     TextDeltaPacket,
     TextEndPacket,
     TextStartPacket,
-    ThreadIdPacket,
     ToolErrorPacket,
     ToolResultPacket,
     ToolStartPacket,
@@ -79,7 +79,8 @@ async def run_simple_agent_loop(
         _safe_sync_turn,
     )
 
-    yield sse(ThreadIdPacket(thread_id=ctx.thread_id))
+    yield sse(StartPacket(message_id=ctx.thread_id))
+    yield sse(MessageMetaPacket(message_metadata={"threadId": ctx.thread_id}))
 
     system_prompt = await _prepare_system_prompt(ctx, messages)
     messages = await _prepare_messages(messages, ctx)
@@ -234,14 +235,14 @@ async def _run_simple(
                         yield sse(
                             ToolErrorPacket(
                                 tool_call_id=tr["tool_call_id"],
-                                error=tr["error"],
+                                error_text=tr["error"],
                             )
                         )
                     else:
                         yield sse(
                             ToolResultPacket(
                                 tool_call_id=tr["tool_call_id"],
-                                result=tr["result"],
+                                output=tr["result"],
                             )
                         )
 
@@ -262,7 +263,7 @@ async def _run_simple(
                 "queryGate": state.get("query_gate") or {},
                 "runner": "simple",
             }
-            yield sse(MessageMetaPacket(metadata=message_metadata))
+            yield sse(MessageMetaPacket(message_metadata=message_metadata))
 
             set_session_summary(
                 _session_span,

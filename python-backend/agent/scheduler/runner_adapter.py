@@ -62,19 +62,27 @@ async def execute_for_scheduler(
                     continue
                 kind = pkt.get("type") or pkt.get("kind")
                 if kind == "text-delta":
-                    text_buf.append(pkt.get("text", ""))
-                elif kind == "tool-start":
+                    text_buf.append(pkt.get("text", "") or pkt.get("delta", ""))
+                elif kind in ("tool-start", "tool-input-start"):
                     tool_calls.append(
                         ToolCallSummary(
-                            name=pkt.get("tool_name", ""),
+                            name=pkt.get("tool_name", "") or pkt.get("toolName", ""),
                             input_preview=json.dumps(pkt.get("input", {}))[:200],
                         )
                     )
-                elif kind == "tool-error":
+                elif kind in ("tool-error", "tool-output-error"):
                     if tool_calls:
-                        tool_calls[-1].error = pkt.get("error", "")
+                        tool_calls[-1].error = (
+                            pkt.get("error", "") or pkt.get("errorText", "")
+                        )
                 elif kind == "thread-id":
-                    trace_id = pkt.get("thread_id") or trace_id
+                    trace_id = pkt.get("thread_id") or pkt.get("threadId") or trace_id
+                elif kind == "start":
+                    # AI-SDK v6 'start' packet carries messageId which we use as thread id.
+                    trace_id = pkt.get("messageId") or pkt.get("message_id") or trace_id
+                elif kind == "message-metadata":
+                    md = pkt.get("metadata") or {}
+                    trace_id = md.get("threadId") or md.get("thread_id") or trace_id
                 elif kind == "finish":
                     break
     except Exception as exc:  # noqa: BLE001 — we want any failure recorded

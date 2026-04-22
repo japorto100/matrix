@@ -102,12 +102,18 @@ async def test_run_agent_loop_streams_real_message_metadata(
     )
 
     chunks = [chunk async for chunk in runner.run_agent_loop(ctx, [{"role": "user", "content": "Hi"}])]
-    metadata_chunk = next(chunk for chunk in chunks if '"type": "message-metadata"' in chunk)
+    # AI-SDK v6: the runner emits an early thread-id message-metadata before
+    # the real end-of-turn metadata. Pick the one that carries promptTokens.
+    metadata_chunk = next(
+        chunk
+        for chunk in chunks
+        if '"type": "message-metadata"' in chunk and "promptTokens" in chunk
+    )
     payload = json.loads(metadata_chunk.removeprefix("data: ").strip())
 
-    assert payload["metadata"]["promptTokens"] == 321
-    assert payload["metadata"]["completionTokens"] == 123
-    assert payload["metadata"]["cachedTokens"] == 88
-    assert payload["metadata"]["provider"] == "openrouter"
-    assert payload["metadata"]["sourceLayerCounts"]["personal_raw"] == 2
-    assert payload["metadata"]["degradationFlags"] == ["NO_PERSONAL_KB"]
+    assert payload["messageMetadata"]["promptTokens"] == 321
+    assert payload["messageMetadata"]["completionTokens"] == 123
+    assert payload["messageMetadata"]["cachedTokens"] == 88
+    assert payload["messageMetadata"]["provider"] == "openrouter"
+    assert payload["messageMetadata"]["sourceLayerCounts"]["personal_raw"] == 2
+    assert payload["messageMetadata"]["degradationFlags"] == ["NO_PERSONAL_KB"]

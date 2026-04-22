@@ -9,10 +9,33 @@ from dataclasses import asdict, dataclass
 from typing import Literal
 
 # ── Packet types ─────────────────────────────────────────────────────────────
+#
+# Wire-format: Vercel AI SDK v6 Data Stream Protocol. The shapes below are
+# the ones @ai-sdk/react's Zod union accepts. Historical notes:
+#   - ThreadIdPacket (type "thread-id") is AI-SDK-incompatible; kept as a
+#     hidden alias for the scheduler's runner_adapter which still reads it
+#     off the wire from old generators. New emitters should produce
+#     StartPacket + MessageMetaPacket({"threadId": ...}).
+#   - Type names with hyphen-order swapped (step-start → start-step) and
+#     renames (tool-start → tool-input-start, tool-result →
+#     tool-output-available, tool-error → tool-output-error) are required for
+#     v6 — the v5 names are silently dropped by the frontend parser.
+
+
+@dataclass
+class StartPacket:
+    """AI-SDK v6 'start' — required first packet of a message. The messageId
+    field is how we surface the agent's thread/message id to the frontend."""
+
+    message_id: str = "m1"
+    type: Literal["start"] = "start"
 
 
 @dataclass
 class ThreadIdPacket:
+    """DEPRECATED: emit StartPacket + MessageMetaPacket({"threadId": ...})
+    instead. Kept here for the scheduler's runner_adapter wire-format."""
+
     thread_id: str
     type: Literal["thread-id"] = "thread-id"
 
@@ -38,30 +61,43 @@ class TextEndPacket:
 
 @dataclass
 class ToolStartPacket:
+    """AI-SDK v6 'tool-input-start' — a tool call has begun emitting."""
+
     tool_name: str
     tool_call_id: str
-    type: Literal["tool-start"] = "tool-start"
+    type: Literal["tool-input-start"] = "tool-input-start"
 
 
 @dataclass
 class ToolResultPacket:
+    """AI-SDK v6 'tool-output-available' — tool has returned a result."""
+
     tool_call_id: str
-    result: dict
-    type: Literal["tool-result"] = "tool-result"
+    output: dict
+    type: Literal["tool-output-available"] = "tool-output-available"
 
 
 @dataclass
 class ToolErrorPacket:
+    """AI-SDK v6 'tool-output-error'."""
+
     tool_call_id: str
-    error: str
-    type: Literal["tool-error"] = "tool-error"
+    error_text: str
+    type: Literal["tool-output-error"] = "tool-output-error"
 
 
 @dataclass
 class StepStartPacket:
-    """Marks a step boundary in multi-step agent execution (AI SDK StepStartUIPart)."""
+    """AI-SDK v6 'start-step' (hyphen order matters)."""
 
-    type: Literal["step-start"] = "step-start"
+    type: Literal["start-step"] = "start-step"
+
+
+@dataclass
+class StepFinishPacket:
+    """AI-SDK v6 'finish-step'."""
+
+    type: Literal["finish-step"] = "finish-step"
 
 
 @dataclass
@@ -69,12 +105,16 @@ class ReasoningDeltaPacket:
     """Reasoning/thinking content delta (AI SDK ReasoningUIPart)."""
 
     delta: str
+    id: str = "r1"
     type: Literal["reasoning-delta"] = "reasoning-delta"
 
 
 @dataclass
 class MessageMetaPacket:
-    metadata: dict  # {promptTokens, completionTokens, threadId}
+    """AI-SDK v6 'message-metadata' — the field name is `messageMetadata`
+    (emitted after snake→camel conversion from `message_metadata`)."""
+
+    message_metadata: dict  # {promptTokens, completionTokens, threadId, ...}
     type: Literal["message-metadata"] = "message-metadata"
 
 
@@ -86,7 +126,9 @@ class FinishPacket:
 
 @dataclass
 class ErrorPacket:
-    error: str
+    """AI-SDK v6 'error' — the frontend zod union expects `errorText`."""
+
+    error_text: str
     type: Literal["error"] = "error"
     # Optional — populated by build_error_packet_with_failover() via the
     # resilience.error_classifier. Default None keeps existing callers and
@@ -109,7 +151,7 @@ def build_error_packet_with_failover(exc: BaseException, prefix: str = "") -> Er
     result = classify_error(exc)
     message = f"{prefix}{exc}" if prefix else str(exc)
     return ErrorPacket(
-        error=message,
+        error_text=message,
         metadata={
             "failover_reason": result.reason.value,
             "recovery_strategy": result.recovery.value,

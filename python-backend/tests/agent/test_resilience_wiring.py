@@ -28,7 +28,7 @@ from agent.streaming import ErrorPacket, build_error_packet_with_failover
 
 def test_error_packet_default_metadata_is_none():
     """Back-compat: existing callers don't need to pass metadata."""
-    packet = ErrorPacket(error="boom")
+    packet = ErrorPacket(error_text="boom")
     assert packet.metadata is None
     assert packet.type == "error"
 
@@ -44,7 +44,7 @@ def test_build_error_packet_with_failover_rate_limit():
         "retryable": True,
         "status_code": 429,
     }
-    assert "rate limit" in packet.error
+    assert "rate limit" in packet.error_text
 
 
 def test_build_error_packet_with_failover_auth():
@@ -59,7 +59,7 @@ def test_build_error_packet_with_failover_auth():
 def test_build_error_packet_with_failover_prefix():
     exc = Timeout(message="slow", model="x", llm_provider="y")
     packet = build_error_packet_with_failover(exc, prefix="LangGraph error: ")
-    assert packet.error.startswith("LangGraph error: ")
+    assert packet.error_text.startswith("LangGraph error: ")
     assert packet.metadata["failover_reason"] == "timeout"
 
 
