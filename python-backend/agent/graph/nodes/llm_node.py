@@ -95,6 +95,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             from agent.llm.smart_routing import resolve_model_for_turn
             from agent.security.credentials import (
                 get_user_smart_routing_config,
+                user_has_provider_credential,
             )
 
             routing_cfg = await get_user_smart_routing_config(user_id)
@@ -119,9 +120,23 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             )
             routing_reason = decision.reason
             if decision.used_cheap:
-                model = decision.model
-                state["model"] = model  # propagate for downstream span-attrs
-                state["llm_model"] = model
+                # ADR-001 G2: credential pre-flight. If the cheap model
+                # lives on a different provider than primary, verify the
+                # user actually has an API key for it BEFORE mutating
+                # state["model"]. Otherwise a user with Anthropic-only
+                # credentials whose simple turn routes to OpenAI lands
+                # at line 192 with the wrong api_key → bare 401.
+                cheap_provider = _provider_label(decision.model)
+                primary_provider = _provider_label(model)
+                cheap_ok = cheap_provider == primary_provider or (
+                    await user_has_provider_credential(user_id, cheap_provider)
+                )
+                if cheap_ok:
+                    model = decision.model
+                    state["model"] = model  # propagate for downstream span-attrs
+                    state["llm_model"] = model
+                else:
+                    routing_reason = "no_cheap_credentials"
         except Exception:  # noqa: BLE001 — routing must never break the call
             logger.debug("smart_routing skipped", exc_info=True)
 

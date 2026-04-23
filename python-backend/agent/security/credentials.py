@@ -131,6 +131,20 @@ def get_env_default_model() -> str:
     return os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
 
 
+async def user_has_provider_credential(user_id: str, provider: str) -> bool:
+    """ADR-001 G2 preflight — does the user have an API key for ``provider``?
+
+    Non-mutating; used by smart-routing BEFORE silently switching the
+    model to a provider the user cannot authenticate for. Without this,
+    an Anthropic-only user whose simple turn routes to an OpenAI cheap
+    model receives a bare 401 from the provider.
+    """
+    if not user_id or not provider:
+        return False
+    key = await get_user_api_key(user_id, provider)
+    return bool(key)
+
+
 async def get_user_smart_routing_config(user_id: str) -> dict | None:
     """Return the user's smart_routing policy dict from user_llm_settings.
 
