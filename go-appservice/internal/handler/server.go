@@ -121,6 +121,11 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	mux.HandleFunc("/api/v1/agent/tools/portfolio-summary", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/tools/portfolio-summary"))
 	mux.HandleFunc("/api/v1/agent/tools/set_chart_state", agenthttp.AgentMutationProxyHandler(agentClient, "/api/v1/agent/tools/set_chart_state"))
 
+	// ── Agent Context: compression-status (exec-06 §4c Phase 5) ─────────────
+	// Stateless read for the CompressionIndicator — forwards to Python's
+	// `GET /api/v1/agent/context/compression-status?thread_id=X&model=Y`.
+	mux.HandleFunc("/api/v1/agent/context/compression-status", agenthttp.AgentToolProxyHandler(agentClient, "/api/v1/agent/context/compression-status"))
+
 	// ── MCP Server Proxy (exec-09) ──────────────────────────────────────────
 	mux.HandleFunc("/api/v1/mcp/", agenthttp.McpProxyHandler(cfg.MCPServiceURL))
 
