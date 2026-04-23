@@ -1,7 +1,7 @@
 # exec-a2fm: Adaptive Model & Reasoning Routing
 
 **Datum:** 13.04.2026
-**Status:** Draft / Research — **Stufe 0 heuristic landed 2026-04-20; Holistic review done 2026-04-23 — rollout blocked behind ADR-001 6-gate checklist**
+**Status:** Draft / Research — **Stufe 0 heuristic landed 2026-04-20; Holistic review + ADR-001 + 4 backend-gates + Phase-1 router_node refactor landed 2026-04-23. Rollout blocked behind frontend gates (G5 indicator, G6 Control-UI panel).**
 **Abhaengig von:** exec-19 (Stufe 5b/5c fertig), exec-16 (LiteLLM Integration)
 
 > **Implementation-stub (2026-04-20, reviewed 2026-04-23):** A conservative keyword-heuristic cheap-vs-strong router landed as an MVP: `python-backend/agent/llm/smart_routing.py` + migration 026 (`user_llm_settings.smart_routing` JSONB column). **This is NOT yet the A2FM-paper ML-router** — it's a hermes port with multi-domain keyword expansion. Feature is off by default (`{}` = disabled). Holistic review via `sota-contrarian stakes=high` completed 2026-04-23; rollout is blocked behind the 6-gate checklist in [ADR-001](../../docs/superpowers/findings/2026-04-23-adr-smart-routing-rollout-gate.md) (DE keyword set, credential pre-flight, config cache, A/B routing dimension, user-visible indicator, Control-UI panel). Current wire-point in `llm_node.py` is treated as **Phase-0.5 / provisional**; a proper `router_node.py` (Phase-1 target below) is the inversion recommended by the ADR after G1-G4 land. A2FM-paper ML-router remains Phase-2/3.
@@ -96,15 +96,19 @@ A2FM (Adaptive Agent Foundation Model) vereint **drei Modi** in einem Framework:
 - [x] ModelInfo mit `reasoning_type` + `reasoning_levels` aus LiteLLM
 - [ ] Agent-Chat Default-Model: User's selected models > `openrouter/auto` > `claude-sonnet-4-6`
 
-### Phase 1: Eigener Router (regelbasiert)
+### Phase 1: Eigener Router (regelbasiert) — ✅ **LANDED 2026-04-23**
 
-Einfacher LangGraph-Node **vor** dem LLM-Call der den Mode bestimmt:
+Als eigenständiger LangGraph-Node **vor** dem LLM-Call:
 
 ```
-User Message → RouterNode → mode: instant|reasoning|agentic
-                           → model: aus selected_models basierend auf mode
-                           → reasoning_effort: none|low|medium|high
+START → memory_recall → router → llm_call → [tools → increment → llm_call]* → memory_retain → END
 ```
+
+- Impl: `python-backend/agent/graph/nodes/router_node.py`
+- Runs the bilingual (EN+DE) smart_routing heuristic + G2 credential preflight
+- Tool-continuation loop (`increment → llm_call`) bypasses router → "first turn only" by graph construction, no iteration==0 check needed in node
+- Output: `routing_reason`, `routing_used`, `routing_picked_model` als state-fields, konsumiert von llm_node für span-attrs + model-selection
+- Current heuristic: keyword-based (see `agent/llm/smart_routing.py`). Phase-2 (ML-classifier) ersetzt die Regeln, nicht die Node-Architektur.
 
 **Signale fuer Routing:**
 - Prompt-Laenge (kurz → instant, lang → reasoning)

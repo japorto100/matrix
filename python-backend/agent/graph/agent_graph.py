@@ -1,8 +1,13 @@
 """Agent Graph — LangGraph StateGraph fuer den Trading Agent.
 
-Flow: START → memory_recall → llm_call → [approval → tools → increment →]* → memory_retain → END
+Flow: START → memory_recall → router → llm_call → [approval → tools → increment →]* → memory_retain → END
 
 exec-11: memory_recall (VOR LLM) + memory_retain (NACH LLM) Nodes hinzugefuegt.
+ADR-001 P1: router node (smart cheap-vs-strong routing) zwischen
+memory_recall und llm_call. Tool-continuation-Loop geht direkt
+``increment → llm_call`` und umgeht den router — das garantiert per
+Graph-Konstruktion "nur auf dem ersten Turn pro Chat", ohne
+iteration==0 checks in den Nodes selbst.
 """
 
 from __future__ import annotations
@@ -17,6 +22,7 @@ from langgraph.graph import END, START, StateGraph
 from agent.graph.nodes.approval_node import approval_node
 from agent.graph.nodes.llm_node import llm_node
 from agent.graph.nodes.memory_node import memory_recall_node, memory_retain_node
+from agent.graph.nodes.router_node import router_node
 from agent.graph.nodes.tool_node import tool_node
 from agent.graph.state import AgentGraphState
 
@@ -66,21 +72,23 @@ async def _increment_iteration(state: AgentGraphState) -> dict[str, Any]:
 def create_agent_graph(checkpointer: Any | None = None) -> Any:
     """Erstellt und kompiliert den Agent StateGraph.
 
-    Flow: START → memory_recall → llm_call → [approval → tools → increment →]* → memory_retain → END
+    Flow: START → memory_recall → router → llm_call → [approval → tools → increment →]* → memory_retain → END
     """
     graph = StateGraph(AgentGraphState)
 
     # Nodes registrieren
     graph.add_node("memory_recall", memory_recall_node)
+    graph.add_node("router", router_node)
     graph.add_node("llm_call", llm_node)
     graph.add_node("approval_gate", approval_node)
     graph.add_node("tool_execute", tool_node)
     graph.add_node("increment", _increment_iteration)
     graph.add_node("memory_retain", memory_retain_node)
 
-    # START → Memory Recall → LLM
+    # START → Memory Recall → Router → LLM
     graph.add_edge(START, "memory_recall")
-    graph.add_edge("memory_recall", "llm_call")
+    graph.add_edge("memory_recall", "router")
+    graph.add_edge("router", "llm_call")
 
     # Nach LLM: tool_calls → approval, sonst → retain
     graph.add_conditional_edges(
@@ -124,6 +132,6 @@ def create_agent_graph(checkpointer: Any | None = None) -> Any:
     )
 
     logger.info(
-        "Agent graph compiled (nodes: memory_recall, llm_call, approval_gate, tool_execute, increment, memory_retain)"
+        "Agent graph compiled (nodes: memory_recall, router, llm_call, approval_gate, tool_execute, increment, memory_retain)"
     )
     return compiled

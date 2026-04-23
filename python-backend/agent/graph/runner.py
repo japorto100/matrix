@@ -334,6 +334,9 @@ async def _run_graph(
         "agent_class": getattr(ctx, "agent_class", "advisory"),
         "user_role": getattr(ctx, "user_role", "viewer"),
         "ab_row_id": getattr(ctx, "ab_row_id", None) or "",
+        "routing_reason": "not_evaluated",
+        "routing_used": False,
+        "routing_picked_model": "",
     }
 
     config = {"configurable": {"thread_id": ctx.thread_id}}

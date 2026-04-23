@@ -104,9 +104,8 @@ oder zusätzliche compose-profiles.
     - **`#87 G4`** A/B harness routing dimension + migration 027 ✅ **DONE 2026-04-23** (commit `dc539df`)
     - **`#88 G5`** User-visible routing indicator (GDPR disclosure) *(M, 1-2d frontend — PENDING)*
     - **`#89 G6`** Control-UI panel + self-service disable *(M, 2-3d frontend — PENDING)*
-    - **`#90 P1`** Inversion: refactor to router_node.py *(M, 1d backend — PENDING, G1-G4 done so unblocked)*
-    **Rollout status:** 4/6 backend gates through. Frontend gates (G5, G6) + P1
-    refactor remain. Flip `enabled: true` BLOCKED until G5+G6 ship.
+    - **`#90 P1`** Inversion: refactor to router_node.py ✅ **DONE 2026-04-23** — router_node.py als eigener Graph-Node zwischen memory_recall und llm_call. Tool-continuation-Loop umgeht router → "first turn only" by graph construction. llm_node ist jetzt consumer-only.
+    **Rollout status:** All 4 backend gates + P1 refactor DONE. Frontend gates (G5 indicator, G6 Control-UI) remain. Flip `enabled: true` BLOCKED until G5+G6 ship (frontend work).
 
 18. **`#66 Cluster H` exec-17 C9 ADR — tracing+audit parallel stores** *(~1.5h)*
     OTEL (perf debug) vs audit log (compliance). Should they be same store or parallel?

@@ -103,7 +103,17 @@ class AgentGraphState(TypedDict):
     user_role: str
 
     # ADR-001 G4: A/B experiment row id (UUID) when this turn runs under
-    # an active dispatcher experiment. Used by the llm_node smart-routing
-    # block to mark the routing dimension on the same ab_experiments row
-    # via fire-and-forget UPDATE. Empty string when not under experiment.
+    # an active dispatcher experiment. Used by the router_node smart-
+    # routing decision to mark the routing dimension on the same
+    # ab_experiments row via fire-and-forget UPDATE. Empty string when
+    # not under an experiment.
     ab_row_id: str
+
+    # ADR-001 P1: smart-routing decision output produced by router_node
+    # (runs START → memory_recall → router → llm_call). Consumed by
+    # llm_node for span-attributes + final model selection. Default
+    # values mean "router did not run" — safe for ad-hoc graph calls
+    # that skip the dispatcher entry point.
+    routing_reason: str
+    routing_used: bool
+    routing_picked_model: str

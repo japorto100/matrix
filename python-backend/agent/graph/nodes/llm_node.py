@@ -85,92 +85,14 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     # anonymous traffic is separate from named-user buckets.
     user_id = state.get("user_id") or "anonymous"
 
-    # exec-a2fm: smart cheap-vs-strong routing. Only runs on the FIRST
-    # turn of a chat (iteration == 0) because tool-continuation turns
-    # shouldn't silently switch models mid-conversation. Conservative
-    # heuristic — falls through to primary on any complex-looking input.
-    routing_reason = "not_evaluated"
-    routing_used = False
-    routing_picked_model: str | None = None
-    ab_row_id = state.get("ab_row_id") or ""
-    if iteration == 0 and user_id != "anonymous":
-        try:
-            from agent.llm.smart_routing import resolve_model_for_turn
-            from agent.security.credentials import (
-                get_user_smart_routing_config,
-                user_has_provider_credential,
-            )
-
-            routing_cfg = await get_user_smart_routing_config(user_id)
-            user_msg_text = ""
-            for msg in reversed(messages):
-                if isinstance(msg, dict) and msg.get("role") == "user":
-                    content = msg.get("content")
-                    if isinstance(content, str):
-                        user_msg_text = content
-                        break
-                    if isinstance(content, list):
-                        user_msg_text = " ".join(
-                            blk.get("text", "")
-                            for blk in content
-                            if isinstance(blk, dict) and blk.get("type") == "text"
-                        )
-                        break
-            decision = resolve_model_for_turn(
-                user_message=user_msg_text,
-                primary_model=model,
-                routing_config=routing_cfg,
-            )
-            routing_reason = decision.reason
-            if decision.used_cheap:
-                # ADR-001 G2: credential pre-flight. If the cheap model
-                # lives on a different provider than primary, verify the
-                # user actually has an API key for it BEFORE mutating
-                # state["model"]. Otherwise a user with Anthropic-only
-                # credentials whose simple turn routes to OpenAI lands
-                # at line 192 with the wrong api_key → bare 401.
-                cheap_provider = _provider_label(decision.model)
-                primary_provider = _provider_label(model)
-                cheap_ok = cheap_provider == primary_provider or (
-                    await user_has_provider_credential(user_id, cheap_provider)
-                )
-                if cheap_ok:
-                    model = decision.model
-                    state["model"] = model  # propagate for downstream span-attrs
-                    state["llm_model"] = model
-                    routing_used = True
-                    routing_picked_model = decision.model
-                else:
-                    routing_reason = "no_cheap_credentials"
-                    routing_picked_model = model
-            else:
-                # decision recorded (e.g. complex_heuristic) — record which
-                # model actually got picked for ops visibility.
-                routing_picked_model = model
-        except Exception:  # noqa: BLE001 — routing must never break the call
-            logger.debug("smart_routing skipped", exc_info=True)
-
-    # ADR-001 G4: fire-and-forget UPDATE of the A/B experiment row so
-    # the fitness-regression harness can decouple routing from runner-
-    # variant effects. Only runs when this turn is under an experiment
-    # (dispatcher set ab_row_id) and routing was actually evaluated
-    # (iteration==0 block ran). Non-blocking — we don't await.
-    if ab_row_id and routing_reason != "not_evaluated":
-        try:
-            import asyncio as _asyncio
-
-            from agent.runners.dispatcher import _mark_routing
-
-            _asyncio.create_task(
-                _mark_routing(
-                    ab_row_id,
-                    routing_used=routing_used,
-                    routing_reason=routing_reason,
-                    routing_picked_model=routing_picked_model,
-                )
-            )
-        except Exception:  # noqa: BLE001 — telemetry must never break the call
-            logger.debug("ab_experiments routing mark skipped", exc_info=True)
+    # ADR-001 P1: smart-routing decision is now produced by router_node
+    # (runs once BEFORE llm_call per graph construction). Read the
+    # decision outputs from state for span-attributes + logging. Default
+    # values from graph init make this safe for ad-hoc invocations that
+    # skip the router (tests, harness).
+    routing_reason = state.get("routing_reason") or "not_evaluated"
+    routing_used = bool(state.get("routing_used"))
+    routing_picked_model = state.get("routing_picked_model") or ""
 
     registry = ToolRegistry.load()
     tool_defs = [t.definition() for t in registry.all()]

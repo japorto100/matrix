@@ -85,3 +85,4 @@ Move the routing decision out of `llm_node.py` side-effect and into a proper `ro
 |---|---|
 | 2026-04-20 | Code landed, flagged NEEDS HOLISTIC REVIEW |
 | 2026-04-23 | `sota-contrarian stakes=high` review complete; this ADR records the rollout gate |
+| 2026-04-23 | **G1-G4 + P1 landed** (commits `0a59a76` DE keywords, `5061586` cache, `57400f4` credential preflight, `dc539df` A/B dimension + migration 027, `<P1-commit>` router_node refactor). Remaining: G5 (frontend user-indicator), G6 (frontend Control-UI panel). |
