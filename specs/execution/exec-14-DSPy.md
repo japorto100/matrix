@@ -227,30 +227,40 @@ DSPy hat in matrix **vier modul-ebenen** wo es direkt andocken kann:
 
 Vor jedem commitment:
 
-### D-1. Replace matrix's custom skill-optimization durch DSPy?
+### D-1. Replace matrix's custom skill-optimization durch DSPy? — ✅ **REFRAMED 2026-04-23 (ADR-003)**
 
-**Pro:** weniger code zu warten, community-gehärteter optimizer (GEPA SOTA), upstream-innovationen kostenfrei.
-**Contra:** matrix's `agent/skills/rl_trainer.py` + `trigger_quality.py` sind spezifisch-getunte module; DSPy-style refactor = invasive change an gerade-produktiver maschinerie.
-**Entscheidungs-hilfe:** sota-contrarian stakes=high auf matrix-skills vs DSPy-overlap benchmark.
+**Reframing (contrarian stakes=high):** "Replace" ist ein false dilemma. `rl_trainer.py` + `trigger_quality.py` + `pareto.py` operieren auf **skill lifecycle** (promotion/eviction, retrieval-quality scoring, LoRA weight training stubs). DSPy+GEPA operiert auf **prompt content optimization**. Verschiedene layers, kein conflict.
 
-### D-2. DSPy-`dspy.Module` als standard-interface für neue agent-patterns?
+**Richtige Frage:** "Should DSPy optimize prompt content *inside* skills, alongside the existing lifecycle layer?" → Antwort wahrscheinlich **ja** nach Phase-(-1) PoC + Phase-1 benchmark. Kein replacement nötig.
 
-**Pro:** einheitlicher programming-model, auto-optimizer-ready aus der box.
-**Contra:** matrix hat bereits LangGraph runner + SimpleLoop (Phase-C); dritter runner-pattern wäre fragmentierung.
-**Entscheidungs-hilfe:** DSPy-modules **sind keine eigene loop**, sie sind compositable-units. Könnten innerhalb LangGraph nodes oder SimpleLoop laufen. Kein dritter runner.
+### D-2. DSPy-`dspy.Module` als standard-interface für neue agent-patterns? — 🔒 **DEFERRED 2026-04-23 (ADR-003)**
 
-### D-3. DSPy-compile-output versioning + deployment?
+Blocked on D-7 resolution. Interface-standardization macht nur Sinn wenn der Phase-1 winner ein DSPy-basierter optimizer ist. Wenn LLMSelector oder ein anderes model-selection-approach gewinnt, ist `dspy.Module` das falsche primitive.
 
-DSPy-compile produziert ein optimiertes prompt-artefakt. Wohin speichert matrix das? Optionen:
+**Original reasoning (preserved):** DSPy-modules sind keine eigene loop; compositable-units innerhalb LangGraph/SimpleLoop. Das bleibt wahr — aber erst committen wenn empirisch bestätigt dass DSPy die optimization-base ist.
+
+### D-3. DSPy-compile-output versioning + deployment? — 🔒 **DEFERRED 2026-04-23 (ADR-003)**
+
+DSPy-compile produziert ein optimiertes prompt-artefakt — aber nur wenn DSPy-basierter optimizer Phase-1 gewinnt. DB-Schema-migration vor D-7 ist sunk cost.
+
+**Phase-1-Interim:** File-based in `agent/skills/compiled/` (adequate für benchmark-runs, ~0 LOC migration).
+
+**Phase-2+ (post-winner):** Optionen:
 - **Postgres JSONB** (neue column `agent.compiled_programs`) — live-reload, versioniert
-- **File-based** in `agent/skills/compiled/`
 - **DSPy's built-in MLflow integration** — tracking + artifact-store
 
-Enterprise-pattern für matrix: **DB-backed versioning mit user_id-scoping**. Migration nötig.
+Enterprise-pattern für matrix: **DB-backed versioning mit user_id-scoping**. Design erst nach winner-selection.
 
-### D-4. DSPy integration mit Phase-C A/B dispatcher?
+### D-4. DSPy integration mit Phase-C A/B dispatcher? — ⚠️ **REVISIT 2026-04-23 (ADR-003)**
 
-Können DSPy-compiled programs als **dritte variant** im Phase-C dispatcher laufen? `variant="dspy_compiled"` → misst harness_fitness_score von DSPy-optimized vs LangGraph vs SimpleLoop. Das wäre die **cleanste empirical-grundlage** für alle D-1/D-2 entscheidungen.
+Können DSPy-compiled programs als **dritte variant** im Phase-C dispatcher laufen? Grundsätzlich ja, aber **blocked auf zwei pre-conditions:**
+
+1. **Dispatcher N-way bucketing refactor.** Aktuell 2-way (`hash(user_id) % 100` vs `AGENT_SIMPLE_LOOP_PCT`). Dritter variant braucht entweder zweiten threshold oder re-bucketing scheme + kill-switch anpassung.
+2. **Compiled-artifact-version hash pro `ab_experiments` row.** GEPA-recompile mid-experiment ändert den compiled artifact — `variant="dspy_compiled"` ist dann kein stabiler variant mehr. Ohne artifact-versioning-pinning sind Welch-t-test Ergebnisse measurement-invalid.
+
+ADR-001 G4 hat die confounding-risk bereits bei der einfachen routing-dimension gesehen (siehe migration 027 für ab_experiments.routing_*). Eine dritte variant multipliziert das Risiko.
+
+**Minimal-prep für Phase-3:** (a) bucketing-refactor, (b) `ab_experiments.compiled_artifact_hash` column via migration.
 
 ### D-5. Cost-model
 
@@ -279,7 +289,25 @@ Wir haben heute **drei realistische optionen** für matrix's optimization-layer:
 
 **Grundregel:** implementierungs-entscheidungen basieren auf **2026-current-state-research**. 2023–2024 foundation-papers sind *context* (um zu verstehen woher die konzepte kommen), nicht *implementation-guide*. Wer DSPy 2310.03714 als to-do-liste liest baut das framework von 2023; wir wollen was 2026 current ist.
 
+### Phase (−1) — PoC benchmark gate (4–8h, added 2026-04-23 per ADR-003)
+
+**Contrarian-finding:** 1-1.5 Tage Reading-Investment ohne data-point-gate ist reversed information-order. Ein kleiner PoC beantwortet "bewegt DSPy die Nadel auf matrix-Daten überhaupt?" empirisch.
+
+**G(−1).1 — Architectural-match verification für LLMSelector (2h).** Read LLMSelector (2502.14815) §2 "Architecture Requirements". Antwort in einem Absatz: hat matrix ≥2 distinct pipeline-stages die profitabel verschiedene modelle *per query* laufen könnten? Schaue `agent/graph/nodes/llm_node.py` an — wenn das die einzige LLM-call-stelle pro turn ist, applies LLMSelector nicht. Dokumentiere die Antwort hier unter §5 D-7.
+- **Wenn architectural-match fails:** ersetze LLMSelector in Phase-1 durch TextGrad als zweite comparison-baseline. Downgrade LLMSelector paper von P1 auf P2 in der reading-priority tabelle.
+
+**G(−1).2 — PoC run (4-8h).** Führe MIPROv2 (via DSPy, documented/stable) gegen **einen** matrix flow aus: candidate = `agent/llm/smart_routing.py` keyword-heuristic (pure Python, bounded, testable). Nutze einen historical data slice (session_id range aus `agent.sessions`). Miss: fitness-delta vs current heuristic, LLM-call-count, token-cost per compile-run.
+
+**Exit-criteria:**
+- Fitness delta **≥ 5%**: green-light für Phase-0 reading week.
+- Fitness delta **2-5%**: amber — proceed zu Phase-0 mit härterem Phase-1 significance gate (N ≥ 200 statt 100).
+- Fitness delta **< 2%**: red — defer gesamten DSPy-track zu Welle 4+. Null-result im changelog dokumentieren + queued Welle-3 items reprioritisieren (smart-routing G5/G6, exec-17 Langfuse, exec2-04 E2EE).
+
+**Deliverable:** ein short writeup in diesem spec (§6.1 oder §7) mit fitness-delta-number + decision (green/amber/red).
+
 ### Phase 0 — Research + contrarian (1–1.5 tage)
+
+**Pre-requisite:** Phase (−1) completed. Phase-0 reading starts nur bei green/amber.
 
 **Fokus: aktuelle SOTA, nicht historie.**
 
@@ -384,4 +412,5 @@ Nur wenn Phase 1 einen klaren winner hat:
 | 2026-04-20 | **Paper-kopien erweitert + konsolidierte tabelle** (analog zu exec-14-pddl-formal-planning.md). 3 zusatz-papers: **OPRO arxiv 2309.03409** (Google DeepMind, ICLR 2024, DSPy's konzeptioneller vorgänger), **TextGrad arxiv 2406.07496** (Stanford/Zou-lab, paralleles framework), **Prompt-Opt-Survey arxiv 2502.16923** (broader literature-situation). Total 8 papers für DSPy-track. **Neue decision D-6**: framework-choice DSPy+GEPA vs TextGrad vs own-OPRO-style (empfehlung Phase-1: a + b als comparison, c nur fallback). |
 | 2026-04-20 | **2026-arxiv papers ergänzt.** `2603.20667` REVERE (reflective evolution für scientific workflows, 24 pages). Plus PDDL-side bekommt 5 × 2026-papers inkl. **2602.21670 TextGrad+PDDL-direct-composition** (validiert das in beiden specs skizzierte pattern), **2603.23844 "Language Model Planners do not Scale, but do Formalizers?"** (kritischer finding für spec-richtung), **2603.06064 PDDL via MCP-interface** (matrix hat bereits MCP!). Cross-ref in `exec-14-pddl-formal-planning.md §2026-arxiv-papers`. Total 9 papers im DSPy-track + 16 im PDDL-track = **25 papers in `docs/papers/`**. |
 | 2026-04-20 | **5 weitere 2026-arxiv-ecosystem-papers DSPy-track** (user-frage: asymmetrie DSPy vs PDDL war real). Alle 2026/current-SOTA: **`2604.05150` Compiled AI** (Apr 2026, neues paradigm), **`2604.08801` p1** (Apr 2026, post-GEPA optimizer), **`2601.13922` Dataset-level feature discovery** (Jan 2026, orthogonal to MIPRO/GEPA). Plus 2 kritische 2025-context-papers: **`2502.14815` LLMSelector** (beats DSPy+MIPROv2 5-70% auf compound-AI-systems — promoted zu **P1 must-read** wegen D-1 entscheidungs-relevanz) und **`2507.03041` Optimas** (DSPy compound-AI extension). DSPy-track jetzt 14 papers total. |
+| 2026-04-23 | **`sota-contrarian stakes=high` review done** → [ADR-003](../../docs/superpowers/findings/2026-04-23-adr-003-exec-14-dspy-gating.md). D-1 reframed (add, nicht replace), D-2/D-3 deferred auf D-7 resolution, D-4 blocked auf dispatcher-refactor + artifact-versioning, Phase-(-1) PoC gate added (4-8h MIPROv2 on smart-routing BEFORE Phase-0 reading). LLMSelector paper P1-priority ist **conditional** auf architectural-match verification (G(−1).1). |
 | 2026-04-20 | **Phase-plan 2026-focused rewrite** (user-feedback). Fokus: implementierungs-entscheidungen basieren auf 2026-SOTA, 2023–2024 foundations nur als *background*. **Neues D-7**: GEPA vs LLMSelector vs p1 primary-optimizer choice — empirisch via Phase-1 benchmark auf matrix-daten, nicht brand-commitment. Phase-1 testet **4 kandidaten parallel** (GEPA + p1 + LLMSelector + matrix's eigener `agent/skills/pareto.py`) auf historical-chat-data → fitness-winner entscheidet. Verify-gates aktualisiert: P1 papers gelesen + 2026-arxiv-papers skimmed bevor contrarian. |
