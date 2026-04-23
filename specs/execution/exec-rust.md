@@ -1,6 +1,6 @@
 # exec-rust — Rust Indicator Core & Compute Integration
 
-> Status: Portiert / Integration geplant
+> Status: Portiert / Integration **ratified 2026-04-24** — boundary-decision (§4 Rust vs Python) committed, 3-phase integration plan (Compute-as-Tool → gRPC → WASM) has no open design decisions. Impl is multi-day; Phase 1 (compute_tool.py) is the smallest first unit. Phase 2 gRPC + Phase 3 WASM are downstream when the first proves value. Phase-1 does **not** require exec-ebm (despite §5 dependency note — ebm is a consumer of compute results, not a prerequisite for exposing them).
 > Erstellt: 2026-04-13
 > Quelle: `D:\tradingview-clones\tradeview-fusion\python-backend\`
 > Referenz: Finished Execution Slices (siehe Sektion 3)
