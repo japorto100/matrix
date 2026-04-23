@@ -1,12 +1,12 @@
 # exec-hermes — Gems-Index für `_ref/hermes-agent/` Ports nach matrix
 
-> ## STATUS: **Index + aktive Adoption** (Phase-1 + Phase-B P1–P6 DONE + Phase-C DONE; Phase-B-P6-frontend + Phase-D-streaming PENDING)
+> ## STATUS: **Index + aktive Adoption** (Phase-1 + Phase-B P1–P6 DONE + Phase-C DONE + Phase-B-P6-frontend DONE 2026-04-24 [commit `e0bf944`]; Phase-D-streaming PENDING)
 >
 > Dieser Spec ist das **Source-of-Truth-Index-Dokument** für jede Hermes-Agent-Adoption in matrix. Jede Zeile in §0 **Gems Coverage Matrix** hat einen absoluten Pfad zu `_ref/hermes-agent/`, einen matrix-Zielpfad, Status und owning-exec. Implementierungsdetails leben in den owning-execs, nicht hier.
 >
 > Wenn ein Gem "WIRED" oder "PLANNED" in einem anderen exec ist, ist dieser Spec **Index**; die Arbeit geschieht dort. Wenn ein Gem "REJECTED" ist, erklärt §5 warum.
 
-> Erstellt: 2026-04-18 · Phase-1 abgeschlossen 2026-04-18 · Phase-B P1–P6 abgeschlossen 2026-04-20 (P6 frontend-components bleiben als follow-up)
+> Erstellt: 2026-04-18 · Phase-1 abgeschlossen 2026-04-18 · Phase-B P1–P6 abgeschlossen 2026-04-20 · Phase-B-P6-frontend (CompressionIndicator + async title-gen dispatch in runner) abgeschlossen 2026-04-24 via exec-06 Phase-5 work. CompressionFeedback.tsx bleibt explizit als Phase-2 nice-to-have offen (exec-06 §4c.b).
 > Referenz-Index: `_ref/hermes-agent/` via gitnexus (47,734 nodes, 1,707 Files)
 > Hermes-Commits 2026-04, Hermes 4 Paper: arxiv 2508.15204
 > Querverweise: exec-harness, exec-context, exec-memory, exec-11, exec-15, exec-16, exec-17, exec-18, exec-12, exec-10, exec-skills, exec-security, exec-scheduler, exec-scheduler2
