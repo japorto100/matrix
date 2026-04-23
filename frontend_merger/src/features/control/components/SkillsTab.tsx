@@ -29,10 +29,17 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ApiError } from "@/lib/queries/client";
 import { useImportSkillFromGithub, usePatchSkill, useSkills } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockSkills } from "../mock-data";
 import type { Skill, SkillTier } from "../types";
+import {
+	extractSkillsGuardVerdict,
+	type SkillsGuardDecision,
+	SkillsGuardDrawer,
+	type SkillsGuardVerdict,
+} from "./SkillsGuardDrawer";
 
 const TIER_LABEL: Record<SkillTier, string> = {
 	global: "Global",
@@ -60,6 +67,8 @@ export function SkillsTab() {
 	const [importDescription, setImportDescription] = useState("");
 	const patchSkill = usePatchSkill();
 	const importSkill = useImportSkillFromGithub();
+	// ADR-004: HITL drawer state for dangerous skills-guard verdicts.
+	const [guardVerdict, setGuardVerdict] = useState<SkillsGuardVerdict | null>(null);
 
 	// Slice 7 Phase H: real backend with mock fallback
 	const query = useSkills();
@@ -89,8 +98,35 @@ export function SkillsTab() {
 			setImportName("");
 			setImportDescription("");
 		} catch (err) {
+			// ADR-004: if the backend returned a dangerous verdict with
+			// suggested_action=hitl_confirm, route to the skills-guard drawer
+			// instead of a plain toast.
+			if (err instanceof ApiError) {
+				const verdict = extractSkillsGuardVerdict(err.body, githubUrl.trim());
+				if (verdict) {
+					setGuardVerdict(verdict);
+					return;
+				}
+			}
 			toast.error(`Import failed: ${err instanceof Error ? err.message : "unknown"}`);
 		}
+	};
+
+	const handleGuardDecision = (decision: SkillsGuardDecision) => {
+		if (!guardVerdict) return;
+		if (decision === "deny") {
+			toast.info(`Import denied by user: ${guardVerdict.source}`);
+			setGuardVerdict(null);
+			return;
+		}
+		// allow_once / allow_session → placeholder until backend accepts a
+		// trust_source=human_approved header on the retry (ADR-004 step 5).
+		// For now surface the intent so the user sees the decision was
+		// acknowledged + audit can correlate via matching timestamps.
+		toast.warning(
+			`${decision === "allow_once" ? "Allow-once" : "Allow-session"} not yet wired — retry will fail until backend accepts the trust_source=human_approved override. (ADR-004 step 5)`,
+		);
+		setGuardVerdict(null);
 	};
 
 	const grouped = useMemo(() => {
@@ -289,6 +325,16 @@ export function SkillsTab() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* ADR-004: Skills-Guard HITL drawer on dangerous verdict. */}
+			<SkillsGuardDrawer
+				open={guardVerdict !== null}
+				onOpenChange={(next) => {
+					if (!next) setGuardVerdict(null);
+				}}
+				verdict={guardVerdict}
+				onDecide={handleGuardDecision}
+			/>
 		</div>
 	);
 }
