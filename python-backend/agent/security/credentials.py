@@ -12,8 +12,26 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 logger = logging.getLogger(__name__)
+
+# ADR-001 G3: in-process TTL cache for smart-routing config.
+# Rationale: ``get_user_smart_routing_config`` is called on every
+# iteration-0 LLM turn (i.e. first turn of every new chat) for every
+# non-anonymous user — including the majority who never opt into
+# smart-routing (config = ``{}`` → returns None). Without caching this
+# means a fresh Postgres connection open/close per new chat for the
+# whole user base, adding latency and conn-pool pressure to cold
+# turns. A short TTL (60s) is ample: enablement is an intentional
+# config change, not a real-time setting.
+_SMART_ROUTING_TTL_SECONDS = 60.0
+_smart_routing_cache: dict[str, tuple[float, dict | None]] = {}
+
+
+def _smart_routing_cache_clear() -> None:
+    """Test helper — flush the in-process cache."""
+    _smart_routing_cache.clear()
 
 
 async def get_user_api_key(user_id: str, provider: str) -> str | None:
@@ -119,10 +137,25 @@ async def get_user_smart_routing_config(user_id: str) -> dict | None:
     Returns ``None`` on DB error, missing user, or empty policy. Callers
     pass the result straight into
     :func:`agent.llm.smart_routing.resolve_model_for_turn`.
+
+    Result is cached in-process for ``_SMART_ROUTING_TTL_SECONDS`` (ADR-001
+    G3). The negative result (``None``) is cached too so disabled users
+    don't pay the DB round-trip on every new chat.
     """
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url or not user_id:
         return None
+
+    now = time.monotonic()
+    cached = _smart_routing_cache.get(user_id)
+    if cached is not None:
+        expires_at, value = cached
+        if expires_at > now:
+            return value
+        # Expired — fall through to re-fetch. Don't delete yet; if the
+        # fetch fails we'd rather keep serving the last known value than
+        # thrash on every turn.
+
     try:
         import psycopg
 
@@ -135,12 +168,19 @@ async def get_user_smart_routing_config(user_id: str) -> dict | None:
                 )
             ).fetchone()
             if row and isinstance(row[0], dict) and row[0]:
-                return row[0]
+                value = row[0]
+            else:
+                value = None
     except Exception as e:  # noqa: BLE001
         logger.debug(
             "get_user_smart_routing_config failed for %s: %s", user_id, e
         )
-    return None
+        # DB error: keep serving the previously cached value (if any)
+        # rather than flipping to None for the TTL window.
+        return cached[1] if cached is not None else None
+
+    _smart_routing_cache[user_id] = (now + _SMART_ROUTING_TTL_SECONDS, value)
+    return value
 
 
 def provider_from_model(model: str) -> str:
