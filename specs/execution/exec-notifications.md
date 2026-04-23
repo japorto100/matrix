@@ -1,7 +1,7 @@
 # exec-notifications: Real-Time Notification & Alert System
 
 **Datum:** 13.04.2026
-**Status:** Draft
+**Status:** Draft → **Ready-to-implement 2026-04-24**. No open design decisions; 5-phase implementation plan (Go Alert Hub → Python Producer → LiteLLM Webhook → Frontend Bell → Preferences) is commit-ready. Libraries selected (nikoksr/notify v2, r3labs/sse v2 — both MIT), NATS subjects defined (§NATS), DB schema finalized (§DB Schema, Go auto-migrate in `storage.*`), 9 verify-gates enumerated. Implementation is a multi-day track separate from this spec.
 **Abhaengig von:** exec-19 (NATS Bridge, LiteLLM Spend), exec-16 (Virtual Keys)
 **Kontext:** Trading/Research Platform mit Matrix Chat + Agent System. Alerts sind Trading-relevant (Budget, Ingestion, Agent-Tasks, Markt-Events, Portfolio). Mobile Delivery via Element X (Matrix Chat Nachrichten).
 
