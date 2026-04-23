@@ -8,6 +8,15 @@
 
 ---
 
+## Einordnung: A²FM ist agent-harness architecture, NICHT meta-harness
+
+Wichtige begriffliche Klarstellung (`project_harness_naming` memory, 2026-04-23):
+
+- **Agent harness** = das Runtime-Gerüst in dem der Agent läuft (in matrix: `agent/graph/nodes/*`, runner.py, dispatcher.py, streaming). A²FM baut einen besseren Agent harness — 3-mode Token-Router + plan+parallel-tool-calls + summary — als foundation-model-trainiertes Paket.
+- **Meta-harness** = der Optimizer ÜBER den agent harness (in matrix: `agent/harness/` dir — scorer, pareto, proposer, evaluator). Misst fitness, schlägt Verbesserungen vor, populiert `ab_experiments.harness_fitness_score`.
+
+A²FM selbst ist **nicht** meta-harness. Aber A²FM's `r_adaptive = 1 - p^α` reward-shaping kann matrix's meta-harness inspirieren: der scorer kann diese Formel als zusätzliches fitness-signal für routed-cheap turns adoptieren. Das ist die einzige cross-ebenen Verbindung. Im Wesentlichen ist dieses Research-Doc eine **agent-harness-architecture-Analyse** mit einem kleinen meta-harness-Interface (L2 adaptive-reward signal).
+
 ## What A2FM actually is (summary for matrix)
 
 A²FM is a **single unified foundation model** trained from Qwen2.5-32B-Instruct to handle three execution modes via a learned router-as-token mechanism:
@@ -83,6 +92,8 @@ Store the derived mode in the `ab_experiments.routing_picked_model` column (alre
 **Value:** ground truth before building anything. Immediately answers exec-a2fm Phase-2 prereq question "welche Queries brauchen Tools, welche nicht?"
 
 ### L2 — **Adaptive-reward signal without retraining** (2-3 days)
+
+**Cross-ebenen:** dies ist der Punkt wo A²FM's agent-harness-idee in matrix's meta-harness (= `agent/harness/`) hineinreicht. Der scorer adoptiert die reward-Formel; das Rest bleibt A²FM-orthogonal.
 
 Take A2FM's `r_adaptive = 1 - p^α` penalty structure and apply it to matrix's existing keyword-heuristic router output as an **evaluation loop**, not a training loop:
 
