@@ -102,9 +102,9 @@ Heuristic (regex) alone isn't sufficient by 2026 — LLMs generate novel secret-
 
 ---
 
-## 2. HITL skills_guard — blocked on exec-12
+## 2. HITL skills_guard — ✅ unblocked 2026-04-23 (ADR-004)
 
-**Status:** BLOCKED on exec-12 sandbox-decision + frontend HITL-dialog pattern.
+**Status:** Unblocked 2026-04-23 via [ADR-004](../../docs/superpowers/findings/2026-04-23-adr-004-sandbox-hitl-layer.md). Decision: **surface-dialog layer** via existing consent_system (not sandbox-layer). 3-step backend wiring (422-body shape, consent_policy.yaml rule, BFF error-parser) + skills-guard-drawer frontend (`#64`).
 **Hermes-ref:** `_ref/hermes-agent/tools/skills_guard.py` (code ported as `agent/security/skills_guard.py` commit `8ff8a6a`).
 
 Skills-guard today returns `dangerous|suspicious|clean` verdicts — but there's no user-facing dialog when `dangerous` fires. Import is blocked (HTTP 422), but the user sees a raw API error rather than a structured "this skill tried to invoke subprocess-spawn — allow anyway?" prompt.
