@@ -1,6 +1,6 @@
 # exec-media-ingestion — Image / Audio / Video / Batch Pipelines
 
-**Status:** Draft — ownership transferred from archived `exec-19 §3.5 + §3.7`
+**Status:** Draft → **Ready-to-implement 2026-04-24**. Ownership transferred from archived `exec-19 §3.5 + §3.7`. Open items (§Implementation Status) are impl-work not design-decisions: 4 pipelines (image / audio / video / batch), 4 new routes on ingestion-worker, 1 search endpoint, PipelineKind enum extension. All technology choices fixed (Tesseract/Florence-2 for OCR, Whisper for STT, ffmpeg for key-frames, existing safe-unpack pattern from skills_guard for batch). Impl is multi-day per pipeline; treat this ratification as the go-signal for whoever picks up.
 **Erstellt:** 2026-04-18
 **Owner der Stufe 3 media-Pipelines vor Archive:** exec-19 (devstack-consolidation)
 **Cross-Refs:** exec-15 (Control-UI Files Tabs), exec-18 (agent.traces / audit_events), exec-retrieval (wenn vorhanden — chunk-level search)
