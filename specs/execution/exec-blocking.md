@@ -154,12 +154,11 @@ Bis dahin ist der shared-OlmMachine-ansatz (Option A) der SOTA-Weg. Siehe auch `
 
 ---
 
-## C9. Tracing (agent.spans) + Audit (agent.audit_events) — parallel mit ADR, nicht mergen
+## C9. Tracing (agent.spans) + Audit (agent.audit_events) — parallel mit ADR ✅ **DONE 2026-04-23**
 
 - **Quelle**: session 2026-04-20 desktop-file
-- **Status**: Two parallel stores. Tracing = `agent/tracing.py` + `agent.spans` JSONB (performance, 30d retention, Grafana/OpenObserve). Audit = `agent/audit/` + `agent.audit_events` (compliance, 1y retention, Control-UI AuditTab). Overlap: beide emittieren bei LLM-call + tool-call.
-- **Entscheidung**: Nicht mergen. Unterschiedliche consumers, retention-policies, query-pattern. ABER: cross-write elimination nötig (heute double-write wo span + audit-event gleiche infos halten).
-- **TODO (nicht deferred, aber nicht kritisch)**: ADR in `exec-17-observability-harness-traces.md` die dokumentiert warum parallel + ~50 LOC cross-write-removal.
+- **Status**: Two parallel stores. Tracing = `agent/tracing.py` + `agent.spans` JSONB (performance, 30d retention, Grafana/OpenObserve). Audit = `agent/audit/` + `agent.audit_events` (compliance, 1y retention, Control-UI AuditTab).
+- **Entscheidung (formalisiert 2026-04-23):** ADR-002 in `docs/superpowers/findings/2026-04-23-adr-002-tracing-audit-parallel-stores.md`. Parallel bleibt; `LLM_REQUEST` audit-write entfernt (redundant mit span), `LLM_RESPONSE`/`TOOL_CALL`/`TOOL_RESULT` bleiben (content für 1y compliance). Future-cleanup TODO: per-tool `audit_required: bool` Flag zusammen mit `exec-security` sensitive-tool-Klassifikation.
 
 ---
 

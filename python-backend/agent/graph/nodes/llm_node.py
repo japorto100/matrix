@@ -180,13 +180,11 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         span.set_attribute("llm.routing_used", routing_used)
         if routing_picked_model:
             span.set_attribute("llm.routing_picked", routing_picked_model)
+        # ADR-002: LLM_REQUEST audit_log entfernt — redundant mit diesem
+        # span (model/iteration bereits getragen). tool_count als span-attr
+        # statt als audit-metadata. LLM_RESPONSE bleibt für content trail.
+        span.set_attribute("agent.tool_count", len(tool_defs))
         start = audit_timer()
-        await audit_log(
-            action=AuditAction.LLM_REQUEST,
-            thread_id=thread_id,
-            iteration=iteration,
-            metadata={"model": model, "tool_count": len(tool_defs)},
-        )
 
         client = get_litellm_client()
 

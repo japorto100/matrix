@@ -4,7 +4,7 @@
 **Status:** Draft
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-16 (LLM Provider Gateway)
 
-> **Deferred (2026-04-20):** Tracing (`agent.spans`) + Audit (`agent.audit_events`) bleiben bewusst parallel — ADR + cross-write-cleanup (~50 LOC) lebt in `exec-blocking.md §C9`. Beide stores haben unterschiedliche consumers, retention-policies, query-patterns. Merge ist NICHT geplant; heute beide emittieren bei LLM-call + tool-call (double-write), das muss weg.
+> **ADR-002 (2026-04-23):** Tracing (`agent.spans`) + Audit (`agent.audit_events`) bleiben bewusst parallel. Formeller ADR + `LLM_REQUEST` cross-write-removal in [`docs/superpowers/findings/2026-04-23-adr-002-tracing-audit-parallel-stores.md`](../../docs/superpowers/findings/2026-04-23-adr-002-tracing-audit-parallel-stores.md). `LLM_RESPONSE`/`TOOL_CALL`/`TOOL_RESULT` bleiben (content für 1y compliance). Future-cleanup: per-tool `audit_required: bool` Flag zusammen mit `exec-security` sensitive-tool-Klassifikation.
 
 **Referenzen:**
 - Meta-Harness Paper: https://arxiv.org/html/2603.28052v1 (Stanford/KRAFTON/MIT)
