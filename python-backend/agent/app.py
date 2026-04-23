@@ -96,7 +96,7 @@ async def _ab_status() -> JSONResponse:
 
 
 @app.post("/internal/harness/backfill")
-async def _harness_backfill() -> JSONResponse:
+async def _harness_backfill(request: Request) -> JSONResponse:
     """exec-scheduler §8.1 + exec-harness §4g.4 — scorer-backfill endpoint.
 
     Polls ``agent.ab_experiments`` for rows where
@@ -109,11 +109,30 @@ async def _harness_backfill() -> JSONResponse:
     (default every 15 minutes). Without this endpoint running the
     ab_experiments column stays NULL and Phase-C A/B analysis is blind.
 
-    Returns ``{scored, skipped}``. Never raises — partial failure is
-    better than a worker-retry-storm.
+    **eval_id wiring (§4g.4 TODO):** optional JSON body
+    ``{"eval_id": "<id>"}`` tags every scored row's
+    ``ab_experiments.harness_eval_id`` with that id. The scheduled River
+    worker passes no body → column stays NULL for ad-hoc backfill.
+    Direct callers running a specific meta-harness evaluation pass the
+    eval's id so Pareto dashboards can group by run.
+
+    Returns ``{scored, skipped, eval_id?}``. Never raises — partial
+    failure is better than a worker-retry-storm.
     """
     import asyncio
     import os
+
+    eval_id: str | None = None
+    # Body is optional; River worker posts empty. Parse only if present.
+    try:
+        if request.headers.get("content-length"):
+            body = await request.json()
+            if isinstance(body, dict):
+                raw = body.get("eval_id")
+                if isinstance(raw, str) and raw.strip():
+                    eval_id = raw.strip()[:128]
+    except Exception:  # noqa: BLE001 — bad body = treat as no eval_id
+        eval_id = None
 
     scored = 0
     skipped = 0
@@ -146,13 +165,13 @@ async def _harness_backfill() -> JSONResponse:
         )
 
     if not rows:
-        return JSONResponse({"scored": 0, "skipped": 0})
+        return JSONResponse({"scored": 0, "skipped": 0, "eval_id": eval_id})
 
     from agent.harness.scorer import score_session
 
     for (thread_id,) in rows:
         try:
-            await score_session(thread_id)
+            await score_session(thread_id, eval_id=eval_id)
             scored += 1
         except Exception:  # noqa: BLE001 — single-session fail must not abort batch
             skipped += 1
@@ -163,7 +182,7 @@ async def _harness_backfill() -> JSONResponse:
     # stragglers), just reduces false-positive "still NULL" on re-scan.
     await asyncio.sleep(0.05)
 
-    return JSONResponse({"scored": scored, "skipped": skipped})
+    return JSONResponse({"scored": scored, "skipped": skipped, "eval_id": eval_id})
 
 
 # exec-15 Slice 2: Control API router (thin proxies to ingestion-worker etc.)

@@ -230,3 +230,53 @@ async def test_score_session_dispatches_backfill(monkeypatch):
     assert calls["n"] == 1
     assert calls["args"]["thread_id"] == "t-dispatch-test"
     assert calls["args"]["fitness_score"] == result["fitness_score"]
+    # Default: no eval_id forwarded for ad-hoc invocations.
+    assert calls["args"]["eval_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_score_session_forwards_eval_id(monkeypatch):
+    """§4g.4: when score_session is called with eval_id, it must flow into
+    backfill_ab_experiment_fitness so harness_eval_id gets populated."""
+    calls = {"args": None}
+
+    async def _fake_backfill(**kwargs):
+        calls["args"] = kwargs
+        return True
+
+    class _FakeStore:
+        async def query(self, *args, **kwargs):
+            return [
+                {
+                    "action": "llm_response",
+                    "duration_ms": 10,
+                    "metadata": {"token_usage": 100, "model": "gpt-4o", "done": True},
+                },
+            ]
+
+    with patch("agent.audit.store.get_audit_store", lambda: _FakeStore()), patch(
+        "agent.sessions.get_session", lambda tid: {"status": "completed", "summary": {}}
+    ), patch.object(scorer, "backfill_ab_experiment_fitness", _fake_backfill):
+        import asyncio
+
+        await scorer.score_session("t-eval-test", eval_id="run-xyz")
+        await asyncio.sleep(0.05)
+
+    assert calls["args"] is not None
+    assert calls["args"]["eval_id"] == "run-xyz"
+
+
+@pytest.mark.asyncio
+async def test_score_sessions_forwards_eval_id():
+    """score_sessions must forward eval_id to every per-session score_session call."""
+    forwarded: list[str | None] = []
+
+    async def _fake_score_session(tid, *, eval_id=None):
+        forwarded.append(eval_id)
+        return {"thread_id": tid, "fitness_score": 0.5}
+
+    with patch.object(scorer, "score_session", _fake_score_session):
+        results = await scorer.score_sessions(["a", "b", "c"], eval_id="eval-batch-1")
+
+    assert forwarded == ["eval-batch-1", "eval-batch-1", "eval-batch-1"]
+    assert len(results) == 3

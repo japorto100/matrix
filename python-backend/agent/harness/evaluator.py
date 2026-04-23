@@ -41,10 +41,16 @@ async def evaluate_single(
     query: dict[str, Any],
     *,
     system_prompt_override: str = "",
+    eval_id: str | None = None,
 ) -> dict[str, Any]:
     """Run the agent on a single query and return audit-based scores.
 
     Uses a unique thread_id per evaluation to isolate traces.
+
+    ``eval_id`` (exec-harness §4g.4): forwards to
+    :func:`agent.harness.scorer.score_session` so the A/B row's
+    ``harness_eval_id`` is populated. Callers inside
+    :func:`evaluate_search_set` share the run's eval_id.
     """
     from agent.harness.scorer import score_session
 
@@ -77,10 +83,13 @@ async def evaluate_single(
             "error": str(e),
         }
 
-    # Score the session
-    scores = await score_session(eval_thread_id)
+    # Score the session. eval_id (when provided) flows into the
+    # ab_experiments.harness_eval_id column via the scorer's backfill.
+    scores = await score_session(eval_thread_id, eval_id=eval_id)
     scores["query_id"] = query.get("id", "")
     scores["category"] = query.get("category", "")
+    if eval_id:
+        scores["eval_id"] = eval_id
 
     return scores
 
@@ -89,10 +98,18 @@ async def evaluate_search_set(
     *,
     system_prompt_override: str = "",
     max_queries: int = 0,
+    eval_id: str | None = None,
 ) -> dict[str, Any]:
     """Run the agent against the full search set and aggregate scores.
 
     Returns per-query scores + aggregated summary.
+
+    ``eval_id``: groups every per-query fitness row under one
+    harness-run identifier in ``agent.ab_experiments.harness_eval_id``.
+    Auto-generated when omitted so each run has a unique id — omit the
+    param in one-off callers and rely on the auto-id for Pareto
+    dashboards to distinguish runs. Pass explicitly only for reruns /
+    comparison runs that need to share an id.
     """
     queries = load_search_set()
     if not queries:
@@ -101,10 +118,15 @@ async def evaluate_search_set(
     if max_queries > 0:
         queries = queries[:max_queries]
 
+    if not eval_id:
+        eval_id = f"run-{uuid.uuid4().hex[:12]}"
+
     results = []
     for query in queries:
         result = await evaluate_single(
-            query, system_prompt_override=system_prompt_override
+            query,
+            system_prompt_override=system_prompt_override,
+            eval_id=eval_id,
         )
         results.append(result)
 
@@ -121,6 +143,7 @@ async def evaluate_search_set(
     total_cost = sum(r.get("cost_estimate_usd", 0) for r in results)
 
     return {
+        "eval_id": eval_id,
         "queries_evaluated": len(results),
         "completion_rate": round(completed / max(len(results), 1), 3),
         "avg_turns": round(avg_turns, 2),

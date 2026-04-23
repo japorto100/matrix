@@ -54,11 +54,22 @@ def _estimate_cost(model: str, total_tokens: int) -> float:
     return round(total_tokens * DEFAULT_COST_PER_MTOK / 1_000_000, 6)
 
 
-async def score_session(thread_id: str) -> dict[str, Any]:
+async def score_session(
+    thread_id: str,
+    *,
+    eval_id: str | None = None,
+) -> dict[str, Any]:
     """Score a completed agent session from audit data.
 
     Returns a dict with scoring dimensions. Higher is generally better
     for rates, lower is better for counts/cost.
+
+    ``eval_id`` (exec-harness §4g.4 wiring): when the scorer runs as
+    part of a specific meta-harness evaluation (not an ad-hoc backfill),
+    passing the eval's identifier lets the backfill UPDATE populate
+    ``agent.ab_experiments.harness_eval_id`` so fitness rows can be
+    grouped by eval-run in Pareto dashboards. ``None`` → scheduled
+    backfill (River worker) or ad-hoc invocation; column stays NULL.
     """
     from agent.audit.store import get_audit_store
 
@@ -156,7 +167,7 @@ async def score_session(thread_id: str) -> dict[str, Any]:
             backfill_ab_experiment_fitness(
                 thread_id=thread_id,
                 fitness_score=result["fitness_score"],
-                eval_id=None,
+                eval_id=eval_id,
             )
         )
     except Exception:  # noqa: BLE001 — scorer must never break its caller
@@ -270,9 +281,16 @@ async def backfill_ab_experiment_fitness(
         return False
 
 
-async def score_sessions(thread_ids: list[str]) -> list[dict[str, Any]]:
-    """Score multiple sessions. Returns list sorted by thread_id."""
+async def score_sessions(
+    thread_ids: list[str],
+    *,
+    eval_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Score multiple sessions. Returns list sorted by thread_id.
+
+    ``eval_id`` forwards to each :func:`score_session` call — see there.
+    """
     results = []
     for tid in thread_ids:
-        results.append(await score_session(tid))
+        results.append(await score_session(tid, eval_id=eval_id))
     return results
