@@ -26,6 +26,7 @@ import { mockAgentRoles, mockEnvVars, mockModelRouting, mockUtilityModels } from
 import type { EnvVar, LlmProvider, ModelRouting, UtilityModel } from "../types";
 import { ModelExplorer } from "./ModelExplorer";
 import { ProviderCard } from "./ProviderCard";
+import { SmartRoutingSection } from "./SmartRoutingSection";
 import { SpendDashboard } from "./SpendDashboard";
 import { UtilityModelsSection } from "./UtilityModelsSection";
 
@@ -296,6 +297,10 @@ export function ApiModelsTab() {
 			{/* ── Model Explorer (exec-19 Stufe 5b) ──────────────────────── */}
 			<Separator className="my-6" />
 			<ModelExplorer />
+
+			{/* ── Smart Routing (ADR-001 G6) ──────────────────────────────── */}
+			<Separator className="my-6" />
+			<SmartRoutingSection />
 
 			{/* ── Utility & Inference Subtab ──────────────────────────────── */}
 			<Separator className="my-6" />

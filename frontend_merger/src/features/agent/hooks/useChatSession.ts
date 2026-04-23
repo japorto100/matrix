@@ -37,6 +37,12 @@ export interface MessageUsage {
 	finishReason: string;
 	/** AC104: estimated cost in USD (dynamic from ModelInfo pricing) */
 	costUsd?: number;
+	/** ADR-001 G5: true if smart-routing silently picked a cheap model for this turn */
+	routingUsed?: boolean;
+	/** ADR-001 G5: reason for the routing decision (simple_turn, complex_heuristic, no_cheap_credentials, etc.) */
+	routingReason?: string;
+	/** ADR-001 G5: the model actually called when routing_used=true (cheap-model id) */
+	routingPicked?: string;
 }
 
 export interface ContextDiagnostics {
@@ -214,6 +220,14 @@ export function useChatSession(): UseChatSessionReturn {
 					}
 					// Dynamic cost from ModelInfo (no more hardcoded COST_PER_TOKEN)
 					const costUsd = computeCost(modelInfo, promptTokens, completionTokens);
+					// ADR-001 G5: smart-routing indicator data
+					const routingUsed = typeof meta?.routingUsed === "boolean" ? meta.routingUsed : false;
+					const routingReason =
+						typeof meta?.routingReason === "string" ? meta.routingReason : undefined;
+					const routingPicked =
+						typeof meta?.routingPicked === "string" && meta.routingPicked
+							? meta.routingPicked
+							: undefined;
 					setUsageMap((prev) => {
 						const next = new Map(prev);
 						next.set(message.id, {
@@ -223,6 +237,9 @@ export function useChatSession(): UseChatSessionReturn {
 							cachedTokens,
 							finishReason: finishReason ?? "stop",
 							costUsd,
+							routingUsed,
+							routingReason,
+							routingPicked,
 						});
 						return next;
 					});

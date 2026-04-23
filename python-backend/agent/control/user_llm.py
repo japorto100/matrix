@@ -923,6 +923,133 @@ async def set_selected_models(request: Request) -> dict[str, Any]:
     return {"status": "ok", "user_id": user_id, "selected_models": models, "count": len(models)}
 
 
+# ─── Smart-Routing Config (ADR-001 G6) ──────────────────────────────────────
+# User's smart cheap-vs-strong routing policy.
+# Persisted in agent.user_llm_settings.smart_routing (jsonb, migration 026).
+# Consumed by agent/llm/smart_routing.py via agent/security/credentials.py.
+# See ADR-001 for the rollout gate. Enabling this toggle means silent model-
+# substitution on "simple" first-turn messages — the Control-UI surface must
+# make that clear (G5 frontend indicator is the user-visible disclosure).
+
+
+_SMART_ROUTING_INT_KEYS = ("max_simple_chars", "max_simple_words")
+_SMART_ROUTING_ALLOWED = (
+    "enabled",
+    "cheap_model",
+    *_SMART_ROUTING_INT_KEYS,
+)
+
+
+def _normalize_smart_routing(raw: Any) -> dict[str, Any]:
+    """Whitelist + coerce the JSONB payload so bad shapes never reach the DB.
+
+    Returns a fresh dict containing only known keys with strict types. Empty
+    cheap_model or disabled → stripped-down `{}` stays valid (feature off).
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, Any] = {}
+    enabled = raw.get("enabled")
+    if enabled is not None:
+        if isinstance(enabled, str):
+            out["enabled"] = enabled.strip().lower() in ("1", "true", "yes", "on")
+        else:
+            out["enabled"] = bool(enabled)
+    cheap = raw.get("cheap_model")
+    if isinstance(cheap, str) and cheap.strip():
+        out["cheap_model"] = cheap.strip()[:256]
+    for k in _SMART_ROUTING_INT_KEYS:
+        v = raw.get(k)
+        if v is None:
+            continue
+        try:
+            iv = int(v)
+        except (TypeError, ValueError):
+            continue
+        if iv > 0:
+            out[k] = iv
+    return out
+
+
+@router.get("/user/llm/smart-routing")
+async def get_smart_routing(request: Request) -> dict[str, Any]:
+    """Get the user's smart_routing policy dict.
+
+    Returns ``{"user_id": ..., "smart_routing": {...}}`` where
+    ``smart_routing`` may be empty (``{}``) meaning "feature off".
+    """
+    user_id = _user_id(request)
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {"user_id": user_id, "smart_routing": {}}
+
+    import psycopg
+
+    try:
+        async with await psycopg.AsyncConnection.connect(db_url) as conn:
+            cur = await conn.execute(
+                "SELECT smart_routing FROM agent.user_llm_settings WHERE user_id = %s",
+                (user_id,),
+            )
+            row = await cur.fetchone()
+            cfg = row[0] if row and row[0] else {}
+            return {"user_id": user_id, "smart_routing": cfg}
+    except Exception as e:  # noqa: BLE001
+        logger.warning("get_smart_routing failed: %s", e)
+        return {"user_id": user_id, "smart_routing": {}}
+
+
+@router.put("/user/llm/smart-routing")
+async def set_smart_routing(request: Request) -> dict[str, Any]:
+    """Set the user's smart_routing policy.
+
+    Body: ``{"enabled": true, "cheap_model": "openai/gpt-4o-mini",
+    "max_simple_chars": 160, "max_simple_words": 28}``. Any shape that
+    doesn't match the whitelist is dropped silently (defence in depth).
+
+    Disabling is ``{"enabled": false}`` or ``{}``. Also clears cached
+    get_user_smart_routing_config entry so next turn sees new policy
+    immediately (TTL cache would otherwise defer by up to 60s).
+    """
+    user_id = _user_id(request)
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        body = {}
+    normalized = _normalize_smart_routing(body if isinstance(body, dict) else {})
+
+    db_url = os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        return {
+            "status": "env_only",
+            "message": "No DB — smart_routing requires PostgreSQL",
+        }
+
+    import json
+
+    import psycopg
+
+    async with await psycopg.AsyncConnection.connect(db_url) as conn:
+        await conn.execute(
+            """INSERT INTO agent.user_llm_settings (user_id, smart_routing, updated_at)
+               VALUES (%s, %s::jsonb, NOW())
+               ON CONFLICT (user_id) DO UPDATE SET smart_routing = %s::jsonb, updated_at = NOW()""",
+            (user_id, json.dumps(normalized), json.dumps(normalized)),
+        )
+        await conn.commit()
+
+    # Invalidate G3 cache so the next turn sees the new policy without
+    # waiting for the TTL.
+    try:
+        from agent.security import credentials as _cred
+
+        _cred._smart_routing_cache.pop(user_id, None)
+    except Exception:  # noqa: BLE001
+        pass
+
+    return {"status": "ok", "user_id": user_id, "smart_routing": normalized}
+
+
 # ─── Account-Level Info (exec-19 Stufe 5b follow-up) ─────────────────────────
 # Aggregates credits/usage/spend from provider APIs + LiteLLM.
 # OpenRouter: GET /key → limit_remaining, usage_monthly

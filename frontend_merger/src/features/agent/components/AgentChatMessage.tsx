@@ -257,6 +257,18 @@ function AgentChatMessageInner({
 						)}
 						{!isUser && !isStreaming && fullText && (
 							<div className="flex items-center gap-1.5">
+								{/* ADR-001 G5: smart-routing indicator. Only shown when a cheap model
+								    was silently picked instead of the user's primary. Hover reveals
+								    which model actually answered — GDPR-relevant disclosure. */}
+								{usage?.routingUsed && usage.routingPicked && (
+									<span
+										className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-700 dark:text-amber-400"
+										title={`Smart-routing: answered by ${usage.routingPicked} (reason: ${usage.routingReason ?? "simple_turn"}). Your primary model was skipped because this looked like a simple question.`}
+									>
+										<span aria-hidden="true">⚡</span>
+										<span>cheap-routed</span>
+									</span>
+								)}
 								{/* AC103/AC104: token usage + cost badge */}
 								{usage && (
 									<span

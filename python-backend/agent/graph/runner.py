@@ -407,6 +407,15 @@ async def _run_graph(
                         )
 
             yield sse(TextEndPacket(id=text_id))
+            # ADR-001 G5: forward routing-decision info to frontend so the
+            # agent-chat UI can show a user-visible indicator when a cheap
+            # model was silently picked. The values originate in router_node
+            # (which sets the state keys) and flow through the full graph
+            # invocation.
+            routing_used = bool(result.get("routing_used"))
+            routing_reason = str(result.get("routing_reason") or "not_evaluated")
+            routing_picked = str(result.get("routing_picked_model") or "")
+
             message_metadata = {
                 "threadId": ctx.thread_id,
                 "promptTokens": int(result.get("prompt_tokens", 0) or 0),
@@ -420,6 +429,9 @@ async def _run_graph(
                 "degradationFlags": result.get("degradation_flags", []) or [],
                 "contextBlocks": result.get("context_blocks", []) or [],
                 "queryGate": result.get("query_gate") or {},
+                "routingUsed": routing_used,
+                "routingReason": routing_reason,
+                "routingPicked": routing_picked,
             }
             yield sse(
                 MessageMetaPacket(
