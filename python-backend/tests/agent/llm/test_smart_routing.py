@@ -148,3 +148,76 @@ def test_resolve_truthy_coercion():
         routing_config={"enabled": "true", "cheap_model": "gpt-4o-mini"},
     )
     assert decision.used_cheap is True
+
+
+# ---------------------------------------------------------------------------
+# ADR-001 G1 — bilingual keyword set + hyphen-tokenizer
+# ---------------------------------------------------------------------------
+
+def test_de_reasoning_keyword_rejected():
+    """DE reasoning verbs must route to primary, not cheap."""
+    assert choose_cheap_model_route("analysiere das kurz", _CFG) is None
+    assert choose_cheap_model_route("bewerte den text", _CFG) is None
+    assert choose_cheap_model_route("vergleiche a und b", _CFG) is None
+    assert choose_cheap_model_route("prüfe das bitte", _CFG) is None
+
+
+def test_de_trading_keyword_rejected():
+    """DE trading/finance terms must route to primary."""
+    assert choose_cheap_model_route("mein portfolio", _CFG) is None
+    assert choose_cheap_model_route("berechne das risiko", _CFG) is None
+    assert choose_cheap_model_route("optimiere die strategie", _CFG) is None
+    assert choose_cheap_model_route("welche positionen?", _CFG) is None
+
+
+def test_de_research_keyword_rejected():
+    """DE research terms must route to primary."""
+    assert choose_cheap_model_route("recherche zum thema", _CFG) is None
+    assert choose_cheap_model_route("deine hypothese?", _CFG) is None
+
+
+def test_de_coding_keyword_rejected():
+    """DE coding verbs must route to primary."""
+    assert choose_cheap_model_route("implementiere das", _CFG) is None
+    assert choose_cheap_model_route("refaktoriere bitte", _CFG) is None
+
+
+def test_de_simple_greeting_routes():
+    """DE trivial small-talk should still route to cheap."""
+    assert choose_cheap_model_route("hallo wie geht es dir", _CFG) == "gpt-4o-mini"
+    assert choose_cheap_model_route("was gibt es neues", _CFG) == "gpt-4o-mini"
+
+
+def test_hyphen_compound_matches_keyword():
+    """Hyphenated compounds must be split so 'Sharpe-Ratio' hits sharpe."""
+    assert choose_cheap_model_route("Sharpe-Ratio", _CFG) is None
+    assert choose_cheap_model_route("risk-adjusted return", _CFG) is None
+    assert choose_cheap_model_route("fine-tune the model", _CFG) is None
+
+
+def test_hyphen_non_keyword_still_routes():
+    """Hyphenated text without complex keywords should still route."""
+    assert choose_cheap_model_route("one-off question", _CFG) == "gpt-4o-mini"
+
+
+def test_de_analyse_all_flections():
+    """All common flection forms of 'analysieren' block cheap route."""
+    for msg in (
+        "analysiere das",
+        "analysieren bitte",
+        "analysiert hier",
+        "deine analyse?",
+    ):
+        assert choose_cheap_model_route(msg, _CFG) is None, f"should reject: {msg}"
+
+
+def test_resolve_de_complex_stays_primary():
+    """End-to-end: DE complex question resolves to primary with reason."""
+    decision = resolve_model_for_turn(
+        user_message="analysiere meine positionen",
+        primary_model="claude-opus-4-7",
+        routing_config=_CFG,
+    )
+    assert decision.used_cheap is False
+    assert decision.model == "claude-opus-4-7"
+    assert decision.reason == "complex_heuristic"

@@ -12,6 +12,13 @@ complex task (URLs, code-fences, multi-line, long, domain-specific
 keywords) stays on the primary model. False-negatives are cheap (pay
 for primary); false-positives degrade user experience (weaker reply).
 
+**Bilingual keyword set (ADR-001 G1):** matrix serves a German-speaking
+user-base; the keyword set therefore covers EN + DE forms of the same
+concept in parallel (e.g. ``analyze / analysiere / analyse``) and
+splits hyphenated compounds (``sharpe-ratio`` → ``{sharpe, ratio}``).
+Without this the conservative bias inverts for DE queries — exactly
+the case where users expect the primary (stronger) model.
+
 **Config source:** per-user `agent.user_llm_settings` (migration 009+).
 The existing JSONB columns (`selected_models`, `utility_models`,
 `per_role_overrides`) can carry a new `smart_routing` sub-key without a
@@ -52,28 +59,68 @@ __all__ = [
 
 
 # Keywords that reliably correlate with "this is a complex task" across
-# matrix's supported domains. Intentionally broader than hermes which
-# was CLI-coding-only.
+# matrix's supported domains. Intentionally broader than hermes (which
+# was CLI-coding-only, English-only). Keyword-matching is
+# language-parallel: both EN and DE forms of the same concept are
+# included so DE-speaking users' complex queries don't silently route to
+# the cheap model (ADR-001 G1 — without this the conservative-bias
+# claim in the module docstring is inverted for the target user base).
+#
+# Verb forms: we include the common flected forms a user would actually
+# type (e.g. "analysiere", "analysiert", "analyse") because this module
+# uses exact set-intersection on tokenized words, not stemming.
 _COMPLEX_KEYWORDS = frozenset({
-    # coding / CLI
+    # --- coding / CLI ---
+    # EN
     "debug", "debugging", "implement", "implementation", "refactor",
     "patch", "traceback", "stacktrace", "exception", "pytest", "test",
     "tests", "terminal", "shell", "tool", "tools", "cron", "docker",
     "kubernetes", "compile", "deploy", "migration", "rollback",
-    # reasoning
+    # DE
+    "debuggen", "implementiere", "implementieren", "implementierung",
+    "refaktoriere", "refaktorieren", "refactoring", "teste", "testen",
+    "fehler", "ausnahme", "stapel", "kompiliere", "kompilieren",
+    "einsetzen", "werkzeug", "werkzeuge", "zurücksetzen",
+    # --- reasoning ---
+    # EN
     "analyze", "analysis", "investigate", "architecture", "design",
     "compare", "benchmark", "optimize", "optimise", "review", "plan",
     "planning", "delegate", "subagent", "evaluate", "reason",
-    # trading / finance (matrix-specific)
+    # DE
+    "analysiere", "analysieren", "analysiert", "analyse", "untersuche",
+    "untersuchen", "untersuchung", "architektur", "entwurf",
+    "entwerfe", "entwerfen", "gestalte", "gestalten", "vergleiche",
+    "vergleichen", "vergleich", "optimiere", "optimieren",
+    "optimierung", "überarbeite", "überarbeiten", "plane", "planen",
+    "planung", "bewerte", "bewerten", "bewertung", "begründe",
+    "begründen", "prüfe", "prüfen", "prüfung",
+    # --- trading / finance (matrix-specific) ---
+    # EN
     "portfolio", "rebalance", "backtest", "options", "derivative",
     "margin", "leverage", "liquidity", "arbitrage", "strategy",
-    "risk", "var", "drawdown", "sharpe", "pnl",
-    # research / kg
+    "risk", "var", "drawdown", "sharpe", "pnl", "volatility",
+    # DE (portfolio/arbitrage/backtest same as EN)
+    "rebalancieren", "rebalancing", "optionen", "derivat", "derivate",
+    "marge", "hebel", "liquidität", "strategie", "risiko", "varianz",
+    "volatilität", "rendite", "renditen", "positionen", "position",
+    "auftrag", "aufträge",
+    # --- research / kg ---
+    # EN
     "research", "synthesize", "literature", "citation", "hypothesis",
     "claim", "evidence", "contradict", "corroborate",
-    # data / ML
+    # DE
+    "recherche", "recherchiere", "recherchieren", "synthetisiere",
+    "synthetisieren", "literatur", "zitat", "zitate", "hypothese",
+    "behauptung", "beleg", "beweis", "widersprechen", "bestätigen",
+    "bestätige", "untermauern",
+    # --- data / ML ---
+    # EN
     "dataset", "embedding", "train", "fine-tune", "finetune",
     "evaluation", "inference", "model", "prompt",
+    # DE
+    "datensatz", "datensätze", "training", "trainiere", "trainieren",
+    "feinabstimmung", "auswertung", "auswerten", "schlussfolgerung",
+    "modell", "modelle", "eingabeaufforderung",
 })
 
 _URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
@@ -148,8 +195,22 @@ def choose_cheap_model_route(
     if _URL_RE.search(text):
         return None
 
+    # Tokenize: lowercase → whitespace-split → strip punctuation →
+    # also split hyphenated compounds so "Sharpe-Ratio" → {sharpe, ratio}
+    # and "risk-adjusted" → {risk, adjusted}. Without this split,
+    # hyphenated domain terms bypass the keyword gate (ADR-001 G1).
     lowered = text.lower()
-    words = {tok.strip(".,:;!?()[]{}\"'`") for tok in lowered.split()}
+    words: set[str] = set()
+    for tok in lowered.split():
+        stripped = tok.strip(".,:;!?()[]{}\"'`")
+        if not stripped:
+            continue
+        # Hyphen-split — handles "sharpe-ratio", "risk-adjusted",
+        # "back-test", "fine-tune". Also keeps single-word tokens
+        # unchanged (no hyphen → single-element list).
+        for piece in stripped.split("-"):
+            if piece:
+                words.add(piece)
     if words & _COMPLEX_KEYWORDS:
         return None
 
