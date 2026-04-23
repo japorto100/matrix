@@ -490,6 +490,28 @@ async def _run_graph(
             except Exception:  # noqa: BLE001 — task-create must never block response
                 logger.debug("sync_turn task dispatch failed", exc_info=True)
 
+            # exec-06 §4d Phase 5: fire-and-forget session title-gen after
+            # the first assistant reply. persist_session_title is
+            # idempotent (only sets title when the column is NULL/empty)
+            # so calling on every turn is safe; the UPDATE becomes a
+            # no-op once a title has been generated. Service-credential
+            # lives in MATRIX_TITLE_GEN_KEY (absent → skipped silently,
+            # no user-quota consumption, no billing span).
+            if db_session and final:
+                try:
+                    from agent.titles.generator import generate_and_persist_title
+
+                    last_user = _last_user_text(messages) or ""
+                    asyncio.create_task(
+                        generate_and_persist_title(
+                            session_id=db_session.session_id,
+                            user_message=last_user[:500],
+                            assistant_reply=final[:500],
+                        )
+                    )
+                except Exception:  # noqa: BLE001 — title-gen must never break the turn
+                    logger.debug("title-gen task dispatch failed", exc_info=True)
+
             yield sse(FinishPacket(finish_reason="stop"))
 
         except Exception as e:

@@ -147,11 +147,47 @@ async def persist_session_title(
     )
     try:
         async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
+            # Idempotent: only set title the first time. If the row already
+            # has a non-null/non-empty title (from a prior turn or an ops
+            # backfill), keep it. Callers can invoke this on every turn
+            # without worrying about clobbering an existing title.
             await conn.execute(
-                "UPDATE agent.sessions SET title = %s WHERE session_id = %s",
+                """
+                UPDATE agent.sessions
+                SET title = %s
+                WHERE session_id = %s
+                  AND (title IS NULL OR title = '')
+                """,
                 (title, session_id),
             )
         return True
     except Exception as exc:  # noqa: BLE001
         logger.warning("persist_session_title failed: %s", exc)
         return False
+
+
+async def generate_and_persist_title(
+    *,
+    session_id: str,
+    user_message: str,
+    assistant_reply: str,
+    max_words: int = 7,
+) -> str | None:
+    """Convenience wrapper: generate a title and persist it idempotently.
+
+    Designed for ``asyncio.create_task(...)`` dispatch from the runner
+    right after the first assistant reply completes. Returns the title
+    (for callers that want to emit it via SSE) or ``None`` when the
+    service-credential is missing or the LLM call failed — the caller
+    should not distinguish, either way the session just stays
+    title-less until a later turn succeeds.
+    """
+    title = await generate_title(
+        user_message=user_message,
+        assistant_reply=assistant_reply,
+        max_words=max_words,
+    )
+    if not title:
+        return None
+    ok = await persist_session_title(session_id, title)
+    return title if ok else None

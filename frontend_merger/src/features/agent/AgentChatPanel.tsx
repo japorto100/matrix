@@ -169,7 +169,22 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 			<div
 				className={`flex flex-col bg-background overflow-hidden ${showCanvas ? "w-1/2" : "w-full"}`}
 			>
-				<AgentChatHeader />
+				<AgentChatHeader
+					model={selectedModel}
+					threadId={threadId}
+					latestTotalTokens={(() => {
+						// Find the latest assistant message with a usage entry.
+						// exec-06 §4c Phase 5: drives CompressionIndicator percent.
+						for (let i = messages.length - 1; i >= 0; i -= 1) {
+							const m = messages[i];
+							if (m.role !== "assistant") continue;
+							const u = usageMap.get(m.id);
+							if (!u) continue;
+							return (u.promptTokens ?? 0) + (u.completionTokens ?? 0) + (u.reasoningTokens ?? 0);
+						}
+						return 0;
+					})()}
+				/>
 
 				<AgentChatToolbar
 					selectedModel={selectedModel}

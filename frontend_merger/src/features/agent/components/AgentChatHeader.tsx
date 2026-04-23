@@ -2,14 +2,25 @@
 
 // AC94: Context-Chip — zeigt injizierten Kontext als dismissible Badge
 // AC77: close button via useGlobalChat
+// exec-06 §4c Phase 5: CompressionIndicator im header.
 
 import { ExternalLink, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useGlobalChat } from "../stores/globalChatStore";
+import { CompressionIndicator } from "./CompressionIndicator";
 
-export function AgentChatHeader() {
+interface AgentChatHeaderProps {
+	/** Selected model id — drives the context-window lookup. */
+	model?: string;
+	/** Latest turn's total tokens, from SSE message-metadata. */
+	latestTotalTokens?: number;
+	/** Current thread id. Forwarded to the compression-status endpoint. */
+	threadId?: string;
+}
+
+export function AgentChatHeader({ model, latestTotalTokens, threadId }: AgentChatHeaderProps = {}) {
 	const { chatContext, clearChatContext, closeChat } = useGlobalChat();
 
 	return (
@@ -17,6 +28,7 @@ export function AgentChatHeader() {
 			<div className="flex items-center justify-between px-3 py-2">
 				<span className="text-xs font-semibold text-foreground">Agent Chat</span>
 				<div className="flex items-center gap-1">
+					<CompressionIndicator model={model} totalTokens={latestTotalTokens} threadId={threadId} />
 					<Link href="/control" tabIndex={-1}>
 						<Button
 							variant="ghost"
