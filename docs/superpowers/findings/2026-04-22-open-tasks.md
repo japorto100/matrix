@@ -97,15 +97,16 @@ oder zusätzliche compose-profiles.
 17. **`#65 Cluster H` exec-16 §2.D smart-routing holistic review** ✅ **DONE 2026-04-23**
     `sota-contrarian stakes=high` complete. ADR-001 filed at
     `docs/superpowers/findings/2026-04-23-adr-smart-routing-rollout-gate.md`.
-    exec-16 §2.D + exec-a2fm.md updated. Rollout blocked behind 6-gate checklist:
-    - **`#84 G1`** DE keyword set + hyphen-tokenizer *(S, 1d — CORRECTNESS, non-negotiable)*
-    - **`#85 G2`** Credential pre-flight check in llm_node.py *(S, 0.5d)*
-    - **`#86 G3`** 60s TTL cache on get_user_smart_routing_config *(XS, 0.25d)*
-    - **`#87 G4`** A/B harness routing dimension *(S, 0.5d)*
-    - **`#88 G5`** User-visible routing indicator (GDPR disclosure) *(M, 1-2d frontend)*
-    - **`#89 G6`** Control-UI panel + self-service disable *(M, 2-3d frontend)*
-    - **`#90 P1`** Inversion: refactor to router_node.py *(M, 1d backend, after G1-G4)*
-    Recommended sequence: G1 → G3 → G2 → G4 → (G5, G6 parallel). ~5-7 dev-days.
+    exec-16 §2.D + exec-a2fm.md updated.
+    - **`#84 G1`** DE keyword set + hyphen-tokenizer ✅ **DONE 2026-04-23** (commit `0a59a76`)
+    - **`#85 G2`** Credential pre-flight check in llm_node.py ✅ **DONE 2026-04-23** (commit `57400f4`)
+    - **`#86 G3`** 60s TTL cache on get_user_smart_routing_config ✅ **DONE 2026-04-23** (commit `5061586`)
+    - **`#87 G4`** A/B harness routing dimension + migration 027 ✅ **DONE 2026-04-23** (commit `dc539df`)
+    - **`#88 G5`** User-visible routing indicator (GDPR disclosure) *(M, 1-2d frontend — PENDING)*
+    - **`#89 G6`** Control-UI panel + self-service disable *(M, 2-3d frontend — PENDING)*
+    - **`#90 P1`** Inversion: refactor to router_node.py *(M, 1d backend — PENDING, G1-G4 done so unblocked)*
+    **Rollout status:** 4/6 backend gates through. Frontend gates (G5, G6) + P1
+    refactor remain. Flip `enabled: true` BLOCKED until G5+G6 ship.
 
 18. **`#66 Cluster H` exec-17 C9 ADR — tracing+audit parallel stores** *(~1.5h)*
     OTEL (perf debug) vs audit log (compliance). Should they be same store or parallel?
