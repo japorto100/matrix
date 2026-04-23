@@ -1,7 +1,7 @@
 # exec-17: Observability & Agent Harness Traces
 
 **Datum:** 10.04.2026
-**Status:** Draft
+**Status:** Draft — infrastructure (Stufen 1–5) **LANDED** (`otel-collector.yaml`, `docker-compose.otel.yml`, Python + Go OTel integrated, span taxonomy defined). **Verify-gates pending live `dev-stack.sh --observability` run** to fire end-to-end traces; §4g A/B fitness backfill is live (see changelog 2026-04-20 + 2026-04-23 eval_id wiring). No open design decisions.
 **Abhaengig von:** exec-10 (LangGraph Agent), exec-16 (LLM Provider Gateway)
 
 > **ADR-002 (2026-04-23):** Tracing (`agent.spans`) + Audit (`agent.audit_events`) bleiben bewusst parallel. Formeller ADR + `LLM_REQUEST` cross-write-removal in [`docs/superpowers/findings/2026-04-23-adr-002-tracing-audit-parallel-stores.md`](../../docs/superpowers/findings/2026-04-23-adr-002-tracing-audit-parallel-stores.md). `LLM_RESPONSE`/`TOOL_CALL`/`TOOL_RESULT` bleiben (content für 1y compliance). Future-cleanup: per-tool `audit_required: bool` Flag zusammen mit `exec-security` sensitive-tool-Klassifikation.
