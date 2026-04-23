@@ -33,7 +33,11 @@ import os
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["generate_title", "persist_session_title"]
+__all__ = [
+    "generate_title",
+    "persist_session_title",
+    "generate_and_persist_title",
+]
 
 
 _TITLE_PROMPT = """You are naming a chat session based on its first exchange.
