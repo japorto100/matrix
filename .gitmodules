@@ -76,3 +76,6 @@
 [submodule "_ref/claude_code/openclaw"]
 	path = _ref/claude_code/openclaw
 	url = https://github.com/openclaw/openclaw
+[submodule "_ref/FinceptTerminal"]
+	path = _ref/FinceptTerminal
+	url = https://github.com/Fincept-Corporation/FinceptTerminal
