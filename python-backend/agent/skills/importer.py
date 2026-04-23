@@ -180,12 +180,19 @@ async def import_from_github(
 
         # Any block → reject the whole import (no partial dest_dir on disk).
         if rejected:
-            return {
+            # ADR-004: surface-dialog HITL. When any rejection is at verdict
+            # ``dangerous`` (not just ``caution``), hint the frontend BFF to
+            # route to the skills-guard-drawer instead of a generic toast.
+            has_dangerous = any(r.get("verdict") == "dangerous" for r in rejected)
+            response: dict[str, Any] = {
                 "success": False,
                 "imported": [],
                 "rejected": rejected,
                 "repo_url": repo_url,
             }
+            if has_dangerous:
+                response["suggested_action"] = "hitl_confirm"
+            return response
 
         # Pass 2: install the vetted candidates
         imported: list[str] = []
@@ -333,7 +340,7 @@ def install_from_archive(
                 "skills_guard blocked archive install of '%s': %s",
                 skill.name, reason,
             )
-            return {
+            payload: dict[str, Any] = {
                 "success": False,
                 "skill_name": skill.name,
                 "message": reason,
@@ -341,6 +348,10 @@ def install_from_archive(
                 "trust_level": scan_result.trust_level,
                 "findings": _findings_to_dicts(scan_result.findings),
             }
+            # ADR-004: surface-dialog HITL hint on dangerous verdict.
+            if scan_result.verdict == "dangerous":
+                payload["suggested_action"] = "hitl_confirm"
+            return payload
 
         # Installieren
         if target_tier == "global":

@@ -372,6 +372,8 @@ def test_install_from_archive_blocks_dangerous_no_partial_install(
     assert result["success"] is False
     assert result.get("verdict") == "dangerous"
     assert result.get("findings"), "must surface the findings payload"
+    # ADR-004: HITL hint so frontend BFF routes to skills-guard-drawer.
+    assert result.get("suggested_action") == "hitl_confirm"
     # No partial install on disk.
     assert not any(skills_base.rglob("pkg"))
 
