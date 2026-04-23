@@ -820,9 +820,21 @@ Phase-B P4 replaced three hardcoded lookups:
 
 ---
 
-## 2.D Smart cheap-vs-strong routing (Phase-C tail, 2026-04-20) — **NEEDS HOLISTIC REVIEW**
+## 2.D Smart cheap-vs-strong routing (Phase-C tail, 2026-04-20) — **DECISION RECORDED (ADR-001, 2026-04-23)**
 
-**Status:** Code landed but **must be revisited as a whole** before rollout. Owner-spec is `exec-a2fm-adaptive-routing.md` (Draft/Research) — this §2.D is the LiteLLM-gateway-side cross-ref.
+**Status:** Code landed, holistic review complete via `sota-contrarian stakes=high`. Rollout is **blocked behind a 6-gate checklist** recorded in [ADR-001](../../docs/superpowers/findings/2026-04-23-adr-smart-routing-rollout-gate.md). Owner-spec is `exec-a2fm-adaptive-routing.md` (Draft/Research) — this §2.D is the LiteLLM-gateway-side cross-ref.
+
+**ADR-001 rollout gate (Do NOT flip `enabled: true` until all 6 pass):**
+1. **G1** German keyword set + hyphen-tokenizer (or langdetect branching) — feature is semantically broken for DE user base without it. **Non-negotiable correctness bug.**
+2. **G2** Credential pre-flight check in `llm_node.py` before mutating `state["model"]` — prevents silent 401 on single-vendor-credential users (cheap-model provider may not match user's credentials).
+3. **G3** 60s TTL in-process cache on `get_user_smart_routing_config` (OR pre-load in `app.py` pre-graph) — current impl opens new DB conn on every iteration-0 turn for all users, even `enabled:false`.
+4. **G4** Routing dimension in A/B harness span schema (`routing_used: bool` or composite `variant="langgraph_cheap_routed"`) — must exist **before** data collection, not post-hoc. Without it, runner-variant fitness comparison is contaminated.
+5. **G5** User-visible routing indicator in conversation UI — OTel span `llm.routing_reason` is ops-only, not GDPR-valid processor disclosure.
+6. **G6** Control-UI panel + self-service disable path in `frontend_merger/src/features/control/` — SQL-only enablement acceptable for ops pilot only.
+
+**Recommended sequence:** G1 → G3 → G2 → G4 → (G5, G6 parallel). Total ~5-7 dev-days.
+
+**Inversion target (Phase-1):** after G1-G4 land, move the routing decision out of `llm_node.py` side-effect into a proper `router_node.py` (matches exec-a2fm Phase-1 original spec). Current wire-point is **Phase-0.5 / provisional**.
 
 **What shipped:**
 - `python-backend/agent/llm/smart_routing.py` — port of hermes `choose_cheap_model_route` heuristic, expanded keyword set for matrix's multi-domain context (coding + trading + research + data + ops). Conservative: false-negatives (pay for primary) are cheap, false-positives (weaker reply) degrade UX.
