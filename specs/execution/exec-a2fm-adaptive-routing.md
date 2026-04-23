@@ -122,19 +122,35 @@ START → memory_recall → router → llm_call → [tools → increment → llm
 - Regelbasiert (if/else + keyword matching), kein ML
 - Konfigurierbar per User (control-ui: "Auto-Routing aktivieren" Toggle)
 
-### Phase 2: ML-basierter Router (A2FM-inspiriert)
+### Phase 2: ML-basierter Router (A2FM-inspiriert) — **RE-SEQUENCED 2026-04-23**
 
-- Kleiner Classifier (z.B. `sentence-transformers` Embedding → 3-class softmax)
-- Trainiert auf unseren Audit-Logs: welche Queries brauchten Tools, welche nicht
-- Cost-Regularization aus A2FM: bestrafe teures Reasoning bei einfachen Fragen
-- Integration in LangGraph als erster Node
+**Update nach Paper-Read (2026-04-23):** siehe [A2FM research writeup](../../docs/superpowers/findings/2026-04-23-a2fm-paper-research-phase2.md). Das Paper ist 32B-scale training + eigene foundation-model-weights — matrix ist provider-agnostic (LiteLLM) und hat keine GPU-Infra. Daher sind nicht alle paper-ideas lift-able. Recommended sequencing (weicht vom ursprünglichen spec-plan ab):
+
+**P2.a — L1: Post-hoc mode-labeling der audit_events** (1-2d, zero-training)
+- SQL + Python script: labele alle `agent.audit_events` nach {instant, reasoning, agentic} basierend auf `tool_call` events, iteration-count, response-length
+- Output: markdown/CSV report mit mode-distribution + per-mode fitness/cost/latency
+- Gate: wenn 95%+ aller queries instant sind, Phase 2+3 sind moot → nur instant-case optimieren
+
+**P2.b — L2: Adaptive-reward feedback loop** (2-3d)
+- Nutze A2FM's `r_adaptive = 1 - p^α` Reward-Struktur als offline-eval-loop, NICHT als online-RL
+- Per-user threshold-tuning worker (analog `HarnessBackfillWorker`) liest letzte N turns fitness by routing-mode, proposes neue thresholds
+- Migration 028 ggf. für per-user per-mode fitness history
+- Integration: nutzt existing `agent/harness/scorer.py` composite_fitness + `ab_experiments.harness_fitness_score`
+
+**P2.c — L3 (optional): Small encoder-classifier** (5-7d)
+- Nur wenn L2 plateau'd und Audit-corpus >10k sessions
+- `all-MiniLM-L6-v2` (22MB) → 3-class softmax, CPU-inference <100ms
+- Trainiert auf L1 mode-labels
+- Integration in `router_node.py` (P1-refactor done 2026-04-23): swap inner rule-match gegen `classifier.predict()`
+- Risk: nur user_message context (kein thread-context) — nur auf iteration==0 nutzbar
 
 ### Phase 3: Self-Improving Router
 
-- A2FM's APO-Ansatz: Forced + Adaptive Rollouts
-- User-Feedback (Thumbs up/down aus Agent-Chat) als Reward-Signal
-- Periodic Retraining auf neuen Audit-Daten
-- Trace-basierte Evaluation (exec-17 OTel → welcher Mode war erfolgreich)
+Entspricht jetzt L2 (moved von Phase 2.b). Full A2FM-APO-training ist Welle-5+ research (braucht GPU + >100k audit sessions).
+
+### Phase 4 (Research, Welle 5+): Full A2FM training — **L4**
+
+Paper-faithful approach: Qwen2.5-32B-Instruct backbone + SFT mit DeepSeek-R1/V3.1 als teachers + GRPO-APO. Not in scope until matrix has GPU infra + audit corpus growth. **Open question:** released OPPO A²FM checkpoint publicly via Hugging Face? Paper mentions "Open Source: Code, Models" — verify before any training commitment.
 
 ---
 
