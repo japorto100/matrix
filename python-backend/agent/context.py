@@ -35,6 +35,12 @@ class AgentExecutionContext:
     user_role: str = "viewer"
     # Request-level metadata (forwarded from Go)
     request_id: str | None = None
+    # ADR-001 G4: A/B experiment row id (UUID). Set by the dispatcher
+    # when a turn is run under an active experiment so downstream nodes
+    # (notably llm_node's smart-routing block) can mark their dimension
+    # of the turn on the same row via fire-and-forget UPDATE. None when
+    # the turn runs outside the experiment ledger (tests, ad-hoc calls).
+    ab_row_id: str | None = None
 
     def tool_definitions(self) -> list[dict]:
         """Return Anthropic tool_definition dicts for all registered tools."""

@@ -32,6 +32,7 @@ itself. The user-satisfaction signal is filled in later by
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import hashlib
 import logging
 import os
@@ -175,6 +176,45 @@ async def _insert_ab_row(
         logger.debug("ab_experiments INSERT failed: %s", exc)
 
 
+async def _mark_routing(
+    row_id: str,
+    *,
+    routing_used: bool,
+    routing_reason: str | None,
+    routing_picked_model: str | None,
+) -> None:
+    """ADR-001 G4 — fire-and-forget UPDATE of the routing dimension.
+
+    Called from ``llm_node`` when smart-routing resolves a decision on
+    iteration-0. Keeps the dispatcher hot-path free of extra await; the
+    UPDATE piggy-backs on a new psycopg connection like `_mark_fallback`.
+    """
+    if not row_id:
+        return
+    try:
+        import psycopg
+
+        dsn = os.environ.get(
+            "HINDSIGHT_DB_URL",
+            "postgresql://postgres@localhost:5433/hindsight_dev",
+        )
+        async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
+            await conn.execute(
+                """
+                UPDATE agent.ab_experiments
+                SET routing_used = %s,
+                    routing_reason = COALESCE(%s, routing_reason),
+                    routing_picked_model = COALESCE(%s, routing_picked_model)
+                WHERE id = %s
+                """,
+                (routing_used, routing_reason, routing_picked_model, row_id),
+            )
+    except Exception:  # noqa: BLE001
+        logger.debug(
+            "ab_experiments routing UPDATE failed (row=%s)", row_id, exc_info=True
+        )
+
+
 async def _mark_fallback(row_id: str, error: str) -> None:
     try:
         import psycopg
@@ -228,6 +268,11 @@ async def run_agent_loop_with_variant(
             bucket=bucket,
         )
     )
+
+    # ADR-001 G4: thread the row id through the context so llm_node's
+    # smart-routing block can mark the routing dimension on this run.
+    # Frozen dataclass → use dataclasses.replace.
+    ctx = dataclasses.replace(ctx, ab_row_id=row_id)
 
     if variant == "simple":
         async for chunk in _run_simple_with_guard(ctx, messages, row_id=row_id):

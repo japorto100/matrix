@@ -90,6 +90,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     # shouldn't silently switch models mid-conversation. Conservative
     # heuristic — falls through to primary on any complex-looking input.
     routing_reason = "not_evaluated"
+    routing_used = False
+    routing_picked_model: str | None = None
+    ab_row_id = state.get("ab_row_id") or ""
     if iteration == 0 and user_id != "anonymous":
         try:
             from agent.llm.smart_routing import resolve_model_for_turn
@@ -135,16 +138,48 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                     model = decision.model
                     state["model"] = model  # propagate for downstream span-attrs
                     state["llm_model"] = model
+                    routing_used = True
+                    routing_picked_model = decision.model
                 else:
                     routing_reason = "no_cheap_credentials"
+                    routing_picked_model = model
+            else:
+                # decision recorded (e.g. complex_heuristic) — record which
+                # model actually got picked for ops visibility.
+                routing_picked_model = model
         except Exception:  # noqa: BLE001 — routing must never break the call
             logger.debug("smart_routing skipped", exc_info=True)
+
+    # ADR-001 G4: fire-and-forget UPDATE of the A/B experiment row so
+    # the fitness-regression harness can decouple routing from runner-
+    # variant effects. Only runs when this turn is under an experiment
+    # (dispatcher set ab_row_id) and routing was actually evaluated
+    # (iteration==0 block ran). Non-blocking — we don't await.
+    if ab_row_id and routing_reason != "not_evaluated":
+        try:
+            import asyncio as _asyncio
+
+            from agent.runners.dispatcher import _mark_routing
+
+            _asyncio.create_task(
+                _mark_routing(
+                    ab_row_id,
+                    routing_used=routing_used,
+                    routing_reason=routing_reason,
+                    routing_picked_model=routing_picked_model,
+                )
+            )
+        except Exception:  # noqa: BLE001 — telemetry must never break the call
+            logger.debug("ab_experiments routing mark skipped", exc_info=True)
 
     registry = ToolRegistry.load()
     tool_defs = [t.definition() for t in registry.all()]
 
     with turn_span("llm_call", model, iteration) as span:
         span.set_attribute("llm.routing_reason", routing_reason)
+        span.set_attribute("llm.routing_used", routing_used)
+        if routing_picked_model:
+            span.set_attribute("llm.routing_picked", routing_picked_model)
         start = audit_timer()
         await audit_log(
             action=AuditAction.LLM_REQUEST,

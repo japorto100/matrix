@@ -101,3 +101,9 @@ class AgentGraphState(TypedDict):
 
     # User role from Go Gateway (viewer/analyst/trader/admin)
     user_role: str
+
+    # ADR-001 G4: A/B experiment row id (UUID) when this turn runs under
+    # an active dispatcher experiment. Used by the llm_node smart-routing
+    # block to mark the routing dimension on the same ab_experiments row
+    # via fire-and-forget UPDATE. Empty string when not under experiment.
+    ab_row_id: str

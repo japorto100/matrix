@@ -333,6 +333,7 @@ async def _run_graph(
         "user_id": ctx.user_id,
         "agent_class": getattr(ctx, "agent_class", "advisory"),
         "user_role": getattr(ctx, "user_role", "viewer"),
+        "ab_row_id": getattr(ctx, "ab_row_id", None) or "",
     }
 
     config = {"configurable": {"thread_id": ctx.thread_id}}
