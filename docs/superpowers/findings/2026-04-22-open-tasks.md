@@ -1,10 +1,46 @@
-# Open Tasks — handoff from 2026-04-22 overnight session
+# Open Tasks — handoff ledger
+
+> **⚠️ READ-ME-FIRST**: Dieses doc hat zwei zeit-schichten. Content **ab §"Post-session state — 2026-04-24 update (voll-katalog, FINAL)"** ist die **einzige authoritative quelle**. Der obere teil (Welle A/B/C "Agent-chat hängt" etc.) ist 2026-04-22 handoff-stand und seither **veraltet** — die meisten dortigen items sind inzwischen landed (siehe `specs/execution/superpower-impl-log.md` für vollen completion-log).
+>
+> **Quick-jump**:
+> - TL;DR-tabelle: siehe §TL;DR direkt unten
+> - Current open work (authoritative): §Post-session state FINAL (etwa zeile 230)
+> - Historical 2026-04-22 content: §Welle A-G unten (archiviert, NICHT executeable)
+
+---
+
+## TL;DR — 2026-04-24 end-of-session stand
+
+**Completed in superpower session**: Plan v2 Phase-1 + 4 von 7 Phase-2 items, ADRs 001-004, exec-17 observability tier 1+2, 6 exec-ratifications, smart-routing G1-G6+P1, memory umbrella, exec-06 Phase 5 tail. Plan v1 SUPERSEDED, Plan v2 DONE. Full commit-log in `specs/execution/superpower-impl-log.md`.
+
+**Open work = 23 items in 8 kategorien:**
+
+| Kat | Count | Tasks | Next-step |
+|---|---|---|---|
+| **A** Plan v2 Phase-2 gaps | 3 | #93, #94, #95 | Optional UX-polish |
+| **B** Browser-client blocked | 6 | #38, #39, #40, #51, #60, #61 | **Highest leverage** — one rig unblocks all 6 |
+| **C** User-skip | 2 | #74 PDDL, #76 EBM | Nicht jetzt, per user-decision |
+| **D** Recurring | 1 | #82 monthly monitor | Bleibt in_progress |
+| **E** Observability follow-up | 1 | #92 tier-3 browser RUM | Nice-to-have |
+| **F** Unfixed verify-findings | 4 | G4-race, G1-quality, COALESCE, @vercel/otel doc | Small fixes |
+| **G** Pre-existing noise | 1 | Typos DE allowlist | Wenn typos als CI-gate dazu kommt |
+| **H** Infra runtime issues | 5 | Rootlessport race, stale healthchecks, stack-status, creds, commit-doc | Infra-session |
+
+**Recommended next session**: **Build browser-client E2E rig** (one-time playwright+cinny setup) → 6 tasks unblocked at once.
+
+Alternative kleiner start: **H-2 stale healthcheck recreate** (5-min fix) + **F-G4 INSERT/UPDATE race** (ON CONFLICT DO UPDATE refactor, ~1h).
+
+---
+
+## Historical context (archiviert 2026-04-22)
+
+> Unten folgt das original 2026-04-22 handoff-content. Fast alle Welle-A/B/C-items sind seit 2026-04-24 landed. **Lese nur wenn du verstehen willst WARUM wir wo sind, nicht WAS als nächstes zu tun ist.**
 
 Eine priorisierte Liste der 29 Items die am Ende dieser Session noch offen
 sind. Companion zu `2026-04-22-overnight-findings.md` (welches Bugs +
 Beobachtungen aus diesem Lauf dokumentiert).
 
-**Stand der Gesamt-Liste:** 29 completed / 53 pending / 82 gesamt.
+**Stand der Gesamt-Liste (2026-04-22):** 29 completed / 53 pending / 82 gesamt. — *veraltet, siehe TL;DR oben für current stand*
 **Dieser Doc:** nur die pending. Done-Items stehen in der taskforge
 (`TaskList` / `TaskGet`) sowie in commits ab `2f5f977`.
 
@@ -252,24 +288,30 @@ Stand **post `d4b4432`** (5-agent verify + 13 fixes gelandet):
 
 #### A) Plan v2 Phase-2 gaps (extrahiert aus v2 "Deferred" sektion)
 
-| # | Titel | Prio | Scope |
-|---|-------|------|-------|
-| **#93** | Custom A2UI catalog-extension (ChartWidget/PortfolioCard via `createReactComponent`) | mittel | Heute rendern ChartWidget + PortfolioCard via `ToolOutputRenderer` als tool-result-workaround. Ziel: wrap als first-class A2UI v0.9 catalog-entries in A2uiProvider, so dass `A2UIRenderer` sie native mountet. Unblockt native agent-emission. |
-| **#94** | Matrix-chat CopilotKit integration (exec-10 tie-in) | niedrig | CopilotKit ist heute nur in agent-chat (AgentProviders). Ziel: mount in matrix-chat `/matrix` route damit matrix-user AG-UI actions triggern können. |
-| **#95** | Route consolidation into /control/* | niedrig | Heute: `/matrix`, `/files/[[...tab]]`, `/memory/[[...tab]]`, `/control/[[...tab]]` separat. Plan-v2 wollte `/control/*` als einziges admin-tab-system. UX-entscheidung, kein funktionaler value. |
+| # | Titel | Prio | Scope + Files | First-step |
+|---|-------|------|---------------|------------|
+| **#93** | Custom A2UI catalog-extension via `createReactComponent` | **mittel** (user-sichtbar) | Heute rendern ChartWidget + PortfolioCard via `ToolOutputRenderer` als tool-result-workaround (custom `GenerativeWidget` interface in `registry.ts`, nicht A2UI-konform). Ziel: wrap als first-class A2UI v0.9 catalog-entries so dass `A2UIRenderer` sie native mountet.<br>**Files**: `frontend_merger/src/features/agent/providers/A2uiProvider.tsx` (wire extended catalog), `frontend_merger/src/features/agent/components/a2ui/registry.ts` (refactor zu A2UI `WidgetDefinition`), neue catalog-extension module.<br>**Payoff**: agent emittiert ChartWidget via native A2UI widget-spec statt dict-envelope. | `bun add @a2ui/catalog-builder` checken, dann `createReactComponent` examples in @copilotkit/a2ui-renderer docs lesen. |
+| **#94** | Matrix-chat CopilotKit integration (exec-10 tie-in) | niedrig | CopilotKit ist heute nur in `AgentProviders` gewrappt — aktiv nur in agent-chat sheet. Matrix-chat (`/matrix` route) hat keinen CopilotKit-provider. Ziel: wenn matrix-chat user AG-UI actions triggern wollen (z.B. "open file X" aus chat), braucht es provider + runtime-URL mount pro-route.<br>**Files**: `frontend_merger/src/app/matrix/layout.tsx` (neu wrappen), `exec-10-multi-agent.md` §matrix-ui bridge. | Zuerst clarify: gibt es user-stories die das wirklich brauchen? Vielleicht auch deferred gewollt. |
+| **#95** | Route consolidation into /control/* | niedrig | Heute: `/`, `/matrix`, `/files/[[...tab]]`, `/memory/[[...tab]]`, `/control/[[...tab]]`. Plan-v2 idee: alles unter `/control/matrix`, `/control/files`, `/control/memory` bündeln als admin-tab-system.<br>**Files**: migrate directories + GlobalTopBar nav-items + rewrite rules für alte URLs + playwright test updates. | Vor impl: UX-entscheidung mit user — wollen wir das überhaupt? Kein funktionaler value, pure layout-frage. |
 
 #### B) Browser-client blocked — server-side ready, brauchen Playwright+cinny/element rig
 
 Alle 6 teilen den gleichen blocker: matrix-js-sdk browser-client + registered test-users. Ein-mal aufwand (E2E test-rig bauen) entsperrt alle 6 gleichzeitig.
 
-| # | Titel | Scope |
-|---|-------|-------|
-| **#38** | exec2-04 B1 E2EE base functionality | Verschlüsselter 1-1 chat zwischen registrierten usern |
-| **#39** | exec2-04 B2 Cross-Signing + QR flow | Device verification via QR |
-| **#40** | exec2-04 B3 Key backup | Rescue-key + server-side key-backup |
-| **#51** | exec-10 multi-agent + exec-11 memory evolution | E2E-test der parallelen agent-orchestration + memory-scope-isolation |
-| **#60** | exec-05 A4 NATS E2EE E2E-test | E2EE message-flow Tuwunel → NATS → Agent → E2EE back |
-| **#61** | exec-10 A2A live-test (HOT) | Agent-to-agent protocol roundtrip (nicht nur NATS fanout) |
+**Vorabbedingung "rig" konkret:**
+- Tuwunel homeserver läuft (`--calls` profile + `--tuwunel` flag)
+- `scripts/setup-users.sh` registriert alice + bob
+- Playwright launches cinny oder element-web mit test-user-login
+- Pro test: user-login → message-send → assertions
+
+| # | Titel | Spec | Was verifiziert wird | First-step |
+|---|-------|------|----------------------|------------|
+| **#38** | exec2-04 B1 E2EE base functionality | exec2-04 §B1 | Alice sendet encrypted message → Bob empfängt + entschlüsselt. Basic megolm session establishment. | Playwright test in `frontend_merger/tests/e2e/e2ee-base.spec.ts` |
+| **#39** | exec2-04 B2 Cross-signing + QR flow | exec2-04 §B2 | Alice's 2. device wird via QR-scan verified. Cross-signed keys propagieren. | Nach #38 — braucht alice's session |
+| **#40** | exec2-04 B3 Key backup | exec2-04 §B3 | Alice resetet browser → rescue-key wiederherstellt room-keys von server-backup. | Nach #38 + #39 |
+| **#51** | exec-10 multi-agent + exec-11 memory evolution | exec-10, exec-11 | Alice schickt message die 2+ agents parallel triggert → beide agents haben isolierte memory-scopes (kein cross-leak). Memory-evolution (reflect, consolidate) läuft asynchron. | Agents: `@agent-alice`, `@agent-bob` pre-materialized in Go bot-agent |
+| **#60** | exec-05 A4 NATS E2EE E2E-test | exec-05 §A4 | Encrypted message-flow Tuwunel → go-appservice decrypt → NATS → python-agent → reply → go-appservice encrypt → Tuwunel. Verify audit-trail zeigt beide richtungen. | Nach #38 — braucht encrypted-room-setup |
+| **#61** | exec-10 A2A live-test (HOT) | exec-10 §A2A | Agent-to-agent protocol: `@agent-alice` ruft tool bei `@agent-bob` via Google A2A SDK. Roundtrip mit streaming. | Nach #51 — braucht beide agents active |
 
 #### C) User-skip (explizit deferred durch user)
 
@@ -294,12 +336,12 @@ Alle 6 teilen den gleichen blocker: matrix-js-sdk browser-client + registered te
 
 Die 5-agent verify (2026-04-24) hat 17 issues gefunden, 13 davon sofort gefixt. Die verbleibenden 4 sind in einem der folge-runs zu adressieren:
 
-| ID | Titel | Agent | Warum nicht sofort gefixt |
-|---|-------|-------|---------------------------|
-| **G4-race** | A/B experiments INSERT/UPDATE fire-and-forget ordering-race | 2 | Low-probability silent-data-loss bei slow DB. Fix braucht ON CONFLICT DO UPDATE refactor in `dispatcher.py` + `router_node.py`. Eigenes ticket. |
-| **G1-quality** | 20 common EN keywords im smart_routing → false-positives ("reason", "test", "train", "model", "options" etc) | 2 | Nicht correctness-bug, quality-issue. Braucht keyword-review + evtl. confidence-scoring. Docstring-update als limit-doku oder keyword-rebuild. |
-| **§4g.4-COALESCE** | eval_id in ab_experiments ist "sticky" — re-backfill mit neuer eval_id updated nicht | 5 | Intentional per docstring, aber nicht dokumentierter limitation. Braucht docstring-hinweis in scorer + optional flag `force_eval_id_overwrite`. |
-| **@vercel/otel dev-mode doc** | Commit-comment für #46 tier-2 behauptet "needs prod build" — agent fand dev-mode läuft auch | 3 | Commit-msg misleading aber kein impl-bug. Journal-entry korrigieren wenn welle sich setzt. |
+| ID | Titel | Impact | Fix-sketch |
+|---|-------|--------|------------|
+| **F-G4-race** | A/B experiments INSERT/UPDATE fire-and-forget ordering-race | Low-prob silent-data-loss bei slow DB. Wenn INSERT-task (ab_row_id) nach UPDATE-task (routing_used) läuft → UPDATE findet keine row, no-ops. | Refactor zu `INSERT ... ON CONFLICT (id) DO UPDATE SET routing_used=EXCLUDED.routing_used, ...`. Files: `dispatcher.py` `_insert_ab_row()`, `router_node.py` `_mark_routing()`. ~1h. |
+| **F-G1-quality** | Smart_routing keyword-set enthält 20 common EN words | Nicht correctness bug, aber casual queries wie "what is the reason?" / "any options?" / "test this" schlagen in den keyword-filter → routing zu cheap-model wird blockiert → kostenoptimierung wirkungslos für viele prompts. | `smart_routing.py _COMPLEX_KEYWORDS` — review + entfernen: `reason`, `test`, `model`, `train`, `options`, `tool`, `tools`, `plan`, `design`, `review`, `strategy`, `risk`, `claim`, `evidence`, `prompt`, `inference`, `evaluate`, `compare`, `research`. Behalten: multi-word phrases wie `deep analysis`. ~30min. |
+| **F-4g4-COALESCE** | `scorer.score_session(eval_id=X)` — wenn row schon `harness_eval_id='A'` hat und X='B' kommt, COALESCE behält 'A' | Silent surprise für re-scoring workflow. Intentional (first-write-wins) aber nicht in docstring. | Option A: add explicit `force_eval_id_overwrite=False` param + docstring note. Option B: CONFLICT update eval_id too. Ich würde Option A — safer default. Files: `scorer.py`. ~20min. |
+| **F-@vercel-otel-doc** | Commit `d78ad68` msg sagt "@vercel/otel needs prod build" — verify fand: fires in dev auch | Doc-irritation only, no impl bug. Future reader könnte denken dev-mode bricht — aber tut es nicht. | Nächstes journal-entry korrigieren mit `ref d78ad68 — clarification: instrumentation.ts fires in both next dev and next build; the "needs prod build" remark was wrong`. 5min. |
 
 #### G) Pre-existing noise (nicht session-introduced, sichtbar aber leben-damit)
 
@@ -339,6 +381,107 @@ Entdeckt beim 2026-04-24 end-of-session status-check. Nicht blocking für aktuel
 - Completed items (siehe `superpower-impl-log.md` für vollen cluster-log mit commit-SHAs)
 - Paper-only ratifications (#70, #75, #77-80) — kein code-change, nur spec-state-update
 - Hotfixes der session (MCP 500, port collision) — schon in PR-history
+
+---
+
+## Process: Superpowers + exec-*.md sync workflow
+
+Dieser abschnitt ist **prozess-anleitung** für zukünftige sessions. Ziel: `specs/execution/exec-*.md` files bleiben truthful zum code-zustand, verify-gates akkumulieren über zeit statt zu zerfasern, neue exec-files folgen naming-convention.
+
+### 1. Exec-*.md files mit impl-stand synchronisieren
+
+**Trigger**: ein cluster von commits ist gelandet (nicht bei jedem einzel-commit, sonst noise-storm).
+
+**Rezept** (pro exec-file):
+
+```
+a) Read exec-NN-topic.md §Status, §Phase-*, §Verify-Gates sections
+b) Cross-ref specs/execution/superpower-impl-log.md §2.* cluster
+   → finde alle commit-SHAs die diesen exec touched haben
+c) Update exec file:
+   - §Status line: "ratified YYYY-MM-DD", "LANDED commit-SHA", "pending X"
+   - §Phase-N status markers: ✓ done / ○ in-progress / – deferred
+   - §Verify-Gates: ✓ gates mit commit-ref, ○ offene gates mit blocker-note
+   - §Dependencies: cross-ref zu anderen execs die seither gelandet sind
+d) Commit: "docs(exec-NN): sync with impl state through <SHA>"
+```
+
+**Wer macht das**: main-Claude, **NICHT** ein subagent. Subagents haben oft nicht context über cross-exec impact. Wenn unsicher: `Agent(subagent_type="sota-explore", prompt="find all commits touching exec-NN topic")` → vor-recherche, dann main macht sync.
+
+### 2. Neue verify-gates identifizieren
+
+**Wann**: nach jedem sota-verify run (wie der 5-agent run vom 2026-04-24).
+
+**Was in verify-gates gehört**:
+- Smoke-command + expected output (`curl ... | jq ...`)
+- Unit/integration test file + expected pass count
+- Cross-service probe wenn E2E (e.g. "POST /api/... → SELECT ... FROM ab_experiments zeigt row mit routing_used=true")
+
+**Was NICHT in verify-gates gehört**:
+- Lint/typecheck (das gehört CI config, nicht gate-doc)
+- "does it compile" (gate-noise, nichts specifisches)
+- "it looks good" (untestbar)
+
+**Format** (in jedem exec-NN-topic.md §Verify-Gates):
+
+```markdown
+## Verify-Gates
+
+### Gate 1: <name>
+- [x] Landed <commit-SHA>
+- Smoke: `curl -sS http://... -d '<payload>'` returns 200 + body contains `X`
+- Test: `uv run pytest tests/X.py::test_Y` — N/N pass
+- Expected observability: otel span `X` with attribute `Y=Z` visible in openobserve
+
+### Gate 2: ...
+```
+
+### 3. Naming-convention für neue exec-*.md files
+
+**Currently im repo** (inkonsistent):
+- `exec-NN-topic.md` (z.B. exec-05-nats-e2ee-pipeline.md, exec-17-observability-harness-traces.md)
+- `exec-topic.md` ohne nummer (z.B. exec-memory.md, exec-harness.md, exec-rust.md)
+- `exec2-NN-topic.md` (exec2-04-verify-gates.md — "exec round 2")
+- `exec-topic-YYYY-MM-DD.md` (exec-linux-setup-users-2026-04-17.md — date-stamped one-shots)
+
+**Vorschlag SOTA-naming** (geht nach vorne, keine breaking-renames bestehender):
+
+| Pattern | Wann | Beispiel |
+|---|---|---|
+| `exec-NN-topic.md` | Core execution slice mit phase-tracking | `exec-18-unified-agent-schema.md` |
+| `exec-topic.md` | Cross-cutting thema ohne fixe phasen (memory, harness, rust integration) | `exec-memory.md` |
+| `exec-topic-delta-YYYY-MM-DD.md` | Delta gegen ein ursprünglich-geplantes exec (z.B. re-scoping) | `exec-14-dspy-delta-2026-04-23.md` (ersetzt oder ergänzt exec-14-DSPy.md) |
+| `exec-topic-YYYY-MM-DD.md` | Date-stamped one-shots ohne follow-up (setup, migrations) | `exec-postgres-tuning-2026-04-17.md` |
+
+**Regel für "neues exec-file erstellen vs existing erweitern"**:
+
+- **Erweitern** existing wenn: neue phase / neue verify-gates eines existierenden topics, spec ist noch unter 2000 zeilen
+- **Neues file** wenn: topic über 2000 zeilen gewachsen, ODER andere primary audience (z.B. infra-team vs agent-team), ODER scope-grenzen anders (phase-2 statt phase-1)
+- **Delta-file** (`*-delta-*`) wenn: original exec bleibt gültig, aber ein spezifisches sub-scope wurde re-scoped (z.B. contrarian review änderte D-1..D-3 entscheidungen)
+- **Niemals**: tag- oder sprint-basierte files ("exec-sprint-5-agent.md" etc) — wird schnell chaos.
+
+**Archive-policy**: wenn ein file superseded wird (wie plan v1), banner setzen + keep file (history). Nur bei echtem dead-end-scope löschen.
+
+### 4. Superpower-subagents-cheat-sheet für spec-arbeit
+
+| Task | Subagent | Warum |
+|---|---|---|
+| "was ist in diesem exec schon impl-iert?" | `sota-explore` | schnell grep+read über viele files |
+| "plan eine neue phase für exec-NN" | `sota-plan` | architect-pattern mit critical-files |
+| "ist diese arch-entscheidung stabil?" | `sota-contrarian` | vor irreversiblem code — besonders bei ADRs |
+| "hat impl X die exec spec erfüllt?" | `sota-verify` | adversarial probing + test-runs |
+| "code-review post-landing" | `superpowers:code-reviewer` | standards + missing-tests audit |
+
+**Anti-pattern**: nicht sota-plan rufen um dann sota-verify zu rufen um dann sota-contrarian zu rufen. Zu viel roundtrip. Für normale features: main-Claude plant + implementiert + verify ruft 1-2 agents parallel am ende.
+
+### 5. Impl-log als source-of-truth für session-history
+
+`specs/execution/superpower-impl-log.md` ist der **temporäre rollup** (current: for this superpower session). Wenn er zu gross wird:
+
+- **Retire-signal**: wenn die meisten §2.* cluster-sektionen in ihre jeweiligen exec-*.md §Status gezogen wurden → breadcrumb-file hinterlassen (`docs/superpowers/findings/YYYY-MM-DD-impl-log-retired.md` mit "content distributed into exec-*, see git log for history") und impl-log löschen.
+- **Erneuern-signal**: wenn eine neue multi-day superpower-session startet → neuer impl-log `specs/execution/superpower-impl-log-YYYY-MM-DD.md`, alten archivieren.
+
+Dieser pattern vermeidet dass impl-log zum "zweiten journal" wird.
 
 ### Welche cluster vollständig durch sind (seit 2026-04-22)
 
