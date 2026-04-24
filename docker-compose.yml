@@ -428,6 +428,13 @@ services:
     command: ["--config=/etc/otel-collector.yaml"]
     volumes:
       - ./otel-collector.yaml:/etc/otel-collector.yaml:ro
+    # OPENOBSERVE_USER/PASSWORD/ORG reach the collector process via env so
+    # otel-collector.yaml's ${VAR} interpolation can resolve. These are the
+    # same values the openobserve container was booted with (root .env).
+    environment:
+      OPENOBSERVE_USER: ${OPENOBSERVE_USER:-admin@example.com}
+      OPENOBSERVE_PASSWORD: ${OPENOBSERVE_PASSWORD}
+      OPENOBSERVE_ORG: ${OPENOBSERVE_ORG:-default}
     ports:
       - "4317:4317"   # OTLP/gRPC
       - "4318:4318"   # OTLP/HTTP

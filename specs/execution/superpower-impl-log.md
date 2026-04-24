@@ -27,6 +27,7 @@
 | **P4 HITL + frontend integration** | 2026-04-23 nacht | ADR-004, skills-guard-drawer, files-tab unblock, CompressionIndicator, title-gen | `88bfc05` → `6b794e0` |
 | **P5 Memory-umbrella** | 2026-04-24 vormittag | 4-spec cross-check, Taxonomie compression/compaction/clear | `76c64b1` |
 | **P6 Bug-fixes + Plan-v2 Phase-2** | 2026-04-24 heute | MCP 500 + port-collision gefixt, #31–#34 A2UI voll gelandet | `cb284a2` → `e74caad` |
+| **P7 Observability strategy + #46 tier 1+2** | 2026-04-24 heute | env-layout entscheidung (root + service), OTel vs OpenObserve klarstellung, 3-tier model, #46 reframed um Next.js BFF (tier 2), tier 3 split als #92 | in-flight |
 
 ---
 
@@ -151,6 +152,29 @@ Taxonomie-klärung (session-output, im memory-system gespeichert):
 
 **Späteres ziel:** `exec-09-protocols-generative-ui.md §MCP-wiring` + `docker-compose.yml` comment-trail.
 
+### §2.I Observability strategy (#46 reframed + #92 split)
+
+Entscheidungen getroffen vor der impl (siehe findings):
+
+| Entscheidung | Findings-doc | Warum |
+|---|---|---|
+| Env-layout: root `.env` (compose interpolation) + service `.env`s (runtime) — **both, verschiedene scopes** | `2026-04-24-env-layout-decision.md` | Offizielles docker-compose model trennt interpolation von container-env. Nur-root oder nur-service scheitern an service-prozessen außerhalb compose. |
+| OTel vs OpenObserve klarstellung: OTel = vendor-neutral standard, OpenObserve = austauschbarer OTLP-receiver | `2026-04-24-observability-tier-strategy.md §1` | Swap zu Jaeger/Tempo/Datadog/Honeycomb = endpoint + auth-header change, kein code-change |
+| 3-tier model: backend (done ✓) + Next.js BFF (in #46) + browser RUM (in #92) | `2026-04-24-observability-tier-strategy.md §2` | Tiers 1+2 sind server-side mit gleichem pattern, tier 3 ist security-kritisch + eigenes scope |
+| Browser darf NIEMALS direct OTLP senden — BFF-proxy pattern | `2026-04-24-observability-tier-strategy.md §3` | Industry consensus (Grafana, Dash0, Groundcover, Elastic 2026): creds im bundle = leak via DevTools |
+
+#46 scope (revised):
+1. OpenObserve container recreate mit OPENOBSERVE_* aus root `.env`
+2. `go-appservice/.env.development` ergänzen mit OPENOBSERVE_* (der "echte bug")
+3. go-traces E2E smoke → openobserve UI zeigt span
+4. python-agent-traces E2E smoke
+5. **NEU**: Next.js BFF via `@vercel/otel` in `src/instrumentation.ts`
+6. Vendor-portability verify: keine direct OpenObserve-API-calls außerhalb OTel
+
+#92 (neu, folge-task): browser RUM via BFF-proxy (`/api/telemetry` route, CSP setup, opt-in, user-consent, browser SDK install). Nicht blocking, nice-to-have.
+
+**Späteres ziel:** `exec-17-observability-harness-traces.md §Phase-2`.
+
 ---
 
 ## §3 Infra, stack-flags, smoke results
@@ -224,8 +248,9 @@ Explizit geblockt durch sandbox-policy:
 
 | # | Titel | Status | Nächster schritt |
 |---|-------|--------|------------------|
-| **#46** | exec-17 Observability traces | pending | `--profile observability` stack starten + OTel/OpenObserve smoke |
-| **#91** | verify bug fixes e2e | pending | Frontend-prod-build + `/api/v1/mcp` via Go proxy smoke |
+| **#46** | exec-17 Observability traces (tiers 1+2) | in_progress | OpenObserve recreate → go-env ergänzen → go+python+BFF smoke |
+| **#91** | verify bug fixes e2e | in_progress | Frontend-prod-build ✓, MCP via Go proxy ✓, smoke komplett |
+| **#92** | exec-17 Tier-3 Browser RUM | pending | folge-task nach #46, separates scope (BFF-proxy, CSP, consent) |
 
 ### §4.C User-directives aktiv
 

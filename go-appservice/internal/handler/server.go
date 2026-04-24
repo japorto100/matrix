@@ -26,6 +26,7 @@ import (
 	"matrix/go-appservice/internal/storage"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
@@ -225,9 +226,17 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 		)
 	}
 
+	// exec-17 #46: wrap the mux in otelhttp so incoming HTTP requests get
+	// auto-traced (route, method, status, duration). No spans are produced
+	// when OTEL_ENABLED=false because the global TracerProvider is a noop.
+	var rootHandler http.Handler = s.hsTokenMiddleware(mux)
+	if os.Getenv("OTEL_ENABLED") == "true" {
+		rootHandler = otelhttp.NewHandler(rootHandler, "appservice")
+	}
+
 	s.httpServer = &http.Server{
 		Addr:         ":" + cfg.AppservicePort,
-		Handler:      s.hsTokenMiddleware(mux),
+		Handler:      rootHandler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		BaseContext:  func(_ net.Listener) context.Context { return context.Background() },

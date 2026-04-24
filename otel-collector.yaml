@@ -6,8 +6,8 @@
 extensions:
   basicauth/openobserve:
     client_auth:
-      username: root@example.com
-      password: Complexpass#123
+      username: ${OPENOBSERVE_USER}
+      password: ${OPENOBSERVE_PASSWORD}
 
 receivers:
   otlp:
