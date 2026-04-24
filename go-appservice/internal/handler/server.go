@@ -129,6 +129,11 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	// ── MCP Server Proxy (exec-09) ──────────────────────────────────────────
 	mux.HandleFunc("/api/v1/mcp/", agenthttp.McpProxyHandler(cfg.MCPServiceURL))
 
+	// ── A2UI Surfaces (plan-v2 Phase-2 #31) ────────────────────────────────
+	// Per-user widget-surface persistence. Backs usePersistentSurface.
+	// Requires shared pgxpool; 503 if PostgresDSN not configured.
+	mux.HandleFunc("/api/v1/surfaces/", agenthttp.SurfacesHandler(sharedPool))
+
 	// ── Control Surface Proxy (exec-15 Slice 7) ────────────────────────────
 	// Forward all /api/v1/control/* requests to Python Agent Service (:8094).
 	// Python side: agent/control/router.py exposes 54 routes (memory, episodes,
