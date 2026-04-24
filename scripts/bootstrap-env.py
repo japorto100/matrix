@@ -409,7 +409,7 @@ GO_GATEWAY_BASE_URL=http://127.0.0.1:8090
 NEXT_PUBLIC_MCP_URL=http://localhost:8090/api/v1/mcp
 
 # ─── LiveKit JWT Service (for Voice/Video Calls) ───────────────────────────
-NEXT_PUBLIC_LK_JWT_SERVICE_URL=http://localhost:8080
+NEXT_PUBLIC_LK_JWT_SERVICE_URL=http://localhost:8082
 
 # ─── Agent Namespace Prefix ────────────────────────────────────────────────
 NEXT_PUBLIC_MATRIX_AGENT_PREFIX=agent-
@@ -433,7 +433,7 @@ fe_merger_prod = fe_merger_dev.replace(
 ).replace(
     "http://localhost:8090", "http://go-appservice:8090"
 ).replace(
-    "http://localhost:8080", "http://lk-jwt:8080"
+    "http://localhost:8082", "http://lk-jwt:8080"
 ).replace(
     "# frontend_merger — Development (localhost)",
     "# frontend_merger — Production (container service-names)"

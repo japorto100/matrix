@@ -108,8 +108,8 @@ startup_check = true
 endpoint = "http://garage:3900"
 bucket = "matrix-media"
 region = "garage"
-key = "GKf1db02b2c9b15a5b99e69d44"    # garage-managed
-secret = "1f4f755673a956d435f17d654cd04d589d6566624cf5079a34057455b90fc17a" # garage-managed
+key = "GK8b0fe0ac1c6ba2e42d880bb2"    # garage-managed
+secret = "b4c0dd8e052d0945e5a2af426247114a17cc27f3ba9ec2accc6a1614d80ef57c" # garage-managed
 base_path = "tuwunel-v1.6/"
 use_https = false
 use_payload_signatures = true
@@ -160,29 +160,19 @@ client = "http://localhost:8448"
 server = "localhost:8448"
 
 # ─── MatrixRTC / LiveKit ─────────────────────────────────────────────────────
-# lk-jwt-service läuft im compose (Port 8080 auf host gemapped).
+# lk-jwt-service läuft im compose (Host :8082 → Container :8080). Host-port
+# war :8080, kollidierte mit opensandbox-api-gateway unter profile sandbox.
 [[global.well_known.rtc_transports]]
 type = "livekit"
-livekit_service_url = "http://localhost:8080"
+livekit_service_url = "http://localhost:8082"
 
-# ─── Appservice: Go Appservice (Trading Agent) ───────────────────────────────
-# v1.6 Breaking: explicit id field required and must match TOML section key.
-# Vorher (v1.5) wurde der Section-Name implizit als id uebernommen.
+# ─── Appservice: via admin-command (tuwunel-native) ──────────────────────────
+# Tuwunel v1.6.0 stable hat bugs mit inline-config und `appservice_dir`-auto-load
+# (partial-parsing: as_token wird geladen, namespace-regex nicht → M_EXCLUSIVE).
 #
-# Go-Appservice läuft LOKAL (nicht im compose) — via host.containers.internal.
-# Tokens aus go-appservice/.env.development (MATRIX_AS_TOKEN / MATRIX_HS_TOKEN).
-[global.appservice.trading-agent]
-id = "trading-agent"
-url = "http://host.containers.internal:8090"
-as_token = "a95a7500ff11932501a7a7edb230f97851a3a3fa30eefd34dfcd939d99a32bc2"
-hs_token = "870c5b1e91dff748fefafa24a2e34b17a36aaadd7b605780c1c963b8dcb80da2"
-sender_localpart = "appservice-bot"
-rate_limited = false
-
-[[global.appservice.trading-agent.namespaces.users]]
-exclusive = true
-regex = "@agent-.*:matrix\\.local"
-
-[[global.appservice.trading-agent.namespaces.users]]
-exclusive = true
-regex = "@appservice-bot:matrix\\.local"
+# Workaround: appservice wird dynamic registriert via admin-command in der
+# #admins room von alice (first-user-admin). Siehe scripts/register-appservice.sh
+# (ruft !admin appservices register mit registration.yaml content auf).
+#
+# Yaml bleibt homeserver/appservices/registration.yaml als single-source.
+# Keine inline [global.appservice.X]-section → verhindert duplicate-id-conflict.

@@ -34,18 +34,32 @@ from agent.working_memory import (  # noqa: E402
 )
 from shared import create_service_app  # noqa: E402
 
-app = create_service_app("agent-service")
+# exec-09 / exec-17: MCP sub-apps need their lifespan wired through to the
+# parent app — otherwise StreamableHTTPSessionManager never initialises and
+# every MCP request 500s. Build sub-apps first, thread their lifespans via
+# a combined context-manager, then pass it to create_service_app().
+from contextlib import AsyncExitStack, asynccontextmanager  # noqa: E402
 
-# exec-09: MCP Server als Sub-App mounten (gleicher Port wie Agent Service)
 from agent.mcp_server import create_mcp_server  # noqa: E402
 from agent.mcp_traces import create_trace_mcp_server  # noqa: E402
 
 _mcp = create_mcp_server()
-app.mount("/mcp", _mcp.streamable_http_app())
-
-# exec-17: MCP Trace Server for Claude Code trace inspection
 _trace_mcp = create_trace_mcp_server()
-app.mount("/mcp-traces", _trace_mcp.streamable_http_app())
+_mcp_app = _mcp.streamable_http_app()
+_trace_mcp_app = _trace_mcp.streamable_http_app()
+
+
+@asynccontextmanager
+async def _lifespan(_app):
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(_mcp_app.router.lifespan_context(_app))
+        await stack.enter_async_context(_trace_mcp_app.router.lifespan_context(_app))
+        yield
+
+
+app = create_service_app("agent-service", lifespan=_lifespan)
+app.mount("/mcp", _mcp_app)
+app.mount("/mcp-traces", _trace_mcp_app)
 
 # ABP.2c: close shared httpx client on shutdown to release connections cleanly.
 from agent.http_client import close_client as _close_http_client  # noqa: E402

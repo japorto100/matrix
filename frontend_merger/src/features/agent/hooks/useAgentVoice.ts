@@ -26,9 +26,12 @@ export interface UseAgentVoiceReturn {
 	leaveVoice: () => Promise<void>;
 }
 
-const LK_JWT_SERVICE_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL ?? "http://localhost:8080";
+const LK_JWT_SERVICE_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL;
 
 async function fetchVoiceToken(threadId: string): Promise<{ token: string; url: string }> {
+	if (!LK_JWT_SERVICE_URL) {
+		throw new Error("NEXT_PUBLIC_LK_JWT_SERVICE_URL not configured");
+	}
 	const res = await fetch(`${LK_JWT_SERVICE_URL}/sfu/get`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },

@@ -42,8 +42,7 @@ export interface UseMatrixRTCCallReturn {
 	leaveCall: () => Promise<void>;
 }
 
-/** Env fallback for lk-jwt-service URL (Dev: localhost, Prod: hinter Reverse Proxy) */
-const LK_JWT_ENV_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL ?? "http://localhost:8080";
+const LK_JWT_ENV_URL = process.env.NEXT_PUBLIC_LK_JWT_SERVICE_URL;
 
 /**
  * Holt ein LiveKit JWT vom lk-jwt-service.
@@ -55,6 +54,9 @@ async function fetchLivekitToken(
 	roomId: string,
 ): Promise<{ token: string; url: string }> {
 	const serviceUrl = client.getLivekitServiceURL() ?? LK_JWT_ENV_URL;
+	if (!serviceUrl) {
+		throw new Error("NEXT_PUBLIC_LK_JWT_SERVICE_URL not configured");
+	}
 	const openIdToken = await client.getOpenIdToken();
 	const res = await fetch(`${serviceUrl}/sfu/get`, {
 		method: "POST",

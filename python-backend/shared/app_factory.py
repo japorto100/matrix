@@ -132,9 +132,19 @@ def _init_otel(app: FastAPI, title: str) -> None:
         pass  # OTel packages optional — service starts without tracing
 
 
-def create_service_app(title: str, version: str = "0.1.0") -> FastAPI:
-    """Create FastAPI app with request logging and optional OTel middleware."""
-    app = FastAPI(title=title, version=version)
+def create_service_app(
+    title: str,
+    version: str = "0.1.0",
+    *,
+    lifespan=None,
+) -> FastAPI:
+    """Create FastAPI app with request logging and optional OTel middleware.
+
+    ``lifespan`` allows callers to thread sub-app lifespans through the
+    parent — required for FastMCP streamable-HTTP sub-apps whose
+    ``session_manager`` only runs during the app lifespan.
+    """
+    app = FastAPI(title=title, version=version, lifespan=lifespan)
 
     # OTel init — centralized, opt-in via OTEL_ENABLED=true
     _init_otel(app, title)

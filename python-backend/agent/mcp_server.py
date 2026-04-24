@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(
     "trading-agent",
     instructions="Trading Agent MCP Server — provides market data, chart state, portfolio, and memory tools.",
+    # Mount FastMCP's streamable-HTTP endpoint at "/" so the effective path
+    # after app.mount("/mcp", ...) in agent/app.py is /mcp/ (not /mcp/mcp/).
+    streamable_http_path="/",
 )
 
 

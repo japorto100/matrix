@@ -1,5 +1,15 @@
 # Matrix Stack — podman-compose / docker-compose
 # ---------------------------------------------------------------------------
+# !!! WICHTIGER HDD-PERFORMANCE-HINWEIS FÜR PODMAN (SOTA 2026) !!!
+# Podman-Graphroot (System-Images) liegt auf der schnellen SSD (~/.local/share/containers).
+# Belassen Sie flüchtige Caches (z.B. Redis) als benannte SSD-Volumes.
+# Wenn Container RIESIGE DATENMENGEN (z.B. Postgres, Media-Uploads, Backups) erzeugen,
+# MÜSSEN Sie diese per "Bind-Mount" explizit auf die langsame, aber große HDD auslagern,
+# um die 120GB SSD vor I/O-Tod zu bewahren!
+# Beispiel für HDD-Bind-Mount:
+# volumes:
+#   - /mnt/cold-storage/matrix_db_data:/var/lib/postgresql/data
+# ---------------------------------------------------------------------------
 # Dev (Standard): infra-only — Homeserver + NATS + Postgres + SeaweedFS (+LiteLLM opt).
 #   podman-compose up -d   →  tuwunel, nats, postgres, seaweedfs
 # Go/Python/Next.js laufen NICHT im Container, sondern lokal via `scripts/dev-stack.sh`.
@@ -35,18 +45,13 @@ services:
     container_name: tuwunel
     volumes:
       - ./homeserver/${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}:/etc/tuwunel/tuwunel.toml:ro
+      - ./homeserver/appservices:/etc/tuwunel/appservices:ro
       - tuwunel-data:/var/lib/tuwunel
     ports:
       - "8448:8448"
     command: ["--config", "/etc/tuwunel/tuwunel.toml"]
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8448/_matrix/client/versions"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # ── NATS (Message Queue) ─────────────────────────────────────────────────
+    # ── NATS Message Bus ─────────────────────────────────────────────────────
   nats:
     image: nats:2-alpine
     container_name: nats
@@ -145,7 +150,7 @@ services:
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:4000/health\")' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -155,8 +160,8 @@ services:
   # ── OpenSandbox (Alibaba) — Code Execution, exec-12, Port 8080 ───────────
   # Starten: podman-compose --profile sandbox up -d opensandbox-server
   opensandbox-server:
-    image: opensandbox/opensandbox-server:latest
-    container_name: opensandbox-server
+    image: opensandbox/server:latest
+    container_name: opensandbox-api-gateway
     volumes:
       - ./python-backend/agent/sandbox/sandbox-config.toml:/etc/opensandbox/config.toml:ro
       - ${CONTAINER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
@@ -168,7 +173,7 @@ services:
     profiles:
       - sandbox
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -340,10 +345,12 @@ services:
   # Matrix Homeserver bezieht LiveKit-Tokens von diesem Service (:8080).
   # Frontend-ENV: NEXT_PUBLIC_LK_JWT_SERVICE_URL=http://localhost:8080
   lk-jwt-service:
-    image: ghcr.io/livekit/lk-jwt-service:latest
+    image: ghcr.io/element-hq/lk-jwt-service:latest
     container_name: lk-jwt
+    # Host :8082 to avoid collision with opensandbox-api-gateway (:8080,
+    # profile sandbox). Container-internal port stays 8080.
     ports:
-      - "8080:8080"
+      - "8082:8080"
     environment:
       - LIVEKIT_URL=ws://livekit-server:7880
       - LIVEKIT_KEY=${LIVEKIT_API_KEY:-devkey}
@@ -505,7 +512,7 @@ services:
   # podman-compose --profile pooler up -d pgbouncer
   # ─────────────────────────────────────────────────────────────────────────
   pgbouncer:
-    image: edoburu/pgbouncer:1.24.1-p1
+    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer
     environment:
       DB_HOST: postgres

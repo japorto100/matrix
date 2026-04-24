@@ -31,7 +31,7 @@
     },
     "matrix-traces": {
       "type": "sse",
-      "url": "http://127.0.0.1:8094/mcp-traces/mcp"
+      "url": "http://127.0.0.1:8094/mcp-traces/"
     }
   }
 }

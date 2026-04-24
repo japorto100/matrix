@@ -37,6 +37,8 @@ trace_mcp = FastMCP(
         "trace_search to find patterns across sessions, and harness_config "
         "to see the current agent setup."
     ),
+    # Effective path after app.mount("/mcp-traces", ...) is /mcp-traces/.
+    streamable_http_path="/",
 )
 
 
