@@ -237,28 +237,79 @@ oder zusätzliche compose-profiles.
 
 ---
 
-## Post-session state — 2026-04-24 update
+## Post-session state — 2026-04-24 update (voll-katalog, FINAL)
 
 Zwischen dem 2026-04-22 handoff und jetzt wurden **die meisten items gelandet**
 (siehe `specs/execution/superpower-impl-log.md` für den vollen cluster-log).
-Was **nach der 2026-04-24 observability-session** noch wirklich offen ist:
+Nach der 2026-04-24 observability-session + 5-agent adversarial verify +
+13 fixes in `d4b4432` ist **Plan v2 als DONE markiert**, v1 als SUPERSEDED.
 
-### Truly open — nicht blocking, aber nicht erledigt
+Was **jetzt wirklich noch offen ist** (alles — keine kategorien-diskriminierung):
 
-Stand **2026-04-24 nach `d78ad68`** (tier-2 BFF traces gelandet):
+### Truly open — alle kategorien, 2026-04-24 FINAL
 
-| # | Titel | Status | Blocker | Nächster schritt |
-|---|-------|--------|---------|------------------|
-| **#38** | exec2-04 B1 E2EE base functionality | pending | cinny/element + registered users (browser-client test-rig) | Browser-client setup bauen |
-| **#39** | exec2-04 B2 cross-signing + QR flow | pending | wie #38 | nach #38 |
-| **#40** | exec2-04 B3 key backup | pending | wie #38 | nach #38 |
-| **#51** | exec-10 multi-agent + exec-11 memory evolution live-test | pending | browser-client E2E | browser-rig |
-| **#60** | exec-05 A4 NATS E2EE E2E-test | pending | browser-client | nach #38-40 |
-| **#61** | exec-10 A2A live-test (HOT) | pending | browser-client | nach #38-40 |
-| **#74** | exec-14 PDDL formal-planning | **user-skip** | user entscheidung "kein PDDL vorerst" | — |
-| **#76** | exec-ebm energy-based scoring | **user-skip** | user entscheidung "kein EBM vorerst" | — |
-| **#82** | exec-matrix-monitor monthly upstream check | **recurring** (in_progress) | natur-by-design | bleibt in_progress, monatlicher check |
-| **#92** | exec-17 Tier-3 Browser RUM via BFF-proxy | pending (neu) | kein blocker, nice-to-have | nach bedarf; separates scope (BFF-proxy, CSP, consent, browser SDK) |
+Stand **post `d4b4432`** (5-agent verify + 13 fixes gelandet):
+
+#### A) Plan v2 Phase-2 gaps (extrahiert aus v2 "Deferred" sektion)
+
+| # | Titel | Prio | Scope |
+|---|-------|------|-------|
+| **#93** | Custom A2UI catalog-extension (ChartWidget/PortfolioCard via `createReactComponent`) | mittel | Heute rendern ChartWidget + PortfolioCard via `ToolOutputRenderer` als tool-result-workaround. Ziel: wrap als first-class A2UI v0.9 catalog-entries in A2uiProvider, so dass `A2UIRenderer` sie native mountet. Unblockt native agent-emission. |
+| **#94** | Matrix-chat CopilotKit integration (exec-10 tie-in) | niedrig | CopilotKit ist heute nur in agent-chat (AgentProviders). Ziel: mount in matrix-chat `/matrix` route damit matrix-user AG-UI actions triggern können. |
+| **#95** | Route consolidation into /control/* | niedrig | Heute: `/matrix`, `/files/[[...tab]]`, `/memory/[[...tab]]`, `/control/[[...tab]]` separat. Plan-v2 wollte `/control/*` als einziges admin-tab-system. UX-entscheidung, kein funktionaler value. |
+
+#### B) Browser-client blocked — server-side ready, brauchen Playwright+cinny/element rig
+
+Alle 6 teilen den gleichen blocker: matrix-js-sdk browser-client + registered test-users. Ein-mal aufwand (E2E test-rig bauen) entsperrt alle 6 gleichzeitig.
+
+| # | Titel | Scope |
+|---|-------|-------|
+| **#38** | exec2-04 B1 E2EE base functionality | Verschlüsselter 1-1 chat zwischen registrierten usern |
+| **#39** | exec2-04 B2 Cross-Signing + QR flow | Device verification via QR |
+| **#40** | exec2-04 B3 Key backup | Rescue-key + server-side key-backup |
+| **#51** | exec-10 multi-agent + exec-11 memory evolution | E2E-test der parallelen agent-orchestration + memory-scope-isolation |
+| **#60** | exec-05 A4 NATS E2EE E2E-test | E2EE message-flow Tuwunel → NATS → Agent → E2EE back |
+| **#61** | exec-10 A2A live-test (HOT) | Agent-to-agent protocol roundtrip (nicht nur NATS fanout) |
+
+#### C) User-skip (explizit deferred durch user)
+
+| # | Titel | Warum skip |
+|---|-------|------------|
+| **#74** | exec-14 PDDL formal-planning | User: "kein PDDL vorerst" (2026-04-23) |
+| **#76** | exec-ebm energy-based scoring | User: "kein EBM vorerst" (2026-04-23) |
+
+#### D) Recurring / by-design
+
+| # | Titel | Typ |
+|---|-------|-----|
+| **#82** | exec-matrix-monitor monthly upstream check | recurring, bleibt in_progress-status |
+
+#### E) Follow-ups aus observability-session (#46 tier-3)
+
+| # | Titel | Prio | Warum separat |
+|---|-------|------|---------------|
+| **#92** | exec-17 Tier-3 Browser RUM via BFF-proxy | niedrig | Nicht-blocking. Backend-observability (tier 1+2) reicht für ops. Browser-RUM hat security-implikationen (creds-safety) + braucht CSP/CORS/consent-setup + privacy-decision. Eigenes scope. |
+
+#### F) Verify-findings ungefixt (dokumentiert in commit `d4b4432`)
+
+Die 5-agent verify (2026-04-24) hat 17 issues gefunden, 13 davon sofort gefixt. Die verbleibenden 4 sind in einem der folge-runs zu adressieren:
+
+| ID | Titel | Agent | Warum nicht sofort gefixt |
+|---|-------|-------|---------------------------|
+| **G4-race** | A/B experiments INSERT/UPDATE fire-and-forget ordering-race | 2 | Low-probability silent-data-loss bei slow DB. Fix braucht ON CONFLICT DO UPDATE refactor in `dispatcher.py` + `router_node.py`. Eigenes ticket. |
+| **G1-quality** | 20 common EN keywords im smart_routing → false-positives ("reason", "test", "train", "model", "options" etc) | 2 | Nicht correctness-bug, quality-issue. Braucht keyword-review + evtl. confidence-scoring. Docstring-update als limit-doku oder keyword-rebuild. |
+| **§4g.4-COALESCE** | eval_id in ab_experiments ist "sticky" — re-backfill mit neuer eval_id updated nicht | 5 | Intentional per docstring, aber nicht dokumentierter limitation. Braucht docstring-hinweis in scorer + optional flag `force_eval_id_overwrite`. |
+| **@vercel/otel dev-mode doc** | Commit-comment für #46 tier-2 behauptet "needs prod build" — agent fand dev-mode läuft auch | 3 | Commit-msg misleading aber kein impl-bug. Journal-entry korrigieren wenn welle sich setzt. |
+
+#### G) Pre-existing noise (nicht session-introduced, sichtbar aber leben-damit)
+
+- **Typos-warnings auf deutsche docstrings** (`ein`, `ist`, `oder`, `Prueft`) — braucht `[default.extend-words]` allowlist in `.typos.toml` wenn wir typos als CI-gate einbauen.
+
+#### Kategorisch NICHT auf dieser liste:
+
+- Completed items (siehe `superpower-impl-log.md` für vollen cluster-log mit commit-SHAs)
+- Paper-only ratifications (#70, #75, #77-80) — kein code-change, nur spec-state-update
+- Hotfixes der session (MCP 500, port collision) — schon in PR-history
 
 ### Welche cluster vollständig durch sind (seit 2026-04-22)
 
@@ -274,9 +325,11 @@ Stand **2026-04-24 nach `d78ad68`** (tier-2 BFF traces gelandet):
 
 ### Was als NÄCHSTE session gut wäre
 
-1. **Browser-client E2E test-rig bauen** (unblockt #38, #39, #40, #51, #60, #61 gleichzeitig). Pattern: Playwright + cinny/element setup + programmatic test user registration. 1x aufwand, 6 tasks gewinnen.
-2. **#92 tier-3 browser RUM** — wenn observability-visibility aus BFF nicht reicht. Nicht urgent.
-3. **#46 polish items** — W3C traceparent cross-service propagation reparieren (BFF, go, python haben derzeit separate trace_ids). Siehe note in commit `d78ad68`.
+1. **Browser-client E2E test-rig bauen** (unblockt #38, #39, #40, #51, #60, #61 gleichzeitig — 6 items für einmal aufwand). Pattern: Playwright + cinny/element setup + programmatic test user registration.
+2. **#93 custom A2UI catalog-extension** (Plan v2 Phase-2 gap, mittel-priorität, user-sichtbar — ChartWidget/PortfolioCard als first-class A2UI widgets statt tool-output-workaround).
+3. **Verify-follow-ups F** (G4 race, G1 keyword review, §4g.4 COALESCE docstring) — quick-win tickets.
+4. **#92 tier-3 browser RUM** — niedrig priorisiert, nur wenn BFF-tier-2 nicht reicht.
+5. **#94 Matrix-chat CopilotKit + #95 route consolidation** — beide UX-entscheidungen, kein funktionaler driver.
 
 ### Archive pointer für 2026-04-24 arbeit
 

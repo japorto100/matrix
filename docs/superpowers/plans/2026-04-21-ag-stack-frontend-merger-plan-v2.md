@@ -1,5 +1,32 @@
 # Agentic-Stack Frontend Merger Implementation Plan v2
 
+> **STATUS: COMPLETED — 2026-04-24.** Phase-1 (Tasks 0-15) landed
+> before superpower-session. Phase-2 (4 of 7 deferred items) landed in
+> this session: #31 Postgres surfaces, #32 Ansatz X native SSE packets,
+> #33 a2ui-agent-sdk Python install, #34 live-data binding. Remaining
+> 3 Phase-2 gap items extracted as tasks #93 / #94 / #95:
+>
+> - **#93** Custom A2UI widget-catalog (wrap ChartWidget + PortfolioCard
+>   via `createReactComponent` so they become first-class v0.9 catalog
+>   entries instead of tool-result workarounds via ToolOutputRenderer).
+> - **#94** Matrix-chat CopilotKit integration (mount CopilotKit in
+>   `/matrix` route so matrix-chat users can trigger AG-UI actions too
+>   — exec-10 tie-in).
+> - **#95** Route consolidation (consider bundling `/matrix`, `/files`,
+>   `/memory` under `/control/*` as admin-tab system — UX-decision, no
+>   functional value, lowest priority).
+>
+> Full task-list state + open-items breakdown is the authoritative
+> `docs/superpowers/findings/2026-04-22-open-tasks.md §Post-session
+> state — 2026-04-24 update`. Supersedes v1 at
+> `2026-04-21-ag-stack-frontend-merger-plan.md` (marked SUPERSEDED).
+>
+> Adversarial verify (2026-04-24, 5 parallel sota-verify agents) +
+> 13 fixes in commit `d4b4432` closed the functional/CI issues the
+> agents found. Remaining verify-findings (G4 INSERT/UPDATE race, G1
+> keyword FP-rate, COALESCE sticky eval_id) are tracked in the same
+> post-session open-tasks section.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire CopilotKit hooks (provider-agnostic, no UI mounted) + A2UI v0.9 widget-rendering (chat-inline + standalone main-canvas) into `frontend_merger/`, with persistent surfaces, new TopBar buttons (Files + Memory), and a virtual `render_a2ui_surface` tool on the python-agent side (Ansatz Y-first).

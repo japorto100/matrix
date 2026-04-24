@@ -1,5 +1,22 @@
 # Agentic-Stack Frontend Merger Implementation Plan
 
+> **STATUS: SUPERSEDED** by [`2026-04-21-ag-stack-frontend-merger-plan-v2.md`](./2026-04-21-ag-stack-frontend-merger-plan-v2.md).
+>
+> Contrarian review (2026-04-22) produced v2 with 3 MAJOR mitigations:
+> - G1 LiteLLM handshake smoke added as Task 0 (catch provider-gateway
+>   breakage before wiring anything else)
+> - A2UI tree-validation-before-render (Task 4 guard)
+> - `usePersistentSurface` Phase-1 (localStorage) / Phase-2 (BFF+Postgres)
+>   split so Phase-1 lands without blocking on go-appservice routes
+>
+> **v2 itself is COMPLETED as of 2026-04-24.** Phase-1 Tasks 0-15 done,
+> Phase-2 4 of 7 items landed (#31-34 surfaces/SSE/SDK/binding), remaining
+> 3 gap-items extracted as tasks **#93 / #94 / #95** (see
+> `docs/superpowers/findings/2026-04-22-open-tasks.md §Post-session state`).
+>
+> **Do not execute this v1 file** — content is a superset of v2 but
+> without the mitigations. Reference v2 for the authoritative plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire CopilotKit hooks (provider-agnostic, no UI mounted) + A2UI v0.9 widget-rendering (chat-inline + standalone main-canvas) into `frontend_merger/`, with persistent surfaces, new TopBar buttons (Files + Memory), and a virtual `render_a2ui_surface` tool on the python-agent side (Ansatz Y-first).
