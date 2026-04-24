@@ -110,6 +110,7 @@ dependencies = [
     # ── Langfuse (exec-17 Phase 3: LLM Observability) ──────────────────────
     # Opt-in via LANGFUSE_ENABLED=true — see agent/langfuse_tracker.py
     "langfuse>=2.40.0",
+    "a2ui-agent-sdk>=0.2.1",
 ]
 
 [dependency-groups]
