@@ -27,7 +27,7 @@
 | **P4 HITL + frontend integration** | 2026-04-23 nacht | ADR-004, skills-guard-drawer, files-tab unblock, CompressionIndicator, title-gen | `88bfc05` → `6b794e0` |
 | **P5 Memory-umbrella** | 2026-04-24 vormittag | 4-spec cross-check, Taxonomie compression/compaction/clear | `76c64b1` |
 | **P6 Bug-fixes + Plan-v2 Phase-2** | 2026-04-24 heute | MCP 500 + port-collision gefixt, #31–#34 A2UI voll gelandet | `cb284a2` → `e74caad` |
-| **P7 Observability strategy + #46 tier 1+2** | 2026-04-24 heute | env-layout entscheidung (root + service), OTel vs OpenObserve klarstellung, 3-tier model, #46 reframed um Next.js BFF (tier 2), tier 3 split als #92 | in-flight |
+| **P7 Observability strategy + #46 tier 1+2** | 2026-04-24 heute | env-layout entscheidung (root + service), OTel vs OpenObserve klarstellung, 3-tier model, #46 reframed um Next.js BFF (tier 2), tier 3 split als #92 | `d1454a4` + `d78ad68` — **landed** |
 
 ---
 
@@ -164,16 +164,26 @@ Entscheidungen getroffen vor der impl (siehe findings):
 | Browser darf NIEMALS direct OTLP senden — BFF-proxy pattern | `2026-04-24-observability-tier-strategy.md §3` | Industry consensus (Grafana, Dash0, Groundcover, Elastic 2026): creds im bundle = leak via DevTools |
 
 #46 scope (revised):
-1. OpenObserve container recreate mit OPENOBSERVE_* aus root `.env`
-2. `go-appservice/.env.development` ergänzen mit OPENOBSERVE_* (der "echte bug")
-3. go-traces E2E smoke → openobserve UI zeigt span
-4. python-agent-traces E2E smoke
-5. **NEU**: Next.js BFF via `@vercel/otel` in `src/instrumentation.ts`
-6. Vendor-portability verify: keine direct OpenObserve-API-calls außerhalb OTel
+1. ✅ OpenObserve container recreate mit OPENOBSERVE_* aus root `.env` (commit `d1454a4`)
+2. ✅ `go-appservice/.env.development` ergänzen — aber dann doch obsolet weil wir durch den collector routen (creds an collector container env). Kept commented für direct-mode switch.
+3. ✅ **go-traces E2E smoke** → openobserve UI zeigt `matrix-appservice` spans (otelhttp middleware hinzugefügt in `server.go` — das war der **echte impl-gap**, go hatte OTel-init aber keinen handler-wrap → silent no-traces)
+4. ✅ **python-agent-traces E2E smoke** → openobserve zeigt `agent-service` spans (FastAPIInstrumentor war schon da, nur `.env.development` hatte `OTEL_ENABLED=false`)
+5. ✅ **Next.js BFF via `@vercel/otel`** (commit `d78ad68`) — `frontend_merger/src/instrumentation.ts`, opt-in, routed via :4318 (HTTP OTLP, @vercel/otel default ist HTTP nicht gRPC — gotcha dokumentiert)
+6. ✅ Vendor-portability verify: keine direct OpenObserve-API-calls außerhalb OTel path (nur für ops-queries via curl in session)
 
-#92 (neu, folge-task): browser RUM via BFF-proxy (`/api/telemetry` route, CSP setup, opt-in, user-consent, browser SDK install). Nicht blocking, nice-to-have.
+**Final smoke verdict (nach commit `d78ad68`):**
 
-**Späteres ziel:** `exec-17-observability-harness-traces.md §Phase-2`.
+| Service | Spans | Path |
+|---|---|---|
+| `matrix-appservice` (go) | 45 | otelhttp → collector :4317 → openobserve |
+| `agent-service` (python) | 180 | FastAPIInstrumentor → collector :4317 → openobserve |
+| `frontend-merger-bff` (Next.js) | 90 | @vercel/otel → collector :4318 → openobserve |
+
+**Offene polish-items** (nicht blocking):
+- W3C traceparent cross-service propagation — BFF und go haben separate trace_ids, propagation-link muss fine-getuned werden (propagator ist TraceContext auf allen 3 — wahrscheinlich fetch-instrumentation-config). Tracked als #46-close-out-polish.
+- Tier 3 browser RUM → **`#92`** (separate task, BFF-proxy pattern für creds-safety).
+
+**Späteres ziel:** `exec-17-observability-harness-traces.md §Phase-2` + `§verify-gates` (prod-build-only for @vercel/otel documented).
 
 ---
 
@@ -244,13 +254,13 @@ Explizit geblockt durch sandbox-policy:
 | **#76** | exec-ebm energy-based scoring | **user-skip** | — |
 | **#82** | exec-matrix-monitor monthly upstream check | **recurring** | bleibt in_progress |
 
-### §4.B Tasks die noch dran sind (in dieser session-arbeit)
+### §4.B Tasks die in dieser session bearbeitet wurden
 
-| # | Titel | Status | Nächster schritt |
-|---|-------|--------|------------------|
-| **#46** | exec-17 Observability traces (tiers 1+2) | in_progress | OpenObserve recreate → go-env ergänzen → go+python+BFF smoke |
-| **#91** | verify bug fixes e2e | in_progress | Frontend-prod-build ✓, MCP via Go proxy ✓, smoke komplett |
-| **#92** | exec-17 Tier-3 Browser RUM | pending | folge-task nach #46, separates scope (BFF-proxy, CSP, consent) |
+| # | Titel | Status | Commits |
+|---|-------|--------|---------|
+| **#46** | exec-17 Observability traces (tiers 1+2) | ✅ completed | `d1454a4` (tier-1 go) + `d78ad68` (tier-2 BFF) |
+| **#91** | verify bug fixes e2e | ✅ completed | implicit (MCP `/mcp/` 200 + lk-jwt :8082 verifiziert im run-up) |
+| **#92** | exec-17 Tier-3 Browser RUM | pending (neu) | folge-task, separates scope (BFF-proxy, CSP, consent) |
 
 ### §4.C User-directives aktiv
 

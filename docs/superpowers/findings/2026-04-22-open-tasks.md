@@ -234,3 +234,54 @@ oder zusätzliche compose-profiles.
 - `specs/execution/EXECUTION-ORDER.md` — cluster playbook
 
 **Last-commit-dieses-handoffs:** pushed to `origin/main` @ `8596757`
+
+---
+
+## Post-session state — 2026-04-24 update
+
+Zwischen dem 2026-04-22 handoff und jetzt wurden **die meisten items gelandet**
+(siehe `specs/execution/superpower-impl-log.md` für den vollen cluster-log).
+Was **nach der 2026-04-24 observability-session** noch wirklich offen ist:
+
+### Truly open — nicht blocking, aber nicht erledigt
+
+Stand **2026-04-24 nach `d78ad68`** (tier-2 BFF traces gelandet):
+
+| # | Titel | Status | Blocker | Nächster schritt |
+|---|-------|--------|---------|------------------|
+| **#38** | exec2-04 B1 E2EE base functionality | pending | cinny/element + registered users (browser-client test-rig) | Browser-client setup bauen |
+| **#39** | exec2-04 B2 cross-signing + QR flow | pending | wie #38 | nach #38 |
+| **#40** | exec2-04 B3 key backup | pending | wie #38 | nach #38 |
+| **#51** | exec-10 multi-agent + exec-11 memory evolution live-test | pending | browser-client E2E | browser-rig |
+| **#60** | exec-05 A4 NATS E2EE E2E-test | pending | browser-client | nach #38-40 |
+| **#61** | exec-10 A2A live-test (HOT) | pending | browser-client | nach #38-40 |
+| **#74** | exec-14 PDDL formal-planning | **user-skip** | user entscheidung "kein PDDL vorerst" | — |
+| **#76** | exec-ebm energy-based scoring | **user-skip** | user entscheidung "kein EBM vorerst" | — |
+| **#82** | exec-matrix-monitor monthly upstream check | **recurring** (in_progress) | natur-by-design | bleibt in_progress, monatlicher check |
+| **#92** | exec-17 Tier-3 Browser RUM via BFF-proxy | pending (neu) | kein blocker, nice-to-have | nach bedarf; separates scope (BFF-proxy, CSP, consent, browser SDK) |
+
+### Welche cluster vollständig durch sind (seit 2026-04-22)
+
+- ✅ **ADR-001 Smart-Routing rollout gate** — G1-G6 + P1 alle landed
+- ✅ **ADR-002 Tracing/Audit parallel stores**
+- ✅ **ADR-003 exec-14 DSPy-track gating**
+- ✅ **ADR-004 Sandbox-HITL surface-dialog**
+- ✅ **Plan v2 Phase-2 (A2UI)** — #31 Postgres surfaces + #32 Ansatz X SSE + #33 a2ui-agent-sdk + #34 live-data binding (alle 4 landed 2026-04-24)
+- ✅ **exec-17 Observability tier 1+2** — go + python + Next.js BFF traces in OpenObserve
+- ✅ **Bug fixes** — FastMCP /mcp/ 500, lk-jwt port collision (:8080 → :8082)
+- ✅ **Memory umbrella boundary review** — 4 specs konsistent
+- ✅ **Welle 3 ratifications** — exec-scheduler2, exec-notifications, exec-media-ingestion, exec-rust, exec-hermes Phase-B alle ratifiziert oder landed
+
+### Was als NÄCHSTE session gut wäre
+
+1. **Browser-client E2E test-rig bauen** (unblockt #38, #39, #40, #51, #60, #61 gleichzeitig). Pattern: Playwright + cinny/element setup + programmatic test user registration. 1x aufwand, 6 tasks gewinnen.
+2. **#92 tier-3 browser RUM** — wenn observability-visibility aus BFF nicht reicht. Nicht urgent.
+3. **#46 polish items** — W3C traceparent cross-service propagation reparieren (BFF, go, python haben derzeit separate trace_ids). Siehe note in commit `d78ad68`.
+
+### Archive pointer für 2026-04-24 arbeit
+
+- `specs/execution/superpower-impl-log.md` — vollständiger session-rollup (§0 phasen P0-P7, §1 ADRs, §2 impl-cluster incl §2.I observability, §3 smoke, §4 blocked-state)
+- `docs/superpowers/findings/2026-04-24-env-layout-decision.md` — root + service .env scope
+- `docs/superpowers/findings/2026-04-24-observability-tier-strategy.md` — OTel vs OpenObserve, 3-tier model, #92 rationale
+- `docs/superpowers/findings/2026-04-24-memory-umbrella-boundaries.md` — 4-spec cross-check
+- **Last-commit post-2026-04-24-session:** pushed to `origin/main` @ `d78ad68`
