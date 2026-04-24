@@ -16,6 +16,15 @@
  *
  * Multiple surfaces coexist — A2UIProvider managed sie parallel.
  * A2UIRenderer rendert eigenes fallback wenn surface noch nicht dispatched.
+ *
+ * Data source (plan-v2 Phase-2 #34): the canvas is purely reactive. It
+ * reads from the shared A2UI store populated by `useA2uiSseSubscriber`
+ * (wired in ``useChatSession.onData``). Any ``data-a2ui-*`` packet the
+ * agent emits during an active chat turn flows into the store and the
+ * renderer picks it up — same store feeds this canvas AND any chat-
+ * inline canvases. Push-from-agent while chat is closed requires a
+ * dedicated persistent channel (SSE or WS) which is out of scope for
+ * #34 — track as follow-up if needed.
  */
 
 "use client";

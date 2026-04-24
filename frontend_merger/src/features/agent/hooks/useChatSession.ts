@@ -20,6 +20,7 @@ import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReasoningEffort } from "../components/AgentChatToolbar";
 import { collapsedToolsAtom, toggleToolCollapseAtom, usageMapAtom } from "../context/atoms";
+import { useA2uiSseSubscriber } from "./useA2uiSseSubscriber";
 import type { RequestAttachment, StagedAttachment } from "./useAttachments";
 import { useAvailableModels } from "./useAvailableModels";
 import { computeCost, useModelInfo } from "./useModelInfo";
@@ -169,6 +170,10 @@ export function useChatSession(): UseChatSessionReturn {
 	const [autoplayTts, setAutoplayTts] = useState(false);
 	const toggleAutoplayTts = useCallback(() => setAutoplayTts((v) => !v), []);
 
+	// plan-v2 Phase-2 #34: A2UI Ansatz-X SSE subscriber — receives
+	// data-a2ui-* packets and forwards them to the renderer store.
+	const onA2uiDataPart = useA2uiSseSubscriber();
+
 	const { messages, status, error, sendMessage, regenerate, stop, clearError, setMessages } =
 		useChat({
 			id: chatIdRef.current,
@@ -202,6 +207,9 @@ export function useChatSession(): UseChatSessionReturn {
 					return { body };
 				},
 			}),
+			onData: (dataPart: unknown) => {
+				onA2uiDataPart(dataPart);
+			},
 			onFinish: ({ message, finishReason }) => {
 				if (message.role === "assistant") {
 					// Usage tokens forwarded by Python via message-metadata SSE event (ACR-G5).

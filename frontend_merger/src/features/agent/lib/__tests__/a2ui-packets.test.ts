@@ -22,7 +22,7 @@ describe("isA2uiPacket", () => {
 	it("rejects malformed values", () => {
 		expect(isA2uiPacket(null)).toBe(false);
 		expect(isA2uiPacket(undefined)).toBe(false);
-		expect(isA2uiPacket("a2ui-surface-start")).toBe(false);
+		expect(isA2uiPacket("data-a2ui-surface-start")).toBe(false);
 		expect(isA2uiPacket({})).toBe(false);
 		expect(isA2uiPacket({ type: 123 })).toBe(false);
 	});
@@ -31,7 +31,7 @@ describe("isA2uiPacket", () => {
 describe("toRendererMessage", () => {
 	it("maps surface-start to createSurface with tree + dataModel", () => {
 		const packet: A2uiPacket = {
-			type: "a2ui-surface-start",
+			type: "data-a2ui-surface-start",
 			surfaceId: "main",
 			components: { type: "Card" },
 			dataModel: { price: 42 },
@@ -45,7 +45,7 @@ describe("toRendererMessage", () => {
 	it("maps update-components to updateComponents", () => {
 		const patch = [{ op: "add", path: "/x", value: 1 }];
 		const packet: A2uiPacket = {
-			type: "a2ui-update-components",
+			type: "data-a2ui-update-components",
 			surfaceId: "main",
 			patch,
 		};
@@ -58,7 +58,7 @@ describe("toRendererMessage", () => {
 	it("maps update-data-model to updateDataModel", () => {
 		const patch = [{ op: "replace", path: "/price", value: 43 }];
 		const packet: A2uiPacket = {
-			type: "a2ui-update-data-model",
+			type: "data-a2ui-update-data-model",
 			surfaceId: "main",
 			patch,
 		};
@@ -70,11 +70,11 @@ describe("toRendererMessage", () => {
 
 	it("maps surface-end and delete-surface to their terminal shapes", () => {
 		expect(
-			toRendererMessage({ type: "a2ui-surface-end", surfaceId: "main" }),
+			toRendererMessage({ type: "data-a2ui-surface-end", surfaceId: "main" }),
 		).toEqual({ version: "v0.9", endSurface: { surfaceId: "main" } });
 
 		expect(
-			toRendererMessage({ type: "a2ui-delete-surface", surfaceId: "main" }),
+			toRendererMessage({ type: "data-a2ui-delete-surface", surfaceId: "main" }),
 		).toEqual({ version: "v0.9", deleteSurface: { surfaceId: "main" } });
 	});
 });

@@ -9,31 +9,31 @@
 // ── Wire types (match Python dataclasses) ────────────────────────────────────
 
 export interface A2uiSurfaceStartPacket {
-	type: "a2ui-surface-start";
+	type: "data-a2ui-surface-start";
 	surfaceId: string;
 	components: unknown;
 	dataModel: Record<string, unknown>;
 }
 
 export interface A2uiSurfaceUpdatePacket {
-	type: "a2ui-update-components";
+	type: "data-a2ui-update-components";
 	surfaceId: string;
 	patch: unknown[]; // JSON-Patch array
 }
 
 export interface A2uiUpdateDataModelPacket {
-	type: "a2ui-update-data-model";
+	type: "data-a2ui-update-data-model";
 	surfaceId: string;
 	patch: unknown[];
 }
 
 export interface A2uiSurfaceEndPacket {
-	type: "a2ui-surface-end";
+	type: "data-a2ui-surface-end";
 	surfaceId: string;
 }
 
 export interface A2uiDeleteSurfacePacket {
-	type: "a2ui-delete-surface";
+	type: "data-a2ui-delete-surface";
 	surfaceId: string;
 }
 
@@ -45,11 +45,11 @@ export type A2uiPacket =
 	| A2uiDeleteSurfacePacket;
 
 export const A2UI_PACKET_TYPES = [
-	"a2ui-surface-start",
-	"a2ui-update-components",
-	"a2ui-update-data-model",
-	"a2ui-surface-end",
-	"a2ui-delete-surface",
+	"data-a2ui-surface-start",
+	"data-a2ui-update-components",
+	"data-a2ui-update-data-model",
+	"data-a2ui-surface-end",
+	"data-a2ui-delete-surface",
 ] as const;
 
 export function isA2uiPacket(value: unknown): value is A2uiPacket {
@@ -75,7 +75,7 @@ export interface A2uiRendererMessage {
 
 export function toRendererMessage(packet: A2uiPacket): A2uiRendererMessage {
 	switch (packet.type) {
-		case "a2ui-surface-start":
+		case "data-a2ui-surface-start":
 			return {
 				version: "v0.9",
 				createSurface: {
@@ -84,19 +84,19 @@ export function toRendererMessage(packet: A2uiPacket): A2uiRendererMessage {
 					dataModel: packet.dataModel,
 				},
 			};
-		case "a2ui-update-components":
+		case "data-a2ui-update-components":
 			return {
 				version: "v0.9",
 				updateComponents: { surfaceId: packet.surfaceId, patch: packet.patch },
 			};
-		case "a2ui-update-data-model":
+		case "data-a2ui-update-data-model":
 			return {
 				version: "v0.9",
 				updateDataModel: { surfaceId: packet.surfaceId, patch: packet.patch },
 			};
-		case "a2ui-surface-end":
+		case "data-a2ui-surface-end":
 			return { version: "v0.9", endSurface: { surfaceId: packet.surfaceId } };
-		case "a2ui-delete-surface":
+		case "data-a2ui-delete-surface":
 			return { version: "v0.9", deleteSurface: { surfaceId: packet.surfaceId } };
 	}
 }

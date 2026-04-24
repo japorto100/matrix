@@ -36,7 +36,12 @@ export default function LandingPage() {
 					</p>
 				</header>
 
-				{/* Main Canvas — standalone dashboard, surfaceId="main" */}
+				{/*
+				 * Main Canvas — standalone dashboard, surfaceId="main".
+				 * Populated by data-a2ui-* packets the agent emits during
+				 * chat turns (#32/#34). The chat-session SSE subscriber
+				 * feeds the shared A2UI store; this canvas reads from it.
+				 */}
 				<A2uiCanvas surfaceId="main" />
 
 				<section className="grid gap-4 md:grid-cols-3">

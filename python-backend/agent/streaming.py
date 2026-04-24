@@ -171,14 +171,16 @@ class ApprovalRequestPacket:
     type: Literal["approval-request"] = "approval-request"
 
 
-# ── A2UI Ansatz X packets (plan-v2 Phase-2 #32) ──────────────────────────────
+# ── A2UI Ansatz X packets (plan-v2 Phase-2 #32/#34) ──────────────────────────
 #
 # Native packet types for streaming A2UI widget-surfaces over the same SSE
 # channel as text/tool deltas. Ansatz X (SOTA, first-class) supersedes the
 # dict-envelope "Ansatz Y" that ships the surface as a tool-result payload.
 #
-# Wire types match the A2UI JS client's expectation (see mapping-design
-# §17 Ansatz X). Keys are camelCased by _to_sse() before emission.
+# Wire type names use the ``data-`` prefix so AI SDK v6's DefaultChatTransport
+# treats them as project-specific data parts and forwards them to useChat's
+# onData() callback instead of rejecting them against its built-in zod union.
+# (Without the prefix, ai-sdk v6 aborts the stream on unrecognized types.)
 #
 # Lifecycle per surface:
 #   1. A2uiSurfaceStartPacket   — declare new surface + initial data model
@@ -201,7 +203,7 @@ class A2uiSurfaceStartPacket:
     surface_id: str
     components: list | dict
     data_model: dict
-    type: Literal["a2ui-surface-start"] = "a2ui-surface-start"
+    type: Literal["data-a2ui-surface-start"] = "data-a2ui-surface-start"
 
 
 @dataclass
@@ -212,7 +214,7 @@ class A2uiSurfaceUpdatePacket:
 
     surface_id: str
     patch: list
-    type: Literal["a2ui-update-components"] = "a2ui-update-components"
+    type: Literal["data-a2ui-update-components"] = "data-a2ui-update-components"
 
 
 @dataclass
@@ -223,7 +225,7 @@ class A2uiUpdateDataModelPacket:
 
     surface_id: str
     patch: list
-    type: Literal["a2ui-update-data-model"] = "a2ui-update-data-model"
+    type: Literal["data-a2ui-update-data-model"] = "data-a2ui-update-data-model"
 
 
 @dataclass
@@ -232,7 +234,7 @@ class A2uiSurfaceEndPacket:
     Client may detach streaming-specific handlers after receiving."""
 
     surface_id: str
-    type: Literal["a2ui-surface-end"] = "a2ui-surface-end"
+    type: Literal["data-a2ui-surface-end"] = "data-a2ui-surface-end"
 
 
 @dataclass
@@ -241,7 +243,7 @@ class A2uiDeleteSurfacePacket:
     surface isn't currently rendered."""
 
     surface_id: str
-    type: Literal["a2ui-delete-surface"] = "a2ui-delete-surface"
+    type: Literal["data-a2ui-delete-surface"] = "data-a2ui-delete-surface"
 
 
 # ── SSE helper ────────────────────────────────────────────────────────────────

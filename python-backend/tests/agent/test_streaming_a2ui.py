@@ -34,7 +34,7 @@ def test_a2ui_surface_start_wire_format() -> None:
         data_model={"price": 42.0},
     )
     frame = _parse_sse(sse(packet))
-    assert frame["type"] == "a2ui-surface-start"
+    assert frame["type"] == "data-a2ui-surface-start"
     assert frame["surfaceId"] == "main"  # snake_case → camelCase
     assert frame["components"] == {"type": "Card", "children": []}
     assert frame["dataModel"] == {"price": 42.0}
@@ -46,7 +46,7 @@ def test_a2ui_update_components_patch_roundtrip() -> None:
     ]
     packet = A2uiSurfaceUpdatePacket(surface_id="chat-abc", patch=patch)
     frame = _parse_sse(sse(packet))
-    assert frame["type"] == "a2ui-update-components"
+    assert frame["type"] == "data-a2ui-update-components"
     assert frame["surfaceId"] == "chat-abc"
     assert frame["patch"] == patch
 
@@ -55,19 +55,19 @@ def test_a2ui_update_data_model_ticker_shape() -> None:
     patch = [{"op": "replace", "path": "/price", "value": 43.5}]
     packet = A2uiUpdateDataModelPacket(surface_id="main", patch=patch)
     frame = _parse_sse(sse(packet))
-    assert frame["type"] == "a2ui-update-data-model"
+    assert frame["type"] == "data-a2ui-update-data-model"
     assert frame["surfaceId"] == "main"
     assert frame["patch"] == patch
 
 
 def test_a2ui_surface_end_minimal() -> None:
     frame = _parse_sse(sse(A2uiSurfaceEndPacket(surface_id="main")))
-    assert frame == {"type": "a2ui-surface-end", "surfaceId": "main"}
+    assert frame == {"type": "data-a2ui-surface-end", "surfaceId": "main"}
 
 
 def test_a2ui_delete_surface_minimal() -> None:
     frame = _parse_sse(sse(A2uiDeleteSurfacePacket(surface_id="main")))
-    assert frame == {"type": "a2ui-delete-surface", "surfaceId": "main"}
+    assert frame == {"type": "data-a2ui-delete-surface", "surfaceId": "main"}
 
 
 def test_all_packet_types_distinct() -> None:

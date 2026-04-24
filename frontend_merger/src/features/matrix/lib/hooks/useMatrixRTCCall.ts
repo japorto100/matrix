@@ -126,9 +126,16 @@ export function useMatrixRTCCall(client: MatrixClient | null): UseMatrixRTCCallR
 				setLivekitToken(token);
 				setLivekitUrl(url);
 
+				// Safe to unwrap: fetchLivekitToken already threw above if
+				// neither client.getLivekitServiceURL() nor LK_JWT_ENV_URL
+				// was set. Duplicate guard here for TS narrowing only.
+				const serviceUrl = client.getLivekitServiceURL() ?? LK_JWT_ENV_URL;
+				if (!serviceUrl) {
+					throw new Error("NEXT_PUBLIC_LK_JWT_SERVICE_URL not configured");
+				}
 				const livekitFocus: LivekitTransportConfig = {
 					type: "livekit",
-					livekit_service_url: client.getLivekitServiceURL() ?? LK_JWT_ENV_URL,
+					livekit_service_url: serviceUrl,
 				};
 
 				// E2EE aktiviert: matrix-js-sdk generiert + verteilt Media Keys
