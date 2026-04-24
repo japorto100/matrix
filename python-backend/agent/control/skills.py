@@ -214,18 +214,28 @@ async def import_skill_from_github(
     request: Request,
     scope: RequestScope = Depends(resolve_scope),
 ) -> dict[str, Any]:
-    """Persist an import request for later worker-based onboarding."""
+    """Import skills from GitHub — skills_guard pre-scan + HITL on dangerous.
+
+    Wires the ``agent.skills.importer.import_from_github()`` implementation
+    (which includes the skills_guard two-pass scan) so the SkillsGuardDrawer
+    UI can actually fire on dangerous verdict. Before this wiring, the
+    endpoint only wrote a SKILL_IMPORT_REQUESTED audit row and returned
+    ``{"status": "queued"}`` — the guard + HITL path was dead code.
+
+    Returns 422 with ``{"success": false, "rejected": [...],
+    "suggested_action": "hitl_confirm"}`` when the scan classifies any
+    candidate as ``dangerous`` — the frontend's ``extractSkillsGuardVerdict``
+    picks that up and opens the drawer. Returns 200 with ``success=true``
+    on clean import.
+    """
     if not req.github_url.startswith(("https://github.com/", "http://github.com/")):
         raise HTTPException(status_code=400, detail="github_url must be a GitHub URL")
     if req.tier not in {"team", "personal"}:
         raise HTTPException(status_code=400, detail="tier must be team|personal")
 
-    skill_name = (
-        req.name or req.github_url.rstrip("/").split("/")[-1] or "imported-skill"
-    ).strip()
-    skill_id = f"{req.tier}:{skill_name}"
     now = datetime.now(UTC)
 
+    # Audit the request attempt regardless of outcome (for ops visibility)
     try:
         with psycopg.connect(_db_url(), autocommit=True) as conn:
             conn.execute(
@@ -241,7 +251,6 @@ async def import_skill_from_github(
                     True,
                     json.dumps(
                         {
-                            "skill_id": skill_id,
                             "github_url": req.github_url,
                             "tier": req.tier,
                             "name": req.name,
@@ -253,13 +262,27 @@ async def import_skill_from_github(
                     ),
                 ),
             )
+    except Exception:  # noqa: BLE001
+        logger.exception("skill import audit write failed — continuing")
+
+    # Run the actual import (clone + two-pass scan + install)
+    from agent.skills.importer import import_from_github
+
+    try:
+        result = await import_from_github(
+            repo_url=req.github_url,
+            target_tier=req.tier,
+            target_owner=scope.user_id if req.tier == "personal" else scope.team_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:  # noqa: BLE001
-        logger.exception("import skill failed")
+        logger.exception("skill import failed")
         raise HTTPException(status_code=500, detail=f"import: {e}") from e
 
-    return {
-        "status": "queued",
-        "skill_id": skill_id,
-        "tier": req.tier,
-        "github_url": req.github_url,
-    }
+    # HITL gate: if the scan flagged anything dangerous, propagate the
+    # suggested_action so the frontend drawer fires.
+    if not result.get("success", False):
+        raise HTTPException(status_code=422, detail=result)
+
+    return result

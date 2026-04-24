@@ -12,7 +12,7 @@ Scoring dimensions:
   - cost_estimate: Rough USD cost based on token counts
 
 **Phase-C §4g — A/B experiment backfill:**
-:func:`score_session` additionally UPDATEs
+:func:`score_session` additionally writes to
 ``agent.ab_experiments.harness_fitness_score`` for the row that matches
 this thread. The fitness score is a composite scalar in [0, 1] built
 from the dimensions above so SQL aggregation (``AVG(...) GROUP BY

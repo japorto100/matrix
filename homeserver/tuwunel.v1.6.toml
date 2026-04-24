@@ -162,9 +162,16 @@ server = "localhost:8448"
 # ─── MatrixRTC / LiveKit ─────────────────────────────────────────────────────
 # lk-jwt-service läuft im compose (Host :8082 → Container :8080). Host-port
 # war :8080, kollidierte mit opensandbox-api-gateway unter profile sandbox.
+#
+# IMPORTANT: This URL is dereferenced from INSIDE the tuwunel container —
+# "localhost" would resolve to the container loopback, NOT the host where
+# lk-jwt is listening on :8082. host.containers.internal is Podman's
+# rootless alias for the host gateway (equivalent to Docker's
+# host.docker.internal). If running with --network host, switch back to
+# http://localhost:8082.
 [[global.well_known.rtc_transports]]
 type = "livekit"
-livekit_service_url = "http://localhost:8082"
+livekit_service_url = "http://host.containers.internal:8082"
 
 # ─── Appservice: via admin-command (tuwunel-native) ──────────────────────────
 # Tuwunel v1.6.0 stable hat bugs mit inline-config und `appservice_dir`-auto-load

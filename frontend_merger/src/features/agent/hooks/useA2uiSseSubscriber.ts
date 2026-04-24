@@ -1,8 +1,8 @@
 "use client";
 
+import { isA2uiPacket, toRendererMessage } from "@agent/lib/a2ui-packets";
 import { useA2UIActions } from "@copilotkit/a2ui-renderer";
 import { useCallback } from "react";
-import { isA2uiPacket, toRendererMessage } from "@agent/lib/a2ui-packets";
 
 /**
  * Plan-v2 Phase-2 #34 — SSE → A2UI renderer bridge.

@@ -18,11 +18,19 @@ import os
 import tempfile
 import uuid
 
+# exec-09 / exec-17: MCP sub-apps need their lifespan wired through to the
+# parent app — otherwise StreamableHTTPSessionManager never initialises and
+# every MCP request 500s. Build sub-apps first, thread their lifespans via
+# a combined context-manager, then pass it to create_service_app().
+from contextlib import AsyncExitStack, asynccontextmanager  # noqa: E402
+
 from fastapi import Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
 from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
 
 from agent.context_assembler import assemble_context  # noqa: E402
+from agent.mcp_server import create_mcp_server  # noqa: E402
+from agent.mcp_traces import create_trace_mcp_server  # noqa: E402
 from agent.roles import AgentRole  # noqa: E402
 from agent.tools.chart_state import get_chart_state, set_chart_state  # noqa: E402
 from agent.tools.geomap import get_geomap_focus  # noqa: E402
@@ -33,15 +41,6 @@ from agent.working_memory import (  # noqa: E402
     working_memory_set,
 )
 from shared import create_service_app  # noqa: E402
-
-# exec-09 / exec-17: MCP sub-apps need their lifespan wired through to the
-# parent app — otherwise StreamableHTTPSessionManager never initialises and
-# every MCP request 500s. Build sub-apps first, thread their lifespans via
-# a combined context-manager, then pass it to create_service_app().
-from contextlib import AsyncExitStack, asynccontextmanager  # noqa: E402
-
-from agent.mcp_server import create_mcp_server  # noqa: E402
-from agent.mcp_traces import create_trace_mcp_server  # noqa: E402
 
 _mcp = create_mcp_server()
 _trace_mcp = create_trace_mcp_server()

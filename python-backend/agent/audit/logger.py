@@ -13,7 +13,8 @@ from agent.audit.store import get_audit_store
 
 
 class AuditAction(StrEnum):
-    LLM_REQUEST = "llm_request"
+    # LLM_REQUEST removed per ADR-002 — redundant with OTel span for the
+    # request side. LLM_RESPONSE is the only audit-side LLM event now.
     LLM_RESPONSE = "llm_response"
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"

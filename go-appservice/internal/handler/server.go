@@ -229,7 +229,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 	// exec-17 #46: wrap the mux in otelhttp so incoming HTTP requests get
 	// auto-traced (route, method, status, duration). No spans are produced
 	// when OTEL_ENABLED=false because the global TracerProvider is a noop.
-	var rootHandler http.Handler = s.hsTokenMiddleware(mux)
+	rootHandler := http.Handler(s.hsTokenMiddleware(mux))
 	if os.Getenv("OTEL_ENABLED") == "true" {
 		rootHandler = otelhttp.NewHandler(rootHandler, "appservice")
 	}

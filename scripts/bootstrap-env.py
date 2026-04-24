@@ -328,11 +328,14 @@ KEY_ENCRYPTION_SECRET={S['KEY_ENCRYPTION_SECRET']}
 KEY_VAULT_BACKEND=aesgcm
 
 # ─── Observability ─────────────────────────────────────────────────────────
+# Route through otel-collector :4317 (internal trust, no auth). Collector
+# attaches basic-auth and forwards to openobserve. Switch endpoint to
+# http://localhost:5081 + uncomment OPENOBSERVE_* to bypass the collector.
 OTEL_ENABLED=false
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:5081
-OPENOBSERVE_USER=admin@example.com
-OPENOBSERVE_PASSWORD={S['OPENOBSERVE_PASSWORD']}
-OPENOBSERVE_ORG=default
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+# OPENOBSERVE_USER=admin@example.com
+# OPENOBSERVE_PASSWORD={S['OPENOBSERVE_PASSWORD']}
+# OPENOBSERVE_ORG=default
 
 LANGFUSE_ENABLED=false
 LANGFUSE_HOST=https://cloud.langfuse.com

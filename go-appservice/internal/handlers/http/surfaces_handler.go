@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -85,6 +86,7 @@ func loadSurface(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, use
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "surface not found"})
 			return
 		}
+		// #nosec G706 -- slog structured key-value args, not printf formatting; no log-injection.
 		slog.Error("surfaces: load query failed", "user_id", userID, "surface_id", surfaceID, "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "db query failed"})
 		return
@@ -105,7 +107,12 @@ func saveSurface(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, use
 	if body.SchemaVersion <= 0 {
 		body.SchemaVersion = 1
 	}
-	if len(body.SurfaceJSON) == 0 {
+	// {"surface_json": null} serializes to 4 bytes ("null") and would
+	// otherwise pass the len-check. Reject explicitly so the caller
+	// sees 400 instead of a silently-lost surface (postgres accepts
+	// null::jsonb, so the row would write but read back as null and
+	// the hook would discard it).
+	if len(body.SurfaceJSON) == 0 || bytes.Equal(bytes.TrimSpace(body.SurfaceJSON), []byte("null")) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "surface_json required"})
 		return
 	}
@@ -122,6 +129,7 @@ func saveSurface(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, use
 	var updatedAt time.Time
 	row := pool.QueryRow(r.Context(), q, userID, surfaceID, body.SchemaVersion, string(body.SurfaceJSON))
 	if err := row.Scan(&updatedAt); err != nil {
+		// #nosec G706 -- slog structured key-value args, not printf formatting; no log-injection.
 		slog.Error("surfaces: upsert failed", "user_id", userID, "surface_id", surfaceID, "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "db upsert failed"})
 		return
@@ -137,6 +145,7 @@ func deleteSurface(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, u
 	const q = `DELETE FROM agent.agent_surfaces WHERE user_id = $1 AND surface_id = $2`
 	tag, err := pool.Exec(r.Context(), q, userID, surfaceID)
 	if err != nil {
+		// #nosec G706 -- slog structured key-value args, not printf formatting; no log-injection.
 		slog.Error("surfaces: delete failed", "user_id", userID, "surface_id", surfaceID, "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "db delete failed"})
 		return

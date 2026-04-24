@@ -10,7 +10,10 @@
 		"lint": "biome check ./src",
 		"lint:fix": "biome check --write ./src",
 		"format": "biome format --write ./src",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"_note_bun_test": "DO NOT use `bun test` — it runs bun's native test runner without jsdom and breaks React/DOM tests. Always run `bun run test` (which invokes vitest) or `bunx vitest run`."
 	},
 	"dependencies": {
 		"@a2ui/react": "^0.9.1",

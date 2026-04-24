@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	type A2uiPacket,
 	A2UI_PACKET_TYPES,
+	type A2uiPacket,
 	isA2uiPacket,
 	toRendererMessage,
 } from "../a2ui-packets";
@@ -69,12 +69,14 @@ describe("toRendererMessage", () => {
 	});
 
 	it("maps surface-end and delete-surface to their terminal shapes", () => {
-		expect(
-			toRendererMessage({ type: "data-a2ui-surface-end", surfaceId: "main" }),
-		).toEqual({ version: "v0.9", endSurface: { surfaceId: "main" } });
+		expect(toRendererMessage({ type: "data-a2ui-surface-end", surfaceId: "main" })).toEqual({
+			version: "v0.9",
+			endSurface: { surfaceId: "main" },
+		});
 
-		expect(
-			toRendererMessage({ type: "data-a2ui-delete-surface", surfaceId: "main" }),
-		).toEqual({ version: "v0.9", deleteSurface: { surfaceId: "main" } });
+		expect(toRendererMessage({ type: "data-a2ui-delete-surface", surfaceId: "main" })).toEqual({
+			version: "v0.9",
+			deleteSurface: { surfaceId: "main" },
+		});
 	});
 });

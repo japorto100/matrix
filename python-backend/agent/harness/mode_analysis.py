@@ -280,8 +280,11 @@ async def analyze_modes(
     report_md = _render_report(threads, days=days)
     csv_body = _render_csv(threads)
 
-    out_dir = out_dir or Path(
-        "/home/lipfi2/code/matrix/docs/superpowers/findings"
+    # Repo-relative default so the script is portable (CI, Docker, other
+    # machines). __file__ is python-backend/agent/harness/mode_analysis.py
+    # → parents[3] is the repo root.
+    out_dir = out_dir or (
+        Path(__file__).resolve().parents[3] / "docs" / "superpowers" / "findings"
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y-%m-%d")

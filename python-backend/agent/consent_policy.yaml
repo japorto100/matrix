@@ -138,3 +138,14 @@ rate_limits:
       max_calls: 10
     file_delete:
       max_calls: 3
+
+  # ── Skills import HITL (ADR-004) ─────────────────────────────────────
+  # Gate for POST /api/v1/control/skills/import when the two-pass
+  # skills_guard scan classifies a candidate as 'dangerous'. The
+  # backend returns 422 with suggested_action=hitl_confirm, the
+  # frontend opens SkillsGuardDrawer; user decision routes back
+  # through this consent layer.
+  skill_import_dangerous:
+    level: confirm
+    severity: high
+    reason: "SKILL.md hat vom scanner als gefährlich markierte content (shell_exec, network_post, unbounded_eval etc). User muss explizit bestätigen."

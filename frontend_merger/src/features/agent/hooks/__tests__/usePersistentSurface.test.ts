@@ -96,12 +96,8 @@ describe("usePersistentSurface (Phase-2, BFF-synced)", () => {
 			"a2ui.surface.main",
 			JSON.stringify({ schema_version: SCHEMA_VERSION, surface_json: { type: "Card" } }),
 		);
-		fetchMock.mockResolvedValueOnce(
-			new Response(null, { status: 404 }),
-		); // initial GET (server has no record yet)
-		fetchMock.mockResolvedValueOnce(
-			new Response(null, { status: 204 }),
-		); // DELETE
+		fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 })); // initial GET (server has no record yet)
+		fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 })); // DELETE
 		const { result } = renderHook(() => usePersistentSurface("main"));
 		act(() => {
 			result.current.clear();

@@ -26,7 +26,16 @@ func AgentToolProxyHandler(client agentToolProxyClient, upstreamPath string) htt
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "agent tool proxy unavailable"})
 			return
 		}
-		status, body, err := client.Get(r.Context(), upstreamPath)
+		// #46 tier-2 bug: forward the incoming query-string so upstream
+		// handlers receive thread_id / model / etc. Without this,
+		// CompressionIndicator queried the proxy without context and
+		// upstream defaulted to window=200000 (claude-opus-4-5) instead
+		// of the real model's window.
+		path := upstreamPath
+		if r.URL.RawQuery != "" {
+			path = path + "?" + r.URL.RawQuery
+		}
+		status, body, err := client.Get(r.Context(), path)
 		if err != nil {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "agent tool request failed"})
 			return
@@ -36,6 +45,9 @@ func AgentToolProxyHandler(client agentToolProxyClient, upstreamPath string) htt
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
+		// #nosec G705 -- body comes from the trusted upstream agent-service
+		// (operator-configured via AGENT_SERVICE_URL), Content-Type is
+		// explicitly application/json so there is no XSS vector.
 		_, _ = w.Write(body)
 	}
 }

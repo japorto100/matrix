@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, type UseQueryOptions, type UseQueryResult } from "@tanstack/react-query";
+import { type UseQueryOptions, type UseQueryResult, useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/queries/client";
 
 /**

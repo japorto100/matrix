@@ -414,7 +414,11 @@ services:
       - openobserve-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5080/healthz"]
+      # Use a TCP-level probe via the built-in /bin/sh + /proc/net/tcp —
+      # openobserve image has no wget/curl/python, so prior wget test
+      # permanently reported (unhealthy), blocking otel-collector's
+      # depends_on: service_healthy on cold start.
+      test: ["CMD-SHELL", "[ -f /proc/net/tcp ] && grep -q ':13D8 ' /proc/net/tcp || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5

@@ -17,7 +17,7 @@ import time
 from typing import Any, TypedDict
 
 import httpx
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 logger = logging.getLogger(__name__)
 
@@ -957,7 +957,23 @@ def _normalize_smart_routing(raw: Any) -> dict[str, Any]:
             out["enabled"] = bool(enabled)
     cheap = raw.get("cheap_model")
     if isinstance(cheap, str) and cheap.strip():
-        out["cheap_model"] = cheap.strip()[:256]
+        # Strip null-bytes (otherwise postgres JSONB write explodes with
+        # DataError → HTTP 500 instead of the 400 we want here) + enforce
+        # "provider/model" form so the credential pre-flight (G2) can
+        # resolve the provider. Bare names like "gpt-4o-mini" would hit
+        # _provider_label() → "litellm" → credentials row absent → silent
+        # fallback to primary on every turn. Reject at save-time instead.
+        normalized = cheap.strip().replace("\x00", "")[:256]
+        if "/" not in normalized:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "cheap_model must be in 'provider/model' form "
+                    "(e.g. 'openai/gpt-4o-mini', 'anthropic/claude-haiku-4-5'). "
+                    "Bare model names silently fail the credential check."
+                ),
+            )
+        out["cheap_model"] = normalized
     for k in _SMART_ROUTING_INT_KEYS:
         v = raw.get(k)
         if v is None:

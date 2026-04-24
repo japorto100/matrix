@@ -112,8 +112,11 @@ class PostgresAuditStore(AuditStore):
         try:
             import psycopg
 
-            with psycopg.connect(self._dsn) as conn:
-                conn.execute(
+            # Use AsyncConnection — sync psycopg.connect() would block the
+            # ASGI event loop on every LLM call (latency time-bomb). See
+            # verify-findings 2026-04-24 §Agent 5.
+            async with await psycopg.AsyncConnection.connect(self._dsn) as conn:
+                await conn.execute(
                     f"""
                     INSERT INTO {TABLE}
                         (timestamp, action, user_id, thread_id, agent_class,
@@ -147,7 +150,7 @@ class PostgresAuditStore(AuditStore):
                         "iteration": entry.get("iteration"),
                     },
                 )
-                conn.commit()
+                await conn.commit()
         except Exception as e:
             logger.warning("Audit PG write failed: %s", e)
 
@@ -176,8 +179,13 @@ class PostgresAuditStore(AuditStore):
             import psycopg
             from psycopg.rows import dict_row
 
-            with psycopg.connect(self._dsn, row_factory=dict_row) as conn:
-                rows = conn.execute(sql, params).fetchall()
+            # Use AsyncConnection — sync psycopg.connect() would block the
+            # ASGI event loop. See PostgresAuditStore.append() for context.
+            async with await psycopg.AsyncConnection.connect(
+                self._dsn, row_factory=dict_row
+            ) as conn:
+                cur = await conn.execute(sql, params)
+                rows = await cur.fetchall()
             return [dict(row) for row in rows]
         except Exception as e:
             logger.warning("Audit PG query failed: %s", e)
