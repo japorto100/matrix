@@ -305,6 +305,35 @@ Die 5-agent verify (2026-04-24) hat 17 issues gefunden, 13 davon sofort gefixt. 
 
 - **Typos-warnings auf deutsche docstrings** (`ein`, `ist`, `oder`, `Prueft`) — braucht `[default.extend-words]` allowlist in `.typos.toml` wenn wir typos als CI-gate einbauen.
 
+#### H) Infra runtime issues — host/podman env, nicht impl-bugs
+
+Entdeckt beim 2026-04-24 end-of-session status-check. Nicht blocking für aktuelle arbeit, aber sollten wir an einem der nächsten tage zusammen angehen:
+
+- **H-1: Podman rootlessport race** (postgres exit 137 wiederkehrend)
+  - Root-cause: podman 1.0.6 + slirp4netns auf Linux Mint 22.3 — race zwischen container-startup und rootlessport host-port-bindung. Container bekommt SIGKILL oder bleibt "up" mit unreachable host port → connection-reset auf DB-writes.
+  - Heute: ad-hoc `podman restart postgres` (manchmal 2x).
+  - Dokumentiert in project-memory `project_postgres_rootlessport_race.md`.
+  - **Prevention empfehlung**: switch network-backend `slirp4netns` → `pasta` via `~/.config/containers/containers.conf` + podman 4.7+. Einmalige config-change, systemweit. Beobachtung: pasta ist in podman docs seit ~2 jahren als "more stable, recommended" markiert.
+  - Alternative: systemd-watcher der bei exit=137 auto-restart macht (reaktiv, nicht preventiv).
+  - Alternative: `network_mode: host` nur für postgres (umgeht rootlessport-layer — aber breaks port-mapping für andere services).
+
+- **H-2: Stale container-config nach compose-file-change** (openobserve + litellm zeigen "unhealthy" obwohl service real 200 antwortet)
+  - Symptom: `podman ps` zeigt `unhealthy`, aber `curl /healthz` returniert 200.
+  - Root-cause: healthcheck-definition wird beim container-CREATE eingebrannt. YAML-änderung (mein `d4b4432` fix: `wget` → `/proc/net/tcp` probe) wirkt erst nach recreate.
+  - Aktuell betroffen: openobserve, litellm.
+  - Fix: `podman-compose up -d --force-recreate openobserve litellm` beim nächsten stack-down/up-cycle. Heute nicht akut — service real gesund, nur self-report broken.
+
+- **H-3: Infra-containers im `Created` / `Exited` state — nicht auto-started mit dev-stack.sh**
+  - Current: pgbouncer, valkey, falkordb, lk-jwt, tuwunel, coturn, seaweedfs, garage, cloudflared(-named) alle exited/created.
+  - Ist by-design für ein minimal-dev-stack (siehe `--matrix-core` vs `--matrix-full` flags), aber kein status-indicator im dev-stack.sh dass sie AUSGELASSEN wurden vs gebrochen.
+  - Follow-up: status-output erweitern um "intentionally-off" vs "unexpectedly-down" zu unterscheiden.
+
+- **H-4: Openobserve basic-auth creds leak-path** (sessin-notiz, nicht akute)
+  - OPENOBSERVE_USER/PASSWORD landet derzeit in 3 .env files (root, python-backend, otel-collector via compose-env). Für production: migrate zu vault / docker-secrets statt plain .env. Heute dev-only ok, aber vermerkt.
+
+- **H-5: @vercel/otel dev-mode commit-doc misleading** (aus verify Agent 3)
+  - commit `d78ad68` message behauptet "@vercel/otel needs prod build". Verify agent fand: instrumentation.ts fires in `next dev` auch. Commit-msg korrigieren bei nächstem journal-update — kein impl-bug.
+
 #### Kategorisch NICHT auf dieser liste:
 
 - Completed items (siehe `superpower-impl-log.md` für vollen cluster-log mit commit-SHAs)
