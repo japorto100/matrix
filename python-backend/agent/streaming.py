@@ -171,6 +171,79 @@ class ApprovalRequestPacket:
     type: Literal["approval-request"] = "approval-request"
 
 
+# ── A2UI Ansatz X packets (plan-v2 Phase-2 #32) ──────────────────────────────
+#
+# Native packet types for streaming A2UI widget-surfaces over the same SSE
+# channel as text/tool deltas. Ansatz X (SOTA, first-class) supersedes the
+# dict-envelope "Ansatz Y" that ships the surface as a tool-result payload.
+#
+# Wire types match the A2UI JS client's expectation (see mapping-design
+# §17 Ansatz X). Keys are camelCased by _to_sse() before emission.
+#
+# Lifecycle per surface:
+#   1. A2uiSurfaceStartPacket   — declare new surface + initial data model
+#   2. A2uiSurfaceUpdatePacket  — incremental component-tree edits (optional)
+#   3. A2uiUpdateDataModelPacket — push new data bound into existing tree
+#   4. A2uiSurfaceEndPacket     — complete, frontend may seal the surface
+#
+# A2uiDeleteSurfacePacket is a one-shot: removes a surface from the client.
+
+
+@dataclass
+class A2uiSurfaceStartPacket:
+    """Open an A2UI surface and seed it with components + initial data model.
+
+    ``components`` is the A2UI widget-tree (basicCatalog v0.9 + Chart
+    extension in this project). ``data_model`` carries the initial bind
+    values; live-updates arrive via A2uiUpdateDataModelPacket.
+    """
+
+    surface_id: str
+    components: list | dict
+    data_model: dict
+    type: Literal["a2ui-surface-start"] = "a2ui-surface-start"
+
+
+@dataclass
+class A2uiSurfaceUpdatePacket:
+    """Incremental component-tree update — agent may patch the shape of a
+    surface without re-sending the whole tree. ``patch`` is a JSON-Patch
+    (RFC 6902) array scoped to ``components``."""
+
+    surface_id: str
+    patch: list
+    type: Literal["a2ui-update-components"] = "a2ui-update-components"
+
+
+@dataclass
+class A2uiUpdateDataModelPacket:
+    """Push new data bound into an already-rendered surface. ``patch`` is a
+    JSON-Patch array scoped to ``data_model`` (e.g. ticker updates, form
+    field overwrites, list appends)."""
+
+    surface_id: str
+    patch: list
+    type: Literal["a2ui-update-data-model"] = "a2ui-update-data-model"
+
+
+@dataclass
+class A2uiSurfaceEndPacket:
+    """Signal that the agent is done streaming updates to this surface.
+    Client may detach streaming-specific handlers after receiving."""
+
+    surface_id: str
+    type: Literal["a2ui-surface-end"] = "a2ui-surface-end"
+
+
+@dataclass
+class A2uiDeleteSurfacePacket:
+    """Remove a surface from the client. Idempotent: client ignores if the
+    surface isn't currently rendered."""
+
+    surface_id: str
+    type: Literal["a2ui-delete-surface"] = "a2ui-delete-surface"
+
+
 # ── SSE helper ────────────────────────────────────────────────────────────────
 
 
