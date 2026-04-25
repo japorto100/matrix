@@ -154,10 +154,12 @@ Verifizierung gegen installiertes opensandbox 0.1.6 SDK ergab Abweichungen zur D
 ### docker-compose Service
 
 ```yaml
-  # ── OpenSandbox Server (Code Execution, exec-12) ─────────────────────────
+  # ── OpenSandbox Server (Code Execution, exec-12) ───────────────
+  # Port 8080: Gesichert via sandbox-config.toml (network=none). API für LLM Agenten.
+  # Port 8100 (opensandbox): Ungesicherter Spielplatz ohne Config-Mount (Fallback).
   opensandbox-server:
-    image: opensandbox/opensandbox-server:latest
-    container_name: opensandbox-server
+    image: opensandbox/server:latest
+    container_name: opensandbox-api-gateway
     ports:
       - "8080:8080"
     volumes:
@@ -175,7 +177,7 @@ Verifizierung gegen installiertes opensandbox 0.1.6 SDK ergab Abweichungen zur D
       retries: 3
 ```
 
-Starten: `docker-compose --profile sandbox up opensandbox`
+Starten: `docker-compose --profile sandbox up opensandbox-server`
 Braucht Docker Socket Mount fuer Container-in-Container Lifecycle.
 
 ## Phase 2: Security Hardening (pentagi Patterns)

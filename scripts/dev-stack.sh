@@ -259,7 +259,7 @@ PORT_VALKEY=6379
 PORT_PGBOUNCER=6432
 PORT_FALKORDB=6380
 PORT_NORNIC=7474
-PORT_GO=8090
+PORT_GO=29318   # MATRIX_APPSERVICE_PORT — callback-port für tuwunel, nicht 8090
 PORT_AGENT=8094
 PORT_BRIDGE=8097
 PORT_INGESTION=8098
@@ -330,40 +330,60 @@ compose_up() {
   [ ${#services[@]} -eq 0 ] && return 0
   [ -z "$COMPOSE" ] && { warn "compose tool fehlt — $* nicht gestartet"; return 1; }
 
-  # Profile-Flags ableiten aus service-liste
-  local profiles=()
+  # Profile-Namen ableiten aus service-liste.
+  # podman-compose <1.1 kennt kein --profile flag → wir nutzen COMPOSE_PROFILES
+  # env-var (wird von podman-compose + docker-compose gleichermassen respektiert).
+  local profiles_csv=""
   for s in "${services[@]}"; do
+    local p=""
     case "$s" in
-      litellm)                      profiles+=("--profile" "litellm") ;;
-      opensandbox|opensandbox-server) profiles+=("--profile" "sandbox") ;;
-      coturn|livekit-server|lk-jwt-service) profiles+=("--profile" "calls") ;;
-      cloudflared)                  profiles+=("--profile" "tunnel") ;;
-      cloudflared-named)            profiles+=("--profile" "tunnel-named") ;;
-      openobserve|otel-collector|postgres-exporter) profiles+=("--profile" "observability") ;;
-      valkey)                       profiles+=("--profile" "cache") ;;
-      garage)                       profiles+=("--profile" "storage-garage") ;;
-      falkordb)                     profiles+=("--profile" "kg-falkor") ;;
-      nornic)                       profiles+=("--profile" "kg-nornic") ;;
-      pgbouncer)                    profiles+=("--profile" "pooler") ;;
-      llm-mock)                     profiles+=("--profile" "mock") ;;
+      litellm)                                       p="litellm" ;;
+      opensandbox|opensandbox-server)                p="sandbox" ;;
+      coturn|livekit-server|lk-jwt-service)          p="calls" ;;
+      cloudflared)                                   p="tunnel" ;;
+      cloudflared-named)                             p="tunnel-named" ;;
+      openobserve|otel-collector|postgres-exporter)  p="observability" ;;
+      valkey)                                        p="cache" ;;
+      garage)                                        p="storage-garage" ;;
+      falkordb)                                      p="kg-falkor" ;;
+      nornic)                                        p="kg-nornic" ;;
+      pgbouncer)                                     p="pooler" ;;
+      llm-mock)                                      p="mock" ;;
     esac
-  done
-  # Dedupe profiles
-  local uniq_profiles=()
-  local seen=""
-  for p in "${profiles[@]}"; do
-    if [ "$p" = "--profile" ]; then continue; fi
-    if [[ "$seen" != *"|$p|"* ]]; then
-      uniq_profiles+=("--profile" "$p")
-      seen="${seen}|${p}|"
+    # Dedupe: skip wenn profile schon in der csv
+    if [ -n "$p" ] && [[ ",$profiles_csv," != *",$p,"* ]]; then
+      profiles_csv="${profiles_csv:+${profiles_csv},}$p"
     fi
   done
 
-  log "compose up: ${services[*]}"
-  (cd "$REPO_ROOT" && \
-    TUWUNEL_IMAGE="ghcr.io/matrix-construct/tuwunel:${TUWUNEL_IMAGE_TAG}" \
-    $COMPOSE "${uniq_profiles[@]}" up -d "${services[@]}" 2>&1) \
-    | tee -a "$LOG_DIR/compose.log" || warn "compose up failed"
+  # Split in zwei phasen: default-services (kein profile) und profile-services
+  # getrennt aufrufen. Podman-compose mit COMPOSE_PROFILES=X skipped alle
+  # default-services — daher erst default ohne env-var, dann profile-services mit.
+  local default_svcs=() profile_svcs=()
+  for s in "${services[@]}"; do
+    case "$s" in
+      tuwunel|nats|postgres) default_svcs+=("$s") ;;
+      *) profile_svcs+=("$s") ;;
+    esac
+  done
+
+  local common_env=(
+    "TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:${TUWUNEL_IMAGE_TAG}"
+    "TUWUNEL_CONFIG=${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}"
+  )
+
+  if [ ${#default_svcs[@]} -gt 0 ]; then
+    log "compose up (default): ${default_svcs[*]}"
+    (cd "$REPO_ROOT" && env "${common_env[@]}" $COMPOSE up -d "${default_svcs[@]}" 2>&1) \
+      | tee -a "$LOG_DIR/compose.log" || warn "compose up (default) failed"
+  fi
+
+  if [ ${#profile_svcs[@]} -gt 0 ]; then
+    log "compose up (profiles: $profiles_csv): ${profile_svcs[*]}"
+    (cd "$REPO_ROOT" && env "${common_env[@]}" COMPOSE_PROFILES="$profiles_csv" \
+      $COMPOSE up -d "${profile_svcs[@]}" 2>&1) \
+      | tee -a "$LOG_DIR/compose.log" || warn "compose up (profiles) failed"
+  fi
 }
 
 compose_stop() {
@@ -522,11 +542,42 @@ if [ ${#COMPOSE_SVCS[@]} -gt 0 ]; then
   $WANT_CALLS    && wait_for_port $PORT_LK_JWT "lk-jwt" 20
 fi
 
+# ─── Appservice Registration (idempotent, tuwunel v1.6.0 workaround) ────────
+# Persistiert in tuwunel-DB — nur beim ersten-start / nach tuwunel-DB-wipe nötig.
+# Auto-skip wenn namespace-test zeigt appservice schon registriert.
+# Hintergrund siehe scripts/devstack.md §"Appservice-Registration".
+if $WANT_TUWUNEL && $WANT_GO && [ -f "$REPO_ROOT/scripts/register-appservice.sh" ]; then
+  # Schnelltest: kann appservice als @agent-test im namespace operieren?
+  AS_TOKEN=$(grep '^MATRIX_AS_TOKEN=' "$REPO_ROOT/go-appservice/.env.development" 2>/dev/null | cut -d= -f2-)
+  if [ -n "$AS_TOKEN" ]; then
+    NS_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -m 3 \
+      -X PUT -H "Authorization: Bearer ${AS_TOKEN}" -H 'Content-Type: application/json' \
+      -d '{"displayname":"probe"}' \
+      "http://localhost:$PORT_TUWUNEL/_matrix/client/v3/profile/@agent-probe:matrix.local/displayname?user_id=@agent-probe:matrix.local" 2>/dev/null)
+    if [ "$NS_CHECK" = "200" ]; then
+      log "appservice namespace OK (already registered)"
+    elif [ "$NS_CHECK" = "403" ] || [ "$NS_CHECK" = "400" ]; then
+      # 400 = M_EXCLUSIVE (namespace unbekannt), 403 = auth-issue. Register nötig.
+      # Alice muss existieren (als first-user-admin für !admin-command).
+      if curl -s -m 2 -X POST "http://localhost:$PORT_TUWUNEL/_matrix/client/v3/login" \
+           -H 'Content-Type: application/json' \
+           -d '{"type":"m.login.password","identifier":{"type":"m.id.user","user":"alice"},"password":"alice-dev-password-2026"}' \
+           2>/dev/null | grep -q access_token; then
+        log "appservice namespace fehlt → registriere via admin-command…"
+        "$REPO_ROOT/scripts/register-appservice.sh" 2>&1 | sed 's/^/  /' || \
+          warn "register failed — agent-mention wird nicht funktionieren"
+      else
+        warn "alice fehlt → skip register. Erst: ./scripts/setup-users.sh"
+      fi
+    fi
+  fi
+fi
+
 # ─── Go Appservice (local process) ───────────────────────────────────────────
 if $WANT_GO; then
   if [ -f "$REPO_ROOT/go-appservice/.env.development" ]; then
     spawn "go-appservice" "$REPO_ROOT/go-appservice" \
-      env GO_ENV=development bash -c 'go run ./cmd/appservice'
+      env GO_ENV=development bash -c 'go run -tags goolm ./cmd/appservice'
   else
     warn "go-appservice/.env.development fehlt — skip"
   fi
@@ -547,7 +598,7 @@ fi
 
 if $WANT_BRIDGE; then
   spawn "python-bridge" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV uv run python -m bridge.app
+    env $UV_APP_ENV uv run python -m uvicorn bridge.app:app --host 127.0.0.1 --port "$PORT_BRIDGE" --reload
 fi
 
 if $WANT_INGESTION; then

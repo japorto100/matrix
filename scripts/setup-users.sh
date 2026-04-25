@@ -101,7 +101,7 @@ EOF
 EOF
 )
 
-    curl -sf -X POST "$HS/_matrix/client/v3/register" \
+    curl -s -X POST "$HS/_matrix/client/v3/register" \
         -H 'Content-Type: application/json' \
         -d "$body"
 }
@@ -118,7 +118,7 @@ login_user() {
 }
 EOF
 )
-    curl -sf -X POST "$HS/_matrix/client/v3/login" \
+    curl -s -X POST "$HS/_matrix/client/v3/login" \
         -H 'Content-Type: application/json' \
         -d "$body"
 }

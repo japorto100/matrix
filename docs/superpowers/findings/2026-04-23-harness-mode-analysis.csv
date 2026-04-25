@@ -1,0 +1,1 @@
+thread_id,user_id,mode,llm_turns,has_tool_calls,max_iteration,total_tokens,avg_response_chars,total_duration_ms,model_used

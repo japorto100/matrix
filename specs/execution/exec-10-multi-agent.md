@@ -497,6 +497,14 @@ agent/skills/importer.py                — GEAENDERT: URL host validation (SSRF
 - [ ] **Frontend-Login-UX** — aktuell wird alice-Token in `frontend_merger/.env.local:MATRIX_ACCESS_TOKEN` injiziert (dev-convenience, one-click-login). SOTA: Browser-Login-Flow (email+password → token in localStorage, prod-parity). Frontend_merger braucht Login-Komponente (prüfen ob cinny-basierte vorhanden).
 - [ ] **`MATRIX_BOT_ACCESS_TOKEN` feature-flag refactor** — `python-backend/agent/control/security.py:63` checkt `bool(os.environ.get("MATRIX_BOT_ACCESS_TOKEN"))` als "is matrix wired up". SOTA: stattdessen `appservice.registered` aus go-appservice-state lesen (via health-endpoint). Token-based-check ist legacy aus matrix-nio-era.
 - [ ] **Trading-project per-user-provisioning** — wenn OIDC/MAS-blocker (`exec-matrix-monitor §M4`) gelöst: user-registration hook → sanitize(username) → auto-create `@<userid>:matrix.local` (password oder MAS) + namespace-managed `@agent-<userid>:matrix.local` (on-demand) + auto-DM-room. Siehe §7.2 username-sanitizer.
+- [ ] **Appservice-ID umbenennen: `trading-agent` → `orchestrator`** — legacy-name aus trading-project-context. Für matrix-repo als generic Orchestrator-Platform ist das irreführend. Changes needed:
+  - `homeserver/registration.yaml` — `id: trading-agent` → `id: orchestrator`
+  - `homeserver/tuwunel.v1.6.toml` — kommentare anpassen (appservice_dir yaml-path bleibt, reference updaten)
+  - `go-appservice/internal/config/config.go` — `[appservice.trading-agent]` refs → `[appservice.orchestrator]` in docs
+  - Tuwunel-DB-reset nötig (alter appservice-entity unter `trading-agent` id bleibt registriert)
+  - Docs: `exec2-04 §O.2` + README updaten
+  - **Gate für rename:** wenn trading-project integration near-term geplant → `orchestrator` als umbrella, `trading-agent` als subagent (teil der subagent-topologie in §7.2)
+
 - [ ] **User-Agent-Ownership + Access-Control** (🚨 security-relevant, muss vor prod) — aktuell weiß das system nicht automatisch welcher human-user welchem agent gehört:
   - Heute: Alice muss explizit `@agent-alice` mentionen. Bob könnte auch `@agent-alice` adressieren — kein owner-check. Cross-access ist offen.
   - **Neue DB-table** `agent_ownership` (owner_user_id PRIMARY KEY → agent_user_id). Go-appservice pflegt das.

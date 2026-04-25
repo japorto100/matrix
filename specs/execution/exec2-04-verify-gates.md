@@ -4,6 +4,12 @@
 > Reihenfolge: so wie man beim DevStack-Start logisch durchgehen wuerde.
 > Stand: 13.04.2026 (Gates A-H: 30.03.2026 | Gates I-K: 11-13.04.2026 Infrastructure)
 
+> **⚙️ BEVOR Verify-Run:** Stack-Setup + Troubleshooting siehe `scripts/devstack.md`.
+> Enthält: presets (`--matrix-full`, `--matrix-mobile`, etc.), erster-Start-Chain
+> (setup-garage → users → dev-stack), db-wipe-Szenarien, bekannte upstream-bugs
+> (Tuwunel v1.6.0 appservice-autoload, podman-compose --profile, etc.), und
+> ports-Übersicht. Täglicher Re-Start: `./scripts/dev-stack.sh --matrix-full`.
+
 ---
 
 ## Offene Tasks (aus exec2-01/02/03 + exec-04)
