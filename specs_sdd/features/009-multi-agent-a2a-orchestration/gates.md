@@ -11,19 +11,20 @@ feature_id: 009
 
 ## G1 LangGraph Base
 
-- [ ] Graph compiles.
+- [x] Graph compiles.
 - [ ] LLM/tool loop works.
 - [ ] Approval interrupt/resume works.
-- [ ] Max iterations stop works.
-- [ ] Legacy fallback status is clear.
+- [x] Max-iteration routing decision is unit-tested.
+- [ ] Legacy fallback/checkpointer status is clear for production persistence.
 
 ## G2 Trading Roles
 
-- [ ] Six roles exist.
-- [ ] Role prompts are applied.
-- [ ] Role-specific tool filtering works.
-- [ ] Orchestrator parallel/aggregate/sequential path works.
-- [ ] Completion contracts are enforced.
+- [x] Six roles exist.
+- [x] Role prompts exist and orchestrator nodes compile.
+- [x] Role-specific tool filtering works in `tool_node`.
+- [x] Orchestrator compiles and aggregate node is unit-tested.
+- [ ] Orchestrator parallel/aggregate/sequential path works live.
+- [ ] Completion contracts are enforced, not only defined.
 
 ## G3 Skills
 
@@ -36,20 +37,27 @@ feature_id: 009
 
 ## G4 A2A
 
-- [ ] AgentCards serialize.
-- [ ] A2A client local call works.
+- [x] AgentCards serialize for the six trading cards.
+- [x] A2A client local HTTP call and SSE text parsing is unit-tested.
 - [ ] Delegation node sends to target.
 - [ ] Target receives bounded task.
 - [ ] Result returns to source.
 - [ ] Logs/traces show both agents.
 
+## G4a Checkpointing
+
+- [x] Local graph compile is not broken by `HINDSIGHT_DB_URL`.
+- [ ] Async PostgreSQL saver lifecycle is implemented in the graph runner or
+  explicitly deferred.
+
 ## G5 Matrix / Per-User Routing
 
-- [ ] Mention resolves target agent.
-- [ ] Dynamic reply identity works.
-- [ ] Default-user-agent routing decision is recorded.
-- [ ] Username sanitization utility exists before external registration use.
-- [ ] Per-user model/agent routing visible.
+- [ ] Mention resolves target agent in a live Matrix room.
+- [x] Dynamic reply identity works in the Python bridge static test.
+- [x] Default-user-agent routing decision is recorded.
+- [x] Username sanitization utility exists before external registration use.
+- [x] Per-user default model lookup is static-tested.
+- [ ] Per-user agent routing/settings are visible.
 
 ## G6 Paper-Derived Learning
 

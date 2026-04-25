@@ -76,7 +76,7 @@ class A2AClient:
                         try:
                             packet = json.loads(line[5:].strip())
                             if packet.get("type") in ("text_delta", "text-delta"):
-                                text += packet.get("text", "")
+                                text += packet.get("delta") or packet.get("text", "")
                         except json.JSONDecodeError:
                             continue
 

@@ -185,7 +185,11 @@ export function extractSkillsGuardVerdict(
 	source: string,
 ): SkillsGuardVerdict | null {
 	if (!body || typeof body !== "object") return null;
-	const obj = body as Record<string, unknown>;
+	const root = body as Record<string, unknown>;
+	const obj =
+		root.detail && typeof root.detail === "object"
+			? (root.detail as Record<string, unknown>)
+			: root;
 	if (obj.suggested_action !== "hitl_confirm") return null;
 
 	// Shape from /skills/import (multi-rejection):

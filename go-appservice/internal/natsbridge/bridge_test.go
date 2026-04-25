@@ -11,12 +11,12 @@ import (
 
 func TestInboundMessageSerialization(t *testing.T) {
 	msg := InboundMessage{
-		RoomID:       "!room:matrix.local",
-		Sender:       "@user:matrix.local",
-		Body:         "hello agent",
-		EventID:      "$event123",
-		ThreadID:     "$thread_root",
-		TargetAgent:  "trading",
+		RoomID:        "!room:matrix.local",
+		Sender:        "@user:matrix.local",
+		Body:          "hello agent",
+		EventID:       "$event123",
+		ThreadID:      "$thread_root",
+		TargetAgent:   "trading",
 		IsThreadReply: true,
 	}
 	data, err := json.Marshal(msg)
@@ -97,6 +97,21 @@ func TestInboundMessageOmitsEmptyFields(t *testing.T) {
 	}
 	if contains(text, "is_thread_reply") {
 		t.Error("false IsThreadReply should be omitted")
+	}
+}
+
+func TestSubjectAgentTokenNormalizesUnsafeNames(t *testing.T) {
+	cases := map[string]string{
+		"Research":                             "research",
+		"@agent-Research.Bot:matrix.local":     "research-bot",
+		"../../evil":                           "evil",
+		"---":                                  "default",
+		"agent-very_long_name_with/slashes...": "very_long_name_with-slashes",
+	}
+	for input, want := range cases {
+		if got := SubjectAgentToken(input); got != want {
+			t.Fatalf("SubjectAgentToken(%q) = %q, want %q", input, got, want)
+		}
 	}
 }
 

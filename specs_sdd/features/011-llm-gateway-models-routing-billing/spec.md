@@ -1,6 +1,6 @@
 ---
 title: LLM Gateway, Models, Routing and Billing
-status: in_progress
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -24,6 +24,11 @@ smart routing work are implemented. ADR-001 originally blocked rollout behind
 six gates; later superpower implementation log records G1-G6 plus the Phase-1
 `router_node` refactor as landed. Remaining risk is no longer "gate not built",
 but live verification and follow-up fixes from adversarial verify.
+
+Static verification on 2026-04-25 passes Billing, Insights, Model Metadata,
+Smart Routing, Credential Preflight, Smart Routing cache, Router Node,
+Credential Pool and resilience tests. This validates the local logic, but not a
+live LiteLLM/provider/DB spend path.
 
 ## Target State / Soll
 
@@ -51,16 +56,26 @@ metadata, reasoning controls, usage/billing visibility and gated routing.
 - A2FM ML router remains research/phase 2+; Phase 2 is now L1/L2 feedback
   before any classifier.
 - Verify follow-ups remain: A/B insert/update race, smart-routing keyword
-  quality review, scorer eval-id overwrite semantics.
+  quality review and scorer eval-id overwrite semantics. Static cleanup on
+  2026-04-25 changed this state: A/B routing metadata now uses upsert semantics
+  so insert/update order preserves routing fields; broad English keywords were
+  narrowed to phrase checks plus domain terms; scorer eval ids are explicitly
+  first-write-wins unless a future workpack adds an overwrite flag.
 
-## Verify
+## Static Verify
 
-- [ ] LiteLLM tool-call smoke passes.
-- [ ] Model explorer loads live models.
-- [ ] Spend dashboard shows data with configured DB.
-- [ ] Smart routing shows user-visible routing metadata and Control-UI disable
+- [x] `uv run pytest tests/agent/billing tests/agent/llm tests/agent/resilience tests/agent/security/test_credential_preflight.py tests/agent/security/test_smart_routing_cache.py tests/agent/graph/nodes/test_router_node.py tests/agent/runners/test_mark_routing.py -q` passes.
+- [x] ADR-001 G1/G2/G3/G4/P1 logic has local test coverage.
+- [x] A2FM is preserved as research/phase-2+, not shipped routing behavior.
+
+## Live Verify
+
+- LiteLLM tool-call smoke passes.
+- Model explorer loads live models.
+- Spend dashboard shows data with configured DB.
+- Smart routing shows user-visible routing metadata and Control-UI disable
   path.
-- [ ] Follow-up findings F-G4/F-G1/F-4g4 are closed or explicitly accepted.
+- [x] Follow-up findings F-G4/F-G1/F-4g4 are closed or explicitly accepted.
 
 ## Closeout Criteria
 

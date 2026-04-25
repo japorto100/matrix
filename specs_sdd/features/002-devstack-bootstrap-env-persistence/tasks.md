@@ -14,18 +14,17 @@ migrated_from:
 
 # Tasks
 
-- [ ] T001 Summarize devstack implementation state into `closeout.md`.
-- [ ] T002 Extract env layout rationale into `research.md` or ADR candidate.
-- [ ] T003 [P] Verify shell syntax for scripts -> `scripts/*.sh`.
-- [ ] T004 [P] Verify compose parse -> `docker-compose.yml`.
-- [ ] T005 [P] Verify env examples are present for frontend, Go and Python.
-- [ ] T006 Run operator bootstrap smoke or document why local secrets prevent it.
-- [ ] T007 Mark archived `exec-19` stages as split across owning features.
+- [x] T001 Summarize devstack implementation state into `closeout.md`.
+- [x] T002 Extract env layout rationale into `research.md` or ADR candidate.
+- [x] T003 [P] Verify shell syntax for scripts -> `scripts/*.sh`.
+- [x] T004 [P] Verify compose parse -> `docker-compose.yml`.
+- [x] T005 [P] Verify env examples are present for frontend, Go and Python.
+- [x] T006 Run operator bootstrap smoke or document why local secrets prevent it.
+- [x] T007 Mark archived `exec-19` stages as split across owning features.
 
 ## Verify Gates
 
-- [ ] `bash -n scripts/*.sh`
-- [ ] Compose YAML parses.
-- [ ] Alembic head is reachable when Postgres is running.
-- [ ] Env examples match documented service roles.
-
+- [x] `bash -n scripts/*.sh`
+- [x] Compose YAML parses.
+- Alembic head is reachable when Postgres is running. Deferred to live/operator verify.
+- [x] Env examples match documented service roles.

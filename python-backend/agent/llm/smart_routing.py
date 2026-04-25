@@ -73,8 +73,8 @@ _COMPLEX_KEYWORDS = frozenset({
     # --- coding / CLI ---
     # EN
     "debug", "debugging", "implement", "implementation", "refactor",
-    "patch", "traceback", "stacktrace", "exception", "pytest", "test",
-    "tests", "terminal", "shell", "tool", "tools", "cron", "docker",
+    "patch", "traceback", "stacktrace", "exception", "pytest",
+    "terminal", "shell", "cron", "docker",
     "kubernetes", "compile", "deploy", "migration", "rollback",
     # DE
     "debuggen", "implementiere", "implementieren", "implementierung",
@@ -84,8 +84,8 @@ _COMPLEX_KEYWORDS = frozenset({
     # --- reasoning ---
     # EN
     "analyze", "analysis", "investigate", "architecture", "design",
-    "compare", "benchmark", "optimize", "optimise", "review", "plan",
-    "planning", "delegate", "subagent", "evaluate", "reason",
+    "compare", "benchmark", "optimize", "optimise",
+    "planning", "delegate", "subagent", "evaluate",
     # DE
     "analysiere", "analysieren", "analysiert", "analyse", "untersuche",
     "untersuchen", "untersuchung", "architektur", "entwurf",
@@ -116,7 +116,7 @@ _COMPLEX_KEYWORDS = frozenset({
     # --- data / ML ---
     # EN
     "dataset", "embedding", "train", "fine-tune", "finetune",
-    "evaluation", "inference", "model", "prompt",
+    "evaluation", "inference", "prompt",
     # DE
     "datensatz", "datensätze", "training", "trainiere", "trainieren",
     "feinabstimmung", "auswertung", "auswerten", "schlussfolgerung",
@@ -125,6 +125,19 @@ _COMPLEX_KEYWORDS = frozenset({
 
 _URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 _CODE_FENCE_RE = re.compile(r"```|`[^`]+`")
+_COMPLEX_PHRASES = tuple(
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\b(unit|integration|e2e|regression)\s+tests?\b",
+        r"\btest\s+(suite|coverage|failure|failures|runner|matrix)\b",
+        r"\b(code|pull\s+request|pr|architecture|security)\s+review\b",
+        r"\breview\s+(this|the)?\s*(code|diff|patch|pr|pull\s+request)\b",
+        r"\bfine[-\s]?tune\b",
+        r"\b(reason|reasoning)\s+(through|about|chain|trace)\b",
+        r"\b(model|prompt)\s+(routing|selection|metadata|pricing|evaluation)\b",
+        r"\b(plan|planning)\s+(architecture|migration|rollout|implementation)\b",
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -193,6 +206,8 @@ def choose_cheap_model_route(
     if _CODE_FENCE_RE.search(text):
         return None
     if _URL_RE.search(text):
+        return None
+    if any(pattern.search(text) for pattern in _COMPLEX_PHRASES):
         return None
 
     # Tokenize: lowercase → whitespace-split → strip punctuation →

@@ -36,29 +36,35 @@ split into subfeatures during content migration.
 
 ## Top-Level `specs/*.md`
 
-| Source | Destination |
-|---|---|
-| `specs/00-overview.md` | Feature 001 |
-| `specs/01-homeserver.md` | Feature 004 |
-| `specs/02-go-appservice.md` | Feature 006 |
-| `specs/03-python-agent-bridge.md` | Feature 006 |
-| `specs/04-nextjs-chat.md` | Feature 005 |
-| `specs/05-devstack.md` | Feature 002 |
-| `specs/06-e2ee.md` | Feature 006 |
-| `specs/07-mobile.md` | Feature 004 |
-| `specs/08-tooling.md` | Feature 001 |
-| `specs/09-privacy.md` | Feature 001 |
-| `specs/10-portierung.md` | Feature 001 |
-| `specs/11-bore-tunnel.md` | Feature 004 |
-| `specs/12-connectivity.md` | Feature 004 |
-| `specs/13-e2ee-agent-architecture.md` | Feature 006 |
-| `specs/14-agent-chat-ui-enhancements.md` | Feature 007 |
-| `specs/15-document-preview-evaluation.md` | `research/backlog/` |
-| `specs/16-security.md` | Feature 013 |
-| `specs/17-schema-ownership.md` | `archive/schema-history/` |
-| `specs/18-python-backend-workspace-refactor.md` | Feature 001 or Feature 002 after content review |
-| `specs/FUTURE_IDEAS.md` | Feature 001 / `research/backlog/` split |
-| `specs/agent-output-pattern.md` | Feature 001 |
+Classification was completed during Feature 001. "Current" means the file still
+contains accepted operating guidance. "Split" means the file remains useful, but
+its contents are owned by multiple SDD features/backlog entries. "Historical"
+means the file is provenance only and should not drive new implementation
+without re-triage.
+
+| Source | Destination | Classification | Notes |
+|---|---|---|---|
+| `specs/00-overview.md` | Feature 001 | current | Baseline project purpose and architecture context. |
+| `specs/01-homeserver.md` | Feature 004 | current | Homeserver setup owner. |
+| `specs/02-go-appservice.md` | Feature 006 | current | Go Matrix gateway owner. |
+| `specs/03-python-agent-bridge.md` | Feature 006 | current | Python NATS bridge owner. |
+| `specs/04-nextjs-chat.md` | Feature 005 | split | Chat UI history now lives in `frontend_merger`; protocol details remain active. |
+| `specs/05-devstack.md` | Feature 002 | current | Devstack/bootstrap source material. |
+| `specs/06-e2ee.md` | Feature 006 | current | E2EE gateway and hardening source. |
+| `specs/07-mobile.md` | Feature 004 | current | Mobile/connectivity source. |
+| `specs/08-tooling.md` | Feature 001 | current | Tooling invariants promoted to `constitution.md`. |
+| `specs/09-privacy.md` | Feature 001 / Feature 013 | current | Privacy invariants promoted to `constitution.md`; security follow-ups live in Feature 013. |
+| `specs/10-portierung.md` | Feature 001 | current | Porting direction and tradeview-fusion boundary guidance. |
+| `specs/11-bore-tunnel.md` | Feature 004 | current | Tunnel/mobile connectivity source. |
+| `specs/12-connectivity.md` | Feature 004 | current | Connectivity troubleshooting source. |
+| `specs/13-e2ee-agent-architecture.md` | Feature 006 | current | Agent/E2EE architecture source. |
+| `specs/14-agent-chat-ui-enhancements.md` | Feature 007 / backlog | split | Implemented parts in Feature 007; nice-to-haves in backlog. |
+| `specs/15-document-preview-evaluation.md` | `research/backlog/` / Feature 010 | split | Viewer decisions are UI backlog unless tied to Files surface. |
+| `specs/16-security.md` | Feature 013 | current | Sandbox/security/HITL owner. |
+| `specs/17-schema-ownership.md` | `archive/schema-history/` | historical | Superseded schema ownership history. |
+| `specs/18-python-backend-workspace-refactor.md` | Feature 001 / Feature 002 | current | Python workspace/cache invariants promoted to baseline/devstack. |
+| `specs/FUTURE_IDEAS.md` | `research/backlog/future-ideas.md` plus owning features | split | Converted into categorized backlog with feature owners. |
+| `specs/agent-output-pattern.md` | Feature 001 / Feature 006 / Feature 007 | current | Matrix/mobile output convention promoted to `constitution.md`. |
 
 ## `specs/agent-ui/*`
 

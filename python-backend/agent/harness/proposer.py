@@ -258,6 +258,35 @@ harness (system prompts, tool config, memory settings) would improve agent perfo
     return proposal
 
 
+def _proposal_prompt_override(proposal: dict[str, Any]) -> str:
+    """Convert system-prompt proposals into a candidate prompt overlay."""
+    changes = proposal.get("proposed_changes") or []
+    prompt_changes = []
+    for change in changes:
+        if not isinstance(change, dict):
+            continue
+        target = str(change.get("target", "")).lower()
+        if "system_prompt" not in target and "prompt" not in target:
+            continue
+        text = str(change.get("change") or "").strip()
+        rationale = str(change.get("rationale") or "").strip()
+        if not text:
+            continue
+        prompt_changes.append(
+            {
+                "target": change.get("target", "system_prompt"),
+                "change": text,
+                "rationale": rationale,
+            }
+        )
+    if not prompt_changes:
+        return ""
+    return (
+        "Harness candidate prompt overlay generated from proposer output:\n"
+        + json.dumps(prompt_changes, indent=2, default=str)
+    )
+
+
 def _save_proposal(proposal: dict[str, Any], config_snapshot: dict | None = None) -> None:
     """Save proposal to DB (agent.component_configs) AND optionally filesystem.
 
@@ -376,11 +405,13 @@ async def propose_loop(
     candidates_per_iter: int = 1,
     model: str = "",
     last_n_sessions: int = 10,
+    eval_max_queries: int = 1,
+    eval_concurrency: int = 2,
 ) -> list[dict[str, Any]]:
     """Run multiple proposer iterations (Meta-Harness: ~20 iterations, ~60 candidates).
 
-    Each iteration: propose → (future: evaluate → score → update frontier).
-    Currently propose-only; evaluation integration is future work.
+    Each iteration: propose -> evaluate candidate overlay on the real search-set
+    evaluator when ``eval_max_queries`` is positive.
     """
     all_proposals = []
     for i in range(iterations):
@@ -388,6 +419,17 @@ async def propose_loop(
             logger.info("Proposer iteration %d/%d", i + 1, iterations)
             proposal = await propose(model=model, last_n_sessions=last_n_sessions)
             proposal["loop_iteration"] = i + 1
+            if eval_max_queries > 0:
+                from agent.harness.evaluator import evaluate_search_set
+
+                eval_id = f"harness-loop-{proposal.get('timestamp', i + 1)}"
+                evaluation = await evaluate_search_set(
+                    system_prompt_override=_proposal_prompt_override(proposal),
+                    max_queries=eval_max_queries,
+                    eval_id=eval_id,
+                    concurrency=eval_concurrency,
+                )
+                proposal["evaluation"] = evaluation
             all_proposals.append(proposal)
 
     logger.info(

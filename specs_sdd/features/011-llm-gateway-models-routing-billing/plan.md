@@ -1,6 +1,6 @@
 ---
 title: LLM Gateway, Models, Routing and Billing Plan
-status: mostly_built
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25

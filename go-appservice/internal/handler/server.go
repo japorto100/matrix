@@ -20,7 +20,7 @@ import (
 	memclient "matrix/go-appservice/internal/connectors/memory"
 	"matrix/go-appservice/internal/crypto"
 	agenthttp "matrix/go-appservice/internal/handlers/http"
-	"matrix/go-appservice/internal/intent"
+	agentintent "matrix/go-appservice/internal/intent"
 	"matrix/go-appservice/internal/natsbridge"
 	"matrix/go-appservice/internal/scheduler"
 	"matrix/go-appservice/internal/storage"
@@ -38,7 +38,7 @@ type Server struct {
 	httpServer    *http.Server
 	client        *mautrix.Client
 	nats          *natsbridge.Bridge
-	agent         *intent.AgentSender
+	agent         *agentintent.AgentSender
 	crypto        *crypto.Machine               // nil wenn E2EE deaktiviert
 	artifactStore storage.ArtifactMetadataStore // nil wenn Artifact Storage deaktiviert
 
@@ -65,7 +65,7 @@ func NewServer(cfg *config.Config, natsBridge *natsbridge.Bridge) (*Server, erro
 		return nil, fmt.Errorf("matrix client: %w", err)
 	}
 
-	agentSender := intent.New(client, cfg.ServerName)
+	agentSender := agentintent.New(client, cfg.ServerName)
 
 	// exec-scheduler Lane P: shared pgxpool for storage + River. Only
 	// created when a PostgresDSN is configured. Legacy deployments without
@@ -644,7 +644,7 @@ func (s *Server) handleMessage(ctx context.Context, ev *event.Event) {
 		if agentName == "" {
 			agentName = "trading"
 		}
-		fallbackID := id.UserID("@" + s.cfg.AgentPrefix + agentName + ":" + s.cfg.ServerName)
+		fallbackID := s.agent.UserID(agentName)
 		_ = s.agent.SendText(ctx, fallbackID, ev.RoomID, "⚠️ Agent temporär nicht erreichbar.")
 	}
 }
@@ -706,7 +706,7 @@ func (s *Server) handleAgentReply(reply natsbridge.ReplyMessage) {
 	ctx := context.Background()
 	agentID := id.UserID(reply.AgentUserID)
 	if reply.AgentUserID == "" {
-		agentID = id.UserID("@" + s.cfg.AgentPrefix + "trading:" + s.cfg.ServerName)
+		agentID = s.agent.UserID("trading")
 	}
 
 	roomID := id.RoomID(reply.RoomID)
@@ -843,7 +843,7 @@ func extractAgentName(body, agentPrefix string) string {
 			break
 		}
 	}
-	return strings.ToLower(rest[:end])
+	return agentintent.SanitizeAgentName(rest[:end])
 }
 
 // isAgentUser prüft ob eine User-ID aus dem Agent-Namespace kommt.

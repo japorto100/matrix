@@ -74,6 +74,13 @@ media_rc_create_burst_count = 50            # Burst-Cap
 # ─── Media: Legacy-URLs erlauben (QW-4 / MSC3916) ───────────────────────────
 allow_legacy_media = true
 
+# ─── URL Preview ─────────────────────────────────────────────────────────────
+# SSRF-Schutz: keine Domains sind fuer serverseitige URL-Previews erlaubt.
+# Tuwunel blockiert Preview-Fetches, wenn die Allowlist leer bleibt.
+url_preview_domain_contains_allowlist = []
+url_preview_domain_explicit_allowlist = []
+url_preview_url_contains_allowlist = []
+
 # ─── Media: Migrations-Safety ───────────────────────────────────────────────
 # Default ist false — explizit gesetzt damit bei Pfad-Mismatch die DB-Eintraege
 # nicht verwaist werden (wichtig beim v1.5 → v1.6 Media-Pfad-Uebergang).

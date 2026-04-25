@@ -34,9 +34,10 @@ feature_id: 014
 
 ## Harness
 
-- `score_session` produces composite fitness.
+- [x] `score_session` produces composite fitness in tests.
 - A/B backfill worker fills missing fitness scores.
-- eval id behavior is deterministic/documented.
+- [x] eval id behavior is deterministic/documented in tests.
+- [x] routing-specific follow-ups are synchronized with Feature 011.
 - Pareto frontier can compute from real candidate data.
 
 ## Evaluator
@@ -49,6 +50,7 @@ feature_id: 014
 
 ## Eval Workpacks
 
+- [x] Historical Superpowers harness-mode CSV is linked with checksum.
 - Each workpack records prerequisites, command/probe, expected evidence and
   owning feature.
 - A workpack is closed only with evidence, not by code existence.

@@ -124,6 +124,22 @@ async def _prepare_system_prompt(
         except Exception:
             pass
 
+        # Feature 009: per-user agent settings. This is a fail-soft prompt
+        # surface; hard enforcement remains in tool permissions, skill toggles
+        # and memory/context policy.
+        try:
+            from agent.security.agent_settings import get_user_agent_settings
+
+            agent_id = getattr(ctx, "agent_id", "default") or "default"
+            settings = await get_user_agent_settings(ctx.user_id, agent_id=agent_id)
+            if settings is not None:
+                system_prompt = f"{system_prompt}\n\n{settings.prompt_block()}"
+                span.set_attribute("agent.settings.memory_scope", settings.memory_scope)
+                span.set_attribute("agent.settings.enabled_skills", len(settings.enabled_skills))
+                span.set_attribute("agent.settings.tool_allowlist", len(settings.tool_allowlist))
+        except Exception:  # noqa: BLE001
+            logger.debug("User agent settings skipped", exc_info=True)
+
         # exec-hermes Phase-B P1: Memory recall via MemoryManager (new path)
         # with Hindsight-direct (legacy path) as fallback. MemoryManager is
         # None until init_stack seeds it — callers must handle that case.

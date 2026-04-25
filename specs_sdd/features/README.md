@@ -18,16 +18,16 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 003 | `003-frontend-merger-shell` | implementation_done | Shell gebaut, nur Live-Smoke offen |
 | 004 | `004-matrix-homeserver-connectivity` | active_monitoring | Externe Blocker/Monitoring, aber Basis fuer Matrix |
 | 005 | `005-matrix-chat-core` | implementation_done | Implementiert, Live-Verify-Schuld |
-| 006 | `006-appservice-nats-e2ee-bridges` | implementation_done_live_verify_open | Implementiert, A4 E2E offen |
-| 007 | `007-agent-chat-voice-runtime` | implementation_done_live_verify_open | Implementiert, Stack/Voice-Verify offen |
-| 008 | `008-agentic-ui-generative-ui-mcp` | mostly_built | Viel gebaut, Phase-2-Gaps |
-| 009 | `009-multi-agent-a2a-orchestration` | implementation_done_live_verify_open | A2A live unverified |
-| 010 | `010-control-ui-runtime-surfaces` | frontend_built | Frontend steht, Integration quer ueber Backends |
-| 011 | `011-llm-gateway-models-routing-billing` | in_progress | Routing/Billing/Gates aktiv |
-| 012 | `012-memory-context-world-personal-kb` | mixed_active | Umbrella mit offenen Subfeatures |
-| 013 | `013-sandbox-security-hitl` | mixed_active | ADR-004 entschieden, HITL live offen |
-| 014 | `014-observability-harness-evals` | in_progress | Infra live, Spec/Gates/Evidence offen |
-| 015 | `015-scheduler-skills-planning-automation` | mixed_active | Scheduler/Skills teils gebaut, PDDL/DSPy gated |
+| 006 | `006-appservice-nats-e2ee-bridges` | static_verified_live_pending | Go/Python statisch verifiziert, A4 E2E offen |
+| 007 | `007-agent-chat-voice-runtime` | static_verified_live_pending | Frontend/Python statisch verifiziert, Approval/Context/Sanitizer statisch nachgezogen, Stack/Voice offen |
+| 008 | `008-agentic-ui-generative-ui-mcp` | static_verified_live_pending | A2UI/Copilot/Python-Emitter statisch verifiziert, #93/#94/#95 entschieden |
+| 009 | `009-multi-agent-a2a-orchestration` | static_verified_live_pending | A2A-Client/AgentCards/Graph/Rollen statisch verifiziert, live offen |
+| 010 | `010-control-ui-runtime-surfaces` | static_verified_live_pending | Shell/BFF/Queries stehen, Tab-Walkthrough offen |
+| 011 | `011-llm-gateway-models-routing-billing` | static_verified_live_pending | Billing/Model/Routing statisch verifiziert, Routing-Followups geschlossen |
+| 012 | `012-memory-context-world-personal-kb` | static_verified_live_pending | Memory/Context statisch verifiziert, World/KB erste Slices entschieden |
+| 013 | `013-sandbox-security-hitl` | static_verified_live_pending | Security-Logik statisch verifiziert, URL-preview dev config explizit, HITL/OpenSandbox live offen |
+| 014 | `014-observability-harness-evals` | static_verified_live_pending | Harness/Export statisch verifiziert, Evidence verlinkt, Live-Trace/Audit/Eval offen |
+| 015 | `015-scheduler-skills-planning-automation` | static_verified_live_pending | Scheduler/Skills/Plan statisch verifiziert, Loader-Source statisch nachgezogen, Live-Delivery offen |
 
 ## Meta-Bereiche
 

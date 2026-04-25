@@ -1,4 +1,4 @@
-"""ADR-001 G4 — _mark_routing fire-and-forget UPDATE helper."""
+"""ADR-001 G4 — _mark_routing fire-and-forget UPSERT helper."""
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -53,13 +53,46 @@ async def test_mark_routing_writes_all_three_columns(monkeypatch):
         routing_used=True,
         routing_reason="simple_turn",
         routing_picked_model="gpt-4o-mini",
+        user_id="alice",
+        thread_id="t-1",
     )
 
-    assert "UPDATE agent.ab_experiments" in record["sql"]
+    assert "INSERT INTO agent.ab_experiments" in record["sql"]
+    assert "ON CONFLICT (id) DO UPDATE" in record["sql"]
     assert "routing_used" in record["sql"]
     assert "routing_reason" in record["sql"]
     assert "routing_picked_model" in record["sql"]
-    assert record["params"] == (True, "simple_turn", "gpt-4o-mini", "row-123")
+    assert record["params"] == (
+        "row-123",
+        "alice",
+        "t-1",
+        True,
+        "simple_turn",
+        "gpt-4o-mini",
+    )
+
+
+@pytest.mark.asyncio
+async def test_insert_ab_row_updates_pending_upsert_without_clobbering_routing(monkeypatch):
+    record: dict = {}
+
+    async def fake_connect(_dsn, **_kw):
+        return _make_fake_conn(record)
+
+    monkeypatch.setattr("psycopg.AsyncConnection.connect", fake_connect)
+
+    await dispatcher._insert_ab_row(
+        row_id="row-123",
+        user_id="alice",
+        thread_id="t-1",
+        variant="langgraph",
+        bucket=42,
+    )
+
+    assert "INSERT INTO agent.ab_experiments" in record["sql"]
+    assert "ON CONFLICT (id) DO UPDATE" in record["sql"]
+    assert "routing_used" not in record["sql"]
+    assert record["params"] == ("row-123", "alice", "t-1", "langgraph", 42)
 
 
 @pytest.mark.asyncio

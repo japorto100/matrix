@@ -364,11 +364,19 @@ async def harness_history() -> str:
     name="harness_evaluate",
     description="Run the agent against the search set and collect scores. Use to evaluate the current harness or a proposed variant.",
 )
-async def harness_evaluate(max_queries: int = 5) -> str:
+async def harness_evaluate(
+    max_queries: int = 5,
+    concurrency: int = 4,
+    use_cache: bool = True,
+) -> str:
     """Evaluate current harness against search set queries."""
     from agent.harness.evaluator import evaluate_search_set
 
-    result = await evaluate_search_set(max_queries=max_queries)
+    result = await evaluate_search_set(
+        max_queries=max_queries,
+        concurrency=concurrency,
+        use_cache=use_cache,
+    )
     return json.dumps(result, indent=2, default=str)
 
 
@@ -387,12 +395,19 @@ async def harness_pareto() -> str:
     name="harness_loop",
     description="Run multiple proposer iterations (Meta-Harness style). Each iteration analyzes traces and proposes improvements.",
 )
-async def harness_loop(iterations: int = 3, model: str = "") -> str:
+async def harness_loop(
+    iterations: int = 3,
+    model: str = "",
+    eval_max_queries: int = 1,
+) -> str:
     """Run the proposer loop for N iterations."""
     from agent.harness.proposer import propose_loop
 
     results = await propose_loop(
-        iterations=iterations, candidates_per_iter=1, model=model
+        iterations=iterations,
+        candidates_per_iter=1,
+        model=model,
+        eval_max_queries=eval_max_queries,
     )
     return json.dumps(
         {"iterations": len(results), "proposals": results}, indent=2, default=str

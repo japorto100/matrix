@@ -9,11 +9,22 @@ feature_id: 002
 
 # Gates
 
-- [ ] Compose file parses.
-- [ ] `scripts/dev-stack.sh` shell syntax passes.
-- [ ] Env examples exist for frontend, Go appservice and Python backend.
-- [ ] Alembic migrations can run against local Postgres.
-- [ ] Secrets bootstrap runbook is operator-verifiable without committing clear
+- [x] Compose file parses.
+- [x] `scripts/dev-stack.sh` shell syntax passes.
+- [x] Env examples exist for frontend, Go appservice and Python backend.
+- [ ] Alembic migrations can run against local Postgres. Deferred to
+  `live-verify.md` because it requires a running local Postgres profile.
+- [x] Secrets bootstrap runbook is operator-verifiable without committing clear
   secrets.
-- [ ] Postgres settings are reviewed against 8GB RAM machine.
-- [ ] HDD/SSD placement follows local policy.
+- [x] Postgres settings are reviewed against 8GB RAM machine.
+- [x] HDD/SSD placement follows local policy.
+
+## Static Evidence
+
+Checked on 2026-04-25:
+
+- `bash -n scripts/*.sh`
+- `podman compose -f docker-compose.yml config`
+- env examples present at `.env.example`, `frontend_merger/.env.example`,
+  `go-appservice/.env.example`, `python-backend/.env.example` and
+  `python-backend/ingestion/.env.example`

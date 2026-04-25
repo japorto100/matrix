@@ -1,6 +1,6 @@
 ---
 title: Sandbox, Security and HITL
-status: mixed_active
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -36,10 +36,22 @@ system, not inside OpenSandbox. The Superpower implementation log records that
 the structured 422 response and `SkillsGuardDrawer` frontend later landed, but
 live verification remains required.
 
-Matrix-specific security decisions also belong here: URL previews are disabled
-in dev and prod because Matrix/Synapse server-side previews create SSRF risk,
-E2EE trust boundaries are intentional, `pendingEventOrdering: "detached"` fixes
-SDK send/redact/kick flows, and markdown/HTML messages are sanitized.
+Matrix-specific security decisions also belong here: URL previews must be
+disabled because Matrix/Synapse server-side previews create SSRF risk, E2EE
+trust boundaries are intentional, `pendingEventOrdering: "detached"` fixes SDK
+send/redact/kick flows, and markdown/HTML messages are sanitized.
+
+Static verification on 2026-04-25 passes prompt-scanner, redaction,
+Skills-Guard and trajectory-export tests. Matrix client creation still contains
+`pendingEventOrdering: "detached"` and Agent Chat markdown uses
+`rehype-sanitize`. A later static cleanup on the same date made two local gaps
+concrete:
+
+- the active `homeserver/tuwunel.v1.6.toml` now explicitly sets the URL-preview
+  allowlists to empty arrays and has a config test for that posture;
+- `SkillsGuardDrawer.extractSkillsGuardVerdict()` now unwraps FastAPI
+  `HTTPException.detail` bodies forwarded through the Next.js BFF proxy, so
+  dangerous backend verdicts route to the drawer instead of a generic toast.
 
 ## Target State / Soll
 
@@ -83,16 +95,29 @@ approvals are governed by one security model:
   GitGuardian/OWASP leak taxonomy references are open evaluation inputs.
 - Control UI Security/Sandbox/Permissions tabs must be checked against real
   backend state, not only static rendering.
+- URL-preview disablement is explicit in the active dev config; live prod
+  config still needs operator verification before broad exposure.
 
-## Verify
+## Static Verify
 
-- [ ] Sandbox profile starts when selected.
-- [ ] Prompt scanner blocks high-risk scheduled task prompt.
-- [ ] Redaction path works for configured sensitive fields.
-- [ ] Skills-Guard dangerous import opens the HITL drawer.
-- [ ] Approve/reject decisions are audit-logged.
-- [ ] URL preview remains disabled in dev/prod config.
-- [ ] Security/Sandbox/Permissions tabs reflect backend state.
+- [x] `uv run pytest tests/agent/security/test_prompt_scanner.py tests/agent/security/test_redact.py tests/agent/security/test_skills_guard.py tests/agent/test_trajectory_export.py -q` passes.
+- [x] Prompt scanner positive/negative cases are covered.
+- [x] Redaction and trajectory export redaction are covered.
+- [x] Skills-Guard backend verdict logic is covered.
+- [x] Skills-Guard frontend/BFF error-shape extraction is covered.
+- [x] `pendingEventOrdering: "detached"` remains in Matrix client creation.
+- [x] Agent Chat markdown uses a sanitize pipeline.
+- [x] Active Tuwunel dev config has empty URL-preview allowlists.
+
+## Live Verify
+
+- Sandbox profile starts when selected.
+- Prompt scanner blocks high-risk scheduled task prompt through the live API.
+- Redaction path works for configured sensitive fields in persistence.
+- Skills-Guard dangerous import opens the HITL drawer.
+- Approve/reject decisions are audit-logged.
+- URL preview disablement is confirmed in active prod homeserver config.
+- Security/Sandbox/Permissions tabs reflect backend state.
 
 ## Closeout Criteria
 

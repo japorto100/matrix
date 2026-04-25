@@ -11,14 +11,15 @@ feature_id: 003
 
 ## Required Flows
 
-- [ ] Open `/` and confirm the shell renders.
-- [ ] Open `/matrix` and confirm Matrix surface renders a valid state.
-- [ ] Open `/agent` and confirm Agent Chat shell renders.
-- [ ] Open `/control` and confirm Control UI shell renders.
-- [ ] Open `/files` and confirm Files surface renders.
-- [ ] Open `/memory` and confirm Memory surface renders.
-- [ ] Use GlobalTopBar navigation between all surfaces without full-page errors.
-- [ ] Confirm missing env values produce actionable empty/config states, not crashes.
+- Open `/` and confirm the shell renders.
+- Open `/matrix` and confirm Matrix surface renders a valid state.
+- Open `/control` and confirm Control UI shell renders.
+- Open `/files` and confirm Files surface renders.
+- Open `/memory` and confirm Memory surface renders.
+- Open the global Agent Chat overlay from the shell and confirm it renders.
+- Open `/control/agents` and confirm Agent configuration renders.
+- Use GlobalTopBar navigation between all surfaces without full-page errors.
+- Confirm missing env values produce actionable empty/config states, not crashes.
 
 ## Evidence
 
@@ -28,4 +29,3 @@ feature_id: 003
 ## Result
 
 pending
-

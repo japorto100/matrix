@@ -16,6 +16,7 @@ import anyio
 
 from agent.context import AgentExecutionContext
 from agent.graph.state import AgentGraphState, ToolResult
+from agent.roles import TRADING_ROLE_TOOLS, TradingRole
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         return {"tool_results": [], "tool_calls": []}
 
     registry = ToolRegistry.load()
+    role = _trading_role_from_state(state)
+    if role is not None:
+        registry = registry.filter_by_names(TRADING_ROLE_TOOLS.get(role, set()))
 
     # Minimaler Context fuer Tool-Execution
     ctx = AgentExecutionContext(
@@ -124,6 +128,16 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         "tool_calls": [],  # Clear pending calls
         "messages": tool_messages,
     }
+
+
+def _trading_role_from_state(state: AgentGraphState) -> TradingRole | None:
+    role = state.get("current_role")
+    if not role:
+        return None
+    try:
+        return TradingRole(role)
+    except ValueError:
+        return None
 
 
 async def _execute_single(

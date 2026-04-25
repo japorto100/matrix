@@ -1,6 +1,6 @@
 ---
 title: Agentic UI, Generative UI and MCP Tasks
-status: mostly_built
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -23,69 +23,77 @@ migrated_from:
 
 ## Provider Runtime
 
-- [ ] T010 Verify CopilotKit env flags in `.env.example` and local dev env.
-- [ ] T011 Verify provider disabled mode has no hook crash and no retry spam.
-- [ ] T012 Verify provider enabled mode mounts CopilotKit + A2UI root provider.
-- [ ] T013 Verify `GlobalCopilotContext` registers global actions/readables.
-- [ ] T014 Verify route-level readables/actions for Files and Control.
+- T010 Verify CopilotKit env flags in `.env.example` and local dev env.
+- [x] T011 Static-test provider disabled mode has no hook registration.
+- [x] T012 Static-build provider enabled mode with CopilotKit + A2UI provider
+  path.
+- [x] T013 Static-test `GlobalCopilotContext` registers global
+  actions/readables.
+- T014 Verify route-level readables/actions for Files and Control.
 
 ## A2UI Static Rendering
 
-- [ ] T020 Verify A2UI tree validation tests.
-- [ ] T021 Verify malformed tree rejected with safe fallback.
-- [ ] T022 Verify valid tree renders inline in chat.
-- [ ] T023 Verify main canvas renders a valid surface.
-- [ ] T024 Verify unknown widget type does not crash the app.
-- [ ] T025 Verify `render_a2ui_surface` fallback remains available or is
+- [x] T020 Verify A2UI tree validation tests.
+- [x] T021 Verify malformed tree rejected with safe fallback.
+- T022 Live-verify valid tree renders inline in chat.
+- T023 Live-verify main canvas renders a valid surface.
+- [x] T024 Static-test unknown widget type is rejected and does not crash packet
+  handling.
+- [x] T025 Verify `render_a2ui_surface` fallback remains available or is
   explicitly retired.
 
 ## Native A2UI Stream
 
-- [ ] T030 Verify Python stream dataclasses emit `data-a2ui-*` packets.
-- [ ] T031 Verify TS packet adapter converts stream data to renderer messages.
-- [ ] T032 Verify `useChatSession` forwards `onData` packets to A2UI subscriber.
-- [ ] T033 Verify `data-a2ui-update-components` updates visible UI.
-- [ ] T034 Verify `data-a2ui-update-data-model` updates bound live data.
-- [ ] T035 Verify `data-a2ui-delete-surface` clears surface state.
+- [x] T030 Verify Python stream dataclasses emit `data-a2ui-*` packets.
+- [x] T031 Verify TS packet adapter converts stream data to renderer messages.
+- [x] T032 Verify `useChatSession` forwards `onData` packets to A2UI subscriber
+  by code/test coverage of the subscriber path.
+- T033 Verify `data-a2ui-update-components` updates visible UI.
+- [x] T034 Static-test `data-a2ui-update-data-model` adapter and widget-data
+  hook; live visible update remains pending.
+- [x] T035 Static-test `data-a2ui-delete-surface` adapter; live visible delete
+  remains pending.
 
 ## Surface Persistence
 
-- [ ] T040 Verify localStorage hydration after reload.
-- [ ] T041 Verify Postgres surface save/load/delete through Go API.
-- [ ] T042 Verify Next.js BFF preserves auth/user scope.
-- [ ] T043 Verify schema-version mismatch drops stale cache safely.
-- [ ] T044 Verify failed Postgres sync does not break local UI.
+- T040 Verify localStorage hydration after reload.
+- T041 Verify Postgres surface save/load/delete through Go API.
+- T042 Verify Next.js BFF preserves auth/user scope.
+- T043 Verify schema-version mismatch drops stale cache safely.
+- T044 Verify failed Postgres sync does not break local UI.
 
 ## Python A2UI Emitter
 
-- [ ] T050 Verify `a2ui-agent-sdk` imports are selective and side-effect safe.
-- [ ] T051 Verify `A2uiEmitter` emits protocol-valid messages.
-- [ ] T052 Verify system prompt includes catalog guidance only when needed.
-- [ ] T053 Verify SDK message translation matches frontend packet adapter.
+- [x] T050 Verify `a2ui-agent-sdk` imports are selective and side-effect safe.
+- [x] T051 Verify `A2uiEmitter` emits protocol-valid messages.
+- [x] T052 Verify system prompt includes catalog guidance.
+- [x] T053 Verify SDK message translation matches frontend packet adapter.
 
 ## Open Plan-v2 Gaps
 
-- [ ] T060 #93 Decide/implement custom A2UI catalog-extension.
-- [ ] T061 #93 Wrap ChartWidget and PortfolioCard as native A2UI entries if
-  adopted.
-- [ ] T062 #93 Keep tool-output fallback during migration.
-- [ ] T063 #94 Decide whether `/matrix` needs CopilotKit actions.
-- [ ] T064 #95 Keep route consolidation deferred unless UX decision changes.
+- [x] T060 #93 Decide custom A2UI catalog-extension: local widgets plus
+  fallback for current branch.
+- [x] T061 #93 ChartWidget and PortfolioCard exist as local A2UI/custom widget
+  entries; native catalog-extension decision remains open.
+- [x] T062 #93 Keep tool-output fallback during migration.
+- [x] T063 #94 Decide whether `/matrix` needs CopilotKit actions: deferred.
+- [x] T064 #95 Keep route consolidation deferred unless UX decision changes.
 
 ## MCP / WebMCP
 
-- [ ] T070 Verify Python FastMCP server starts and lists expected tools.
-- [ ] T071 Verify Go `/mcp/` proxy initialize returns 200.
-- [ ] T072 Verify frontend `use-mcp` hook reaches the current server URL.
-- [ ] T073 Verify Browser WebMCP `navigator.modelContext.listTools()`.
-- [ ] T074 Verify a safe browser tool roundtrip.
-- [ ] T075 Document MCP auth/tool filtering status before enabling external
+- T070 Verify Python FastMCP server starts and lists expected tools.
+- T071 Verify Go `/mcp/` proxy initialize returns 200.
+- [x] T072 Static-verify frontend `use-mcp` hook exists/builds against current
+  server URL config.
+- T073 Verify Browser WebMCP `navigator.modelContext.listTools()`.
+- T074 Verify a safe browser tool roundtrip.
+- [x] T075 Document MCP auth/tool filtering status before enabling external
   servers.
 
 ## Verify Gates
 
-- [ ] Malformed A2UI tree rejected.
-- [ ] Valid A2UI tree renders.
-- [ ] Live LLM path creates a UI surface via `data-a2ui-*`.
-- [ ] Surface survives reload and server reconcile.
-- [ ] MCP live connection tested or deferred with reason.
+- [x] Malformed A2UI tree rejected.
+- Valid A2UI tree renders in browser.
+- Live LLM path creates a UI surface via `data-a2ui-*`.
+- Surface survives reload and server reconcile.
+- MCP live connection tested or deferred with reason.

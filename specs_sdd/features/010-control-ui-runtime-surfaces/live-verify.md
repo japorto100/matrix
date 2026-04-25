@@ -13,109 +13,109 @@ migrated_from:
 
 ## Prerequisites
 
-- [ ] Frontend shell running.
-- [ ] Go appservice reachable.
-- [ ] Python backend reachable.
-- [ ] Postgres reachable.
-- [ ] NATS reachable if bridge/state tabs need it.
-- [ ] SeaweedFS/storage reachable if files tests are in scope.
+- Frontend shell running.
+- Go appservice reachable.
+- Python backend reachable.
+- Postgres reachable.
+- NATS reachable if bridge/state tabs need it.
+- SeaweedFS/storage reachable if files tests are in scope.
 
 ## Foundation / Shell
 
-- [ ] Open `/control`.
-- [ ] Open `/memory`.
-- [ ] Open `/files`.
-- [ ] Navigate between surfaces via GlobalTopBar.
-- [ ] Confirm no route crashes.
+- Open `/control`.
+- Open `/memory`.
+- Open `/files`.
+- Navigate between surfaces via GlobalTopBar.
+- Confirm no route crashes.
 
 ## User / Developer Mode
 
-- [ ] `/control` defaults to User Mode.
-- [ ] User Mode shows Overview, Agents, Permissions, Skills, Tools, Sessions, Security.
-- [ ] Developer Mode shows System, API/Models, Sandbox, Audit, MCP, A2A in addition.
-- [ ] `?mode=dev` opens Developer Mode.
-- [ ] localStorage fallback persists mode when URL param absent.
+- `/control` defaults to User Mode.
+- User Mode shows Overview, Agents, Permissions, Skills, Tools, Sessions, Security.
+- Developer Mode shows System, API/Models, Sandbox, Audit, MCP, A2A in addition.
+- `?mode=dev` opens Developer Mode.
+- localStorage fallback persists mode when URL param absent.
 
 ## Files Vertical
 
-- [ ] Files list renders.
-- [ ] Upload intent creates signed URL.
-- [ ] File upload succeeds.
-- [ ] Uploaded file appears in list.
-- [ ] PDF preview renders.
-- [ ] Audio viewer renders when given audio file.
-- [ ] Video viewer renders when given video file.
-- [ ] Image viewer renders when given image.
-- [ ] Reindex dialog requires correct confirmation.
-- [ ] Reindex request sends confirm token.
-- [ ] Reindex audit event appears.
+- Files list renders.
+- Upload intent creates signed URL.
+- File upload succeeds.
+- Uploaded file appears in list.
+- PDF preview renders.
+- Audio viewer renders when given audio file.
+- Video viewer renders when given video file.
+- Image viewer renders when given image.
+- Reindex dialog requires correct confirmation.
+- Reindex request sends confirm token.
+- Reindex audit event appears.
 
 ## Content Ingestion
 
-- [ ] AddMemoryModal opens.
-- [ ] Note tab ingests note.
-- [ ] Link tab ingests link.
-- [ ] File tab ingests uploaded document.
-- [ ] Bridge tab clearly marks non-active bridges as pending/deferred.
-- [ ] IngestionStatusPage shows Total/Done/Running/Pending/Failed.
-- [ ] Failed ingestion can be retried.
-- [ ] Duplicate content produces dedup behavior or documented absence.
+- AddMemoryModal opens.
+- Note tab ingests note.
+- Link tab ingests link.
+- File tab ingests uploaded document.
+- Bridge tab clearly marks non-active bridges as pending/deferred.
+- IngestionStatusPage shows Total/Done/Running/Pending/Failed.
+- Failed ingestion can be retried.
+- Duplicate content produces dedup behavior or documented absence.
 
 ## Memory Browser
 
-- [ ] MemoryHealthCards show episodic/KG/vector layer status.
-- [ ] EpisodesGrid loads live episodes or healthy empty state.
-- [ ] Filter bar changes URL state.
-- [ ] Back/forward preserves filters.
-- [ ] EpisodeDetailSheet opens and shows input/tool/output sections.
-- [ ] Delete episode confirmation works.
-- [ ] Delete invalidates grid/timeline.
-- [ ] Timeline groups entries by day.
-- [ ] Timeline handles realistic episode count.
+- MemoryHealthCards show episodic/KG/vector layer status.
+- EpisodesGrid loads live episodes or healthy empty state.
+- Filter bar changes URL state.
+- Back/forward preserves filters.
+- EpisodeDetailSheet opens and shows input/tool/output sections.
+- Delete episode confirmation works.
+- Delete invalidates grid/timeline.
+- Timeline groups entries by day.
+- Timeline handles realistic episode count.
 
 ## KG Visualization
 
-- [ ] `/memory/kg` renders Trading KG.
-- [ ] KG seed path creates nodes if empty.
-- [ ] Backend `/kg/graph` returns node/edge counts.
-- [ ] Type filter returns only requested node type.
-- [ ] React Flow graph renders real nodes.
-- [ ] `/memory/graph` provenance graph renders separately.
-- [ ] Mock badge/fallback appears only when backend unavailable.
+- `/memory/kg` renders Trading KG.
+- KG seed path creates nodes if empty.
+- Backend `/kg/graph` returns node/edge counts.
+- Type filter returns only requested node type.
+- React Flow graph renders real nodes.
+- `/memory/graph` provenance graph renders separately.
+- Mock badge/fallback appears only when backend unavailable.
 
 ## Agent Configuration
 
-- [ ] Agents tab shows six trading roles.
-- [ ] Agent detail sheet opens.
-- [ ] Edit mode patches `system_prompt`, `memory_access` and `approval_required`.
-- [ ] Reset prompt/memory removes overlay.
-- [ ] Permissions matrix renders 6x7 cells.
-- [ ] Left-click cycles permission level.
-- [ ] Right-click reset removes override.
-- [ ] Skills toggle calls backend and shows persisted or pending status.
-- [ ] Tools tab lists registry/tool schemas.
-- [ ] Sandbox tab lists runs or healthy empty state.
+- Agents tab shows six trading roles.
+- Agent detail sheet opens.
+- Edit mode patches `system_prompt`, `memory_access` and `approval_required`.
+- Reset prompt/memory removes overlay.
+- Permissions matrix renders 6x7 cells.
+- Left-click cycles permission level.
+- Right-click reset removes override.
+- Skills toggle calls backend and shows persisted or pending status.
+- Tools tab lists registry/tool schemas.
+- Sandbox tab lists runs or healthy empty state.
 
 ## Observability / System
 
-- [ ] System tab health checks all configured services.
-- [ ] API/Models tab loads provider/model/routing/utility state.
-- [ ] Spend dashboard shows data or explicit DB-required state.
-- [ ] Audit tab loads events.
-- [ ] Audit filters work.
-- [ ] CSV export escapes commas/quotes/newlines.
-- [ ] JSON export downloads filtered rows.
-- [ ] Sessions tab shows active sessions or healthy empty state.
-- [ ] Kill session hidden in User Mode.
-- [ ] Kill session available in Developer Mode and writes audit event.
-- [ ] MCP tab shows server/tool state.
-- [ ] A2A tab shows delegation state or healthy empty state.
-- [ ] Security tab shows posture and recent events.
+- System tab health checks all configured services.
+- API/Models tab loads provider/model/routing/utility state.
+- Spend dashboard shows data or explicit DB-required state.
+- Audit tab loads events.
+- Audit filters work.
+- CSV export escapes commas/quotes/newlines.
+- JSON export downloads filtered rows.
+- Sessions tab shows active sessions or healthy empty state.
+- Kill session hidden in User Mode.
+- Kill session available in Developer Mode and writes audit event.
+- MCP tab shows server/tool state.
+- A2A tab shows delegation state or healthy empty state.
+- Security tab shows posture and recent events.
 
 ## Mock-Fallback Guard
 
-- [ ] For each tab, record whether data came from live backend or mock fallback.
-- [ ] Any mock fallback in live verify becomes a follow-up task.
+- For each tab, record whether data came from live backend or mock fallback.
+- Any mock fallback in live verify becomes a follow-up task.
 
 ## Result
 

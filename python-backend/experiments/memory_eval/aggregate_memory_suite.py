@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiments.memory_eval.aggregate_memory_ab import _summarize
+from experiments.memory_eval.eval_classes import summarize_by_eval_class
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -31,6 +32,7 @@ def build_suite(runs: list[dict[str, Any]]) -> dict[str, Any]:
     for run in runs:
         name = str(run.get("pipeline") or "unknown")
         pipelines[name] = _summarize(run)
+        pipelines[name]["eval_classes"] = summarize_by_eval_class(run)
     out["leaderboard"] = sorted(
         (
             {

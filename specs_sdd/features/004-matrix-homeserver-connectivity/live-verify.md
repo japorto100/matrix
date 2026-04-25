@@ -11,18 +11,18 @@ feature_id: 004
 
 ## Required Flows
 
-- [ ] Start Tuwunel with current compose/profile.
-- [ ] Confirm homeserver health endpoint or login discovery responds.
-- [ ] Confirm appservice registration is accepted if appservice is in scope.
-- [ ] Confirm tunnel URL reaches the homeserver if tunnel testing is in scope.
-- [ ] Confirm Element X/mobile can discover the server via `.well-known`.
-- [ ] Confirm federation is disabled or configured according to current scope.
+- Start Tuwunel with current compose/profile.
+- Confirm homeserver health endpoint or login discovery responds.
+- Confirm appservice registration is accepted if appservice is in scope.
+- Confirm tunnel URL reaches the homeserver if tunnel testing is in scope.
+- Confirm Element X/mobile can discover the server via `.well-known`.
+- Confirm federation is disabled or configured according to current scope.
 
 ## Blocked/External Checks
 
-- [ ] MSC3414/MSC4362 state noted.
-- [ ] OIDC/MAS state noted.
-- [ ] Tuwunel upstream bugs state noted.
+- MSC3414/MSC4362 state noted.
+- OIDC/MAS state noted.
+- Tuwunel upstream bugs state noted.
 
 ## Result
 

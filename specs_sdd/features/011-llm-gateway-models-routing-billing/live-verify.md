@@ -11,57 +11,57 @@ feature_id: 011
 
 ## Gateway
 
-- [ ] Start LiteLLM.
-- [ ] Call `/v1/chat/completions` through LiteLLM.
-- [ ] Verify tool-call response with JSON arguments.
-- [ ] Verify streaming response shape.
+- Start LiteLLM.
+- Call `/v1/chat/completions` through LiteLLM.
+- Verify tool-call response with JSON arguments.
+- Verify streaming response shape.
 
 ## Models
 
-- [ ] Load model explorer in Control UI.
-- [ ] Confirm model count/data comes from live gateway.
-- [ ] Select model in UI.
-- [ ] Confirm selected model affects Agent Chat request.
-- [ ] Confirm selected model reaches LiteLLM/provider logs.
+- Load model explorer in Control UI.
+- Confirm model count/data comes from live gateway.
+- Select model in UI.
+- Confirm selected model affects Agent Chat request.
+- Confirm selected model reaches LiteLLM/provider logs.
 
 ## Credentials
 
-- [ ] Add/update provider credential.
-- [ ] Confirm credential is stored encrypted.
-- [ ] Confirm missing credential produces actionable error.
+- Add/update provider credential.
+- Confirm credential is stored encrypted.
+- Confirm missing credential produces actionable error.
 
 ## Billing / Spend
 
-- [ ] Configure LiteLLM DB.
-- [ ] Run one billable request.
-- [ ] Confirm usage ledger records request.
-- [ ] Confirm span metadata includes prompt/completion/cache/reasoning token
+- Configure LiteLLM DB.
+- Run one billable request.
+- Confirm usage ledger records request.
+- Confirm span metadata includes prompt/completion/cache/reasoning token
   fields where provider supplies them.
-- [ ] Confirm Spend dashboard shows data.
+- Confirm Spend dashboard shows data.
 
 ## Reasoning Budget
 
-- [ ] Send a high-reasoning request through Anthropic/OpenRouter.
-- [ ] Confirm thinking/reasoning content streams or provider-supported fallback
+- Send a high-reasoning request through Anthropic/OpenRouter.
+- Confirm thinking/reasoning content streams or provider-supported fallback
   is documented.
-- [ ] Confirm `reasoning_tokens` appears in usage where supported.
+- Confirm `reasoning_tokens` appears in usage where supported.
 
 ## Smart Routing
 
-- [ ] Enable smart routing for test user only.
-- [ ] Trigger cheap path.
-- [ ] Trigger strong path.
-- [ ] Confirm user-visible routing indicator.
-- [ ] Confirm Control-UI disable path turns routing off.
-- [ ] Confirm A/B row records `routing_used`, reason and picked model.
-- [ ] Confirm missing cheap-provider credential keeps primary model.
-- [ ] Confirm ADR G1-G6/P1 checklist is satisfied before broader rollout.
+- Enable smart routing for test user only.
+- Trigger cheap path.
+- Trigger strong path.
+- Confirm user-visible routing indicator.
+- Confirm Control-UI disable path turns routing off.
+- Confirm A/B row records `routing_used`, reason and picked model.
+- Confirm missing cheap-provider credential keeps primary model.
+- Confirm ADR G1-G6/P1 checklist is satisfied before broader rollout.
 
 ## Follow-Ups
 
-- [ ] F-G4 race fixed or accepted.
-- [ ] F-G1 keyword quality fixed or accepted.
-- [ ] F-4g4 scorer eval-id semantics documented or changed.
+- [x] F-G4 race fixed at static/SQL-shape level.
+- [x] F-G1 keyword quality fixed at static heuristic-test level.
+- [x] F-4g4 scorer eval-id semantics documented as first-write-wins.
 
 ## Result
 

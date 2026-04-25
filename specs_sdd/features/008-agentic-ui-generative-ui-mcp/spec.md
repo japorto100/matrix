@@ -1,6 +1,6 @@
 ---
 title: Agentic UI, Generative UI and MCP
-status: mostly_built
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -24,6 +24,12 @@ virtual tool result. The later Plan-v2 Phase-2 work landed the stronger path:
 native `data-a2ui-*` SSE packets, `a2ui-agent-sdk`, server-backed surface
 persistence and live-data bindings. MCP is not the transport for A2UI live data;
 it remains the tool/app/governance layer.
+
+Static verification on 2026-04-25 confirms the current implementation has A2UI
+schema validation, TypeScript packet translation, renderer subscription,
+frontend widget-data tests, CopilotKit env-gated global actions/readables and
+Python `A2uiEmitter` tests. `render_a2ui_surface` remains available as a
+fallback while native `data-a2ui-*` packets are the target path.
 
 ## Target State / Soll
 
@@ -50,18 +56,35 @@ opening `exec-09`, `exec-20` or Superpowers Plan v2.
 
 - Custom A2UI widget catalog remains open.
 - Matrix-chat CopilotKit integration remains open.
-- Route consolidation into `/control/*` is a UX-only decision and not a
+- Route consolidation into `/control/*` is a UX-only decision and is not a
   functional blocker.
 - Browser/WebMCP roundtrip still needs live verification where it is meant to be
   active.
 - MCP Apps are evaluation-only and must not replace text/tool fallbacks.
+- Server-backed surface persistence still needs live verification; static tests
+  cover packet/widget-data behavior, not Postgres reconciliation.
 
-## Verify
+Decision cleanup on 2026-04-25 closes the local architecture questions in
+`decisions.md`: local custom widgets plus fallback are accepted for now, Matrix
+CopilotKit actions stay deferred, route consolidation is UX/backlog only, and
+external MCP enablement requires auth/tool filtering first.
 
-- [ ] A2UI validation tests pass.
-- [ ] Agent can emit a widget through the live LLM/A2UI packet path.
-- [ ] MCP server connection works with current config.
-- [ ] Unsafe widget/tree output is rejected.
+## Static Verify
+
+- [x] `bun run test` covers A2UI tree validation, packet adapter, renderer
+  subscriber, widget-data hook and Copilot global context.
+- [x] `uv run pytest tests/agent/test_a2ui_emitter.py -q` passes.
+- [x] Unsafe widget/tree output is rejected by validation tests.
+- [x] Python emitter can serialize protocol packets to SSE frames.
+- [x] #93/#94/#95 and MCP external-enablement decisions are documented in
+  `decisions.md`.
+
+## Live Verify
+
+- Agent can emit a widget through the live LLM/A2UI packet path.
+- MCP server connection works with current config.
+- WebMCP browser tool roundtrip works where enabled.
+- Surface persistence survives reload and server reconcile.
 
 ## Closeout Criteria
 

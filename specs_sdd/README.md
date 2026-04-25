@@ -3,7 +3,7 @@ title: Matrix Specs SDD Index
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 supersedes: []
 ---
 
@@ -33,6 +33,7 @@ specs_sdd/
   constitution.md
   FEATURE_DETERMINATION.md
   MIGRATION_MAP.md
+  DECISION_BACKLOG.md
   features/
     NNN-feature-name/
       spec.md
@@ -61,12 +62,14 @@ specs_sdd/
 6. `LEGACY_COVERAGE.md` fuer Vollstaendigkeitsabgleich gegen alte Dateien.
 7. `SEMANTIC_AUDIT.md` fuer den Abgleich, ob `specs_sdd` die alten Inhalte
    bereits wirklich ersetzt.
-8. `STATUS_BOARD.md` fuer aktuellen Gate-/Closeout-Status.
-9. `features/*/spec.md` fuer Current State, Target State und Scope.
-10. `features/*/sources.md` oder `research.md` fuer Feature-spezifische Quellen,
+8. `DECISION_BACKLOG.md` fuer noch nicht akzeptierte Entscheidungen und
+   bewusst deferred Fragen.
+9. `STATUS_BOARD.md` fuer aktuellen Gate-/Closeout-Status.
+10. `features/*/spec.md` fuer Current State, Target State und Scope.
+11. `features/*/sources.md` oder `research.md` fuer Feature-spezifische Quellen,
    Paper und externe Kontextbasis.
-11. `features/*/tasks.md` fuer konkrete Arbeit.
-12. `features/*/live-verify.md` und `closeout.md` fuer Abschlussstatus.
+12. `features/*/tasks.md` fuer konkrete Arbeit.
+13. `features/*/live-verify.md` und `closeout.md` fuer Abschlussstatus.
 
 ## Status-Modell
 
@@ -77,6 +80,9 @@ specs_sdd/
 | `accepted` | bindend; Aenderung nur ueber ADR oder explizite Spec-Revision |
 | `implementation_done` | Code/Config gebaut, aber Verify oder Live-Verify offen |
 | `baseline` | stabile Grundlage, kein normaler Implementation-Slice |
+| `closed_static` | Dokument-/Static-Scope geschlossen; keine Runtime-Live-Verify erforderlich |
+| `static_closed_live_pending` | Static-/Buildless-Scope geschlossen; Runtime-/Operator-Live-Verify offen |
+| `static_classified_live_pending` | Legacy gates/owners/status sind statisch geklaert; Live-Verify bleibt offen |
 | `mostly_built` | grosser Teil gebaut, bekannte Rest-Gaps |
 | `frontend_built` | UI steht, Backend-/Live-Integration ist gemischt |
 | `in_progress` | aktive Arbeit oder aktive Gates |
@@ -112,6 +118,21 @@ Das Journal ersetzt keine Execution-Tasks.
   entdeckt, entschieden, verifiziert oder verschoben.
 - Journal-Eintraege muessen auf Feature-Tasks, ADRs oder Research verlinken,
   sobald daraus bindende Arbeit entsteht.
+
+## Checkbox Policy
+
+Unchecked Markdown boxes are reserved for real work queue items:
+
+- active implementation tasks in `tasks.md`,
+- true acceptance/verify gates in `gates.md`.
+
+Do not use unchecked boxes for explanatory acceptance prose, live-verify
+procedure steps, historical requirements, template placeholders or duplicated
+substeps. Those stay as plain bullets. This keeps status counts meaningful and
+prevents old execution logs from turning into hundreds of fake tasks.
+
+Decision/defer questions live in `DECISION_BACKLOG.md` until accepted or
+explicitly retired. They should not remain as unchecked `tasks.md` items.
 
 ## Quellen-Konvention
 

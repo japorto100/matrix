@@ -194,4 +194,4 @@ def filter_disabled_skills(skills: list[Skill], user_id: str | None) -> list[Ski
         if sid in ov and not ov[sid]:
             continue
         out.append(s)
-    return out if out else skills
+    return out

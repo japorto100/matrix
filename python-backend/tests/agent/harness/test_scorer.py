@@ -96,6 +96,39 @@ def test_composite_fitness_clamped_to_unit_interval():
     assert 0.0 <= f <= 1.0
 
 
+def test_composite_fitness_accepts_custom_weights():
+    s = {
+        "tool_success_rate": 0.0,
+        "tool_calls": 1,
+        "completed": True,
+        "session_status": "completed",
+        "turn_efficiency": 0.0,
+        "memory_utilization": False,
+        "cost_estimate_usd": 0.0,
+    }
+    weights = scorer.ScoreWeights(
+        tool_success_rate=0.0,
+        completion=1.0,
+        turn_efficiency=0.0,
+        memory_utilization=0.0,
+        cost_inverse=0.0,
+    )
+    assert scorer.composite_fitness(s, weights=weights) == 1.0
+
+
+@pytest.mark.asyncio
+async def test_audit_session_scorer_implements_interface(monkeypatch):
+    async def _fake_score_session(thread_id, *, eval_id=None):
+        return {"thread_id": thread_id, "eval_id": eval_id}
+
+    monkeypatch.setattr(scorer, "score_session", _fake_score_session)
+
+    audit_scorer = scorer.AuditSessionScorer()
+    result = await audit_scorer.score_session("t-1", eval_id="eval-1")
+
+    assert result == {"thread_id": "t-1", "eval_id": "eval-1"}
+
+
 @pytest.mark.asyncio
 async def test_backfill_returns_false_without_ids():
     assert await scorer.backfill_ab_experiment_fitness(

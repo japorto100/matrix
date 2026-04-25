@@ -26,7 +26,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,43 @@ logger = logging.getLogger(__name__)
 # estimate_usage_cost. Keep a conservative fallback rate for models
 # LiteLLM doesn't know (harness eval scenarios with fake/local models).
 DEFAULT_COST_PER_MTOK = 3.0
+
+
+@dataclass(frozen=True)
+class ScoreWeights:
+    """Weights for the scalar harness fitness score."""
+
+    tool_success_rate: float = 0.30
+    completion: float = 0.25
+    turn_efficiency: float = 0.20
+    memory_utilization: float = 0.15
+    cost_inverse: float = 0.10
+
+
+DEFAULT_SCORE_WEIGHTS = ScoreWeights()
+
+
+class SessionScorer(Protocol):
+    """Interface for session scorers used by evaluators/proposers."""
+
+    async def score_session(
+        self,
+        thread_id: str,
+        *,
+        eval_id: str | None = None,
+    ) -> dict[str, Any]: ...
+
+
+class AuditSessionScorer:
+    """Default scorer backed by the agent audit store."""
+
+    async def score_session(
+        self,
+        thread_id: str,
+        *,
+        eval_id: str | None = None,
+    ) -> dict[str, Any]:
+        return await score_session(thread_id, eval_id=eval_id)
 
 
 def _estimate_cost(model: str, total_tokens: int) -> float:
@@ -176,14 +214,17 @@ async def score_session(
     return result
 
 
-def composite_fitness(score: dict[str, Any]) -> float:
+def composite_fitness(
+    score: dict[str, Any],
+    weights: ScoreWeights = DEFAULT_SCORE_WEIGHTS,
+) -> float:
     """Collapse the multi-dimensional score dict into a scalar in [0, 1].
 
     Higher = better. Weights are intentionally simple so the scalar has
     an obvious interpretation; the raw dimensions remain available in
     the score dict for anyone who wants Pareto-front analysis.
 
-    Weights (sum to 1.0):
+    Default weights (sum to 1.0):
       * 0.30 — tool_success_rate    (tool calls that returned results)
       * 0.25 — completion            (did the session finish cleanly)
       * 0.20 — turn_efficiency       (fewer turns = better, 1/turns)
@@ -217,11 +258,11 @@ def composite_fitness(score: dict[str, Any]) -> float:
     cost_inv = 1.0 / (1.0 + max(0.0, cost))
 
     fitness = (
-        0.30 * tsr
-        + 0.25 * completed
-        + 0.20 * turn_eff
-        + 0.15 * mem_util
-        + 0.10 * cost_inv
+        weights.tool_success_rate * tsr
+        + weights.completion * completed
+        + weights.turn_efficiency * turn_eff
+        + weights.memory_utilization * mem_util
+        + weights.cost_inverse * cost_inv
     )
     return round(max(0.0, min(1.0, fitness)), 4)
 

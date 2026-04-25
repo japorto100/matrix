@@ -11,12 +11,12 @@ feature_id: 002
 
 ## Required Flows
 
-- [ ] Start infrastructure profile needed for current work.
-- [ ] Confirm Postgres accepts connections and migrations can run.
-- [ ] Confirm NATS is reachable when messaging features are in scope.
-- [ ] Confirm Tuwunel starts when Matrix features are in scope.
-- [ ] Confirm env files can be copied from examples without missing required keys.
-- [ ] Confirm secrets bootstrap/runbook is usable without committing secrets.
+- Start infrastructure profile needed for current work.
+- Confirm Postgres accepts connections and migrations can run.
+- Confirm NATS is reachable when messaging features are in scope.
+- Confirm Tuwunel starts when Matrix features are in scope.
+- Confirm env files can be copied from examples without missing required keys.
+- Confirm secrets bootstrap/runbook is usable without committing secrets.
 
 ## Evidence
 

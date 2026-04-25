@@ -14,11 +14,11 @@ coverage and consistency checks.
 
 ## Required Checks
 
-- [ ] Every legacy baseline file is classified.
-- [ ] README reading order points to the final baseline docs.
-- [ ] Constitution contains only rules intended to bind future work.
+- [x] Every legacy baseline file is classified.
+- [x] README reading order points to the final baseline docs.
+- [x] Constitution contains only rules intended to bind future work.
 
 ## Result
 
-pending
-
+Not applicable as runtime live verify. Static document consistency passed on
+2026-04-25.

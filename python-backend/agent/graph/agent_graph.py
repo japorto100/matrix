@@ -111,20 +111,11 @@ def create_agent_graph(checkpointer: Any | None = None) -> Any:
     # Memory Retain → END
     graph.add_edge("memory_retain", END)
 
-    # Kompilieren — #13 fix: PostgreSQL checkpointer wenn DB verfuegbar
+    # Kompilieren. Persistent PostgreSQL checkpointing needs an async lifecycle
+    # around AsyncPostgresSaver.from_conn_string(), so callers can pass a ready
+    # saver explicitly. This factory keeps the default graph locally compilable.
     if checkpointer is None:
-        db_url = os.environ.get("HINDSIGHT_DB_URL")
-        if db_url:
-            try:
-                from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
-                checkpointer = AsyncPostgresSaver.from_conn_string(db_url)
-                logger.info("LangGraph checkpointer: PostgreSQL (persistent)")
-            except Exception:
-                checkpointer = MemorySaver()
-                logger.info("LangGraph checkpointer: MemorySaver (in-memory fallback)")
-        else:
-            checkpointer = MemorySaver()
+        checkpointer = MemorySaver()
 
     compiled = graph.compile(
         checkpointer=checkpointer,

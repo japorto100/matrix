@@ -58,6 +58,13 @@ def test_complex_keyword_coding_rejected():
     assert choose_cheap_model_route("refactor the function", _CFG) is None
 
 
+def test_complex_coding_phrases_rejected_without_broad_single_words():
+    assert choose_cheap_model_route("unit test failure", _CFG) is None
+    assert choose_cheap_model_route("review this PR", _CFG) is None
+    assert choose_cheap_model_route("model routing issue", _CFG) is None
+    assert choose_cheap_model_route("plan architecture rollout", _CFG) is None
+
+
 def test_complex_keyword_trading_rejected():
     """matrix-specific: trading terms should stay on primary model."""
     assert choose_cheap_model_route("rebalance my portfolio", _CFG) is None
@@ -186,6 +193,13 @@ def test_de_simple_greeting_routes():
     """DE trivial small-talk should still route to cheap."""
     assert choose_cheap_model_route("hallo wie geht es dir", _CFG) == "gpt-4o-mini"
     assert choose_cheap_model_route("was gibt es neues", _CFG) == "gpt-4o-mini"
+
+
+def test_broad_english_words_do_not_block_casual_prompts():
+    assert choose_cheap_model_route("test message", _CFG) == "gpt-4o-mini"
+    assert choose_cheap_model_route("which model are you", _CFG) == "gpt-4o-mini"
+    assert choose_cheap_model_route("what is the plan today", _CFG) == "gpt-4o-mini"
+    assert choose_cheap_model_route("review my sentence", _CFG) == "gpt-4o-mini"
 
 
 def test_hyphen_compound_matches_keyword():

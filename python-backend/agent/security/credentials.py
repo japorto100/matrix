@@ -79,7 +79,7 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
 async def get_user_default_model(user_id: str) -> str | None:
     """Holt User's gewaehltes Default-Model aus DB. None wenn nicht gesetzt."""
     db_url = os.environ.get("HINDSIGHT_DB_URL")
-    if not db_url:
+    if not db_url or not user_id:
         return None
 
     try:
@@ -104,7 +104,7 @@ async def get_user_default_model(user_id: str) -> str | None:
 async def get_user_role_model(user_id: str, role: str) -> str | None:
     """Holt per-role Model Override aus DB. None wenn kein Override."""
     db_url = os.environ.get("HINDSIGHT_DB_URL")
-    if not db_url:
+    if not db_url or not user_id or not role:
         return None
 
     try:

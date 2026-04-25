@@ -11,6 +11,8 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import json
 import logging
 import uuid
@@ -26,6 +28,66 @@ SEARCH_SET_PATH = (
     / "search_set"
     / "queries.json"
 )
+EVAL_CACHE_PATH = (
+    Path(__file__).resolve().parents[3] / "data" / "harness" / "eval_cache.json"
+)
+EVALUATOR_CACHE_VERSION = "search-set-v1"
+
+
+class EvaluationCache:
+    """Small JSON-backed cache for deterministic harness eval inputs."""
+
+    def __init__(self, path: Path = EVAL_CACHE_PATH) -> None:
+        self.path = path
+        self._entries: dict[str, dict[str, Any]] | None = None
+
+    def _load(self) -> dict[str, dict[str, Any]]:
+        if self._entries is not None:
+            return self._entries
+        if not self.path.exists():
+            self._entries = {}
+            return self._entries
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            self._entries = data if isinstance(data, dict) else {}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Ignoring unreadable evaluator cache %s: %s", self.path, exc)
+            self._entries = {}
+        return self._entries
+
+    @staticmethod
+    def key_for(query: dict[str, Any], *, system_prompt_override: str = "") -> str:
+        payload = {
+            "version": EVALUATOR_CACHE_VERSION,
+            "query": {
+                "id": query.get("id", ""),
+                "message": query.get("message", ""),
+                "category": query.get("category", ""),
+            },
+            "system_prompt_override": system_prompt_override or "",
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+    def get(self, key: str) -> dict[str, Any] | None:
+        entry = self._load().get(key)
+        return dict(entry) if isinstance(entry, dict) else None
+
+    def set(self, key: str, value: dict[str, Any]) -> None:
+        entries = self._load()
+        cached = dict(value)
+        cached["cache_key"] = key
+        cached["cached"] = True
+        entries[key] = cached
+
+    def flush(self) -> None:
+        if self._entries is None:
+            return
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(
+            json.dumps(self._entries, indent=2, sort_keys=True, default=str),
+            encoding="utf-8",
+        )
 
 
 def load_search_set() -> list[dict[str, Any]]:
@@ -99,6 +161,9 @@ async def evaluate_search_set(
     system_prompt_override: str = "",
     max_queries: int = 0,
     eval_id: str | None = None,
+    concurrency: int = 4,
+    use_cache: bool = True,
+    cache: EvaluationCache | None = None,
 ) -> dict[str, Any]:
     """Run the agent against the full search set and aggregate scores.
 
@@ -121,14 +186,38 @@ async def evaluate_search_set(
     if not eval_id:
         eval_id = f"run-{uuid.uuid4().hex[:12]}"
 
-    results = []
-    for query in queries:
-        result = await evaluate_single(
+    cache = cache or EvaluationCache()
+    semaphore = asyncio.Semaphore(max(1, concurrency))
+
+    async def _run(query: dict[str, Any]) -> dict[str, Any]:
+        cache_key = EvaluationCache.key_for(
             query,
             system_prompt_override=system_prompt_override,
-            eval_id=eval_id,
         )
-        results.append(result)
+        if use_cache:
+            cached = cache.get(cache_key)
+            if cached is not None:
+                result = dict(cached)
+                result["cache_hit"] = True
+                if eval_id:
+                    result["eval_id"] = eval_id
+                return result
+
+        async with semaphore:
+            result = await evaluate_single(
+                query,
+                system_prompt_override=system_prompt_override,
+                eval_id=eval_id,
+            )
+        result["cache_hit"] = False
+        result["cache_key"] = cache_key
+        if use_cache and "error" not in result:
+            cache.set(cache_key, result)
+        return result
+
+    results = await asyncio.gather(*(_run(query) for query in queries))
+    if use_cache:
+        cache.flush()
 
     # Aggregate
     completed = sum(1 for r in results if r.get("completed", False))
@@ -145,6 +234,9 @@ async def evaluate_search_set(
     return {
         "eval_id": eval_id,
         "queries_evaluated": len(results),
+        "concurrency": max(1, concurrency),
+        "cache_enabled": use_cache,
+        "cache_hits": sum(1 for r in results if r.get("cache_hit")),
         "completion_rate": round(completed / max(len(results), 1), 3),
         "avg_turns": round(avg_turns, 2),
         "total_tokens": total_tokens,

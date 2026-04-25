@@ -45,21 +45,30 @@ passes live verification with:
 
 ### F-G4 Race
 
-Risk: async insert/update order in A/B experiments can lose routing metadata if
-the update runs before the insert. Desired fix: upsert semantics so
-`routing_used`, `routing_reason` and `routing_picked` survive either order.
+Status: fixed at static level.
+
+The routing mark now writes by `INSERT ... ON CONFLICT (id) DO UPDATE`, and the
+dispatcher's base row insert also uses conflict-update semantics without
+clobbering routing fields. Therefore `routing_used`, `routing_reason` and
+`routing_picked_model` survive either insert/update order.
 
 ### F-G1 Keyword Quality
 
-Risk: overly common English words such as "reason", "test", "model", "plan",
-"review" block cheap routing for casual prompts. Desired fix: keep robust
-multi-word complexity phrases and remove broad single-word false positives.
+Status: fixed at static level.
+
+Overly common English words such as `reason`, `test`, `model`, `plan` and
+`review` no longer block cheap routing as standalone tokens. The heuristic now
+keeps targeted phrase checks such as unit-test failures, PR/code review, model
+routing/metadata and rollout/architecture planning. Tests cover both the
+complex phrases and casual false-positive cases.
 
 ### F-4g4 Scorer Eval ID
 
-Risk: scorer keeps first `harness_eval_id` via COALESCE when rescoring with a
-new eval id. Desired default: document first-write-wins and add explicit
-overwrite option only if needed.
+Status: accepted/documented.
+
+The scorer keeps the first `harness_eval_id` via `COALESCE`. This is intentional
+first-write-wins behavior for reproducible harness grouping. A future explicit
+overwrite flag can be added if re-labeling historical rows becomes necessary.
 
 ## A2FM Boundary
 

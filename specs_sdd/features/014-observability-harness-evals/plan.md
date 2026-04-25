@@ -1,6 +1,6 @@
 ---
 title: Observability, Harness and Evals Plan
-status: in_progress
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25

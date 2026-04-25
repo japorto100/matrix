@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
+	"unicode"
 
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
@@ -26,7 +28,53 @@ func New(client *mautrix.Client, serverName string) *AgentSender {
 // UserID gibt die Matrix-User-ID für einen Agent-Namen zurück.
 // Beispiel: "trading" → "@agent-trading:matrix.local"
 func (s *AgentSender) UserID(agentName string) id.UserID {
-	return id.NewUserID(fmt.Sprintf("agent-%s", agentName), s.serverName)
+	return id.NewUserID(fmt.Sprintf("agent-%s", SanitizeAgentName(agentName)), s.serverName)
+}
+
+// SanitizeAgentName normalisiert einen Agent-Namen für Matrix localparts und
+// NATS subject tokens. Erlaubt sind ASCII a-z, 0-9, "_" und "-"; andere
+// Zeichen werden als Trenner behandelt.
+func SanitizeAgentName(agentName string) string {
+	value := strings.ToLower(strings.TrimSpace(agentName))
+	value = strings.TrimPrefix(value, "@")
+	value = strings.TrimPrefix(value, "agent-")
+	if idx := strings.Index(value, ":"); idx >= 0 {
+		value = value[:idx]
+	}
+
+	var b strings.Builder
+	lastDash := false
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_':
+			b.WriteRune(r)
+			lastDash = false
+		case r == '-':
+			if !lastDash && b.Len() > 0 {
+				b.WriteRune('-')
+				lastDash = true
+			}
+		case unicode.IsSpace(r) || r == ':' || r == '.' || r == '/' || r == '\\':
+			if !lastDash && b.Len() > 0 {
+				b.WriteRune('-')
+				lastDash = true
+			}
+		default:
+			if !lastDash && b.Len() > 0 {
+				b.WriteRune('-')
+				lastDash = true
+			}
+		}
+		if b.Len() >= 64 {
+			break
+		}
+	}
+
+	result := strings.Trim(b.String(), "-_")
+	if result == "" {
+		return "default"
+	}
+	return result
 }
 
 // SendText sendet eine Text-Nachricht als Agent in einen Raum.

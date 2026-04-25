@@ -25,6 +25,10 @@ def _load_env() -> None:
         load_dotenv(dotenv_path=env_specific, override=True)
 
 
+def _csv(value: str | None) -> tuple[str, ...]:
+    return tuple(part.strip() for part in str(value or "").split(",") if part.strip())
+
+
 @dataclass
 class Config:
     # ── NATS (Go Appservice Koordination) ───────────────────────────────────
@@ -40,6 +44,7 @@ class Config:
     # ── Service ──────────────────────────────────────────────────────────────
     host: str
     port: int
+    nats_allowed_agents: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> Config:
@@ -54,4 +59,5 @@ class Config:
             ),
             host=os.getenv("HOST", "127.0.0.1"),
             port=int(os.getenv("PORT", "8097")),
+            nats_allowed_agents=_csv(os.getenv("NATS_ALLOWED_AGENTS")),
         )

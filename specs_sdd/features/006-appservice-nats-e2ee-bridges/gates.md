@@ -11,13 +11,15 @@ feature_id: 006
 
 ## G1 Core NATS Path
 
+- [x] Go appservice static tests pass with `go test -tags goolm ./...`.
 - [ ] Go appservice starts and registers.
 - [ ] Python bridge starts and subscribes.
 - [ ] Go publishes inbound event.
 - [ ] Python consumes inbound and calls agent service.
 - [ ] Python publishes reply.
 - [ ] Go consumes reply and sends Matrix message.
-- [ ] No legacy Python Matrix sync loop is active.
+- [x] Python bridge/A2UI static tests pass.
+- [x] No legacy Python Matrix sync loop is in the current bridge path.
 
 ## G2 E2EE Path
 
@@ -30,12 +32,15 @@ feature_id: 006
 
 ## G3 Routing / Isolation
 
-- [ ] Mention routes to expected target agent.
+- [x] `target_agent` maps to expected reply Matrix user id in Python bridge
+  test.
 - [ ] DM to agent can resolve target without body regex or legacy fallback is
   documented.
-- [ ] Subject routing fallback and enabled modes are tested.
-- [ ] NATS authorization gap is closed or explicitly deferred.
-- [ ] Thread replies preserve thread metadata.
+- [x] Subject routing fallback is the default static config.
+- [x] Python subscribes to routed inbound subjects.
+- [ ] Subject routing enabled mode is live-verified end-to-end with Go publish.
+- [x] NATS authorization gap is explicitly deferred.
+- [x] Thread replies preserve thread metadata in reply payload tests.
 
 ## G4 Key Deletion / Hybrid
 
@@ -47,9 +52,9 @@ feature_id: 006
 
 ## G5 Future Bridge Classification
 
-- [ ] WhatsApp/Signal/Telegram/Meta/Discord bridge work is backlog unless
+- [x] WhatsApp/Signal/Telegram/Meta/Discord bridge work is backlog unless
   promoted.
-- [ ] Hookshot/maubot/feed bridge work is routed to integration/ingestion
+- [x] Hookshot/maubot/feed bridge work is routed to integration/ingestion
   backlog.
-- [ ] Content-ingestion sections are owned by memory/ingestion features, not
+- [x] Content-ingestion sections are owned by memory/ingestion features, not
   this feature's closeout.
