@@ -1,0 +1,20 @@
+{
+  "description": "Meta-Harness runner parity smoke scenarios. These avoid tools so dispatcher, LangGraph and SimpleLoop can be compared without sandbox or external tool availability.",
+  "scenarios": [
+    {
+      "id": "rp-no-tools-001",
+      "category": "runner_parity",
+      "enable_tools": false,
+      "turns": [
+        {
+          "user": "Reply with one short sentence: runner parity smoke."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["llm_response"],
+        "forbidden_actions": ["tool_call"],
+        "forbidden_tools": ["sandbox_browser", "memory_search", "sandbox_execute"]
+      }
+    }
+  ]
+}

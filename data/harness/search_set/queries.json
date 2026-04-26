@@ -1,17 +1,19 @@
 {
-  "description": "Representative evaluation queries for harness optimization (exec-17 Phase 5 + exec-harness). Meta-Harness paper uses ~250 search-set queries. Expanded from 5 to 15 with skill + layer categories.",
+  "description": "Representative evaluation queries for harness optimization (exec-17 Phase 5 + exec-harness). Meta-Harness paper uses ~250 search-set queries. Expanded from 5 to 15 with skill + layer categories. expected_tools now uses registered Matrix tool names; historical_expected_tools preserves old placeholders with no current registry equivalent.",
   "queries": [
     {
       "id": "q001",
       "message": "What is the current market sentiment for AAPL?",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": [],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["market-research"],
       "category": "simple_query"
     },
     {
       "id": "q002",
       "message": "Analyze the BTE divergence pattern for EUR/USD and suggest entry points",
-      "expected_tools": ["market_data_fetch", "chart_analysis"],
+      "expected_tools": ["get_chart_state"],
+      "historical_expected_tools": ["market_data_fetch", "chart_analysis"],
       "expected_skills": ["trading-analysis"],
       "category": "multi_tool"
     },
@@ -26,7 +28,8 @@
     {
       "id": "q004",
       "message": "Compare the risk profiles of MSFT and GOOGL based on recent earnings",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": [],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["risk-assessment", "market-research"],
       "category": "analysis"
     },
@@ -47,14 +50,16 @@
     {
       "id": "q007",
       "message": "Give me a macro thesis for crude oil this quarter including OPEC dynamics",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": [],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["market-research"],
       "category": "analysis"
     },
     {
       "id": "q008",
       "message": "Multi-timeframe setup for SOL/USD: 4H structure, 1H entry, 15m trigger",
-      "expected_tools": ["market_data_fetch", "chart_analysis"],
+      "expected_tools": ["get_chart_state"],
+      "historical_expected_tools": ["market_data_fetch", "chart_analysis"],
       "expected_skills": ["trading-analysis"],
       "category": "skill_retrieval"
     },
@@ -69,28 +74,32 @@
     {
       "id": "q010",
       "message": "Evaluate whether this long ETHUSD + long NASDAQ position has excessive correlation risk",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": ["get_portfolio_summary"],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["risk-assessment"],
       "category": "risk_assessment"
     },
     {
       "id": "q011",
       "message": "What are the key support and resistance levels for DXY this week?",
-      "expected_tools": ["market_data_fetch", "chart_analysis"],
+      "expected_tools": ["get_chart_state"],
+      "historical_expected_tools": ["market_data_fetch", "chart_analysis"],
       "expected_skills": ["trading-analysis"],
       "category": "simple_query"
     },
     {
       "id": "q012",
       "message": "Build a bull case and bear case for NVDA based on AI capex trends",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": [],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["market-research"],
       "category": "analysis"
     },
     {
       "id": "q013",
       "message": "Should I reduce my position in gold given the hawkish Fed stance? My current allocation is 15%",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": ["get_portfolio_summary"],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_memory": true,
       "expected_skills": ["risk-assessment", "memory-usage"],
       "category": "risk_assessment"
@@ -106,7 +115,8 @@
     {
       "id": "q015",
       "message": "Set up a swing trade plan for copper futures with entry, stop, and three targets",
-      "expected_tools": ["market_data_fetch"],
+      "expected_tools": ["get_chart_state"],
+      "historical_expected_tools": ["market_data_fetch"],
       "expected_skills": ["trading-analysis", "risk-assessment"],
       "category": "multi_tool"
     }

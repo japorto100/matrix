@@ -1,0 +1,49 @@
+{
+  "description": "Meta-Harness diagnostic scenarios for the Python Agent memory lifecycle. These scenarios focus on Hindsight/MemPalace/Fusion evidence and route metadata; threshold-specific pre_save/compaction behavior is unit-tested with model-window overrides.",
+  "scenarios": [
+    {
+      "id": "ml-memory-explicit-add-search-001",
+      "category": "memory_lifecycle_explicit",
+      "turns": [
+        {
+          "user": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction."
+        },
+        {
+          "user": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_retain"],
+        "required_tools": ["memory_add", "memory_search"],
+        "required_skills": ["memory-usage"],
+        "required_memory_routes": ["fusion"],
+        "expected_memory": true,
+        "min_tool_success_rate": 1.0
+      },
+      "metadata": {
+        "focus": "explicit memory tool path plus Fusion route visibility"
+      }
+    },
+    {
+      "id": "ml-memory-fusion-route-001",
+      "category": "memory_lifecycle_fusion_route",
+      "turns": [
+        {
+          "user": "Remember this project memory: before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence."
+        },
+        {
+          "user": "What should happen before context compaction if exact tool outputs are still only in the chat?"
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_recall", "memory_retain"],
+        "required_skills": ["memory-usage"],
+        "required_memory_routes": ["fusion"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "automatic recall/retain and Fusion route visibility"
+      }
+    }
+  ]
+}
