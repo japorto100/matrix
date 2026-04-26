@@ -1,11 +1,11 @@
-"""Tests for agent/harness/scorer.py — composite fitness + A/B backfill."""
+"""Tests for meta_harness/scorer.py — composite fitness + A/B backfill."""
 from __future__ import annotations
 
 from unittest.mock import patch
 
 import pytest
 
-from agent.harness import scorer
+from meta_harness import scorer
 
 
 def test_composite_fitness_perfect_session():
@@ -50,6 +50,21 @@ def test_composite_fitness_no_tool_calls_doesnt_penalise():
     fitness = scorer.composite_fitness(s)
     # tsr treated as 1.0 because no tool calls → no failures possible
     assert fitness > 0.5
+
+
+def test_composite_fitness_does_not_reward_unexpected_memory_use():
+    base = {
+        "tool_success_rate": 1.0,
+        "tool_calls": 0,
+        "completed": True,
+        "session_status": "completed",
+        "turn_efficiency": 1.0,
+        "cost_estimate_usd": 0.0,
+    }
+
+    assert scorer.composite_fitness({**base, "memory_utilization": False}) == (
+        scorer.composite_fitness({**base, "memory_utilization": True})
+    )
 
 
 def test_composite_fitness_expensive_session_hurts():

@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from agent.harness import evaluator
+from meta_harness import evaluator
 
 
 @pytest.mark.asyncio
@@ -14,8 +14,8 @@ async def test_evaluate_search_set_runs_queries_in_parallel(monkeypatch):
 
     monkeypatch.setattr(
         evaluator,
-        "load_search_set",
-        lambda: [
+        "load_query_set",
+        lambda split="search": [
             {"id": "q1", "message": "one", "category": "smoke"},
             {"id": "q2", "message": "two", "category": "smoke"},
         ],
@@ -57,8 +57,8 @@ async def test_evaluate_search_set_uses_json_cache(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         evaluator,
-        "load_search_set",
-        lambda: [{"id": "q1", "message": "one", "category": "smoke"}],
+        "load_query_set",
+        lambda split="search": [{"id": "q1", "message": "one", "category": "smoke"}],
     )
 
     async def _fake_evaluate_single(query, **kwargs):
@@ -81,3 +81,45 @@ async def test_evaluate_search_set_uses_json_cache(tmp_path, monkeypatch):
     assert first["cache_hits"] == 0
     assert second["cache_hits"] == 1
     assert second["per_query"][0]["cache_hit"] is True
+
+
+@pytest.mark.asyncio
+async def test_evaluate_search_set_protects_holdout(monkeypatch):
+    monkeypatch.setattr(
+        evaluator,
+        "load_query_set",
+        lambda split="search": [{"id": "h1", "message": "hidden"}],
+    )
+
+    result = await evaluator.evaluate_search_set(split="holdout")
+
+    assert result["split"] == "holdout"
+    assert "protected" in result["error"].lower()
+
+
+@pytest.mark.asyncio
+async def test_evaluate_search_set_can_explicitly_run_holdout(monkeypatch):
+    monkeypatch.setattr(
+        evaluator,
+        "load_query_set",
+        lambda split="search": [{"id": "h1", "message": "hidden"}],
+    )
+
+    async def _fake_evaluate_single(query, **kwargs):
+        return {
+            "query_id": query["id"],
+            "completed": True,
+            "turns": 1,
+            "total_tokens": 1,
+        }
+
+    monkeypatch.setattr(evaluator, "evaluate_single", _fake_evaluate_single)
+
+    result = await evaluator.evaluate_search_set(
+        split="holdout",
+        allow_holdout=True,
+        use_cache=False,
+    )
+
+    assert result["split"] == "holdout"
+    assert result["queries_evaluated"] == 1

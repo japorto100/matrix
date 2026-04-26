@@ -18,12 +18,20 @@ build-backend = "setuptools.build_meta"
 [tool.uv.workspace]
 members = ["agent", "bridge", "voice", "memory_engine", "mock", "ingestion"]
 
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
 # Root liefert shared-base für alle Workspace-Members (context/retrieval/memory/shared
 # bleiben Namespace-Packages von python-backend selbst — noch ohne eigenes pyproject).
 [tool.setuptools.packages.find]
 where = ["."]
 namespaces = true
-include = ["context*", "retrieval*", "memory*", "shared*"]
+include = ["context*", "retrieval*", "memory*", "shared*", "meta_harness*"]
 
 [project]
 name = "matrix-python-backend"
@@ -93,6 +101,8 @@ dependencies = [
     "piper-tts>=1.0.0",
     # STT/TTS: OpenAI als optionaler Cloud-Provider
     "livekit-plugins-openai>=1.0.0",
+    # CPU-only: this machine has no CUDA-capable NVIDIA GPU for modern PyTorch.
+    "torch==2.11.0+cpu",
     "sentence-transformers>=5.3.0",
     "langgraph-checkpoint-postgres>=3.0.5",
     # ── Sandbox Code Execution (exec-12 Phase 1) ──────────────────────────

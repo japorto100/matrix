@@ -5,7 +5,7 @@ comes from the search set." This module runs the agent with a given harness conf
 against representative queries and collects scores.
 
 Usage:
-  from agent.harness.evaluator import evaluate_search_set
+  from meta_harness.evaluator import evaluate_search_set
   results = await evaluate_search_set(config_override={...})
 """
 
@@ -15,6 +15,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -22,16 +23,27 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 SEARCH_SET_PATH = (
-    Path(__file__).resolve().parents[3]
+    Path(__file__).resolve().parents[2]
     / "data"
     / "harness"
     / "search_set"
     / "queries.json"
 )
+HOLDOUT_SET_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "harness"
+    / "holdout_set"
+    / "queries.json"
+)
 EVAL_CACHE_PATH = (
-    Path(__file__).resolve().parents[3] / "data" / "harness" / "eval_cache.json"
+    Path(__file__).resolve().parents[2] / "data" / "harness" / "eval_cache.json"
 )
 EVALUATOR_CACHE_VERSION = "search-set-v1"
+EVALUATION_SETS = {
+    "search": SEARCH_SET_PATH,
+    "holdout": HOLDOUT_SET_PATH,
+}
 
 
 class EvaluationCache:
@@ -56,7 +68,12 @@ class EvaluationCache:
         return self._entries
 
     @staticmethod
-    def key_for(query: dict[str, Any], *, system_prompt_override: str = "") -> str:
+    def key_for(
+        query: dict[str, Any],
+        *,
+        system_prompt_override: str = "",
+        runner_variant: str = "dispatcher",
+    ) -> str:
         payload = {
             "version": EVALUATOR_CACHE_VERSION,
             "query": {
@@ -65,6 +82,7 @@ class EvaluationCache:
                 "category": query.get("category", ""),
             },
             "system_prompt_override": system_prompt_override or "",
+            "runner_variant": runner_variant,
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -92,10 +110,18 @@ class EvaluationCache:
 
 def load_search_set() -> list[dict[str, Any]]:
     """Load search-set queries from JSON file."""
-    if not SEARCH_SET_PATH.exists():
-        logger.warning("Search set not found: %s", SEARCH_SET_PATH)
+    return load_query_set("search")
+
+
+def load_query_set(split: str = "search") -> list[dict[str, Any]]:
+    """Load a named evaluation split without exposing holdout by default."""
+    path = EVALUATION_SETS.get(split)
+    if path is None:
+        raise ValueError(f"unknown evaluation split: {split}")
+    if not path.exists():
+        logger.warning("%s set not found: %s", split, path)
         return []
-    data = json.loads(SEARCH_SET_PATH.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
     return data.get("queries", [])
 
 
@@ -104,37 +130,53 @@ async def evaluate_single(
     *,
     system_prompt_override: str = "",
     eval_id: str | None = None,
+    runner_variant: str = "dispatcher",
 ) -> dict[str, Any]:
     """Run the agent on a single query and return audit-based scores.
 
     Uses a unique thread_id per evaluation to isolate traces.
 
     ``eval_id`` (exec-harness §4g.4): forwards to
-    :func:`agent.harness.scorer.score_session` so the A/B row's
+    :func:`meta_harness.scorer.score_session` so the A/B row's
     ``harness_eval_id`` is populated. Callers inside
     :func:`evaluate_search_set` share the run's eval_id.
     """
-    from agent.harness.scorer import score_session
+    from meta_harness.scorer import score_session
 
     eval_thread_id = f"eval-{uuid.uuid4().hex[:12]}"
 
     # Build a minimal agent execution
     try:
         from agent.context import AgentExecutionContext
-        from agent.graph.runner import run_agent_loop
+        from agent.tools.registry import ToolRegistry
+        from meta_harness.scenario_runner import (
+            _normalize_runner_variant,
+            _stream_agent_loop_for_variant,
+        )
+
+        registry = ToolRegistry.load()
+        model = (
+            str(query.get("model") or "")
+            or os.environ.get("AGENT_DEFAULT_MODEL", "")
+            or os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
+        )
 
         ctx = AgentExecutionContext(
             user_id="harness-evaluator",
             thread_id=eval_thread_id,
-            model="",  # Uses default from config
+            model=model,
             system_prompt=system_prompt_override or "",
-            tools=(),
+            tools=tuple(registry.all()),
         )
 
         messages = [{"role": "user", "content": query["message"]}]
 
         # Consume the SSE stream (we only care about audit side-effects)
-        async for _ in run_agent_loop(ctx, messages):
+        async for _ in _stream_agent_loop_for_variant(
+            _normalize_runner_variant(runner_variant),
+            ctx,
+            messages,
+        ):
             pass
 
     except Exception as e:
@@ -143,15 +185,31 @@ async def evaluate_single(
             "query_id": query.get("id", ""),
             "thread_id": eval_thread_id,
             "error": str(e),
+            "runner_variant": runner_variant,
         }
 
     # Score the session. eval_id (when provided) flows into the
     # ab_experiments.harness_eval_id column via the scorer's backfill.
     scores = await score_session(eval_thread_id, eval_id=eval_id)
+    try:
+        from agent.audit.store import get_audit_store
+        from meta_harness.scenario_runner import (
+            TraceExpectations,
+            evaluate_trace_gates,
+        )
+
+        events = await get_audit_store().query(thread_id=eval_thread_id, limit=1000)
+        scores["trace_gates"] = evaluate_trace_gates(
+            events,
+            TraceExpectations.from_legacy_query(query),
+        ).as_dict()
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("trace gate scoring skipped: %s", exc)
     scores["query_id"] = query.get("id", "")
     scores["category"] = query.get("category", "")
     if eval_id:
         scores["eval_id"] = eval_id
+    scores["runner_variant"] = runner_variant
 
     return scores
 
@@ -164,6 +222,9 @@ async def evaluate_search_set(
     concurrency: int = 4,
     use_cache: bool = True,
     cache: EvaluationCache | None = None,
+    split: str = "search",
+    allow_holdout: bool = False,
+    runner_variant: str = "dispatcher",
 ) -> dict[str, Any]:
     """Run the agent against the full search set and aggregate scores.
 
@@ -176,9 +237,17 @@ async def evaluate_search_set(
     dashboards to distinguish runs. Pass explicitly only for reruns /
     comparison runs that need to share an id.
     """
-    queries = load_search_set()
+    if split == "holdout" and not allow_holdout:
+        return {
+            "error": "Holdout set is protected. Pass allow_holdout=True explicitly.",
+            "split": split,
+            "path": str(HOLDOUT_SET_PATH),
+        }
+
+    queries = load_query_set(split)
     if not queries:
-        return {"error": "No search set queries found", "path": str(SEARCH_SET_PATH)}
+        path = EVALUATION_SETS.get(split, SEARCH_SET_PATH)
+        return {"error": f"No {split} set queries found", "path": str(path)}
 
     if max_queries > 0:
         queries = queries[:max_queries]
@@ -188,11 +257,15 @@ async def evaluate_search_set(
 
     cache = cache or EvaluationCache()
     semaphore = asyncio.Semaphore(max(1, concurrency))
+    from meta_harness.scenario_runner import _normalize_runner_variant
+
+    runner_variant = _normalize_runner_variant(runner_variant)
 
     async def _run(query: dict[str, Any]) -> dict[str, Any]:
         cache_key = EvaluationCache.key_for(
             query,
             system_prompt_override=system_prompt_override,
+            runner_variant=runner_variant,
         )
         if use_cache:
             cached = cache.get(cache_key)
@@ -208,6 +281,7 @@ async def evaluate_search_set(
                 query,
                 system_prompt_override=system_prompt_override,
                 eval_id=eval_id,
+                runner_variant=runner_variant,
             )
         result["cache_hit"] = False
         result["cache_key"] = cache_key
@@ -233,8 +307,10 @@ async def evaluate_search_set(
 
     return {
         "eval_id": eval_id,
+        "split": split,
         "queries_evaluated": len(results),
         "concurrency": max(1, concurrency),
+        "runner_variant": runner_variant,
         "cache_enabled": use_cache,
         "cache_hits": sum(1 for r in results if r.get("cache_hit")),
         "completion_rate": round(completed / max(len(results), 1), 3),

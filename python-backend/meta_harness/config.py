@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,7 @@ class HarnessConfig:
     roles: dict[str, dict[str, Any]] = field(default_factory=dict)
     tools: list[dict[str, str]] = field(default_factory=list)
     memory_config: dict[str, dict[str, Any]] = field(default_factory=dict)
+    runtime_config: dict[str, Any] = field(default_factory=dict)
     consent_config: dict[str, Any] = field(default_factory=dict)
     graph_flow: str = ""
 
@@ -91,6 +93,23 @@ def capture_current_config() -> HarnessConfig:
         config.memory_config = {r.value: c for r, c in TRADING_ROLE_MEMORY.items()}
     except Exception:
         pass
+
+    config.runtime_config = {
+        "memory": {
+            "agent_memory_engine": os.environ.get("AGENT_MEMORY_ENGINE", "auto"),
+            "embedding_provider": os.environ.get("MEMORY_EMBEDDING_PROVIDER", "openrouter"),
+            "embedding_model": os.environ.get("MEMORY_EMBEDDING_MODEL", ""),
+            "embedding_base_url": os.environ.get("MEMORY_EMBEDDING_BASE_URL", ""),
+            "fusion_verbatim_backend": os.environ.get("MEMORY_FUSION_VERBATIM_BACKEND", "mempalace"),
+            "hindsight_reranker_provider": os.environ.get("HINDSIGHT_API_RERANKER_PROVIDER", "rrf"),
+            "bank_id_shape": "user_{user_id}",
+            "pareto_hypotheses": [
+                "embedding_model_dimension_quality_cost",
+                "reranker_strategy_quality_latency_cost",
+                "mempalace_trigger_policy_context_bloat",
+            ],
+        }
+    }
 
     # Consent config
     try:

@@ -23,9 +23,9 @@ analysis. No schema changes; read-only query.
 
 Usage (requires ``HINDSIGHT_DB_URL``)::
 
-    uv run python -m agent.harness.mode_analysis
+    uv run python -m meta_harness.mode_analysis
     # or with a narrower time window:
-    uv run python -m agent.harness.mode_analysis --days 30 --limit 5000
+    uv run python -m meta_harness.mode_analysis --days 30 --limit 5000
 
 References:
 
@@ -213,7 +213,7 @@ def _render_report(threads: dict[str, ThreadStats], *, days: int) -> str:
         "- **Labeling rules:** any `tool_call` → agentic. Else max_iteration ≥ 2 or ≥2 LLM responses → reasoning. Else short single response → instant. No LLM events → unknown.",
         "- **What this doesn't tell you:** whether routing the instant-bucket to a cheap model would have preserved quality. That's L2 (adaptive-reward loop using `harness_fitness_score`).",
         "- **Caveat:** the `instant` bucket is identified by response-length, not user intent. Short factual replies and short confused replies both land here. L2's fitness-delta check disambiguates.",
-        "- **Re-run:** `uv run python -m agent.harness.mode_analysis` (optionally `--days N --limit M`).",
+        "- **Re-run:** `uv run python -m meta_harness.mode_analysis` (optionally `--days N --limit M`).",
         "",
         "## Actionable",
         "",
@@ -281,10 +281,10 @@ async def analyze_modes(
     csv_body = _render_csv(threads)
 
     # Repo-relative default so the script is portable (CI, Docker, other
-    # machines). __file__ is python-backend/agent/harness/mode_analysis.py
-    # → parents[3] is the repo root.
+    # machines). __file__ is python-backend/meta_harness/mode_analysis.py
+    # → parents[2] is the repo root.
     out_dir = out_dir or (
-        Path(__file__).resolve().parents[3] / "docs" / "superpowers" / "findings"
+        Path(__file__).resolve().parents[2] / "docs" / "superpowers" / "findings"
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y-%m-%d")

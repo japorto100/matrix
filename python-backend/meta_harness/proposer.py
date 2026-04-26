@@ -17,7 +17,7 @@ And generates:
   - A new HarnessConfig variant
 
 Usage:
-  Standalone:  uv run python -m agent.harness.proposer
+  Standalone:  uv run python -m meta_harness.proposer
   Via MCP:     harness_propose() tool in mcp_traces.py
   Via API LLM: any model through LiteLLM
 """
@@ -26,13 +26,18 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-HARNESS_DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "harness"
+HARNESS_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "harness"
+META_HARNESS_DATA_DIR = (
+    Path(__file__).resolve().parents[2] / "data" / "meta_harness"
+)
+ENABLE_EXTERNAL_LLM_ENV = "META_HARNESS_ENABLE_EXTERNAL_LLM"
 
 PROPOSER_SYSTEM_PROMPT = """\
 You are a Harness Optimization Agent analyzing an AI trading agent system.
@@ -65,11 +70,42 @@ Reference specific trace data to justify your proposals.
 """
 
 
+def _external_llm_enabled() -> bool:
+    return os.environ.get(ENABLE_EXTERNAL_LLM_ENV, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _external_llm_disabled_response(
+    *,
+    model: str,
+    last_n_sessions: int,
+) -> dict[str, Any]:
+    return {
+        "status": "disabled",
+        "external_llm_disabled": True,
+        "required_env": ENABLE_EXTERNAL_LLM_ENV,
+        "model_requested": model,
+        "sessions_requested": last_n_sessions,
+        "analysis": (
+            "External Meta-Harness proposer LLM calls are disabled by default. "
+            "Codex is the proposer for this repository and should inspect "
+            "domain_spec.md, scenario artifacts, traces, scores and specs "
+            "directly before making bounded harness changes."
+        ),
+        "proposed_changes": [],
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+
+
 async def _gather_context(last_n_sessions: int = 10) -> dict[str, Any]:
     """Gather all context the proposer needs: config + traces + scores."""
     from agent.audit.store import get_audit_store
-    from agent.harness.config import capture_current_config
-    from agent.harness.scorer import score_session
+    from meta_harness.config import capture_current_config
+    from meta_harness.scorer import score_session
 
     # 1. Current harness config
     config = capture_current_config()
@@ -184,9 +220,101 @@ async def _gather_context(last_n_sessions: int = 10) -> dict[str, Any]:
         "config": json.loads(config.to_json()),
         "scores": scores,
         "traces": trace_summaries,
+        "candidate_artifacts": _load_recent_meta_harness_artifacts(),
+        "candidate_decisions": _load_recent_candidate_decisions(),
         "skill_strategy": skill_summary,
         "trigger_quality": trigger_quality,
     }
+
+
+def _read_json_if_exists(path: Path) -> Any:
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "path": str(path)}
+
+
+def _compact_trace_file(path: Path, *, max_events: int = 20) -> dict[str, Any]:
+    data = _read_json_if_exists(path)
+    if not isinstance(data, list):
+        return {"path": str(path), "events": 0, "timeline": []}
+    timeline = []
+    for event in data[:max_events]:
+        if not isinstance(event, dict):
+            continue
+        entry: dict[str, Any] = {
+            "action": event.get("action"),
+            "success": event.get("success"),
+        }
+        tool = event.get("toolName") or event.get("tool_name")
+        if tool:
+            entry["tool"] = tool
+        if event.get("metadata"):
+            entry["metadata"] = event.get("metadata")
+        if event.get("input"):
+            entry["input_preview"] = str(event.get("input"))[:500]
+        if event.get("output"):
+            entry["output_preview"] = str(event.get("output"))[:500]
+        timeline.append(entry)
+    return {
+        "path": str(path),
+        "events": len(data),
+        "timeline": timeline,
+    }
+
+
+def _load_recent_meta_harness_artifacts(
+    *,
+    data_dir: Path = META_HARNESS_DATA_DIR,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    """Load compact filesystem artifacts for proposer inspection.
+
+    Meta-Harness relies on prior diagnostic experience. Keep this bounded for
+    prompt size, but include paths so a coding agent can inspect full artifacts.
+    """
+    runs_dir = data_dir / "runs"
+    if not runs_dir.exists():
+        return []
+
+    candidates = sorted(
+        (p for p in runs_dir.glob("*/candidates/*") if p.is_dir()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )[:limit]
+    artifacts: list[dict[str, Any]] = []
+    for candidate_dir in candidates:
+        run_dir = candidate_dir.parents[1]
+        trace_files = sorted(candidate_dir.glob("traces/**/*.json"))
+        artifacts.append(
+            {
+                "candidate_path": str(candidate_dir),
+                "run": _read_json_if_exists(run_dir / "run.json"),
+                "scenario_set": _read_json_if_exists(
+                    candidate_dir / "scenario_set.json"
+                ),
+                "scores": _read_json_if_exists(candidate_dir / "scores.json"),
+                "verdicts": _read_json_if_exists(candidate_dir / "verdicts.json"),
+                "source_snapshot": _read_json_if_exists(
+                    candidate_dir / "source_snapshot.json"
+                ),
+                "raw_trace_previews": [
+                    _compact_trace_file(path) for path in trace_files[:3]
+                ],
+            }
+        )
+    return artifacts
+
+
+def _load_recent_candidate_decisions(limit: int = 20) -> list[dict[str, Any]]:
+    try:
+        from meta_harness.decisions import load_candidate_decisions
+
+        return load_candidate_decisions(limit=limit)
+    except Exception:  # noqa: BLE001
+        return []
 
 
 async def propose(
@@ -197,7 +325,11 @@ async def propose(
 
     Uses LiteLLM so any configured model works (Anthropic, OpenAI, Gemini, etc.).
     """
-    import os
+    if not _external_llm_enabled():
+        return _external_llm_disabled_response(
+            model=model,
+            last_n_sessions=last_n_sessions,
+        )
 
     from agent.llm_client import get_litellm_client
 
@@ -218,6 +350,12 @@ async def propose(
 
 ## Recent Execution Traces
 {json.dumps(context["traces"], indent=2, default=str)[:8000]}
+
+## Recent Meta-Harness Candidate Artifacts
+{json.dumps(context["candidate_artifacts"], indent=2, default=str)[:6000]}
+
+## Recent Keep/Discard/Defer Decisions
+{json.dumps(context["candidate_decisions"], indent=2, default=str)[:2500]}
 
 Analyze the above data. What patterns do you see? What specific changes to the
 harness (system prompts, tool config, memory settings) would improve agent performance?
@@ -252,6 +390,8 @@ harness (system prompts, tool config, memory settings) would improve agent perfo
     proposal["timestamp"] = datetime.now(UTC).isoformat()
     proposal["model"] = model
     proposal["sessions_analyzed"] = len(context["scores"])
+    proposal["candidate_artifacts_seen"] = len(context["candidate_artifacts"])
+    proposal["candidate_decisions_seen"] = len(context["candidate_decisions"])
 
     _save_proposal(proposal, context.get("config"))
 
@@ -390,7 +530,7 @@ def _save_proposal_fs(proposal: dict[str, Any]) -> None:
     )
 
     # Save current config snapshot alongside
-    from agent.harness.config import capture_current_config
+    from meta_harness.config import capture_current_config
 
     config = capture_current_config()
     config.version = f"v{next_num:03d}"
@@ -419,8 +559,15 @@ async def propose_loop(
             logger.info("Proposer iteration %d/%d", i + 1, iterations)
             proposal = await propose(model=model, last_n_sessions=last_n_sessions)
             proposal["loop_iteration"] = i + 1
+            if proposal.get("external_llm_disabled"):
+                all_proposals.append(proposal)
+                logger.info(
+                    "External proposer disabled by %s; stopping proposer loop",
+                    ENABLE_EXTERNAL_LLM_ENV,
+                )
+                return all_proposals
             if eval_max_queries > 0:
-                from agent.harness.evaluator import evaluate_search_set
+                from meta_harness.evaluator import evaluate_search_set
 
                 eval_id = f"harness-loop-{proposal.get('timestamp', i + 1)}"
                 evaluation = await evaluate_search_set(
@@ -440,7 +587,7 @@ async def propose_loop(
     return all_proposals
 
 
-# Standalone mode: uv run python -m agent.harness.proposer [--iterations N]
+# Standalone mode: uv run python -m meta_harness.proposer [--iterations N]
 if __name__ == "__main__":
     import argparse
     import asyncio
@@ -459,7 +606,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--candidates", type=int, default=1, help="Candidates per iteration"
     )
+    parser.add_argument(
+        "--enable-external-llm",
+        action="store_true",
+        help=f"Allow proposer API calls by setting {ENABLE_EXTERNAL_LLM_ENV}=true",
+    )
     args = parser.parse_args()
+    if args.enable_external_llm:
+        os.environ[ENABLE_EXTERNAL_LLM_ENV] = "true"
 
     async def main():
         if args.iterations > 1:

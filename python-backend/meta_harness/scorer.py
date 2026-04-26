@@ -23,6 +23,7 @@ real user-satisfaction signal (Contrarian-CRITICAL-3 resolution).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -41,14 +42,38 @@ DEFAULT_COST_PER_MTOK = 3.0
 class ScoreWeights:
     """Weights for the scalar harness fitness score."""
 
-    tool_success_rate: float = 0.30
-    completion: float = 0.25
+    tool_success_rate: float = 0.35
+    completion: float = 0.30
     turn_efficiency: float = 0.20
-    memory_utilization: float = 0.15
-    cost_inverse: float = 0.10
+    memory_utilization: float = 0.0
+    cost_inverse: float = 0.15
 
 
 DEFAULT_SCORE_WEIGHTS = ScoreWeights()
+
+
+def _backfill_timeout_seconds() -> float:
+    """Hard upper bound for asynchronous A/B score backfill tasks."""
+    try:
+        return max(0.1, float(os.environ.get("META_HARNESS_AB_BACKFILL_TIMEOUT_S", "2.0")))
+    except ValueError:
+        return 2.0
+
+
+async def _dispatch_ab_backfill_with_timeout(**kwargs: Any) -> None:
+    """Run the fail-soft A/B backfill without letting it pin CLI shutdown."""
+    try:
+        await asyncio.wait_for(
+            backfill_ab_experiment_fitness(**kwargs),
+            timeout=_backfill_timeout_seconds(),
+        )
+    except TimeoutError:
+        logger.warning(
+            "ab_experiments fitness UPDATE timed out for thread=%s",
+            kwargs.get("thread_id") or kwargs.get("session_id") or "<unknown>",
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("ab_experiments fitness UPDATE task failed", exc_info=True)
 
 
 class SessionScorer(Protocol):
@@ -199,10 +224,8 @@ async def score_session(
     # FROM agent.ab_experiments GROUP BY variant` becomes the decision query.
     # Fire-and-forget via asyncio so a scorer call never blocks on DB fsync.
     try:
-        import asyncio
-
         asyncio.create_task(
-            backfill_ab_experiment_fitness(
+            _dispatch_ab_backfill_with_timeout(
                 thread_id=thread_id,
                 fitness_score=result["fitness_score"],
                 eval_id=eval_id,
@@ -225,11 +248,15 @@ def composite_fitness(
     the score dict for anyone who wants Pareto-front analysis.
 
     Default weights (sum to 1.0):
-      * 0.30 — tool_success_rate    (tool calls that returned results)
-      * 0.25 — completion            (did the session finish cleanly)
+      * 0.35 — tool_success_rate    (tool calls that returned results)
+      * 0.30 — completion            (did the session finish cleanly)
       * 0.20 — turn_efficiency       (fewer turns = better, 1/turns)
-      * 0.15 — memory_utilization    (1.0 if any recall, else 0.0)
-      * 0.10 — cost_inverse          (1 / (1 + cost_usd), cheap = better)
+      * 0.00 — memory_utilization    (visible metric, not a generic bonus)
+      * 0.15 — cost_inverse          (1 / (1 + cost_usd), cheap = better)
+
+    Memory correctness is evaluated by trace gates. Raw memory utilization is
+    not generally "higher is better" because many scenarios should not touch
+    memory at all.
 
     NULL-safe: missing or malformed fields contribute 0 so the scalar
     degrades gracefully on pre-P4 sessions.
