@@ -123,6 +123,7 @@ async def _run_simple(
     """Core multi-turn loop — delegates to llm_node + tool_node."""
     from agent.graph.nodes.llm_node import llm_node
     from agent.graph.nodes.tool_node import tool_node
+    from agent.graph.runner import _memory_bank_id_for_user
     from agent.security.credentials import get_user_role_model
     from agent.sessions import create_session, update_session
     from agent.tracing import session_span, set_session_summary
@@ -142,7 +143,7 @@ async def _run_simple(
             agent_id=getattr(ctx, "agent_id", "default"),
             user_id=ctx.user_id,
             thread_id=ctx.thread_id,
-            bank_id=f"user-{ctx.user_id}" if ctx.user_id else None,
+            bank_id=_memory_bank_id_for_user(ctx.user_id),
         )
     except Exception:  # noqa: BLE001
         pass
@@ -150,6 +151,7 @@ async def _run_simple(
     state: dict[str, Any] = {
         "messages": list(messages),
         "tool_calls": [],
+        "tool_definitions": [tool.definition() for tool in ctx.tools],
         "tool_results": [],
         "iteration": 0,
         "max_iterations": MAX_ITERATIONS,
@@ -366,11 +368,11 @@ def _append_tool_messages(
                 "content": state.get("final_response", "") or "",
                 "tool_calls": [
                     {
-                        "id": tc.tool_call_id,
+                        "id": _tool_call_value(tc, "tool_call_id", "id"),
                         "type": "function",
                         "function": {
-                            "name": tc.tool_name,
-                            "arguments": _json.dumps(tc.tool_input),
+                            "name": _tool_call_value(tc, "tool_name", "name"),
+                            "arguments": _tool_call_arguments(tc),
                         },
                     }
                     for tc in tool_calls
@@ -389,6 +391,29 @@ def _append_tool_messages(
                 "content": content,
             }
         )
+
+
+def _tool_call_value(tool_call: Any, primary: str, fallback: str) -> Any:
+    """Read tool-call fields from either ToolCall objects or dict payloads."""
+    if isinstance(tool_call, dict):
+        if primary in tool_call:
+            return tool_call[primary]
+        if fallback in tool_call:
+            return tool_call[fallback]
+        function = tool_call.get("function")
+        if isinstance(function, dict):
+            return function.get(fallback) or function.get(primary)
+        return None
+    return getattr(tool_call, primary, getattr(tool_call, fallback, None))
+
+
+def _tool_call_arguments(tool_call: Any) -> str:
+    import json as _json
+
+    value = _tool_call_value(tool_call, "tool_input", "arguments")
+    if isinstance(value, str):
+        return value
+    return _json.dumps(value or {}, default=str)
 
 
 async def _finalize_ab_row(

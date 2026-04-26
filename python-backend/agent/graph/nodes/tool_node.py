@@ -36,6 +36,16 @@ TOOL_TIMEOUT_SEC = _get_tool_timeout()
 # Sandbox tools need much longer timeouts (up to 30min for backtesting)
 SANDBOX_TOOL_TIMEOUT_SEC = float(os.environ.get("SANDBOX_TOOL_TIMEOUT_SEC", "1800"))
 SANDBOX_TOOLS = {"sandbox_execute", "sandbox_browser"}
+MEMORY_TOOL_TIMEOUT_SEC = float(os.environ.get("MEMORY_TOOL_TIMEOUT_SEC", "90"))
+MEMORY_TOOLS = {"memory_add", "memory_search"}
+
+
+def _effective_tool_timeout(tool_name: str) -> float:
+    if tool_name in SANDBOX_TOOLS:
+        return SANDBOX_TOOL_TIMEOUT_SEC
+    if tool_name in MEMORY_TOOLS:
+        return MEMORY_TOOL_TIMEOUT_SEC
+    return TOOL_TIMEOUT_SEC
 
 
 async def tool_node(state: AgentGraphState) -> dict[str, Any]:
@@ -183,11 +193,7 @@ async def _execute_single(
             tool.validate(tc["tool_input"], ctx)
 
             # Execute with timeout (sandbox tools get extended timeout)
-            timeout = (
-                SANDBOX_TOOL_TIMEOUT_SEC
-                if tc["tool_name"] in SANDBOX_TOOLS
-                else TOOL_TIMEOUT_SEC
-            )
+            timeout = _effective_tool_timeout(tc["tool_name"])
             with anyio.fail_after(timeout):
                 result = await tool.execute(tc["tool_input"], ctx)
 
@@ -214,11 +220,7 @@ async def _execute_single(
             )
         except TimeoutError:
             elapsed = audit_duration(start)
-            effective_timeout = (
-                SANDBOX_TOOL_TIMEOUT_SEC
-                if tc["tool_name"] in SANDBOX_TOOLS
-                else TOOL_TIMEOUT_SEC
-            )
+            effective_timeout = _effective_tool_timeout(tc["tool_name"])
             await audit_log(
                 action=AuditAction.TOOL_RESULT,
                 thread_id=ctx.thread_id,

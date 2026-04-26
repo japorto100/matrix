@@ -10,7 +10,7 @@ Dual-path design (both consume the same aggregation):
 
 * **exec-16 billing-REST** — :class:`InsightsEngine` exposed through
   ``GET /api/v1/billing/insights?user_id=X&days=7`` for Control-UI
-* **exec-harness fitness** — :mod:`agent.harness.scorer` imports
+* **exec-harness fitness** — :mod:`meta_harness.scorer` imports
   :meth:`InsightsEngine.cost_for_session` as the authoritative cost signal
   (replacing its own per-model cost dict)
 

@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-from agent.harness.evals_store import save_memory_ab_eval
+from meta_harness.evals_store import save_memory_ab_eval
 
 
 def main() -> int:

@@ -59,7 +59,10 @@ class _FakeMemoryProvider(MemoryProvider):
     def __init__(self, *, block: str | None = None, recalls: list[str] | None = None):
         self._block = block
         self._recalls = recalls or []
+        self.prefetch_calls: list[tuple[str, str, str, int]] = []
         self.sync_calls: list[tuple[str, str]] = []
+        self.sync_bank_ids: list[str] = []
+        self.pre_compress_calls: list[tuple[int, str, str]] = []
 
     @property
     def name(self) -> str:
@@ -71,6 +74,7 @@ class _FakeMemoryProvider(MemoryProvider):
     async def prefetch(
         self, query: str, *, user_id: str, bank_id: str, limit: int = 5
     ) -> list[MemoryRecall]:
+        self.prefetch_calls.append((query, user_id, bank_id, limit))
         return [
             MemoryRecall(provider="fake", content=c, confidence=0.9)
             for c in self._recalls[:limit]
@@ -85,6 +89,17 @@ class _FakeMemoryProvider(MemoryProvider):
         bank_id: str,
     ) -> None:
         self.sync_calls.append((user_message, assistant_message))
+        self.sync_bank_ids.append(bank_id)
+
+    async def on_pre_compress(
+        self,
+        messages: list[dict],
+        *,
+        user_id: str,
+        bank_id: str,
+    ) -> str | None:
+        self.pre_compress_calls.append((len(messages), user_id, bank_id))
+        return "archived"
 
     def system_prompt_block(self) -> str | None:
         return self._block
@@ -217,6 +232,123 @@ async def test_memory_manager_prefetch_returns_recalls():
     assert recalls[0].provider == "fake"
 
 
+async def test_prepare_system_prompt_passes_thread_to_skill_audit(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+
+    captured = {}
+
+    async def fake_format_skills_for_prompt_async(*args, **kwargs):
+        captured.update(kwargs)
+        return "## Available Skills\nskill block"
+
+    monkeypatch.setattr(
+        "agent.skills.loader.format_skills_for_prompt_async",
+        fake_format_skills_for_prompt_async,
+    )
+    monkeypatch.setattr(
+        "agent.temporal_context.get_temporal_context",
+        lambda user_id=None: "",
+    )
+    set_memory_manager(MemoryManager([]))
+
+    ctx = AgentExecutionContext(
+        user_id="anonymous",
+        thread_id="thread-skills",
+        model="openrouter/openrouter/auto",
+        system_prompt="base prompt",
+        tools=(),
+    )
+
+    prompt = await runner._prepare_system_prompt(
+        ctx,
+        [{"role": "user", "content": "market sentiment for AAPL"}],
+    )
+
+    assert "Tool Instruction Compliance" in prompt
+    assert "skill block" in prompt
+    assert captured["thread_id"] == "thread-skills"
+    assert captured["session_id"] == "thread-skills"
+    assert captured["user_id"] == "anonymous"
+
+
+async def test_prepare_system_prompt_injects_memory_with_canonical_bank_id(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+
+    provider = _FakeMemoryProvider(recalls=["remembered trading preference"])
+    set_memory_manager(MemoryManager([provider]))
+
+    async def no_skills(*_args, **_kwargs):
+        return ""
+
+    monkeypatch.setattr(
+        "agent.skills.loader.format_skills_for_prompt_async",
+        no_skills,
+    )
+    monkeypatch.setattr(
+        "agent.temporal_context.get_temporal_context",
+        lambda user_id=None: "",
+    )
+
+    ctx = AgentExecutionContext(
+        user_id="u1",
+        thread_id="thread-memory",
+        model="openrouter/openrouter/auto",
+        system_prompt="base prompt",
+        tools=(),
+    )
+
+    prompt = await runner._prepare_system_prompt(
+        ctx,
+        [{"role": "user", "content": "remember my swing trading preference"}],
+    )
+
+    assert "## Relevant Memories" in prompt
+    assert "remembered trading preference" in prompt
+    assert provider.prefetch_calls == [
+        ("remember my swing trading preference", "u1", "user_u1", 5)
+    ]
+
+
+async def test_prepare_system_prompt_keeps_skills_when_legacy_memory_times_out(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+
+    async def fake_format_skills_for_prompt_async(*_args, **_kwargs):
+        return "## Available Skills\nmarket-research"
+
+    async def slow_memory_engine():
+        await __import__("asyncio").sleep(0.05)
+        return None
+
+    monkeypatch.setenv("AGENT_PROMPT_MEMORY_INIT_TIMEOUT_S", "0.001")
+    monkeypatch.setattr(
+        "agent.skills.loader.format_skills_for_prompt_async",
+        fake_format_skills_for_prompt_async,
+    )
+    monkeypatch.setattr(
+        "agent.temporal_context.get_temporal_context",
+        lambda user_id=None: "",
+    )
+    monkeypatch.setattr("memory_fusion.engine.get_memory_engine", slow_memory_engine)
+
+    ctx = AgentExecutionContext(
+        user_id="anonymous",
+        thread_id="thread-slow-memory",
+        model="openrouter/openrouter/auto",
+        system_prompt="base prompt",
+        tools=(),
+    )
+
+    prompt = await runner._prepare_system_prompt(
+        ctx,
+        [{"role": "user", "content": "market sentiment for AAPL"}],
+    )
+
+    assert "market-research" in prompt
+
+
 async def test_memory_manager_sync_turn_dispatches():
     provider = _FakeMemoryProvider()
     manager = MemoryManager([provider])
@@ -224,6 +356,60 @@ async def test_memory_manager_sync_turn_dispatches():
         "hello", "world", user_id="u1", bank_id="user-u1"
     )
     assert provider.sync_calls == [("hello", "world")]
+
+
+async def test_prepare_messages_pre_save_archives_without_mutating(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+
+    provider = _FakeMemoryProvider()
+    set_memory_manager(MemoryManager([provider]))
+    monkeypatch.setattr("agent.middleware.compaction.estimate_tokens", lambda _m: 80)
+    monkeypatch.setattr("agent.llm.model_metadata.get_model_context_window", lambda _m: 100)
+
+    ctx = AgentExecutionContext(
+        user_id="u1",
+        thread_id="t1",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+    )
+    messages = [{"role": "user", "content": "near threshold"}]
+
+    result = await runner._prepare_messages(messages, ctx)
+
+    assert result == messages
+    assert provider.pre_compress_calls == [(1, "u1", "user_u1")]
+
+
+async def test_prepare_messages_compaction_archives_before_truncating(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+    from agent.middleware import compaction
+
+    provider = _FakeMemoryProvider()
+    set_memory_manager(MemoryManager([provider]))
+    monkeypatch.setattr("agent.middleware.compaction.estimate_tokens", lambda _m: 86)
+    monkeypatch.setattr("agent.llm.model_metadata.get_model_context_window", lambda _m: 100)
+
+    big = "x" * (compaction.TOOL_RESULT_MAX_CHARS + 1000)
+    messages = [
+        {"role": "user", "content": "use tool"},
+        {"role": "tool", "content": big},
+    ]
+    ctx = AgentExecutionContext(
+        user_id="u1",
+        thread_id="t1",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+    )
+
+    result = await runner._prepare_messages(messages, ctx)
+
+    assert provider.pre_compress_calls == [(2, "u1", "user_u1")]
+    assert len(result[1]["content"]) < len(big)
+    assert "truncated" in result[1]["content"]
 
 
 # ──────────────── 5. init_stack health-dict shape (P1.3) ─────────────────
@@ -288,6 +474,23 @@ async def test_safe_sync_turn_swallows_exceptions(monkeypatch):
         messages=[{"role": "user", "content": "hi"}],
         final_response="hello",
     )
+
+
+async def test_safe_sync_turn_uses_canonical_bank_id():
+    from agent.graph import runner
+
+    provider = _FakeMemoryProvider()
+    set_memory_manager(MemoryManager([provider]))
+
+    await runner._safe_sync_turn(
+        user_id="u1",
+        thread_id="t1",
+        messages=[{"role": "user", "content": "hi"}],
+        final_response="hello",
+    )
+
+    assert provider.sync_calls == [("hi", "hello")]
+    assert provider.sync_bank_ids == ["user_u1"]
 
 
 async def test_safe_sync_turn_none_manager_noops():

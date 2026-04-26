@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any
 
 from agent.errors import CredentialExhaustedError
@@ -68,12 +69,42 @@ def _provider_label(model: str) -> str:
     return "litellm"
 
 
+def _resolve_model_name(model: str | None) -> str:
+    return (
+        str(model or "").strip()
+        or os.environ.get("AGENT_DEFAULT_MODEL", "").strip()
+        or os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "").strip()
+    )
+
+
+def _max_output_tokens_from_env() -> int | None:
+    raw = os.environ.get("AGENT_MAX_OUTPUT_TOKENS", "4096").strip()
+    if not raw:
+        return 4096
+    try:
+        value = int(raw)
+    except ValueError:
+        return 4096
+    return value if value > 0 else None
+
+
+def _clean_assistant_content(content: str) -> str:
+    """Strip provider-leaked reasoning channel markers from assistant text."""
+    text = str(content or "")
+    lowered = text.lower()
+    for marker in ("assistantfinal", "assistant_final", "<|assistant|>final"):
+        idx = lowered.rfind(marker)
+        if idx >= 0:
+            return text[idx + len(marker):].lstrip(" :\n\r\t")
+    return text
+
+
 async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     """Ruft das LLM auf und gibt tool_calls oder finale Antwort zurueck."""
     from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
     from agent.tracing import turn_span
 
-    model = state["model"]
+    model = _resolve_model_name(state.get("model"))
     messages = state["messages"]
     system_prompt = state["system_prompt"]
     api_key = state.get("api_key")
@@ -94,8 +125,12 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
     routing_used = bool(state.get("routing_used"))
     routing_picked_model = state.get("routing_picked_model") or ""
 
-    registry = ToolRegistry.load()
-    tool_defs = [t.definition() for t in registry.all()]
+    configured_tool_defs = state.get("tool_definitions")
+    if configured_tool_defs is None:
+        registry = ToolRegistry.load()
+        tool_defs = [t.definition() for t in registry.all()]
+    else:
+        tool_defs = list(configured_tool_defs)
 
     with turn_span("llm_call", model, iteration) as span:
         span.set_attribute("llm.routing_reason", routing_reason)
@@ -136,6 +171,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         kwargs: dict[str, Any] = {"model": model, "messages": oai_messages}
         if openai_tools:
             kwargs["tools"] = openai_tools
+        max_output_tokens = _max_output_tokens_from_env()
+        if max_output_tokens is not None:
+            kwargs["max_tokens"] = max_output_tokens
 
         # exec-hermes Phase-B P1: consult CredentialPool BEFORE the LLM call.
         # When a usable credential exists we pass it through extra_body
@@ -225,6 +263,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 pass
             raise
         choice = response.choices[0]
+        assistant_content = _clean_assistant_content(choice.message.content or "")
 
         # exec-hermes §3.5: capture x-ratelimit-* headers per-(user, provider-key).
         # exec-hermes Phase-B P1: when a CredentialPool credential is available,
@@ -339,12 +378,13 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             input_data=str(oai_messages[-1].get("content", ""))[:2000]
             if oai_messages
             else "",
-            output_data=choice.message.content[:2000] if choice.message.content else "",
+            output_data=assistant_content[:2000],
             metadata={
                 "model": model,
                 "done": not bool(tool_calls),
                 "tool_calls_count": len(tool_calls),
                 "token_usage": token_usage,
+                "content_cleaned": assistant_content != (choice.message.content or ""),
             },
         )
 
@@ -374,7 +414,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             input=str(oai_messages[-1].get("content", ""))[:5000]
             if oai_messages
             else "",
-            output=choice.message.content[:5000] if choice.message.content else "",
+            output=assistant_content[:5000],
             usage={
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
@@ -406,16 +446,16 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             result["messages"] = [
                 {
                     "role": "assistant",
-                    "content": choice.message.content or "",
+                    "content": assistant_content,
                     "tool_calls": choice.message.tool_calls,
                 }
             ]
             result["done"] = False
         else:
-            result["final_response"] = choice.message.content or ""
+            result["final_response"] = assistant_content
             result["done"] = True
             result["messages"] = [
-                {"role": "assistant", "content": choice.message.content or ""}
+                {"role": "assistant", "content": assistant_content}
             ]
 
         return result

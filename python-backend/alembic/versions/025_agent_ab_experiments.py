@@ -8,7 +8,7 @@ experiments (prompt-cache strategies, compaction thresholds, skill
 loading orders) plug into the same schema.
 
 **Quality-signal design (Contrarian-3 fix):**
-User-satisfaction signal comes from ``agent/harness/scorer.py`` fitness
+User-satisfaction signal comes from ``meta_harness/scorer.py`` fitness
 scores, NOT a hand-rolled heuristic. The ``harness_fitness_score`` column
 is populated by a post-turn or offline harness batch job that joins on
 ``session_id``. We do NOT ship a ``suspected_retry`` boolean — previous

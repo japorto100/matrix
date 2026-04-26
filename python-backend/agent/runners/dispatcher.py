@@ -26,7 +26,7 @@ This is the **single public entry point** that replaces the direct
 
 Quality-signal: we populate cost/tokens/error fields from the turn
 itself. The user-satisfaction signal is filled in later by
-``agent/harness/scorer.py`` joining on ``session_id`` and writing into
+``meta_harness/scorer.py`` joining on ``session_id`` and writing into
 ``harness_fitness_score`` — this dispatcher does not know about harness.
 """
 from __future__ import annotations

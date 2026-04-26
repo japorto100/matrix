@@ -10,7 +10,10 @@ from __future__ import annotations
 
 from agent.graph.nodes.llm_node import (
     _apply_anthropic_caching,
+    _clean_assistant_content,
+    _max_output_tokens_from_env,
     _model_may_use_ephemeral_cache,
+    _resolve_model_name,
 )
 
 
@@ -116,3 +119,34 @@ def test_non_anthropic_model_gate_returns_false():
     assert _model_may_use_ephemeral_cache("openrouter/anthropic/claude-opus") is True
     assert _model_may_use_ephemeral_cache("openai/gpt-4o-mini") is False
     assert _model_may_use_ephemeral_cache("") is False
+
+
+def test_clean_assistant_content_strips_provider_reasoning_markers():
+    raw = "analysisNeed answer.assistantfinal**Result**\nEURUSD 4H"
+    assert _clean_assistant_content(raw) == "**Result**\nEURUSD 4H"
+
+
+def test_clean_assistant_content_leaves_normal_text_unchanged():
+    text = "Final answer: EURUSD is on the 4H chart."
+    assert _clean_assistant_content(text) == text
+
+
+def test_resolve_model_name_falls_back_to_env(monkeypatch):
+    monkeypatch.delenv("AGENT_DEFAULT_MODEL", raising=False)
+    monkeypatch.setenv("AGENT_DEFAULT_UTILITY_MODEL", "openrouter/test-model")
+    assert _resolve_model_name("") == "openrouter/test-model"
+    assert _resolve_model_name(" openrouter/explicit ") == "openrouter/explicit"
+
+
+def test_max_output_tokens_env_default_and_disable(monkeypatch):
+    monkeypatch.delenv("AGENT_MAX_OUTPUT_TOKENS", raising=False)
+    assert _max_output_tokens_from_env() == 4096
+
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "1024")
+    assert _max_output_tokens_from_env() == 1024
+
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "0")
+    assert _max_output_tokens_from_env() is None
+
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "invalid")
+    assert _max_output_tokens_from_env() == 4096

@@ -144,3 +144,65 @@ def _make_ctx():
         agent_class="advisory",
         user_role="viewer",
     )
+
+
+def test_append_tool_messages_accepts_dict_tool_calls():
+    from agent.runners.simple import _append_tool_messages
+
+    state = {
+        "messages": [{"role": "user", "content": "use a tool"}],
+        "final_response": "",
+    }
+    tool_calls = [
+        {
+            "tool_call_id": "call-1",
+            "tool_name": "memory_search",
+            "tool_input": {"query": "alpha"},
+        }
+    ]
+    tool_results = [
+        {
+            "tool_call_id": "call-1",
+            "tool_name": "memory_search",
+            "result": {"matches": []},
+        }
+    ]
+
+    _append_tool_messages(state, tool_calls, tool_results)
+
+    assistant = state["messages"][1]
+    tool = state["messages"][2]
+    assert assistant["tool_calls"][0]["id"] == "call-1"
+    assert assistant["tool_calls"][0]["function"]["name"] == "memory_search"
+    assert '"query": "alpha"' in assistant["tool_calls"][0]["function"]["arguments"]
+    assert tool["role"] == "tool"
+    assert tool["tool_call_id"] == "call-1"
+
+
+def test_append_tool_messages_preserves_openai_argument_strings():
+    from agent.runners.simple import _append_tool_messages
+
+    state = {
+        "messages": [{"role": "user", "content": "use a tool"}],
+        "final_response": "",
+    }
+    tool_calls = [
+        {
+            "id": "call-2",
+            "function": {
+                "name": "memory_search",
+                "arguments": "{\"query\":\"beta\"}",
+            },
+        }
+    ]
+
+    _append_tool_messages(
+        state,
+        tool_calls,
+        [{"tool_call_id": "call-2", "tool_name": "memory_search", "result": "ok"}],
+    )
+
+    tool_call = state["messages"][1]["tool_calls"][0]
+    assert tool_call["id"] == "call-2"
+    assert tool_call["function"]["name"] == "memory_search"
+    assert tool_call["function"]["arguments"] == "{\"query\":\"beta\"}"

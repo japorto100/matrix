@@ -44,6 +44,10 @@ class AgentGraphState(TypedDict):
     # Current pending tool calls from LLM
     tool_calls: list[ToolCall]
 
+    # Tool definitions allowed for this turn. ``None``/missing means legacy
+    # registry fallback; an empty list means tools are explicitly disabled.
+    tool_definitions: list[dict[str, Any]] | None
+
     # Accumulated tool results
     tool_results: Annotated[list[ToolResult], operator.add]
 

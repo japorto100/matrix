@@ -117,9 +117,15 @@ def create_agent_graph(checkpointer: Any | None = None) -> Any:
     if checkpointer is None:
         checkpointer = MemorySaver()
 
+    interrupt_before = (
+        ["approval_gate"]
+        if os.environ.get("AGENT_GRAPH_INTERRUPT_BEFORE_APPROVAL", "").lower()
+        in ("1", "true", "yes", "on")
+        else None
+    )
     compiled = graph.compile(
         checkpointer=checkpointer,
-        interrupt_before=["approval_gate"],
+        interrupt_before=interrupt_before,
     )
 
     logger.info(

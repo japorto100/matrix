@@ -88,7 +88,14 @@ class SandboxManager:
 
         try:
             from opensandbox import Sandbox
-            from opensandbox_code_interpreter import CodeInterpreter, SupportedLanguage
+
+            try:
+                from opensandbox_code_interpreter import (
+                    CodeInterpreter,
+                    SupportedLanguage,
+                )
+            except ImportError:
+                from code_interpreter import CodeInterpreter, SupportedLanguage
 
             # 1. Create sandbox
             sandbox = await Sandbox.create(
@@ -254,7 +261,14 @@ class SandboxManager:
 
         try:
             from opensandbox import Sandbox
-            from opensandbox_code_interpreter import CodeInterpreter, SupportedLanguage
+
+            try:
+                from opensandbox_code_interpreter import (
+                    CodeInterpreter,
+                    SupportedLanguage,
+                )
+            except ImportError:
+                from code_interpreter import CodeInterpreter, SupportedLanguage
 
             sandbox = await Sandbox.create(
                 config.image or "opensandbox/code-interpreter:v1.0.2",

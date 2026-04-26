@@ -5,7 +5,11 @@ from typing import Any
 import pytest
 
 from agent.graph.nodes import tool_node as tool_node_module
-from agent.graph.nodes.tool_node import _trading_role_from_state, tool_node
+from agent.graph.nodes.tool_node import (
+    _effective_tool_timeout,
+    _trading_role_from_state,
+    tool_node,
+)
 from agent.roles import TradingRole
 from agent.tools.base import TradingTool
 from agent.tools.registry import ToolRegistry
@@ -37,6 +41,12 @@ def test_trading_role_from_state_accepts_known_roles_only():
     assert _trading_role_from_state({"current_role": "risk_manager"}) is TradingRole.RISK_MANAGER
     assert _trading_role_from_state({"current_role": "default"}) is None
     assert _trading_role_from_state({}) is None
+
+
+def test_memory_tools_get_extended_timeout_budget():
+    assert _effective_tool_timeout("memory_add") == tool_node_module.MEMORY_TOOL_TIMEOUT_SEC
+    assert _effective_tool_timeout("memory_search") == tool_node_module.MEMORY_TOOL_TIMEOUT_SEC
+    assert _effective_tool_timeout("get_chart_state") == tool_node_module.TOOL_TIMEOUT_SEC
 
 
 @pytest.mark.asyncio
