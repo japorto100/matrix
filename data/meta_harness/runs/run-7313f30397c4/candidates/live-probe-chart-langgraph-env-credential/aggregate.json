@@ -1,0 +1,50 @@
+{
+  "run_id": "run-7313f30397c4",
+  "candidate_id": "live-probe-chart-langgraph-env-credential",
+  "scenarios_evaluated": 1,
+  "completion_rate": 0.0,
+  "trace_gate_pass_rate": 0.0,
+  "avg_turns": 1.0,
+  "turn_efficiency": 1.0,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.6,
+  "fitness_score": 0.6,
+  "total_tokens": 8260,
+  "avg_tokens": 8260.0,
+  "token_efficiency": 0.121065,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 6078.0,
+  "avg_duration_ms": 6078.0,
+  "latency_efficiency": 0.164528,
+  "failed_scenarios": [
+    {
+      "scenario_id": "lp-chart-001",
+      "failures": [
+        "harness timeout"
+      ],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ]
+    }
+  ]
+}

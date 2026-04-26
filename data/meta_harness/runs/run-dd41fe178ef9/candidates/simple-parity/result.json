@@ -1,0 +1,64 @@
+{
+  "run_id": "run-dd41fe178ef9",
+  "candidate_id": "simple-parity",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-105c49cc",
+  "user_id": "anonymous",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    },
+    {
+      "role": "assistant",
+      "content": "The runner parity smoke test is passing."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-rp-no-tools-001-105c49cc\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-105c49cc\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"delta\": \"The runner parity smoke test is passing.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-105c49cc\", \"promptTokens\": 4245, \"completionTokens\": 107, \"reasoningTokens\": 113, \"cachedTokens\": 0, \"totalTokens\": 4352, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-105c49cc",
+    "error": "no events found",
+    "completed": true,
+    "completion_source": "sse_finish",
+    "fitness_score": 0.35,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required action: llm_response"
+      ],
+      "warnings": [],
+      "observed_actions": [],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required action: llm_response"
+    ],
+    "warnings": [],
+    "observed_actions": [],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null,
+    "observed_memory_routes": [],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "simple"
+}

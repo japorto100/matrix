@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "failures": [],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "llm_response",
+    "memory_recall",
+    "memory_retain",
+    "skill_found",
+    "skill_used",
+    "tool_call",
+    "tool_result"
+  ],
+  "observed_tools": [
+    "memory_add",
+    "memory_search"
+  ],
+  "observed_skills": [
+    "global:market-research",
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment",
+    "market-research",
+    "memory-usage",
+    "plan",
+    "risk-assessment"
+  ],
+  "tool_success_rate": 1.0,
+  "observed_memory_routes": [
+    "fusion"
+  ],
+  "observed_memory_providers": [
+    "fusion",
+    "summary_async",
+    "verbatim"
+  ]
+}

@@ -1,0 +1,4 @@
+{"chunk": "data: {\"messageId\": \"mh-q001-26dc4eec\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-q001-26dc4eec\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='meta-harness' provider='openrouter': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"}

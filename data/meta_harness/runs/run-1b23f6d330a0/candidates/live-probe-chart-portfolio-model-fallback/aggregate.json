@@ -1,0 +1,45 @@
+{
+  "run_id": "run-1b23f6d330a0",
+  "candidate_id": "live-probe-chart-portfolio-model-fallback",
+  "scenarios_evaluated": 2,
+  "completion_rate": 0.5,
+  "trace_gate_pass_rate": 0.5,
+  "avg_turns": 1.0,
+  "turn_efficiency": 1.0,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8,
+  "fitness_score": 0.8,
+  "total_tokens": 8809,
+  "avg_tokens": 4404.5,
+  "token_efficiency": 0.227041,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 7771.0,
+  "avg_duration_ms": 3885.5,
+  "latency_efficiency": 0.257367,
+  "failed_scenarios": [
+    {
+      "scenario_id": "lp-portfolio-001",
+      "failures": [
+        "missing required tool: get_portfolio_summary",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ]
+    }
+  ]
+}

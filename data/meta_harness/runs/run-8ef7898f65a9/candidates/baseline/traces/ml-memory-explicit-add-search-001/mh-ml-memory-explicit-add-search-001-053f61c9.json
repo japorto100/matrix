@@ -1,0 +1,354 @@
+[
+  {
+    "id": 233,
+    "timestamp": "2026-04-26 11:00:40.350287+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "<tool_output source=\"memory_search\" trusted=\"true\">\n{\"results\": [], \"message\": \"Memory not available\"}\n</tool_output>",
+    "output": "I\u2019m sorry, but I couldn\u2019t find any memory entry matching **memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction**. If you think the fact should be stored, please let me know the exact wording and I can add it to my long\u2011term memory for future reference.",
+    "duration_ms": 5996,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 4503
+    },
+    "iteration": 2
+  },
+  {
+    "id": 232,
+    "timestamp": "2026-04-26 11:00:34.241140+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": {
+      "results": [],
+      "message": "Memory not available"
+    },
+    "duration_ms": 110,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 231,
+    "timestamp": "2026-04-26 11:00:34.130718+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 230,
+    "timestamp": "2026-04-26 11:00:34.037345+00:00",
+    "action": "consent_decision",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "auto_allow",
+      "policy_id": "yaml:default"
+    },
+    "iteration": null
+  },
+  {
+    "id": 229,
+    "timestamp": "2026-04-26 11:00:33.928283+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+    "output": null,
+    "duration_ms": 1514,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4443
+    },
+    "iteration": 0
+  },
+  {
+    "id": 228,
+    "timestamp": "2026-04-26 11:00:31.895241+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "market-research"
+      ],
+      "query_preview": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 227,
+    "timestamp": "2026-04-26 11:00:31.750679+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "market-research"
+      ],
+      "query_preview": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 226,
+    "timestamp": "2026-04-26 11:00:31.180937+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "<tool_output source=\"memory_add\" trusted=\"true\">\n{\"stored\": false, \"message\": \"Memory not available\"}\n</tool_output>",
+    "output": "I\u2019m sorry\u2014I wasn\u2019t able to store that fact with **`memory_add`** because the long\u2011term memory service isn\u2019t currently available in this session (the tool returned \u201cMemory not available\u201d).  \n\nIf you\u2019d still like to keep the phrase for later reference, I can store it in the short\u2011term working memory using **`save_memory`**, which persists only for the duration of our conversation. Let me know if that works for you!",
+    "duration_ms": 22711,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 4698
+    },
+    "iteration": 2
+  },
+  {
+    "id": 225,
+    "timestamp": "2026-04-26 11:00:08.348133+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+      "fact_type": "world"
+    },
+    "output": {
+      "stored": false,
+      "message": "Memory not available"
+    },
+    "duration_ms": 115,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 224,
+    "timestamp": "2026-04-26 11:00:08.233172+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+      "fact_type": "world"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 223,
+    "timestamp": "2026-04-26 11:00:07.989806+00:00",
+    "action": "consent_decision",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "auto_allow",
+      "policy_id": "yaml:default"
+    },
+    "iteration": null
+  },
+  {
+    "id": 222,
+    "timestamp": "2026-04-26 11:00:07.715367+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+    "output": null,
+    "duration_ms": 1322,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4423
+    },
+    "iteration": 0
+  },
+  {
+    "id": 221,
+    "timestamp": "2026-04-26 11:00:05.831853+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "market-research"
+      ],
+      "query_preview": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 220,
+    "timestamp": "2026-04-26 11:00:05.413978+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-053f61c9",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "market-research"
+      ],
+      "query_preview": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

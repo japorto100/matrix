@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-portfolio-001-b71711cb\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-b71711cb\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"**Portfolio\\u2011Risk Assessment**\\n\\n- **Current holdings:**\\u202fNone (0\\u202f% exposure).  \\n- **Concentration risk:**\\u202fNo assets are held, so concentration risk is **nil**.  \\n- **Correlation risk:**\\u202fWith no positions, there is no exposure to any market or currency, thus **no correlation risk** exists.\\n\\n*Bottom line:* Your portfolio is currently free from both concentration and correlation risks. If you add positions later, we can re\\u2011evaluate based on the specific assets and their weights.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"get_portfolio_summary\", \"toolCallId\": \"chatcmpl-tool-f97110f32c65479c9d2870cd7de17bf3\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-f97110f32c65479c9d2870cd7de17bf3\", \"output\": {\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-b71711cb\", \"promptTokens\": 8690, \"completionTokens\": 239, \"reasoningTokens\": 136, \"cachedTokens\": 2512, \"totalTokens\": 8929, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-sandbox-001-9c1e8e18\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-9c1e8e18\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"**Position size:**\\u202f0.5\\u202funits (e.g., 0.5\\u202fshares/contracts)  \\n**Risk dollars:**\\u202f$1\\u202f000 (1\\u202f% of the $100\\u202f000 equity)\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"sandbox_execute\", \"toolCallId\": \"chatcmpl-tool-a81a906b83164361a508b38a0b146a92\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-a81a906b83164361a508b38a0b146a92\", \"errorText\": \"OpenSandbox SDK not installed: No module named 'opensandbox_code_interpreter'. Install with: uv pip install opensandbox opensandbox-code-interpreter\", \"type\": \"tool-output-error\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-9c1e8e18\", \"promptTokens\": 8872, \"completionTokens\": 432, \"reasoningTokens\": 257, \"cachedTokens\": 0, \"totalTokens\": 9304, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

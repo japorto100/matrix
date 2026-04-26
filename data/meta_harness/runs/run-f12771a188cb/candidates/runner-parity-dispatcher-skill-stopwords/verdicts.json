@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "failures": [],
+  "warnings": [],
+  "observed_actions": [
+    "llm_response",
+    "skill_found"
+  ],
+  "observed_tools": [],
+  "observed_skills": [],
+  "tool_success_rate": null,
+  "observed_memory_routes": [],
+  "observed_memory_providers": []
+}

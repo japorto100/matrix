@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-chart-001-63d74174\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-63d74174\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"**Aktueller Chart\\u2011Zustand**\\n\\n- **Symbol:** EUR/USD  \\n- **Timeframe:** 4\\u2011Stunden\\u2011Chart (4H)  \\n- **Aktivierte Indikatoren:** RSI (Relative Strength Index) und MACD (Moving Average Convergence Divergence)  \\n\\nDamit haben Sie den EUR/USD\\u2011W\\u00e4hrungspaar\\u2011Chart im 4\\u2011Stunden\\u2011Intervall mit den beiden genannten technischen Indikatoren im Fokus.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"chatcmpl-tool-f766d2aab07340bdad0896a32acf390d\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-f766d2aab07340bdad0896a32acf390d\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-63d74174\", \"promptTokens\": 9174, \"completionTokens\": 151, \"reasoningTokens\": 34, \"cachedTokens\": 48, \"totalTokens\": 9325, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

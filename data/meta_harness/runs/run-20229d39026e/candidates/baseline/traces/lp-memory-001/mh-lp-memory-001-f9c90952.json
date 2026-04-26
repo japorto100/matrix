@@ -1,0 +1,250 @@
+[
+  {
+    "id": 156,
+    "timestamp": "2026-04-26 00:41:02.400765+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 598,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found."
+    },
+    "iteration": null
+  },
+  {
+    "id": 155,
+    "timestamp": "2026-04-26 00:41:01.436071+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 1319,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+    },
+    "iteration": null
+  },
+  {
+    "id": 154,
+    "timestamp": "2026-04-26 00:40:59.904262+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "risk-assessment"
+      ],
+      "query_preview": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 153,
+    "timestamp": "2026-04-26 00:40:59.814376+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "risk-assessment"
+      ],
+      "query_preview": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 152,
+    "timestamp": "2026-04-26 00:40:58.991768+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 286,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade."
+    },
+    "iteration": null
+  },
+  {
+    "id": 151,
+    "timestamp": "2026-04-26 00:40:58.379975+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 1160,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+    },
+    "iteration": null
+  },
+  {
+    "id": 150,
+    "timestamp": "2026-04-26 00:40:57.056864+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "query_preview": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 149,
+    "timestamp": "2026-04-26 00:40:56.971365+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-memory-001-f9c90952",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "query_preview": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

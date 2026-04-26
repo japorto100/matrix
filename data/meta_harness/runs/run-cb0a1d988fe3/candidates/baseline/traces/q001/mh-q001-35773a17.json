@@ -1,0 +1,121 @@
+[
+  {
+    "id": 66,
+    "timestamp": "2026-04-26 00:21:03.608340+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-q001-35773a17",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "What is the current market sentiment for AAPL?",
+    "output": null,
+    "duration_ms": 1640,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4471
+    },
+    "iteration": 0
+  },
+  {
+    "id": 65,
+    "timestamp": "2026-04-26 00:21:01.873188+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-q001-35773a17",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 558,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "What is the current market sentiment for AAPL?"
+    },
+    "iteration": null
+  },
+  {
+    "id": 64,
+    "timestamp": "2026-04-26 00:20:57.613567+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-q001-35773a17",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:market-research",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "market-research",
+        "risk-assessment"
+      ],
+      "query_preview": "What is the current market sentiment for AAPL?",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 63,
+    "timestamp": "2026-04-26 00:20:57.524015+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-q001-35773a17",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:market-research",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "market-research",
+        "risk-assessment"
+      ],
+      "query_preview": "What is the current market sentiment for AAPL?",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

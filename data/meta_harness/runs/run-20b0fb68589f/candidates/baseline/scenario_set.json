@@ -1,0 +1,31 @@
+{
+  "scenarios": [
+    {
+      "id": "lp-portfolio-001",
+      "category": "tool_portfolio_risk",
+      "turns": [
+        {
+          "user": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "skill_used"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "get_portfolio_summary"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "risk-assessment"
+        ],
+        "expected_memory": false,
+        "min_tool_success_rate": 1.0
+      },
+      "judge": {},
+      "metadata": {},
+      "enable_tools": true
+    }
+  ]
+}

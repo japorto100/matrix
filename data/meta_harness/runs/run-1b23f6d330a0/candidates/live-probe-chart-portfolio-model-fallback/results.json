@@ -1,0 +1,550 @@
+[
+  {
+    "run_id": "run-1b23f6d330a0",
+    "candidate_id": "live-probe-chart-portfolio-model-fallback",
+    "scenario_id": "lp-chart-001",
+    "thread_id": "mh-lp-chart-001-44a242bc",
+    "user_id": "meta-harness",
+    "category": "tool_chart_state",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+      },
+      {
+        "role": "assistant",
+        "content": "**Active Chart Summary**\n\n- **Symbol:**\u202fEUR/USD  \n- **Timeframe:**\u202f4\u2011hour (4H)  \n- **Enabled Indicators:**\u202fRSI (Relative Strength Index) and MACD (Moving Average Convergence Divergence)  \n\nThese are the current settings of the chart you\u2019re viewing."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-chart-001-44a242bc\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-44a242bc\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"**Active Chart Summary**\\n\\n- **Symbol:**\\u202fEUR/USD  \\n- **Timeframe:**\\u202f4\\u2011hour (4H)  \\n- **Enabled Indicators:**\\u202fRSI (Relative Strength Index) and MACD (Moving Average Convergence Divergence)  \\n\\nThese are the current settings of the chart you\\u2019re viewing.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"chatcmpl-tool-7b1f564736ea4610972ac00f99eff184\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-7b1f564736ea4610972ac00f99eff184\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-44a242bc\", \"promptTokens\": 8683, \"completionTokens\": 126, \"reasoningTokens\": 40, \"cachedTokens\": 0, \"totalTokens\": 8809, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"openrouter/openrouter/auto\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 930,
+        "timestamp": "2026-04-26 16:39:40.918122+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"get_chart_state\" trusted=\"true\">\n{\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}\n</tool_output>",
+        "output": "**Active Chart Summary**\n\n- **Symbol:**\u202fEUR/USD  \n- **Timeframe:**\u202f4\u2011hour (4H)  \n- **Enabled Indicators:**\u202fRSI (Relative Strength Index) and MACD (Moving Average Convergence Divergence)  \n\nThese are the current settings of the chart you\u2019re viewing.",
+        "duration_ms": 5114,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4477,
+          "content_cleaned": false
+        },
+        "iteration": 2
+      },
+      {
+        "id": 929,
+        "timestamp": "2026-04-26 16:39:35.710040+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": {
+          "symbol": "EURUSD",
+          "timeframe": "4H",
+          "indicators": [
+            "RSI",
+            "MACD"
+          ],
+          "source": "stub"
+        },
+        "duration_ms": 193,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 928,
+        "timestamp": "2026-04-26 16:39:35.517257+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 927,
+        "timestamp": "2026-04-26 16:39:35.397530+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 926,
+        "timestamp": "2026-04-26 16:39:35.308431+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+        "output": null,
+        "duration_ms": 2657,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4332,
+          "content_cleaned": false
+        },
+        "iteration": 0
+      },
+      {
+        "id": 925,
+        "timestamp": "2026-04-26 16:39:32.477060+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 1778,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_meta-harness",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "meta-harness",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+        },
+        "iteration": null
+      },
+      {
+        "id": 924,
+        "timestamp": "2026-04-26 16:39:19.672501+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:trading-analysis",
+            "global:plan",
+            "global:memory-usage"
+          ],
+          "skill_names": [
+            "trading-analysis",
+            "plan",
+            "memory-usage"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "meta-harness",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 923,
+        "timestamp": "2026-04-26 16:39:19.569743+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-44a242bc",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:trading-analysis",
+            "global:plan",
+            "global:memory-usage"
+          ],
+          "skill_names": [
+            "trading-analysis",
+            "plan",
+            "memory-usage"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "meta-harness",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-chart-001-44a242bc",
+      "model": "openrouter/openrouter/auto",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 2,
+      "turn_efficiency": 0.5,
+      "total_tokens": 8809,
+      "token_efficiency": 4404,
+      "total_duration_ms": 7771,
+      "tool_calls": 1,
+      "tool_success_rate": 1.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 1,
+      "memory_retains": 0,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.9,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_decision",
+          "llm_response",
+          "memory_recall",
+          "skill_found",
+          "skill_used",
+          "tool_call",
+          "tool_result"
+        ],
+        "observed_tools": [
+          "get_chart_state"
+        ],
+        "observed_skills": [
+          "global:memory-usage",
+          "global:plan",
+          "global:trading-analysis",
+          "memory-usage",
+          "plan",
+          "trading-analysis"
+        ],
+        "tool_success_rate": 1.0,
+        "observed_memory_routes": [
+          "fusion"
+        ],
+        "observed_memory_providers": []
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": 1.0,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-1b23f6d330a0/candidates/live-probe-chart-portfolio-model-fallback",
+    "runner_variant": "dispatcher"
+  },
+  {
+    "run_id": "run-1b23f6d330a0",
+    "candidate_id": "live-probe-chart-portfolio-model-fallback",
+    "scenario_id": "lp-portfolio-001",
+    "thread_id": "mh-lp-portfolio-001-60a3d177",
+    "user_id": "meta-harness",
+    "category": "tool_portfolio_risk",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-portfolio-001-60a3d177\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-60a3d177\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='meta-harness' provider='litellm': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 934,
+        "timestamp": "2026-04-26 16:40:06.602506+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-60a3d177",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 4278,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_meta-harness",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "meta-harness",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+        },
+        "iteration": null
+      },
+      {
+        "id": 933,
+        "timestamp": "2026-04-26 16:40:02.001771+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-60a3d177",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 0,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_meta-harness",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "meta-harness",
+          "actor_role": "advisory",
+          "item_count": 0,
+          "query_gate": "insufficient_query",
+          "needs_verification": false
+        },
+        "iteration": null
+      },
+      {
+        "id": 932,
+        "timestamp": "2026-04-26 16:40:01.803982+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-60a3d177",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:risk-assessment",
+            "global:memory-usage",
+            "global:plan"
+          ],
+          "skill_names": [
+            "risk-assessment",
+            "memory-usage",
+            "plan"
+          ],
+          "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+          "user_id": "meta-harness",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 931,
+        "timestamp": "2026-04-26 16:40:01.727152+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-60a3d177",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:risk-assessment",
+            "global:memory-usage",
+            "global:plan"
+          ],
+          "skill_names": [
+            "risk-assessment",
+            "memory-usage",
+            "plan"
+          ],
+          "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+          "user_id": "meta-harness",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-portfolio-001-60a3d177",
+      "model": "",
+      "completed": false,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 0,
+      "turn_efficiency": 1.0,
+      "total_tokens": 0,
+      "token_efficiency": 0,
+      "total_duration_ms": 0,
+      "tool_calls": 0,
+      "tool_success_rate": 0.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 2,
+      "memory_retains": 0,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.7,
+      "trace_gates": {
+        "passed": false,
+        "failures": [
+          "missing required tool: get_portfolio_summary",
+          "missing tool_result events for tool success rate threshold"
+        ],
+        "warnings": [],
+        "observed_actions": [
+          "memory_recall",
+          "skill_found",
+          "skill_used"
+        ],
+        "observed_tools": [],
+        "observed_skills": [
+          "global:memory-usage",
+          "global:plan",
+          "global:risk-assessment",
+          "memory-usage",
+          "plan",
+          "risk-assessment"
+        ],
+        "tool_success_rate": null,
+        "observed_memory_routes": [
+          "fusion"
+        ],
+        "observed_memory_providers": []
+      }
+    },
+    "trace_verdict": {
+      "passed": false,
+      "failures": [
+        "missing required tool: get_portfolio_summary",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-1b23f6d330a0/candidates/live-probe-chart-portfolio-model-fallback",
+    "runner_variant": "dispatcher"
+  }
+]

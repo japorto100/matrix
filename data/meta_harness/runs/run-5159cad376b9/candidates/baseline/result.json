@@ -1,0 +1,49 @@
+{
+  "run_id": "run-5159cad376b9",
+  "candidate_id": "baseline",
+  "scenario_id": "q001",
+  "thread_id": "mh-q001-26dc4eec",
+  "user_id": "meta-harness",
+  "category": "simple_query",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "What is the current market sentiment for AAPL?"
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-q001-26dc4eec\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-q001-26dc4eec\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='meta-harness' provider='openrouter': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"
+  ],
+  "trace_events": [],
+  "score": {
+    "thread_id": "mh-q001-26dc4eec",
+    "error": "no events found",
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required skill: market-research"
+      ],
+      "warnings": [],
+      "observed_actions": [],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required skill: market-research"
+    ],
+    "warnings": [],
+    "observed_actions": [],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null
+  },
+  "artifact_dir": null
+}

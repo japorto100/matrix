@@ -1,0 +1,121 @@
+[
+  {
+    "id": 922,
+    "timestamp": "2026-04-26 16:37:46.214254+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-41642178",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 3327,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_meta-harness",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "meta-harness",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+    },
+    "iteration": null
+  },
+  {
+    "id": 921,
+    "timestamp": "2026-04-26 16:37:41.617928+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-41642178",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_meta-harness",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "meta-harness",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 920,
+    "timestamp": "2026-04-26 16:37:40.745223+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-41642178",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:risk-assessment",
+        "global:memory-usage",
+        "global:plan"
+      ],
+      "skill_names": [
+        "risk-assessment",
+        "memory-usage",
+        "plan"
+      ],
+      "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+      "user_id": "meta-harness",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 919,
+    "timestamp": "2026-04-26 16:37:40.512850+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-41642178",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:risk-assessment",
+        "global:memory-usage",
+        "global:plan"
+      ],
+      "skill_names": [
+        "risk-assessment",
+        "memory-usage",
+        "plan"
+      ],
+      "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+      "user_id": "meta-harness",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

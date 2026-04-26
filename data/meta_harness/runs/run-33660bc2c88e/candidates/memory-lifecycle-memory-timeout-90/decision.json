@@ -1,0 +1,13 @@
+{
+  "run_id": "run-33660bc2c88e",
+  "candidate_id": "memory-lifecycle-memory-timeout-90",
+  "decision": "keep",
+  "rationale": "Kept: memory lifecycle scenarios pass after dedicated memory tool timeout budget; observed Fusion route with verbatim and summary_async providers.",
+  "decided_at": "2026-04-26T16:16:45.797432+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.8583
+  },
+  "follow_up": ""
+}

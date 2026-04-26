@@ -1,0 +1,57 @@
+{
+  "run_id": "run-7f2f2fb5a1bd",
+  "candidate_id": "memory-fusion-mempalace-fast-add-typed-384",
+  "scenarios_evaluated": 1,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 0.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 0.167,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.5226,
+  "fitness_score": 0.5226,
+  "total_tokens": 68202,
+  "avg_tokens": 68202.0,
+  "token_efficiency": 0.014662,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 30772.0,
+  "avg_duration_ms": 30772.0,
+  "latency_efficiency": 0.032497,
+  "failed_scenarios": [
+    {
+      "scenario_id": "ml-memory-explicit-add-search-001",
+      "failures": [
+        "missing required action: memory_retain",
+        "tool failures observed: memory_add",
+        "tool success rate below threshold: 0.167 < 1.0"
+      ],
+      "observed_actions": [
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "memory_add",
+        "memory_search",
+        "save_memory"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ]
+    }
+  ]
+}

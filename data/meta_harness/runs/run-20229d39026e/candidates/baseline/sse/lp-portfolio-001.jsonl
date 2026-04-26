@@ -1,0 +1,4 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-portfolio-001-2181fd2c\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-2181fd2c\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"errorText\": \"LangGraph error: Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"x-api-key header is required\\\"},\\\"request_id\\\":\\\"req_011CaRTCWdurRPGJsLvXRBeF\\\"}. Received Model Group=claude-3-haiku-20240307\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"auth\", \"recovery_strategy\": \"rotate_immediately\", \"retryable\": true, \"status_code\": 401}}\n\n"}

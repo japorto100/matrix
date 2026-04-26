@@ -1,0 +1,72 @@
+[
+  {
+    "id": 746,
+    "timestamp": "2026-04-26 15:49:19.647210+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-09837ef4",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:market-research",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "market-research",
+        "trading-analysis"
+      ],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 745,
+    "timestamp": "2026-04-26 15:49:19.350049+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-09837ef4",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:market-research",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "market-research",
+        "trading-analysis"
+      ],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

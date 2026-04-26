@@ -1,0 +1,23 @@
+{
+  "run_id": "run-7da41ed6c2cb",
+  "candidate_id": "memory-lifecycle-skill-gated-regression",
+  "scenarios_evaluated": 2,
+  "completion_rate": 0.5,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.7083,
+  "fitness_score": 0.7083,
+  "total_tokens": 31862,
+  "avg_tokens": 15931.0,
+  "token_efficiency": 0.062771,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 15598.0,
+  "avg_duration_ms": 7799.0,
+  "latency_efficiency": 0.128222,
+  "failed_scenarios": []
+}

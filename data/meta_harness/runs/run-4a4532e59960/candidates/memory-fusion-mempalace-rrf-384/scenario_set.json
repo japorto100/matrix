@@ -1,0 +1,44 @@
+{
+  "scenarios": [
+    {
+      "id": "ml-memory-explicit-add-search-001",
+      "category": "memory_lifecycle_explicit",
+      "turns": [
+        {
+          "user": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction."
+        },
+        {
+          "user": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "memory_retain"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "memory_add",
+          "memory_search"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "memory-usage"
+        ],
+        "required_memory_routes": [
+          "fusion"
+        ],
+        "required_memory_providers": [],
+        "expected_memory": true,
+        "min_tool_success_rate": 1.0,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "explicit memory tool path plus Fusion route visibility"
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

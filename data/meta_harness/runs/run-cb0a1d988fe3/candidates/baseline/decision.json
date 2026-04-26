@@ -1,0 +1,15 @@
+{
+  "run_id": "run-cb0a1d988fe3",
+  "candidate_id": "baseline",
+  "decision": "keep",
+  "rationale": "Second live OpenRouter scenario q001 passed trace gates and completion scoring after SSE-finish fallback: completed=true, fitness_score=1.0, required market-research skill observed.",
+  "decided_at": "2026-04-26T00:21:13.976966+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "fitness_score": 1.0,
+    "scenario_id": "q001",
+    "thread_id": "mh-q001-35773a17",
+    "completion_source": "sse_finish"
+  },
+  "follow_up": ""
+}

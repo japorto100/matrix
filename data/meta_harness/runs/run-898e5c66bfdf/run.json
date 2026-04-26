@@ -1,0 +1,12 @@
+{
+  "run_id": "run-898e5c66bfdf",
+  "candidate_id": "memory-tools-route-current",
+  "created_at": "2026-04-26T12:54:24.585537+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000"
+  }
+}

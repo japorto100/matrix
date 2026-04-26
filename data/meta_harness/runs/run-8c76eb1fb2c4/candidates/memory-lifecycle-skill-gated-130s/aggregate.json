@@ -1,0 +1,54 @@
+{
+  "run_id": "run-8c76eb1fb2c4",
+  "candidate_id": "memory-lifecycle-skill-gated-130s",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 0.5,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 0.8335,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.7951,
+  "fitness_score": 0.7951,
+  "total_tokens": 35464,
+  "avg_tokens": 17732.0,
+  "token_efficiency": 0.056395,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 16356.0,
+  "avg_duration_ms": 8178.0,
+  "latency_efficiency": 0.122279,
+  "failed_scenarios": [
+    {
+      "scenario_id": "ml-memory-explicit-add-search-001",
+      "failures": [
+        "tool failures observed: memory_add",
+        "tool success rate below threshold: 0.667 < 1.0"
+      ],
+      "observed_actions": [
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "memory_add",
+        "memory_search"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ]
+    }
+  ]
+}

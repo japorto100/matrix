@@ -1,0 +1,13 @@
+{
+  "run_id": "run-f12771a188cb",
+  "candidate_id": "runner-parity-dispatcher-skill-stopwords",
+  "decision": "keep",
+  "rationale": "Kept: no-tool runner-parity passes with no tools, no skills, and 215 total tokens after tool-disable propagation plus skill stopword/query gating.",
+  "decided_at": "2026-04-26T16:16:45.525087+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "total_tokens": 215
+  },
+  "follow_up": ""
+}

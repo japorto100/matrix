@@ -1,0 +1,19 @@
+{
+  "run_id": "run-7e71055b00bb",
+  "candidate_id": "baseline",
+  "decision": "defer",
+  "rationale": "Live service run completed through Python Agent + LiteLLM + Postgres, but trace gate failed because expected skill market-research was not audited for q001.",
+  "decided_at": "2026-04-26T00:08:21.076317+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 0.0,
+    "completed": true,
+    "model": "openrouter/openrouter/auto",
+    "observed_actions": [
+      "llm_response",
+      "memory_recall",
+      "memory_retain"
+    ],
+    "missing_gate": "skill:market-research"
+  },
+  "follow_up": "Investigate skill audit/thread association or normalize skill expectations for market sentiment scenarios."
+}

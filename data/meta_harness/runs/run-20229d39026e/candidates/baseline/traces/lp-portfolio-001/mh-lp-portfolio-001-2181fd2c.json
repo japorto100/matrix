@@ -1,0 +1,126 @@
+[
+  {
+    "id": 148,
+    "timestamp": "2026-04-26 00:40:56.025787+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-2181fd2c",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 461,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+    },
+    "iteration": null
+  },
+  {
+    "id": 147,
+    "timestamp": "2026-04-26 00:40:55.290612+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-2181fd2c",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 1245,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+    },
+    "iteration": null
+  },
+  {
+    "id": 146,
+    "timestamp": "2026-04-26 00:40:53.882090+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-2181fd2c",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan",
+        "market-research"
+      ],
+      "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 145,
+    "timestamp": "2026-04-26 00:40:53.784252+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-portfolio-001-2181fd2c",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan",
+        "market-research"
+      ],
+      "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]
