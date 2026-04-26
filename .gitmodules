@@ -79,3 +79,6 @@
 [submodule "_ref/FinceptTerminal"]
 	path = _ref/FinceptTerminal
 	url = https://github.com/Fincept-Corporation/FinceptTerminal
+[submodule "_ref/meta-harness"]
+	path = _ref/meta-harness
+	url = https://github.com/stanford-iris-lab/meta-harness.git
