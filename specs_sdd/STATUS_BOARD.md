@@ -32,12 +32,15 @@ Each feature now has the SDD core file set:
 | 007 | Agent Chat and Voice Runtime | static_verified_live_pending | BFF/Gateway/Python/tool/voice live verify | no, live verify required |
 | 008 | Agentic UI, Generative UI and MCP | static_verified_live_pending | native A2UI live roundtrip | no, live A2UI/MCP verify remains |
 | 009 | Multi-Agent and A2A Orchestration | static_verified_live_pending | A2A live smoke | no, A2A never live-tested |
-| 010 | Control UI and Runtime Surfaces | static_verified_live_pending | tab-by-tab backend walkthrough | no, backend integration mixed |
+| 010 | Control UI and Runtime Surfaces | static_verified_live_pending | tab-by-tab data-display/backend walkthrough | no, backend integration mixed; not an agent-tool surface |
 | 011 | LLM Gateway, Models, Routing and Billing | static_verified_live_pending | LiteLLM/billing/routing live verify | no |
-| 012 | Memory, Context, World Model and Personal KB | static_verified_live_pending | memory_fusion/context live verify | no |
+| 012 | Memory, Context, World Model and Personal KB | static_verified_live_pending | memory_fusion/context live verify + Hindsight/MemPalace upstream/session checks | no |
 | 013 | Sandbox, Security and HITL | static_verified_live_pending | Skills-Guard HITL live verify | no |
 | 014 | Observability, Harness and Evals | static_verified_live_pending | live trace + audit/eval evidence | no |
 | 015 | Scheduler, Skills, Formal Planning and Automation | static_verified_live_pending | scheduler live delivery + real-LLM skill verify | no |
+| 016 | Meta-Harness Agent Optimization | implementation_started | official-domain-spec loop + richer scenario coverage + promotion gate | no |
+| 017 | Knowledge Graph, Bitemporal Claims and Decay Retrieval | planned | global/domain nonicdb/NornicDB KG schema/projection design | no |
+| 018 | Database Schema Governance | planned | current-schema registry and Alembic drift gates | no |
 
 ## Immediate Migration Order
 
@@ -127,6 +130,14 @@ Work is split into four execution waves:
 - Feature 015 static scheduler/skills/plan/security checks pass; skill loader
   source modes, disabled filtering and PDDL refusal/repair contract are covered;
   live scheduler delivery and real-LLM skill verification remain deferred.
+- Feature 016 created from Meta-Harness deepdive and first slices implemented:
+  Python-only in-process and live-service scenario runner, ToolRegistry-aware
+  legacy evaluator, trace gates, candidate artifact layout, CLI/MCP scenario
+  run surfaces, normalized search-set tool names, protected holdout split,
+  proposer artifact/decision-history input, keep/discard/defer decision log and
+  tests. Official Stanford repo is vendored under `_ref/meta-harness`; initial
+  Matrix `domain_spec.md` and proposer skill exist. Promotion gate, external
+  proposer opt-in guard and richer scenario coverage remain open.
 
 ## Closure Rule
 

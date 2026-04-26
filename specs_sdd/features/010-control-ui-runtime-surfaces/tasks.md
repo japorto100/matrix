@@ -3,7 +3,7 @@ title: Control UI and Runtime Surfaces Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 010
 migrated_from:
   - specs/execution/exec-15-memory-control-ui.md
@@ -28,6 +28,11 @@ migrated_from:
   merger.
 - [x] T012 Ensure old standalone `control-ui/` assumptions are translated to
   `frontend_merger`.
+- [x] T013 Document Control UI as inspection/admin/data-display surface, not an
+  agent tool surface by default.
+- T014 During live verify, flag every Control action that looks executable and
+  route runtime semantics to the owning feature before it can become an agent
+  tool.
 
 ## Slice 1 — Files Vertical
 

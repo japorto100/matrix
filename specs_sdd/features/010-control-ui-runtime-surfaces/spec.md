@@ -3,7 +3,7 @@ title: Control UI and Runtime Surfaces
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 010
 migrated_from:
   - specs/execution/exec-15-memory-control-ui.md
@@ -30,6 +30,13 @@ fall back to `mock-data.ts` when a backend route is absent or down.
 
 Control UI is the integrated runtime cockpit. Every tab either shows real data
 from its owning backend or explicitly declares why it is empty/deferred.
+
+Control UI is a data display, inspection and admin surface. It is not part of
+the agent action space by default. Backend tools only become agent tools when a
+specific owner feature intentionally exposes them through the Agent
+ToolRegistry/MCP contract. Control can show tool state, traces, Memory/KG
+state, runs, gates and admin affordances, but those UI affordances do not
+automatically grant the agent new tools.
 
 ## Subfeatures
 

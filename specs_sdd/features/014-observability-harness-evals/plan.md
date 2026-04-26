@@ -28,7 +28,7 @@ backend/UI consumer.
 
 - `python-backend/agent/tracing/**`
 - `python-backend/agent/audit/**`
-- `python-backend/agent/harness/**`
+- `python-backend/meta_harness/**`
 - `python-backend/shared/app_factory.py`
 - `go-appservice/internal/telemetry/**`
 - `otel-collector.yaml`

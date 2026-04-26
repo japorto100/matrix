@@ -40,6 +40,7 @@ Decision/defer questions live in `DECISION_BACKLOG.md`.
 | 013 Sandbox/Security/HITL | 22 | OpenSandbox live, Skills-Guard live decision/audit, prod URL-preview config, audit integrity | live_verify |
 | 014 Observability/Harness/Evals | 0 | active implementation tasks closed; live trace/audit/eval gates remain in feature gates/live verify | live_verify |
 | 015 Scheduler/Skills/Planning | 0 | active design task closed; phase decisions moved to backlog | live_verify |
+| 016 Meta-Harness Agent Optimization | 0 | active T-tasks are tracked in Feature 016; runner/CLI/MCP first slices implemented | planned_implementation |
 
 ## Triage Buckets
 
@@ -112,6 +113,8 @@ branch has no obvious `implement_now` gaps left.
    score.
 9. Feature 015: scheduler cron tick, Python subscriber, Matrix delivery and
    `task_executions` completion row.
+10. Feature 016: Python-only Meta-Harness stack smoke after PostgreSQL,
+    LiteLLM and Python Agent are available.
 
 ### C. Agent Runtime Live Verify
 
@@ -125,6 +128,8 @@ These need the Agent Chat stack and usually a configured model provider.
 6. Feature 011: selected model reaches backend/provider and routing metadata is
    visible to the user.
 7. Feature 015: skill retrieval/refinement is visible in a real agent turn.
+8. Feature 016: proposer iteration consumes artifact history from real
+   simulated-user runs.
 
 ### D. External/Provider-Gated Live Verify
 

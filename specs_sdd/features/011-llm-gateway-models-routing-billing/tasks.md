@@ -3,7 +3,7 @@ title: LLM Gateway, Models, Routing and Billing Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 011
 migrated_from:
   - specs/execution/exec-16-llm-provider-gateway.md
@@ -37,6 +37,9 @@ migrated_from:
 - T023 Verify missing `KEY_ENCRYPTION_SECRET` fails closed.
 - T024 Decide multi-key CredentialPool scope.
 - T025 Decide `preferred_runner`/dispatcher override scope.
+- T026 Verify remote embedding calls, starting with MemPalace/OpenRouter, use
+  CredentialPool/user consent/quota/audit instead of unaudited env-only secrets
+  before production enablement.
 
 ## Model Selection
 
@@ -56,6 +59,8 @@ migrated_from:
 - T044 Verify LiteLLM spend logs with configured DB.
 - T045 Add or defer event-driven rollup.
 - T046 Add or defer smart-routing cost-attribution split.
+- T047 Add embedding usage/cost attribution for OpenRouter embedding models
+  once MemPalace remote embeddings leave dev/smoke mode.
 
 ## Reasoning Budget
 

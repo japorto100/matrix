@@ -51,6 +51,19 @@ multi-channel search and derived observations. MemPalace is primarily verbatim
 conversation retrieval. The useful architecture is not "replace Hindsight", but
 evaluate which query classes benefit from verbatim-first retrieval.
 
+Boundary update on 2026-04-26: Hindsight may maintain KG-like structures for
+agent learning memory inside Postgres, and MemPalace may maintain loci/episodic
+links for exact recall. These are agent-memory internals. They must not be
+confused with the global/domain KG in Feature 017.
+
+ADR-0006 update on 2026-04-26: Matrix adopts MemPalace's loci model but not its
+Chroma/SQLite production runtime. Upstream `_ref/mempalace` currently stores
+drawers in Chroma, queries via `query_texts`, and uses Chroma's default local
+embedding behavior unless benchmark-specific embedding functions are supplied.
+Matrix maps the concepts to Postgres/pgvector instead: `agent.mempalace_drawers`
+stores verbatim content, wing/room/hall/closet/drawer metadata, source refs,
+embedding model and embedding dimension.
+
 Adopted from MemPalace concepts:
 
 - query sanitizer.
@@ -63,6 +76,50 @@ Not adopted as current target:
 
 - filesystem MemPalace runtime as production store.
 - ChromaDB as primary store.
+- SQLite as the Matrix production MemPalace store.
+- local embedding model cold-start as the default agent/Meta-Harness path.
+
+OpenRouter embedding note: the live model list on 2026-04-26 includes a
+zero-priced `nvidia/llama-nemotron-embed-vl-1b-v2:free` option, but live smoke
+tests returned 2048-dimensional vectors. Existing Hindsight dev data is
+384-dimensional; this only explains the temporary non-destructive default and
+must not decide the final Memory-Fusion architecture. Matrix should choose the
+Hindsight/MemPalace embedding dimension by upstream documentation review,
+retrieval evals and reset/re-embedding cost. Stable candidates for later quality
+gates include low-cost text embedding models such as
+`sentence-transformers/all-minilm-l6-v2`, `openai/text-embedding-3-small`,
+`baai/bge-m3`, Perplexity and Qwen embedding models.
+
+Embedding-dimension research update (2026-04-26):
+
+- MemPalace's house/wing/room/closet/drawer language is a hierarchy for scoping,
+  metadata filtering and human/agent navigation. It is not three separate vector
+  dimensions. The vector store still compares one embedding vector per drawer.
+- MemPalace upstream documents ChromaDB semantic search with the default
+  `all-MiniLM-L6-v2` embedding model; its benchmark code labels that default as
+  384-dimensional. The same benchmark code exposes stronger alternatives such as
+  `bge-base` at 768 dimensions and `bge-large` / `mxbai` at 1024 dimensions for
+  ablation, not as a mandatory production default.
+- Hindsight upstream defaults to `BAAI/bge-small-en-v1.5` locally, also 384
+  dimensions. Its OpenAI-compatible default is `text-embedding-3-small` at 1536
+  dimensions. Hindsight detects dimensions at startup, but once memories exist
+  the dimension cannot be changed without reset/re-embedding.
+- Matrix recommendation before eval: keep Hindsight and MemPalace on one shared
+  embedding dimension per index. Use 384 dimensions for the first stable
+  Memory-Fusion baseline because both MemPalace and Hindsight official defaults
+  are 384-dim class models. Treat 768/1024/1536 as an explicit upgrade
+  experiment requiring reset/re-embedding and retrieval-quality comparison.
+- Hindsight's local cross-encoder reranker loads model weights. Matrix defaults
+  to `HINDSIGHT_API_RERANKER_PROVIDER=rrf` for dev/Meta-Harness loops to avoid
+  local cold-starts on this machine. Local/TEI/Cohere/LiteLLM rerankers stay
+  explicit eval candidates rather than default runtime behavior.
+
+Open research task:
+
+- Refresh MemPalace upstream docs/repo before schema lock. If upstream added
+  Postgres support, rooms/session semantics, updated loci storage or new eval
+  patterns, pull that into this feature deliberately; otherwise record Matrix's
+  Postgres divergence.
 
 ## Memory For Autonomous Agents Paper
 

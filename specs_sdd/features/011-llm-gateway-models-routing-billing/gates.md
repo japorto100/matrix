@@ -3,7 +3,7 @@ title: LLM Gateway, Models, Routing and Billing Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 011
 ---
 
@@ -25,6 +25,10 @@ feature_id: 011
 - [ ] Key set/delete/validate endpoints are live-verified.
 - [ ] Encrypted DB value and masked API response are live-verified.
 - [ ] Missing `KEY_ENCRYPTION_SECRET` fails closed in operator config.
+- [ ] Meta-Harness/dev anonymous LLM path is reviewed so it cannot bypass
+  production named-user CredentialPool, quotas, billing or audit.
+- [ ] OpenRouter embedding calls for MemPalace are reviewed under the same
+  credential/redaction/quota/audit rules as chat model calls.
 
 ## G3 Model Selection
 
@@ -40,6 +44,8 @@ feature_id: 011
 - [ ] Real LLM response writes usage/cost/span data.
 - [ ] LiteLLM spend logs are visible with configured DB.
 - [ ] Event-driven rollup is implemented or explicitly deferred.
+- [ ] Embedding model usage/cost is represented before remote MemPalace
+  embeddings are enabled beyond dev/smoke.
 
 ## G5 Smart Routing
 

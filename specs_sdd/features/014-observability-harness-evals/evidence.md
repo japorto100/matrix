@@ -42,6 +42,6 @@ overwrite mode is implemented.
 
 Current static tests:
 
-- `python-backend/tests/agent/harness/test_scorer.py`
+- `python-backend/tests/meta_harness/test_scorer.py`
 - `python-backend/tests/agent/runners/test_mark_routing.py`
 - `python-backend/tests/agent/llm/test_smart_routing.py`

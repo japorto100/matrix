@@ -37,7 +37,7 @@ feature_id: 014
 
 ## Verify Result
 
-- PASS static: `uv run pytest tests/agent/harness/test_scorer.py tests/agent/billing/test_insights.py tests/agent/test_trajectory_export.py tests/agent/test_control_runtime.py -q`.
+- PASS static: `uv run pytest tests/meta_harness/test_scorer.py tests/agent/billing/test_insights.py tests/agent/test_trajectory_export.py tests/agent/test_control_runtime.py -q`.
 - PASS static: Feature 011 routing race/keyword/eval-id follow-ups are
   synchronized with this feature's harness ledger.
 

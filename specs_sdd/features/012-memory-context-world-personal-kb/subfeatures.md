@@ -3,7 +3,7 @@ title: Memory Umbrella Subfeatures
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 012
 ---
 
@@ -80,25 +80,25 @@ Open:
 - full visible provenance/degradation flags in Agent Chat message body.
 - prompt-layout regression against cache-hit/cost metrics.
 
-## 012.5 Global World Model
+## 012.5 Global World Evidence And Claim Inputs
 
 Status: planned.
 
 Scope:
 
 - global evidence records.
-- claim layer.
-- global KG with status machine.
-- Fast Lane/Slow Lane KG tiering.
+- claim input records before KG promotion.
 - world degradation flags.
 - evidence-joined answer-time adjudication.
+- handoff contract to Feature 017 for bitemporal KG claims, graph projection,
+  status machine and decay retrieval.
 
 Open:
 
-- backend choice: NornicDB vs FalkorDB/Neo4j/Postgres hybrid.
-- claim schema and promotion/demotion engine.
+- evidence/claim source schema.
+- claim proposal contract into Feature 017.
 - IE pipeline adapted from Researchwatcher to trading/geopolitics/macro.
-- GraphMERT or alternative batch validator.
+- validator contract before KG promotion.
 
 ## 012.6 Personal Knowledgebase
 

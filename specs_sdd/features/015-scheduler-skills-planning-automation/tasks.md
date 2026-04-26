@@ -51,6 +51,8 @@ migrated_from:
 
 - [x] T030 Static-test filesystem/db/hybrid skill loader source modes.
 - [x] T031 Static-test finder BM25/dense/RRF with expected-skill queries.
+- [x] T031a Add query-gating for general skills and stopword filtering so
+  trivial/no-tool turns do not load unrelated skills.
 - [x] T032 Verify disabled skills are filtered via current preference path.
 - T033 Verify real LLM refinement with `AGENT_SKILL_REFINEMENT=true`.
 - T034 Verify real LLM iterative search.
@@ -71,26 +73,33 @@ migrated_from:
 - T045 Implement or defer promotion pipeline.
 - T046 Verify Pareto with >20 real usage events before relying on it.
 - T047 Build or defer `experiments/skill_eval` A/B variants.
+- T048 Research online/public skills for trading, geopolitical research,
+  strategy review, source-quality/citation workflows and general Matrix-agent
+  operations; classify each as adopt, extend, reference-only or reject.
+- T049 Define a security and provenance audit checklist before importing any
+  third-party skill into the Matrix runtime.
+- T050 Compare Hermes-style experience-to-skill learning and EvoSkill-style
+  failure-driven skill evolution against Matrix's non-coding domain workflows.
 
 ## Plan Skill
 
-- [x] T050 Static-test plan skill triggers on DE and EN planning cues.
-- [x] T051 Static-test plan skill response is read-only.
-- T052 Live-verify execution waits for explicit user confirmation.
+- [x] T060 Static-test plan skill triggers on DE and EN planning cues.
+- [x] T061 Static-test plan skill response is read-only.
+- T062 Live-verify execution waits for explicit user confirmation.
 
 ## PDDL
 
-- T060 Choose or defer first PDDL pilot workflow.
-- T061 Choose or defer solver stack.
-- [x] T062 Define refusal/repair loop before any execution integration.
-- T063 Keep PDDL out of trivial CRUD and low-latency paths.
+- T070 Choose or defer first PDDL pilot workflow.
+- T071 Choose or defer solver stack.
+- [x] T072 Define refusal/repair loop before any execution integration.
+- T073 Keep PDDL out of trivial CRUD and low-latency paths.
 
 ## DSPy
 
-- T070 Run/document G(-1).1 LLMSelector architectural match.
-- T071 Run/document G(-1).2 MIPROv2 PoC.
-- T072 Defer D-2/D-3 schema/interface until benchmark winner.
-- T073 Defer A/B variant until N-way bucketing and artifact hash exist.
+- T080 Run/document G(-1).1 LLMSelector architectural match.
+- T081 Run/document G(-1).2 MIPROv2 PoC.
+- T082 Defer D-2/D-3 schema/interface until benchmark winner.
+- T083 Defer A/B variant until N-way bucketing and artifact hash exist.
 
 ## Verify Gates
 

@@ -31,7 +31,7 @@ feature_id: 014
 - Command/probe:
   `cd python-backend && uv run python - <<'PY'
   import asyncio, json
-  from agent.harness.evaluator import evaluate_search_set
+  from meta_harness.evaluator import evaluate_search_set
   print(json.dumps(asyncio.run(evaluate_search_set(max_queries=1, concurrency=1)), indent=2))
   PY`
 - Confirm score rows are produced.

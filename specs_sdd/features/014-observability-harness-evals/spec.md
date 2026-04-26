@@ -67,7 +67,7 @@ found. Eval-id semantics are synchronized with Feature 011 as first-write-wins.
 
 ## Static Verify
 
-- [x] `uv run pytest tests/agent/harness/test_scorer.py tests/agent/billing/test_insights.py tests/agent/test_trajectory_export.py tests/agent/test_control_runtime.py -q` passes.
+- [x] `uv run pytest tests/meta_harness/test_scorer.py tests/agent/billing/test_insights.py tests/agent/test_trajectory_export.py tests/agent/test_control_runtime.py -q` passes.
 - [x] Harness scorer composite fitness logic is covered.
 - [x] Insights rollup and trajectory export logic are covered.
 - [x] Control runtime static tests pass.

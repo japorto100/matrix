@@ -13,7 +13,7 @@ are active, already built, superseded or research-only.
 
 ## Decision
 
-Use **15 final features** plus **3 meta destinations**.
+Use **16 final features** plus **3 meta destinations**.
 
 The order is intentional:
 
@@ -40,6 +40,7 @@ The order is intentional:
 | 013 | Sandbox, Security and HITL | mixed_active | OpenSandbox/security built; HITL live verify remains. |
 | 014 | Observability, Harness and Evals | in_progress | Infra partly live; evidence/spec lag. |
 | 015 | Scheduler, Skills, Formal Planning and Automation | mixed_active | Scheduler/skills partly built; PDDL/DSPy gated. |
+| 016 | Meta-Harness Agent Optimization | implementation_started | New outer-loop optimization feature for simulated-user evals, tools, memory, skills, candidate artifacts and proposer/promotion flow. |
 
 ## Why Subfeatures Matter
 
@@ -50,6 +51,10 @@ their real ownership is inside a broader product/platform capability:
   Feature 012, with `exec-memory` as the umbrella.
 - `exec-skills`, `exec-scheduler`, `exec-14-pddl`, `exec-14-DSPy` are one
   automation feature with separate subfeatures.
+- Meta-Harness as an active outer-loop optimizer is split into Feature 016
+  because it spans Agent runtime, tools, memory, skills, observability and
+  candidate promotion. Feature 014 remains the observability/evaluator
+  infrastructure dependency.
 - `exec-20-mcp-manager` is a subfeature of Agentic UI/MCP, not its own product
   feature yet.
 - `exec-13-ui-kg-extensions` is historical input to Control UI and Memory, not
