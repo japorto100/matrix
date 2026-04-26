@@ -25,6 +25,8 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -312,14 +314,18 @@ class FusionProvider(MemoryProvider):
             return []
         try:
             items = await recall_method(
-                query, bank_id=bank_id, limit=limit,
+                bank_id=bank_id,
+                query=query,
+                n_results=limit,
+                request_context=self._request_context(),
             )
         except TypeError:
-            # Some engine signatures take bank_id positionally.
+            # Test doubles and older engine variants may expose a simpler
+            # recall(query, *, bank_id, limit) shape.
             try:
-                items = await recall_method(query, bank_id, limit=limit)
+                items = await recall_method(query, bank_id=bank_id, limit=limit)
             except Exception as exc:  # noqa: BLE001
-                logger.debug("fusion recall (positional) failed: %s", exc)
+                logger.debug("fusion recall (compat) failed: %s", exc)
                 return []
         except Exception as exc:  # noqa: BLE001
             logger.debug("fusion recall failed: %s", exc)
@@ -327,14 +333,26 @@ class FusionProvider(MemoryProvider):
 
         recalls: list[MemoryRecall] = []
         for raw in items or []:
-            if not isinstance(raw, dict):
+            if isinstance(raw, dict):
+                content = str(raw.get("content") or raw.get("text") or "")
+                source_ref = str(raw.get("source_ref") or raw.get("ref") or "")
+                confidence = float(raw.get("confidence") or raw.get("score") or 0.0)
+                metadata = raw.get("metadata") or {}
+            else:
+                content = str(getattr(raw, "content", "") or getattr(raw, "text", "") or "")
+                source_ref = str(getattr(raw, "source_ref", "") or getattr(raw, "ref", "") or "")
+                confidence = float(
+                    getattr(raw, "confidence", None) or getattr(raw, "score", None) or 0.0
+                )
+                metadata = getattr(raw, "metadata", {}) or {}
+            if not content:
                 continue
             recalls.append(MemoryRecall(
                 provider=self.name,
-                content=str(raw.get("content") or raw.get("text") or ""),
-                source_ref=str(raw.get("source_ref") or ""),
-                confidence=float(raw.get("confidence") or 0.0),
-                metadata=raw.get("metadata") or {},
+                content=content,
+                source_ref=source_ref,
+                confidence=confidence,
+                metadata=metadata if isinstance(metadata, dict) else {},
             ))
         return recalls
 
@@ -348,6 +366,35 @@ class FusionProvider(MemoryProvider):
     ) -> None:
         if self._engine is None:
             return
+        retain_batch = getattr(self._engine, "retain_batch_async", None)
+        if retain_batch is not None:
+            content = f"User: {user_message}\nAssistant: {assistant_message}".strip()
+            if not content:
+                return
+            try:
+                await retain_batch(
+                    bank_id=bank_id,
+                    contents=[
+                        self._content_item(
+                            content,
+                            source="sync_turn",
+                            user_id=user_id,
+                            bank_id=bank_id,
+                        )
+                    ],
+                    request_context=self._request_context(),
+                    document_tags=["agent_turn", "sync_turn"],
+                    consumer="agent_writer",
+                    operation_context={
+                        "user_id": user_id,
+                        "agent_id": "agent",
+                        "actor_role": "assistant",
+                    },
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("fusion retain_batch_async failed: %s", exc)
+            return
+
         retain = getattr(self._engine, "retain", None)
         if retain is None:
             return
@@ -360,6 +407,117 @@ class FusionProvider(MemoryProvider):
             )
         except Exception as exc:  # noqa: BLE001
             logger.debug("fusion retain failed: %s", exc)
+
+    async def on_pre_compress(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        user_id: str,
+        bank_id: str,
+    ) -> str | None:
+        """Archive visible messages before context is compacted or compressed."""
+        if self._engine is None or not messages:
+            return None
+        retain_batch = getattr(self._engine, "retain_batch_async", None)
+        if retain_batch is None:
+            return None
+
+        content = self._format_messages(messages)
+        if not content:
+            return None
+        try:
+            await retain_batch(
+                bank_id=bank_id,
+                contents=[
+                    self._content_item(
+                        content,
+                        source="pre_compress",
+                        user_id=user_id,
+                        bank_id=bank_id,
+                        metadata={
+                            "message_count": str(len(messages)),
+                            "archive_boundary": "pre_compaction_or_compression",
+                        },
+                    )
+                ],
+                request_context=self._request_context(),
+                document_tags=["pre_compress", "verbatim_archive"],
+                consumer="agent_context_archive",
+                operation_context={
+                    "user_id": user_id,
+                    "agent_id": "agent",
+                    "actor_role": "assistant",
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("fusion pre-compress archive failed: %s", exc)
+            return None
+        return f"Archived {len(messages)} messages before context reduction."
+
+    async def on_session_end(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        user_id: str,
+        bank_id: str,
+    ) -> None:
+        await self.on_pre_compress(messages, user_id=user_id, bank_id=bank_id)
+
+    @staticmethod
+    def _request_context() -> Any:
+        try:
+            from hindsight_api.models import RequestContext
+
+            return RequestContext()
+        except Exception:  # noqa: BLE001
+            return {}
+
+    @staticmethod
+    def _format_messages(messages: list[dict[str, Any]]) -> str:
+        lines: list[str] = []
+        for msg in messages:
+            role = str(msg.get("role") or "unknown")
+            content = msg.get("content", "")
+            if isinstance(content, list):
+                content = " ".join(str(part) for part in content)
+            text = str(content or "").strip()
+            if text:
+                lines.append(f"[{role}] {text}")
+        return "\n".join(lines).strip()
+
+    @staticmethod
+    def _content_item(
+        content: str,
+        *,
+        source: str,
+        user_id: str,
+        bank_id: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        now = datetime.now(UTC)
+        digest = sha256(
+            f"{bank_id}:{user_id}:{source}:{content}".encode()
+        ).hexdigest()[:16]
+        return {
+            "content": content,
+            "context": f"{source}:user:{user_id}",
+            "event_date": now,
+            "document_id": f"{bank_id}:{source}:{digest}",
+            "tags": [source, "agent_memory"],
+            "metadata": {
+                "user_id": user_id,
+                "bank_id": bank_id,
+                "source": source,
+                "source_type": "conversation",
+                "evidence_kind": "verbatim",
+                "artifact_type": "conversation_turn"
+                if source == "sync_turn"
+                else "conversation_archive",
+                "source_ref": f"{bank_id}:{source}:{digest}",
+                "filed_at": now.isoformat(),
+                **dict(metadata or {}),
+            },
+        }
 
     def system_prompt_block(self) -> str | None:
         return self._system_block

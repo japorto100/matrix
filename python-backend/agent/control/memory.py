@@ -59,7 +59,7 @@ async def get_memory_health(request: Request, user_id: str = "local") -> dict[st
     degraded_reasons: list[str] = []
 
     memory_provider = get_memory_provider()
-    vector_provider = "chromadb" if memory_provider == "mempalace" else "pgvector"
+    vector_provider = "pgvector"
     episodic_entry = _layer_entry("episodic", memory_provider)
     vector_entry = _layer_entry("vector", vector_provider)
     kg_entry = _layer_entry("kg", "kuzu")
