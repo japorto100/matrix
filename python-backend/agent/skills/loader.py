@@ -304,14 +304,20 @@ async def format_skills_for_prompt_async(
 
         skills = filter_disabled_skills(skills, user_id)
 
-        # SkillRL §3.2: General skills always-load, Task-Specific via finder
+        # General skills are broad, but still query-gated by default. Always
+        # loading them made trivial/no-tool turns drag memory guidance into the
+        # prompt and caused Meta-Harness runner-parity false positives.
+        always_load_general = os.environ.get(
+            "AGENT_SKILL_ALWAYS_LOAD_GENERAL", ""
+        ).strip().lower() in ("1", "true", "yes", "on")
         general = [s for s in skills if s.skill_type == "general"]
         task_specific = [s for s in skills if s.skill_type != "general"]
+        searchable = task_specific if always_load_general else skills
 
         search_result = await iterative_find(
-            task_specific, query.strip(), api_key=api_key
+            searchable, query.strip(), api_key=api_key
         )
-        skills = general + search_result.picked
+        skills = (general + search_result.picked) if always_load_general else search_result.picked
         pre_refine = skills
 
         await _audit_skill(

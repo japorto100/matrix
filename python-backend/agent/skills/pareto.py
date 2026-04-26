@@ -156,6 +156,7 @@ def compute_pareto(*, min_usage: int = 0) -> list[SkillScore]:
                 SELECT
                     elem #>> '{}'                              AS skill_id,
                     COUNT(*)                                   AS n,
+                    COUNT(*) FILTER (WHERE ae.success = true)  AS success_n,
                     AVG(COALESCE(ae.duration_ms, 0))           AS avg_ms
                 FROM agent.audit_events ae,
                      LATERAL jsonb_array_elements(
@@ -179,22 +180,47 @@ def compute_pareto(*, min_usage: int = 0) -> list[SkillScore]:
         return []
 
     refine_counts = {r[0]: int(r[1]) for r in refine_rows if r[0]}
-    use_counts: dict[str, tuple[int, float]] = {
-        r[0]: (int(r[1]), float(r[2] or 0.0)) for r in use_rows if r[0]
+    use_counts: dict[str, tuple[int, int, float]] = {
+        r[0]: (int(r[1]), int(r[2] or 0), float(r[3] or 0.0))
+        for r in use_rows
+        if r[0]
     }
     disable_counts = {r[0]: int(r[1]) for r in disable_rows if r[0]}
 
-    scored: list[SkillScore] = []
+    row_by_skill: dict[str, tuple[str | None, str, str, int, int]] = {}
     for row in rows:
         db_id, name, tier, usage_count, success_count = row
         skill_id = f"{tier}:{name}"
+        row_by_skill[skill_id] = (
+            db_id,
+            name,
+            tier,
+            int(usage_count or 0),
+            int(success_count or 0),
+        )
+
+    for skill_id, (use_n, success_n, _avg_ms) in use_counts.items():
+        if skill_id in row_by_skill:
+            continue
+        tier, sep, name = skill_id.partition(":")
+        if not sep:
+            tier, name = "audit", skill_id
+        row_by_skill[skill_id] = (None, name, tier, use_n, success_n)
+
+    scored: list[SkillScore] = []
+    for skill_id, row in row_by_skill.items():
+        db_id, name, tier, usage_count, success_count = row
+        skill_id = f"{tier}:{name}"
         refine_n = refine_counts.get(skill_id, 0)
-        use_n, avg_ms = use_counts.get(skill_id, (0, 0.0))
+        use_n, use_success_n, avg_ms = use_counts.get(skill_id, (0, 0, 0.0))
         disable_n = disable_counts.get(skill_id, 0)
 
-        success_rate = (
-            success_count / usage_count if usage_count > 0 else 0.0
-        )
+        if usage_count > 0:
+            success_rate = success_count / usage_count
+        elif use_n > 0:
+            success_rate = use_success_n / use_n
+        else:
+            success_rate = 0.0
         refinement_stability = (
             1.0 - (refine_n / use_n) if use_n > 0 else 1.0
         )
