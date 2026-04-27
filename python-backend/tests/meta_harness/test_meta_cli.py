@@ -107,6 +107,11 @@ async def test_cli_rag_benchmark_writes_artifacts(tmp_path, monkeypatch):
     assert report["provider_config"]["embedding_dimension"] == "1536"
     assert report["provider_config"]["openrouter_api_key_present"] is True
     assert "sk-redacted" not in json.dumps(report)
+    decision = json.loads((candidate_dir / "decision.json").read_text())
+    assert decision["decision"] == "defer"
+    assert "holdout" in decision["rationale"].lower()
+    decisions_log = (tmp_path / "candidate_decisions.jsonl").read_text()
+    assert "matrix-fused-vector-kg" in decisions_log
 
 
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():

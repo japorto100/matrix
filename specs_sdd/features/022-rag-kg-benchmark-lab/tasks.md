@@ -117,8 +117,13 @@ feature_id: 022
     scored fused Matrix RAG at fitness `0.9754`.
 - [x] T031a Add Pareto-readable candidates for retrieval mode:
   `matrix-vector-only`, `matrix-kg-only` and `matrix-fused-vector-kg`.
-- T032 Add decision ledger entries when graph retrieval is kept, rejected or
-  deferred for a query class.
+- T032 [done-initial] Add decision ledger entries when graph retrieval is kept,
+  rejected or deferred for a query class.
+  - 2026-04-27: `meta_harness.retrieval_benchmark` now writes conservative
+    candidate decisions through the existing Meta-Harness decision log for
+    KG-bearing candidates. Search-only runs defer graph/fused promotion until
+    holdout evidence exists; holdout graph-overreach failures discard; strong
+    search+holdout pass can keep with live/provider follow-up.
 - T033 [partial-done] Ensure benchmark improvements do not become simulation-only hacks:
   candidates must pass holdout and live/provider smokes before promotion.
   - 2026-04-27: inner-loop artifacts carry protected holdout split metadata;

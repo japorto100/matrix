@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from meta_harness.config import capture_current_config
+from meta_harness.decisions import record_candidate_decision
 from meta_harness.proposer import META_HARNESS_DATA_DIR
 from retrieval.evals.benchmark_lab import (
     DEFAULT_MATRIX_CANDIDATES,
@@ -127,12 +128,25 @@ def write_retrieval_benchmark_artifacts(
         _write_json(candidate_dir / "scenario_set.json", _scenario_set(candidate))
         _write_json(candidate_dir / "config.json", _config_snapshot())
         _write_json(candidate_dir / "source_snapshot.json", _source_snapshot())
+        decision = _graph_retrieval_decision(candidate)
+        decision_payload = None
+        if decision is not None:
+            decision_payload = record_candidate_decision(
+                run_id=run_id,
+                candidate_id=candidate_id,
+                decision=decision["decision"],
+                rationale=decision["rationale"],
+                metrics=decision["metrics"],
+                follow_up=decision["follow_up"],
+                data_dir=data_dir,
+            ).as_dict()
         written.append(
             {
                 "candidate_id": candidate_id,
                 "candidate_path": str(candidate_dir),
                 "pass_rate": candidate.get("pass_rate"),
                 "fitness_score": aggregate["fitness_score"],
+                "decision": decision_payload,
             }
         )
 
@@ -198,6 +212,73 @@ def _candidate_verdicts(candidate: dict[str, Any]) -> dict[str, Any]:
         "observed_actions": ["retrieval_benchmark"],
         "observed_tools": [],
         "tool_success_rate": 1.0,
+    }
+
+
+def _graph_retrieval_decision(candidate: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a conservative decision-log entry for graph-bearing candidates."""
+
+    include_kg = bool(candidate.get("include_kg"))
+    if not include_kg:
+        return None
+
+    candidate_id = str(candidate.get("candidate_id") or "")
+    pass_rate = _as_float(candidate.get("pass_rate"))
+    holdout_pass_rate = candidate.get("holdout_pass_rate")
+    holdout = (
+        None
+        if holdout_pass_rate in (None, "")
+        else _as_float(holdout_pass_rate)
+    )
+    failures = [
+        str(failure)
+        for result in candidate.get("results", [])
+        if isinstance(result, dict)
+        for failure in result.get("failures", [])
+    ]
+    metrics = {
+        "pass_rate": pass_rate,
+        "holdout_pass_rate": holdout,
+        "recall@5": _as_float(candidate.get("recall@5")),
+        "ndcg@5": _as_float(candidate.get("ndcg@5")),
+        "latency_ms_avg": _as_float(candidate.get("latency_ms_avg")),
+    }
+
+    if holdout is None:
+        return {
+            "decision": "defer",
+            "rationale": (
+                f"{candidate_id} uses KG/fused retrieval, but this run has no "
+                "holdout split. Promotion requires holdout evidence."
+            ),
+            "metrics": metrics,
+            "follow_up": "Run Feature 022 holdout and live/provider smokes before keeping graph retrieval.",
+        }
+    if holdout < 0.5 or any("forbidden-source:kg" in failure for failure in failures):
+        return {
+            "decision": "discard",
+            "rationale": (
+                f"{candidate_id} regressed protected simple/document-grounded "
+                "or graph-overreach checks."
+            ),
+            "metrics": metrics,
+            "follow_up": "Inspect graph routing and source-grounding failures before retrying.",
+        }
+    if pass_rate >= 0.9 and holdout >= 0.9:
+        return {
+            "decision": "keep",
+            "rationale": (
+                f"{candidate_id} passed search and holdout gates under matched "
+                "retrieval/context budgets."
+            ),
+            "metrics": metrics,
+            "follow_up": "Run live/provider benchmark before enabling this mode by default.",
+        }
+    return {
+        "decision": "defer",
+        "rationale": f"{candidate_id} has mixed benchmark evidence.",
+        "metrics": metrics,
+        "follow_up": "Add query-class decision notes and rerun with stronger dense/parser baseline.",
     }
 
 

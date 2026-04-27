@@ -58,6 +58,9 @@ feature_id: 023
   - 2026-04-27: Feature 022 now exposes reference-level metadata failures
     (`missing-reference-metadata:<ref>:<key>`) that inner-loop candidates can
     optimize against without mutating goldens or holdout sets.
+  - 2026-04-27: Feature 022 benchmark artifacts also emit decision-log entries
+    for KG/fused candidates, giving the outer Meta-Harness proposer a concrete
+    keep/discard/defer history instead of only raw scores.
 
 ## Memory/Agent Inner Loop
 
