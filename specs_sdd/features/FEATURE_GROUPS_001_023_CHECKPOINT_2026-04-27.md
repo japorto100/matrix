@@ -165,13 +165,17 @@ Current status:
   for real implementation.
 - `020` is future subagent/routing contract work. It must not turn Matrix into a
   coding-agent product in the current scope.
+- `020` now has a centralized route/delegation metadata policy. Subagents
+  remain disabled, but audit events expose route taxonomy, allowed tools,
+  memory scope, spawn-depth cap and explicit fallback reason.
 
 Next best work:
 
 - research/deep-read pass for `_ref/hermes-agent`, `_ref/meta-harness`,
   `_ref/EvoSkill`, `_ref/hindsight`, `_ref/mempalace` and relevant local agent
   code.
-- add route-decision telemetry before changing runner behavior.
+- extend route-decision telemetry into live Meta-Harness parity runs before
+  changing runner behavior.
 - harden graphless vs LangGraph parity around no-tool, tool, memory and
   retrieval cases.
 - keep Control UI as display/admin, not an implicit agent tool surface.
@@ -209,6 +213,9 @@ Current status:
   inner-loop input gates. The deterministic fused Matrix candidate is still a
   search-set promotion candidate, not a production default until holdout/live
   provider and source-derived canaries pass.
+- `017/022` now have a static NornicDB projection replay gate: claim path,
+  projection event id and source artifact/chunk/citation metadata must survive
+  before any graph projection can pass.
 - Source provenance is now represented in the default search canaries:
   `source-provenance-001` requires exact source artifact/chunk citation before
   a candidate passes.
@@ -223,6 +230,10 @@ Current status:
 - Feature 023 now has a provider-free memory/context smoke that writes normal
   Meta-Harness artifacts and validates Fusion route plus Hindsight/MemPalace
   provider metadata without burning OpenRouter quota.
+- Feature 023 inner-loop candidates now carry retrieval-budget parameters
+  (`top_k`, `token_budget`, `max_hits`) and context-bubble metadata, so the
+  outer Meta-Harness can evaluate actual parameter candidates, not only mode
+  labels.
 - `017` is global/domain KG, not the agent personal-memory rail. It should use
   nonicdb/NornicDB projection work where useful, while Hindsight/MemPalace keep
   their own memory structures in Postgres.
@@ -238,8 +249,8 @@ Next best work:
   routing defaults.
 - decide where LightRAG/HippoRAG/LinearRAG are references, adapters or deferred
   comparison systems.
-- wire inner-loop candidates from Feature 023 into Feature 022 benchmark
-  evidence and Feature 016 Meta-Harness artifacts.
+- add RRF-weight and parser/chunker dimensions to Feature 023 once the runtime
+  exposes those as real knobs.
 
 Research need:
 
