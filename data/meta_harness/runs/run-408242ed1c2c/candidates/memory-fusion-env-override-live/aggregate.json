@@ -1,0 +1,23 @@
+{
+  "run_id": "run-408242ed1c2c",
+  "candidate_id": "memory-fusion-env-override-live",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8583,
+  "fitness_score": 0.8583,
+  "total_tokens": 44265,
+  "avg_tokens": 22132.5,
+  "token_efficiency": 0.045182,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 104173.0,
+  "avg_duration_ms": 52086.5,
+  "latency_efficiency": 0.019199,
+  "failed_scenarios": []
+}
