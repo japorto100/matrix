@@ -52,8 +52,18 @@ feature_id: 022
 - T020 [done-initial] Implement Recall@k and nDCG@k over chunk/claim refs.
   - 2026-04-27: `retrieval.evals.benchmark_lab` compares candidates with
     pass rate, Recall@k, nDCG@k and latency over deterministic canaries.
-- T021 Implement citation completeness and unsupported-claim checks.
-- T022 Implement multi-hop path completeness checks.
+- T021 [done-static] Implement citation completeness and unsupported-claim checks.
+  - 2026-04-27: deterministic canaries can now attach a generated answer,
+    require explicit citations, require cited reference ids, and fail benchmark
+    candidates on support-ratio, citation-ratio, unsupported-claim and
+    missing-citation defects. This reuses the existing retrieval citation
+    verifier instead of adding another evaluator path.
+- T022 [done-static] Implement multi-hop path completeness checks.
+  - 2026-04-27: canary expectations can require exact KG path tuples, and
+    both single-canary and candidate-comparison reports now emit selected
+    `kg_paths` plus `missing-kg-path` failures. The trading/geopolitical
+    baseline requires the `EU -> SANCTIONS -> Russian oil -> SHIPPING_INSURANCE`
+    path.
 - T023 [partial-done] Record offline indexing/update cost and online retrieval latency.
   - 2026-04-27: benchmark report records per-candidate average retrieval
     latency. Offline indexing cost still open.
@@ -88,6 +98,10 @@ feature_id: 022
   - Results: `matrix-vector-only` pass_rate `0.5`, Recall@5 `0.5`; `matrix-kg-only`
     pass_rate `0.0`, Recall@5 `0.5`; `matrix-fused-vector-kg` pass_rate `1.0`,
     Recall@5 `1.0`, nDCG@5 `0.8155`.
+  - 2026-04-27: Meta-Harness smoke
+    `run-rag-citation-path-smoke` wrote Pareto artifacts with citation/path
+    fields. Fused Matrix RAG remained the top candidate with pass_rate `1.0`
+    and fitness `0.9631`; vector-only now explicitly fails the missing KG path.
 - T041 Run OpenRouter-embedding benchmark when credits/rate limits allow.
 - T042 [ready-live] Run Postgres/pgvector benchmark for Matrix retrieval.
   - 2026-04-27: Matrix Postgres runner now uses dedicated `matrix-postgres`

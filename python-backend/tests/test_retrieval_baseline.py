@@ -8,6 +8,8 @@ from retrieval.core.types import RetrievalHit, RetrievalMode
 from retrieval.evals.canaries import (
     GENERAL_VECTOR_CANARY,
     TRADING_GEO_KG_CANARY,
+    CanaryExpectation,
+    RetrievalCanary,
     evaluate_canary,
     evaluate_canary_set,
 )
@@ -359,6 +361,9 @@ async def test_trading_geo_canary_requires_vector_and_kg_sources() -> None:
     assert verdict["intent"] == "temporal"
     assert "kg" in verdict["sources"]
     assert "vector" in verdict["sources"]
+    assert ["EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"] in verdict[
+        "kg_paths"
+    ]
 
 
 @pytest.mark.asyncio
@@ -368,6 +373,36 @@ async def test_general_qa_canary_stays_vector_only() -> None:
     assert verdict["passed"] is True
     assert verdict["intent"] == "text"
     assert verdict["sources"] == ["vector"]
+
+
+@pytest.mark.asyncio
+async def test_canary_can_require_generated_answer_citations() -> None:
+    canary = RetrievalCanary(
+        id="citation-complete-001",
+        query="How do EU sanctions affect Russian oil exports?",
+        expectation=CanaryExpectation(
+            intent="graph",
+            required_sources=("kg",),
+            required_reference_ids=("claim-1",),
+            required_cited_reference_ids=("claim-1",),
+            generated_answer="EU sanctions affect Russian oil exports [claim-1].",
+            require_citations=True,
+        ),
+        kg_hits=(
+            {
+                "claim_id": "claim-1",
+                "content": "EU sanctions affect Russian oil exports and shipping finance.",
+                "score": 0.9,
+            },
+        ),
+        mode="graph",
+    )
+
+    verdict = await evaluate_canary(canary)
+
+    assert verdict["passed"] is True
+    assert verdict["verification"]["supported"] is True
+    assert verdict["cited_reference_ids"] == ["claim-1"]
 
 
 @pytest.mark.asyncio

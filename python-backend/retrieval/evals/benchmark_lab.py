@@ -93,6 +93,17 @@ def _sources(hits: list[dict[str, Any]] | None) -> set[str]:
     return observed
 
 
+def _kg_paths(hits: list[dict[str, Any]] | None) -> set[tuple[str, ...]]:
+    paths: set[tuple[str, ...]] = set()
+    for hit in hits or []:
+        path = hit.get("metadata", {}).get("path")
+        if isinstance(path, list | tuple):
+            normalized = tuple(str(part) for part in path if str(part))
+            if normalized:
+                paths.add(normalized)
+    return paths
+
+
 def _ranked_reference_ids(references: list[dict[str, Any]] | None) -> list[str]:
     return [str(ref.get("id")) for ref in references or []]
 
@@ -149,12 +160,19 @@ async def evaluate_candidate(
         kg_hits=list(canary.kg_hits) if candidate.include_kg else [],
         token_budget=token_budget,
         max_hits=max_hits,
+        answer=canary.expectation.generated_answer,
+        require_citations=canary.expectation.require_citations,
     )
     latency_ms = round((perf_counter() - started) * 1000, 3)
     sources = _sources(result.hits)
+    kg_paths = _kg_paths(result.hits)
     ranked_ids = _ranked_reference_ids(result.references)
     relevant = set(canary.expectation.required_reference_ids)
     compatibility = metadata_compatibility(candidate)
+    verification = result.verification or {}
+    cited_reference_ids = {
+        str(ref_id) for ref_id in verification.get("cited_reference_ids", [])
+    }
     failures: list[str] = list(compatibility["failures"])
 
     if result.degraded and canary.expectation.must_not_degrade:
@@ -168,6 +186,36 @@ async def evaluate_candidate(
     for reference_id in relevant:
         if reference_id not in ranked_ids:
             failures.append(f"missing-reference:{reference_id}")
+    for required_path in canary.expectation.required_kg_paths:
+        if required_path not in kg_paths:
+            failures.append(f"missing-kg-path:{' -> '.join(required_path)}")
+    for reference_id in canary.expectation.required_cited_reference_ids:
+        if reference_id not in cited_reference_ids:
+            failures.append(f"missing-cited-reference:{reference_id}")
+    if verification:
+        if float(verification.get("support_ratio", 0.0)) < canary.expectation.min_support_ratio:
+            failures.append(
+                "support-ratio:"
+                f"{verification.get('support_ratio')}<"
+                f"{canary.expectation.min_support_ratio}"
+            )
+        if (
+            float(verification.get("citation_ratio", 0.0))
+            < canary.expectation.min_citation_ratio
+        ):
+            failures.append(
+                "citation-ratio:"
+                f"{verification.get('citation_ratio')}<"
+                f"{canary.expectation.min_citation_ratio}"
+            )
+        failures.extend(
+            f"unsupported-claim:{claim}"
+            for claim in verification.get("unsupported_claims", [])
+        )
+        failures.extend(
+            f"missing-citation:{claim}"
+            for claim in verification.get("missing_citation_claims", [])
+        )
 
     return {
         "canary_id": canary.id,
@@ -178,7 +226,10 @@ async def evaluate_candidate(
         "degraded": result.degraded,
         "degraded_reasons": result.degraded_reasons or [],
         "metadata_compatibility": compatibility,
+        "verification": verification,
+        "cited_reference_ids": sorted(cited_reference_ids),
         "sources": sorted(sources),
+        "kg_paths": [list(path) for path in sorted(kg_paths)],
         "ranked_reference_ids": ranked_ids,
         f"recall@{k}": _recall_at(ranked_ids, relevant, k),
         f"ndcg@{k}": _ndcg_at(ranked_ids, relevant, k),

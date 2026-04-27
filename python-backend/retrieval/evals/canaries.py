@@ -23,6 +23,12 @@ class CanaryExpectation:
     forbidden_sources: tuple[str, ...] = ()
     must_not_degrade: bool = True
     required_reference_ids: tuple[str, ...] = ()
+    required_kg_paths: tuple[tuple[str, ...], ...] = ()
+    generated_answer: str | None = None
+    require_citations: bool = False
+    required_cited_reference_ids: tuple[str, ...] = ()
+    min_support_ratio: float = 1.0
+    min_citation_ratio: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -50,6 +56,17 @@ def _observed_sources(hits: list[dict[str, Any]] | None) -> set[str]:
     return sources
 
 
+def _observed_kg_paths(hits: list[dict[str, Any]] | None) -> set[tuple[str, ...]]:
+    paths: set[tuple[str, ...]] = set()
+    for hit in hits or []:
+        path = hit.get("metadata", {}).get("path")
+        if isinstance(path, list | tuple):
+            normalized = tuple(str(part) for part in path if str(part))
+            if normalized:
+                paths.add(normalized)
+    return paths
+
+
 async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
     """Run one canary and return a stable pass/fail artifact."""
 
@@ -58,10 +75,17 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
         mode=canary.mode,
         vector_hits=list(canary.vector_hits),
         kg_hits=list(canary.kg_hits),
+        answer=canary.expectation.generated_answer,
+        require_citations=canary.expectation.require_citations,
     )
     sources = _observed_sources(result.hits)
+    kg_paths = _observed_kg_paths(result.hits)
     ranked_reference_ids = [str(ref.get("id")) for ref in result.references or []]
     reference_ids = set(ranked_reference_ids)
+    verification = result.verification or {}
+    cited_reference_ids = {
+        str(ref_id) for ref_id in verification.get("cited_reference_ids", [])
+    }
 
     failures: list[str] = []
     if result.intent != canary.expectation.intent:
@@ -79,6 +103,30 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
     for reference_id in canary.expectation.required_reference_ids:
         if reference_id not in reference_ids:
             failures.append(f"missing reference {reference_id!r}")
+    for required_path in canary.expectation.required_kg_paths:
+        if required_path not in kg_paths:
+            failures.append(f"missing kg path {required_path!r}")
+    for reference_id in canary.expectation.required_cited_reference_ids:
+        if reference_id not in cited_reference_ids:
+            failures.append(f"missing cited reference {reference_id!r}")
+    if verification:
+        if float(verification.get("support_ratio", 0.0)) < canary.expectation.min_support_ratio:
+            failures.append(
+                f"support ratio {verification.get('support_ratio')} "
+                f"< {canary.expectation.min_support_ratio}"
+            )
+        if (
+            float(verification.get("citation_ratio", 0.0))
+            < canary.expectation.min_citation_ratio
+        ):
+            failures.append(
+                f"citation ratio {verification.get('citation_ratio')} "
+                f"< {canary.expectation.min_citation_ratio}"
+            )
+        for claim in verification.get("unsupported_claims", []):
+            failures.append(f"unsupported claim {claim!r}")
+        for claim in verification.get("missing_citation_claims", []):
+            failures.append(f"missing citation for claim {claim!r}")
 
     return {
         "id": canary.id,
@@ -88,8 +136,11 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
         "degraded": result.degraded,
         "degraded_reasons": result.degraded_reasons or [],
         "sources": sorted(sources),
+        "kg_paths": [list(path) for path in sorted(kg_paths)],
         "ranked_reference_ids": ranked_reference_ids,
         "reference_ids": sorted(reference_ids),
+        "verification": verification,
+        "cited_reference_ids": sorted(cited_reference_ids),
         "hit_count": len(result.hits or []),
     }
 
@@ -137,6 +188,7 @@ TRADING_GEO_KG_CANARY = RetrievalCanary(
         intent="temporal",
         required_sources=("kg", "vector"),
         required_reference_ids=("claim-sanctions-insurance",),
+        required_kg_paths=(("EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"),),
     ),
     vector_hits=(
         {
