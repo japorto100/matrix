@@ -212,6 +212,10 @@ Current status:
 - Source provenance is now represented in the default search canaries:
   `source-provenance-001` requires exact source artifact/chunk citation before
   a candidate passes.
+- The ResearchWatcher PDF/Markdown extraction benchmark is now rerun as a
+  Feature 023 inner-loop evidence item. PyMuPDF4LLM passes the light fixture
+  but leaves formula, figure and code-fence preservation as concrete candidate
+  dimensions for Docling/MinerU/MarkItDown comparison.
 - `017` is global/domain KG, not the agent personal-memory rail. It should use
   nonicdb/NornicDB projection work where useful, while Hindsight/MemPalace keep
   their own memory structures in Postgres.

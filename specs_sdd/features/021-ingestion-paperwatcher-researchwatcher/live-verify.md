@@ -41,6 +41,9 @@ feature_id: 021
   - Gap captured for next parser candidates: no structured formula extraction,
     no figure count and no code fence in the extracted Markdown for this
     fixture.
+  - 2026-04-27 rerun for Feature 023:
+    `run-pdf-extraction-feature023-20260427`, fitness `0.9682`, latency
+    `3532.881ms`; same formula/figure/code-fence gaps remain.
 
 ## 2026-04-27 Local CLI Smoke
 

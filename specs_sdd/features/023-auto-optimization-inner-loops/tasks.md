@@ -71,7 +71,14 @@ feature_id: 023
 - T040 [done-static] Unit-test candidate schema validation.
 - T041 [done-static] Unit-test Meta-Harness artifact conversion.
 - T042 [done-static-live-smoke] Run one deterministic RAG inner-loop smoke over Feature 022 canaries.
-- T043 Run one parser/chunking smoke over the ResearchWatcher PDF fixture.
+- T043 [done-static-live-smoke] Run one parser/chunking smoke over the ResearchWatcher PDF fixture.
+  - 2026-04-27: `meta_harness.meta_cli pdf-extraction-benchmark` ran
+    PyMuPDF4LLM against the ResearchWatcher PDF/Markdown ground-truth fixture
+    as `run-pdf-extraction-feature023-20260427`.
+  - Result: passed, token recall `0.9091`, phrase coverage `1.0`, table
+    count `1`, latency `3532.881ms`, fitness `0.9682`.
+  - Known gaps preserved for future parser candidates: formula count `0`,
+    figure count `0`, no code fence.
 - T044 Run one memory/context smoke without live provider calls.
 - T045 [done-static-live-smoke] Gate all live-provider loops behind quota/cost config.
 - T046 [done-static-live-smoke] Prove inner-loop candidates cannot modify benchmark goldens,

@@ -24,8 +24,16 @@ feature_id: 023
   - 2026-04-27: `meta_harness.meta_cli pareto` after the inner-loop smoke
     reported `has_inner_fused_frontier: true`; the promoted fused candidate
     appears as `run-inner-loop-rag-smoke:inner-matrix-fused-vector-kg`.
-- LV004 Run parser/chunking optimization smoke over the ResearchWatcher PDF
+- LV004 [done-static-live-smoke] Run parser/chunking optimization smoke over the ResearchWatcher PDF
   fixture.
+  - 2026-04-27:
+    `uv run python -m meta_harness.meta_cli pdf-extraction-benchmark --run-id run-pdf-extraction-feature023-20260427 --data-dir ../.meta-harness`
+  - Result: passed; token recall `0.9091`, phrase coverage `1.0`, table
+    count `1`, extracted chars `905`, truth chars `1082`, latency `3532.881ms`,
+    fitness `0.9682`.
+  - Gap for next inner-loop parser candidates: formula extraction, figure
+    extraction and code-fence preservation still fail to appear in the current
+    PyMuPDF4LLM output.
 - LV005 [done] Verify OpenRouter-free mode refuses to exceed configured request caps.
   - 2026-04-27:
     `meta_harness.meta_cli inner-loop --kind rag --run-id run-inner-loop-blocked-smoke --provider-calls-budget 1`
