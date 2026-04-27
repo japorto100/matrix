@@ -31,7 +31,16 @@ feature_id: 022
     for trading/geopolitical multi-hop plus plain document QA boundaries.
 - LV005 Run OpenRouter embeddings when budget/rate limit allows.
 - LV006 Run NornicDB/nonicdb projection smoke when available.
-- LV007 Record keep/reject/defer decision per retrieval candidate.
+- LV007 [done-static-live-smoke] Record keep/reject/defer decision per
+  retrieval candidate.
+  - 2026-04-27:
+    `uv run python -m meta_harness.meta_cli rag-benchmark --run-id run-rag-kg-decisions-20260427 --data-dir ../.meta-harness`
+    passed and wrote decision logs for KG-bearing candidates.
+  - Results: `matrix-vector-only` pass_rate `0.6667`, no graph decision;
+    `matrix-kg-only` pass_rate `0.0`, fitness `0.1666`, decision `defer`;
+    `matrix-fused-vector-kg` pass_rate `1.0`, fitness `0.9754`, decision
+    `defer` because this run intentionally used only the `search` split and
+    promotion requires holdout evidence.
 - LV008 [done-static-live-smoke] Verify candidate metadata compatibility gates.
   - 2026-04-27: `uv run python -m meta_harness.meta_cli rag-benchmark --run-id run-rag-metadata-compat-smoke --data-dir ../data/meta_harness`.
   - Artifacts now include `metadata_compatibility` in

@@ -63,3 +63,9 @@ feature_id: 023
   - Result: passed; provider calls `0`, trace gate pass rate `1.0`, tool
     success `1.0`, memory utilization `1.0`, fitness `1.0`.
   - Observed providers: `hindsight`, `mempalace`; observed route: `fusion`.
+- LV010 [done-static-live-smoke] Verify RAG/KG benchmark decisions feed the
+  Meta-Harness decision history.
+  - 2026-04-27: `run-rag-kg-decisions-20260427` wrote conservative
+    keep/discard/defer entries through the existing decision log. Fused RAG
+    stayed deferred despite search pass_rate `1.0` because holdout was not part
+    of the run.
