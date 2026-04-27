@@ -13,6 +13,7 @@ from typing import Any
 from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
 from agent.errors import CriticalError, RepairableError
 from agent.sandbox.config import (
+    CODE_SANDBOX,
     SandboxConfig,
     get_sandbox_connection_config,
     get_sandbox_ready_timeout,
@@ -52,6 +53,21 @@ class SandboxResult:
     )  # [{name, data_b64, mime}]
     execution_time_ms: float = 0
     error: str | None = None
+
+    @property
+    def success(self) -> bool:
+        return self.exit_code == 0 and not self.error
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "exit_code": self.exit_code,
+            "files": self.files,
+            "execution_time_ms": self.execution_time_ms,
+            "error": self.error,
+            "success": self.success,
+        }
 
 
 class SandboxManager:
@@ -231,6 +247,30 @@ class SandboxManager:
                     logger.info("Sandbox destroyed: %s", sandbox.id)
                 except Exception as kill_err:
                     logger.warning("Failed to destroy sandbox: %s", kill_err)
+
+    async def execute_file(
+        self,
+        *,
+        file_content: bytes,
+        file_name: str,
+        analysis_code: str,
+        thread_id: str = "",
+    ) -> SandboxResult:
+        """Analyze an uploaded file by staging it under `/tmp/uploads/`.
+
+        `FileAnalyzeTool` historically called this method, while the manager
+        only exposed `execute_code(upload_files=...)`. Keep the public helper so
+        file-analysis uses the same sandbox lifecycle and output collection as
+        `sandbox_execute`.
+        """
+        encoded = base64.b64encode(file_content).decode()
+        return await self.execute_code(
+            code=analysis_code,
+            language="python",
+            config=CODE_SANDBOX,
+            thread_id=thread_id,
+            upload_files=[{"name": file_name, "content_b64": encoded}],
+        )
 
     async def execute_browser(
         self,

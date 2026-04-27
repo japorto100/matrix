@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Closeout
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 013
 ---
 
@@ -20,10 +20,15 @@ feature_id: 013
 - Agent Chat markdown sanitize pipeline.
 - Active Tuwunel dev config explicitly disables URL-preview allowlists.
 - OpenSandbox manager/tools exist, but were not live-started in this pass.
+- FileAnalyzeTool compatibility path is repaired: `SandboxManager.execute_file`
+  now stages uploaded file bytes through the existing OpenSandbox
+  `execute_code(upload_files=...)` lifecycle.
 
 ## Not Built
 
-- Live OpenSandbox profile/health/execution evidence on this machine.
+- Full live OpenSandbox execution evidence on this machine.
+- Live file upload proof; current OpenSandbox/Podman runtime fails sandbox
+  creation before user code runs.
 - Full Skills-Guard UI drawer allow/reject retry path with audit evidence.
 - HMAC/hash-chain audit-trail tamper detection.
 - Tier-3 ML redaction/leak detector decision.
@@ -47,6 +52,10 @@ feature_id: 013
 
 Pending: OpenSandbox start/execution, Skills-Guard drawer allow/reject/audit,
 Control Security/Sandbox/Permissions tabs and prod URL-preview config check.
+
+Partial live update 2026-04-27: OpenSandbox health on `:8080` passed, but live
+file execution failed during sandbox creation with Podman/Docker archive
+`broken pipe`; static file-staging code is fixed and covered.
 
 ## Follow-Ups
 

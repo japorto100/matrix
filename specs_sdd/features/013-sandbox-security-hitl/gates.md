@@ -3,7 +3,7 @@ title: Sandbox Security HITL Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 013
 ---
 
@@ -11,12 +11,15 @@ feature_id: 013
 
 ## G1 OpenSandbox Runtime
 
-- [ ] Compose/podman profile starts `opensandbox-server`.
-- [ ] Health check succeeds.
+- [x] Compose/podman profile can start `opensandbox-server`/`opensandbox-api-gateway`.
+- [x] Health check succeeds.
 - [ ] Safe Python execution returns stdout/stderr.
-- [ ] File upload sample returns artifact/result.
+- [ ] File upload sample returns artifact/result. Static staging path is fixed;
+  live sandbox creation is currently blocked by OpenSandbox/Podman archive
+  `broken pipe` before user code runs.
 - [ ] Browser sandbox returns screenshot or artifact.
 - [ ] TTL/resource/output limits are enforced or documented as unavailable.
+  Current blocker: sandbox creation fails before TTL/output limit proof.
 - [ ] Egress-deny behavior is tested.
 
 ## G2 Consent / RBAC / Rate Limit

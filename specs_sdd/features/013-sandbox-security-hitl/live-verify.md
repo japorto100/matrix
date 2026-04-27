@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 013
 ---
 
@@ -106,3 +106,33 @@ Residual risk:
 
 partial pass; OpenSandbox code execution is live. Remaining work is browser,
 file upload, egress policy and HITL/consent live verification.
+
+## 2026-04-27 File Upload Path Probe
+
+Status: static pass, live blocked before code execution.
+
+Evidence:
+
+- Code fix: `SandboxManager.execute_file` now exists and wraps the existing
+  `execute_code(upload_files=...)` lifecycle. `SandboxResult` also exposes
+  `success` and `to_dict()` for `FileAnalyzeTool` audit/output compatibility.
+- Static tests:
+  `cd python-backend && uv run pytest tests/agent/sandbox/test_config.py tests/agent/sandbox/test_manager_file.py -q`
+  => `8 passed`.
+- Ruff:
+  `cd python-backend && uv run ruff check agent/sandbox/manager.py tests/agent/sandbox/test_manager_file.py`
+  => pass.
+- Live server health:
+  `GET http://127.0.0.1:8080/health` returned `200`.
+- Live file probe reached OpenSandbox and attempted to create a
+  `code-interpreter:v1.0.2` sandbox, but failed before code execution:
+  `Failed to create directory /opt/opensandbox ... broken pipe`.
+- Host storage at the time was `/` 93% full with about 7.5 GB free; the active
+  code-interpreter image is about 9.65 GB. Treat this as an OpenSandbox/Podman
+  runtime/storage blocker, not a successful file-upload gate.
+
+Remaining:
+
+- Re-run live `execute_file` after fixing OpenSandbox rootless Podman/archive
+  behavior and/or freeing SSD/container storage.
+- Only then mark T012 file upload and T015 resource/TTL/output caps live.

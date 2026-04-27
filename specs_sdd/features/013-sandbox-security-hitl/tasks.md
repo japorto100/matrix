@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 013
 migrated_from:
   - specs/execution/exec-12-sandbox-security.md
@@ -25,13 +25,20 @@ migrated_from:
 
 - [x] T010 Verify compose/podman profile starts `opensandbox-server`.
 - [x] T011 Verify safe Python execution returns stdout/stderr/files.
-- T012 Verify file upload is copied into sandbox and result is returned while
-  original stays outside agent process.
+- T012 [partial-static-live-blocked] Verify file upload is copied into sandbox
+  and result is returned while original stays outside agent process.
+  - 2026-04-27: fixed missing `SandboxManager.execute_file` compatibility path
+    used by `FileAnalyzeTool`; static tests verify file bytes are staged through
+    `execute_code(upload_files=...)`.
+  - Live OpenSandbox server health passed, but sandbox creation failed before
+    code execution with Podman/Docker API `broken pipe` while creating
+    `/opt/opensandbox`; likely runtime/storage pressure on the 93%-full SSD or
+    OpenSandbox rootless Podman archive issue. Keep full live file upload open.
 - T013 Verify browser sandbox screenshot/artifact path.
 - T014 Verify denied egress via OpenSandbox `networkPolicy`/egress sidecar.
   Docker `network_mode="none"` is not valid for Matrix because it prevents
   execd/proxy endpoint resolution; local runtime uses `bridge`.
-- T015 Verify resource/time/output limits: TTL destroy, stdout/stderr caps,
+- T015 [partial-live-blocked] Verify resource/time/output limits: TTL destroy, stdout/stderr caps,
   max file size, per-tool timeout.
 - [x] T016 Align Matrix OpenSandbox config with upstream SDK/runtime:
   `opensandbox-server` on `:8080`, SDK `OPEN_SANDBOX_DOMAIN` bridge,
