@@ -1,0 +1,17 @@
+{
+  "run_id": "run-eeb4e11fab0f",
+  "candidate_id": "post-kg-context-memory-smoke",
+  "decision": "defer",
+  "rationale": "Trace gates and completion passed for two memory lifecycle scenarios, but the candidate is Pareto-dominated by existing runs and exposed duplicate memory_add calls plus high token/latency cost on the explicit add/search scenario. Use as evidence for a memory-tool dedup/latency hardening follow-up, not promotion.",
+  "decided_at": "2026-04-27T03:29:03.068578+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.8476,
+    "total_tokens": 60506,
+    "avg_duration_ms": 74463,
+    "tool_success_rate": 1.0,
+    "memory_utilization_rate": 1.0
+  },
+  "follow_up": "Add deterministic guard or trace-gate warning for duplicate memory_add calls with the same normalized content in one turn."
+}

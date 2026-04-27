@@ -98,6 +98,12 @@ migrated_from:
 - T039k Evaluate MemPalace warmup/embedding latency; live probe still shows
   first-call `memory_add` around 17-22s with remote embeddings, which is under
   the current 30s tool timeout but too close for production comfort.
+- [x] T039k.1 Deduplicate explicit memory writes within a single assistant
+  turn/thread window: Meta-Harness `run-eeb4e11fab0f` passed trace gates but
+  showed repeated `memory_add` calls for the same exact lifecycle probe,
+  increasing latency and token use without adding evidence value. Rerun
+  `run-22d2dfd38755` verified one write per memory scenario and lower
+  token/latency cost.
 - [x] T039l Make automatic post-answer `memory_retain_node` verbatim-first:
   write exact conversation evidence synchronously to MemPalace/Postgres and
   dispatch Hindsight summary retain asynchronously, matching explicit

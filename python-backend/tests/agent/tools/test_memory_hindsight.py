@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 
 import pytest
 
 from agent.audit.logger import AuditAction
-from agent.tools.memory_hindsight import MemoryAddTool, MemorySearchTool
+from agent.tools.memory_hindsight import (
+    MemoryAddTool,
+    MemorySearchTool,
+    _clear_memory_add_dedupe_for_tests,
+)
+
+
+@pytest.fixture(autouse=True)
+def _clear_memory_add_dedupe():
+    asyncio.run(_clear_memory_add_dedupe_for_tests())
+    yield
+    asyncio.run(_clear_memory_add_dedupe_for_tests())
 
 
 @pytest.mark.asyncio
@@ -230,3 +242,44 @@ async def test_memory_add_tool_dispatches_summary_in_background(monkeypatch):
 
     assert result["stored"] is True
     assert len(created) == 1
+
+
+@pytest.mark.asyncio
+async def test_memory_add_tool_deduplicates_same_thread_content(monkeypatch):
+    calls = []
+
+    async def _audit_log(**kwargs):
+        calls.append(("audit", kwargs))
+
+    class _Engine:
+        async def retain_batch_async(self, **kwargs):
+            calls.append(("retain", kwargs))
+            await asyncio.sleep(0)
+            return [["fact-1"]]
+
+    async def _get_memory_engine():
+        return _Engine()
+
+    monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
+    monkeypatch.setattr("memory_fusion.engine.get_memory_engine", _get_memory_engine)
+    monkeypatch.setattr("memory_fusion.engine.get_bank_id", lambda user_id: "user-u1")
+
+    tool = MemoryAddTool()
+    ctx = SimpleNamespace(user_id="u1", thread_id="t1", agent_class="advisory")
+    first, second = await asyncio.gather(
+        tool.execute({"content": "Remember exact duplicate", "fact_type": "experience"}, ctx),
+        tool.execute({"content": " remember   exact duplicate ", "fact_type": "experience"}, ctx),
+    )
+
+    assert first["stored"] is True
+    assert second["stored"] is True
+    assert second["deduplicated"] is True
+    assert second["facts_extracted"] == 0
+    assert second["original_facts_extracted"] == 1
+    assert len([1 for kind, _kwargs in calls if kind == "retain"]) == 1
+    dedupe_audit = [
+        kwargs
+        for kind, kwargs in calls
+        if kind == "audit" and kwargs["metadata"].get("deduplicated")
+    ][0]
+    assert dedupe_audit["metadata"]["dedupe_source"] == "pending"

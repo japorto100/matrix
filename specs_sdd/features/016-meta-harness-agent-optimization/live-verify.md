@@ -139,6 +139,44 @@ Probe:
 - run one scenario that should call a specific tool.
 - assert `tool_call` and `tool_result` audit events.
 
+## MV-03 Memory Lifecycle Meta-Harness Smoke
+
+Status: pass/kept on 2026-04-27.
+
+Scope: in-process `simple` runner, LiteLLM/OpenRouter, Memory-Fusion route,
+explicit memory tools, no frontend and no Go.
+
+Command:
+
+- `cd python-backend && .venv/bin/python -m meta_harness.meta_cli run ../data/harness/memory_lifecycle/scenarios.json --candidate-id post-kg-context-memory-smoke --runner-variant simple --model openrouter/openrouter/free`
+
+Evidence:
+
+- Run id: `run-eeb4e11fab0f`.
+- Artifact dir:
+  `data/meta_harness/runs/run-eeb4e11fab0f/candidates/post-kg-context-memory-smoke/`.
+- Trace gate pass rate: `1.0`.
+- Completion rate: `1.0`.
+- Fitness score: `0.8476`.
+- Tool success rate: `1.0`.
+- Memory utilization rate: `1.0`.
+- Observed memory route/provider metadata includes `fusion`, `verbatim` and
+  `summary_async`.
+- Candidate decision: `defer`; it is Pareto-dominated and exposed a concrete
+  hardening target: repeated `memory_add` calls with the same normalized content
+  in one explicit-memory turn. This becomes T097a.
+- Follow-up candidate after implementing explicit `memory_add` dedup:
+  `run-22d2dfd38755`, candidate `memory-add-dedupe-smoke`.
+- Follow-up result: trace gate pass rate `1.0`, completion rate `1.0`,
+  fitness score `0.8583`, tool success rate `1.0`, memory utilization rate
+  `1.0`.
+- Improvement over `run-eeb4e11fab0f`: total tokens reduced from `60506` to
+  `36959`; average duration reduced from `74463ms` to `22902ms`; each memory
+  lifecycle scenario emitted one `memory_add` tool call.
+- Candidate decision: `keep`; globally Pareto-dominated by unrelated tiny/no-
+  tool scenarios, but kept because it fixes a scenario-specific duplicate-write
+  regression and preserves all trace gates.
+
 Expected evidence:
 
 - required tool gate pass.

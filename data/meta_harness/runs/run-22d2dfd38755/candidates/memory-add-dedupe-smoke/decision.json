@@ -1,0 +1,20 @@
+{
+  "run_id": "run-22d2dfd38755",
+  "candidate_id": "memory-add-dedupe-smoke",
+  "decision": "keep",
+  "rationale": "Code candidate kept: it fixes a concrete duplicate memory_add write pattern observed in run-eeb4e11fab0f. The rerun passed both memory lifecycle trace gates, kept completion at 1.0, improved fitness from 0.8476 to 0.8583, and reduced total tokens from 60506 to 36959 and avg duration from 74463ms to 22902ms. It remains globally Pareto-dominated by unrelated tiny/no-tool candidates, so promotion is based on scenario-specific regression value.",
+  "decided_at": "2026-04-27T03:33:41.803712+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.8583,
+    "previous_fitness_score": 0.8476,
+    "total_tokens": 36959,
+    "previous_total_tokens": 60506,
+    "avg_duration_ms": 22902,
+    "previous_avg_duration_ms": 74463,
+    "tool_success_rate": 1.0,
+    "memory_utilization_rate": 1.0
+  },
+  "follow_up": "Add a trace-gate warning that explicitly counts duplicate memory_add normalized-content writes so future regressions are visible in scores."
+}

@@ -207,6 +207,13 @@ feature_id: 016
   not host-local `localhost:5433`.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
+- [x] T097a Add explicit `memory_add` deduplication for repeated normalized
+  content/fact-type writes in the same thread and short time window after
+  Meta-Harness exposed duplicate writes in `run-eeb4e11fab0f`.
+- T097b Add a deterministic duplicate-memory-tool trace gate: if one assistant
+  turn calls `memory_add` multiple times with the same normalized content/fact
+  type, warn or fail the candidate unless the scenario explicitly expects
+  duplicate writes.
 - T098 Reduce skill over-selection in explicit memory probes; current
   `lp-memory-001` passes but still loads `market-research`, `risk-assessment`
   and `plan` alongside `memory-usage`.

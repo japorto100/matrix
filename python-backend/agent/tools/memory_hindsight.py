@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import time
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -21,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_SEARCH_FACT_TYPES = {"experience", "observation", "world"}
 _ALLOWED_WRITE_FACT_TYPES = {"experience", "observation"}
+_MEMORY_ADD_DEDUPE_LOCK = asyncio.Lock()
+_MEMORY_ADD_PENDING: dict[tuple[str, str, str, str], asyncio.Future[dict]] = {}
+_MEMORY_ADD_RECENT: dict[tuple[str, str, str, str], tuple[float, dict]] = {}
 
 if TYPE_CHECKING:
     from agent.context import AgentExecutionContext
@@ -46,6 +51,65 @@ def _normalize_write_fact_type(value: str) -> str:
     if normalized in _ALLOWED_WRITE_FACT_TYPES:
         return normalized
     return "experience"
+
+
+def _normalize_memory_add_content(value: str) -> str:
+    return " ".join(str(value or "").split()).casefold()
+
+
+def _memory_add_dedupe_window_seconds() -> float:
+    try:
+        return max(0.0, float(os.getenv("MEMORY_ADD_DEDUPE_WINDOW_SEC", "45")))
+    except ValueError:
+        return 45.0
+
+
+async def _claim_memory_add_slot(
+    key: tuple[str, str, str, str],
+) -> tuple[str, asyncio.Future[dict] | dict | None]:
+    window = _memory_add_dedupe_window_seconds()
+    if window <= 0:
+        return "disabled", None
+
+    now = time.monotonic()
+    async with _MEMORY_ADD_DEDUPE_LOCK:
+        stale = [
+            recent_key
+            for recent_key, (seen_at, _result) in _MEMORY_ADD_RECENT.items()
+            if now - seen_at > window
+        ]
+        for recent_key in stale:
+            _MEMORY_ADD_RECENT.pop(recent_key, None)
+
+        recent = _MEMORY_ADD_RECENT.get(key)
+        if recent is not None:
+            return "recent", recent[1]
+
+        pending = _MEMORY_ADD_PENDING.get(key)
+        if pending is not None:
+            return "pending", pending
+
+        future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
+        _MEMORY_ADD_PENDING[key] = future
+        return "owner", future
+
+
+async def _finish_memory_add_slot(key: tuple[str, str, str, str], result: dict) -> None:
+    window = _memory_add_dedupe_window_seconds()
+    if window <= 0:
+        return
+    async with _MEMORY_ADD_DEDUPE_LOCK:
+        pending = _MEMORY_ADD_PENDING.pop(key, None)
+        if pending is not None and not pending.done():
+            pending.set_result(result)
+        if result.get("stored"):
+            _MEMORY_ADD_RECENT[key] = (time.monotonic(), dict(result))
+
+
+async def _clear_memory_add_dedupe_for_tests() -> None:
+    async with _MEMORY_ADD_DEDUPE_LOCK:
+        _MEMORY_ADD_PENDING.clear()
+        _MEMORY_ADD_RECENT.clear()
 
 
 async def _submit_summary_retain_background(
@@ -200,6 +264,45 @@ class MemoryAddTool(TradingTool):
             # Tag mit Agent-Klasse fuer Memory Sharing Sichtbarkeit
             role_tag = getattr(ctx, "agent_class", "advisory")
             effective_fact_type = _normalize_write_fact_type(params.fact_type)
+            dedupe_key = (
+                str(ctx.thread_id),
+                bank_id,
+                effective_fact_type,
+                _normalize_memory_add_content(params.content),
+            )
+            slot_kind, slot = await _claim_memory_add_slot(dedupe_key)
+            if slot_kind in {"recent", "pending"}:
+                prior = await slot if isinstance(slot, asyncio.Future) else slot
+                facts_extracted = int((prior or {}).get("facts_extracted", 0) or 0)
+                stored = bool((prior or {}).get("stored", False))
+                await audit_log(
+                    action=AuditAction.MEMORY_RETAIN,
+                    thread_id=ctx.thread_id,
+                    agent_id=ctx.user_id,
+                    input_data=params.content[:2000],
+                    success=stored,
+                    metadata={
+                        "bank_id": bank_id,
+                        "route": "fusion",
+                        "provider": "fusion",
+                        "providers": "dedupe",
+                        "storage_route": "dedupe",
+                        "fact_type": effective_fact_type,
+                        "original_fact_type": params.fact_type,
+                        "item_count": 0,
+                        "original_item_count": facts_extracted,
+                        "tool_name": self.name,
+                        "source": "explicit_memory_tool",
+                        "deduplicated": True,
+                        "dedupe_source": slot_kind,
+                    },
+                )
+                return {
+                    "stored": stored,
+                    "facts_extracted": 0,
+                    "deduplicated": True,
+                    "original_facts_extracted": facts_extracted,
+                }
             content_items = [
                 {
                     "content": params.content,
@@ -261,11 +364,18 @@ class MemoryAddTool(TradingTool):
                 },
             )
 
-            return {
+            result = {
                 "stored": True,
                 "facts_extracted": facts_extracted,
             }
+            await _finish_memory_add_slot(dedupe_key, result)
+            return result
         except Exception as e:
+            if "dedupe_key" in locals():
+                await _finish_memory_add_slot(
+                    dedupe_key,
+                    {"stored": False, "facts_extracted": 0, "error": str(e)},
+                )
             await audit_log(
                 action=AuditAction.MEMORY_RETAIN,
                 thread_id=ctx.thread_id,
