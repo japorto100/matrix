@@ -20,6 +20,9 @@ feature_id: 019
 - T004 [done-static] Ensure local sentence-transformer downloads are opt-in and use
   `/mnt/cold-storage/models/huggingface` via `HF_HOME`.
 - T005 [done-static] Track embedding model/version/dimension in chunk metadata.
+  - 2026-04-27: ingestion source artifacts/chunk metadata and RAG benchmark
+    provider snapshots now carry embedding provider/model/dimension without
+    hardcoding OpenAI/OpenRouter-only code paths.
 
 ## Retrieval Architecture
 
@@ -76,6 +79,9 @@ feature_id: 019
   - 2026-04-27: retrieval benchmark canaries now verify reference-level
     source/citation metadata, so vector/fused candidates are judged against a
     stronger source-grounded baseline before external GraphRAG adapters.
+  - 2026-04-27: MarkItDown is now available as an optional lightweight parser
+    candidate for source-grounded dense baselines, but remains behind parser
+    benchmark gates.
 - T038 [done-static] Require every retrieval candidate to declare source
   artifact version, parser version, chunking config, embedding model/dimension
   and KG projection version before Feature 022 scores are comparable.

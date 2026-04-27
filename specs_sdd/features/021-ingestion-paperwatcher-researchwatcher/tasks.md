@@ -61,8 +61,14 @@ feature_id: 021
   - 2026-04-27: document chunks receive stable IDs of
     `<artifact-prefix>-<chunk-index>-<chunk-hash-prefix>` before embedding and
     sink writes; Hindsight metadata now carries the same source/citation refs.
-- T023 Wire remote embedding provider config from Feature 019; local HF model
-  downloads remain opt-in and use `HF_HOME=/mnt/cold-storage/models/huggingface`.
+- T023 [done-static] Wire remote embedding provider config from Feature 019;
+  local HF model downloads remain opt-in and use
+  `HF_HOME=/mnt/cold-storage/models/huggingface`.
+  - 2026-04-27: `IngestionConfig` reads `EMBEDDER_PROVIDER`,
+    `EMBEDDER_MODEL`, `EMBEDDER_BASE_URL` and `EMBEDDER_API_KEY`, with
+    OpenRouter/OpenAI-compatible fallbacks. `EmbedderRegistry` exposes
+    `openrouter` and deterministic providers; local sentence-transformers stays
+    opt-in and uses HDD `HF_HOME` cache.
 - T024 [done-static] Emit KG `ClaimProposal` objects for extraction outputs,
   but do not promote claims automatically.
   - 2026-04-27: `KGSink` now calls the KG pipeline `/propose` path rather than
@@ -77,9 +83,16 @@ feature_id: 021
     embedding vectors into the graph path.
 - T026 Add parser adapter plan for PyMuPDF4LLM baseline, Docling SOTA candidate
   and MinerU heavy/complex-PDF candidate.
-- T026a Add Microsoft MarkItDown as a lightweight parser candidate for Office,
-  HTML, simple PDFs and MCP-style conversion workflows; keep it behind the same
-  extraction benchmark gates as the other parsers.
+- T026a [done-static] Add Microsoft MarkItDown as a lightweight parser
+  candidate for Office, HTML, simple PDFs and MCP-style conversion workflows;
+  keep it behind the same extraction benchmark gates as the other parsers.
+  - 2026-04-27: `MarkItDownExtractor` is registered as optional
+    `markitdown` extractor. It does not change the default PDF extractor and
+    does not add a hard dependency; selecting it requires the `markitdown`
+    package to be installed. It supports current MarkItDown API output via
+    `result.text_content` with a `result.markdown` fallback.
+  - Source check: Microsoft/PyPI current docs describe `MarkItDown().convert`
+    and `result.text_content`; PyPI shows a 2026-02-20 upload.
 - T027 Preserve hierarchy/page/table/figure/formula/code metadata through
   chunking and citation refs.
 - T028 Prefer structured trading/finance inputs such as XBRL/CSV/API over PDF
@@ -143,9 +156,12 @@ feature_id: 021
   least one financial/research PDF.
 - T039 Evaluate MinerU only after resource footprint and install/cache location
   are clear.
-- T040 Compare MarkItDown against PyMuPDF4LLM, Docling and MinerU on the
+- T040 [partial-static] Compare MarkItDown against PyMuPDF4LLM, Docling and MinerU on the
   ResearchWatcher fixture plus one Office-style fixture; promote it only for
   source classes where it preserves citations and structure well enough.
+  - 2026-04-27: optional adapter and unit tests exist. Benchmark comparison is
+    still open because `markitdown` is not installed as a hard dependency and
+    must be run through the same Feature 023 extraction benchmark path.
 - T041 Add one current trading/finance or macro PDF fixture so parser
   decisions are not based only on generic benchmark PDFs.
 - T042 [done-static-live-smoke] Add a paper/source provenance fixture where the expected answer must

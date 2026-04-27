@@ -43,6 +43,9 @@ feature_id: 023
 - T020 Add search spaces for parser/splitter/chunking:
   PyMuPDF4LLM, Docling, MinerU, recursive/character/hierarchy-aware chunking,
   chunk size, overlap and metadata enrichment.
+  - 2026-04-27: parser candidate space now has an optional MarkItDown adapter
+    in addition to PyMuPDF4LLM and remote Docling/MinerU placeholders. It must
+    still be benchmarked before promotion.
 - T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.
