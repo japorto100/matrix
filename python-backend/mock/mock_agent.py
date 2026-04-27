@@ -22,7 +22,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from datetime import datetime
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -94,6 +96,72 @@ async def agent_chat(request: Request):
     )
 
 
+def _latest_user_text(messages: list[dict[str, Any]]) -> str:
+    for message in reversed(messages):
+        if message.get("role") == "user":
+            content = message.get("content")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                parts = [
+                    str(item.get("text") or "")
+                    for item in content
+                    if isinstance(item, dict)
+                ]
+                return " ".join(part for part in parts if part)
+    return ""
+
+
+def _mock_chat_text(prompt: str) -> str:
+    text = prompt.strip().lower()
+    if "runner parity smoke" in text:
+        return "runner parity smoke."
+    if "memory" in text:
+        return "Mock memory response."
+    if "tool" in text:
+        return "Mock tool-free response."
+    return "Mock LLM response."
+
+
+@app.post("/chat/completions")
+@app.post("/v1/chat/completions")
+async def chat_completions(request: Request):
+    """OpenAI-compatible chat completions endpoint for local harness gates."""
+    body = await request.json()
+    messages = body.get("messages") or []
+    model = str(body.get("model") or "mock/local")
+    max_tokens = body.get("max_tokens")
+    prompt = _latest_user_text(messages if isinstance(messages, list) else [])
+    content = _mock_chat_text(prompt)
+    if isinstance(max_tokens, int) and max_tokens > 0:
+        content = " ".join(content.split()[:max_tokens])
+
+    prompt_tokens = sum(
+        len(str(message.get("content") or "").split())
+        for message in messages
+        if isinstance(message, dict)
+    )
+    completion_tokens = len(content.split())
+    return {
+        "id": f"chatcmpl-mock-{int(time.time() * 1000)}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+    }
+
+
 @app.get("/health")
 async def health():
     return {
@@ -117,6 +185,9 @@ if __name__ == "__main__":
     import os
 
     host = os.environ.get("MOCK_HOST", "127.0.0.1")
-    logger.info("Mock Agent startet auf http://%s:8094", host)
-    logger.info("Endpunkte: POST /api/v1/agent/chat | GET /health")
-    uvicorn.run(app, host=host, port=8094, log_level="warning")
+    port = int(os.environ.get("MOCK_PORT", "8094"))
+    logger.info("Mock Agent startet auf http://%s:%s", host, port)
+    logger.info(
+        "Endpunkte: POST /api/v1/agent/chat | POST /chat/completions | GET /health"
+    )
+    uvicorn.run(app, host=host, port=port, log_level="warning")

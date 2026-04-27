@@ -348,8 +348,7 @@ compose_up() {
       falkordb)                                      p="kg-falkor" ;;
       nornic)                                        p="kg-nornic" ;;
       pgbouncer)                                     p="pooler" ;;
-      llm-mock)                                      p="mock" ;;
-    esac
+  esac
     # Dedupe: skip wenn profile schon in der csv
     if [ -n "$p" ] && [[ ",$profiles_csv," != *",$p,"* ]]; then
       profiles_csv="${profiles_csv:+${profiles_csv},}$p"
@@ -447,10 +446,11 @@ if [ -n "$KILL_TARGET" ]; then
     go|go-appservice)   kill_port $PORT_GO "go-appservice"; rm -f "$PID_DIR/go-appservice.pid" ;;
     agent|python-agent) kill_port $PORT_AGENT "python-agent"; rm -f "$PID_DIR/python-agent.pid" ;;
     bridge|python-bridge) kill_port $PORT_BRIDGE "python-bridge"; rm -f "$PID_DIR/python-bridge.pid" ;;
+    llm-mock)         kill_port $PORT_LLM_MOCK "llm-mock"; rm -f "$PID_DIR/llm-mock.pid" ;;
     ingestion|python-ingestion) kill_port $PORT_INGESTION "python-ingestion"; rm -f "$PID_DIR/python-ingestion.pid" ;;
     frontend|frontend-merger) kill_port $PORT_MERGER "frontend"; rm -f "$PID_DIR/frontend-merger.pid" ;;
     # Compose services — nutze compose stop um cleanly herunterzufahren
-    tuwunel|nats|postgres|seaweedfs|garage|litellm|llm-mock|coturn|livekit|lk-jwt|\
+    tuwunel|nats|postgres|seaweedfs|garage|litellm|coturn|livekit|lk-jwt|\
     livekit-server|lk-jwt-service|cloudflared|cloudflared-named|openobserve|\
     otel-collector|postgres-exporter|valkey|pgbouncer|falkordb|nornic|\
     opensandbox|opensandbox-server)
@@ -518,7 +518,6 @@ $WANT_POSTGRES      && COMPOSE_SVCS+=("postgres")
 [ "$STORAGE_BACKEND" = "garage" ]    && COMPOSE_SVCS+=("garage")
 [ "$STORAGE_BACKEND" = "seaweedfs" ] && COMPOSE_SVCS+=("seaweedfs")
 $WANT_LITELLM       && COMPOSE_SVCS+=("litellm")
-$WANT_LLM_MOCK      && COMPOSE_SVCS+=("llm-mock")
 $WANT_SANDBOX       && COMPOSE_SVCS+=("opensandbox-server")
 $WANT_CALLS         && COMPOSE_SVCS+=("livekit-server" "lk-jwt-service" "coturn")
 $WANT_TUNNEL        && COMPOSE_SVCS+=("cloudflared")
@@ -585,6 +584,12 @@ fi
 
 # ─── Python services via uv run (APP_ENV=development lädt .env.development) ──
 UV_APP_ENV="APP_ENV=development"
+
+if $WANT_LLM_MOCK; then
+  spawn "llm-mock" "$REPO_ROOT/python-backend" \
+    env $UV_APP_ENV MOCK_PORT="$PORT_LLM_MOCK" setsid .venv/bin/python -m mock.mock_agent
+  wait_for_port $PORT_LLM_MOCK "llm-mock" 45
+fi
 
 if $WANT_AGENT; then
   if $USE_MOCK_AGENT; then

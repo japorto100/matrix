@@ -199,21 +199,23 @@ services:
     profiles:
       - sandbox
 
-  # ── LLM Mock Agent (:8094) — opt-in ──────────────────────────────────────
-  # Ersatz fuer real Python agent-service beim Isolationstest der BFF-Routen.
+  # ── LLM Mock (:8095) — opt-in ────────────────────────────────────────────
+  # OpenAI-compatible local mock for deterministic harness/LiteLLM smoke gates.
+  # Also exposes /api/v1/agent/chat for legacy service-level mock probes.
   # podman-compose --profile mock up -d llm-mock
   llm-mock:
     image: python:3.13-slim
     container_name: llm-mock
     working_dir: /app
     volumes:
-      - ./llm-mock:/app:ro
+      - ./python-backend/mock:/app:ro
     environment:
       - MOCK_HOST=0.0.0.0
+      - MOCK_PORT=8095
     entrypoint:
       ["sh", "-c", "pip install -q 'fastapi>=0.116.0' 'uvicorn>=0.35.0' && python mock_agent.py"]
     ports:
-      - "8094:8094"
+      - "8095:8095"
     profiles:
       - mock
 

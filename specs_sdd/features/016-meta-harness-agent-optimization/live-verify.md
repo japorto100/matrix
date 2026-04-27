@@ -769,3 +769,57 @@ Conclusion:
 - A full runner-parity live pass now needs T097d: a budget-stable local/mock
   LiteLLM-compatible lane or funded OpenRouter key. Repeated Meta-Harness
   outer-loop work should not depend on volatile free-model quotas.
+
+## MV-12 Budget-Stable Local Meta-Harness LLM Lane
+
+Status: pass on 2026-04-27.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer/operator after MV-11 proved OpenRouter quota/credit
+  instability blocks repeated runner-parity loops.
+- Added a local OpenAI-compatible `llm-mock` lane for harness-mechanics tests.
+  This is not a substitute for real OpenRouter quality evaluation; it is for
+  deterministic runner, trace, artifact and parity plumbing.
+
+Implementation evidence:
+
+- `python-backend/mock/mock_agent.py` now serves:
+  `/chat/completions` and `/v1/chat/completions` with OpenAI-compatible
+  response shape.
+- `./scripts/dev-stack.sh --llm-mock` starts the mock as a local Python process
+  on `:8095`; the old Compose path was unreliable under local
+  `podman-compose` profile handling.
+- Static checks:
+  `pytest tests/mock/test_mock_agent.py tests/agent/test_llm_node_caching.py tests/meta_harness/test_scenario_runner.py -q`
+  => `47 passed`.
+- Ruff:
+  `ruff check mock/mock_agent.py tests/mock/test_mock_agent.py`
+  => pass.
+- DevStack smoke:
+  `./scripts/dev-stack.sh --llm-mock`
+  => `llm-mock :8095`.
+- HTTP smoke:
+  `GET http://127.0.0.1:8095/health`
+  => `status=ok`.
+- OpenAI-compatible smoke:
+  `POST http://127.0.0.1:8095/chat/completions`
+  => assistant content `runner parity smoke.`
+
+Meta-Harness evidence:
+
+- Command:
+  `AGENT_MEMORY_ENGINE=disabled LITELLM_BASE_URL=http://127.0.0.1:8095 AGENT_MAX_OUTPUT_TOKENS=64 META_HARNESS_TURN_TIMEOUT_S=30 META_HARNESS_ALLOW_ENV_CREDENTIALS=false python -m meta_harness.meta_cli parity ../data/harness/runner_parity/scenarios.json --max-scenarios 1 --model mock/local --run-id run-local-mock-parity-devstack --candidate-id-prefix local-mock --variants simple,langgraph`
+- Artifact run:
+  `data/meta_harness/runs/run-local-mock-parity-devstack/`.
+- Result: `parity_passed=true`, `all_variants_trace_passed=true`,
+  `mismatches={}`.
+- Both `simple` and `langgraph` variants passed
+  `trace_gate_pass_rate=1.0`, `completion_rate=1.0`,
+  `fitness_score=0.9999`.
+
+Boundary:
+
+- This lane validates harness mechanics only. Real agent capability,
+  reasoning, memory policy and tool-choice behavior still require OpenRouter or
+  another real model lane.

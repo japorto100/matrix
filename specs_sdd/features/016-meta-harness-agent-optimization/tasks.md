@@ -217,9 +217,11 @@ feature_id: 016
   `run.json` plus `config.json`. Follow-up live diagnostics no longer show the
   old 4096-token budget error; current blockers are OpenRouter free-model rate
   limits and missing paid credits.
-- T097d Add a budget-stable Meta-Harness LLM lane for repeated outer-loop
-  optimization: prefer a local/mock LiteLLM-compatible model for runner-parity
-  and deterministic harness plumbing, and keep OpenRouter/free models only as
+- [x] T097d [done-static-live-smoke] Add a budget-stable Meta-Harness LLM lane
+  for repeated outer-loop optimization. `llm-mock` now exposes an
+  OpenAI-compatible chat-completions endpoint on `:8095`; DevStack starts it as
+  a local Python process, and runner-parity can point `LITELLM_BASE_URL` at it
+  for deterministic harness plumbing checks. OpenRouter/free models remain
   explicit live-provider probes.
 - [x] T097a Add explicit `memory_add` deduplication for repeated normalized
   content/fact-type writes in the same thread and short time window after
