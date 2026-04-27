@@ -329,8 +329,14 @@ async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
     assert route_event["thread_id"] == "t-route"
     assert route_event["metadata"]["runner"] == "simple"
     assert route_event["metadata"]["decision"] == "tool_use"
+    assert route_event["metadata"]["route_taxonomy"] == "retrieval_answer"
     assert route_event["metadata"]["delegation_decision"] == "none"
+    assert route_event["metadata"]["delegate_kind"] is None
     assert route_event["metadata"]["spawn_depth"] == 0
+    assert route_event["metadata"]["max_spawn_depth"] == 0
+    assert route_event["metadata"]["fallback_reason"] == "subagents_disabled"
+    assert route_event["metadata"]["allowed_tools"] == ["memory_search"]
+    assert route_event["metadata"]["memory_scope"] == "current_user"
     assert route_event["metadata"]["tool_names"] == ["memory_search"]
     assert route_event["metadata"]["memory_route_requested"] is True
     assert route_event["metadata"]["retrieval_route_requested"] is True

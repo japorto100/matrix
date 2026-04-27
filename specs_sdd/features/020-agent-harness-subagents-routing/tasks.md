@@ -34,20 +34,20 @@ feature_id: 020
 
 ## Architecture
 
-- T010 Define Matrix route taxonomy: direct answer, retrieval answer, tool use,
+- T010 [done-static] Define Matrix route taxonomy: direct answer, retrieval answer, tool use,
   role switch, subagent/delegate and human escalation.
-- T011 Define subagent contract for future domain delegates: input, allowed
+- T011 [done-static] Define subagent contract for future domain delegates: input, allowed
   tools, memory scope, output schema, budget, audit events and cancellation.
-- T012 Define graphless runner parity requirements versus LangGraph.
-- T013 Define guardrails so subagents cannot silently write memory, KG claims or
+- T012 [done-static] Define graphless runner parity requirements versus LangGraph.
+- T013 [done-static] Define guardrails so subagents cannot silently write memory, KG claims or
   schedule tasks without explicit policy.
-- T014 Define role-routing interaction with current TradingRole prompts and
+- T014 [done-static] Define role-routing interaction with current TradingRole prompts and
   memory recall tags.
-- T015 Define `max_spawn_depth` equivalent for Matrix delegates; default is
+- T015 [done-static] Define `max_spawn_depth` equivalent for Matrix delegates; default is
   zero/disabled, first allowed promotion is flat single-hop delegation.
-- T016 Define sibling coordination rules before any parallel delegate writes:
+- T016 [done-static] Define sibling coordination rules before any parallel delegate writes:
   artifact namespaces, memory write policy, KG proposal policy and tool budget.
-- T017 Define mid-run steering semantics as a future controlled operator/HITL
+- T017 [done-static] Define mid-run steering semantics as a future controlled operator/HITL
   capability, not as an unlogged prompt mutation.
 - T018 Define provider transport boundary for Matrix: OpenAI-compatible,
   Responses-style, OpenRouter/LiteLLM, embeddings and rerankers.
@@ -76,7 +76,12 @@ feature_id: 020
 
 ## Implementation Candidates
 
-- T030 Add route-decision audit metadata before changing behavior.
+- T030 [done-static] Add route-decision audit metadata before changing behavior.
+  - 2026-04-27: `agent.routing.delegation_policy` centralizes the route
+    metadata schema. `llm_node` now emits additive fields
+    `route_taxonomy`, `delegate_kind`, `max_spawn_depth`, `allowed_tools`,
+    `memory_scope`, `budget` and `fallback_reason` while preserving current
+    behavior: `delegation_decision=none`, `spawn_depth=0`.
 - T031 [done-static] Add bounded tool-budget telemetry visible to
   Meta-Harness.
   - 2026-04-27: `tool_node` now attaches non-secret budget metadata to
@@ -92,7 +97,7 @@ feature_id: 020
 - T034 Add transport abstraction candidate after Feature 011 review; avoid
   moving provider logic until Meta-Harness covers OpenRouter, mock, embeddings
   and local fallback paths.
-- T035 Add route-decision event schema before implementing domain delegates:
+- T035 [done-static] Add route-decision event schema before implementing domain delegates:
   `route_decision`, `delegation_decision`, `spawn_depth`, `delegate_kind`,
   `allowed_tools`, `memory_scope`, `budget`, `fallback_reason`.
 - T036 [done-static] Implement route-decision telemetry as the first code
@@ -114,7 +119,7 @@ feature_id: 020
 
 ## Verification
 
-- T040 Static tests for route/delegation policy helpers.
+- T040 [done-static] Static tests for route/delegation policy helpers.
 - T041 Meta-Harness runner parity with local lane for routing mechanics.
 - T042 Live OpenRouter smoke for routing quality.
 - T043 Holdout set before any behavioral promotion.
