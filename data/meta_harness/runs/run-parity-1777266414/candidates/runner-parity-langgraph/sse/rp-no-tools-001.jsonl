@@ -1,0 +1,4 @@
+{"chunk": "data: {\"messageId\": \"mh-rp-no-tools-001-dd0234ef\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-dd0234ef\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='meta-harness' provider='litellm': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"}

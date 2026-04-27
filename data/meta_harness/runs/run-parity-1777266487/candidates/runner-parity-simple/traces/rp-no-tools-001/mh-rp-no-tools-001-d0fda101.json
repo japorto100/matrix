@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1610,
+    "timestamp": "2026-04-27 05:08:27.053714+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-d0fda101",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_meta-harness",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "meta-harness",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 1609,
+    "timestamp": "2026-04-27 05:08:26.897025+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-d0fda101",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [],
+      "skill_names": [],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "meta-harness",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

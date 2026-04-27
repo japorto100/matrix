@@ -42,7 +42,7 @@ feature_id: 016
 - [x] T017 Add CLI support for selecting the in-process runner variant.
 - [x] T018 Make legacy evaluator/search-set runs use the same runner-variant
   plumbing instead of hardcoding LangGraph.
-- T019 Add parity scenarios that run the same tool/memory fixture against
+- T019 [done-static-live-smoke] Add parity scenarios that run the same tool/memory fixture against
   `dispatcher`, `langgraph` and `simple` and compare trace gates.
 - [x] T019a Add a minimal no-tool runner-parity scenario for isolating runner
   health without sandbox/tool availability.
@@ -210,6 +210,9 @@ feature_id: 016
   not host-local `localhost:5433`.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
+- T097c Fix/verify output-token cap propagation through LiteLLM/OpenRouter:
+  runner-parity live smoke still reported an upstream 4096-token request
+  despite a local `AGENT_MAX_OUTPUT_TOKENS=64` command override.
 - [x] T097a Add explicit `memory_add` deduplication for repeated normalized
   content/fact-type writes in the same thread and short time window after
   Meta-Harness exposed duplicate writes in `run-eeb4e11fab0f`.

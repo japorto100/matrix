@@ -1,0 +1,140 @@
+{
+  "run_id": "run-parity-1777266487",
+  "candidate_id": "runner-parity-simple",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-d0fda101",
+  "user_id": "meta-harness",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    },
+    {
+      "role": "assistant",
+      "content": "[meta-harness runner error] runner error APIStatusError: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\"error\":{\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 956. To increase, visit https://openrouter.ai/settings/credits and upgrade to a paid account\",\"code\":402,\"metadata\":{\"provider_name\":null}},\"user_id\":\"user_3CAAFEAyhkhIYK07cULDdIePvdi\"}. Received Model Group=openrouter/openrouter/auto\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}} (scenario=rp-no-tools-001, runner=simple)"
+    }
+  ],
+  "sse_chunks": [],
+  "trace_events": [
+    {
+      "id": 1610,
+      "timestamp": "2026-04-27 05:08:27.053714+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-d0fda101",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 0,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "meta-harness",
+        "actor_role": "advisory",
+        "item_count": 0,
+        "query_gate": "insufficient_query",
+        "needs_verification": false
+      },
+      "iteration": null
+    },
+    {
+      "id": 1609,
+      "timestamp": "2026-04-27 05:08:26.897025+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-d0fda101",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [],
+        "skill_names": [],
+        "query_preview": "Reply with one short sentence: runner parity smoke.",
+        "user_id": "meta-harness",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-d0fda101",
+    "model": "",
+    "completed": false,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 0,
+    "turn_efficiency": 1.0,
+    "total_tokens": 0,
+    "token_efficiency": 0,
+    "total_duration_ms": 0,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 1,
+    "memory_retains": 0,
+    "memory_utilization": true,
+    "skills_loaded": [],
+    "skill_events": 1,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.7,
+    "harness_runner_error": true,
+    "runner_errors": [
+      "runner error APIStatusError: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\"error\":{\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 956. To increase, visit https://openrouter.ai/settings/credits and upgrade to a paid account\",\"code\":402,\"metadata\":{\"provider_name\":null}},\"user_id\":\"user_3CAAFEAyhkhIYK07cULDdIePvdi\"}. Received Model Group=openrouter/openrouter/auto\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}} (scenario=rp-no-tools-001, runner=simple)"
+    ],
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required action: llm_response",
+        "harness runner error"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found"
+      ],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required action: llm_response",
+      "harness runner error"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "memory_recall",
+      "skill_found"
+    ],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion"
+    ],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "simple"
+}

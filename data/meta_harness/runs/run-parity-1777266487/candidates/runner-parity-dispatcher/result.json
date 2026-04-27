@@ -1,0 +1,159 @@
+{
+  "run_id": "run-parity-1777266487",
+  "candidate_id": "runner-parity-dispatcher",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-163c2ed0",
+  "user_id": "meta-harness",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-rp-no-tools-001-163c2ed0\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-163c2ed0\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"errorText\": \"LangGraph error: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\\\"error\\\":{\\\"message\\\":\\\"This request requires more credits, or fewer max_tokens. You requested up to 4096 tokens, but can only afford 953. To increase, visit https://openrouter.ai/settings/credits and upgrade to a paid account\\\",\\\"code\\\":402,\\\"metadata\\\":{\\\"provider_name\\\":null}},\\\"user_id\\\":\\\"user_3CAAFEAyhkhIYK07cULDdIePvdi\\\"}. Received Model Group=openrouter/openrouter/auto\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}}\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"billing\", \"recovery_strategy\": \"rotate_immediately\", \"retryable\": true, \"status_code\": 402}}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 1604,
+      "timestamp": "2026-04-27 05:08:21.752441+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-163c2ed0",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": "### Personal Raw Evidence\n- [available] meta_harness_probe_prefers_1_percent_risk_per_trade (user_meta-harness__verbatim:0:2988b7f623d0498d2465c6b2#0)",
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness",
+        "role": "default",
+        "facts_recalled": 1,
+        "entities": 0,
+        "tokens_used": 150
+      },
+      "iteration": null
+    },
+    {
+      "id": 1603,
+      "timestamp": "2026-04-27 05:08:21.673260+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-163c2ed0",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 2133,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "meta-harness",
+        "actor_role": "default",
+        "item_count": 1,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "Reply with one short sentence: runner parity smoke."
+      },
+      "iteration": null
+    },
+    {
+      "id": 1602,
+      "timestamp": "2026-04-27 05:08:11.705122+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-163c2ed0",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [],
+        "skill_names": [],
+        "query_preview": "Reply with one short sentence: runner parity smoke.",
+        "user_id": "meta-harness",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-163c2ed0",
+    "model": "",
+    "completed": false,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 0,
+    "turn_efficiency": 1.0,
+    "total_tokens": 0,
+    "token_efficiency": 0,
+    "total_duration_ms": 0,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 2,
+    "memory_retains": 0,
+    "memory_utilization": true,
+    "skills_loaded": [],
+    "skill_events": 1,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.7,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required action: llm_response"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found"
+      ],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required action: llm_response"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "memory_recall",
+      "skill_found"
+    ],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion"
+    ],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "dispatcher"
+}

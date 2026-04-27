@@ -1,0 +1,12 @@
+{
+  "run_id": "run-parity-1777266414",
+  "candidate_id": "runner-parity-langgraph",
+  "created_at": "2026-04-27T05:07:13.892899+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000"
+  }
+}

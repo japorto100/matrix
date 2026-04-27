@@ -683,3 +683,43 @@ Follow-up:
 - Investigate older `ml-memory-fusion-route-001` duplicate `memory_add`
   variance separately; dedupe prevents duplicate writes, but the trace warning
   remains useful for prompt/tool-policy tuning.
+
+## MV-10 Runner-Parity CLI And Failure Hardening
+
+Status: static pass; live diagnostic fail on 2026-04-27 due provider credits /
+output-token budget, not runner-selection code.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer/operator and simulated user for the no-tool
+  `runner_parity` scenario set.
+- Added `matrix-meta-harness parity <scenario-file>` so one command runs the
+  same scenarios across `dispatcher`, `langgraph` and graphless `simple`, stores
+  one candidate per runner and returns a per-scenario gate matrix.
+- Hardened `run_scenario(...)` so runner exceptions such as credential/provider
+  failures become candidate artifacts and trace-gate failures instead of
+  aborting the whole outer-loop run.
+- Tightened the parity gate: all runners failing the same scenario no longer
+  counts as pass. `parity_passed` now requires both no mismatches and all
+  runner trace gates passing.
+
+Evidence:
+
+- Static checks:
+  `pytest tests/meta_harness/test_scenario_runner.py tests/meta_harness/test_meta_cli.py -q`
+  => `35 passed`.
+- Ruff:
+  `ruff check meta_harness/scenario_runner.py meta_harness/meta_cli.py tests/meta_harness/test_scenario_runner.py`
+  => pass.
+- Live diagnostic command:
+  `META_HARNESS_TURN_TIMEOUT_S=45 AGENT_MAX_OUTPUT_TOKENS=64 ... python -m meta_harness.meta_cli parity ../data/harness/runner_parity/scenarios.json --max-scenarios 1`
+- Latest artifact run:
+  `data/meta_harness/runs/run-parity-1777266561/`.
+- Result: `parity_passed=false`, `all_variants_trace_passed=false`,
+  `mismatches={}`. All three runners failed the no-tool scenario consistently,
+  which is now reported as a failed gate rather than a false parity pass.
+- Root cause observed from LiteLLM/OpenRouter: upstream 402 credit error
+  claimed a 4096-token request while only about 943 tokens were affordable,
+  despite the local command setting `AGENT_MAX_OUTPUT_TOKENS=64`. This becomes
+  T097c because output-token cap propagation through LiteLLM/OpenRouter still
+  needs a focused live probe.

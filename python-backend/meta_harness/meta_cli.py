@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 from meta_harness.proposer import ENABLE_EXTERNAL_LLM_ENV
-from meta_harness.scenario_runner import run_scenario_file
+from meta_harness.scenario_runner import run_runner_parity_file, run_scenario_file
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -36,6 +36,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="In-process runner variant. Live service runs through its app dispatcher.",
     )
     run.add_argument("--data-dir", type=Path, default=None)
+
+    parity = sub.add_parser("parity", help="Run a scenario file across runner variants")
+    parity.add_argument("path", type=Path)
+    parity.add_argument("--max-scenarios", type=int, default=0)
+    parity.add_argument("--run-id", default="")
+    parity.add_argument("--candidate-id-prefix", default="runner-parity")
+    parity.add_argument("--user-id", default="anonymous")
+    parity.add_argument("--model", default="")
+    parity.add_argument("--system-prompt-override", default="")
+    parity.add_argument(
+        "--variants",
+        default="dispatcher,langgraph,simple",
+        help="Comma-separated runner variants to compare.",
+    )
+    parity.add_argument("--data-dir", type=Path, default=None)
 
     evaluate = sub.add_parser("evaluate", help="Evaluate the search or holdout set")
     evaluate.add_argument("--max-queries", type=int, default=5)
@@ -106,6 +121,22 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_scenario_file(args.path, **kwargs)
+    if args.command == "parity":
+        variants = tuple(
+            value.strip() for value in str(args.variants).split(",") if value.strip()
+        )
+        kwargs = {
+            "max_scenarios": args.max_scenarios,
+            "run_id": args.run_id or None,
+            "candidate_id_prefix": args.candidate_id_prefix,
+            "user_id": args.user_id,
+            "model": args.model,
+            "system_prompt_override": args.system_prompt_override,
+            "variants": variants,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_runner_parity_file(args.path, **kwargs)
     if args.command == "evaluate":
         from meta_harness.evaluator import evaluate_search_set
 

@@ -604,6 +604,38 @@ async def test_run_scenario_uses_sse_finish_as_completion_signal(tmp_path, monke
 
 
 @pytest.mark.asyncio
+async def test_run_scenario_records_runner_errors_as_gate_failures(tmp_path, monkeypatch):
+    class _Store:
+        async def query(self, *, thread_id=None, limit=100):
+            return []
+
+    async def _fake_score(thread_id, *, eval_id=None):
+        return {"thread_id": thread_id, "completed": True, "fitness_score": 1.0}
+
+    async def _failing_runner(**kwargs):
+        raise RuntimeError("credential pool exhausted")
+
+    monkeypatch.setattr("agent.audit.store.get_audit_store", lambda: _Store())
+    monkeypatch.setattr(scenario_runner, "score_session", _fake_score)
+
+    scenario = scenario_runner.Scenario.from_mapping(
+        {"id": "runner-fail", "turns": [{"user": "hi"}], "category": "smoke"}
+    )
+
+    result = await scenario_runner.run_scenario(
+        scenario,
+        run_id="run-fail",
+        runner=_failing_runner,
+        data_dir=tmp_path,
+    )
+
+    assert result.score["completed"] is False
+    assert result.score["harness_runner_error"] is True
+    assert "harness runner error" in result.trace_verdict.failures
+    assert "[meta-harness runner error]" in result.transcript[-1]["content"]
+
+
+@pytest.mark.asyncio
 async def test_run_scenario_file_can_use_service_runner(monkeypatch, tmp_path):
     scenario_file = tmp_path / "scenarios.json"
     scenario_file.write_text(
@@ -707,6 +739,98 @@ async def test_run_scenario_file_pins_default_model_for_all_scenarios(monkeypatc
 
     assert result["scenarios_evaluated"] == 2
     assert models == ["openrouter/pinned-model", "openrouter/pinned-model"]
+
+
+@pytest.mark.asyncio
+async def test_runner_parity_file_compares_trace_gates(monkeypatch, tmp_path):
+    scenario_file = tmp_path / "scenarios.json"
+    scenario_file.write_text(
+        json.dumps({"scenarios": [{"id": "s1", "turns": [{"user": "hi"}]}]}),
+        encoding="utf-8",
+    )
+    calls: list[str] = []
+
+    async def _fake_run_scenario_file(path, **kwargs):
+        assert path == scenario_file
+        variant = kwargs["runner_variant"]
+        calls.append(variant)
+        passed = variant != "langgraph"
+        return {
+            "run_id": kwargs["run_id"],
+            "candidate_id": kwargs["candidate_id"],
+            "trace_gate_pass_rate": 1.0 if passed else 0.0,
+            "completion_rate": 1.0,
+            "fitness_score": 0.8 if passed else 0.2,
+            "artifact_dir": f"/tmp/{variant}",
+            "results": [
+                {
+                    "scenario_id": "s1",
+                    "trace_verdict": {"passed": passed},
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        scenario_runner,
+        "run_scenario_file",
+        _fake_run_scenario_file,
+    )
+
+    result = await scenario_runner.run_runner_parity_file(
+        scenario_file,
+        run_id="run-parity",
+        variants=("dispatcher", "langgraph", "simple"),
+        data_dir=tmp_path / "meta",
+    )
+
+    assert calls == ["dispatcher", "langgraph", "simple"]
+    assert result["parity_passed"] is False
+    assert result["all_variants_trace_passed"] is False
+    assert result["mismatches"] == {
+        "s1": {"dispatcher": True, "langgraph": False, "simple": True}
+    }
+
+
+@pytest.mark.asyncio
+async def test_runner_parity_fails_when_all_variants_fail(monkeypatch, tmp_path):
+    scenario_file = tmp_path / "scenarios.json"
+    scenario_file.write_text(
+        json.dumps({"scenarios": [{"id": "s1", "turns": [{"user": "hi"}]}]}),
+        encoding="utf-8",
+    )
+
+    async def _fake_run_scenario_file(path, **kwargs):
+        return {
+            "run_id": kwargs["run_id"],
+            "candidate_id": kwargs["candidate_id"],
+            "trace_gate_pass_rate": 0.0,
+            "completion_rate": 0.0,
+            "fitness_score": 0.0,
+            "artifact_dir": "/tmp/fail",
+            "results": [
+                {
+                    "scenario_id": "s1",
+                    "trace_verdict": {"passed": False},
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        scenario_runner,
+        "run_scenario_file",
+        _fake_run_scenario_file,
+    )
+
+    result = await scenario_runner.run_runner_parity_file(
+        scenario_file,
+        run_id="run-parity",
+        variants=("dispatcher", "langgraph", "simple"),
+        data_dir=tmp_path / "meta",
+    )
+
+    assert result["mismatches"] == {}
+    assert result["all_variants_trace_passed"] is False
+    assert result["parity_passed"] is False
 
 
 @pytest.mark.asyncio

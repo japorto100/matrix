@@ -13,7 +13,7 @@ import json
 import logging
 import os
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -755,8 +755,10 @@ async def run_scenario(
     transcript: list[dict[str, str]] = []
     all_sse: list[str] = []
     timeout_errors: list[str] = []
+    runner_errors: list[str] = []
     for turn in scenario.turns:
         turn_timed_out = False
+        turn_failed = False
         messages.append({"role": "user", "content": turn.user})
         transcript.append({"role": "user", "content": turn.user})
         timeout_s = _turn_timeout_seconds()
@@ -785,6 +787,15 @@ async def run_scenario(
             timeout_errors.append(message)
             turn_timed_out = True
             chunks = []
+        except Exception as exc:  # noqa: BLE001
+            message = (
+                f"runner error {type(exc).__name__}: {exc} "
+                f"(scenario={scenario.id}, runner={effective_runner_variant})"
+            )
+            logger.warning("Meta-Harness %s", message)
+            runner_errors.append(message)
+            turn_failed = True
+            chunks = []
         all_sse.extend(chunks)
         assistant_text = assistant_text_from_sse(chunks)
         if assistant_text:
@@ -794,7 +805,11 @@ async def run_scenario(
             transcript.append(
                 {"role": "assistant", "content": f"[meta-harness timeout] {timeout_errors[-1]}"}
             )
-        if turn_timed_out:
+        elif runner_errors:
+            transcript.append(
+                {"role": "assistant", "content": f"[meta-harness runner error] {runner_errors[-1]}"}
+            )
+        if turn_timed_out or turn_failed:
             break
 
     events = await _query_trace_events(thread_id)
@@ -807,6 +822,11 @@ async def run_scenario(
         score["completed"] = False
         score["harness_timeout"] = True
         score["timeout_errors"] = timeout_errors
+        score["fitness_score"] = composite_fitness(score)
+    if runner_errors:
+        score["completed"] = False
+        score["harness_runner_error"] = True
+        score["runner_errors"] = runner_errors
         score["fitness_score"] = composite_fitness(score)
     response_text = "\n".join(
         item["content"] for item in transcript if item.get("role") == "assistant"
@@ -821,6 +841,12 @@ async def run_scenario(
             verdict,
             passed=False,
             failures=tuple([*verdict.failures, "harness timeout"]),
+        )
+    if runner_errors:
+        verdict = replace(
+            verdict,
+            passed=False,
+            failures=tuple([*verdict.failures, "harness runner error"]),
         )
     score["trace_gates"] = verdict.as_dict()
 
@@ -1131,4 +1157,67 @@ async def run_scenario_file(
         "fitness_score": aggregate["fitness_score"],
         "artifact_dir": str(data_dir / "runs" / run_id / "candidates" / candidate_id),
         "results": [r.as_dict() for r in results],
+    }
+
+
+async def run_runner_parity_file(
+    path: Path,
+    *,
+    max_scenarios: int = 0,
+    run_id: str | None = None,
+    candidate_id_prefix: str = "runner-parity",
+    user_id: str = "anonymous",
+    model: str = "",
+    system_prompt_override: str = "",
+    data_dir: Path = META_HARNESS_DATA_DIR,
+    variants: Sequence[str] = RUNNER_VARIANTS,
+) -> dict[str, Any]:
+    """Run the same scenarios across agent runner variants and compare gates."""
+
+    run_id = run_id or f"run-{uuid.uuid4().hex[:12]}"
+    normalized_variants = tuple(_normalize_runner_variant(value) for value in variants)
+    by_variant: dict[str, dict[str, Any]] = {}
+    scenario_matrix: dict[str, dict[str, bool]] = {}
+    for variant in normalized_variants:
+        result = await run_scenario_file(
+            path,
+            max_scenarios=max_scenarios,
+            run_id=run_id,
+            candidate_id=f"{candidate_id_prefix}-{variant}",
+            user_id=user_id,
+            model=model,
+            system_prompt_override=system_prompt_override,
+            runner_variant=variant,
+            data_dir=data_dir,
+        )
+        by_variant[variant] = {
+            "candidate_id": result["candidate_id"],
+            "trace_gate_pass_rate": result["trace_gate_pass_rate"],
+            "completion_rate": result["completion_rate"],
+            "fitness_score": result["fitness_score"],
+            "artifact_dir": result["artifact_dir"],
+        }
+        for scenario_result in result["results"]:
+            scenario_id = str(scenario_result["scenario_id"])
+            verdict = scenario_result.get("trace_verdict") or {}
+            scenario_matrix.setdefault(scenario_id, {})[variant] = bool(
+                verdict.get("passed")
+            )
+
+    mismatches = {
+        scenario_id: outcomes
+        for scenario_id, outcomes in sorted(scenario_matrix.items())
+        if len(set(outcomes.values())) > 1
+    }
+    all_variants_trace_passed = all(
+        all(outcomes.values()) for outcomes in scenario_matrix.values()
+    )
+    return {
+        "run_id": run_id,
+        "variants": list(normalized_variants),
+        "by_variant": by_variant,
+        "scenario_matrix": scenario_matrix,
+        "parity_passed": not mismatches and all_variants_trace_passed,
+        "all_variants_trace_passed": all_variants_trace_passed,
+        "mismatches": mismatches,
     }
