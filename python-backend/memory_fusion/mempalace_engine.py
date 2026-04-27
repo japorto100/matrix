@@ -441,6 +441,8 @@ class MempalaceMemoryEngine:
         wing: str | None = None,
         room: str | None = None,
         hall: str | None = None,
+        thread_id: str | None = None,
+        session_id: str | None = None,
         **_: Any,
     ) -> dict[str, Any]:
         if search_query:
@@ -485,6 +487,12 @@ class MempalaceMemoryEngine:
         if fact_type:
             params["fact_type"] = fact_type
             sql += " AND fact_type = %(fact_type)s"
+        if thread_id:
+            params["thread_id"] = str(thread_id)
+            sql += " AND metadata->>'thread_id' = %(thread_id)s"
+        if session_id:
+            params["session_id"] = str(session_id)
+            sql += " AND metadata->>'session_id' = %(session_id)s"
         sql += " ORDER BY filed_at DESC, drawer_id ASC LIMIT %(limit)s OFFSET %(offset)s"
 
         count_sql = "SELECT count(*) AS total FROM (" + sql.rsplit(" ORDER BY ", 1)[0] + ") q"
@@ -520,6 +528,35 @@ class MempalaceMemoryEngine:
                 (unit_id,),
             )
         return {"deleted": result.rowcount > 0, "id": unit_id}
+
+    async def delete_memory_units_by_scope(
+        self,
+        *,
+        bank_id: str,
+        room: str | None = None,
+        thread_id: str | None = None,
+        session_id: str | None = None,
+        request_context: Any = None,  # noqa: ARG002
+        **_: Any,
+    ) -> dict[str, Any]:
+        """Delete MemPalace drawers for an explicit room/thread/session scope."""
+
+        if not any((room, thread_id, session_id)):
+            raise ValueError("refusing unscoped MemPalace delete")
+        sql = "DELETE FROM agent.mempalace_drawers WHERE bank_id = %(bank_id)s"
+        params: dict[str, Any] = {"bank_id": bank_id}
+        if room:
+            params["room"] = str(room)
+            sql += " AND room = %(room)s"
+        if thread_id:
+            params["thread_id"] = str(thread_id)
+            sql += " AND metadata->>'thread_id' = %(thread_id)s"
+        if session_id:
+            params["session_id"] = str(session_id)
+            sql += " AND metadata->>'session_id' = %(session_id)s"
+        async with await self._connect() as conn:
+            result = await conn.execute(sql, params)
+        return {"deleted": int(result.rowcount or 0), "bank_id": bank_id}
 
     async def list_banks(self, *, request_context: Any = None, **_: Any) -> list[dict[str, Any]]:
         async with await self._connect() as conn:

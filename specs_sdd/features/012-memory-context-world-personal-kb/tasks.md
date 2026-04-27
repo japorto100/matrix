@@ -50,8 +50,11 @@ migrated_from:
   dedicated verification.
 - T023 Review current Hindsight docs/repo state for new schema, runtime or
   eval concepts before finalizing the Matrix Postgres adaptation.
-- T024 Verify Matrix room/thread/session identity is available for durable
-  memory writes and deletion semantics.
+- [x] T024 [done-static-live-smoke] Verify Matrix room/thread/session identity
+  is available for durable memory writes and deletion semantics. MemPalace
+  Postgres now lists by room/thread/session metadata and refuses unscoped bulk
+  deletes; scoped room+thread+session deletion was live-tested against local
+  pgvector Postgres.
 
 ## Memory Evaluation
 

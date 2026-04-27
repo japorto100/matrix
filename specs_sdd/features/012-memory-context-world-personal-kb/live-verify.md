@@ -191,3 +191,29 @@ verbatim-first retain are live-verified. Tool-message serialization and
 assistant tool-markup cleanup are fixed for new turns. Remaining live work is
 latency/cost, compaction threshold, historical dev-memory cleanup, and broader
 Hindsight/MemPalace/Fusion shared-corpus eval coverage.
+
+## 2026-04-27 MemPalace Scoped Identity/Delete Smoke
+
+Status: pass for durable room/thread/session scope semantics.
+
+Evidence:
+
+- Local Postgres/pgvector container `postgres` was started on `:5433` and
+  reached `healthy`.
+- `MempalaceMemoryEngine.list_memory_units` now supports `thread_id` and
+  `session_id` filters in addition to bank/wing/room/hall/fact type.
+- `MempalaceMemoryEngine.delete_memory_units_by_scope` refuses unscoped bulk
+  deletion and deletes only rows matching explicit bank plus room/thread/session
+  scope.
+- Focused live check:
+  `cd python-backend && .venv/bin/python -m pytest tests/memory_fusion/test_mempalace_postgres_engine.py -q`
+  => `1 passed`.
+- Ruff:
+  `cd python-backend && .venv/bin/ruff check memory_fusion/mempalace_engine.py tests/memory_fusion/test_mempalace_postgres_engine.py`
+  => pass.
+
+Residual risk:
+
+- The smoke proves exact durable row scoping; full app-level Matrix session
+  deletion still needs an end-to-end UI/API flow once the production deletion
+  endpoint is selected.
