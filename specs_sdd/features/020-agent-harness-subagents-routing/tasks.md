@@ -77,7 +77,16 @@ feature_id: 020
 ## Implementation Candidates
 
 - T030 Add route-decision audit metadata before changing behavior.
-- T031 Add bounded tool-budget telemetry visible to Meta-Harness.
+- T031 [done-static] Add bounded tool-budget telemetry visible to
+  Meta-Harness.
+  - 2026-04-27: `tool_node` now attaches non-secret budget metadata to
+    `tool_call`/`tool_result` audit events: per-session tool calls, per-tool
+    calls, token usage, iteration count and configured limits. Unit coverage
+    verifies the metadata on a real tool execution without changing
+    allow/deny behavior.
+  - 2026-04-27: Meta-Harness trace gates can require those metadata keys via
+    `required_event_metadata_keys`, so budget telemetry is enforceable in
+    runner/delegation scenarios.
 - T032 Add loop guard scenarios for repeated failed tool calls.
 - T033 Add a future subagent API stub only after gates and contracts are clear.
 - T034 Add transport abstraction candidate after Feature 011 review; avoid

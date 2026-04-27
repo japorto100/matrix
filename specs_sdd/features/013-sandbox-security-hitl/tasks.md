@@ -51,7 +51,11 @@ migrated_from:
   consent.
 - T021 Verify session cache paths: allow once, allow session, deny, deny
   session.
-- T022 Verify per-tool and per-session rate limits stop execution.
+- T022 [partial-static] Verify per-tool and per-session rate limits stop
+  execution.
+  - 2026-04-27: tool execution audit now carries budget snapshots for
+    per-session tool calls, per-tool calls, tokens and iterations. Static
+    coverage proves the telemetry path; live deny/stop behavior remains open.
 - T023 Verify role forwarding (`X-User-Role`, `X-Auth-User`) reaches consent
   checks and blocks insufficient roles.
 

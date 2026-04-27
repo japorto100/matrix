@@ -70,6 +70,12 @@ feature_id: 016
 - [x] T024 Add sandbox/file/browser scenarios gated by local sandbox availability.
 - T025 Add scheduler tool scenarios without requiring Matrix delivery.
 - T026 Add A2UI surface scenarios that assert `render_a2ui_surface` behavior.
+- T027 [done-static] Make tool budget telemetry available to trace/eval gates.
+  - 2026-04-27: `tool_call`/`tool_result` audit events include tool budget
+    snapshots, so Meta-Harness can score budget exhaustion and loop behavior
+    from real traces instead of inferring from transcript text.
+  - 2026-04-27: `TraceExpectations.required_event_metadata_keys` can now gate
+    arbitrary event metadata such as `tool_result.tool_calls_total_limit`.
 
 ## Memory-Aware Evaluation
 

@@ -125,6 +125,55 @@ def test_trace_gates_check_route_decision_metadata(monkeypatch):
     assert verdict.passed is True
 
 
+def test_trace_gates_check_required_event_metadata_keys(monkeypatch):
+    monkeypatch.setattr(
+        scenario_runner,
+        "_registered_tool_names",
+        lambda: {"get_portfolio_summary"},
+    )
+    events = [
+        {
+            "action": "tool_result",
+            "toolName": "get_portfolio_summary",
+            "success": True,
+            "metadata": {
+                "tool_calls_total_limit": 50,
+                "budget": {"remaining": 49},
+            },
+        },
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_event_metadata_keys={
+                "tool_result": (
+                    "tool_calls_total_limit",
+                    "budget.remaining",
+                )
+            },
+        ),
+    )
+
+    assert verdict.passed is True
+
+
+def test_trace_gates_fail_for_missing_event_metadata_key(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    verdict = scenario_runner.evaluate_trace_gates(
+        [{"action": "tool_result", "success": True, "metadata": {}}],
+        scenario_runner.TraceExpectations(
+            required_event_metadata_keys={"tool_result": ("tool_calls_total_limit",)}
+        ),
+    )
+
+    assert verdict.passed is False
+    assert (
+        "missing required metadata key for tool_result: tool_calls_total_limit"
+        in verdict.failures
+    )
+
+
 def test_trace_gates_fail_on_observed_tool_errors_by_default(monkeypatch):
     monkeypatch.setattr(
         scenario_runner,

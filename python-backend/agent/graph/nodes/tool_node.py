@@ -161,6 +161,7 @@ async def _execute_single(
     from agent.tracing import tool_span
 
     tool = registry.lookup(tc["tool_name"])
+    budget_metadata = _tool_budget_metadata(ctx.thread_id, tc["tool_name"])
     if not tool:
         await audit_log(
             action=AuditAction.TOOL_RESULT,
@@ -169,6 +170,7 @@ async def _execute_single(
             input_data=tc["tool_input"],
             success=False,
             output_data={"error": f"Unknown tool: {tc['tool_name']}"},
+            metadata=budget_metadata,
         )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
@@ -187,6 +189,7 @@ async def _execute_single(
             agent_id=ctx.user_id,
             tool_name=tc["tool_name"],
             input_data=tc["tool_input"],
+            metadata=budget_metadata,
         )
 
         try:
@@ -208,6 +211,7 @@ async def _execute_single(
                 output_data=result,
                 duration_ms=elapsed,
                 success=True,
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -231,6 +235,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": f"timeout after {effective_timeout}s"},
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -254,6 +259,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": str(e)},
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -266,3 +272,34 @@ async def _execute_single(
                 result={},
                 error=str(e),
             )
+
+
+def _tool_budget_metadata(thread_id: str, tool_name: str) -> dict[str, Any]:
+    """Return non-blocking budget context for audit/Meta-Harness traces."""
+    metadata: dict[str, Any] = {"thread_id": thread_id, "tool_name": tool_name}
+    try:
+        from agent.consent.config import get_consent_config
+        from agent.consent.rate_limiter import get_rate_limiter
+
+        config = get_consent_config().rate_limits
+        limiter = get_rate_limiter()
+        usage = limiter.get_usage(thread_id)
+        tool_limit = config.per_tool.get(tool_name)
+        metadata.update(
+            {
+                "tool_calls_total_before": usage.tool_calls_total,
+                "tool_calls_total_limit": config.max_tool_calls_total,
+                "tool_calls_for_tool_before": usage.tool_calls_per_tool.get(
+                    tool_name, 0
+                ),
+                "tool_calls_for_tool_limit": tool_limit.max_calls if tool_limit else 0,
+                "tokens_used": usage.tokens_used,
+                "tokens_limit": config.max_tokens_per_session,
+                "iterations_used": usage.iterations,
+                "iterations_limit": config.get_max_iterations(),
+            }
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("tool budget metadata unavailable", exc_info=True)
+        metadata["budget_metadata_available"] = False
+    return metadata

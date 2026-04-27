@@ -4,9 +4,12 @@ from typing import Any
 
 import pytest
 
+from agent.consent.rate_limiter import SessionRateLimiter
+from agent.context import AgentExecutionContext
 from agent.graph.nodes import tool_node as tool_node_module
 from agent.graph.nodes.tool_node import (
     _effective_tool_timeout,
+    _execute_single,
     _trading_role_from_state,
     tool_node,
 )
@@ -135,3 +138,44 @@ async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
     assert result["messages"][0]["tool_call_id"] == "call_123"
     assert result["messages"][0]["tool_use_id"] == "call_123"
     assert '{"ok": true}' in result["messages"][0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_execute_single_audits_tool_budget_metadata(monkeypatch):
+    captured: list[dict[str, Any]] = []
+    limiter = SessionRateLimiter()
+    limiter.record_tool_call("t-budget", "get_portfolio_summary")
+    limiter.record_tokens("t-budget", 123)
+    limiter.record_iteration("t-budget")
+
+    async def fake_audit_log(**kwargs):
+        captured.append(kwargs)
+
+    monkeypatch.setattr("agent.audit.logger.audit_log", fake_audit_log)
+    monkeypatch.setattr("agent.consent.rate_limiter.get_rate_limiter", lambda: limiter)
+
+    ctx = AgentExecutionContext(
+        user_id="alice",
+        thread_id="t-budget",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+    )
+
+    result = await _execute_single(
+        {
+            "tool_call_id": "call_budget",
+            "tool_name": "get_portfolio_summary",
+            "tool_input": {},
+        },
+        _registry(),
+        ctx,
+    )
+
+    assert result["error"] is None
+    result_event = captured[-1]
+    assert result_event["metadata"]["tool_calls_total_before"] == 1
+    assert result_event["metadata"]["tool_calls_for_tool_before"] == 1
+    assert result_event["metadata"]["tokens_used"] == 123
+    assert result_event["metadata"]["iterations_used"] == 1
+    assert result_event["metadata"]["iterations_limit"] > 0

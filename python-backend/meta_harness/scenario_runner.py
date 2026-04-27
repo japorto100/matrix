@@ -123,6 +123,9 @@ class TraceExpectations:
     forbidden_response_terms: tuple[str, ...] = ()
     required_memory_evidence_terms: tuple[str, ...] = ()
     required_memory_metadata_keys: tuple[str, ...] = ()
+    required_event_metadata_keys: dict[str, tuple[str, ...]] = field(
+        default_factory=dict
+    )
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
@@ -134,6 +137,10 @@ class TraceExpectations:
     @classmethod
     def from_mapping(cls, raw: dict[str, Any] | None) -> TraceExpectations:
         raw = raw or {}
+        required_event_metadata_keys = {
+            str(action): tuple(str(key) for key in keys)
+            for action, keys in (raw.get("required_event_metadata_keys") or {}).items()
+        }
         return cls(
             required_actions=tuple(str(x) for x in raw.get("required_actions", [])),
             forbidden_actions=tuple(str(x) for x in raw.get("forbidden_actions", [])),
@@ -164,6 +171,7 @@ class TraceExpectations:
             required_memory_metadata_keys=tuple(
                 str(x) for x in raw.get("required_memory_metadata_keys", [])
             ),
+            required_event_metadata_keys=required_event_metadata_keys,
             required_route_decisions=tuple(
                 str(x) for x in raw.get("required_route_decisions", [])
             ),
@@ -544,6 +552,19 @@ def evaluate_trace_gates(
             if _event_action(event) in {"memory_recall", "memory_retain"}
         ):
             failures.append(f"missing required memory metadata key: {key}")
+    for action, keys in expectations.required_event_metadata_keys.items():
+        matching_events = [event for event in events if _event_action(event) == action]
+        if not matching_events:
+            failures.append(f"missing action for metadata gate: {action}")
+            continue
+        for key in keys:
+            if not any(
+                _metadata_contains_key(_event_metadata(event), key)
+                for event in matching_events
+            ):
+                failures.append(
+                    f"missing required metadata key for {action}: {key}"
+                )
     for decision in expectations.required_route_decisions:
         if decision not in route_decisions:
             failures.append(f"missing required route decision: {decision}")
