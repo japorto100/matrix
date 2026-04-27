@@ -27,10 +27,10 @@ feature_id: 019
 - T011 [done-static] Add intent/router policy: text, graph, hybrid, temporal.
 - T012 [done-static] Implement RRF fusion baseline over vector and KG
   candidates.
-- T013 [partial-static] Add Context Bubble builder with structural priors and
+- T013 [done-static-live-smoke] Add Context Bubble builder with structural priors and
   diversity gate.
 - T014 [done-static] Add citation/source refs to assembled context.
-- T015 [partial-static] Add Self-RAG/citation verification pass for generated
+- T015 [done-static-live-smoke] Add Self-RAG/citation verification pass for generated
   answers.
 - T016 [done-static] Add Matrix `memory_engine.VectorStore` adapter behind the
   retrieval API with mockable tests.

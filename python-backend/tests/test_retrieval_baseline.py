@@ -50,6 +50,43 @@ def test_context_bubble_keeps_references() -> None:
     assert bubble.references[0]["id"] == "claim-1"
 
 
+def test_context_bubble_applies_structural_priors_and_diversity_gate() -> None:
+    bubble = build_context_bubble(
+        [
+            RetrievalHit(
+                "refs-1",
+                "Low value bibliography entry about copper and sanctions.",
+                "vector",
+                0.81,
+                metadata={"section": "references", "embedding": [1.0, 0.0]},
+            ),
+            RetrievalHit(
+                "claim-1",
+                "Promoted KG claim: sanctions affect Russian oil shipping finance.",
+                "kg",
+                0.80,
+                metadata={
+                    "status": "promoted",
+                    "confidence": 0.9,
+                    "embedding": [0.0, 1.0],
+                },
+            ),
+            RetrievalHit(
+                "claim-dup",
+                "Promoted KG claim: sanctions affect Russian oil shipping finance.",
+                "kg",
+                0.79,
+                metadata={"status": "promoted", "embedding": [0.0, 1.0]},
+            ),
+        ],
+        token_budget=120,
+        max_hits=3,
+    )
+
+    assert [hit.id for hit in bubble.hits] == ["claim-1", "refs-1"]
+    assert bubble.references[0]["metadata"]["context_bubble"]["structural_prior"] > 1.0
+
+
 @pytest.mark.asyncio
 async def test_retrieve_hybrid_from_supplied_candidates() -> None:
     result = await retrieve(
@@ -265,6 +302,53 @@ def test_verify_context_support_flags_unsupported_claims() -> None:
     assert result.supported is False
     assert result.cited_reference_ids == ("claim-1",)
     assert result.unsupported_claims == ("Copper prices are guaranteed to rise.",)
+
+
+def test_verify_context_support_can_require_explicit_citations() -> None:
+    hits = [
+        RetrievalHit(
+            "claim-1",
+            "EU sanctions affect Russian oil exports and shipping finance.",
+            "kg",
+        )
+    ]
+
+    missing = verify_context_support(
+        "EU sanctions affect Russian oil exports.",
+        hits,
+        require_citations=True,
+    )
+    cited = verify_context_support(
+        "EU sanctions affect Russian oil exports [claim-1].",
+        hits,
+        require_citations=True,
+    )
+
+    assert missing.supported is False
+    assert missing.missing_citation_claims == ("EU sanctions affect Russian oil exports.",)
+    assert cited.supported is True
+    assert cited.citation_ratio == 1.0
+
+
+@pytest.mark.asyncio
+async def test_retrieve_can_verify_generated_answer_citations() -> None:
+    result = await retrieve(
+        "How do EU sanctions affect Russian oil exports?",
+        mode="graph",
+        kg_hits=[
+            {
+                "claim_id": "claim-1",
+                "content": "EU sanctions affect Russian oil exports and shipping finance.",
+                "score": 0.9,
+            }
+        ],
+        answer="EU sanctions affect Russian oil exports [claim-1].",
+        require_citations=True,
+    )
+
+    assert result.verification is not None
+    assert result.verification["supported"] is True
+    assert result.verification["cited_reference_ids"] == ["claim-1"]
 
 
 @pytest.mark.asyncio

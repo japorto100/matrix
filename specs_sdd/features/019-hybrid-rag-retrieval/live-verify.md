@@ -31,8 +31,15 @@ feature_id: 019
   `ChunkMetadata`: source URI, embedding version/dimension, ingest timestamp,
   TTL and entity signatures are carried into `RetrievalHit.metadata`.
 - Citation/support verification has a deterministic first pass that flags
-  answer sentences not weakly supported by retrieved hits; LLM Self-RAG is not
-  wired yet.
+  answer sentences not weakly supported by retrieved hits; it can now require
+  explicit `[reference-id]`/`[context-index]` citations and can be invoked from
+  `retrieve(..., answer=..., require_citations=True)` so generated-answer
+  verification degrades retrieval results when unsupported or uncited claims
+  appear. LLM Self-RAG remains a later optional verifier.
+- Context Bubble selection now applies lightweight structural priors from
+  section/status/confidence metadata and rejects near-duplicate candidates via
+  embedding cosine or text-token overlap before consuming prompt budget. The
+  behavior is covered by `tests/test_retrieval_baseline.py`.
 - Retrieval can optionally pull KG claim rows from a supplied global KG store
   adapter; this is unit-tested with a fake store and is not yet live-tested
   against Postgres/NornicDB.
@@ -63,6 +70,13 @@ feature_id: 019
   yet.
 - KG extraction is unit-tested through the FastAPI app with the lightweight
   heuristic extractor; NornicDB/nonicdb projection is not live-verified yet.
+- `cd python-backend && .venv/bin/python -m pytest tests/test_retrieval_baseline.py -q`
+  passed on 2026-04-27 (`20 passed`), covering Context Bubble structural
+  priors/diversity, RRF, KG access telemetry, canaries and citation
+  verification.
+- `cd python-backend && .venv/bin/ruff check retrieval/api.py
+  retrieval/composers/context_bubble.py retrieval/verifiers/citation.py
+  tests/test_retrieval_baseline.py` passed on 2026-04-27.
 
 ## Live Stack
 

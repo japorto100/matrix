@@ -46,7 +46,10 @@ Adopt:
 - LinearRAG as relation-free graph construction candidate for scale and lower
   LLM extraction cost.
 - GraphRAG-Bench/RAGSearch style evals before making graph retrieval default.
-- Researchwatcher Context Bubble, Self-RAG and citation-verifier patterns.
+- Researchwatcher Context Bubble, Self-RAG and citation-verifier patterns:
+  structural priors, diversity rejection, weak claim support scoring and
+  explicit citation checking stay deterministic first, with LLM verification
+  optional after the cheap gate.
 
 Do not adopt:
 

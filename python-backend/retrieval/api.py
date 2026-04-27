@@ -17,6 +17,7 @@ from retrieval.rerankers.rrf import reciprocal_rank_fusion
 from retrieval.searchers.kg_claims import kg_claim_hits
 from retrieval.searchers.vector_store import vector_search_hits
 from retrieval.understanders.intent_router import route_intent
+from retrieval.verifiers.citation import verify_context_support
 
 
 @dataclass
@@ -25,6 +26,7 @@ class RetrievalResult:
     hits: list[dict] | None = None
     intent: str = ""
     references: list[dict[str, Any]] | None = None
+    verification: dict[str, Any] | None = None
     degraded: bool = False
     degraded_reasons: list[str] | None = None
 
@@ -169,6 +171,24 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
             )
         except Exception:  # noqa: BLE001
             degraded_reasons.append("KG_ACCESS_TELEMETRY_FAILED")
+    answer = kwargs.get("answer") or kwargs.get("generated_answer")
+    verification: dict[str, Any] | None = None
+    if isinstance(answer, str) and answer.strip():
+        citation_result = verify_context_support(
+            answer,
+            bubble.hits,
+            require_citations=bool(kwargs.get("require_citations", False)),
+        )
+        verification = {
+            "supported": citation_result.supported,
+            "support_ratio": citation_result.support_ratio,
+            "citation_ratio": citation_result.citation_ratio,
+            "cited_reference_ids": list(citation_result.cited_reference_ids),
+            "unsupported_claims": list(citation_result.unsupported_claims),
+            "missing_citation_claims": list(citation_result.missing_citation_claims),
+        }
+        if not citation_result.supported:
+            degraded_reasons.append("ANSWER_CITATION_VERIFY_FAILED")
     return RetrievalResult(
         context=bubble.text,
         hits=[
@@ -191,6 +211,7 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         ],
         intent=plan.mode.value,
         references=list(bubble.references),
+        verification=verification,
         degraded=bool(degraded_reasons),
         degraded_reasons=degraded_reasons,
     )
