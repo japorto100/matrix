@@ -291,3 +291,34 @@ async def test_cli_pdf_extraction_benchmark_uses_paths(tmp_path, monkeypatch):
     assert result["run_id"] == "run-pdf"
     assert captured["pdf_path"] == pdf
     assert captured["truth_path"] == truth
+
+
+@pytest.mark.asyncio
+async def test_cli_memory_smoke_writes_provider_free_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        [
+            "memory-smoke",
+            "--run-id",
+            "run-memory-smoke",
+            "--candidate-id",
+            "memory-smoke-candidate",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["provider_calls"] == 0
+    candidate_dir = (
+        tmp_path / "runs" / "run-memory-smoke" / "candidates" / "memory-smoke-candidate"
+    )
+    assert (candidate_dir / "verdicts.json").exists()
+    aggregate = json.loads((candidate_dir / "aggregate.json").read_text())
+    verdicts = json.loads((candidate_dir / "verdicts.json").read_text())
+    assert aggregate["memory_utilization_rate"] == 1.0
+    assert aggregate["tool_success_rate"] == 1.0
+    assert verdicts["passed"] is True
+    assert verdicts["observed_memory_providers"] == ["hindsight", "mempalace"]

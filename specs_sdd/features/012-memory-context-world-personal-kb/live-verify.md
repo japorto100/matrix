@@ -90,6 +90,13 @@ Evidence:
   in the agent graph. In live probes it timed out but did not block SSE finish;
   this is tracked as latency/reliability follow-up, not explicit memory-tool
   correctness failure.
+- 2026-04-27 deterministic Meta-Harness memory/context smoke
+  `run-memory-context-smoke-20260427` passed without live provider calls. It
+  validates the trace-gate contract for Fusion route, Hindsight+MemPalace
+  provider visibility, `memory_search` success and pre-compaction evidence
+  wording. This is not a replacement for the live Hindsight/Fusion Postgres
+  retain/recall gate; it is the provider-free regression gate used by Feature
+  023.
 
 ## Result
 

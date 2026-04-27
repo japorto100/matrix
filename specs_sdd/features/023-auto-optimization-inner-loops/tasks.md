@@ -79,7 +79,14 @@ feature_id: 023
     count `1`, latency `3532.881ms`, fitness `0.9682`.
   - Known gaps preserved for future parser candidates: formula count `0`,
     figure count `0`, no code fence.
-- T044 Run one memory/context smoke without live provider calls.
+- T044 [done-static-live-smoke] Run one memory/context smoke without live provider calls.
+  - 2026-04-27: added `meta_harness.memory_context_smoke` and
+    `meta_harness.meta_cli memory-smoke`. It writes normal Meta-Harness
+    scenario artifacts from synthetic but contract-shaped memory events, so no
+    LLM/provider call is required.
+  - Smoke `run-memory-context-smoke-20260427` passed with provider calls `0`,
+    trace gate pass rate `1.0`, tool success `1.0`, memory utilization `1.0`,
+    and observed memory providers `hindsight,mempalace`.
 - T045 [done-static-live-smoke] Gate all live-provider loops behind quota/cost config.
 - T046 [done-static-live-smoke] Prove inner-loop candidates cannot modify benchmark goldens,
   deterministic evaluator code or holdout sets during a run.

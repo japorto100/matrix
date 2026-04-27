@@ -56,3 +56,10 @@ feature_id: 023
   - 2026-04-27: `run-inner-rag-provenance-20260427` included
     `source-provenance-001`; the fused candidate stayed promotable while
     vector-only and KG-only remained deferred.
+- LV009 [done-static-live-smoke] Verify memory/context smoke without live
+  provider calls.
+  - 2026-04-27:
+    `uv run python -m meta_harness.meta_cli memory-smoke --run-id run-memory-context-smoke-20260427 --candidate-id memory-context-deterministic --data-dir ../.meta-harness`
+  - Result: passed; provider calls `0`, trace gate pass rate `1.0`, tool
+    success `1.0`, memory utilization `1.0`, fitness `1.0`.
+  - Observed providers: `hindsight`, `mempalace`; observed route: `fusion`.

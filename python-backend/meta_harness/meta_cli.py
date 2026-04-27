@@ -96,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pdf_benchmark.add_argument("--data-dir", type=Path, default=None)
 
+    memory_smoke = sub.add_parser(
+        "memory-smoke",
+        help="Run deterministic Feature 023 memory/context smoke without provider calls",
+    )
+    memory_smoke.add_argument("--run-id", default="run-memory-context-smoke")
+    memory_smoke.add_argument("--candidate-id", default="memory-context-deterministic")
+    memory_smoke.add_argument("--data-dir", type=Path, default=None)
+
     inner_loop = sub.add_parser(
         "inner-loop",
         help="Run Feature 023 deterministic inner-loop candidate sweep",
@@ -231,6 +239,16 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_pdf_extraction_benchmark(**kwargs)
+    if args.command == "memory-smoke":
+        from meta_harness.memory_context_smoke import run_memory_context_smoke
+
+        kwargs = {
+            "run_id": args.run_id,
+            "candidate_id": args.candidate_id,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_memory_context_smoke(**kwargs)
     if args.command == "inner-loop":
         from meta_harness.inner_loop import run_deterministic_rag_inner_loop
 

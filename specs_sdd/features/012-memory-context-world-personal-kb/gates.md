@@ -31,6 +31,9 @@ feature_id: 012
 - [x] Degradation flag logic is tested.
 - [x] Explicit memory tools expose retain/recall audit metadata for
   Meta-Harness route/provider gates.
+- [x] Provider-free Meta-Harness memory/context smoke validates Fusion route,
+  Hindsight+MemPalace provider metadata and `memory_search` success without
+  consuming LLM quota.
 - [ ] Prompt assembly order is live-verified against the current runner path.
 
 ## G3 Compaction / Metadata

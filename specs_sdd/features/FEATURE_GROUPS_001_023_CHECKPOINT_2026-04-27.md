@@ -216,6 +216,9 @@ Current status:
   Feature 023 inner-loop evidence item. PyMuPDF4LLM passes the light fixture
   but leaves formula, figure and code-fence preservation as concrete candidate
   dimensions for Docling/MinerU/MarkItDown comparison.
+- Feature 023 now has a provider-free memory/context smoke that writes normal
+  Meta-Harness artifacts and validates Fusion route plus Hindsight/MemPalace
+  provider metadata without burning OpenRouter quota.
 - `017` is global/domain KG, not the agent personal-memory rail. It should use
   nonicdb/NornicDB projection work where useful, while Hindsight/MemPalace keep
   their own memory structures in Postgres.
