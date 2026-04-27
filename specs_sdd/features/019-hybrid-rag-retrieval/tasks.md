@@ -67,6 +67,9 @@ feature_id: 019
   - 2026-04-27: ingestion now emits deterministic chunk IDs and source/citation
     metadata that retrieval candidates can require. Retrieval ranking itself
     still needs to consume these fields in Feature 019/022.
+  - 2026-04-27: KG proposal emission now consumes the same chunk evidence
+    metadata and records embedding dimension/reuse flags, preserving a single
+    source-grounded ingestion contract before vector/KG fusion experiments.
 - T037 Add source-grounding baseline order for implementation: strong
   parser/chunker/citation pipeline first, Matrix vector baseline second,
   Matrix fused vector+KG third, external LightRAG/HippoRAG adapters fourth.
@@ -79,6 +82,9 @@ feature_id: 019
   - 2026-04-27: `retrieval.evals.benchmark_lab` now emits
     `metadata_compatibility` and marks candidate results failed when required
     source-grounding metadata is missing.
+  - 2026-04-27: KG proposal candidates now expose evidence-side
+    `embedding_dim` and source refs, allowing Feature 022 to reject KG/RAG
+    adapters that lose ingestion provenance.
 
 ## Verification
 

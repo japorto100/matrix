@@ -69,6 +69,11 @@ def proposals_from_extraction(
                         "parser_name",
                         "parser_version",
                         "chunker_name",
+                        "embedding_dim",
+                        "embedding_model",
+                        "embedding_provider",
+                        "embedding_reused_as_evidence_input",
+                        "kg_persist",
                     }
                 },
             },

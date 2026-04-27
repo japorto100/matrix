@@ -18,8 +18,11 @@ feature_id: 021
     URI, chunk id/hash, citation ref and parser/chunker metadata survive into
     retrieval references.
 - Embedding jobs must record provider, model, dimension and embedding version.
-- KG proposals must include evidence refs and remain `candidate` until Feature
-  017 promotion gates approve them.
+- KG proposals must include evidence refs and remain `candidate`/`proposed`
+  until Feature 017 promotion gates approve them.
+  - 2026-04-27: ingestion KG output now enters `/propose` with
+    `persist=false`; evidence metadata carries source artifact/chunk/citation
+    refs and embedding dimension/reuse flags, but not copied vector payloads.
 - No ingestion live smoke may require frontend or Go Gateway.
   - 2026-04-27: verified for local Markdown CLI path with Postgres only.
 - Network-dependent paper/API smokes must have local fixture fallback.

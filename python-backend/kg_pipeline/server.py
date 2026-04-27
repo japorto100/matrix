@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from kg_pipeline.extractors import extract_heuristic
 from kg_pipeline.sinks.global_kg import proposals_from_extraction
 from memory_engine.global_kg_store import create_global_kg_store
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Matrix KG Pipeline Worker",
@@ -25,6 +25,7 @@ class ExtractRequest(BaseModel):
 class ProposeRequest(ExtractRequest):
     source_uri: str | None = None
     persist: bool = False
+    evidence_metadata_by_ref: dict[str, dict[str, object]] = Field(default_factory=dict)
 
 
 @app.get("/health")
@@ -46,7 +47,11 @@ async def extract(req: ExtractRequest) -> dict:
 @app.post("/propose")
 async def propose(req: ProposeRequest) -> dict:
     result = extract_heuristic(req.text, req.doc_id)
-    proposals = proposals_from_extraction(result, source_uri=req.source_uri)
+    proposals = proposals_from_extraction(
+        result,
+        source_uri=req.source_uri,
+        evidence_metadata_by_ref=req.evidence_metadata_by_ref,
+    )
     persisted: list[str] = []
     degraded_reasons: list[str] = []
 

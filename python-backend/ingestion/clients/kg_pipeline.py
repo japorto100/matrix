@@ -58,6 +58,55 @@ class KGPipelineClient:
                 "reason": f"http_error: {e}",
             }
 
+    async def propose(
+        self,
+        text: str,
+        doc_id: str,
+        *,
+        source_uri: str | None = None,
+        evidence_metadata_by_ref: dict[str, dict[str, Any]] | None = None,
+        persist: bool = False,
+    ) -> dict[str, Any]:
+        """Extract claim proposals without promoting them by default."""
+
+        if not self.enabled:
+            logger.debug("kg_pipeline disabled — skipping propose for {}", doc_id)
+            return {
+                "proposal_count": 0,
+                "proposals": [],
+                "skipped": True,
+                "reason": "disabled",
+            }
+
+        payload: dict[str, Any] = {
+            "text": text,
+            "doc_id": doc_id,
+            "source_uri": source_uri,
+            "persist": persist,
+            "evidence_metadata_by_ref": evidence_metadata_by_ref or {},
+        }
+        try:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                r = await client.post(f"{self.base_url}/propose", json=payload)
+                if r.status_code == 503:
+                    logger.warning("kg_pipeline returned 503 (not yet activated)")
+                    return {
+                        "proposal_count": 0,
+                        "proposals": [],
+                        "skipped": True,
+                        "reason": "not_activated",
+                    }
+                r.raise_for_status()
+                return r.json()
+        except httpx.HTTPError as e:
+            logger.warning("kg_pipeline propose failed: {}", e)
+            return {
+                "proposal_count": 0,
+                "proposals": [],
+                "skipped": True,
+                "reason": f"http_error: {e}",
+            }
+
     async def health(self) -> bool:
         """Check if the worker is reachable."""
         if not self.enabled:

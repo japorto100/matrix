@@ -143,6 +143,9 @@ feature_id: 017
     `source_artifact_id`, `chunk_id`, `chunk_hash`, `citation_ref`, page and
     parser/chunker metadata in `EvidenceRef.metadata` when extraction is run
     over source-grounded chunks. Projection replay itself remains open.
+  - 2026-04-27: ingestion `KGSink` forwards evidence metadata to `/propose`
+    with `persist=false` and records embedding dimension/reuse metadata without
+    duplicating vectors into KG; projection replay remains the open part.
 - T049b Benchmark NornicDB/nonicdb path retrieval against Postgres-only KG
   candidate search and fused RAG on the same Feature 022 canaries; promote only
   for query classes where it improves path completeness, stability or latency.
@@ -159,5 +162,8 @@ feature_id: 017
   - 2026-04-27: evidence refs can now carry source artifact/chunk/citation
     metadata from Feature 021, so proposed claims can point back to exact
     source chunks before promotion.
+  - 2026-04-27: KG ingestion now uses the `/propose` contract directly from
+    `KGSink`, so the default path is proposal-only and non-persistent unless a
+    caller explicitly opts into persistence.
 - T054 [done-static] Add KG-pipeline `/propose` endpoint that returns
   Feature-017 claim proposals and only persists when explicitly requested.

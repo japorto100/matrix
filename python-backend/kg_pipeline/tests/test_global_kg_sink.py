@@ -44,6 +44,11 @@ def test_proposals_from_extraction_preserves_source_artifact_citation_metadata()
                 "parser_name": "markdown",
                 "parser_version": "1",
                 "chunker_name": "token",
+                "embedding_dim": 1536,
+                "embedding_model": "openrouter/text-embedding",
+                "embedding_provider": "openrouter",
+                "embedding_reused_as_evidence_input": True,
+                "kg_persist": False,
             }
         },
     )
@@ -53,6 +58,9 @@ def test_proposals_from_extraction_preserves_source_artifact_citation_metadata()
     assert evidence.metadata["source_artifact_id"] == "artifact-1"
     assert evidence.metadata["citation_ref"].endswith("#chunk=chunk-1&page=4")
     assert evidence.metadata["chunker_name"] == "token"
+    assert evidence.metadata["embedding_dim"] == 1536
+    assert evidence.metadata["embedding_reused_as_evidence_input"] is True
+    assert evidence.metadata["kg_persist"] is False
 
 
 def test_proposals_from_extraction_skip_skipped_results() -> None:

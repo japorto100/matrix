@@ -216,6 +216,10 @@ Current status:
   Feature 023 inner-loop evidence item. PyMuPDF4LLM passes the light fixture
   but leaves formula, figure and code-fence preservation as concrete candidate
   dimensions for Docling/MinerU/MarkItDown comparison.
+- Ingestion can now emit source-grounded KG proposals without persistence:
+  `KGSink` calls `/propose` with `persist=false`, forwards source
+  artifact/chunk/citation metadata plus embedding dimension/reuse flags, and
+  avoids copying RAG vectors into the KG path.
 - Feature 023 now has a provider-free memory/context smoke that writes normal
   Meta-Harness artifacts and validates Fusion route plus Hindsight/MemPalace
   provider metadata without burning OpenRouter quota.

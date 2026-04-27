@@ -63,11 +63,18 @@ feature_id: 021
     sink writes; Hindsight metadata now carries the same source/citation refs.
 - T023 Wire remote embedding provider config from Feature 019; local HF model
   downloads remain opt-in and use `HF_HOME=/mnt/cold-storage/models/huggingface`.
-- T024 Emit KG `ClaimProposal` objects for extraction outputs, but do not
-  promote claims automatically.
-- T025 Reuse ingestion chunk embeddings and source artifact refs as KG evidence
-  inputs; KG may add canonical entity/claim embeddings, but must not duplicate
-  the entire RAG vector store into the graph backend.
+- T024 [done-static] Emit KG `ClaimProposal` objects for extraction outputs,
+  but do not promote claims automatically.
+  - 2026-04-27: `KGSink` now calls the KG pipeline `/propose` path rather than
+    raw `/extract` when KG is enabled, passes `persist=false`, and treats
+    returned proposals as candidate output only.
+- T025 [done-static] Reuse ingestion chunk embeddings and source artifact refs
+  as KG evidence inputs; KG may add canonical entity/claim embeddings, but must
+  not duplicate the entire RAG vector store into the graph backend.
+  - 2026-04-27: `KGSink` forwards per-chunk source metadata plus
+    `embedding_dim`, `embedding_reused_as_evidence_input=true` and
+    `kg_persist=false` into `evidence_metadata_by_ref`; it does not copy
+    embedding vectors into the graph path.
 - T026 Add parser adapter plan for PyMuPDF4LLM baseline, Docling SOTA candidate
   and MinerU heavy/complex-PDF candidate.
 - T026a Add Microsoft MarkItDown as a lightweight parser candidate for Office,
@@ -99,6 +106,9 @@ feature_id: 021
     `evidence_metadata_by_ref` and preserves `source_artifact_id`, `chunk_id`,
     `chunk_hash`, `citation_ref`, page and parser/chunker metadata in
     `EvidenceRef.metadata`; test covers source URI override from chunk metadata.
+  - 2026-04-27: `ingestion.tests.test_kg_sink` verifies the ingestion sink
+    sends source-grounded KG proposals with `persist=false`, embedding
+    dimension/reuse metadata and no vector-store duplication.
 - T033 [done] Live-smoke local paper ingestion using
   `docs/papers/knowledgegraph/Do We Still Need GraphRAG Benchmarking RAG and GraphRAG for Agentic Search Systems arXiv 2604.09666.md`.
   - 2026-04-27: CLI local-file smoke passed against Postgres with
