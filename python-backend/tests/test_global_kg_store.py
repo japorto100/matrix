@@ -96,6 +96,49 @@ def test_in_memory_global_kg_correction_preserves_history_but_searches_current()
     ]
 
 
+def test_in_memory_global_kg_projection_replay_snapshot_preserves_provenance() -> None:
+    store = InMemoryGlobalKGStore()
+    proposal = ClaimProposal(
+        subject=EntityRef.from_name("European Union", entity_type="institution"),
+        predicate="SANCTIONED_BY",
+        object_entity=EntityRef.from_name("Russia", entity_type="country"),
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        confidence=0.8,
+        evidence=(
+            EvidenceRef(
+                source_layer="world_evidence",
+                source_ref="chunk-arxiv-2604-09666-url",
+                source_uri="https://arxiv.org/pdf/2604.09666",
+                content_hash="hash-1",
+                metadata={
+                    "source_artifact_id": "artifact-arxiv-2604-09666-url",
+                    "chunk_id": "chunk-arxiv-2604-09666-url",
+                    "chunk_hash": "hash-1",
+                    "citation_ref": "https://arxiv.org/pdf/2604.09666#chunk=chunk-1",
+                    "parser_name": "markitdown",
+                    "chunker_name": "token",
+                },
+            ),
+        ),
+    )
+
+    claim_id = store.propose_claim(proposal)
+    events = store.list_projection_events(limit=10)
+    snapshot = store.projection_replay_snapshot(limit=10)
+
+    assert events[0]["event_id"] == f"out_{claim_id}"
+    assert events[0]["payload"]["evidence_refs"][0]["metadata"]["chunk_id"] == (
+        "chunk-arxiv-2604-09666-url"
+    )
+    assert snapshot["projection_target"] == "nornicdb"
+    assert snapshot["claim_ids"] == [claim_id]
+    assert snapshot["paths"] == [["European Union", "SANCTIONED_BY", "Russia"]]
+    assert snapshot["citation_refs"] == [
+        "https://arxiv.org/pdf/2604.09666#chunk=chunk-1"
+    ]
+    assert snapshot["claims"][0]["evidence_ids"] == [proposal.evidence[0].evidence_id]
+
+
 def test_create_global_kg_store_mock(monkeypatch) -> None:
     monkeypatch.setenv("GLOBAL_KG_MOCK", "true")
 
@@ -191,6 +234,57 @@ def test_postgres_global_kg_vector_search_roundtrip() -> None:
                 )
                 access_row = cur.fetchone()
         assert access_row == (1, True)
+    finally:
+        with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM agent.kg_claims WHERE claim_id = %s", (claim_id,))
+
+
+def test_postgres_global_kg_projection_events_roundtrip() -> None:
+    db_url = (
+        os.environ.get("GLOBAL_KG_DB_URL")
+        or os.environ.get("MEMPALACE_DB_URL")
+        or os.environ.get("HINDSIGHT_DB_URL")
+    )
+    if not db_url:
+        pytest.skip("requires GLOBAL_KG_DB_URL, MEMPALACE_DB_URL or HINDSIGHT_DB_URL")
+
+    suffix = uuid.uuid4().hex
+    citation_ref = f"doc://projection-{suffix}#chunk=chunk-1"
+    proposal = ClaimProposal(
+        subject=EntityRef.from_name(f"Projection Subject {suffix}", entity_type="test"),
+        predicate="SUPPLIES",
+        object_entity=EntityRef.from_name(f"Projection Object {suffix}", entity_type="test"),
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        confidence=0.77,
+        evidence=(
+            EvidenceRef(
+                source_layer="manual",
+                source_ref=f"projection-chunk-{suffix}",
+                source_uri=f"doc://projection-{suffix}",
+                content_hash=f"hash-{suffix}",
+                metadata={
+                    "source_artifact_id": f"artifact-{suffix}",
+                    "chunk_id": f"chunk-{suffix}",
+                    "chunk_hash": f"hash-{suffix}",
+                    "citation_ref": citation_ref,
+                },
+            ),
+        ),
+    )
+    store = PostgresGlobalKGStore(db_url)
+    claim_id = store.propose_claim(proposal)
+
+    try:
+        events = store.list_projection_events(limit=1000)
+        event = next(row for row in events if row["claim_id"] == claim_id)
+        assert event["event_id"] == f"out_{claim_id}"
+        assert event["operation"] == "upsert_claim"
+        assert event["payload"]["evidence_refs"][0]["metadata"]["citation_ref"] == citation_ref
+
+        snapshot = store.projection_replay_snapshot(limit=1000)
+        assert claim_id in snapshot["claim_ids"]
+        assert citation_ref in snapshot["citation_refs"]
     finally:
         with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
             with conn.cursor() as cur:

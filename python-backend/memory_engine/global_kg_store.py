@@ -26,6 +26,19 @@ class GlobalKGStore(Protocol):
     ) -> list[dict[str, Any]]: ...
     def expand_claim_context(self, claim_id: str, *, limit: int = 5) -> dict[str, Any] | None: ...
     def record_claim_access(self, claim_ids: Sequence[str]) -> int: ...
+    def list_projection_events(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        status: str = "pending",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]: ...
+    def projection_replay_snapshot(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        limit: int = 1000,
+    ) -> dict[str, Any]: ...
     def status(self) -> dict[str, Any]: ...
 
 
@@ -36,12 +49,14 @@ class InMemoryGlobalKGStore:
         self._claims: dict[str, ClaimProposal] = {}
         self._versions: dict[str, list[ClaimProposal]] = {}
         self._access_counts: dict[str, int] = {}
+        self._projection_events: list[dict[str, Any]] = []
 
     def propose_claim(self, proposal: ClaimProposal) -> str:
         self._claims[proposal.claim_id] = proposal
         versions = self._versions.setdefault(proposal.conflict_key, [])
         if all(version.claim_id != proposal.claim_id for version in versions):
             versions.append(proposal)
+        self._append_projection_event("upsert_claim", proposal)
         return proposal.claim_id
 
     def correct_claim(self, proposal: ClaimProposal) -> str:
@@ -118,8 +133,50 @@ class InMemoryGlobalKGStore:
             touched += 1
         return touched
 
+    def list_projection_events(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        status: str = "pending",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        matching = [
+            event
+            for event in self._projection_events
+            if event["projection_target"] == projection_target
+            and event["status"] == status
+        ]
+        return matching[: max(1, min(limit, 1000))]
+
+    def projection_replay_snapshot(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        limit: int = 1000,
+    ) -> dict[str, Any]:
+        events = self.list_projection_events(
+            projection_target=projection_target,
+            status="pending",
+            limit=limit,
+        )
+        return _projection_replay_snapshot(events, projection_target=projection_target)
+
     def status(self) -> dict[str, Any]:
         return {"status": "ready", "provider": "memory", "count": len(self._claims)}
+
+    def _append_projection_event(self, operation: str, proposal: ClaimProposal) -> None:
+        payload = proposal.projection_payload()
+        self._projection_events.append(
+            {
+                "event_id": f"out_{proposal.claim_id}",
+                "claim_id": proposal.claim_id,
+                "projection_target": "nornicdb",
+                "operation": operation,
+                "status": "pending",
+                "payload": payload,
+                "created_at": proposal.valid_from.isoformat(),
+            }
+        )
 
 
 class PostgresGlobalKGStore:
@@ -464,6 +521,58 @@ class PostgresGlobalKGStore:
                 row = cur.fetchone()
         return int(row[0]) if row else 0
 
+    def list_projection_events(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        status: str = "pending",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        safe_limit = max(1, min(limit, 1000))
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT event_id, claim_id, projection_target, operation,
+                           status, payload, error, created_at::text,
+                           processed_at::text
+                    FROM agent.kg_projection_outbox
+                    WHERE projection_target = %s
+                      AND status = %s
+                    ORDER BY created_at ASC, event_id ASC
+                    LIMIT %s
+                    """,
+                    (projection_target, status, safe_limit),
+                )
+                rows = cur.fetchall()
+        return [
+            {
+                "event_id": row[0],
+                "claim_id": row[1],
+                "projection_target": row[2],
+                "operation": row[3],
+                "status": row[4],
+                "payload": row[5] or {},
+                "error": row[6],
+                "created_at": row[7],
+                "processed_at": row[8],
+            }
+            for row in rows
+        ]
+
+    def projection_replay_snapshot(
+        self,
+        *,
+        projection_target: str = "nornicdb",
+        limit: int = 1000,
+    ) -> dict[str, Any]:
+        events = self.list_projection_events(
+            projection_target=projection_target,
+            status="pending",
+            limit=limit,
+        )
+        return _projection_replay_snapshot(events, projection_target=projection_target)
+
     def status(self) -> dict[str, Any]:
         try:
             with self._connect() as conn:
@@ -494,6 +603,76 @@ def _proposal_to_row(proposal: ClaimProposal, *, final_score: float) -> dict[str
         "source_refs": context["source_refs"],
         "context_metadata": context["context_metadata"],
         "final_score": final_score,
+    }
+
+
+def _projection_replay_snapshot(
+    events: Sequence[dict[str, Any]],
+    *,
+    projection_target: str,
+) -> dict[str, Any]:
+    """Summarize pending projection events into a deterministic replay contract."""
+
+    claims: dict[str, dict[str, Any]] = {}
+    entities: dict[str, dict[str, Any]] = {}
+    paths: list[list[str]] = []
+    citation_refs: set[str] = set()
+    for event in events:
+        payload = event.get("payload") or {}
+        claim_id = str(payload.get("claim_id") or event.get("claim_id") or "")
+        if not claim_id:
+            continue
+        claims[claim_id] = {
+            "claim_id": claim_id,
+            "operation": event.get("operation"),
+            "status": payload.get("status"),
+            "lane": payload.get("lane"),
+            "valid_from": payload.get("valid_from"),
+            "valid_to": payload.get("valid_to"),
+            "evidence_ids": list(payload.get("evidence_ids") or []),
+            "metadata": payload.get("metadata") or {},
+        }
+        subject = payload.get("subject") or {}
+        obj = payload.get("object") or {}
+        for node in (subject, obj):
+            entity_id = str(node.get("entity_id") or "")
+            if entity_id:
+                entities[entity_id] = dict(node)
+        subject_name = subject.get("name") or subject.get("canonical_key")
+        object_name = obj.get("name") or obj.get("canonical_key") or obj.get("value")
+        if subject_name and payload.get("predicate") and object_name:
+            paths.append([str(subject_name), str(payload["predicate"]), str(object_name)])
+        metadata = payload.get("metadata") or {}
+        for key in ("citation_ref", "source_uri", "source_ref"):
+            value = metadata.get(key)
+            if value:
+                citation_refs.add(str(value))
+        for evidence in metadata.get("evidence", []) or []:
+            if isinstance(evidence, dict):
+                value = evidence.get("citation_ref") or evidence.get("source_uri")
+                if value:
+                    citation_refs.add(str(value))
+        for evidence in payload.get("evidence_refs", []) or []:
+            if not isinstance(evidence, dict):
+                continue
+            evidence_metadata = evidence.get("metadata") or {}
+            value = (
+                evidence_metadata.get("citation_ref")
+                or evidence.get("source_uri")
+                or evidence.get("source_ref")
+            )
+            if value:
+                citation_refs.add(str(value))
+
+    return {
+        "projection_target": projection_target,
+        "event_count": len(events),
+        "claim_ids": sorted(claims),
+        "entity_ids": sorted(entities),
+        "paths": sorted(paths),
+        "citation_refs": sorted(citation_refs),
+        "claims": [claims[key] for key in sorted(claims)],
+        "entities": [entities[key] for key in sorted(entities)],
     }
 
 
@@ -587,7 +766,7 @@ def _insert_claim(cur: Any, proposal: ClaimProposal, *, json_factory: Any) -> No
                 evidence.source_uri,
                 evidence.content_hash,
                 evidence.quote,
-            json_factory(evidence.metadata),
+                json_factory(evidence.metadata),
             ),
         )
 

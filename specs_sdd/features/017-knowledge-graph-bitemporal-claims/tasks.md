@@ -105,9 +105,14 @@ feature_id: 017
 - T030a Evaluate `_ref/NornicDB` as a projection target, not as source of
   truth: schema mapping, rebuild procedure, bitemporal/historical reads,
   vector+graph query behavior, backup/restore and failure isolation.
-- T030b Add projection-outbox replay smoke: delete/recreate the projection from
+- T030b [partial-static] Add projection-outbox replay smoke: delete/recreate the projection from
   Postgres evidence/claim/source artifacts and prove claim ids, path refs and
   citation refs remain stable enough for Feature 019.
+  - 2026-04-27: `GlobalKGStore` now exposes pending projection events and a
+    deterministic replay snapshot for `nornicdb` events. Static tests verify
+    claim ids, compact paths, evidence ids and citation refs survive the
+    replay contract in memory and, when a DB URL is present, through Postgres.
+    Actual delete/recreate of a live NornicDB projection is still open.
 - T031 Define Control UI KG claim detail contract.
 - T032 Define promotion/demotion review queue behavior.
 - T033 Coordinate `/memory/kg` and provenance graph surfaces with Feature 010.
@@ -142,10 +147,14 @@ feature_id: 017
   - 2026-04-27: KG proposal mapping now preserves ingestion
     `source_artifact_id`, `chunk_id`, `chunk_hash`, `citation_ref`, page and
     parser/chunker metadata in `EvidenceRef.metadata` when extraction is run
-    over source-grounded chunks. Projection replay itself remains open.
+    over source-grounded chunks.
   - 2026-04-27: ingestion `KGSink` forwards evidence metadata to `/propose`
     with `persist=false` and records embedding dimension/reuse metadata without
-    duplicating vectors into KG; projection replay remains the open part.
+    duplicating vectors into KG.
+  - 2026-04-27: `ClaimProposal.projection_payload()` now includes compact
+    `evidence_refs` alongside `evidence_ids`, so the outbox payload can carry
+    source URI, chunk/citation metadata and content hashes into rebuildable
+    graph projections without rereading raw documents first.
 - T049b Benchmark NornicDB/nonicdb path retrieval against Postgres-only KG
   candidate search and fused RAG on the same Feature 022 canaries; promote only
   for query classes where it improves path completeness, stability or latency.

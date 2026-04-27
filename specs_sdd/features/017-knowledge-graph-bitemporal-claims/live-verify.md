@@ -26,6 +26,14 @@ feature_id: 017
   conflict keys, decay scoring and NornicDB projection payloads.
 - `memory_engine.global_kg_store` has unit tests for in-memory claim roundtrip,
   mock-store factory and Postgres unavailable status without DSN.
+- `memory_engine.global_kg_store` now exposes NornicDB projection-outbox read
+  and replay snapshot APIs. Static tests verify replay snapshots preserve claim
+  IDs, compact paths, evidence IDs and citation refs; DB-backed projection
+  event roundtrip is covered when `GLOBAL_KG_DB_URL`, `MEMPALACE_DB_URL` or
+  `HINDSIGHT_DB_URL` is present.
+- `ClaimProposal.projection_payload()` now includes `evidence_refs` in addition
+  to `evidence_ids`, so rebuildable projections can receive source URI,
+  content hash and citation/chunk metadata without promoting raw tool output.
 - `memory_engine.global_kg_store` now supports claim embeddings stored from
   `ClaimProposal.metadata.embedding` and pgvector KNN candidate retrieval via
   `search_claims(..., query_embedding=..., embedding_model=...)`, with lexical

@@ -131,6 +131,18 @@ class ClaimProposal:
             "valid_from": self.valid_from.astimezone(UTC).isoformat(),
             "valid_to": self.valid_to.astimezone(UTC).isoformat() if self.valid_to else None,
             "evidence_ids": [e.evidence_id for e in self.evidence],
+            "evidence_refs": [
+                {
+                    "evidence_id": evidence.evidence_id,
+                    "source_layer": evidence.source_layer,
+                    "source_ref": evidence.source_ref,
+                    "source_uri": evidence.source_uri,
+                    "content_hash": evidence.content_hash,
+                    "quote": evidence.quote,
+                    "metadata": evidence.metadata,
+                }
+                for evidence in self.evidence
+            ],
             "metadata": self.metadata,
         }
 

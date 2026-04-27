@@ -26,6 +26,7 @@ def test_claim_proposal_builds_conflict_key_claim_id_and_projection_payload() ->
         source_ref="doc-1",
         source_uri="https://example.invalid/source",
         content_hash="abc",
+        metadata={"citation_ref": "https://example.invalid/source#chunk=1"},
     )
     proposal = ClaimProposal(
         subject=subject,
@@ -47,6 +48,17 @@ def test_claim_proposal_builds_conflict_key_claim_id_and_projection_payload() ->
     assert payload["subject"]["entity_id"].startswith("ent_")
     assert payload["object"]["canonical_key"] == "russia"
     assert payload["evidence_ids"] == [evidence.evidence_id]
+    assert payload["evidence_refs"] == [
+        {
+            "evidence_id": evidence.evidence_id,
+            "source_layer": "world_evidence",
+            "source_ref": "doc-1",
+            "source_uri": "https://example.invalid/source",
+            "content_hash": "abc",
+            "quote": None,
+            "metadata": {"citation_ref": "https://example.invalid/source#chunk=1"},
+        }
+    ]
 
 
 def test_claim_proposal_requires_object() -> None:
