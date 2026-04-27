@@ -23,6 +23,10 @@ feature_id: 019
 - Retrieval can optionally pull from the existing Matrix
   `memory_engine.VectorStore` facade; this adapter is unit-tested with a fake
   store and has not yet been live-tested against Chroma/pgvector.
+- `memory_engine.VectorStore.add(...)` now enriches chunk metadata with
+  `embedding_model`, `embedding_version` and `embedding_dimension` while
+  preserving explicit provider metadata. Mock VectorStore tests cover default
+  metadata and custom OpenRouter/remote-provider-compatible overrides.
 - Citation/support verification has a deterministic first pass that flags
   answer sentences not weakly supported by retrieved hits; LLM Self-RAG is not
   wired yet.

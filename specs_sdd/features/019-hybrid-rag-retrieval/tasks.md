@@ -19,7 +19,7 @@ feature_id: 019
   runs.
 - T004 [done-static] Ensure local sentence-transformer downloads are opt-in and use
   `/mnt/cold-storage/models/huggingface` via `HF_HOME`.
-- T005 Track embedding model/version/dimension in chunk metadata.
+- T005 [done-static] Track embedding model/version/dimension in chunk metadata.
 
 ## Retrieval Architecture
 
