@@ -1,3 +1,6 @@
 [submodule "_ref/NornicDB"]
 	path = _ref/NornicDB
 	url = https://github.com/orneryd/NornicDB.git
+[submodule "_ref/hermes-agent"]
+	path = _ref/hermes-agent
+	url = https://github.com/nousresearch/hermes-agent.git
