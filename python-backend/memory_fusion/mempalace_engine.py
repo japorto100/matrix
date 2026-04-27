@@ -254,6 +254,7 @@ class MempalaceMemoryEngine:
                 embedding <=> %(embedding)s::vector AS distance
             FROM agent.mempalace_drawers
             WHERE bank_id = %(bank_id)s
+              AND embedding IS NOT NULL
               AND embedding_model = %(embedding_model)s
               AND embedding_dim = %(embedding_dim)s
         """
@@ -313,10 +314,11 @@ class MempalaceMemoryEngine:
         contents: list[dict[str, Any]],
         request_context: Any = None,  # noqa: ARG002
         document_tags: list[str] | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> list[list[str]]:
         from psycopg.types.json import Json
 
+        defer_embedding = bool(kwargs.get("defer_embedding", False))
         results: list[list[str]] = []
         async with await self._connect() as conn:
             for idx, item in enumerate(contents):
@@ -354,7 +356,7 @@ class MempalaceMemoryEngine:
                 existing = await (
                     await conn.execute(
                         """
-                        SELECT drawer_id
+                        SELECT drawer_id, embedding IS NULL AS embedding_pending
                         FROM agent.mempalace_drawers
                         WHERE bank_id = %s AND wing = %s AND room = %s AND content_hash = %s
                         LIMIT 1
@@ -362,18 +364,29 @@ class MempalaceMemoryEngine:
                         (bank_id, loci["wing"], loci["room"], content_sha),
                     )
                 ).fetchone()
-                if existing:
+                if existing and (defer_embedding or not bool(existing["embedding_pending"])):
                     results.append([str(existing["drawer_id"])])
                     continue
 
-                embedding = await self._embed_one(content)
-                vector = _vector_literal(embedding)
+                drawer_id = str(existing["drawer_id"]) if existing else drawer_id
+                if defer_embedding:
+                    embedding: list[float] = []
+                    vector = None
+                    embedding_dim = 0
+                    embedding_status = "pending"
+                else:
+                    embedding = await self._embed_one(content)
+                    vector = _vector_literal(embedding)
+                    embedding_dim = len(embedding)
+                    embedding_status = "ready"
                 row_metadata = {
                     **merged_metadata,
                     **loci,
                     "tags": item_tags,
                     "added_by": "memory-fusion",
                     "ingest_mode": "memory_fusion",
+                    "embedding_status": embedding_status,
+                    "embedding_deferred": defer_embedding,
                     "filed_at": _now_iso(),
                 }
                 source_file = str(metadata.get("source_file") or f"memory://{bank_id}/{document_id}")
@@ -421,7 +434,7 @@ class MempalaceMemoryEngine:
                         "metadata": Json(row_metadata),
                         "embedding": vector,
                         "embedding_model": self.embedder.model,
-                        "embedding_dim": len(embedding),
+                        "embedding_dim": embedding_dim,
                         "event_date": str(item.get("event_date") or ""),
                     },
                 )

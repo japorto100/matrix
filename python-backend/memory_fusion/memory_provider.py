@@ -442,6 +442,8 @@ class FusionProvider(MemoryProvider):
                 ],
                 request_context=self._request_context(),
                 document_tags=["pre_compress", "verbatim_archive"],
+                route="verbatim",
+                defer_embedding=True,
                 consumer="agent_context_archive",
                 operation_context={
                     "user_id": user_id,

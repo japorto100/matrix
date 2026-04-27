@@ -217,3 +217,30 @@ Residual risk:
 - The smoke proves exact durable row scoping; full app-level Matrix session
   deletion still needs an end-to-end UI/API flow once the production deletion
   endpoint is selected.
+
+## 2026-04-27 Pre-Save/Compaction Archive Smoke
+
+Status: pass for pre-compaction/pre-compression archive safety.
+
+Evidence:
+
+- `FusionProvider.on_pre_compress` now routes archive writes directly to
+  `verbatim` and sets `defer_embedding=True`; the lossy Hindsight summary path
+  is not on the critical pre-compaction archive path.
+- `MempalaceMemoryEngine.retain_batch_async` can persist raw archive rows with
+  `embedding=NULL`, `embedding_dim=0` and metadata
+  `embedding_status=pending`; a later normal retain of the same content
+  hydrates the row to `embedding_status=ready`.
+- Focused checks:
+  `cd python-backend && .venv/bin/python -m pytest tests/test_memory_provider.py tests/memory_fusion/test_mempalace_postgres_engine.py tests/agent/test_phase_b_wiring.py tests/agent/middleware/test_compaction_compression.py -q`
+  => `53 passed`.
+- Ruff:
+  `cd python-backend && .venv/bin/ruff check memory_fusion/memory_provider.py memory_fusion/mempalace_engine.py tests/test_memory_provider.py tests/memory_fusion/test_mempalace_postgres_engine.py`
+  => pass.
+
+Residual risk:
+
+- Pending-embedding archive rows are durable and listable immediately, but
+  semantic recall only sees them after hydration. This is intentional for the
+  data-loss gate; a background hydration worker remains a follow-up if pending
+  rows accumulate.

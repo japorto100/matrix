@@ -116,6 +116,55 @@ async def test_mempalace_engine_stores_verbatim_loci_in_postgres() -> None:
         remaining = await engine.list_memory_units(bank_id=bank_id, room="memory-fusion")
         assert remaining["total"] == 1
         assert remaining["items"][0]["id"] == other_drawer_id
+
+        archived = await engine.retain_batch_async(
+            bank_id=bank_id,
+            contents=[
+                {
+                    "content": "Pre-save archive captures the full visible context before compaction.",
+                    "fact_type": "experience",
+                    "metadata": {
+                        "room": "memory-fusion",
+                        "hall": "archives",
+                        "thread_id": "thread-archive",
+                        "session_id": "session-archive",
+                        "source_ref": "session.jsonl#pre-save",
+                    },
+                    "tags": ["pre_compress", "verbatim_archive"],
+                    "document_id": "doc-archive",
+                }
+            ],
+            defer_embedding=True,
+        )
+        archive_id = archived[0][0]
+        archive_unit = await engine.get_memory_unit(unit_id=archive_id)
+        assert archive_unit is not None
+        assert archive_unit["metadata"]["embedding_status"] == "pending"
+        assert archive_unit["metadata"]["embedding_deferred"] is True
+
+        hydrated = await engine.retain_batch_async(
+            bank_id=bank_id,
+            contents=[
+                {
+                    "content": "Pre-save archive captures the full visible context before compaction.",
+                    "fact_type": "experience",
+                    "metadata": {
+                        "room": "memory-fusion",
+                        "hall": "archives",
+                        "thread_id": "thread-archive",
+                        "session_id": "session-archive",
+                        "source_ref": "session.jsonl#pre-save",
+                    },
+                    "tags": ["pre_compress", "verbatim_archive"],
+                    "document_id": "doc-archive",
+                }
+            ],
+        )
+        assert hydrated[0][0] == archive_id
+        archive_unit = await engine.get_memory_unit(unit_id=archive_id)
+        assert archive_unit is not None
+        assert archive_unit["metadata"]["embedding_status"] == "ready"
+        assert archive_unit["metadata"]["embedding_deferred"] is False
     finally:
         banks = await engine.list_memory_units(bank_id=bank_id, limit=100)
         for item in banks["items"]:

@@ -101,9 +101,12 @@ migrated_from:
 - [x] T039j.1 Normalize invented explicit memory `fact_type` values from LLM
   tool calls: unknown write types become `experience` with
   `original_fact_type` metadata; unknown search filters are omitted.
-- T039k Evaluate MemPalace warmup/embedding latency; live probe still shows
-  first-call `memory_add` around 17-22s with remote embeddings, which is under
-  the current 30s tool timeout but too close for production comfort.
+- [x] T039k [done-static-live-smoke] Evaluate MemPalace warmup/embedding
+  latency; live probe still shows first-call `memory_add` around 17-22s with
+  remote embeddings, which is under the current 30s tool timeout but too close
+  for production comfort. Pre-compaction/pre-compression archive writes now use
+  the verbatim route and can persist immediately with deferred embeddings
+  (`embedding_status=pending`) before later hydration.
 - [x] T039k.1 Deduplicate explicit memory writes within a single assistant
   turn/thread window: Meta-Harness `run-eeb4e11fab0f` passed trace gates but
   showed repeated `memory_add` calls for the same exact lifecycle probe,
@@ -126,13 +129,16 @@ migrated_from:
   `hindsight_api` dotenv side effects: explicit runtime DB URLs must win after
   Hindsight imports, and Meta-Harness live probes should set
   `PYTHON_DOTENV_DISABLED=true` when using controlled process env.
+- T039p Add or defer a background hydration worker for MemPalace rows with
+  `embedding_status=pending`; pending rows are durable/listable immediately but
+  semantic recall intentionally ignores them until embeddings are attached.
 
 ## Runtime Context
 
 - T040 Live-verify prompt assembly order against `context/merge.py` and current
   runner path.
-- T041 Verify 80% pre-save fires before 85% compaction.
-- T042 Verify 95% emergency compression invokes bounded
+- [x] T041 [done-static] Verify 80% pre-save fires before 85% compaction.
+- [x] T042 [done-static] Verify 95% emergency compression invokes bounded
   `MemoryManager.on_pre_compress`.
 - [x] T043 Static-verify MessageMeta carries context/layer/degradation metadata
   in runner code.
@@ -143,10 +149,12 @@ migrated_from:
 - T048 Verify Hindsight/profile context can be injected without replacing live
   market/news/source-backed data.
 - T049 Verify MemPalace recall requires a trigger and emits source/session refs.
-- T050 Verify pre-save runs before both normal compression and context
-  compaction, with MemPalace archival receiving the complete visible context.
-- T051 Verify compression/compaction thresholds use provider/model context
-  window metadata instead of hardcoded defaults where available.
+- [x] T050 [done-static-live-smoke] Verify pre-save runs before both normal
+  compression and context compaction, with MemPalace archival receiving the
+  complete visible context.
+- [x] T051 [done-static] Verify compression/compaction thresholds use
+  provider/model context window metadata instead of hardcoded defaults where
+  available.
 
 ## Global World Evidence And KG Handoff
 

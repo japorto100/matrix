@@ -332,5 +332,7 @@ async def test_fusion_provider_default_pre_compress_returns_none():
     call = engine.retain_batch_calls[0]
     assert call["bank_id"] == "b1"
     assert call["consumer"] == "agent_context_archive"
+    assert call["route"] == "verbatim"
+    assert call["defer_embedding"] is True
     assert call["contents"][0]["metadata"]["source"] == "pre_compress"
     assert "important detail" in call["contents"][0]["content"]
