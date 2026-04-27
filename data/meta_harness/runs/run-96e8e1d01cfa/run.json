@@ -1,0 +1,12 @@
+{
+  "run_id": "run-96e8e1d01cfa",
+  "candidate_id": "post-push-simple-free",
+  "created_at": "2026-04-27T02:27:05.781320+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000"
+  }
+}

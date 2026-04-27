@@ -57,6 +57,31 @@ class _FakeEngine:
 
 
 @pytest.mark.asyncio
+async def test_runtime_fusion_prefers_mempalace_db_url(monkeypatch) -> None:
+    from memory_fusion import engine as runtime_engine
+    from memory_fusion import fusion_engine
+
+    captured: dict[str, str | None] = {}
+
+    async def fake_create(*, db_url: str | None, palace_path: str | None = None):
+        captured["db_url"] = db_url
+        captured["palace_path"] = palace_path
+        return object()
+
+    monkeypatch.setenv("AGENT_MEMORY_ENGINE", "fusion")
+    monkeypatch.setenv("HINDSIGHT_DB_URL", "postgresql://postgres:stale@localhost:5433/hindsight_dev")
+    monkeypatch.setenv("MEMPALACE_DB_URL", "postgresql://postgres:postgres@localhost:5433/hindsight_dev")
+    monkeypatch.setattr(fusion_engine.FusionMemoryEngine, "create", fake_create)
+    monkeypatch.setattr(runtime_engine, "_engine", None)
+    monkeypatch.setattr(runtime_engine, "_init_failed", False)
+    monkeypatch.setattr(runtime_engine, "_engine_provider", None)
+
+    await runtime_engine.get_memory_engine()
+
+    assert captured["db_url"] == "postgresql://postgres:postgres@localhost:5433/hindsight_dev"
+
+
+@pytest.mark.asyncio
 async def test_recall_sanitizes_query_and_merges_summary_verbatim() -> None:
     summary_engine = _FakeEngine(
         recall_results=[

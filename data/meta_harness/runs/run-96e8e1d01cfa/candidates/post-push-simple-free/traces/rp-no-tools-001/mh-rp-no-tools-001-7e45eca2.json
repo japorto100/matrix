@@ -1,0 +1,50 @@
+[
+  {
+    "id": 3,
+    "timestamp": "2026-04-27 02:27:05.132742+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-7e45eca2",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Reply with one short sentence: runner parity smoke.",
+    "output": "Runner parity smoke.",
+    "duration_ms": 2639,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/free",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 301,
+      "content_cleaned": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-04-27 02:26:44.683715+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-7e45eca2",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [],
+      "skill_names": [],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

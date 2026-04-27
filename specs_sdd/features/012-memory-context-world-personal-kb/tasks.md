@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 012
 migrated_from:
   - specs/execution/exec-memory.md
@@ -28,7 +28,7 @@ migrated_from:
 ## Personal Memory
 
 - T010 Verify Hindsight retain/recall/reflect/consolidate live path.
-- T011 Live-verify `memory_fusion` Postgres retain path.
+- [x] T011 Live-verify `memory_fusion` Postgres retain path.
 - [x] T012 Static-test raw user input is evidence, not observation/truth.
 - [x] T013 Static-test agent output is secondary artifact metadata where
   applicable.
@@ -110,6 +110,10 @@ migrated_from:
   Meta-Harness exposed `messages[5]: missing field tool_call_id` on a
   post-`memory_search` LLM call; keep legacy `tool_use_id` while adding
   OpenAI-compatible `tool_call_id`.
+- [x] T039o Guard Memory-Fusion/Hindsight live runs against upstream
+  `hindsight_api` dotenv side effects: explicit runtime DB URLs must win after
+  Hindsight imports, and Meta-Harness live probes should set
+  `PYTHON_DOTENV_DISABLED=true` when using controlled process env.
 
 ## Runtime Context
 

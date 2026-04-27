@@ -12,7 +12,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_mempalace_engine_stores_verbatim_loci_in_postgres() -> None:
-    db_url = os.environ.get("HINDSIGHT_DB_URL") or os.environ.get("MEMPALACE_DB_URL")
+    db_url = os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
         pytest.skip("requires HINDSIGHT_DB_URL or MEMPALACE_DB_URL")
 

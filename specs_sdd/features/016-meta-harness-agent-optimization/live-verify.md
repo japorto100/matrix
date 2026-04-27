@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Live Verify
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 016
 ---
 
@@ -433,6 +433,57 @@ Follow-up:
 - Old dev-memory rows from earlier failing runs can still retrieve historical
   `<tool_call>` content as evidence. This is a cleanup/reset question for dev
   data, not a new-turn output regression.
+
+## MV-05d Post-Push Memory-Fusion Dotenv Guard
+
+Status: pass on 2026-04-27.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer and simulated user against the real in-process
+  SimpleLoop path after committing/pushing the prior feature batch.
+- Probe first ran a no-tool runner-parity scenario, then an explicit
+  `memory_add`/`memory_search` memory lifecycle scenario.
+- Failed memory candidates exposed an upstream integration issue: importing
+  `hindsight_api.config` calls `load_dotenv(..., override=True)`, which can
+  overwrite process-provided DB URLs with stale `.env` credentials during
+  Harness/dev-stack runs.
+
+Evidence:
+
+- Runner-parity run `run-96e8e1d01cfa`, candidate `post-push-simple-free`,
+  passed with `trace_gate_pass_rate=1.0`, `completion_rate=1.0`, no tool calls
+  and model `openrouter/openrouter/free`.
+- Failing memory runs `run-c174d5e71b23`, `run-cbe1be3f2a71` and
+  `run-1e3bd30b235e` all selected the correct tools (`memory_add`,
+  `memory_search`) but returned
+  `Memory not available`; trace gates failed for missing `memory_retain` and
+  missing route `fusion`.
+- Root cause: Hindsight's dotenv import could override
+  `HINDSIGHT_DB_URL`/`HINDSIGHT_API_DATABASE_URL` after Meta-Harness had already
+  set clean process env vars.
+- Fix: `create_hindsight_engine` re-applies explicit Hindsight runtime
+  overrides after importing Hindsight modules.
+- Fix: Fusion memory DB selection now prefers `MEMPALACE_DB_URL` as the shared
+  Postgres override before `HINDSIGHT_DB_URL`, so MemPalace/Postgres live
+  probes remain stable even if Hindsight import side effects touch
+  `HINDSIGHT_DB_URL`.
+- Harness command now sets `PYTHON_DOTENV_DISABLED=true` for Hindsight-backed
+  live probes so upstream dotenv loading cannot override the controlled
+  process environment.
+- Passing memory run `run-8d52c444d94a`, candidate
+  `post-patch-memory-dotenv-disabled`, passed with `trace_gate_pass_rate=1.0`,
+  `completion_rate=1.0`, observed tools `memory_add` and `memory_search`,
+  observed actions `memory_retain` and `memory_recall`, route `fusion`, and
+  providers `fusion`, `verbatim`, `summary_async`.
+- The exact phrase
+  `memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction` was
+  stored and recalled through Fusion/MemPalace/Postgres/pgvector.
+- Focused checks after the patch:
+  `pytest tests/memory_fusion/test_mempalace_postgres_engine.py tests/test_retrieval_baseline.py -q`
+  => `13 passed, 1 skipped`.
+- Ruff:
+  `ruff check memory_fusion/providers.py memory_fusion/engine.py` => pass.
 
 ## MV-06 MCP Exposure Smoke
 

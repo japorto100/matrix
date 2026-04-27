@@ -70,6 +70,12 @@ async def create_hindsight_engine(
 
         from memory_fusion.embeddings import create_hindsight_embedder
 
+        # Hindsight's package import loads .env with override=True. Re-apply our
+        # explicit runtime bridge so harness/dev-stack DB URLs keep winning.
+        for key, value in overrides.items():
+            if value is not None:
+                os.environ[key] = value
+
         embeddings = create_hindsight_embedder()
 
         task_backend = None

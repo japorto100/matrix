@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 012
 ---
 
@@ -151,6 +151,38 @@ Residual risk:
   `<tool_call>` text and may be retrieved as evidence until dev memory is reset
   or cleaned; new assistant output is cleaned before audit/SSE/memory sync.
 - Shared-corpus evals and compaction/pre-save threshold live gates remain open.
+
+## 2026-04-27 Post-Push Meta-Harness Memory-Fusion Probe
+
+Status: pass for explicit Fusion/MemPalace/Postgres memory lifecycle.
+
+Evidence:
+
+- Minimal Postgres stack used `docker-compose.memory-eval.yml` on `:5433`;
+  Alembic upgraded through migration `030_global_kg_bitemporal_claims`.
+- Initial runner-parity run `run-96e8e1d01cfa` passed through SimpleLoop and
+  OpenRouter-free with no tool calls.
+- Memory lifecycle candidates `run-c174d5e71b23`, `run-cbe1be3f2a71` and
+  `run-1e3bd30b235e` failed correctly: the agent selected `memory_add` and
+  `memory_search`, but Memory-Fusion was unavailable because upstream
+  `hindsight_api` imported `.env` with `override=True` and replaced controlled
+  DB env vars.
+- Runtime fix: `create_hindsight_engine` re-applies Matrix runtime overrides
+  after Hindsight imports, and Fusion now treats `MEMPALACE_DB_URL` as the
+  first shared-Postgres override before `HINDSIGHT_DB_URL`.
+- Harness fix: live Hindsight-backed probes should set
+  `PYTHON_DOTENV_DISABLED=true` to prevent upstream dotenv side effects.
+- Passing run `run-8d52c444d94a`, candidate
+  `post-patch-memory-dotenv-disabled`, passed trace gates with route `fusion`
+  and providers `fusion`, `verbatim`, `summary_async`.
+- `memory_add` stored
+  `memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction` with
+  `facts_extracted=1`; `memory_search` recalled the exact phrase as the top
+  result.
+- Focused checks:
+  `pytest tests/memory_fusion/test_mempalace_postgres_engine.py tests/test_retrieval_baseline.py -q`
+  => `13 passed, 1 skipped`.
+- Ruff on `memory_fusion/providers.py` and `memory_fusion/engine.py`: pass.
 
 ## Result
 

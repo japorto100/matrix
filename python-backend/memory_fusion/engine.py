@@ -74,7 +74,7 @@ async def get_memory_engine():
         if provider == "fusion":
             from memory_fusion.fusion_engine import FusionMemoryEngine
 
-            db_url = os.environ.get("HINDSIGHT_DB_URL")
+            db_url = os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
             _engine = await FusionMemoryEngine.create(
                 db_url=db_url,
                 palace_path=os.environ.get("MEMPALACE_PALACE_PATH", "postgres"),
