@@ -119,6 +119,10 @@ class TraceExpectations:
     required_memory_providers: tuple[str, ...] = ()
     forbidden_memory_routes: tuple[str, ...] = ()
     forbidden_memory_providers: tuple[str, ...] = ()
+    required_response_terms: tuple[str, ...] = ()
+    forbidden_response_terms: tuple[str, ...] = ()
+    required_memory_evidence_terms: tuple[str, ...] = ()
+    required_memory_metadata_keys: tuple[str, ...] = ()
     expected_memory: bool = False
     min_tool_success_rate: float | None = None
     allow_tool_failures: bool = False
@@ -143,6 +147,18 @@ class TraceExpectations:
             ),
             forbidden_memory_providers=tuple(
                 str(x) for x in raw.get("forbidden_memory_providers", [])
+            ),
+            required_response_terms=tuple(
+                str(x) for x in raw.get("required_response_terms", [])
+            ),
+            forbidden_response_terms=tuple(
+                str(x) for x in raw.get("forbidden_response_terms", [])
+            ),
+            required_memory_evidence_terms=tuple(
+                str(x) for x in raw.get("required_memory_evidence_terms", [])
+            ),
+            required_memory_metadata_keys=tuple(
+                str(x) for x in raw.get("required_memory_metadata_keys", [])
             ),
             expected_memory=bool(raw.get("expected_memory", False)),
             min_tool_success_rate=raw.get("min_tool_success_rate"),
@@ -350,9 +366,50 @@ def _observed_memory_metadata(events: list[dict[str, Any]]) -> tuple[set[str], s
     return routes, providers
 
 
+def _normalized_gate_text(value: object) -> str:
+    return " ".join(str(value or "").casefold().split())
+
+
+def _memory_event_blob(events: list[dict[str, Any]]) -> str:
+    memory_events = []
+    for event in events:
+        action = _event_action(event)
+        tool = _event_tool(event)
+        if action in {"memory_recall", "memory_retain"} or tool in {
+            "memory_add",
+            "memory_search",
+        }:
+            memory_events.append(event)
+    return _normalized_gate_text(json.dumps(memory_events, default=str, sort_keys=True))
+
+
+def _metadata_contains_key(metadata: dict[str, Any], key: str) -> bool:
+    if not key:
+        return False
+    current: Any = metadata
+    for part in key.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return False
+        current = current[part]
+    return True
+
+
+def _memory_metadata_keys(events: list[dict[str, Any]]) -> set[str]:
+    keys: set[str] = set()
+    for event in events:
+        if _event_action(event) not in {"memory_recall", "memory_retain"}:
+            continue
+        meta = _event_metadata(event)
+        for key in meta:
+            keys.add(str(key))
+    return keys
+
+
 def evaluate_trace_gates(
     events: list[dict[str, Any]],
     expectations: TraceExpectations,
+    *,
+    response_text: str = "",
 ) -> TraceGateVerdict:
     """Evaluate deterministic trace expectations over audit events."""
     actions = [_event_action(event) for event in events if _event_action(event)]
@@ -377,6 +434,10 @@ def evaluate_trace_gates(
     failures: list[str] = []
     warnings: list[str] = []
     warnings.extend(_duplicate_memory_add_warnings(events))
+
+    normalized_response = _normalized_gate_text(response_text)
+    memory_blob = _memory_event_blob(events)
+    memory_metadata_keys = _memory_metadata_keys(events)
 
     for action in expectations.required_actions:
         if action not in action_set:
@@ -419,6 +480,23 @@ def evaluate_trace_gates(
     for provider in expectations.forbidden_memory_providers:
         if provider in memory_providers:
             failures.append(f"forbidden memory provider observed: {provider}")
+
+    for term in expectations.required_response_terms:
+        if _normalized_gate_text(term) not in normalized_response:
+            failures.append(f"missing required response term: {term}")
+    for term in expectations.forbidden_response_terms:
+        if _normalized_gate_text(term) in normalized_response:
+            failures.append(f"forbidden response term observed: {term}")
+    for term in expectations.required_memory_evidence_terms:
+        if _normalized_gate_text(term) not in memory_blob:
+            failures.append(f"missing required memory evidence term: {term}")
+    for key in expectations.required_memory_metadata_keys:
+        if key not in memory_metadata_keys and not any(
+            _metadata_contains_key(_event_metadata(event), key)
+            for event in events
+            if _event_action(event) in {"memory_recall", "memory_retain"}
+        ):
+            failures.append(f"missing required memory metadata key: {key}")
 
     tool_results = [event for event in events if _event_action(event) == "tool_result"]
     tool_success_rate: float | None = None
@@ -730,7 +808,14 @@ async def run_scenario(
         score["harness_timeout"] = True
         score["timeout_errors"] = timeout_errors
         score["fitness_score"] = composite_fitness(score)
-    verdict = evaluate_trace_gates(events, scenario.expectations)
+    response_text = "\n".join(
+        item["content"] for item in transcript if item.get("role") == "assistant"
+    )
+    verdict = evaluate_trace_gates(
+        events,
+        scenario.expectations,
+        response_text=response_text,
+    )
     if timeout_errors:
         verdict = replace(
             verdict,

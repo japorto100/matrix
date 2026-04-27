@@ -1,0 +1,14 @@
+{
+  "run_id": "run-7c1a6107c65a",
+  "candidate_id": "memory-correctness-gates",
+  "decision": "keep",
+  "rationale": "Stricter deterministic memory correctness gates passed on memory lifecycle scenarios: exact recall term, forbidden stale term, evidence term and memory metadata key checks.",
+  "decided_at": "2026-04-27T04:11:30.600671+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.85,
+    "runner_variant": "simple"
+  },
+  "follow_up": ""
+}

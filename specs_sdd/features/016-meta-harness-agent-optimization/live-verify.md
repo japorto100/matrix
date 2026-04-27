@@ -180,6 +180,15 @@ Evidence:
   when multiple `memory_add` tool calls in a scenario use the same normalized
   `content`/`fact_type`. Covered by
   `tests/meta_harness/test_scenario_runner.py`.
+- Static follow-up: trace gates now support deterministic memory-correctness
+  checks before any LLM judge: required/forbidden assistant response terms,
+  required memory evidence terms and required memory metadata keys such as
+  `bank_id`, `source` or nested keys. The memory lifecycle scenario set uses
+  these gates for exact recall and compaction/verbatim-evidence behavior.
+- Live follow-up with the stricter gates: `run-7c1a6107c65a`, candidate
+  `memory-correctness-gates`, in-process `simple` runner through
+  LiteLLM/OpenRouter. Result: `trace_gate_pass_rate=1.0`,
+  `completion_rate=1.0`, `fitness_score=0.85`; decision recorded as `keep`.
 
 Expected evidence:
 

@@ -233,6 +233,58 @@ def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):
     )
 
 
+def test_trace_gates_check_response_and_memory_evidence_terms(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "memory_recall",
+            "success": True,
+            "metadata": {
+                "route": "fusion",
+                "source_ref": "thread-1",
+                "evidence": {"kind": "verbatim"},
+            },
+            "output_data": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_response_terms=("memory_lifecycle_probe",),
+            forbidden_response_terms=("stale_preference",),
+            required_memory_evidence_terms=("verbatim_evidence_before_compaction",),
+            required_memory_metadata_keys=("source_ref", "evidence.kind"),
+        ),
+        response_text=(
+            "I found memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction."
+        ),
+    )
+
+    assert verdict.passed is True
+
+
+def test_trace_gates_fail_memory_correctness_checks(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        [{"action": "memory_recall", "success": True, "metadata": {"route": "fusion"}}],
+        scenario_runner.TraceExpectations(
+            required_response_terms=("new preference",),
+            forbidden_response_terms=("old preference",),
+            required_memory_evidence_terms=("exact evidence",),
+            required_memory_metadata_keys=("source_ref",),
+        ),
+        response_text="old preference",
+    )
+
+    assert verdict.passed is False
+    assert "missing required response term: new preference" in verdict.failures
+    assert "forbidden response term observed: old preference" in verdict.failures
+    assert "missing required memory evidence term: exact evidence" in verdict.failures
+    assert "missing required memory metadata key: source_ref" in verdict.failures
+
+
 def test_legacy_query_maps_to_scenario():
     scenario = scenario_runner.Scenario.from_mapping(
         {

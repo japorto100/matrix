@@ -85,7 +85,7 @@ feature_id: 016
 - [x] T040 Add memory route assertions for `summary`, `verbatim`, `hybrid` and
   provider mode `hindsight|mempalace|fusion`.
 - T041 Add memory holdout set that is not visible to proposer/search runs.
-- T042 Add deterministic memory correctness gates before any LLM judge:
+- [x] T042 Add deterministic memory correctness gates before any LLM judge:
   expected recall terms, forbidden stale terms, evidence/source presence and
   no unrelated mutation.
 - T043 Record memory fixture manifests per run so failed scenarios can be

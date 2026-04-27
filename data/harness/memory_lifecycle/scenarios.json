@@ -17,6 +17,13 @@
         "required_tools": ["memory_add", "memory_search"],
         "required_skills": ["memory-usage"],
         "required_memory_routes": ["fusion"],
+        "required_response_terms": [
+          "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+        ],
+        "required_memory_evidence_terms": [
+          "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+        ],
+        "required_memory_metadata_keys": ["bank_id", "source"],
         "expected_memory": true,
         "min_tool_success_rate": 1.0
       },
@@ -39,6 +46,9 @@
         "required_actions": ["memory_recall", "memory_retain"],
         "required_skills": ["memory-usage"],
         "required_memory_routes": ["fusion"],
+        "required_response_terms": ["before context compaction", "verbatim evidence"],
+        "forbidden_response_terms": ["global knowledge graph"],
+        "required_memory_metadata_keys": ["bank_id", "route"],
         "expected_memory": true
       },
       "metadata": {
