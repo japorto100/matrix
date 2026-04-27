@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from retrieval.core.chunk_metadata import ChunkMetadata
 from retrieval.core.types import RetrievalHit
 
 
@@ -37,15 +38,15 @@ def vector_search_hits(
     hits: list[RetrievalHit] = []
     for row in rows:
         metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-        source_uri = metadata.get("source_uri") or metadata.get("uri") or row.get("source_uri")
+        chunk_metadata = ChunkMetadata.from_row(row, metadata)
         hits.append(
             RetrievalHit(
                 id=str(row.get("id") or row.get("chunk_id") or f"vector:{len(hits)}"),
                 content=str(row.get("text") or row.get("content") or ""),
                 source="vector",
                 score=_score_from_vector_row(row),
-                source_uri=str(source_uri) if source_uri else None,
-                metadata=metadata,
+                source_uri=chunk_metadata.source_uri,
+                metadata=chunk_metadata.as_metadata(),
             )
         )
     return hits

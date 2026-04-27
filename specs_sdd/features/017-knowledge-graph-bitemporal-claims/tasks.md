@@ -46,7 +46,7 @@ feature_id: 017
   only for KG claims that survive ranking and Context Bubble selection.
 - T014 [done-static-live-smoke] Add answer-time KG context metadata: status,
   freshness, confidence and provenance refs.
-- T015 Define vector chunk metadata contract: `chunk_id`, `source_uri`,
+- T015 [done-static] Define vector chunk metadata contract: `chunk_id`, `source_uri`,
   `embedding_version`, ingest timestamp, TTL/validity metadata and candidate
   entity signatures.
 - T016 [done-static-live-smoke] Expose KG entity/claim/path expansion API for

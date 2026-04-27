@@ -100,7 +100,14 @@ def test_vector_search_adapter_normalizes_rows() -> None:
                     "id": "doc-1",
                     "text": "Oil sanctions context.",
                     "distance": 0.25,
-                    "metadata": {"source_uri": "doc://oil"},
+                    "metadata": {
+                        "source_uri": "doc://oil",
+                        "embedding_version": "bge-small@2026-04",
+                        "embedding_dimension": "384",
+                        "timestamp_ingested": "2026-04-27T00:00:00Z",
+                        "ttl_seconds": 86400,
+                        "entity_signatures": ["eu", "russia"],
+                    },
                 }
             ]
 
@@ -109,6 +116,12 @@ def test_vector_search_adapter_normalizes_rows() -> None:
     assert hits[0].id == "doc-1"
     assert hits[0].score == 0.75
     assert hits[0].source_uri == "doc://oil"
+    assert hits[0].metadata["chunk_id"] == "doc-1"
+    assert hits[0].metadata["embedding_version"] == "bge-small@2026-04"
+    assert hits[0].metadata["embedding_dimension"] == 384
+    assert hits[0].metadata["ingested_at"] == "2026-04-27T00:00:00Z"
+    assert hits[0].metadata["ttl_seconds"] == 86400
+    assert hits[0].metadata["entity_signatures"] == ["eu", "russia"]
 
 
 def test_kg_claim_adapter_normalizes_rows() -> None:

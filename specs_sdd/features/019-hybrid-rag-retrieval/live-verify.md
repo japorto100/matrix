@@ -27,6 +27,9 @@ feature_id: 019
   `embedding_model`, `embedding_version` and `embedding_dimension` while
   preserving explicit provider metadata. Mock VectorStore tests cover default
   metadata and custom OpenRouter/remote-provider-compatible overrides.
+- Vector search hits normalize Feature-017 chunk metadata via
+  `ChunkMetadata`: source URI, embedding version/dimension, ingest timestamp,
+  TTL and entity signatures are carried into `RetrievalHit.metadata`.
 - Citation/support verification has a deterministic first pass that flags
   answer sentences not weakly supported by retrieved hits; LLM Self-RAG is not
   wired yet.

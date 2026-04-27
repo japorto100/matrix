@@ -67,6 +67,10 @@ feature_id: 017
   Fast-Lane validation is skipped rather than blocking fresh ingest, missing
   evidence is rejected, self-relations are hard negatives, and evidence-backed
   Slow-Lane triples can support but not force promotion.
+- `retrieval.core.chunk_metadata.ChunkMetadata` defines the vector chunk
+  metadata contract for fused retrieval: chunk id, source URI, embedding
+  model/version/dimension, ingest timestamp, TTL, validity window and entity
+  signatures. `vector_search_hits(...)` normalizes rows through this contract.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is
   guarded and reports degraded state if the global KG store is unavailable.
 - Meta-Harness Feature 016 now includes
