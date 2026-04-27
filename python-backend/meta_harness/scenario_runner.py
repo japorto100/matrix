@@ -117,6 +117,8 @@ class TraceExpectations:
     required_skills: tuple[str, ...] = ()
     required_memory_routes: tuple[str, ...] = ()
     required_memory_providers: tuple[str, ...] = ()
+    forbidden_memory_routes: tuple[str, ...] = ()
+    forbidden_memory_providers: tuple[str, ...] = ()
     expected_memory: bool = False
     min_tool_success_rate: float | None = None
     allow_tool_failures: bool = False
@@ -135,6 +137,12 @@ class TraceExpectations:
             ),
             required_memory_providers=tuple(
                 str(x) for x in raw.get("required_memory_providers", [])
+            ),
+            forbidden_memory_routes=tuple(
+                str(x) for x in raw.get("forbidden_memory_routes", [])
+            ),
+            forbidden_memory_providers=tuple(
+                str(x) for x in raw.get("forbidden_memory_providers", [])
             ),
             expected_memory=bool(raw.get("expected_memory", False)),
             min_tool_success_rate=raw.get("min_tool_success_rate"),
@@ -405,6 +413,12 @@ def evaluate_trace_gates(
     for provider in expectations.required_memory_providers:
         if provider not in memory_providers:
             failures.append(f"missing required memory provider: {provider}")
+    for route in expectations.forbidden_memory_routes:
+        if route in memory_routes:
+            failures.append(f"forbidden memory route observed: {route}")
+    for provider in expectations.forbidden_memory_providers:
+        if provider in memory_providers:
+            failures.append(f"forbidden memory provider observed: {provider}")
 
     tool_results = [event for event in events if _event_action(event) == "tool_result"]
     tool_success_rate: float | None = None

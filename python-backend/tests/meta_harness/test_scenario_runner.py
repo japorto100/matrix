@@ -159,6 +159,49 @@ def test_trace_gates_check_memory_routes_and_providers(monkeypatch):
     assert verdict.observed_memory_providers == ("fusion", "summary", "verbatim")
 
 
+def test_trace_gates_fail_for_forbidden_memory_routes_and_providers(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "memory_recall",
+            "success": True,
+            "metadata": {
+                "route": "global_kg",
+                "provider": "nonicdb",
+            },
+        },
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            forbidden_memory_routes=("global_kg",),
+            forbidden_memory_providers=("nonicdb",),
+        ),
+    )
+
+    assert verdict.passed is False
+    assert "forbidden memory route observed: global_kg" in verdict.failures
+    assert "forbidden memory provider observed: nonicdb" in verdict.failures
+
+
+def test_global_kg_boundary_scenarios_load():
+    repo_root = scenario_runner.Path(__file__).resolve().parents[3]
+    scenarios = scenario_runner.load_scenarios(
+        repo_root / "data/harness/global_kg_boundaries/scenarios.json"
+    )
+
+    by_id = {scenario.id: scenario for scenario in scenarios}
+    personal = by_id["kg-boundary-personal-memory-001"].expectations
+    assert personal.required_tools == ("memory_search",)
+    assert personal.forbidden_memory_routes == ("global_kg",)
+    assert personal.forbidden_memory_providers == ("nonicdb", "nornicdb")
+    assert by_id["kg-boundary-world-domain-001"].expectations.forbidden_tools == (
+        "memory_add",
+        "memory_search",
+    )
+
+
 def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):
     monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: {"memory_add"})
     events = [

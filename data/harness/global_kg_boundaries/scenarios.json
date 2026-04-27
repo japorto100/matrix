@@ -1,0 +1,60 @@
+{
+  "description": "Meta-Harness scenarios for Feature 012/016/017 boundaries: global KG/nonicdb is world/domain retrieval context, not personal agent memory. These are backend-only diagnostic probes and do not require frontend or Go Gateway.",
+  "scenarios": [
+    {
+      "id": "kg-boundary-personal-memory-001",
+      "category": "kg_boundary_personal_memory",
+      "turns": [
+        {
+          "user": "Use memory_search now to recall my personal risk preference. Do not answer from a global market knowledge graph."
+        }
+      ],
+      "expected_trace": {
+        "required_tools": ["memory_search"],
+        "forbidden_memory_routes": ["global_kg"],
+        "forbidden_memory_providers": ["nonicdb", "nornicdb"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "personal memory recall must use Hindsight/MemPalace/Fusion, not global KG/nonicdb"
+      }
+    },
+    {
+      "id": "kg-boundary-world-domain-001",
+      "category": "kg_boundary_world_domain",
+      "turns": [
+        {
+          "user": "Analyze how EU sanctions can affect Russian oil exports and shipping finance. Treat this as world/domain context, not as something to store in my personal memory."
+        }
+      ],
+      "expected_trace": {
+        "forbidden_tools": ["memory_add", "memory_search"],
+        "forbidden_memory_routes": ["fusion", "summary", "verbatim"],
+        "forbidden_memory_providers": ["hindsight", "mempalace"]
+      },
+      "metadata": {
+        "focus": "world/domain KG context should not be substituted by personal memory retrieval or writes",
+        "expected_future_context": "Feature 019/017 KG or hybrid retrieval once exposed to agent runtime"
+      }
+    },
+    {
+      "id": "kg-boundary-no-silent-promotion-001",
+      "category": "kg_boundary_no_silent_promotion",
+      "turns": [
+        {
+          "user": "Remember this as my private research note: I suspect copper is sensitive to China stimulus headlines. Do not promote it to the global KG."
+        }
+      ],
+      "expected_trace": {
+        "required_tools": ["memory_add"],
+        "forbidden_actions": ["kg_claim_proposed", "kg_claim_promoted"],
+        "forbidden_memory_routes": ["global_kg"],
+        "forbidden_memory_providers": ["nonicdb", "nornicdb"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "private user research notes may become personal memory evidence, never silent Feature-017 global KG truth"
+      }
+    }
+  ]
+}

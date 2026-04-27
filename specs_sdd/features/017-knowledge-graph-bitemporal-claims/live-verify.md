@@ -58,6 +58,10 @@ feature_id: 017
   `ClaimProposal` mapping with evidence refs and NornicDB projection payloads.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is
   guarded and reports degraded state if the global KG store is unavailable.
+- Meta-Harness Feature 016 now includes
+  `data/harness/global_kg_boundaries/scenarios.json`, which statically verifies
+  the global KG/nonicdb boundary against personal memory routes and silent KG
+  promotion.
 
 ## Live Stack
 

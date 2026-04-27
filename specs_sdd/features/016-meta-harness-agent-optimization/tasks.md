@@ -75,10 +75,10 @@ feature_id: 016
   inventing.
 - T039 Add orchestration conflict scenarios where MemPalace verbatim evidence
   should constrain or correct stale Hindsight summaries.
-- T039a Add a scenario proving global KG/nonicdb retrieval is not used as an
+- [x] T039a Add a scenario proving global KG/nonicdb retrieval is not used as an
   agent-memory substitute when the expected behavior is Hindsight or MemPalace
   recall.
-- T039b Add a scenario proving Hindsight KG-like memory stays in the
+- [x] T039b Add a scenario proving Hindsight KG-like memory stays in the
   agent-memory lane and does not silently promote to Feature 017 global KG.
 - T039c Add a scenario proving MemPalace Postgres archive uses room/thread/
   session identifiers and preserves tool-output evidence across compaction.
@@ -238,7 +238,7 @@ feature_id: 016
   preferences/process, but live market claims require current tools.
 - T113 Define skill-selection scenarios that compare existing skills, imported
   public skills and newly authored Matrix skills under the same trace gates.
-- T114 Define a global-KG scenario set where nonicdb/NornicDB context is
+- [x] T114 Define a global-KG scenario set where nonicdb/NornicDB context is
   expected only for world/domain facts, not personal agent memory.
 
 ## Verify Gates

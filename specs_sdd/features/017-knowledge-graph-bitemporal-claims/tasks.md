@@ -117,8 +117,8 @@ feature_id: 017
   KG-claim access telemetry from Feature 019.
 - T045 Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
-- T046 Verify global KG retrieval is not used as an agent-memory rail unless a
-  scenario explicitly requests world/domain KG context.
+- T046 [done-static] Verify global KG retrieval is not used as an agent-memory
+  rail unless a scenario explicitly requests world/domain KG context.
 - T047 Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
   under matched query, context, model and retrieval budgets; implementation
   owner is Feature 019, KG claim/path source owner is Feature 017.

@@ -572,3 +572,25 @@ Expected evidence:
 
 - MCP tool response includes the run/candidate id.
 - no frontend or Go dependency.
+
+## MV-07 Global KG Boundary Gates
+
+Status: static pass on 2026-04-27; live run pending real KG/runtime exposure.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer and added deterministic trace-gate support for
+  forbidden memory routes/providers.
+- New scenario set:
+  `data/harness/global_kg_boundaries/scenarios.json`.
+
+Evidence:
+
+- Personal-memory scenario requires `memory_search` and forbids
+  `global_kg` route plus `nonicdb`/`nornicdb` providers.
+- World/domain scenario forbids `memory_add`/`memory_search` so global KG or
+  hybrid RAG work cannot be silently substituted by personal memory.
+- Private-note scenario requires `memory_add` and forbids KG proposal/promotion
+  actions.
+- Static tests verify the new forbidden route/provider gates and scenario
+  fixture load.

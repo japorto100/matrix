@@ -43,8 +43,11 @@ migrated_from:
   preferences, corrections, summaries, reflections and evolving beliefs.
 - T021 Rename or document `memory_fusion` as memory orchestration in user-facing
   docs and internal specs.
-- T022 Verify Hindsight's KG-like/structured-memory behavior in Postgres and
-  document that it stays inside the agent-memory lane, not the global KG.
+- T022 [partial-static] Verify Hindsight's KG-like/structured-memory behavior
+  in Postgres and document that it stays inside the agent-memory lane, not the
+  global KG. Feature 016 now has boundary scenarios forbidding global KG/
+  nonicdb as an agent-memory substitute; live Hindsight internals still need
+  dedicated verification.
 - T023 Review current Hindsight docs/repo state for new schema, runtime or
   eval concepts before finalizing the Matrix Postgres adaptation.
 - T024 Verify Matrix room/thread/session identity is available for durable
