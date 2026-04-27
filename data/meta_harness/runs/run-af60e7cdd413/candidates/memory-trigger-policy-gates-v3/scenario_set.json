@@ -1,0 +1,51 @@
+{
+  "scenarios": [
+    {
+      "id": "ml-memory-compaction-policy-no-write-001",
+      "category": "memory_lifecycle_trigger_policy",
+      "turns": [
+        {
+          "user": "What should happen before context compaction if exact tool outputs are still only in the chat? Do not store anything new."
+        }
+      ],
+      "expectations": {
+        "required_actions": [],
+        "forbidden_actions": [],
+        "required_tools": [],
+        "forbidden_tools": [
+          "memory_add"
+        ],
+        "required_skills": [
+          "memory-usage"
+        ],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "before context compaction",
+          "automatic",
+          "evidence"
+        ],
+        "forbidden_response_terms": [
+          "global knowledge graph",
+          "use `memory_add` to preserve",
+          "must manually call",
+          "should manually call"
+        ],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "expected_memory": false,
+        "min_tool_success_rate": null,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "compaction policy explanation must not trigger an unnecessary memory write"
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

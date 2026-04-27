@@ -1,0 +1,109 @@
+[
+  {
+    "id": 1592,
+    "timestamp": "2026-04-27 04:51:36.070650+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-compaction-policy-no-write-001-853b2344",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "What should happen before context compaction if exact tool outputs are still only in the chat? Do not store anything new.",
+    "output": "Before the system runs its automatic **context\u2011compaction** step, any tool output that exists only in the current chat transcript (i.e., hasn\u2019t yet been persisted elsewhere) is first **archived**. The archiving process copies the raw tool output into the long\u2011term \u201cpre\u2011save\u201d archive so that the exact information is retained even after the chat text is trimmed or summarized. Only after this archival step does the system go ahead and compact the conversation. No new memories are created in this step.",
+    "duration_ms": 6937,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/free",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 3370,
+      "content_cleaned": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 1591,
+    "timestamp": "2026-04-27 04:51:28.853044+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-compaction-policy-no-write-001-853b2344",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 1590,
+    "timestamp": "2026-04-27 04:51:28.690528+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-compaction-policy-no-write-001-853b2344",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "What should happen before context compaction if exact tool outputs are still only in the chat? Do not store anything new.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 1589,
+    "timestamp": "2026-04-27 04:51:28.585954+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-compaction-policy-no-write-001-853b2344",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "What should happen before context compaction if exact tool outputs are still only in the chat? Do not store anything new.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

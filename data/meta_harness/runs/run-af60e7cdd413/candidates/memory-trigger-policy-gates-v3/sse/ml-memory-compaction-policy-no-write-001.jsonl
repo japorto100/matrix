@@ -1,0 +1,7 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-compaction-policy-no-write-001-853b2344\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-compaction-policy-no-write-001-853b2344\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Before the system runs its automatic **context\\u2011compaction** step, any tool output that exists only in the current chat transcript (i.e., hasn\\u2019t yet been persisted elsewhere) is first **archived**. The archiving process copies the raw tool output into the long\\u2011term \\u201cpre\\u2011save\\u201d archive so that the exact information is retained even after the chat text is trimmed or summarized. Only after this archival step does the system go ahead and compact the conversation. No new memories are created in this step.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-compaction-policy-no-write-001-853b2344\", \"promptTokens\": 3235, \"completionTokens\": 135, \"reasoningTokens\": 25, \"cachedTokens\": 80, \"totalTokens\": 3370, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

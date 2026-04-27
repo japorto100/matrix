@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it\\u2014I\\u2019ll make sure that, before any context compaction happens, we archive the exact tool outputs and decisions as verbatim evidence. This will be retained as part of the project memory.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-a846a9cfe86d132d\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-a846a9cfe86d132d\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\", \"promptTokens\": 6546, \"completionTokens\": 117, \"reasoningTokens\": 24, \"cachedTokens\": 160, \"totalTokens\": 6663, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"If exact tool outputs are still only in the chat (i.e., not yet archived), they should be **archived as verbatim evidence** before context compaction occurs. This ensures the raw tool outputs and decisions are preserved and not lost during the compaction process.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-8846c59c2be503f3\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-8846c59c2be503f3\", \"output\": {\"stored\": true, \"facts_extracted\": 0, \"deduplicated\": true, \"original_facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-ddfd0f40\", \"promptTokens\": 10332, \"completionTokens\": 3268, \"reasoningTokens\": 140, \"cachedTokens\": 0, \"totalTokens\": 13600, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

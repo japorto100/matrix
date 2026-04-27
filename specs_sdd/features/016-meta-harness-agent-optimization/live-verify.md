@@ -641,3 +641,45 @@ Evidence:
   => `35 passed`.
 - Ruff:
   `ruff check agent/skills/finder.py tests/agent/test_skill_finder.py` => pass.
+
+## MV-09 Memory Trigger Policy And Pre-Save Archive
+
+Status: partial pass on 2026-04-27. Code/static gates pass; live LLM runs show
+the no-write policy works, but response-term gates still need less brittle
+normalization for hyphenation/synonyms.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer and user, ran memory lifecycle scenarios through
+  SimpleLoop/OpenRouter, inspected trace failures, then tightened
+  `memory-usage` skill guidance and `memory_add` tool description.
+- New scenario:
+  `ml-memory-compaction-policy-no-write-001` forbids `memory_add` when the user
+  asks how automatic pre-save archive works and says not to store anything new.
+
+Evidence:
+
+- `run-4d4a58a31290`, candidate `pre-save-verbatim-archive`, passed 2/2
+  memory lifecycle scenarios with `trace_gate_pass_rate=1.0` and showed route
+  `fusion` plus providers `fusion`, `verbatim`, `summary_async`.
+- `run-c8d92b347287`, candidate `pre-save-verbatim-archive-gated`, passed 2/2
+  after adding forbidden response terms for stale manual-compaction wording.
+- `run-2d6e48b0f0db`, `run-79edbfca37cb` and `run-af60e7cdd413` were used as
+  rejected/diagnostic candidates while tuning the new no-write policy gate.
+  They proved the model can avoid `memory_add` in the no-write scenario, but
+  also exposed brittle phrase gates and repeated-store variance in the older
+  fusion-route scenario.
+- Static checks:
+  `pytest tests/meta_harness/test_scenario_runner.py tests/agent/test_skill_finder.py tests/agent/tools/test_memory_hindsight.py -q`
+  => `45 passed`.
+- Focused memory/code checks from Feature 012:
+  `pytest tests/test_memory_provider.py tests/memory_fusion/test_mempalace_postgres_engine.py tests/agent/test_phase_b_wiring.py tests/agent/middleware/test_compaction_compression.py -q`
+  => `53 passed`.
+
+Follow-up:
+
+- Normalize response-term gates for hyphenation and synonyms before promoting
+  the no-write scenario to a hard release gate.
+- Investigate older `ml-memory-fusion-route-001` duplicate `memory_add`
+  variance separately; dedupe prevents duplicate writes, but the trace warning
+  remains useful for prompt/tool-policy tuning.

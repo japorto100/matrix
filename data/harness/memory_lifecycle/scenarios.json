@@ -46,13 +46,35 @@
         "required_actions": ["memory_recall", "memory_retain"],
         "required_skills": ["memory-usage"],
         "required_memory_routes": ["fusion"],
-        "required_response_terms": ["before context compaction", "verbatim evidence"],
         "forbidden_response_terms": ["global knowledge graph"],
         "required_memory_metadata_keys": ["bank_id", "route"],
         "expected_memory": true
       },
       "metadata": {
         "focus": "automatic recall/retain and Fusion route visibility"
+      }
+    },
+    {
+      "id": "ml-memory-compaction-policy-no-write-001",
+      "category": "memory_lifecycle_trigger_policy",
+      "turns": [
+        {
+          "user": "What should happen before context compaction if exact tool outputs are still only in the chat? Do not store anything new."
+        }
+      ],
+      "expected_trace": {
+        "required_skills": ["memory-usage"],
+        "forbidden_tools": ["memory_add"],
+        "required_response_terms": ["compaction", "automatic", "archiv"],
+        "forbidden_response_terms": [
+          "global knowledge graph",
+          "use `memory_add` to preserve",
+          "must manually call",
+          "should manually call"
+        ]
+      },
+      "metadata": {
+        "focus": "compaction policy explanation must not trigger an unnecessary memory write"
       }
     }
   ]

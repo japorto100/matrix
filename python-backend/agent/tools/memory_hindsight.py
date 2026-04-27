@@ -241,8 +241,10 @@ class MemoryAddTool(TradingTool):
                 "Store an important fact, preference, decision, project memory, or exact "
                 "evidence in persistent long-term memory. Use this when the user explicitly "
                 "says to use memory_add, asks you to remember something, or when information "
-                "must survive context compaction and future conversations. Prefer this over "
-                "save_memory for anything long-term or evidence-bearing."
+                "must survive future conversations. Do not call this solely to implement "
+                "automatic context-compaction safety; the pre-save archive pipeline handles "
+                "that. Prefer this over save_memory for explicit long-term or evidence-bearing "
+                "memory requests."
             ),
             "input_schema": MemoryAddInput.model_json_schema(),
         }

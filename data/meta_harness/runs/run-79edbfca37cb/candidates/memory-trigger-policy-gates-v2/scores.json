@@ -1,0 +1,43 @@
+{
+  "run_id": "run-79edbfca37cb",
+  "candidate_id": "memory-trigger-policy-gates-v2",
+  "scenarios_evaluated": 3,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 0.6667,
+  "avg_turns": 1.667,
+  "turn_efficiency": 0.6,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8967,
+  "fitness_score": 0.8967,
+  "total_tokens": 51442,
+  "avg_tokens": 17147.3,
+  "token_efficiency": 0.058318,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 146336.0,
+  "avg_duration_ms": 48778.7,
+  "latency_efficiency": 0.020501,
+  "failed_scenarios": [
+    {
+      "scenario_id": "ml-memory-compaction-policy-no-write-001",
+      "failures": [
+        "missing required response term: verbatim",
+        "forbidden response term observed: call `memory_add`",
+        "forbidden response term observed: manually call `memory_add`"
+      ],
+      "observed_actions": [
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "memory-usage"
+      ]
+    }
+  ]
+}

@@ -80,8 +80,11 @@ feature_id: 016
   recall.
 - [x] T039b Add a scenario proving Hindsight KG-like memory stays in the
   agent-memory lane and does not silently promote to Feature 017 global KG.
-- T039c Add a scenario proving MemPalace Postgres archive uses room/thread/
-  session identifiers and preserves tool-output evidence across compaction.
+- [x] T039c [done-static-live-smoke] Add a scenario/probe proving MemPalace
+  Postgres archive uses room/thread/session identifiers and preserves
+  tool-output evidence across compaction. Feature 012 now has live DB smoke
+  for scoped identity/delete plus pre-save deferred-embedding archive; memory
+  lifecycle scenarios include a no-write compaction-policy gate.
 - [x] T040 Add memory route assertions for `summary`, `verbatim`, `hybrid` and
   provider mode `hindsight|mempalace|fusion`.
 - T041 Add memory holdout set that is not visible to proposer/search runs.
@@ -217,6 +220,9 @@ feature_id: 016
 - [x] T098 Reduce skill over-selection in explicit memory probes; current
   memory-only Meta-Harness scenarios now load only `memory-usage` after the
   skill finder added a memory-intent shortcut and zero-overlap BM25 filtering.
+- [x] T098a Add a no-write compaction-policy scenario so Meta-Harness catches
+  unnecessary `memory_add` calls when the user asks how automatic pre-save
+  archive works and explicitly says not to store anything new.
 - T099 Start or mock OpenSandbox before sandbox live probes; current
   `lp-sandbox-001` selects `sandbox_execute` correctly but fails because the
   sandbox service endpoint is unreachable.
