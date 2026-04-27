@@ -1,0 +1,4 @@
+{"chunk": "data: {\"messageId\": \"mh-rp-no-tools-001-62a8bba4\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-62a8bba4\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"errorText\": \"LangGraph error: Error code: 400 - {'error': {'message': 'litellm.BadRequestError: OpenrouterException - {\\\"error\\\":{\\\"message\\\":\\\"qwen/qwen3-480b:free is not a valid model ID\\\",\\\"code\\\":400},\\\"user_id\\\":\\\"user_3CAAFEAyhkhIYK07cULDdIePvdi\\\"}. Received Model Group=openrouter/qwen/qwen3-480b:free\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '400'}}\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"format_error\", \"recovery_strategy\": \"abort\", \"retryable\": false, \"status_code\": 400}}\n\n"}

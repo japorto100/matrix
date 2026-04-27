@@ -387,7 +387,8 @@ def test_meta_cli_keeps_explicit_env_over_env_files(monkeypatch, tmp_path):
     assert os.environ["SHARED_VALUE"] == "explicit"
 
 
-def test_write_scenario_artifacts(tmp_path):
+def test_write_scenario_artifacts(monkeypatch, tmp_path):
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "64")
     scenario = scenario_runner.Scenario.from_mapping(
         {"id": "s1", "turns": [{"user": "hi"}], "category": "smoke"}
     )
@@ -423,6 +424,10 @@ def test_write_scenario_artifacts(tmp_path):
     assert (artifact_dir / "verdicts.json").exists()
     assert (artifact_dir / "config.json").exists()
     assert (artifact_dir / "source_snapshot.json").exists()
+    run_manifest = json.loads((tmp_path / "runs" / "run-test" / "run.json").read_text())
+    assert run_manifest["stack"]["agent_max_output_tokens"] == "64"
+    config = json.loads((artifact_dir / "config.json").read_text())
+    assert config["runtime_config"]["llm"]["agent_max_output_tokens"] == "64"
     trace_path = artifact_dir / "traces" / "s1" / "thread-1.json"
     assert json.loads(trace_path.read_text())[0]["action"] == "llm_response"
 

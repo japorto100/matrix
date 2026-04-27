@@ -8,6 +8,10 @@ cached. This file pins the fixed semantics.
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from agent.graph.nodes.llm_node import (
     _apply_anthropic_caching,
     _clean_assistant_content,
@@ -171,3 +175,68 @@ def test_max_output_tokens_env_default_and_disable(monkeypatch):
 
     monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "invalid")
     assert _max_output_tokens_from_env() == 4096
+
+
+@pytest.mark.asyncio
+async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
+    from agent.graph.nodes import llm_node as llm_module
+
+    captured: dict = {}
+
+    class _FakeCompletions:
+        async def create(self, **kwargs):
+            captured.update(kwargs)
+            message = SimpleNamespace(content="ok", tool_calls=None)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)],
+                usage=None,
+                model=kwargs["model"],
+            )
+
+    class _FakeClient:
+        chat = SimpleNamespace(completions=_FakeCompletions())
+
+    class _FakePool:
+        async def acquire(self, **_kwargs):
+            return None
+
+    class _FakeSpan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def set_attribute(self, *_args, **_kwargs):
+            return None
+
+        def add_event(self, *_args, **_kwargs):
+            return None
+
+        def track_generation(self, *_args, **_kwargs):
+            return None
+
+    async def _noop_audit_log(**_kwargs):
+        return None
+
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "64")
+    monkeypatch.setattr(llm_module, "get_litellm_client", lambda: _FakeClient())
+    monkeypatch.setattr(llm_module, "get_credential_pool", lambda: _FakePool())
+    monkeypatch.setattr("agent.tracing.turn_span", lambda *_args, **_kwargs: _FakeSpan())
+    monkeypatch.setattr("agent.audit.logger.audit_log", _noop_audit_log)
+
+    result = await llm_module.llm_node(
+        {
+            "model": "openrouter/test-model",
+            "messages": [{"role": "user", "content": "say ok"}],
+            "system_prompt": "test",
+            "thread_id": "",
+            "iteration": 0,
+            "tool_definitions": [],
+            "user_id": "anonymous",
+        }
+    )
+
+    assert captured["max_tokens"] == 64
+    assert captured["model"] == "openrouter/test-model"
+    assert result["final_response"] == "ok"

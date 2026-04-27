@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1625,
+    "timestamp": "2026-04-27 11:43:15.083688+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-5f51d925",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [],
+      "skill_names": [],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

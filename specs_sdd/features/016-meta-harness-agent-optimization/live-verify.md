@@ -723,3 +723,49 @@ Evidence:
   despite the local command setting `AGENT_MAX_OUTPUT_TOKENS=64`. This becomes
   T097c because output-token cap propagation through LiteLLM/OpenRouter still
   needs a focused live probe.
+
+## MV-11 Output-Token Cap Propagation
+
+Status: static pass; live provider diagnostic blocked on OpenRouter quota/credit
+on 2026-04-27.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer/operator after MV-10 exposed a misleading upstream
+  4096-token budget error.
+- The focused hypothesis was: either the real agent fails to pass
+  `AGENT_MAX_OUTPUT_TOKENS` to LiteLLM, or the failure is provider/gateway
+  economics unrelated to runner parity.
+
+Evidence:
+
+- Added a focused unit test proving `agent.graph.nodes.llm_node.llm_node(...)`
+  forwards `AGENT_MAX_OUTPUT_TOKENS=64` as `max_tokens=64` into
+  `client.chat.completions.create(...)`.
+- Meta-Harness artifacts now record the cap in both:
+  `data/meta_harness/runs/<run_id>/run.json` under
+  `stack.agent_max_output_tokens`, and
+  `candidates/<candidate_id>/config.json` under
+  `runtime_config.llm.agent_max_output_tokens`.
+- Static checks:
+  `pytest tests/agent/test_llm_node_caching.py tests/meta_harness/test_scenario_runner.py -q`
+  => `45 passed`.
+- Ruff:
+  `ruff check agent/graph/nodes/llm_node.py meta_harness/config.py meta_harness/scenario_runner.py tests/agent/test_llm_node_caching.py tests/meta_harness/test_scenario_runner.py`
+  => pass.
+- Live diagnostic run with current free model:
+  `run-token-cap-verify-2` and `run-token-cap-free-smoke`.
+  Result: old 4096-token budget error did not recur; OpenRouter returned
+  `429 free-models-per-min`.
+- Live diagnostic run with paid low-cost model:
+  `run-token-cap-paid-smoke`.
+  Result: OpenRouter returned `402 Insufficient credits`; artifact confirms
+  `agent_max_output_tokens="64"`.
+
+Conclusion:
+
+- T097c is resolved for Matrix code-path propagation and artifact
+  observability.
+- A full runner-parity live pass now needs T097d: a budget-stable local/mock
+  LiteLLM-compatible lane or funded OpenRouter key. Repeated Meta-Harness
+  outer-loop work should not depend on volatile free-model quotas.

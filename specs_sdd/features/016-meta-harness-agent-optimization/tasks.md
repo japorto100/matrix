@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Tasks
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 016
 ---
 
@@ -210,9 +210,17 @@ feature_id: 016
   not host-local `localhost:5433`.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
-- T097c Fix/verify output-token cap propagation through LiteLLM/OpenRouter:
-  runner-parity live smoke still reported an upstream 4096-token request
-  despite a local `AGENT_MAX_OUTPUT_TOKENS=64` command override.
+- [x] T097c [done-static-live-diagnostic] Fix/verify output-token cap
+  propagation through LiteLLM/OpenRouter. Unit coverage now proves
+  `llm_node` forwards `AGENT_MAX_OUTPUT_TOKENS` as OpenAI-compatible
+  `max_tokens`, and Meta-Harness artifacts record the effective cap in
+  `run.json` plus `config.json`. Follow-up live diagnostics no longer show the
+  old 4096-token budget error; current blockers are OpenRouter free-model rate
+  limits and missing paid credits.
+- T097d Add a budget-stable Meta-Harness LLM lane for repeated outer-loop
+  optimization: prefer a local/mock LiteLLM-compatible model for runner-parity
+  and deterministic harness plumbing, and keep OpenRouter/free models only as
+  explicit live-provider probes.
 - [x] T097a Add explicit `memory_add` deduplication for repeated normalized
   content/fact-type writes in the same thread and short time window after
   Meta-Harness exposed duplicate writes in `run-eeb4e11fab0f`.

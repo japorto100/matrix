@@ -95,6 +95,13 @@ def capture_current_config() -> HarnessConfig:
         pass
 
     config.runtime_config = {
+        "llm": {
+            "default_model": os.environ.get("AGENT_DEFAULT_MODEL", ""),
+            "default_utility_model": os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", ""),
+            "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
+            "agent_max_output_tokens": os.environ.get("AGENT_MAX_OUTPUT_TOKENS", ""),
+            "turn_timeout_seconds": os.environ.get("META_HARNESS_TURN_TIMEOUT_S", ""),
+        },
         "memory": {
             "agent_memory_engine": os.environ.get("AGENT_MEMORY_ENGINE", "auto"),
             "embedding_provider": os.environ.get("MEMORY_EMBEDDING_PROVIDER", "openrouter"),

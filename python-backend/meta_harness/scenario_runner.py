@@ -929,6 +929,7 @@ def write_scenario_artifacts(
             "go_gateway_required": False,
             "memory_engine": os.environ.get("AGENT_MEMORY_ENGINE", "auto"),
             "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
+            "agent_max_output_tokens": os.environ.get("AGENT_MAX_OUTPUT_TOKENS", ""),
         },
     }
     (data_dir / "runs" / result.run_id / "run.json").write_text(
