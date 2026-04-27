@@ -1,0 +1,23 @@
+{
+  "run_id": "run-9b2b8bf9a58a",
+  "candidate_id": "skill-finder-memory-intent-only",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8583,
+  "fitness_score": 0.8583,
+  "total_tokens": 26128,
+  "avg_tokens": 13064.0,
+  "token_efficiency": 0.076546,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 34738.0,
+  "avg_duration_ms": 17369.0,
+  "latency_efficiency": 0.057574,
+  "failed_scenarios": []
+}

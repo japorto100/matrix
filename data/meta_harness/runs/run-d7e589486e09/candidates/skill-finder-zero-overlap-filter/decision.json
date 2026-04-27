@@ -1,0 +1,14 @@
+{
+  "run_id": "run-d7e589486e09",
+  "candidate_id": "skill-finder-zero-overlap-filter",
+  "decision": "discard",
+  "rationale": "Discarded/superseded: zero-overlap BM25 filtering passed memory gates but did not reduce memory-prompt skill over-selection in live traces; run-9b2b8bf9a58a supersedes it with memory-intent-only selection.",
+  "decided_at": "2026-04-27T03:58:26.120288+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.8583,
+    "superseded_by": "run-9b2b8bf9a58a"
+  },
+  "follow_up": ""
+}

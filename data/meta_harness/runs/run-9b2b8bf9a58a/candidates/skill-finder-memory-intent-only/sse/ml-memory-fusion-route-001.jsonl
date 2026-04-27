@@ -1,0 +1,17 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-5d9b349f\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-5d9b349f\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it! I\\u2019ll make sure to archive exact tool outputs and decisions verbatim before any context compaction.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-958646998e7672d9\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-958646998e7672d9\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-5d9b349f\", \"promptTokens\": 6492, \"completionTokens\": 97, \"reasoningTokens\": 22, \"cachedTokens\": 3232, \"totalTokens\": 6589, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-5d9b349f\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-5d9b349f\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Before we compact the conversation, any exact tool outputs (and the decisions based on them) that exist only in the chat transcript need to be saved as immutable evidence. In practice, that means copying those raw outputs\\u202f\\u2014\\u202fverbatim, unchanged\\u202f\\u2014\\u202finto a permanent store (e.g., a \\u201cproject memory\\u201d or audit log) so they remain retrievable even after the chat history is trimmed or summarized. Only after that archival step can we safely discard or condense the rest of the dialogue.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-5d9b349f\", \"promptTokens\": 3217, \"completionTokens\": 140, \"reasoningTokens\": 35, \"cachedTokens\": 3168, \"totalTokens\": 3357, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

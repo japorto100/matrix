@@ -107,6 +107,84 @@ def test_no_lexical_overlap_returns_no_skills(monkeypatch: pytest.MonkeyPatch, t
     assert find_skills_for_query(skills, "runner parity smoke", top_k=2) == []
 
 
+def test_bm25_only_does_not_pad_zero_overlap_skills(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when the task depends on memory_search or memory_add",
+            category="general",
+            content="remember previous conversation memory_search memory_add",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="market-research",
+            description="Market sentiment and equity research",
+            category="research",
+            content="AAPL sentiment catalyst analyst positioning",
+            path=tmp_path / "market",
+        ),
+        Skill(
+            name="risk-assessment",
+            description="Position sizing and portfolio risk",
+            category="risk",
+            content="drawdown stop loss portfolio risk",
+            path=tmp_path / "risk",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Use memory_search now to recall the exact lifecycle probe",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["memory-usage"]
+
+
+def test_memory_intent_prefers_memory_skill_without_plan_or_risk(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search remember previous conversation",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="plan",
+            description="Use when the user asks to plan before executing",
+            category="meta",
+            content="before we do outline approach",
+            path=tmp_path / "plan",
+        ),
+        Skill(
+            name="risk-assessment",
+            description="Use when the user asks about risk or whether a trade should be approved",
+            category="risk",
+            content="risk stop position sizing should",
+            path=tmp_path / "risk",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "What should happen before context compaction if exact tool outputs are still only in the chat?",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["memory-usage"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

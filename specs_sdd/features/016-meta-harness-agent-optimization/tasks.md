@@ -214,9 +214,9 @@ feature_id: 016
   assistant turn calls `memory_add` multiple times with the same normalized
   content/fact type, the candidate verdict records a warning unless a future
   scenario explicitly upgrades the condition to a failure.
-- T098 Reduce skill over-selection in explicit memory probes; current
-  `lp-memory-001` passes but still loads `market-research`, `risk-assessment`
-  and `plan` alongside `memory-usage`.
+- [x] T098 Reduce skill over-selection in explicit memory probes; current
+  memory-only Meta-Harness scenarios now load only `memory-usage` after the
+  skill finder added a memory-intent shortcut and zero-overlap BM25 filtering.
 - T099 Start or mock OpenSandbox before sandbox live probes; current
   `lp-sandbox-001` selects `sandbox_execute` correctly but fails because the
   sandbox service endpoint is unreachable.

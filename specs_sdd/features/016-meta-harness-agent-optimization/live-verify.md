@@ -606,3 +606,29 @@ Follow-up:
 - Skill over-selection remains visible in this run (`plan`,
   `market-research`/`risk-assessment` alongside `memory-usage`) and stays
   tracked as T098.
+
+## MV-08 Memory Skill Precision
+
+Status: pass on 2026-04-27.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer after MV-07 exposed skill over-selection in
+  memory-only scenarios.
+- First candidate `skill-finder-zero-overlap-filter`, run `run-d7e589486e09`,
+  passed memory lifecycle gates but still loaded `plan`, `market-research` or
+  `risk-assessment` on memory prompts, so it was not sufficient.
+- Corrective candidate `skill-finder-memory-intent-only`, run
+  `run-9b2b8bf9a58a`, added a memory-intent shortcut in the skill finder.
+
+Evidence:
+
+- `run-9b2b8bf9a58a` passed both memory lifecycle scenarios with
+  `trace_gate_pass_rate=1.0`, `completion_rate=1.0`, `fitness_score=0.8583`.
+- Observed skills for both scenarios are now only `global:memory-usage` /
+  `memory-usage`; no `plan`, `market-research` or `risk-assessment` loaded.
+- Unit checks:
+  `pytest tests/agent/test_skill_finder.py tests/meta_harness/test_scenario_runner.py -q`
+  => `35 passed`.
+- Ruff:
+  `ruff check agent/skills/finder.py tests/agent/test_skill_finder.py` => pass.

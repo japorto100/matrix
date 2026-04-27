@@ -34,6 +34,23 @@ _STOPWORDS = frozenset(
         "kurz", "mit", "mir", "und", "was", "wie",
     }
 )
+_MEMORY_INTENT_TERMS = frozenset(
+    {
+        "compaction",
+        "erinnere",
+        "erinnern",
+        "erinnerung",
+        "gedaechtnis",
+        "memory",
+        "memory_add",
+        "memory_search",
+        "past",
+        "previous",
+        "recall",
+        "remember",
+        "verbatim",
+    }
+)
 
 
 def _env_bool(key: str, default: bool) -> bool:
@@ -170,6 +187,21 @@ def _bm25_ranks(skills: list[Skill], query: str) -> list[int]:
     return order
 
 
+def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
+    normalized = query.casefold()
+    query_terms = set(tokenize(query))
+    has_memory_intent = any(term in normalized for term in _MEMORY_INTENT_TERMS) or bool(
+        query_terms & _MEMORY_INTENT_TERMS
+    )
+    if not has_memory_intent:
+        return []
+    return [
+        skill
+        for skill in skills
+        if skill.name == "memory-usage" or skill.skill_type == "memory"
+    ]
+
+
 def find_skills_for_query(
     skills: list[Skill],
     query: str,
@@ -183,6 +215,10 @@ def find_skills_for_query(
     q = (query or "").strip()
     if not q or not _env_bool("AGENT_SKILL_FINDER", True):
         return skills
+
+    memory_intent_skills = _memory_intent_skill_subset(skills, q)
+    if memory_intent_skills:
+        return memory_intent_skills
 
     tk = top_k if top_k is not None else int(os.environ.get("AGENT_SKILL_FINDER_TOP_K", "3"))
     max_tok = max_tokens if max_tokens is not None else int(
@@ -201,8 +237,13 @@ def find_skills_for_query(
     else:
         rrf = _rrf([bm_order])
 
-    # Sort by RRF score desc
-    idx_sorted = sorted(rrf.keys(), key=lambda i: rrf[i], reverse=True)
+    # Sort by RRF score desc. In BM25-only mode, do not pad the prompt with
+    # zero-overlap skills just because top_k has spare capacity.
+    idx_sorted = [
+        i
+        for i in sorted(rrf.keys(), key=lambda i: rrf[i], reverse=True)
+        if dense_enabled or bm_scores[i] > 0.0
+    ]
 
     picked: list[Skill] = []
     est = 0

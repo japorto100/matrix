@@ -53,6 +53,10 @@ migrated_from:
 - [x] T031 Static-test finder BM25/dense/RRF with expected-skill queries.
 - [x] T031a Add query-gating for general skills and stopword filtering so
   trivial/no-tool turns do not load unrelated skills.
+- [x] T031b Add memory-intent skill precision: explicit `memory_add`,
+  `memory_search`, remember/recall and context-compaction prompts load
+  `memory-usage` without padding `plan`, `market-research` or
+  `risk-assessment`.
 - [x] T032 Verify disabled skills are filtered via current preference path.
 - T033 Verify real LLM refinement with `AGENT_SKILL_REFINEMENT=true`.
 - T034 Verify real LLM iterative search.
