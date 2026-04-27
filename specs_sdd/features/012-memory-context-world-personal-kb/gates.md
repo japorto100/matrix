@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 012
 ---
 
@@ -18,6 +18,9 @@ feature_id: 012
   path.
 - [x] MemPalace Postgres/pgvector retain/list/get/recall smoke is verified with
   deterministic embeddings.
+- [x] MemPalace pending-embedding rows are durable/listable immediately and can
+  be hydrated later; hydration dimension/provider failures are stored as
+  `embedding_status=failed` with reason.
 - [ ] Full Hindsight/Fusion Postgres retain/recall live path is verified.
 
 ## G2 Runtime Context

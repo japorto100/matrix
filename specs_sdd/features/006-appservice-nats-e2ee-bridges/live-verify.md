@@ -3,7 +3,7 @@ title: Appservice, NATS, E2EE and Bridges Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 006
 ---
 
@@ -46,4 +46,32 @@ feature_id: 006
 
 ## Result
 
-pending
+partial backend-only pass; Feature 006 is not closed.
+
+## Backend-Only Evidence 2026-04-27
+
+- `./scripts/dev-stack.sh --go` started Go appservice locally after Matrix-local
+  NATS/Postgres/Python services were already running.
+- `GET http://127.0.0.1:29318/health` returned `200` with service
+  `matrix-appservice`; logs show NATS connected to `nats://localhost:14222` and
+  subscribed to `matrix.message.reply`.
+- Synthetic NATS publish to `matrix.message.inbound` produced a reply on
+  `matrix.message.reply`:
+  - `room_id`: `!backend-smoke:matrix.local`
+  - `agent_user_id`: `@agent-trading:matrix.local`
+  - `thread_root_id`: `$thread-smoke`
+- Python bridge logs show inbound consumption, Agent HTTP/SSE call to
+  `http://localhost:8094/api/v1/agent/chat`, and reply publish.
+- Go appservice logs show it received the reply and attempted a threaded Matrix
+  send as `@agent-trading:matrix.local`.
+
+Remaining full-live blockers:
+
+- This was not a "without stack" test. It used a real partial stack:
+  `matrix-nats`, `python-bridge`, `python-agent`, `go-appservice` and
+  Postgres. It did not use Tuwunel or a real Matrix client.
+- Homeserver/appservice registration was not verified in this pass because
+  Tuwunel was not started.
+- Final Matrix room delivery still needs Tuwunel plus a real room/client.
+- E2EE decrypt/encrypt, cross-signing, key backup and key deletion gates remain
+  open.

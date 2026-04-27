@@ -244,3 +244,31 @@ Residual risk:
   semantic recall only sees them after hydration. This is intentional for the
   data-loss gate; a background hydration worker remains a follow-up if pending
   rows accumulate.
+
+## 2026-04-27 MemPalace Pending-Embedding Hydration Smoke
+
+Status: pass for bounded hydration-worker semantics.
+
+Evidence:
+
+- `MempalaceMemoryEngine.hydrate_pending_embeddings` picks up durable
+  `embedding_status=pending` drawers, embeds them with the configured provider,
+  dimension-checks against the active ready index for that embedding model, and
+  marks successful rows `embedding_status=ready`.
+- Provider or dimension failures are not silently skipped: the drawer remains
+  verbatim/listable and metadata is updated to `embedding_status=failed` with
+  `embedding_failed_reason`.
+- `status()` now reports `embedding_pending` and `embedding_failed` counts so
+  Control/Meta-Harness can detect backlog or provider failure.
+- Focused checks:
+  `cd python-backend && HINDSIGHT_DB_URL=<matrix-dsn> uv run pytest tests/memory_fusion/test_mempalace_postgres_engine.py -q`
+  => `2 passed`.
+- Ruff:
+  `cd python-backend && uv run ruff check memory_fusion/mempalace_engine.py tests/memory_fusion/test_mempalace_postgres_engine.py`
+  => pass.
+
+Residual risk:
+
+- This is a callable worker method, not yet a scheduled background service. A
+  scheduler/ops trigger still needs to be selected before production archive
+  backlogs are expected to self-drain.

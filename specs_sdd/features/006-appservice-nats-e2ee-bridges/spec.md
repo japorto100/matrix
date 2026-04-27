@@ -3,7 +3,7 @@ title: Appservice, NATS, E2EE and Bridges
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 006
 migrated_from:
   - specs/02-go-appservice.md
@@ -41,6 +41,14 @@ streaming, and Python lint for bridge/agent/voice code. One implementation gap
 was closed during this SDD pass: inbound NATS `thread_id` is now forwarded as
 reply `thread_root_id`, so Matrix threaded replies can keep their root event
 metadata when the live path is exercised.
+
+Backend-only live verification on 2026-04-27 started Go appservice on `:29318`
+against Matrix-local NATS `:14222`, verified `/health`, published a synthetic
+`matrix.message.inbound` event, observed Python bridge consuming it, observed
+Agent HTTP/SSE call, observed Python publishing `matrix.message.reply` with
+`thread_root_id`, and observed Go receiving that reply. The final Matrix send
+failed because the homeserver was not running in this no-frontend/no-homeserver
+backend pass; that remains a full live Matrix gate, not a NATS/bridge blocker.
 
 ## Target State / Soll
 
@@ -88,6 +96,8 @@ streaming; they use HTTP/SSE and LiveKit respectively.
 
 - Go appservice starts with current config.
 - Python subscriber receives NATS message.
+- Python bridge publishes a reply with thread metadata.
+- Go receives the reply and attempts Matrix send.
 - End-to-end encrypted Matrix message can cross the gateway.
 - Reply path sends as expected agent identity.
 - Isolation/key-deletion behavior is either verified or explicitly deferred.

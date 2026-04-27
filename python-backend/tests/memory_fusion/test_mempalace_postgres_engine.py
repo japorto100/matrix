@@ -11,6 +11,13 @@ from memory_fusion.mempalace_engine import MempalaceMemoryEngine
 pytestmark = pytest.mark.asyncio
 
 
+class _FailingEmbedder(DeterministicEmbedder):
+    model = "deterministic-test-8d"
+
+    async def embed(self, texts):
+        raise RuntimeError("embedding provider down")
+
+
 async def test_mempalace_engine_stores_verbatim_loci_in_postgres() -> None:
     db_url = os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
@@ -165,6 +172,99 @@ async def test_mempalace_engine_stores_verbatim_loci_in_postgres() -> None:
         assert archive_unit is not None
         assert archive_unit["metadata"]["embedding_status"] == "ready"
         assert archive_unit["metadata"]["embedding_deferred"] is False
+    finally:
+        banks = await engine.list_memory_units(bank_id=bank_id, limit=100)
+        for item in banks["items"]:
+            await engine.delete_memory_unit(unit_id=str(item["id"]))
+
+
+async def test_mempalace_hydrates_pending_embeddings_and_marks_failures() -> None:
+    db_url = os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
+    if not db_url:
+        pytest.skip("requires HINDSIGHT_DB_URL or MEMPALACE_DB_URL")
+
+    bank_id = f"test_bank_hydrate_{uuid.uuid4().hex}"
+    engine = MempalaceMemoryEngine(
+        db_url=db_url,
+        embedder=DeterministicEmbedder(),
+    )
+    await engine.initialize()
+
+    try:
+        pending = await engine.retain_batch_async(
+            bank_id=bank_id,
+            contents=[
+                {
+                    "content": "Hydration worker should attach embeddings after a fast verbatim pre-save.",
+                    "fact_type": "experience",
+                    "metadata": {
+                        "room": "memory-fusion",
+                        "hall": "archives",
+                        "thread_id": "thread-hydrate",
+                        "session_id": "session-hydrate",
+                        "source_ref": "session.jsonl#hydrate",
+                    },
+                    "tags": ["pre_compress", "verbatim_archive"],
+                    "document_id": "doc-hydrate",
+                }
+            ],
+            defer_embedding=True,
+        )
+        drawer_id = pending[0][0]
+        before = await engine.get_memory_unit(unit_id=drawer_id)
+        assert before is not None
+        assert before["metadata"]["embedding_status"] == "pending"
+
+        result = await engine.hydrate_pending_embeddings(bank_id=bank_id, limit=10)
+
+        assert result["scanned"] == 1
+        assert result["hydrated"] == [drawer_id]
+        assert result["failed"] == []
+        after = await engine.get_memory_unit(unit_id=drawer_id)
+        assert after is not None
+        assert after["metadata"]["embedding_status"] == "ready"
+        assert after["metadata"]["embedding_deferred"] is False
+        assert after["metadata"]["embedding_hydrated_at"]
+
+        failed = await engine.retain_batch_async(
+            bank_id=bank_id,
+            contents=[
+                {
+                    "content": "Hydration worker should mark provider failures without losing verbatim content.",
+                    "fact_type": "experience",
+                    "metadata": {
+                        "room": "memory-fusion",
+                        "hall": "archives",
+                        "thread_id": "thread-fail",
+                        "session_id": "session-fail",
+                        "source_ref": "session.jsonl#fail",
+                    },
+                    "document_id": "doc-fail",
+                }
+            ],
+            defer_embedding=True,
+        )
+        failed_id = failed[0][0]
+        failing_engine = MempalaceMemoryEngine(
+            db_url=db_url,
+            embedder=_FailingEmbedder(),
+        )
+        await failing_engine.initialize()
+
+        failed_result = await failing_engine.hydrate_pending_embeddings(
+            bank_id=bank_id,
+            limit=10,
+        )
+
+        assert failed_result["scanned"] == 1
+        assert failed_result["hydrated"] == []
+        assert failed_result["failed"][0]["drawer_id"] == failed_id
+        failed_unit = await engine.get_memory_unit(unit_id=failed_id)
+        assert failed_unit is not None
+        assert failed_unit["metadata"]["embedding_status"] == "failed"
+        assert "embedding provider down" in failed_unit["metadata"]["embedding_failed_reason"]
+        status = await engine.status()
+        assert status["embedding_failed"] >= 1
     finally:
         banks = await engine.list_memory_units(bank_id=bank_id, limit=100)
         for item in banks["items"]:

@@ -571,6 +571,133 @@ class MempalaceMemoryEngine:
             result = await conn.execute(sql, params)
         return {"deleted": int(result.rowcount or 0), "bank_id": bank_id}
 
+    async def hydrate_pending_embeddings(
+        self,
+        *,
+        bank_id: str | None = None,
+        limit: int = 25,
+        request_context: Any = None,  # noqa: ARG002
+    ) -> dict[str, Any]:
+        """Embed durable pending drawers and mark failures explicitly.
+
+        Pre-compaction/pre-compression writes may persist verbatim content with
+        `embedding_status=pending` so exact evidence survives even when the
+        embedding provider is slow or unavailable. This worker is the bounded
+        follow-up path: it only promotes rows after the active provider returns
+        a non-empty vector with a dimension compatible with existing rows for
+        that model.
+        """
+        from psycopg.types.json import Json
+
+        limit = max(1, min(int(limit), 250))
+        sql = """
+            SELECT drawer_id, bank_id, content, metadata
+            FROM agent.mempalace_drawers
+            WHERE embedding IS NULL
+              AND COALESCE(metadata->>'embedding_status', 'pending') = 'pending'
+        """
+        params: dict[str, Any] = {"limit": limit}
+        if bank_id:
+            params["bank_id"] = bank_id
+            sql += " AND bank_id = %(bank_id)s"
+        sql += " ORDER BY filed_at ASC LIMIT %(limit)s"
+
+        async with await self._connect() as conn:
+            rows = [dict(row) for row in await (await conn.execute(sql, params)).fetchall()]
+            expected_dim = await self._ready_dimension_for_model(conn)
+
+            hydrated: list[str] = []
+            failed: list[dict[str, str]] = []
+            for row in rows:
+                drawer_id = str(row["drawer_id"])
+                metadata = dict(row.get("metadata") or {})
+                try:
+                    embedding = await self._embed_one(str(row.get("content") or ""))
+                    embedding_dim = len(embedding)
+                    if embedding_dim <= 0:
+                        raise RuntimeError("embedding provider returned empty vector")
+                    if expected_dim is not None and embedding_dim != expected_dim:
+                        raise RuntimeError(
+                            f"embedding dimension {embedding_dim} does not match active "
+                            f"{self.embedder.model} dimension {expected_dim}"
+                        )
+                    await conn.execute(
+                        """
+                        UPDATE agent.mempalace_drawers
+                        SET embedding = %(embedding)s::vector,
+                            embedding_model = %(embedding_model)s,
+                            embedding_dim = %(embedding_dim)s,
+                            metadata = %(metadata)s,
+                            updated_at = now()
+                        WHERE drawer_id = %(drawer_id)s
+                        """,
+                        {
+                            "drawer_id": drawer_id,
+                            "embedding": _vector_literal(embedding),
+                            "embedding_model": self.embedder.model,
+                            "embedding_dim": embedding_dim,
+                            "metadata": Json(
+                                {
+                                    **metadata,
+                                    "embedding_status": "ready",
+                                    "embedding_deferred": False,
+                                    "embedding_hydrated_at": _now_iso(),
+                                    "embedding_failed_reason": None,
+                                }
+                            ),
+                        },
+                    )
+                    expected_dim = embedding_dim if expected_dim is None else expected_dim
+                    hydrated.append(drawer_id)
+                except Exception as exc:  # noqa: BLE001
+                    reason = str(exc)[:500]
+                    await conn.execute(
+                        """
+                        UPDATE agent.mempalace_drawers
+                        SET metadata = %(metadata)s,
+                            updated_at = now()
+                        WHERE drawer_id = %(drawer_id)s
+                        """,
+                        {
+                            "drawer_id": drawer_id,
+                            "metadata": Json(
+                                {
+                                    **metadata,
+                                    "embedding_status": "failed",
+                                    "embedding_deferred": True,
+                                    "embedding_failed_at": _now_iso(),
+                                    "embedding_failed_reason": reason,
+                                }
+                            ),
+                        },
+                    )
+                    failed.append({"drawer_id": drawer_id, "reason": reason})
+
+        return {
+            "provider": "mempalace-postgres",
+            "embedding_model": self.embedder.model,
+            "scanned": len(rows),
+            "hydrated": hydrated,
+            "failed": failed,
+        }
+
+    async def _ready_dimension_for_model(self, conn: Any) -> int | None:
+        row = await (
+            await conn.execute(
+                """
+                SELECT embedding_dim
+                FROM agent.mempalace_drawers
+                WHERE embedding_model = %s
+                  AND embedding IS NOT NULL
+                  AND embedding_dim > 0
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (self.embedder.model,),
+            )
+        ).fetchone()
+        return int(row["embedding_dim"]) if row else None
+
     async def list_banks(self, *, request_context: Any = None, **_: Any) -> list[dict[str, Any]]:
         async with await self._connect() as conn:
             rows = await (
@@ -603,10 +730,31 @@ class MempalaceMemoryEngine:
             row = await (
                 await conn.execute("SELECT count(*) AS count FROM agent.mempalace_drawers")
             ).fetchone()
+            pending = await (
+                await conn.execute(
+                    """
+                    SELECT count(*) AS count
+                    FROM agent.mempalace_drawers
+                    WHERE embedding IS NULL
+                      AND COALESCE(metadata->>'embedding_status', 'pending') = 'pending'
+                    """
+                )
+            ).fetchone()
+            failed = await (
+                await conn.execute(
+                    """
+                    SELECT count(*) AS count
+                    FROM agent.mempalace_drawers
+                    WHERE metadata->>'embedding_status' = 'failed'
+                    """
+                )
+            ).fetchone()
         return {
             "provider": "mempalace-postgres",
             "storage": "postgres-pgvector",
             "embedding_provider": "openrouter" if self.embedder.model != "deterministic-test-8d" else "deterministic",
             "embedding_model": self.embedder.model,
             "count": int(row["count"] if row else 0),
+            "embedding_pending": int(pending["count"] if pending else 0),
+            "embedding_failed": int(failed["count"] if failed else 0),
         }

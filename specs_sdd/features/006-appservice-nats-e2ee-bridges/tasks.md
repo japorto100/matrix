@@ -1,9 +1,9 @@
 ---
 title: Appservice, NATS, E2EE and Bridges Tasks
-status: draft
+status: partial_live_backend_verified_not_closed
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 006
 migrated_from:
   - specs/execution/exec-05-nats-e2ee-pipeline.md
@@ -25,16 +25,25 @@ migrated_from:
 
 ## Core Gateway
 
+Note: backend-live means Matrix-local NATS, Python bridge, Python agent and Go
+appservice were running. It does not close Feature 006 because Tuwunel,
+appservice registration, real Matrix room delivery and E2EE were not part of
+that pass.
+
 - [x] T010 Run Go build/tests with `goolm`/E2EE tags where applicable
   (`go test -tags goolm ./...`).
 - T011 Verify appservice registration handshake with homeserver.
 - T012 Verify Go message filter: DMs always forward; groups forward only
   mention/reply/trigger where `MENTION_ONLY_IN_GROUPS=true`.
 - T013 Verify Go publishes inbound event on `matrix.message.inbound`.
-- T014 Verify Python NATS subscriber consumes inbound message and calls agent
-  HTTP/SSE endpoint.
-- T015 Verify Python publishes reply on `matrix.message.reply`.
-- T016 Verify Go receives reply and sends Matrix message as agent intent.
+- [x] T014 [done-live-backend-only] Verify Python NATS subscriber consumes inbound
+  message and calls agent HTTP/SSE endpoint.
+- [x] T015 [done-live-backend-only] Verify Python publishes reply on
+  `matrix.message.reply`.
+- T016 [partial-live-backend] Verify Go receives reply and sends Matrix message
+  as agent intent. Go receives the reply and attempts send; final Matrix send
+  still needs homeserver live because Tuwunel was intentionally not started in
+  this backend-only pass.
 - [x] T017 Add/static-test Python reply thread metadata propagation from
   inbound `thread_id` to reply `thread_root_id`.
 - [x] T018 Static-lint Python bridge/agent/voice code with ruff.

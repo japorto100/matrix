@@ -129,14 +129,14 @@ migrated_from:
   `hindsight_api` dotenv side effects: explicit runtime DB URLs must win after
   Hindsight imports, and Meta-Harness live probes should set
   `PYTHON_DOTENV_DISABLED=true` when using controlled process env.
-- T039p Add or defer a background hydration worker for MemPalace rows with
+- [x] T039p [done-static-live-smoke] Add a background hydration worker for MemPalace rows with
   `embedding_status=pending`; pending rows are durable/listable immediately but
   semantic recall intentionally ignores them until embeddings are attached.
 - T039q Add MemMachine-style ground-truth preservation gates: exact visible
   session text, tool input/output evidence, room/thread/session refs and source
   timestamps must exist before any summary-only Hindsight retain is considered
   successful.
-- T039r Add a hydration-worker design and smoke: pending MemPalace rows are
+- [x] T039r [done-static-live-smoke] Add a hydration-worker design and smoke: pending MemPalace rows are
   picked up, embedded with the configured provider, dimension-checked against
   the active index and marked failed with reason instead of silently skipped.
 - T039s Add context-injection evals comparing Hindsight-only,
