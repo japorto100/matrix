@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from typing import Any
 
 from agent.errors import CredentialExhaustedError
@@ -23,6 +24,11 @@ from agent.resilience.rate_limit_tracker import RateLimitRegistry
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
+
+_TEXTUAL_TOOL_CALL_RE = re.compile(
+    r"<\s*(tool_call|function_call|tool_use|action)\s*>.*?</\s*\1\s*>",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 # Module-private rate-limit registry. Accessor pattern (mirror of
@@ -89,13 +95,20 @@ def _max_output_tokens_from_env() -> int | None:
 
 
 def _clean_assistant_content(content: str) -> str:
-    """Strip provider-leaked reasoning channel markers from assistant text."""
+    """Strip provider-leaked reasoning/tool-call markers from assistant text."""
     text = str(content or "")
     lowered = text.lower()
     for marker in ("assistantfinal", "assistant_final", "<|assistant|>final"):
         idx = lowered.rfind(marker)
         if idx >= 0:
-            return text[idx + len(marker):].lstrip(" :\n\r\t")
+            text = text[idx + len(marker):].lstrip(" :\n\r\t")
+            break
+
+    cleaned = _TEXTUAL_TOOL_CALL_RE.sub("", text).strip()
+    if cleaned:
+        return cleaned
+    if text != cleaned and _TEXTUAL_TOOL_CALL_RE.search(text):
+        return "Done."
     return text
 
 

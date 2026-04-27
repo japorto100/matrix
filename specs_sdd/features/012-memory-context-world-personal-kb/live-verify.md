@@ -93,5 +93,69 @@ Evidence:
 
 ## Result
 
-partial pass; remaining live work is latency, compaction threshold, and broader
+## 2026-04-26 Automatic Retain Verbatim-First Probe
+
+Status: pass for backend-only Memory-Fusion after Meta-Harness outer-loop
+candidate `memory-fusion-verbatim-first-retain`.
+
+Evidence:
+
+- Matrix memory-dev stack after reboot: Postgres `:5433` healthy, FalkorDB
+  `:6380` running, Python Agent `:8094` healthy, LiteLLM `:4000` reachable with
+  OpenRouter health pass.
+- Manual Alembic upgrade against `hindsight_dev` completed before agent start.
+- Fixed env loading so shell/process overrides such as
+  `AGENT_AUTO_MIGRATE=false` and `PORT=9999` survive `.env.development`; this
+  made controlled agent starts possible after reboot.
+- Direct live probe:
+  `MemoryAddTool.execute` returned `{"stored": true, "facts_extracted": 1}` and
+  `MemorySearchTool.execute` returned the exact MemPalace/Postgres/pgvector
+  context phrase.
+- Direct `memory_recall_node` probe injected `## Relevant Context` with one
+  `Personal Raw Evidence` block from MemPalace/Postgres.
+- Meta-Harness run `run-408242ed1c2c`, candidate
+  `memory-fusion-env-override-live`, passed both memory lifecycle scenarios
+  (`trace_gate_pass_rate=1.0`, `completion_rate=1.0`,
+  `fitness_score=0.8583`) but exposed automatic post-answer retain timeouts at
+  `MEMORY_RETAIN_TIMEOUT_SEC=20`.
+- Fix: automatic `memory_retain_node` now writes route `verbatim`
+  synchronously and queues route `summary` in the background via
+  `submit_async_retain`, matching the explicit memory tool path.
+- Follow-up Meta-Harness run `run-a1cc52e7217f`, candidate
+  `memory-fusion-verbatim-first-retain`, passed both memory lifecycle scenarios
+  with no retain timeout messages. Trace events show route `verbatim`,
+  provider `fusion`, providers `verbatim,summary_async`, and
+  `summary_status=background_queued`.
+- Meta-Harness run `run-a25abb61e18f`, candidate
+  `memory-fusion-clean-tool-markup`, verified that new user-facing assistant
+  text no longer leaks raw `<tool_call>` blocks, but exposed a stronger
+  LangGraph/OpenAI serialization bug after `memory_search`:
+  `messages[5]: missing field tool_call_id`.
+- Fix: LangGraph `tool_node` now emits OpenAI-compatible `tool_call_id` on
+  `role=tool` messages while retaining legacy `tool_use_id`.
+- Follow-up Meta-Harness run `run-f1078e290e9f`, candidate
+  `memory-fusion-openai-tool-message-id`, passed both memory lifecycle
+  scenarios with `trace_gate_pass_rate=1.0`, `completion_rate=1.0` and
+  `fitness_score=0.875`. The explicit `memory_search` tool returned results and
+  the subsequent LLM response completed without OpenRouter 400.
+- Focused tests:
+  `uv run pytest tests/agent/graph/nodes/test_tool_node.py tests/agent/test_llm_node_caching.py tests/agent/graph/nodes/test_memory_node.py tests/bridge/test_env_loading.py tests/memory_fusion/test_mempalace_postgres_engine.py tests/agent/tools/test_memory_hindsight.py`
+  => `29 passed`.
+- Ruff:
+  `uv run ruff check agent/graph/nodes/tool_node.py tests/agent/graph/nodes/test_tool_node.py agent/graph/nodes/llm_node.py tests/agent/test_llm_node_caching.py shared/app_factory.py bridge/config.py tests/bridge/test_env_loading.py agent/graph/nodes/memory_node.py tests/agent/graph/nodes/test_memory_node.py`
+  => pass.
+
+Residual risk:
+
+- Old dev-memory rows from earlier probes can still contain historical
+  `<tool_call>` text and may be retrieved as evidence until dev memory is reset
+  or cleaned; new assistant output is cleaned before audit/SSE/memory sync.
+- Shared-corpus evals and compaction/pre-save threshold live gates remain open.
+
+## Result
+
+partial pass; explicit tools, automatic recall injection, and automatic
+verbatim-first retain are live-verified. Tool-message serialization and
+assistant tool-markup cleanup are fixed for new turns. Remaining live work is
+latency/cost, compaction threshold, historical dev-memory cleanup, and broader
 Hindsight/MemPalace/Fusion shared-corpus eval coverage.

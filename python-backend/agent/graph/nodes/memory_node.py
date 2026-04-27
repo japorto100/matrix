@@ -428,32 +428,59 @@ async def _retain_conversation_memory(
                 bank_id,
             )
 
-        await engine.retain_batch_async(
-            bank_id=bank_id,
-            contents=[
-                {
-                    "content": content,
-                    "context": f"thread:{thread_id} role:{role}",
-                    "event_date": now,
-                    "tags": [role] if role != "default" else [],
-                    "metadata": {
-                        "thread_id": thread_id,
-                        "role": role,
-                        "agent_class": state.get("agent_class", "advisory"),
-                    },
-                    "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
-                }
-            ],
-            request_context=RequestContext(),
-            document_tags=[role] if role != "default" else [],
-            consumer="agent_writer",
-            operation_context={
-                "thread_id": thread_id,
-                "user_id": state.get("user_id", ""),
-                "agent_id": state.get("agent_id", "default"),
-                "actor_role": role,
-            },
-        )
+        content_items = [
+            {
+                "content": content,
+                "context": f"thread:{thread_id} role:{role}",
+                "event_date": now,
+                "tags": [role] if role != "default" else [],
+                "metadata": {
+                    "thread_id": thread_id,
+                    "role": role,
+                    "agent_class": state.get("agent_class", "advisory"),
+                    "source": "automatic_memory_retain",
+                },
+                "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
+            }
+        ]
+        operation_context = {
+            "thread_id": thread_id,
+            "user_id": state.get("user_id", ""),
+            "agent_id": state.get("agent_id", "default"),
+            "actor_role": role,
+        }
+        document_tags = [role] if role != "default" else []
+        storage_route = "fusion"
+        storage_providers = "fusion"
+        summary_status = "not_supported"
+        try:
+            await engine.retain_batch_async(
+                bank_id=bank_id,
+                contents=content_items,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+                route="verbatim",
+            )
+            storage_route = "verbatim"
+            storage_providers = "verbatim,summary_async"
+            summary_status = _queue_summary_retain(
+                engine=engine,
+                bank_id=bank_id,
+                contents=content_items,
+                document_tags=document_tags,
+                operation_context=operation_context,
+            )
+        except TypeError:
+            await engine.retain_batch_async(
+                bank_id=bank_id,
+                contents=content_items,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+            )
 
         span.set_attribute("memory.content_length", len(content))
 
@@ -469,6 +496,10 @@ async def _retain_conversation_memory(
                 "role": role,
                 "content_length": len(content),
                 "conflict": conflict.has_conflict if conflict else False,
+                "route": storage_route,
+                "provider": "fusion",
+                "providers": storage_providers,
+                "summary_status": summary_status,
             },
         )
 
@@ -478,3 +509,38 @@ async def _retain_conversation_memory(
             role,
             thread_id,
         )
+
+
+def _queue_summary_retain(
+    *,
+    engine: Any,
+    bank_id: str,
+    contents: list[dict[str, Any]],
+    document_tags: list[str],
+    operation_context: dict[str, Any],
+) -> str:
+    submit_async = getattr(engine, "submit_async_retain", None)
+    if not callable(submit_async):
+        return "not_supported"
+
+    async def _submit() -> None:
+        try:
+            from hindsight_api.models import RequestContext
+
+            await submit_async(
+                bank_id,
+                contents,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+                route="summary",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("automatic memory summary retain failed: %s", exc)
+
+    try:
+        asyncio.create_task(_submit())
+        return "background_queued"
+    except Exception:
+        return "background_dispatch_failed"

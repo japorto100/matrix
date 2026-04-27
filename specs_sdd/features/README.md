@@ -31,6 +31,7 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 016 | `016-meta-harness-agent-optimization` | implementation_started | Scenario runner, trace gates, ToolRegistry eval, CLI/MCP run surface, artifact store, holdout split, official `_ref/meta-harness`, Matrix domain spec and proposer skill started |
 | 017 | `017-knowledge-graph-bitemporal-claims` | planned | Global/domain KG ueber nonicdb/NornicDB-Linie: bitemporale Claims, Projection, Decay-Retrieval und Provenance |
 | 018 | `018-database-schema-governance` | planned | Alembic bleibt authoritative, lesbare Current-Schema-Registry und Introspection-Gates |
+| 019 | `019-hybrid-rag-retrieval` | implementation_started | Eigenes RAG/HiRAG-Feature: OpenRouter Embeddings, LightRAG/HippoRAG/LinearRAG-Eval, Context Bubble, Self-RAG und Fusion |
 
 ## Meta-Bereiche
 
@@ -75,3 +76,5 @@ Die umfangreichsten Live-Verify-Listen liegen hier:
   history, nonicdb/NornicDB projection and decay retrieval
 - Feature 018: Alembic-head schema visibility, registry/doc generation and
   migration drift gates
+- Feature 019: provider-konfigurierbare Embeddings, vector/KG/fused retrieval,
+  Context Bubble, Self-RAG/citation verification and GraphRAG candidate evals

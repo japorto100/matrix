@@ -9,8 +9,10 @@ Not to be confused with:
 - [`memory_fusion/`](../memory_fusion/README.md) — unified **conversation-
   memory runtime** (Hindsight + MemPalace) with its own internal vector
   stores (ChromaDB, Hindsight-embeddings).
-- [`kg_pipeline/`](../kg_pipeline/README.md) — **KG-extraction ETL**
-  (ReLiK + GLiREL) that *writes into* this module's `kg_store`.
+- [`kg_pipeline/`](../kg_pipeline/README.md) — **KG-extraction ETL** that
+  proposes claim candidates. Feature 017 global claims use
+  `global_kg.py`/`global_kg_store.py`; legacy `kg_store.py` remains for the
+  Control UI seed graph.
 
 ## Contents — the three canonical memory types
 
@@ -20,7 +22,8 @@ per type:
 
 | Memory type | Module | What it stores | Backends |
 |---|---|---|---|
-| **Declarative / structural** | [`kg_store.py`](kg_store.py) | Knowledge-graph nodes + edges (stratagems, regimes, institutions, transmission channels…) | Kuzu (default) · SQLite (degraded fallback) · FalkorDB (optional) |
+| **Declarative / structural** | [`kg_store.py`](kg_store.py) | Legacy/control graph nodes + edges (stratagems, regimes, institutions, transmission channels…) | Kuzu (default) · SQLite (degraded fallback) · FalkorDB (optional legacy) |
+| **Global/domain KG claims** | [`global_kg.py`](global_kg.py), [`global_kg_store.py`](global_kg_store.py) | Bitemporal world/trading/geopolitical claims with evidence refs and NornicDB projection outbox | Postgres/pgvector · in-memory smoke |
 | **Episodic / temporal** | [`episodic_store.py`](episodic_store.py) | Time-stamped event records per agent role | SQLite (current) |
 | **Semantic / similarity** | [`vector_store.py`](vector_store.py) | Text chunks + embeddings for approximate-match retrieval | pgvector (primary) · in-memory (tests) |
 
@@ -41,7 +44,8 @@ Plus supporting modules:
                           ┌─────────────────────────┐
                           │      memory_engine/     │
                           │  ┌──────────────────┐   │
-                          │  │  kg_store.py     │   │
+│  │  kg_store.py     │   │
+│  │  global_kg*.py   │   │
                           │  │  vector_store.py │   │
                           │  │  episodic_store  │   │
                           │  └──────────────────┘   │
@@ -65,7 +69,9 @@ maintains its own internal vector stores scoped to conversation memory
 
 ## When to touch
 
-- **Adding a new KG backend driver** (e.g. Neo4j) → `kg_store.py`.
+- **Adding a new legacy/control KG backend driver** → `kg_store.py`.
+- **Changing global KG claim semantics/projection** → `global_kg.py`,
+  `global_kg_store.py` and Feature 017 specs.
 - **Adding a new vector DB backend** (e.g. Milvus) → `vector_store.py`.
 - **Adding a new episodic pattern** → `episodic_store.py`.
 - **Seeding new canonical nodes** (new stratagem set etc.) → `seed_data.py`.

@@ -384,6 +384,56 @@ Known follow-ups:
   That preserves UX, but retain latency/coherence reliability still needs a
   separate Memory-Fusion performance candidate.
 
+## MV-05c Memory-Fusion Retain Outer-Loop Follow-Up
+
+Status: pass on 2026-04-26 with historical dev-memory cleanup follow-up.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer and simulated user against the real in-process
+  LangGraph path after a reboot where no stack was running.
+- Stack bootstrap used Postgres `:5433`, FalkorDB `:6380`, Python Agent
+  `:8094`, and LiteLLM `:4000`; frontend and Go were not required.
+- The first candidate targeted controlled startup and memory correctness after
+  discovering that `.env.development` overwrote shell overrides.
+
+Evidence:
+
+- `shared.app_factory` and `bridge.config` now merge `.env` and
+  `.env.<APP_ENV>` while preserving process env overrides.
+- Direct memory tool probe stored and recalled a MemPalace/Postgres/pgvector
+  phrase through `memory_add` and `memory_search`.
+- Direct `memory_recall_node` probe injected `## Relevant Context` with a
+  Personal Raw Evidence block.
+- Candidate `memory-fusion-env-override-live`, run `run-408242ed1c2c`, passed
+  both memory lifecycle scenarios with `trace_gate_pass_rate=1.0`,
+  `completion_rate=1.0`, `fitness_score=0.8583`, and exposed automatic retain
+  timeouts.
+- Corrective candidate `memory-fusion-verbatim-first-retain`, run
+  `run-a1cc52e7217f`, passed both scenarios with `trace_gate_pass_rate=1.0`,
+  `completion_rate=1.0`, `fitness_score=0.8583`, no retain-timeout messages,
+  and trace events showing automatic retain route `verbatim`, provider
+  `fusion`, providers `verbatim,summary_async`, and
+  `summary_status=background_queued`.
+- Candidate `memory-fusion-clean-tool-markup`, run `run-a25abb61e18f`, fixed
+  new assistant output leaking textual `<tool_call>` blocks, but exposed an
+  OpenAI/OpenRouter message-shape bug after `memory_search`:
+  `messages[5]: missing field tool_call_id`.
+- Corrective candidate `memory-fusion-openai-tool-message-id`, run
+  `run-f1078e290e9f`, passed both memory lifecycle scenarios with
+  `trace_gate_pass_rate=1.0`, `completion_rate=1.0` and
+  `fitness_score=0.875`. Trace showed `memory_search` succeeded and the
+  follow-up LLM response completed without provider 400.
+- Focused tests after the patch:
+  `29 passed in 6.40s`.
+- Ruff on touched Python files: pass.
+
+Follow-up:
+
+- Old dev-memory rows from earlier failing runs can still retrieve historical
+  `<tool_call>` content as evidence. This is a cleanup/reset question for dev
+  data, not a new-turn output regression.
+
 ## MV-06 MCP Exposure Smoke
 
 Prerequisites:

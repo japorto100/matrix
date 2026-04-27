@@ -91,3 +91,47 @@ async def test_tool_node_filters_registry_for_current_trading_role(monkeypatch):
         ("get_portfolio_summary", True),
         ("set_chart_state", False),
     ]
+
+
+@pytest.mark.asyncio
+async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
+    async def fake_execute_single(tc, registry, ctx):
+        return {
+            "tool_call_id": tc["tool_call_id"],
+            "tool_name": tc["tool_name"],
+            "result": {"ok": True},
+            "error": None,
+        }
+
+    class _Limiter:
+        def record_tool_call(self, thread_id: str, tool_name: str) -> None:
+            return None
+
+    monkeypatch.setattr(tool_node_module.ToolRegistry, "load", classmethod(lambda cls: _registry()))
+    monkeypatch.setattr(tool_node_module, "_execute_single", fake_execute_single)
+    monkeypatch.setattr(
+        "agent.consent.rate_limiter.get_rate_limiter",
+        lambda: _Limiter(),
+    )
+
+    result = await tool_node(
+        {
+            "tool_calls": [
+                {
+                    "tool_call_id": "call_123",
+                    "tool_name": "get_portfolio_summary",
+                    "tool_input": {},
+                },
+            ],
+            "current_role": None,
+            "user_id": "alice",
+            "thread_id": "t1",
+            "model": "test-model",
+            "reasoning_effort": None,
+        }
+    )
+
+    assert result["messages"][0]["role"] == "tool"
+    assert result["messages"][0]["tool_call_id"] == "call_123"
+    assert result["messages"][0]["tool_use_id"] == "call_123"
+    assert '{"ok": true}' in result["messages"][0]["content"]

@@ -58,7 +58,11 @@ class PipelineContext:
             chunkers=ChunkerRegistry(
                 chunk_size=config.chunker_size, chunk_overlap=config.chunker_overlap
             ),
-            embedders=EmbedderRegistry(default_model=config.embedder_model),
+            embedders=EmbedderRegistry(
+                default_model=config.embedder_model,
+                remote_base_url=config.embedder_base_url,
+                remote_api_key=config.embedder_api_key,
+            ),
             sinks=SinkRegistry(
                 go_storage_client=go_storage,
                 kg_client=kg_client,

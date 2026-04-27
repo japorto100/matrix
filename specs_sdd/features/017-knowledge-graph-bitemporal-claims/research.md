@@ -3,7 +3,7 @@ title: Knowledge Graph Research Notes
 status: draft
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 017
 ---
 
@@ -36,6 +36,54 @@ Hindsight KG-like memory and MemPalace loci/episodic links are not this KG.
 They are agent-memory internals owned by Feature 012. Feature 017 is only the
 global/domain claim graph used for world, trading, geopolitical and macro
 knowledge.
+
+## Four-Layer Cognitive Mapping
+
+The old `exec-world-model.md` imported Roynard's four-layer decomposition from
+`arXiv:2604.11364` and mapped it to Matrix:
+
+- Knowledge: stable shared world/domain knowledge -> Slow Lane KG.
+- Memory: temporal, episodic and personal facts -> Fast Lane world KG for
+  global events, while personal episodic memory stays in Feature 012.
+- Wisdom: evidence-gated validation and adjudication -> claim promotion,
+  contradiction handling and GraphMERT-style validation.
+- Intelligence: ephemeral reasoning/context -> runtime context, not KG truth.
+
+This matters because a single graph/vector store with one decay policy will
+mishandle at least some of the layers. Feature 017 should encode lane and
+status explicitly instead of treating all claims as one generic `facts` table.
+
+## GraphMERT As Wisdom Validator
+
+`main_docs/root/MEMORY_ARCHITECTURE.md` and
+`specs/execution/exec-world-model.md` both treat GraphMERT as Phase 2 / L6:
+after entity linking, relation extraction, post-processing and claim
+reification. The adopted role is:
+
+- Slow Lane only; no inline use for Fast Lane live events.
+- asynchronous batch validation/refinement, not a serving dependency.
+- tail-prediction and structural plausibility checks over candidate triples.
+- demotion/support signal for claims, not automatic truth promotion.
+- versioned validator output attached to provenance and promotion decisions.
+
+Current checkpoint finding:
+
+- official Hugging Face search for GraphMERT/graphmert/jha-lab GraphMERT
+  returns datasets, not model repos.
+- official `jha-lab/graphmert_umls` README says `predict_tails.py` requires a
+  trained checkpoint and documents training producing checkpoints in
+  `output_dir`.
+- community repos exist, including `Nelumbium-Capital/GraphMert` for finance
+  KG, but visible signals are small/reference-grade rather than proven
+  production checkpoints.
+
+Open constraints:
+
+- no confirmed domain checkpoint for financial/geopolitical Matrix KG.
+- likely needs hard negatives and domain-specific fine-tuning/eval before it is
+  more than a stubbed validation contract.
+- promotion still requires provenance, multi-source corroboration, contradiction
+  checks and possibly human review.
 
 ## Candidate Backends
 
@@ -79,3 +127,6 @@ Matrix adoption:
   simple/general QA.
 - KG promotion/closeout should include cost and latency evidence, not only a
   correctness demo.
+
+Feature 019 now owns the answer-time RAG implementation and GraphRAG candidate
+benchmarking. Feature 017 remains responsible for the KG claim/path source.

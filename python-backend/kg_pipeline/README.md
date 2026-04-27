@@ -1,27 +1,28 @@
 # Matrix KG Extraction Pipeline (Venv 3)
 
-**Status:** Skeleton (Phase 2 not yet activated). See `pyproject.toml` and
-`specs/execution/exec-15-memory-control-ui.md` §5.7.
+**Status:** Lightweight extractor active. ML extractors remain opt-in.
 
 ## Purpose
 
-Extract entities and relations from text chunks using ReLiK (Entity Linking) +
-GLiREL (Relation Extraction) and write them to the Kuzu Knowledge Graph
-(via `memory_engine/kg_store.py`).
+Extract entity/relation candidates from text chunks and forward them toward
+the global KG claim/projection pipeline. The first backend/projection target is
+NornicDB/nonicdb, not FalkorDB. The base service uses a deterministic heuristic
+extractor so it runs on weak local hardware without downloading large models.
 
 ## Why a separate venv?
 
-ReLiK pins `torch==2.3.1`. The main agent venv uses a newer torch via
-sentence-transformers. Sharing a venv would cause dep conflicts.
+Optional ReLiK/GLiREL/GraphMERT-style extractors pull large ML dependencies and
+may pin different Torch versions. The base worker therefore stays separate and
+lightweight, while ML extractors are optional extras.
 
 ## Architecture
 
 ```
 text → preprocessors (section split, sentences)
-     → extractors (relik+glirel, gliner+glirel)
+     → extractors (heuristic now; relik+glirel/gliner+glirel later)
      → filters (confidence, type allow-list)
      → normalizers (predicate mapper, entity canonical)
-     → sinks (kuzu_sink → memory_engine/kg_store.py)
+     → sinks (claim proposal → Postgres source of truth → NornicDB projection)
 ```
 
 Same Phase-based subfolder pattern as `ingestion/` and `retrieval/`.
@@ -36,13 +37,12 @@ Same Phase-based subfolder pattern as `ingestion/` and `retrieval/`.
 | `core/config.py` | `paperwatcher/kg-module/kg_module/config.py` |
 | `schema/` | `paperwatcher/kg-module/kg_module/schema.py` + `shared_schema.py` |
 
-## Activation (Phase 2)
+## Activation
 
 ```bash
 cd python-backend/kg_pipeline
 uv venv
-uv sync                                # ~2 GB download
-python -m spacy download en_core_web_sm
+uv sync
 
 # In python-backend/ingestion/.env (or python-backend/.env):
 # KG_PIPELINE_ENABLED=true
@@ -51,11 +51,11 @@ uv run uvicorn kg_pipeline.server:app --host 127.0.0.1 --port 8099
 ```
 
 After activation, every chunk that the ingestion-worker processes is also
-forwarded to this worker for entity extraction. The extracted nodes/edges
-land in Kuzu and become visible in the control-ui Trading KG view.
+forwarded to this worker for entity/relation candidate extraction. Persisted
+KG claims and the NornicDB projection are owned by Feature 017.
 
 ## Decoupling rules (D17)
 
-- May import `memory_engine.*` (shared data layer)
+- May import shared data contracts only when needed
 - MUST NOT import `agent.*`, `ingestion.*`, `retrieval.*`
 - Communication with main venv: HTTP only (called from `ingestion/sinks/kg_sink.py`)

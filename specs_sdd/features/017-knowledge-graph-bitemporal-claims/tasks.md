@@ -1,9 +1,9 @@
 ---
 title: Knowledge Graph Tasks
-status: planned
+status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 017
 ---
 
@@ -13,20 +13,34 @@ feature_id: 017
 
 - T000 Define global/domain KG boundary: Feature 017 is for world/trading/
   geopolitical/domain claims, not Hindsight KG-like memory or MemPalace loci.
-- T001 Define KG entity table and canonical entity key strategy.
-- T002 Define bitemporal claim/relation table with `valid_period` and
-  system-version history.
-- T003 Define evidence backlink table from KG claims to Memory-Fusion, Personal
-  KB and World Evidence refs.
-- T004 Define conflict key semantics beyond a single `entity_key`.
+- T000a Restore the old world-model four-layer mapping in Feature 017:
+  Knowledge, Memory, Wisdom and Intelligence, with Feature 017 owning only the
+  global KG persistence/promotion parts and context/runtime owning ephemeral
+  Intelligence.
+- T000b Define Fast Lane vs Slow Lane claim semantics in schema fields:
+  temporal/event lane, structural/stable lane, lane-specific TTL/decay/status
+  rules and promotion/demotion constraints.
+- T001 [done-static] Define KG entity table and canonical entity key strategy.
+- T002 [done-static] Define bitemporal claim/relation table with `valid_period`
+  and system-version history.
+- T003 [done-static] Define evidence backlink table from KG claims to
+  Memory-Fusion, Personal KB and World Evidence refs.
+- T004 [done-static] Define conflict key semantics beyond a single
+  `entity_key`.
 - T005 Decide whether overlap handling is append-only query logic or explicit
   split-on-insert; do not use lossy truncation triggers.
+- T006 Add Wisdom/validation fields or companion tables for adjudication state:
+  validation method, validator version, plausibility score, contradiction refs,
+  corroboration count and promotion decision.
 
 ## Retrieval
 
-- T010 Define claim embedding text and embedding dimension configuration.
-- T011 Implement pgvector candidate retrieval for KG claims.
-- T012 Add decay scoring for recency, validity-end and access signals.
+- T010 [done-static] Define claim embedding text and embedding dimension
+  configuration.
+- T011 Implement pgvector candidate retrieval for KG claims as a KG-side
+  candidate source for Feature 019.
+- T012 [done-static] Add decay scoring for recency, validity-end and access
+  signals.
 - T013 Store access telemetry in event/stats tables, not as per-query hot
   updates on claim rows.
 - T014 Add answer-time KG context metadata: status, freshness, confidence and
@@ -34,12 +48,17 @@ feature_id: 017
 - T015 Define vector chunk metadata contract: `chunk_id`, `source_uri`,
   `embedding_version`, ingest timestamp, TTL/validity metadata and candidate
   entity signatures.
-- T016 Implement dual retrieval: vector top-k plus KG entity/claim/path
-  expansion.
-- T017 Implement deterministic RRF fusion baseline.
-- T018 Add optional cross-encoder/MMR re-rank hook.
-- T019 Add context builder output for compact graph paths plus chunk/source
+- T016 [partial-static] Expose KG entity/claim/path expansion API for Feature
+  019 fused retrieval.
+- T017 [done-static] Define deterministic KG candidate ordering before Feature
+  019 fusion.
+- T018 Coordinate optional cross-encoder/MMR hooks with Feature 019.
+- T019 Add KG context output for compact graph paths plus claim/source
   attribution.
+- T019a Add lane-aware retrieval policy: Fast Lane favors freshness and temporal
+  decay; Slow Lane favors stability/confidence and GraphMERT/adjudication
+  status; Intelligence/current-context stays outside KG retrieval unless
+  explicitly requested as runtime context.
 
 ## Memory/KG Boundary
 
@@ -53,11 +72,31 @@ feature_id: 017
 - T023 Add correction scenarios where old KG claims remain historically
   visible but are not retrieved as current truth.
 
+## GraphMERT / Wisdom Validation
+
+- T024 Define GraphMERT as optional async L6 validator after IE and claim
+  reification, not inline retrieval and not a source of truth.
+- T025 [done-research] Evaluate `_ref`/upstream GraphMERT implementation and
+  whether a usable checkpoint exists for financial/geopolitical/domain KG, or
+  whether only a stub/eval contract is realistic for now.
+- T025a [done-research] Record current finding: official
+  `jha-lab/graphmert_umls` exposes code and HF datasets but no confirmed public
+  model checkpoint; community Finance repo `Nelumbium-Capital/GraphMert` is
+  small/reference-grade, not production evidence.
+- T026 Define GraphMERT input/output contract: `(head, relation) -> tail`
+  plausibility, negative sampling, score threshold, validator version and
+  evidence refs.
+- T027 Add GraphMERT/Wisdom promotion rules: GraphMERT score can support or
+  demote Slow Lane claims, but cannot override missing provenance, explicit
+  contradictions or human review gates.
+- T028 Add canary eval for GraphMERT/validator: obvious valid structural
+  triples, hard negatives, temporal false positives and domain-shift examples.
+
 ## Projection And UI
 
-- T030 Define rebuildable graph projection contract with nonicdb/NornicDB as
-  the first global KG candidate; FalkorDB/Neo4j remain alternatives only if the
-  first path fails requirements.
+- T030 [partial-static] Define rebuildable graph projection contract with
+  nonicdb/NornicDB as the first global KG candidate; FalkorDB/Neo4j remain
+  alternatives only if the first path fails requirements.
 - T031 Define Control UI KG claim detail contract.
 - T032 Define promotion/demotion review queue behavior.
 - T033 Coordinate `/memory/kg` and provenance graph surfaces with Feature 010.
@@ -66,7 +105,7 @@ feature_id: 017
 
 ## Verification
 
-- T040 Unit-test bitemporal insert/correction/query semantics.
+- T040 [partial-static] Unit-test bitemporal insert/correction/query semantics.
 - T041 Unit-test no raw tool output is promoted to KG without explicit claim
   extraction and source refs.
 - T042 Unit-test decay ranking with stale, recently accessed and expired-valid
@@ -79,8 +118,21 @@ feature_id: 017
 - T046 Verify global KG retrieval is not used as an agent-memory rail unless a
   scenario explicitly requests world/domain KG context.
 - T047 Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
-  under matched query, context, model and retrieval budgets.
+  under matched query, context, model and retrieval budgets; implementation
+  owner is Feature 019, KG claim/path source owner is Feature 017.
 - T048 Add multi-hop trading/geopolitical canaries where global KG/nonicdb is
   expected to improve retrieval stability over dense RAG.
 - T049 Track offline KG build/update cost and online latency before promoting
   KG retrieval as default for any query class.
+- T050 Verify GraphMERT/validator is never run on Fast Lane live-event ingest
+  inline and cannot block fresh-event availability.
+- T051 Verify Fast Lane -> Slow Lane promotion is auditable and evidence-gated:
+  multi-source corroboration, time window, contradiction absence and optional
+  GraphMERT/Wisdom score.
+- T052 [done-static] Add `GlobalKGStore` facade with in-memory smoke mode,
+  Postgres writer/search surface and NornicDB projection-outbox writes.
+- T053 [done-static] Add KG-pipeline sink that maps extraction relations to
+  explicit `ClaimProposal` objects with evidence refs, without automatic
+  promotion.
+- T054 [done-static] Add KG-pipeline `/propose` endpoint that returns
+  Feature-017 claim proposals and only persists when explicitly requested.

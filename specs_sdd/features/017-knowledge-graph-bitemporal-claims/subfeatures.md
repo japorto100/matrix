@@ -57,7 +57,29 @@ Initial formula:
 
 `final_score = semantic_similarity * recency_decay * validity_decay * access_decay`
 
-## 017.4 Graph Projection
+## 017.4 Fast/Slow/Wisdom Lane Model
+
+Scope:
+
+- Fast Lane for temporal/event/world claims with short validity, TTL-like
+  query filtering, temporal decay and no inline GraphMERT.
+- Slow Lane for stable structural domain claims with longer validity,
+  confidence decay, promotion/demotion and curated source quality gates.
+- Wisdom lane for adjudication: multi-source corroboration, contradiction
+  checks, conflict handling and optional GraphMERT batch validation.
+- Intelligence remains non-persistent runtime reasoning and prompt context; it
+  must not be stored as global KG truth.
+
+GraphMERT role:
+
+- candidate batch validator after claim reification, only for Slow Lane
+  triples and structural relation checks;
+- may score plausibility or tail-prediction, but may not promote claims without
+  provenance and status checks;
+- first implementation may be a stub/eval contract until a domain-specific
+  model/checkpoint exists.
+
+## 017.5 Graph Projection
 
 Scope:
 
@@ -66,7 +88,7 @@ Scope:
 - projection is rebuildable and never the only truth source.
 - Fast Lane temporal/event claims vs Slow Lane structural validated claims.
 
-## 017.5 KG Control Surface
+## 017.6 KG Control Surface
 
 Scope:
 
@@ -75,7 +97,7 @@ Scope:
 - graph view for entities/relations.
 - promotion/demotion review queue.
 
-## 017.6 Hybrid Graph-Vector Retrieval
+## 017.7 Hybrid Graph-Vector Retrieval
 
 Scope:
 

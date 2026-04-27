@@ -23,15 +23,20 @@ migrated_from:
 
 ## OpenSandbox Runtime
 
-- T010 Verify compose/podman profile starts `opensandbox-server`.
-- T011 Verify safe Python execution returns stdout/stderr/files.
+- [x] T010 Verify compose/podman profile starts `opensandbox-server`.
+- [x] T011 Verify safe Python execution returns stdout/stderr/files.
 - T012 Verify file upload is copied into sandbox and result is returned while
   original stays outside agent process.
 - T013 Verify browser sandbox screenshot/artifact path.
-- T014 Verify denied egress or empty `allowed_domains` prevents network
-  access where configured.
+- T014 Verify denied egress via OpenSandbox `networkPolicy`/egress sidecar.
+  Docker `network_mode="none"` is not valid for Matrix because it prevents
+  execd/proxy endpoint resolution; local runtime uses `bridge`.
 - T015 Verify resource/time/output limits: TTL destroy, stdout/stderr caps,
   max file size, per-tool timeout.
+- [x] T016 Align Matrix OpenSandbox config with upstream SDK/runtime:
+  `opensandbox-server` on `:8080`, SDK `OPEN_SANDBOX_DOMAIN` bridge,
+  server-proxy mode for Podman bridge, official code-interpreter image and
+  longer cold-start timeouts for image/execd warmup.
 
 ## Consent / RBAC / Rate Limits
 

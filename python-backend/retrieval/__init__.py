@@ -1,7 +1,7 @@
-"""Matrix Retrieval Pipeline (in main Venv 1, Phase 3 — currently SKELETON).
+"""Matrix Retrieval Pipeline (main Venv 1, Feature 019 baseline).
 
-See README.md and exec-15 §5.8 for adoption map.
+See README.md and specs_sdd/features/019-hybrid-rag-retrieval.
 """
 
 __version__ = "0.1.0"
-__phase__ = "skeleton"
+__phase__ = "baseline"

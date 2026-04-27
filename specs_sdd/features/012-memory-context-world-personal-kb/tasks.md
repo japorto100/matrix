@@ -98,6 +98,18 @@ migrated_from:
 - T039k Evaluate MemPalace warmup/embedding latency; live probe still shows
   first-call `memory_add` around 17-22s with remote embeddings, which is under
   the current 30s tool timeout but too close for production comfort.
+- [x] T039l Make automatic post-answer `memory_retain_node` verbatim-first:
+  write exact conversation evidence synchronously to MemPalace/Postgres and
+  dispatch Hindsight summary retain asynchronously, matching explicit
+  `memory_add` behavior.
+- [x] T039m Add answer-format hardening after tool calls: Meta-Harness observed one
+  OpenRouter-Free turn returning `<tool_call>` markup as assistant text after a
+  successful `memory_add`; trace gates passed, but user-facing output should be
+  cleaned or retried.
+- [x] T039n Fix LangGraph/OpenAI tool-result message serialization after
+  Meta-Harness exposed `messages[5]: missing field tool_call_id` on a
+  post-`memory_search` LLM call; keep legacy `tool_use_id` while adding
+  OpenAI-compatible `tool_call_id`.
 
 ## Runtime Context
 

@@ -128,6 +128,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         tool_messages.append(
             {
                 "role": "tool",
+                "tool_call_id": tc["tool_call_id"],
                 "tool_use_id": tc["tool_call_id"],
                 "content": llm_content,
             }

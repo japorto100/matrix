@@ -44,7 +44,23 @@ class IngestionConfig(BaseModel):
     )
     embedder_model: str = Field(
         default_factory=lambda: os.getenv(
-            "EMBEDDER_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+            "EMBEDDER_MODEL",
+            os.getenv(
+                "OPENROUTER_EMBEDDING_MODEL",
+                "sentence-transformers/all-MiniLM-L6-v2",
+            ),
+        )
+    )
+    embedder_base_url: str = Field(
+        default_factory=lambda: os.getenv(
+            "EMBEDDER_BASE_URL",
+            os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        )
+    )
+    embedder_api_key: str = Field(
+        default_factory=lambda: os.getenv(
+            "EMBEDDER_API_KEY",
+            os.getenv("OPENROUTER_API_KEY", os.getenv("OPENAI_API_KEY", "")),
         )
     )
 

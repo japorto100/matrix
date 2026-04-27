@@ -131,6 +131,27 @@ def test_clean_assistant_content_leaves_normal_text_unchanged():
     assert _clean_assistant_content(text) == text
 
 
+def test_clean_assistant_content_removes_textual_tool_call_block():
+    raw = (
+        "Stored.\n"
+        "<tool_call>\n"
+        '{"name": "memory_add", "arguments": {"content": "x"}}\n'
+        "</tool_call>"
+    )
+
+    assert _clean_assistant_content(raw) == "Stored."
+
+
+def test_clean_assistant_content_replaces_tool_call_only_output():
+    raw = (
+        "<tool_call>\n"
+        '{"name": "memory_add", "arguments": {"content": "x"}}\n'
+        "</tool_call>"
+    )
+
+    assert _clean_assistant_content(raw) == "Done."
+
+
 def test_resolve_model_name_falls_back_to_env(monkeypatch):
     monkeypatch.delenv("AGENT_DEFAULT_MODEL", raising=False)
     monkeypatch.setenv("AGENT_DEFAULT_UTILITY_MODEL", "openrouter/test-model")

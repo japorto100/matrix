@@ -42,6 +42,12 @@ deterministic test embedder for CI/unit tests. Each MemPalace row stores
 `embedding_model` and `embedding_dim` so model changes do not mix incompatible
 vector dimensions during retrieval.
 
+Agent writes are verbatim-first. Explicit `memory_add` and automatic
+post-answer `memory_retain_node` synchronously persist exact evidence to the
+MemPalace/Postgres route, then queue Hindsight summary retain asynchronously.
+This preserves raw chat/tool evidence before compaction without blocking the
+user turn on slower summary extraction.
+
 ## Rationale
 
 Matrix already depends on Postgres for Hindsight, audit, control and harness
@@ -81,6 +87,8 @@ gates as other external model calls.
 
 - Feature 012 owns MemPalace as a Postgres evidence archive, not a Chroma
   sidecar.
+- Agent-facing memory retain must treat MemPalace/verbatim as the synchronous
+  safety path; Hindsight summary/learning enrichment is allowed to lag behind.
 - Feature 011 must include embedding-model credentials, spend and audit in the
   provider policy.
 - Any future upstream MemPalace update is reviewed for concepts first; storage

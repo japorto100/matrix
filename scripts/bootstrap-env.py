@@ -294,12 +294,16 @@ KG_PIPELINE_URL=http://localhost:8099
 KG_PIPELINE_ENABLED=false
 
 # ─── Sandbox (exec-12) ─────────────────────────────────────────────────────
-OPENSANDBOX_SERVER_URL=http://localhost:8100
-OPEN_SANDBOX_URL=http://localhost:8100
+OPENSANDBOX_SERVER_URL=http://localhost:8080
+OPEN_SANDBOX_URL=http://localhost:8080
+OPEN_SANDBOX_DOMAIN=http://localhost:8080
 OPEN_SANDBOX_API_KEY={S['OPEN_SANDBOX_API_KEY']}
-SANDBOX_CODE_IMAGE=opensandbox/code-interpreter:v1.0.2
+SANDBOX_CODE_IMAGE=sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2
 SANDBOX_BROWSER_IMAGE=tradeview/sandbox-browser:v1
 SANDBOX_TOOL_TIMEOUT_SEC=1800
+OPENSANDBOX_REQUEST_TIMEOUT_SEC=180
+OPENSANDBOX_READY_TIMEOUT_SEC=90
+OPENSANDBOX_USE_SERVER_PROXY=true
 CONTAINER_SOCK=/run/user/1002/podman/podman.sock
 
 # ─── Networking & Service Discovery ────────────────────────────────────────

@@ -12,7 +12,12 @@ from typing import Any
 
 from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
 from agent.errors import CriticalError, RepairableError
-from agent.sandbox.config import SandboxConfig, get_sandbox_server_url
+from agent.sandbox.config import (
+    SandboxConfig,
+    get_sandbox_connection_config,
+    get_sandbox_ready_timeout,
+    get_sandbox_server_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +107,8 @@ class SandboxManager:
                 config.image or "opensandbox/code-interpreter:v1.0.2",
                 entrypoint=list(config.entrypoint),
                 timeout=config.timeout,
+                ready_timeout=get_sandbox_ready_timeout(),
+                connection_config=get_sandbox_connection_config(),
             )
             logger.info(
                 "Sandbox created: %s (image=%s, timeout=%s)",
@@ -274,6 +281,8 @@ class SandboxManager:
                 config.image or "opensandbox/code-interpreter:v1.0.2",
                 entrypoint=list(config.entrypoint),
                 timeout=config.timeout,
+                ready_timeout=get_sandbox_ready_timeout(),
+                connection_config=get_sandbox_connection_config(),
             )
             logger.info("Browser sandbox created: %s", sandbox.id)
 

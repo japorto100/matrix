@@ -1,6 +1,8 @@
 # Matrix Retrieval Pipeline (Venv 1, Phase 3)
 
-**Status:** Skeleton (Phase 3 not yet implemented). See exec-15 §5.8 + plan file.
+**Status:** Feature 019 baseline active. Live search adapters are still pending,
+but routing, RRF fusion and Context Bubble composition are implemented and
+unit-tested.
 
 ## Purpose
 
@@ -43,8 +45,24 @@ lancedb, chromadb have no dep conflicts with the agent runtime).
   by reranker/hyde for LLM calls — these are pure utility, not agent runtime)
 - MUST NOT import other agent modules (graph/, tools/, control/)
 
-## Activation (Phase 3)
+## Current Baseline
 
-Will happen after Slice 2 backend (ingestion) is verified end-to-end and
-Slice 3 backend (memory.py + episodes.py) is built. At that point we have
-real data in Hindsight + Kuzu and can start composing actual retrieval pipelines.
+- `retrieval.api.retrieve()` accepts supplied `vector_hits` and `kg_hits`.
+- `understanders.intent_router.route_intent()` selects text, graph, hybrid or
+  temporal retrieval without LLM latency.
+- `rerankers.rrf.reciprocal_rank_fusion()` merges vector/KG candidates with
+  provenance metadata.
+- `searchers.vector_store.vector_search_hits()` adapts the existing
+  `memory_engine.VectorStore` facade into retrieval hits.
+- `searchers.kg_claims.kg_claim_hits()` adapts Feature 017 global KG claim rows
+  into retrieval hits when a Postgres/NornicDB store adapter is supplied.
+- `composers.context_bubble.build_context_bubble()` creates compact,
+  source-attributed prompt context.
+- `verifiers.citation.verify_context_support()` provides a deterministic first
+  pass for unsupported answer claims.
+
+## Activation (Live Adapters)
+
+Next adapters should connect vector search, Feature 017 KG claim/path expansion
+and citation verification behind the current contracts. NornicDB/nonicdb is the
+first global KG projection target; FalkorDB is not the initial Matrix path.

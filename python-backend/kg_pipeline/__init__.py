@@ -1,7 +1,4 @@
-"""Matrix KG Extraction Pipeline (Venv 3, Phase 2 — currently SKELETON).
-
-See pyproject.toml for activation instructions.
-"""
+"""Matrix KG Extraction Pipeline."""
 
 __version__ = "0.1.0"
-__phase__ = "skeleton"
+__phase__ = "lightweight"

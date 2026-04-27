@@ -173,7 +173,7 @@ services:
     profiles:
       - sandbox
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080/health\", timeout=5)' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -1,17 +1,18 @@
-"""KG Pipeline FastAPI Worker (Port 8099) — Phase 2 STUB.
-
-In Phase 1 this server returns 503 on all extract calls. To activate, follow
-the instructions in pyproject.toml.
-"""
+"""KG Pipeline FastAPI Worker (Port 8099)."""
 
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from dataclasses import asdict
+
+from fastapi import FastAPI
+from kg_pipeline.extractors import extract_heuristic
+from kg_pipeline.sinks.global_kg import proposals_from_extraction
+from memory_engine.global_kg_store import create_global_kg_store
 from pydantic import BaseModel
 
 app = FastAPI(
     title="Matrix KG Pipeline Worker",
-    description="(Phase 2 SKELETON — see kg_pipeline/README.md)",
+    description="Lightweight KG candidate extraction for Matrix ingestion",
     version="0.1.0",
 )
 
@@ -21,20 +22,48 @@ class ExtractRequest(BaseModel):
     doc_id: str = ""
 
 
+class ProposeRequest(ExtractRequest):
+    source_uri: str | None = None
+    persist: bool = False
+
+
 @app.get("/health")
 async def health() -> dict:
     return {
-        "status": "skeleton",
-        "phase": "1",
-        "message": "kg_pipeline is a skeleton — see kg_pipeline/README.md to activate Phase 2",
+        "status": "ok",
+        "phase": "1.5",
+        "extractor": "heuristic",
+        "projection_target": "nornicdb",
     }
 
 
 @app.post("/extract")
 async def extract(req: ExtractRequest) -> dict:
-    raise HTTPException(
-        status_code=503,
-        detail=(
-            "kg_pipeline not yet activated. See kg_pipeline/README.md for Phase 2 activation steps."
-        ),
-    )
+    result = extract_heuristic(req.text, req.doc_id)
+    return asdict(result)
+
+
+@app.post("/propose")
+async def propose(req: ProposeRequest) -> dict:
+    result = extract_heuristic(req.text, req.doc_id)
+    proposals = proposals_from_extraction(result, source_uri=req.source_uri)
+    persisted: list[str] = []
+    degraded_reasons: list[str] = []
+
+    if req.persist and proposals:
+        try:
+            store = create_global_kg_store()
+            for proposal in proposals:
+                persisted.append(store.propose_claim(proposal))
+        except Exception as exc:  # noqa: BLE001
+            degraded_reasons.append(f"GLOBAL_KG_STORE_UNAVAILABLE:{type(exc).__name__}")
+
+    return {
+        "doc_id": result.doc_id,
+        "extractor": result.extractor,
+        "proposal_count": len(proposals),
+        "proposals": [proposal.projection_payload() for proposal in proposals],
+        "persisted_claim_ids": persisted,
+        "degraded": bool(degraded_reasons),
+        "degraded_reasons": degraded_reasons,
+    }

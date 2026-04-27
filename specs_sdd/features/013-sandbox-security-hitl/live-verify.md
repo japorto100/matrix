@@ -29,6 +29,53 @@ feature_id: 013
 - Run browser sandbox smoke test and capture artifact.
 - Stop/restart sandbox and confirm graceful error message when unavailable.
 
+## 2026-04-26 OpenSandbox Runtime Smoke
+
+Status: partial pass; code-execution runtime is live, egress/browser/file gates
+remain open.
+
+Evidence:
+
+- `./scripts/dev-stack.sh --sandbox` now targets only `opensandbox-server` and
+  reports Sandbox on `:8080`; the obsolete second `opensandbox` service on
+  `:8100` was not used because it defaults to Kubernetes mode without
+  kubeconfig.
+- `opensandbox-api-gateway` is healthy on `http://127.0.0.1:8080/health`.
+- Fixed Docker healthcheck: the OpenSandbox image lacks `curl`, so compose now
+  uses Python `urllib.request`.
+- Fixed SDK addressing: Matrix now maps legacy
+  `OPENSANDBOX_SERVER_URL`/`OPEN_SANDBOX_URL` to OpenSandbox SDK
+  `ConnectionConfig(domain=...)`, and sets `OPEN_SANDBOX_DOMAIN` in generated
+  env.
+- Fixed local Docker/Podman connectivity: SDK uses `use_server_proxy=true`.
+- Fixed local runtime network: `sandbox-config.toml` uses Docker
+  `network_mode="bridge"` because OpenSandbox endpoint/proxy resolution fails
+  with `network_mode="none"` (`DOCKER::NETWORK_MODE_ENDPOINT_UNAVAILABLE`).
+  Denied egress must be verified via OpenSandbox `networkPolicy`/egress sidecar
+  in T014.
+- Fixed image default: `SANDBOX_CODE_IMAGE` now uses upstream documented
+  `sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2`.
+  First pull completed locally; image size is about 9.65 GB.
+- Added cold-start budget:
+  `OPENSANDBOX_REQUEST_TIMEOUT_SEC=180`,
+  `OPENSANDBOX_READY_TIMEOUT_SEC=90`.
+- Direct `SandboxManager.execute_code(code="print(2 + 3)")` returned
+  `stdout='5\n'`, `stderr=''`, `exit_code=0`, `error=None`.
+- Direct `SandboxExecuteTool.execute(code="print(7 * 6)")` returned
+  `stdout='42\n'`, `stderr=''`, `exit_code=0`, `error=None`.
+- Focused tests: `tests/agent/sandbox/test_config.py` => `6 passed`.
+- Ruff: `agent/sandbox/config.py`, `agent/sandbox/manager.py` and
+  `tests/agent/sandbox/test_config.py` pass.
+
+Residual risk:
+
+- Browser sandbox still uses `tradeview/sandbox-browser:v1` and remains
+  unverified.
+- File upload, egress deny/allow behavior and limit/TTL caps still need live
+  probes.
+- Local cold start is slow after image/server reset because OpenSandbox pulls
+  and warms `code-interpreter` and `execd`.
+
 ## Prompt / Redaction
 
 - Submit benign scheduled task prompt.
@@ -57,4 +104,5 @@ feature_id: 013
 
 ## Result
 
-pending
+partial pass; OpenSandbox code execution is live. Remaining work is browser,
+file upload, egress policy and HITL/consent live verification.
