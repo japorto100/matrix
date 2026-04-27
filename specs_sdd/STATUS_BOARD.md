@@ -3,7 +3,7 @@ title: SDD Status Board
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 ---
 
 # SDD Status Board
@@ -40,7 +40,8 @@ Each feature now has the SDD core file set:
 | 015 | Scheduler, Skills, Formal Planning and Automation | static_verified_live_pending | scheduler live delivery + real-LLM skill verify | no |
 | 016 | Meta-Harness Agent Optimization | implementation_started | official-domain-spec loop + richer scenario coverage + promotion gate | no |
 | 017 | Knowledge Graph, Bitemporal Claims and Decay Retrieval | planned | global/domain nonicdb/NornicDB KG schema/projection design | no |
-| 018 | Database Schema Governance | planned | current-schema registry and Alembic drift gates | no |
+| 018 | Database Schema Governance | implementation_done | keep registry updated with future migrations | yes |
+| 019 | Hybrid RAG and Retrieval | implementation_started | OpenRouter embedding live verify + GraphRAG candidate evals | no |
 
 ## Immediate Migration Order
 

@@ -1,9 +1,9 @@
 ---
 title: Database Schema Governance Research
-status: draft
+status: accepted
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 018
 ---
 
@@ -26,3 +26,10 @@ Recommended pattern:
 - introspection generates current schema docs.
 - optional registry captures intended contract and owner feature.
 - tests catch drift.
+
+Accepted implementation:
+
+- no Agno-style runtime replacement;
+- generated Markdown inventory for live DB checks;
+- reviewed `docs/database/current-schema.md` for stable SDD orientation;
+- ADR 0007 binds the migration checklist.

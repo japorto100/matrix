@@ -1,9 +1,9 @@
 ---
 title: Database Schema Governance
-status: planned
+status: implementation_done
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 018
 migrated_from:
   - python-backend/alembic
@@ -37,6 +37,17 @@ Every new table or field must ship as:
 - schema registry/current-schema update.
 - migration/introspection test.
 - owner feature reference.
+
+Current implementation:
+
+- `docs/database/current-schema.md` is the reviewed readable schema registry.
+- `python-backend/scripts/schema_inventory.py` can regenerate a live Markdown
+  inventory from Postgres after `alembic upgrade head`.
+- `python-backend/tests/test_schema_governance.py` checks single Alembic head,
+  required Feature 012/017 schema contracts and registry drift signals.
+- ADR 0007 records that Alembic stays authoritative; the registry is a review
+  and agent-orientation surface, not runtime migration code.
+- Live regeneration against local Postgres completed on 2026-04-27.
 
 ## Non-Goals
 

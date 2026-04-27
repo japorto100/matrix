@@ -21,6 +21,7 @@ session findings do not become ADRs automatically.
 | 0004 | `docs/superpowers/findings/2026-04-23-adr-004-sandbox-hitl-layer.md` | Sandbox HITL layer | 013 |
 | 0005 | `specs_sdd/adr/0005-agent-learning-stack-boundaries.md` | Agent learning stack boundaries | 012, 015, 016, 017 |
 | 0006 | `specs_sdd/adr/0006-mempalace-postgres-pgvector.md` | MemPalace Postgres/pgvector runtime | 012, 011 |
+| 0007 | `specs_sdd/adr/0007-alembic-current-schema-governance.md` | Alembic current-schema registry and drift gates | 018, 012, 017, 019 |
 
 ## ADR Rule
 
