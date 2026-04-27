@@ -3,6 +3,7 @@
 Usage:
     uv run python -m ingestion.cli ingest-note --text "hello world"
     uv run python -m ingestion.cli ingest-file --path /local/file.pdf
+    uv run python -m ingestion.cli ingest-url --url https://arxiv.org/pdf/2604.09666
     uv run python -m ingestion.cli status
 """
 
@@ -17,6 +18,7 @@ from ingestion.core.config import get_config
 from ingestion.core.exceptions import DedupSkipError
 from ingestion.pipelines.base import PipelineContext
 from ingestion.pipelines.document import DocumentPipeline
+from ingestion.pipelines.link import LinkPipeline
 from ingestion.pipelines.note import NotePipeline
 from loguru import logger
 
@@ -60,6 +62,28 @@ async def cmd_ingest_file(args: argparse.Namespace) -> int:
         return 1
 
 
+async def cmd_ingest_url(args: argparse.Namespace) -> int:
+    """URL → fetch → extract → chunk → embed → sinks."""
+    ctx = PipelineContext.from_config(get_config())
+    pipeline = LinkPipeline(ctx)
+    try:
+        job = await pipeline.run(
+            url=args.url,
+            user_id=args.user,
+            tags=args.tags or [],
+            title=args.title,
+            sinks_active=args.sinks,
+        )
+        logger.info("url ingested: job_id={} status={}", job.id, job.status.value)
+        return 0
+    except DedupSkipError as e:
+        logger.info("url skipped as duplicate: {}", e)
+        return 0
+    except Exception as e:  # noqa: BLE001
+        logger.error("ingest_url failed: {}", e)
+        return 1
+
+
 async def cmd_status(args: argparse.Namespace) -> int:
     ctx = PipelineContext.from_config(get_config())
     counts = ctx.tracker.status_counts()
@@ -89,6 +113,17 @@ def main() -> int:
         help="sink names to run (default: hindsight; examples: hindsight kg)",
     )
 
+    p_url = sub.add_parser("ingest-url", help="ingest a URL or paper link")
+    p_url.add_argument("--url", required=True)
+    p_url.add_argument("--title")
+    p_url.add_argument("--user", default="local")
+    p_url.add_argument("--tags", nargs="*")
+    p_url.add_argument(
+        "--sinks",
+        nargs="*",
+        help="sink names to run (default: hindsight; examples: hindsight kg)",
+    )
+
     sub.add_parser("status", help="show job status counts")
 
     args = parser.parse_args()
@@ -97,6 +132,8 @@ def main() -> int:
         return asyncio.run(cmd_ingest_note(args))
     if args.cmd == "ingest-file":
         return asyncio.run(cmd_ingest_file(args))
+    if args.cmd == "ingest-url":
+        return asyncio.run(cmd_ingest_url(args))
     if args.cmd == "status":
         return asyncio.run(cmd_status(args))
     return 1

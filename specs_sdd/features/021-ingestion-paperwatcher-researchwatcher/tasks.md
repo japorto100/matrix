@@ -50,7 +50,11 @@ feature_id: 021
   files, URL/web fetches, arXiv/paper URLs and structured API payloads.
   - 2026-04-27: `ingestion.cli ingest-file` now supports local files without
     SeaweedFS/Go via `DocumentPipeline.run_local_path`.
-  - Remaining: URL/arXiv/API connectors and durable source artifact registry.
+  - 2026-04-27: `LinkPipeline` now uses the same durable source artifact,
+    stable chunk id, citation ref and chunk-hash manifest contract for URL
+    sources; `ingestion.cli ingest-url` exposes the path for manual/arXiv
+    source ingestion.
+  - Remaining: structured API payload connector and live URL/arXiv smoke.
 - T021 [done-static] Implement parser registry with explicit parser/version
   metadata.
   - 2026-04-27: selected extractor name and document schema version flow into
@@ -136,7 +140,14 @@ feature_id: 021
     `c38f45c6-2595-5518-a78f-0b509a6eea09` written for the local file URI.
     PDF/full retrieval smoke remains covered by LV004/Feature 019 rather than
     this local-ingest gate.
-- T034 Live-smoke one URL or arXiv-source ingest when network/API keys allow.
+- T034 [partial-static] Live-smoke one URL or arXiv-source ingest when
+  network/API keys allow.
+  - 2026-04-27: static URL ingest path exists via `ingest-url` and unit tests
+    prove source artifact/citation/chunk metadata for URL sources.
+  - 2026-04-27: HTTP loader uses response `Content-Type` to preserve arXiv PDF
+    URLs without `.pdf` suffix as PDF-like filenames before MIME detection.
+  - Remaining: run against a real network URL/arXiv source with Matrix
+    Postgres and configured sinks.
 - T035 [partial-done] Meta-Harness scenario: user asks for paper-grounded answer; trace must
   show retrieval/citation path, not memory-only answer.
   - 2026-04-27: Feature 022 now includes `source-provenance-001`, a
