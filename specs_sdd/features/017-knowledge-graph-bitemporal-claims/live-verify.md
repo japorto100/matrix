@@ -59,6 +59,14 @@ feature_id: 017
 - `kg_pipeline.sinks.global_kg` now refuses skipped extraction results and
   relations without both a source ref and evidence quote, preventing raw
   tool/output blobs from becoming global KG claims without provenance.
+- `memory_engine.kg_validation` defines the Wisdom/GraphMERT validation
+  contract: `TripleValidationInput`, `TripleValidationResult`, async validator
+  protocol, explicit no-checkpoint GraphMERT placeholder, deterministic
+  rule-based validator and `supports_slow_lane_promotion(...)`.
+- `tests/test_kg_validation.py` verifies GraphMERT no-checkpoint skips,
+  Fast-Lane validation is skipped rather than blocking fresh ingest, missing
+  evidence is rejected, self-relations are hard negatives, and evidence-backed
+  Slow-Lane triples can support but not force promotion.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is
   guarded and reports degraded state if the global KG store is unavailable.
 - Meta-Harness Feature 016 now includes

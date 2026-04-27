@@ -29,7 +29,7 @@ feature_id: 017
   `entity_key`.
 - T005 Decide whether overlap handling is append-only query logic or explicit
   split-on-insert; do not use lossy truncation triggers.
-- T006 Add Wisdom/validation fields or companion tables for adjudication state:
+- T006 [partial-static] Add Wisdom/validation fields or companion tables for adjudication state:
   validation method, validator version, plausibility score, contradiction refs,
   corroboration count and promotion decision.
 
@@ -75,7 +75,7 @@ feature_id: 017
 
 ## GraphMERT / Wisdom Validation
 
-- T024 Define GraphMERT as optional async L6 validator after IE and claim
+- T024 [done-static] Define GraphMERT as optional async L6 validator after IE and claim
   reification, not inline retrieval and not a source of truth.
 - T025 [done-research] Evaluate `_ref`/upstream GraphMERT implementation and
   whether a usable checkpoint exists for financial/geopolitical/domain KG, or
@@ -84,13 +84,13 @@ feature_id: 017
   `jha-lab/graphmert_umls` exposes code and HF datasets but no confirmed public
   model checkpoint; community Finance repo `Nelumbium-Capital/GraphMert` is
   small/reference-grade, not production evidence.
-- T026 Define GraphMERT input/output contract: `(head, relation) -> tail`
+- T026 [done-static] Define GraphMERT input/output contract: `(head, relation) -> tail`
   plausibility, negative sampling, score threshold, validator version and
   evidence refs.
-- T027 Add GraphMERT/Wisdom promotion rules: GraphMERT score can support or
+- T027 [done-static] Add GraphMERT/Wisdom promotion rules: GraphMERT score can support or
   demote Slow Lane claims, but cannot override missing provenance, explicit
   contradictions or human review gates.
-- T028 Add canary eval for GraphMERT/validator: obvious valid structural
+- T028 [done-static] Add canary eval for GraphMERT/validator: obvious valid structural
   triples, hard negatives, temporal false positives and domain-shift examples.
 
 ## Projection And UI
@@ -126,7 +126,7 @@ feature_id: 017
   expected to improve retrieval stability over dense RAG.
 - T049 Track offline KG build/update cost and online latency before promoting
   KG retrieval as default for any query class.
-- T050 Verify GraphMERT/validator is never run on Fast Lane live-event ingest
+- T050 [done-static] Verify GraphMERT/validator is never run on Fast Lane live-event ingest
   inline and cannot block fresh-event availability.
 - T051 Verify Fast Lane -> Slow Lane promotion is auditable and evidence-gated:
   multi-source corroboration, time window, contradiction absence and optional
