@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "max_hits": 8,
+    "provider_calls": 0,
+    "token_budget": 1600
+  },
+  "candidate_id": "inner-matrix-fused-vector-kg",
+  "candidate_type": "benchmark_candidate",
+  "decision": "promote_outer_loop",
+  "decision_reason": "Promote as deterministic retrieval baseline candidate.",
+  "feature_owner": "019-hybrid-rag-retrieval",
+  "frozen_inputs": {
+    "canary_count": 2,
+    "metadata": {
+      "chunker_version": "deterministic-fixture/v1",
+      "class": "rrf",
+      "embedding_dimension": 0,
+      "embedding_model": "deterministic-fixture",
+      "feature": "019/017",
+      "kg_projection_version": "postgres-fixture/v1",
+      "parser_version": "deterministic-fixture/v1",
+      "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+    },
+    "source_run_id": "run-inner-loop-rag-smoke-retrieval"
+  },
+  "metrics": {
+    "fitness_score": 0.9631,
+    "latency_ms_avg": 0.128,
+    "ndcg@5": 0.8155,
+    "pass_rate": 1.0,
+    "recall@5": 1.0
+  },
+  "parameters": {
+    "include_kg": true,
+    "include_vector": true,
+    "mode": null,
+    "retrieval_candidate_id": "matrix-fused-vector-kg"
+  },
+  "search_space_version": "rag-retrieval-modes/v1",
+  "source_artifacts": [
+    "run-inner-loop-rag-smoke-retrieval"
+  ]
+}

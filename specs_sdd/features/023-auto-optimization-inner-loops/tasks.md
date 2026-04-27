@@ -27,15 +27,15 @@ feature_id: 023
 
 ## Candidate Schema
 
-- T010 Define `InnerLoopCandidate`: id, feature owner, search-space version,
+- T010 [done-static] Define `InnerLoopCandidate`: id, feature owner, search-space version,
   config, changed parameters, expected metric impact, budget estimate and
   rollback/default.
-- T011 Define `InnerLoopRun`: corpus/scenario set, train/holdout split,
+- T011 [done-static] Define `InnerLoopRun`: corpus/scenario set, train/holdout split,
   component metrics, cost/latency, failures and generated artifacts.
-- T012 Define adapter from inner-loop run to Meta-Harness candidate artifact:
+- T012 [done-static-live-smoke] Define adapter from inner-loop run to Meta-Harness candidate artifact:
   `aggregate.json`, `scores.json`, `verdicts.json`, config snapshot and
   evidence refs.
-- T013 Add decision fields: promote to outer loop, discard, defer, needs human
+- T013 [done-static] Add decision fields: promote to outer loop, discard, defer, needs human
   review.
 
 ## RAG/Extraction Inner Loop
@@ -43,10 +43,10 @@ feature_id: 023
 - T020 Add search spaces for parser/splitter/chunking:
   PyMuPDF4LLM, Docling, MinerU, recursive/character/hierarchy-aware chunking,
   chunk size, overlap and metadata enrichment.
-- T021 Add search spaces for retrieval:
+- T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.
-- T022 Add budget-safe local/deterministic mode for repeated loops.
+- T022 [done-static-live-smoke] Add budget-safe local/deterministic mode for repeated loops.
 - T023 Add optional OpenRouter-free/provider mode with strict request caps and
   pacing.
 - T024 Add source-grounding candidate generator for Feature 021/019:
@@ -68,11 +68,11 @@ feature_id: 023
 
 ## Verification
 
-- T040 Unit-test candidate schema validation.
-- T041 Unit-test Meta-Harness artifact conversion.
-- T042 Run one deterministic RAG inner-loop smoke over Feature 022 canaries.
+- T040 [done-static] Unit-test candidate schema validation.
+- T041 [done-static] Unit-test Meta-Harness artifact conversion.
+- T042 [done-static-live-smoke] Run one deterministic RAG inner-loop smoke over Feature 022 canaries.
 - T043 Run one parser/chunking smoke over the ResearchWatcher PDF fixture.
 - T044 Run one memory/context smoke without live provider calls.
-- T045 Gate all live-provider loops behind quota/cost config.
+- T045 [done-static-live-smoke] Gate all live-provider loops behind quota/cost config.
 - T046 Prove inner-loop candidates cannot modify benchmark goldens,
   deterministic evaluator code or holdout sets during a run.

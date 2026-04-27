@@ -1,0 +1,20 @@
+{
+  "feature_owner": "019-hybrid-rag-retrieval",
+  "files": [
+    {
+      "bytes": 14749,
+      "path": "python-backend/meta_harness/inner_loop.py"
+    },
+    {
+      "bytes": 9074,
+      "path": "python-backend/meta_harness/retrieval_benchmark.py"
+    },
+    {
+      "bytes": 7628,
+      "path": "python-backend/retrieval/evals/benchmark_lab.py"
+    }
+  ],
+  "source_artifacts": [
+    "run-inner-loop-rag-smoke-retrieval"
+  ]
+}

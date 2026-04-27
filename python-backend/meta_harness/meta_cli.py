@@ -96,6 +96,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pdf_benchmark.add_argument("--data-dir", type=Path, default=None)
 
+    inner_loop = sub.add_parser(
+        "inner-loop",
+        help="Run Feature 023 deterministic inner-loop candidate sweep",
+    )
+    inner_loop.add_argument(
+        "--kind",
+        choices=("rag",),
+        default="rag",
+        help="Inner-loop search space to run.",
+    )
+    inner_loop.add_argument("--run-id", default="")
+    inner_loop.add_argument("--data-dir", type=Path, default=None)
+    inner_loop.add_argument("--k", type=int, default=5)
+    inner_loop.add_argument("--token-budget", type=int, default=1600)
+    inner_loop.add_argument("--max-hits", type=int, default=8)
+    inner_loop.add_argument(
+        "--provider-calls-budget",
+        type=int,
+        default=0,
+        help="Requested live-provider calls. Non-zero values require explicit quota env.",
+    )
+
     propose = sub.add_parser("propose", help="Run proposer guard or external proposer")
     propose.add_argument("--sessions", type=int, default=10)
     propose.add_argument("--model", default="")
@@ -209,6 +231,19 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_pdf_extraction_benchmark(**kwargs)
+    if args.command == "inner-loop":
+        from meta_harness.inner_loop import run_deterministic_rag_inner_loop
+
+        kwargs = {
+            "run_id": args.run_id or None,
+            "k": args.k,
+            "token_budget": args.token_budget,
+            "max_hits": args.max_hits,
+            "provider_calls_budget": args.provider_calls_budget,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_deterministic_rag_inner_loop(**kwargs)
     if args.command == "propose":
         from meta_harness.proposer import propose
 

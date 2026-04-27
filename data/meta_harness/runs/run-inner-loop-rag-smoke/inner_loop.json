@@ -1,0 +1,150 @@
+{
+  "candidates": [
+    {
+      "budget": {
+        "max_hits": 8,
+        "provider_calls": 0,
+        "token_budget": 1600
+      },
+      "candidate_id": "inner-matrix-vector-only",
+      "candidate_type": "benchmark_candidate",
+      "decision": "defer",
+      "decision_reason": "Needs more canary coverage before outer-loop promotion.",
+      "feature_owner": "019-hybrid-rag-retrieval",
+      "frozen_inputs": {
+        "canary_count": 2,
+        "metadata": {
+          "chunker_version": "deterministic-fixture/v1",
+          "class": "baseline",
+          "embedding_dimension": 0,
+          "embedding_model": "deterministic-fixture",
+          "feature": "019",
+          "kg_projection_version": "disabled",
+          "parser_version": "deterministic-fixture/v1",
+          "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+        },
+        "source_run_id": "run-inner-loop-rag-smoke-retrieval"
+      },
+      "metrics": {
+        "fitness_score": 0.5,
+        "latency_ms_avg": 0.126,
+        "ndcg@5": 0.5,
+        "pass_rate": 0.5,
+        "recall@5": 0.5
+      },
+      "parameters": {
+        "include_kg": false,
+        "include_vector": true,
+        "mode": "text",
+        "retrieval_candidate_id": "matrix-vector-only"
+      },
+      "search_space_version": "rag-retrieval-modes/v1",
+      "source_artifacts": [
+        "run-inner-loop-rag-smoke-retrieval"
+      ]
+    },
+    {
+      "budget": {
+        "max_hits": 8,
+        "provider_calls": 0,
+        "token_budget": 1600
+      },
+      "candidate_id": "inner-matrix-kg-only",
+      "candidate_type": "benchmark_candidate",
+      "decision": "defer",
+      "decision_reason": "Needs more canary coverage before outer-loop promotion.",
+      "feature_owner": "019-hybrid-rag-retrieval",
+      "frozen_inputs": {
+        "canary_count": 2,
+        "metadata": {
+          "chunker_version": "deterministic-fixture/v1",
+          "class": "baseline",
+          "embedding_dimension": 0,
+          "embedding_model": "deterministic-fixture",
+          "feature": "017",
+          "kg_projection_version": "postgres-fixture/v1",
+          "parser_version": "deterministic-fixture/v1",
+          "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+        },
+        "source_run_id": "run-inner-loop-rag-smoke-retrieval"
+      },
+      "metrics": {
+        "fitness_score": 0.25,
+        "latency_ms_avg": 0.078,
+        "ndcg@5": 0.5,
+        "pass_rate": 0.0,
+        "recall@5": 0.5
+      },
+      "parameters": {
+        "include_kg": true,
+        "include_vector": false,
+        "mode": "graph",
+        "retrieval_candidate_id": "matrix-kg-only"
+      },
+      "search_space_version": "rag-retrieval-modes/v1",
+      "source_artifacts": [
+        "run-inner-loop-rag-smoke-retrieval"
+      ]
+    },
+    {
+      "budget": {
+        "max_hits": 8,
+        "provider_calls": 0,
+        "token_budget": 1600
+      },
+      "candidate_id": "inner-matrix-fused-vector-kg",
+      "candidate_type": "benchmark_candidate",
+      "decision": "promote_outer_loop",
+      "decision_reason": "Promote as deterministic retrieval baseline candidate.",
+      "feature_owner": "019-hybrid-rag-retrieval",
+      "frozen_inputs": {
+        "canary_count": 2,
+        "metadata": {
+          "chunker_version": "deterministic-fixture/v1",
+          "class": "rrf",
+          "embedding_dimension": 0,
+          "embedding_model": "deterministic-fixture",
+          "feature": "019/017",
+          "kg_projection_version": "postgres-fixture/v1",
+          "parser_version": "deterministic-fixture/v1",
+          "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+        },
+        "source_run_id": "run-inner-loop-rag-smoke-retrieval"
+      },
+      "metrics": {
+        "fitness_score": 0.9631,
+        "latency_ms_avg": 0.128,
+        "ndcg@5": 0.8155,
+        "pass_rate": 1.0,
+        "recall@5": 1.0
+      },
+      "parameters": {
+        "include_kg": true,
+        "include_vector": true,
+        "mode": null,
+        "retrieval_candidate_id": "matrix-fused-vector-kg"
+      },
+      "search_space_version": "rag-retrieval-modes/v1",
+      "source_artifacts": [
+        "run-inner-loop-rag-smoke-retrieval"
+      ]
+    }
+  ],
+  "created_at": "2026-04-27T15:31:24.746234+00:00",
+  "feature_owner": "023-auto-optimization-inner-loops",
+  "frozen_evaluator": {
+    "goldens_mutable": false,
+    "metrics": [
+      "pass_rate",
+      "recall@5",
+      "ndcg@5",
+      "latency_ms_avg"
+    ],
+    "source_run_id": "run-inner-loop-rag-smoke-retrieval",
+    "type": "retrieval_benchmark"
+  },
+  "holdout_split": "holdout/not-used-in-smoke",
+  "run_id": "run-inner-loop-rag-smoke",
+  "scenario_set": "matrix-retrieval-canaries@2026-04-27",
+  "train_split": "search/deterministic-fixture"
+}
