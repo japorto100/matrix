@@ -219,7 +219,7 @@ OPENAI_BASE_URL=
 # ─── LiteLLM Gateway (wenn via --profile litellm gestartet) ────────────────
 LITELLM_BASE_URL=http://localhost:4000
 LITELLM_PORT=4000
-AGENT_DEFAULT_UTILITY_MODEL=claude-3-haiku-20240307
+AGENT_DEFAULT_UTILITY_MODEL=openrouter/openrouter/free
 
 # ─── Agent Core (LangGraph exec-10) ────────────────────────────────────────
 AGENT_USE_LANGGRAPH=true

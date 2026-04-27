@@ -33,6 +33,11 @@ feature_id: 018
 - T023 [done-static] Add extension checks for `vector`, `btree_gist` and other Postgres
   features when used.
 - T024 [done-static] Add dev command for schema inventory regeneration.
+- T025 [done-live] Ensure the Matrix dev runner uses a dedicated
+  `matrix-postgres` container and `matrix_postgres-data` volume, not another
+  project's Postgres container/volume.
+- T026 [done-live] Move the memory-eval compose Postgres host port away from
+  Matrix's `5433` to prevent runner collisions.
 
 ## Feature 017 Integration
 
@@ -44,3 +49,7 @@ feature_id: 018
 
 - T040 [done-live] Run `alembic upgrade head` against a freshly booted local Postgres and
   regenerate `docs/database/current-schema.md` from live introspection.
+- T041 [done-live] Verify local Matrix Postgres exposes pgvector on `:5433`.
+  - 2026-04-27: `matrix-postgres` runs `pgvector/pgvector:pg17` on
+    `matrix_postgres-data`; extensions verified: `vector 0.8.2`,
+    `btree_gist`, `pg_trgm`, `pg_stat_statements`.

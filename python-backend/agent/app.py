@@ -253,6 +253,37 @@ class AgentChatRequest(BaseModel):
     attachments: list[FileAttachment] | None = None
     reasoning_effort: str | None = Field(None, alias="reasoningEffort")
     browser_tools: list[BrowserToolDef] | None = Field(None, alias="browserTools")
+    meta_harness_run_id: str | None = Field(None, alias="metaHarnessRunId")
+    meta_harness_scenario_id: str | None = Field(None, alias="metaHarnessScenarioId")
+    meta_harness_api_key: str | None = Field(None, alias="metaHarnessApiKey")
+
+
+def _meta_harness_api_key(req: AgentChatRequest, model: str) -> str | None:
+    """Allow local Meta-Harness live probes to use a process env credential."""
+    run_id = (req.meta_harness_run_id or "").strip()
+    api_key = (req.meta_harness_api_key or "").strip()
+    if not run_id or not api_key:
+        return None
+    if os.environ.get("META_HARNESS_ALLOW_ENV_CREDENTIALS", "true").strip().lower() in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }:
+        return None
+    provider = _provider_from_model(model)
+    env_name = f"META_HARNESS_{provider.upper()}_API_KEY"
+    allowed = os.environ.get(env_name) or os.environ.get(f"{provider.upper()}_API_KEY")
+    if not allowed or not os.environ.get("HINDSIGHT_DB_URL"):
+        return None
+    return api_key if api_key == allowed else None
+
+
+def _provider_from_model(model: str) -> str:
+    provider = (model or "").split("/", 1)[0].strip().lower()
+    if provider == "google":
+        return "gemini"
+    return provider or "litellm"
 
 
 class AudioTranscribeRequest(BaseModel):
@@ -787,6 +818,8 @@ async def _stream_agent_loop(
         return
 
     api_key = await get_user_api_key(user_id, provider_from_model(model))
+    if api_key is None:
+        api_key = _meta_harness_api_key(req, model)
 
     registry = ToolRegistry.load()
 

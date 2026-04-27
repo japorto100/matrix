@@ -37,6 +37,10 @@ feature_id: 017
 
 - T010 [done-static] Define claim embedding text and embedding dimension
   configuration.
+- T010a [done-static] Define RAG/KG vector handoff: KG builders reuse
+  ingestion chunk/evidence embedding refs where possible, but store separate
+  entity/claim embeddings with explicit `embedding_model`, `embedding_dim` and
+  provenance when canonical KG objects need semantic retrieval.
 - T011 [done-static-live-smoke] Implement pgvector candidate retrieval for KG claims as a KG-side
   candidate source for Feature 019.
 - T012 [done-static] Add decay scoring for recency, validity-end and access
@@ -98,6 +102,12 @@ feature_id: 017
 - T030 [partial-static] Define rebuildable graph projection contract with
   nonicdb/NornicDB as the first global KG candidate; FalkorDB/Neo4j remain
   alternatives only if the first path fails requirements.
+- T030a Evaluate `_ref/NornicDB` as a projection target, not as source of
+  truth: schema mapping, rebuild procedure, bitemporal/historical reads,
+  vector+graph query behavior, backup/restore and failure isolation.
+- T030b Add projection-outbox replay smoke: delete/recreate the projection from
+  Postgres evidence/claim/source artifacts and prove claim ids, path refs and
+  citation refs remain stable enough for Feature 019.
 - T031 Define Control UI KG claim detail contract.
 - T032 Define promotion/demotion review queue behavior.
 - T033 Coordinate `/memory/kg` and provenance graph surfaces with Feature 010.
@@ -126,6 +136,12 @@ feature_id: 017
   expected to improve retrieval stability over dense RAG.
 - T049 Track offline KG build/update cost and online latency before promoting
   KG retrieval as default for any query class.
+- T049a Verify KG extraction/projection can be rebuilt from source artifacts,
+  chunks, embeddings and evidence refs without depending on a second graph DB
+  as source of truth.
+- T049b Benchmark NornicDB/nonicdb path retrieval against Postgres-only KG
+  candidate search and fused RAG on the same Feature 022 canaries; promote only
+  for query classes where it improves path completeness, stability or latency.
 - T050 [done-static] Verify GraphMERT/validator is never run on Fast Lane live-event ingest
   inline and cannot block fresh-event availability.
 - T051 Verify Fast Lane -> Slow Lane promotion is auditable and evidence-gated:

@@ -52,6 +52,26 @@ feature_id: 021
   downloads remain opt-in and use `HF_HOME=/mnt/cold-storage/models/huggingface`.
 - T024 Emit KG `ClaimProposal` objects for extraction outputs, but do not
   promote claims automatically.
+- T025 Reuse ingestion chunk embeddings and source artifact refs as KG evidence
+  inputs; KG may add canonical entity/claim embeddings, but must not duplicate
+  the entire RAG vector store into the graph backend.
+- T026 Add parser adapter plan for PyMuPDF4LLM baseline, Docling SOTA candidate
+  and MinerU heavy/complex-PDF candidate.
+- T026a Add Microsoft MarkItDown as a lightweight parser candidate for Office,
+  HTML, simple PDFs and MCP-style conversion workflows; keep it behind the same
+  extraction benchmark gates as the other parsers.
+- T027 Preserve hierarchy/page/table/figure/formula/code metadata through
+  chunking and citation refs.
+- T028 Prefer structured trading/finance inputs such as XBRL/CSV/API over PDF
+  extraction when available.
+- T029 Feed parser/chunking configs into Feature 023 inner-loop experiments.
+- T029a Maintain a source-date classification in Feature 021/019/023 docs:
+  2026 papers and current official docs are decision evidence; older papers are
+  method references unless validated by current repo state and local benchmark.
+- T029b Add a source-grounding implementation pack: immutable source artifact,
+  parser registry, hierarchy-aware chunker, citation refs, embedding metadata
+  and optional KG proposal emission must be testable as one pipeline before
+  external GraphRAG candidates are judged.
 
 ## Verification
 
@@ -74,6 +94,28 @@ feature_id: 021
 - T034 Live-smoke one URL or arXiv-source ingest when network/API keys allow.
 - T035 Meta-Harness scenario: user asks for paper-grounded answer; trace must
   show retrieval/citation path, not memory-only answer.
+- [x] T036 Add real PDF extraction benchmark using ResearchWatcher
+  PDF/Markdown ground-truth fixture so Meta-Harness can evaluate parser quality
+  instead of only synthetic retrieval canaries.
+  - 2026-04-27: `meta_harness.extraction_benchmark` compares
+    `_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf`
+    against the sibling `.md`, writes `extraction_benchmark.json`,
+    `aggregate.json`, `scores.json` and `verdicts.json`.
+- T037 Promote extraction benchmark failures into parser/chunker candidates:
+  current PyMuPDF4LLM pass has high text recall but weak structured formula,
+  figure and code-fence preservation.
+- T038 Compare PyMuPDF4LLM vs Docling on the ResearchWatcher fixture and at
+  least one financial/research PDF.
+- T039 Evaluate MinerU only after resource footprint and install/cache location
+  are clear.
+- T040 Compare MarkItDown against PyMuPDF4LLM, Docling and MinerU on the
+  ResearchWatcher fixture plus one Office-style fixture; promote it only for
+  source classes where it preserves citations and structure well enough.
+- T041 Add one current trading/finance or macro PDF fixture so parser
+  decisions are not based only on generic benchmark PDFs.
+- T042 Add a paper/source provenance fixture where the expected answer must
+  cite paper id, page/section or chunk refs; this becomes the first
+  Meta-Harness source-grounding scenario.
 
 ## Bugs Found While Implementing
 

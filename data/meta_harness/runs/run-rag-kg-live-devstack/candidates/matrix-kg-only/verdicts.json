@@ -1,0 +1,12 @@
+{
+  "failures": [
+    "trading-geo-kg-001: missing-source:vector",
+    "general-vector-001: missing-source:vector, forbidden-source:kg, missing-reference:chunk-revenue-summary"
+  ],
+  "observed_actions": [
+    "retrieval_benchmark"
+  ],
+  "observed_tools": [],
+  "passed": false,
+  "tool_success_rate": 1.0
+}

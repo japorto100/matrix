@@ -1,12 +1,12 @@
 ---
-title: Feature Workplan 001-022
+title: Feature Workplan 001-023
 status: active
 owner: filip
 created: 2026-04-27
 updated: 2026-04-27
 ---
 
-# Feature Workplan 001-022
+# Feature Workplan 001-023
 
 This is the operating queue across all SDD features. Feature files remain the
 source of detailed requirements; this file decides what to build, what to
@@ -35,11 +35,13 @@ verify and where Meta-Harness should drive the next iterations.
    artifact/citation refs, then run it over the GraphRAG paper artifact.
 3. Feature 022: build the first RAG/KG canary runner comparing vector-only,
    KG-only and fused Matrix retrieval.
-4. Feature 019/017: use benchmark failures to harden retrieval, KG paths,
+4. Feature 023: add AutoRAG/autoresearch-style inner-loop candidate schema and
+   first deterministic RAG optimization smoke.
+5. Feature 019/017: use benchmark failures to harden retrieval, KG paths,
    provenance and Context Bubble behavior.
-5. Feature 012/015/016: expand memory/skill/routing trace gates from the new
+6. Feature 012/015/016: expand memory/skill/routing trace gates from the new
    retrieval and Hermes lessons.
-6. Feature 013: bring sandbox/file/browser scenarios online once core routing
+7. Feature 013: bring sandbox/file/browser scenarios online once core routing
    and retrieval gates are stable.
 
 ## Feature Matrix
@@ -68,6 +70,7 @@ verify and where Meta-Harness should drive the next iterations.
 | 020 Harness/subagents | Research then implement metadata | Routing/delegation gates | Route-decision audit schema before behavior changes |
 | 021 Ingestion/Paperwatcher | Local CLI path implemented | Paper-grounded retrieval scenario | Durable source/citation refs plus GraphRAG paper ingest |
 | 022 RAG/KG Benchmark Lab | Start build | Candidate comparison/Pareto | Vector-only vs KG-only vs fused baseline report |
+| 023 Auto-Optimization Inner Loops | Create feature and bounded schema | Candidate generation feeding Meta-Harness | Deterministic RAG inner-loop smoke emits candidate artifacts |
 
 ## HermesAgent Transfer Backlog
 
@@ -90,6 +93,8 @@ verify and where Meta-Harness should drive the next iterations.
 - Memory boundary: Hindsight/MemPalace personal evidence vs global KG claims.
 - RAG/KG canaries: simple factual, document-grounded, multi-hop KG, stale-data
   negative case.
+- Auto-optimization: prove inner-loop candidates improve component metrics
+  before outer-loop promotion.
 - Provider safety: no leaked reasoning, no stored resolved secrets, unsupported
   provider fields stripped.
 - Compression: no infinite loop, no context poisoning, language preserved.

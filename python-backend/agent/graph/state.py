@@ -121,3 +121,6 @@ class AgentGraphState(TypedDict):
     routing_reason: str
     routing_used: bool
     routing_picked_model: str
+
+    # Observability label for Meta-Harness route-decision traces.
+    runner_variant: str

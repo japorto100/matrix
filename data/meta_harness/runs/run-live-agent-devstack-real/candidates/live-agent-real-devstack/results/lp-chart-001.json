@@ -1,0 +1,166 @@
+{
+  "run_id": "run-live-agent-devstack-real",
+  "candidate_id": "live-agent-real-devstack",
+  "scenario_id": "lp-chart-001",
+  "thread_id": "mh-lp-chart-001-dbef18e3",
+  "user_id": "meta-harness",
+  "category": "tool_chart_state",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-lp-chart-001-dbef18e3\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-dbef18e3\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='meta-harness' provider='openrouter': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 1645,
+      "timestamp": "2026-04-27 13:59:11.766087+00:00",
+      "action": "skill_used",
+      "user_id": null,
+      "thread_id": "mh-lp-chart-001-dbef18e3",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:trading-analysis",
+          "global:memory-usage",
+          "global:plan"
+        ],
+        "skill_names": [
+          "trading-analysis",
+          "memory-usage",
+          "plan"
+        ],
+        "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+        "user_id": "meta-harness",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 1644,
+      "timestamp": "2026-04-27 13:59:11.682052+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-lp-chart-001-dbef18e3",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:trading-analysis",
+          "global:memory-usage",
+          "global:plan"
+        ],
+        "skill_names": [
+          "trading-analysis",
+          "memory-usage",
+          "plan"
+        ],
+        "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+        "user_id": "meta-harness",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-lp-chart-001-dbef18e3",
+    "model": "",
+    "completed": false,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 0,
+    "turn_efficiency": 1.0,
+    "total_tokens": 0,
+    "token_efficiency": 0,
+    "total_duration_ms": 0,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 0,
+    "memory_retains": 0,
+    "memory_utilization": false,
+    "skills_loaded": [
+      "global:memory-usage",
+      "global:plan",
+      "global:trading-analysis"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.7,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required tool: get_chart_state",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": null,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required tool: get_chart_state",
+      "missing tool_result events for tool success rate threshold"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:memory-usage",
+      "global:plan",
+      "global:trading-analysis",
+      "memory-usage",
+      "plan",
+      "trading-analysis"
+    ],
+    "tool_success_rate": null,
+    "observed_memory_routes": [],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "dispatcher"
+}

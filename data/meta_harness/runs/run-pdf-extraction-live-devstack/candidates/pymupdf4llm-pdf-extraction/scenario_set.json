@@ -1,0 +1,18 @@
+{
+  "scenarios": [
+    {
+      "id": "researchwatcher-small-pdf-ground-truth",
+      "pdf_path": "/home/lipfi2/code/matrix/_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf",
+      "required_phrases": [
+        "Protokoll",
+        "Freie Fall",
+        "Theoretische Grundlagen",
+        "h(t)",
+        "Messdaten",
+        "Python-Simulation",
+        "berechne_hoehe"
+      ],
+      "truth_path": "/home/lipfi2/code/matrix/_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.md"
+    }
+  ]
+}

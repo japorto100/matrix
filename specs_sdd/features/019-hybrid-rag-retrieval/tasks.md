@@ -59,6 +59,17 @@ feature_id: 019
 - T033 Track E2GraphRAG for efficient graph+tree construction.
 - T034 [partial-static] Use GraphRAG-Bench/RAGSearch style comparison before defaulting graph
   retrieval.
+- T035 Use Feature 023 inner-loop outputs as retrieval candidates, but require
+  Feature 022 holdout/Meta-Harness evidence before promotion.
+- T036 Add hierarchy-aware chunking and metadata-enriched retrieval as first
+  class candidates; do not compare graph methods only against weak naive
+  chunking baselines.
+- T037 Add source-grounding baseline order for implementation: strong
+  parser/chunker/citation pipeline first, Matrix vector baseline second,
+  Matrix fused vector+KG third, external LightRAG/HippoRAG adapters fourth.
+- T038 Require every retrieval candidate to declare source artifact version,
+  parser version, chunking config, embedding model/dimension and KG projection
+  version before Feature 022 scores are comparable.
 
 ## Verification
 
@@ -72,3 +83,9 @@ feature_id: 019
 - T044 [done-static] Canary: simple/general QA where dense retrieval should remain enough.
 - T045 [done-static] Aggregate retrieval canaries with Recall@k, nDCG@k and
   pass-rate metrics before larger RAGChecker/RAGAS/GraphRAG-Bench runs.
+- T046 Verify simple document QA does not regress when KG/fused retrieval is
+  enabled.
+- T047 Verify multi-hop/world-model queries have enough expected path evidence
+  to justify LightRAG/HippoRAG-style candidates.
+- T048 Verify graph retrieval does not degrade simple document-grounded QA
+  when parser/chunking quality is held constant.

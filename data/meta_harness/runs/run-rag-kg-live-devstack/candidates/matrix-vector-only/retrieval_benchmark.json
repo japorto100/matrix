@@ -1,0 +1,67 @@
+{
+  "canary_count": 2,
+  "candidate": {
+    "candidate_id": "matrix-vector-only",
+    "count": 2,
+    "include_kg": false,
+    "include_vector": true,
+    "latency_ms_avg": 0.059,
+    "metadata": {
+      "class": "baseline",
+      "feature": "019"
+    },
+    "mode": "text",
+    "ndcg@5": 0.5,
+    "pass_rate": 0.5,
+    "passed": 1,
+    "recall@5": 0.5,
+    "results": [
+      {
+        "canary_id": "trading-geo-kg-001",
+        "candidate_id": "matrix-vector-only",
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:kg",
+          "missing-reference:claim-sanctions-insurance"
+        ],
+        "hit_count": 1,
+        "intent": "text",
+        "latency_ms": 0.067,
+        "ndcg@5": 0.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "chunk-shipping-brief"
+        ],
+        "recall@5": 0.0,
+        "sources": [
+          "vector"
+        ]
+      },
+      {
+        "canary_id": "general-vector-001",
+        "candidate_id": "matrix-vector-only",
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [],
+        "hit_count": 1,
+        "intent": "text",
+        "latency_ms": 0.052,
+        "ndcg@5": 1.0,
+        "passed": true,
+        "ranked_reference_ids": [
+          "chunk-revenue-summary"
+        ],
+        "recall@5": 1.0,
+        "sources": [
+          "vector"
+        ]
+      }
+    ]
+  },
+  "feature_id": "022",
+  "generated_at": "2026-04-27T13:54:16.141710+00:00",
+  "k": 5,
+  "max_hits": 8,
+  "token_budget": 1600
+}

@@ -66,6 +66,36 @@ def build_parser() -> argparse.ArgumentParser:
         default="dispatcher",
     )
 
+    rag_benchmark = sub.add_parser(
+        "rag-benchmark",
+        help="Run Feature 022 retrieval candidates and write Meta-Harness artifacts",
+    )
+    rag_benchmark.add_argument("--run-id", default="")
+    rag_benchmark.add_argument("--data-dir", type=Path, default=None)
+    rag_benchmark.add_argument("--k", type=int, default=5)
+    rag_benchmark.add_argument("--token-budget", type=int, default=1600)
+    rag_benchmark.add_argument("--max-hits", type=int, default=8)
+
+    pdf_benchmark = sub.add_parser(
+        "pdf-extraction-benchmark",
+        help="Run Feature 021 PDF extraction against Markdown ground truth",
+    )
+    pdf_benchmark.add_argument("--run-id", default="")
+    pdf_benchmark.add_argument("--candidate-id", default="pymupdf4llm-pdf-extraction")
+    pdf_benchmark.add_argument(
+        "--pdf-path",
+        type=Path,
+        default=None,
+        help="PDF fixture path; defaults to ResearchWatcher small PDF",
+    )
+    pdf_benchmark.add_argument(
+        "--truth-path",
+        type=Path,
+        default=None,
+        help="Ground-truth Markdown path; defaults to PDF path with .md suffix",
+    )
+    pdf_benchmark.add_argument("--data-dir", type=Path, default=None)
+
     propose = sub.add_parser("propose", help="Run proposer guard or external proposer")
     propose.add_argument("--sessions", type=int, default=10)
     propose.add_argument("--model", default="")
@@ -150,6 +180,35 @@ async def _main_async(args: argparse.Namespace) -> dict:
             allow_holdout=args.allow_holdout,
             runner_variant=args.runner_variant,
         )
+    if args.command == "rag-benchmark":
+        from meta_harness.retrieval_benchmark import run_retrieval_benchmark
+
+        kwargs = {
+            "run_id": args.run_id or None,
+            "k": args.k,
+            "token_budget": args.token_budget,
+            "max_hits": args.max_hits,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_retrieval_benchmark(**kwargs)
+    if args.command == "pdf-extraction-benchmark":
+        from meta_harness.extraction_benchmark import (
+            DEFAULT_PDF_PATH,
+            run_pdf_extraction_benchmark,
+        )
+
+        pdf_path = args.pdf_path or DEFAULT_PDF_PATH
+        truth_path = args.truth_path or pdf_path.with_suffix(".md")
+        kwargs = {
+            "pdf_path": pdf_path,
+            "truth_path": truth_path,
+            "run_id": args.run_id or None,
+            "candidate_id": args.candidate_id,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_pdf_extraction_benchmark(**kwargs)
     if args.command == "propose":
         from meta_harness.proposer import propose
 

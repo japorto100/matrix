@@ -71,7 +71,7 @@ services:
   # Schema-Setup via `python -m alembic upgrade head` aus python-backend/.
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: postgres
+    container_name: matrix-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}

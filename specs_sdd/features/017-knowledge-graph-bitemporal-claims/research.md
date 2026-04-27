@@ -93,6 +93,16 @@ and aligns with the NornicDB paper/doc lane. FalkorDB, Neo4j or another graph
 backend remain alternatives if traversal/query ergonomics justify them after
 the schema is proven.
 
+NornicDB adoption boundary:
+
+- use it as a rebuildable projection/query backend for global/domain KG.
+- do not make it the authoritative claim store until local durability,
+  rebuild, query and operational behavior are proven.
+- do not use it as an agent-memory KG rail. Hindsight KG-like memory and
+  MemPalace loci stay in Feature 012.
+- benchmark hybrid vector+graph+history reads against Postgres-only baselines
+  before enabling it by default.
+
 ## Dual Store Blueprint
 
 Adopt the hybrid retrieval idea as an implementation pattern, not as a second

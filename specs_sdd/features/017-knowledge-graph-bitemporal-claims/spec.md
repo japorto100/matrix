@@ -65,6 +65,14 @@ Feature 017 exposes KG claims, paths and provenance for retrieval. Vector
 chunks, KG claims and raw evidence are different artifacts; they are joined by
 provenance and entity/claim ids, not collapsed into one truth table.
 
+KG construction reuses the RAG/Ingestion evidence layer instead of creating an
+isolated duplicate corpus. Source artifacts produce immutable chunks and chunk
+embeddings; KG extraction links entities/claims back to those chunks and may
+store additional canonical entity/claim embeddings for graph retrieval. Chunk
+vectors are reused by id and embedding version, while KG vectors remain
+separate because entity/claim text, validity windows, confidence and conflict
+keys have different lifecycle and ranking semantics.
+
 ## Fast Lane, Slow Lane And GraphMERT
 
 Feature 017 is not a single monolithic KG. It has at least two global lanes plus
@@ -137,6 +145,9 @@ to Feature 019:
 
 - KG retrieval for canonical entities, bitemporal claims and short paths.
 - graph context as compact explanatory paths, not full subgraphs.
+- source artifact, chunk, evidence and embedding refs from Feature 021 are the
+  rebuildable input for KG proposals; KG projection must not require copying
+  every RAG chunk vector into the graph backend.
 - selected claims can be expanded through `GlobalKGStore.expand_claim_context`
   into subject/object identity, path, evidence refs and context metadata without
   requiring a live graph backend projection.

@@ -1,0 +1,28 @@
+{
+  "files": [
+    {
+      "bytes": 7618,
+      "path": "python-backend/retrieval/api.py"
+    },
+    {
+      "bytes": 7033,
+      "path": "python-backend/retrieval/evals/benchmark_lab.py"
+    },
+    {
+      "bytes": 6415,
+      "path": "python-backend/retrieval/evals/canaries.py"
+    },
+    {
+      "bytes": 8081,
+      "path": "python-backend/meta_harness/retrieval_benchmark.py"
+    },
+    {
+      "bytes": 22257,
+      "path": "python-backend/meta_harness/proposer.py"
+    },
+    {
+      "bytes": 14588,
+      "path": "python-backend/meta_harness/pareto.py"
+    }
+  ]
+}

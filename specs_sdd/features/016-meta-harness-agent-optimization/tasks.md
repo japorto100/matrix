@@ -19,6 +19,19 @@ feature_id: 016
 - [x] T005 Read official repo onboarding and example skills; record Matrix
   deviations from their text-classification and Terminal-Bench assumptions.
 - [x] T006 Write initial Matrix Meta-Harness `domain_spec.md`.
+- T006a [done-static] Update the Matrix domain-spec after the 001-023
+  checkpoint: define stable optimization domains for source grounding, memory
+  route correctness, tool/provider routing and compression behavior, each with
+  fixed evaluator, search set, holdout set, allowed edit scope and budget.
+  - 2026-04-27: `data/meta_harness/domain_spec.md` now defines source
+    grounding/retrieval, memory lifecycle/context injection,
+    runner/tool/provider routing and skills/inner-loop optimization domains.
+- T006b Require every candidate artifact to state whether it is a config
+  overlay, prompt/policy change, code patch or benchmark-only result; vague
+  "agent improved" candidates are invalid.
+- T006c Keep proposer and evaluator roles separate: proposer may inspect
+  search traces and candidate history, but promotion must run frozen outer-loop
+  gates and holdout.
 - [x] T007 Create Matrix-specific Meta-Harness skill for Codex-as-proposer.
 - [x] T008 Add CLI/config guard so external LLM proposer/judge calls are disabled
   by default unless a run explicitly opts in.
@@ -143,6 +156,11 @@ feature_id: 016
   analyze -> prototype/patch -> pending_eval -> outer-loop evaluate -> decide.
 - T077 Persist proposer interaction/log summaries even when Codex, not an API
   LLM, acts as proposer.
+- T078 Add domain-specific proposer prompts for the first stable domains:
+  source-grounding/RAG, memory lifecycle, tool routing and provider budget.
+- T079 Add a "no self-certification" gate: candidate notes can recommend a
+  promotion, but only evaluator artifacts and holdout verdicts can mark it
+  promoted.
 
 ## Scoring / Promotion
 
@@ -173,6 +191,9 @@ feature_id: 016
 - [x] T093 Document required local stack commands and env variables.
 - [x] T094 Add CLI `evaluate`, `propose`, `loop`, `decide`, `history` and
   `pareto` primitives with holdout/external-LLM guards.
+- [x] T094a Add CLI `rag-benchmark` and `pdf-extraction-benchmark` primitives
+  that write Meta-Harness candidate artifacts for Feature 022 retrieval
+  candidates and Feature 021 real PDF extraction checks.
 - [x] T095 Add/configure `AGENT_MAX_OUTPUT_TOKENS` so Meta-Harness and live
   agent turns do not request provider-default giant completions that can fail
   budget gates before scenario quality is measured.
@@ -210,6 +231,11 @@ feature_id: 016
   not host-local `localhost:5433`.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
+- [x] T098 Fix local dev-stack Python service activation so Meta-Harness can
+  run against live Agent/Bridge/Ingestion instead of detached smoke fragments:
+  agent/bridge no longer use `--reload` under the stack wrapper, ingestion is
+  started as `uvicorn ingestion.worker:app`, and ingestion config loads
+  `.env.development` credentials without overriding explicit shell env.
 - [x] T097c [done-static-live-diagnostic] Fix/verify output-token cap
   propagation through LiteLLM/OpenRouter. Unit coverage now proves
   `llm_node` forwards `AGENT_MAX_OUTPUT_TOKENS` as OpenAI-compatible

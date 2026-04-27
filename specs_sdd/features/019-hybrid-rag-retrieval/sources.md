@@ -22,3 +22,7 @@ feature_id: 019
 | `DEEP-PolyU/LinearRAG` | Relation-free GraphRAG candidate. |
 | `GraphRAG-Bench/GraphRAG-Benchmark` | GraphRAG benchmark and task categories. |
 | `arXiv:2604.09666` | RAGSearch: dense RAG vs GraphRAG under agentic search. |
+| `docs/papers/extraction/PDF-to-RAG-Ready-Evaluating-Document-Conversion-Frameworks-2604.04948.pdf` | Evidence that hierarchy-aware chunking and metadata enrichment can matter more than parser/framework choice. |
+| `docs/papers/rag/LightRAG-Simple-and-Fast-Retrieval-Augmented-Generation-2410.05779.pdf` | LightRAG method reference. |
+| `docs/papers/rag/AutoRAG-Automated-Framework-Optimization-RAG-Pipeline-2410.20878.pdf` | AutoRAG framework reference for candidate search, owned by Feature 023. |
+| `docs/papers/rag/AutoRAG-HP-Automatic-Online-HyperParameter-Tuning-RAG-2406.19251.pdf` | API-efficient hyperparameter optimization reference. |

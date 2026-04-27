@@ -132,6 +132,17 @@ migrated_from:
 - T039p Add or defer a background hydration worker for MemPalace rows with
   `embedding_status=pending`; pending rows are durable/listable immediately but
   semantic recall intentionally ignores them until embeddings are attached.
+- T039q Add MemMachine-style ground-truth preservation gates: exact visible
+  session text, tool input/output evidence, room/thread/session refs and source
+  timestamps must exist before any summary-only Hindsight retain is considered
+  successful.
+- T039r Add a hydration-worker design and smoke: pending MemPalace rows are
+  picked up, embedded with the configured provider, dimension-checked against
+  the active index and marked failed with reason instead of silently skipped.
+- T039s Add context-injection evals comparing Hindsight-only,
+  MemPalace-verbatim-only and Fusion answers for the same task. This is not a
+  competition between systems; it determines when exact session evidence must
+  constrain derived memory.
 
 ## Runtime Context
 

@@ -1,0 +1,292 @@
+[
+  {
+    "run_id": "run-live-agent-devstack-free-router",
+    "candidate_id": "live-agent-free-router",
+    "scenario_id": "lp-chart-001",
+    "thread_id": "mh-lp-chart-001-d128d494",
+    "user_id": "meta-harness",
+    "category": "tool_chart_state",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+      },
+      {
+        "role": "assistant",
+        "content": "**Active Chart Summary**\n\n- **Symbol:**\u202fEUR/USD  \n- **Timeframe:**\u202f4\u2011hour (4H)  \n- **Enabled Indicators:**\u202fRSI, MACD  \n\nThese are the current chart settings you have open. Let me know if you\u2019d like any analysis, a change of symbol/timeframe, or additional indicators."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-chart-001-d128d494\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-d128d494\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"**Active Chart Summary**\\n\\n- **Symbol:**\\u202fEUR/USD  \\n- **Timeframe:**\\u202f4\\u2011hour (4H)  \\n- **Enabled Indicators:**\\u202fRSI, MACD  \\n\\nThese are the current chart settings you have open. Let me know if you\\u2019d like any analysis, a change of symbol/timeframe, or additional indicators.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"chatcmpl-tool-b045209058b0879c\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-b045209058b0879c\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-d128d494\", \"promptTokens\": 11344, \"completionTokens\": 193, \"reasoningTokens\": 0, \"cachedTokens\": 80, \"totalTokens\": 11537, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"openrouter/openrouter/free\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 1654,
+        "timestamp": "2026-04-27 14:19:19.600224+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"get_chart_state\" trusted=\"true\">\n{\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}\n</tool_output>",
+        "output": "**Active Chart Summary**\n\n- **Symbol:**\u202fEUR/USD  \n- **Timeframe:**\u202f4\u2011hour (4H)  \n- **Enabled Indicators:**\u202fRSI, MACD  \n\nThese are the current chart settings you have open. Let me know if you\u2019d like any analysis, a change of symbol/timeframe, or additional indicators.",
+        "duration_ms": 8486,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/free",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4819,
+          "content_cleaned": false
+        },
+        "iteration": 2
+      },
+      {
+        "id": 1653,
+        "timestamp": "2026-04-27 14:19:11.036774+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": {
+          "symbol": "EURUSD",
+          "timeframe": "4H",
+          "indicators": [
+            "RSI",
+            "MACD"
+          ],
+          "source": "stub"
+        },
+        "duration_ms": 179,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 1652,
+        "timestamp": "2026-04-27 14:19:10.858244+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 1651,
+        "timestamp": "2026-04-27 14:19:10.781024+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 1650,
+        "timestamp": "2026-04-27 14:19:10.697278+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+        "output": null,
+        "duration_ms": 5628,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/free",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 6718,
+          "content_cleaned": false
+        },
+        "iteration": 0
+      },
+      {
+        "id": 1649,
+        "timestamp": "2026-04-27 14:19:04.593204+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:trading-analysis",
+            "global:memory-usage",
+            "global:plan"
+          ],
+          "skill_names": [
+            "trading-analysis",
+            "memory-usage",
+            "plan"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "meta-harness",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 1648,
+        "timestamp": "2026-04-27 14:19:04.504538+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-d128d494",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:trading-analysis",
+            "global:memory-usage",
+            "global:plan"
+          ],
+          "skill_names": [
+            "trading-analysis",
+            "memory-usage",
+            "plan"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "meta-harness",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-chart-001-d128d494",
+      "model": "openrouter/openrouter/free",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 2,
+      "turn_efficiency": 0.5,
+      "total_tokens": 11537,
+      "token_efficiency": 5768,
+      "total_duration_ms": 14114,
+      "tool_calls": 1,
+      "tool_success_rate": 1.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 0,
+      "memory_retains": 0,
+      "memory_utilization": false,
+      "skills_loaded": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.9,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_decision",
+          "llm_response",
+          "skill_found",
+          "skill_used",
+          "tool_call",
+          "tool_result"
+        ],
+        "observed_tools": [
+          "get_chart_state"
+        ],
+        "observed_skills": [
+          "global:memory-usage",
+          "global:plan",
+          "global:trading-analysis",
+          "memory-usage",
+          "plan",
+          "trading-analysis"
+        ],
+        "tool_success_rate": 1.0,
+        "observed_memory_routes": [],
+        "observed_memory_providers": []
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": 1.0,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-live-agent-devstack-free-router/candidates/live-agent-free-router",
+    "runner_variant": "dispatcher"
+  }
+]

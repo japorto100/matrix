@@ -27,6 +27,17 @@ feature_id: 021
 - LV005 If KG extraction is enabled, confirm outputs are claim proposals only.
 - LV006 Run a Meta-Harness paper-grounded scenario and inspect trace/source
   artifacts.
+- LV007 [done] Run ResearchWatcher PDF extraction benchmark against Markdown
+  ground truth.
+  - 2026-04-27: `uv run python -m meta_harness.meta_cli pdf-extraction-benchmark --run-id run-pdf-extraction-live-devstack`
+  - Artifact:
+    `data/meta_harness/runs/run-pdf-extraction-live-devstack/candidates/pymupdf4llm-pdf-extraction/extraction_benchmark.json`.
+  - Result: passed; token recall `0.9091`, phrase coverage `1.0`, page count
+    `1`, table count `1`, extracted chars `905`, truth chars `1082`, latency
+    about `3.55s`.
+  - Gap captured for next parser candidates: no structured formula extraction,
+    no figure count and no code fence in the extracted Markdown for this
+    fixture.
 
 ## 2026-04-27 Local CLI Smoke
 

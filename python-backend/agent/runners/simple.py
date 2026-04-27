@@ -176,6 +176,7 @@ async def _run_simple(
         "user_id": ctx.user_id,
         "agent_class": getattr(ctx, "agent_class", "advisory"),
         "user_role": getattr(ctx, "user_role", "viewer"),
+        "runner_variant": "simple",
     }
 
     with session_span(

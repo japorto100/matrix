@@ -32,9 +32,9 @@ feature_id: 016
 - In-process LangGraph scenario run:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli run ../data/harness/search_set/queries.json --max-scenarios 1 --runner-variant langgraph`
 - Runner-parity smoke without tools:
-  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/runner_parity/scenarios.json --runner-variant simple --user-id anonymous --model openrouter/openrouter/auto`
+  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/runner_parity/scenarios.json --runner-variant simple --user-id anonymous --model openrouter/openrouter/free`
 - Live-service scenario run:
-  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli run ../data/harness/search_set/queries.json --max-scenarios 1 --agent-url http://127.0.0.1:8094 --user-id anonymous --model openrouter/openrouter/auto`
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli run ../data/harness/search_set/queries.json --max-scenarios 1 --agent-url http://127.0.0.1:8094 --user-id anonymous --model openrouter/openrouter/free`
 - MCP surface:
   `harness_run_scenarios(path="../data/harness/search_set/queries.json", max_scenarios=1, agent_url="http://127.0.0.1:8094")`
 - Protected holdout eval:
@@ -44,7 +44,7 @@ feature_id: 016
 - Candidate decision log:
   `harness_decide_candidate(run_id="...", candidate_id="...", decision="discard", rationale="...", metrics_json="{...}")`
 - Live probe with real tools:
-  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/live_probe/scenarios.json --agent-url http://127.0.0.1:8094 --user-id anonymous --candidate-id baseline --model openrouter/openrouter/auto`
+  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/live_probe/scenarios.json --agent-url http://127.0.0.1:8094 --user-id anonymous --candidate-id baseline --model openrouter/openrouter/free`
 - Pareto frontier from run artifacts:
 
 ```bash
@@ -75,7 +75,7 @@ PY
   production CredentialPool, user-key, quota, audit or billing policy for named
   users.
 - Provider note: this machine currently has OpenRouter credentials, not a direct
-  Anthropic key. Use `--model openrouter/openrouter/auto` for live probe runs
+  Anthropic key. Use `--model openrouter/openrouter/free` for live probe runs
   unless `agent.user_credentials` or ENV has a matching provider key.
 - Sandbox note: local service mode should target
   `OPENSANDBOX_SERVER_URL=http://127.0.0.1:8080`; the `:8100` container defaults

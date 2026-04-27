@@ -120,6 +120,9 @@ Open research task:
   Postgres support, rooms/session semantics, updated loci storage or new eval
   patterns, pull that into this feature deliberately; otherwise record Matrix's
   Postgres divergence.
+- Re-check official MemPalace source material before closeout. Public mirrors
+  and summaries are not enough for schema lock because upstream may still be
+  Chroma/SQLite oriented while Matrix intentionally targets Postgres/pgvector.
 
 ## Memory For Autonomous Agents Paper
 
@@ -131,6 +134,27 @@ Key adopted implications:
 - source attribution matters: user statement > agent inference.
 - forgetting/privacy is separate from cold archival.
 - memory operation logs and diffs are needed for regression testing.
+
+## MemMachine 2026 / Ground-Truth Preservation
+
+`arXiv:2604.04853` strengthens the decision to keep MemPalace-style verbatim
+evidence beside Hindsight summaries. The relevant lesson is not another memory
+store, but a policy:
+
+- preserve episodic ground truth before summarization, compaction or deletion
+  of visible session context.
+- make retrieval/context formatting the optimization target; ingestion alone
+  does not solve memory correctness.
+- distinguish durable raw events, derived summaries and answer-time injected
+  context.
+- judge memory by exact evidence availability, source refs, answer correctness,
+  cost and latency.
+
+Matrix adoption: pre-save, compaction and emergency compression must archive
+complete visible context into the verbatim lane first. Hindsight can then learn
+summaries/reflections asynchronously. If embeddings are slow or remote quota is
+exhausted, rows stay durable with `embedding_status=pending` and are hydrated
+later rather than blocking evidence preservation.
 
 ## World Model Research
 

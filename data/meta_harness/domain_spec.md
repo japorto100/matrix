@@ -23,6 +23,31 @@ Fixed components for the first loop:
   through filesystem/GitNexus/MCP context. External LLM proposer/judge calls
   require explicit run opt-in.
 
+Stable optimization domains after the 001-023 checkpoint:
+
+1. Source grounding and retrieval:
+   - Features: 021 -> 019 -> 022 -> 023.
+   - Unit: parser/chunker/retriever candidate over fixed canaries or PDF
+     ground truth.
+   - Required artifacts: source corpus, parser version, chunker version,
+     embedding model/dimension, KG projection version, scores and verdicts.
+2. Memory lifecycle and context injection:
+   - Feature: 012, evaluated through Feature 016 scenarios.
+   - Unit: multi-turn memory scenario with Hindsight, MemPalace or Fusion
+     route expectations.
+   - Required artifacts: memory route/provider metadata, evidence terms,
+     source/session refs and no unrelated mutation.
+3. Runner/tool/provider routing:
+   - Features: 011, 013, 016, 020.
+   - Unit: scenario trace with `route_decision`, tool/consent events and
+     provider/budget metadata.
+   - Required artifacts: runner variant, route decision, delegation decision,
+     spawn depth, tool success rate and provider/token config.
+4. Skills and inner-loop optimization:
+   - Features: 015 and 023.
+   - Unit: bounded config or skill candidate promoted only after search and
+     holdout evidence.
+
 Allowed changes for candidate search:
 
 - prompt/context assembly overlays.
@@ -31,6 +56,14 @@ Allowed changes for candidate search:
 - tool-use policy, consent flow, retry/recovery behavior and trace gates.
 - scenario fixtures, deterministic validators and artifact logging.
 - bounded developer-reviewed code patches inside declared write scope.
+
+Candidate type must be explicit:
+
+- `config_overlay`: environment, prompt, routing, threshold or policy change.
+- `benchmark_candidate`: parser, chunker, retrieval or KG configuration with no
+  runtime patch.
+- `code_patch`: bounded implementation patch with file scope and rollback.
+- `docs_only`: SDD/research update; cannot be promoted as runtime improvement.
 
 Out of scope:
 
@@ -69,6 +102,10 @@ The first search loop should optimize harness mechanisms, not constants:
   tool recovery and safe sandbox/browser/file use.
 - skill policy: trading/geopolitical/strategy/research skill selection and
   promotion evidence.
+
+The first implementation loop should prefer source-grounding and route
+observability over broad agent-behavior claims. A candidate that merely
+"answers better" without trace evidence is not promotable.
 
 Baselines:
 
@@ -127,6 +164,10 @@ Noise and leakage:
 - holdout results are excluded from proposer context.
 - candidates must be mechanism-level and general, not tuned to exact scenario
   wording.
+- proposer notes do not certify promotion. Only frozen evaluator artifacts,
+  holdout verdicts and explicit keep/discard/defer decisions can do that.
+- candidate generation must not modify benchmark goldens, deterministic
+  evaluator code or holdout files during a run.
 
 Cheap validation checks:
 

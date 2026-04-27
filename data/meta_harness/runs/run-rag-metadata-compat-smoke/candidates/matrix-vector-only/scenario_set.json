@@ -1,0 +1,18 @@
+{
+  "scenarios": [
+    {
+      "id": "trading-geo-kg-001",
+      "query": "",
+      "ranked_reference_ids": [
+        "chunk-shipping-brief"
+      ]
+    },
+    {
+      "id": "general-vector-001",
+      "query": "",
+      "ranked_reference_ids": [
+        "chunk-revenue-summary"
+      ]
+    }
+  ]
+}

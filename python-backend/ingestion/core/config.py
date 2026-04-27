@@ -4,8 +4,38 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
+from dotenv import dotenv_values
 from pydantic import BaseModel, Field
+
+_ROOT = Path(__file__).resolve().parents[2]
+_ORIGINAL_ENV_KEYS = set(os.environ)
+
+
+def _load_env_files() -> None:
+    """Load python-backend .env files without overriding shell-provided env."""
+    file_env: dict[str, str] = {}
+    env_base = _ROOT / ".env"
+    if env_base.exists():
+        file_env.update(
+            {key: value for key, value in dotenv_values(env_base).items() if value is not None}
+        )
+
+    app_env = os.getenv("APP_ENV", file_env.get("APP_ENV", "development")).strip().lower()
+    env_specific = _ROOT / f".env.{app_env}"
+    if env_specific.exists():
+        file_env.update(
+            {
+                key: value
+                for key, value in dotenv_values(env_specific).items()
+                if value is not None
+            }
+        )
+
+    for key, value in file_env.items():
+        if key not in _ORIGINAL_ENV_KEYS:
+            os.environ[key] = value
 
 
 class IngestionConfig(BaseModel):
@@ -78,4 +108,5 @@ class IngestionConfig(BaseModel):
 @lru_cache(maxsize=1)
 def get_config() -> IngestionConfig:
     """Get the singleton config instance."""
+    _load_env_files()
     return IngestionConfig()

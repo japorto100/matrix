@@ -1,0 +1,70 @@
+{
+  "canary_count": 2,
+  "candidate": {
+    "candidate_id": "matrix-kg-only",
+    "count": 2,
+    "include_kg": true,
+    "include_vector": false,
+    "latency_ms_avg": 0.042,
+    "metadata": {
+      "class": "baseline",
+      "feature": "017"
+    },
+    "mode": "graph",
+    "ndcg@5": 0.5,
+    "pass_rate": 0.0,
+    "passed": 0,
+    "recall@5": 0.5,
+    "results": [
+      {
+        "canary_id": "trading-geo-kg-001",
+        "candidate_id": "matrix-kg-only",
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:vector"
+        ],
+        "hit_count": 1,
+        "intent": "graph",
+        "latency_ms": 0.044,
+        "ndcg@5": 1.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "claim-sanctions-insurance"
+        ],
+        "recall@5": 1.0,
+        "sources": [
+          "kg"
+        ]
+      },
+      {
+        "canary_id": "general-vector-001",
+        "candidate_id": "matrix-kg-only",
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:vector",
+          "forbidden-source:kg",
+          "missing-reference:chunk-revenue-summary"
+        ],
+        "hit_count": 1,
+        "intent": "graph",
+        "latency_ms": 0.041,
+        "ndcg@5": 0.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "claim-irrelevant-kg"
+        ],
+        "recall@5": 0.0,
+        "sources": [
+          "kg"
+        ]
+      }
+    ]
+  },
+  "feature_id": "022",
+  "generated_at": "2026-04-27T13:54:16.141710+00:00",
+  "k": 5,
+  "max_hits": 8,
+  "token_budget": 1600
+}

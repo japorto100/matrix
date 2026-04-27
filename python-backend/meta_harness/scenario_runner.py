@@ -123,6 +123,10 @@ class TraceExpectations:
     forbidden_response_terms: tuple[str, ...] = ()
     required_memory_evidence_terms: tuple[str, ...] = ()
     required_memory_metadata_keys: tuple[str, ...] = ()
+    required_route_decisions: tuple[str, ...] = ()
+    required_runner_variants: tuple[str, ...] = ()
+    required_delegation_decisions: tuple[str, ...] = ()
+    max_spawn_depth: int | None = None
     expected_memory: bool = False
     min_tool_success_rate: float | None = None
     allow_tool_failures: bool = False
@@ -160,6 +164,16 @@ class TraceExpectations:
             required_memory_metadata_keys=tuple(
                 str(x) for x in raw.get("required_memory_metadata_keys", [])
             ),
+            required_route_decisions=tuple(
+                str(x) for x in raw.get("required_route_decisions", [])
+            ),
+            required_runner_variants=tuple(
+                str(x) for x in raw.get("required_runner_variants", [])
+            ),
+            required_delegation_decisions=tuple(
+                str(x) for x in raw.get("required_delegation_decisions", [])
+            ),
+            max_spawn_depth=raw.get("max_spawn_depth"),
             expected_memory=bool(raw.get("expected_memory", False)),
             min_tool_success_rate=raw.get("min_tool_success_rate"),
             allow_tool_failures=bool(raw.get("allow_tool_failures", False)),
@@ -366,6 +380,33 @@ def _observed_memory_metadata(events: list[dict[str, Any]]) -> tuple[set[str], s
     return routes, providers
 
 
+def _observed_route_metadata(
+    events: list[dict[str, Any]],
+) -> tuple[set[str], set[str], set[str], int | None]:
+    decisions: set[str] = set()
+    runners: set[str] = set()
+    delegations: set[str] = set()
+    max_spawn_depth: int | None = None
+    for event in events:
+        if _event_action(event) != "route_decision":
+            continue
+        meta = _event_metadata(event)
+        if meta.get("decision"):
+            decisions.add(str(meta["decision"]))
+        if meta.get("runner"):
+            runners.add(str(meta["runner"]))
+        if meta.get("delegation_decision"):
+            delegations.add(str(meta["delegation_decision"]))
+        try:
+            depth = int(meta.get("spawn_depth"))
+        except (TypeError, ValueError):
+            continue
+        max_spawn_depth = (
+            depth if max_spawn_depth is None else max(max_spawn_depth, depth)
+        )
+    return decisions, runners, delegations, max_spawn_depth
+
+
 def _normalized_gate_text(value: object) -> str:
     return " ".join(str(value or "").casefold().split())
 
@@ -429,6 +470,12 @@ def evaluate_trace_gates(
     executable_tool_set = set(executable_tools)
     skills = _observed_skill_ids(events)
     memory_routes, memory_providers = _observed_memory_metadata(events)
+    (
+        route_decisions,
+        runner_variants,
+        delegation_decisions,
+        observed_max_spawn_depth,
+    ) = _observed_route_metadata(events)
     registered_tools = _registered_tool_names()
 
     failures: list[str] = []
@@ -497,6 +544,23 @@ def evaluate_trace_gates(
             if _event_action(event) in {"memory_recall", "memory_retain"}
         ):
             failures.append(f"missing required memory metadata key: {key}")
+    for decision in expectations.required_route_decisions:
+        if decision not in route_decisions:
+            failures.append(f"missing required route decision: {decision}")
+    for runner in expectations.required_runner_variants:
+        if runner not in runner_variants:
+            failures.append(f"missing required runner variant: {runner}")
+    for delegation in expectations.required_delegation_decisions:
+        if delegation not in delegation_decisions:
+            failures.append(f"missing required delegation decision: {delegation}")
+    if expectations.max_spawn_depth is not None:
+        if observed_max_spawn_depth is None:
+            failures.append("missing route spawn depth")
+        elif observed_max_spawn_depth > expectations.max_spawn_depth:
+            failures.append(
+                "spawn depth above threshold: "
+                f"{observed_max_spawn_depth} > {expectations.max_spawn_depth}"
+            )
 
     tool_results = [event for event in events if _event_action(event) == "tool_result"]
     tool_success_rate: float | None = None
@@ -639,6 +703,7 @@ async def _stream_agent_loop_for_variant(
 def _meta_harness_service_headers(
     *,
     user_id: str,
+    model: str = "",
     run_id: str,
     scenario_id: str,
     consent_allow_session_tools: tuple[str, ...] = (),
@@ -654,6 +719,12 @@ def _meta_harness_service_headers(
         headers["x-meta-harness-consent-allow-tools"] = ",".join(
             consent_allow_session_tools
         )
+    if run_id:
+        headers["x-meta-harness-run-id"] = run_id
+        headers["x-meta-harness-scenario-id"] = scenario_id
+        env_api_key = _harness_env_api_key(model)
+        if env_api_key:
+            headers["x-meta-harness-api-key"] = env_api_key
     return headers
 
 
@@ -693,10 +764,17 @@ def service_agent_runner(agent_url: str) -> AgentRunner:
             payload["model"] = model
         if system_prompt:
             payload["context"] = system_prompt
+        if run_id:
+            payload["metaHarnessRunId"] = run_id
+            payload["metaHarnessScenarioId"] = scenario_id
+            env_api_key = _harness_env_api_key(model)
+            if env_api_key:
+                payload["metaHarnessApiKey"] = env_api_key
 
         chunks: list[str] = []
         headers = _meta_harness_service_headers(
             user_id=user_id,
+            model=model,
             run_id=run_id,
             scenario_id=scenario_id,
             consent_allow_session_tools=consent_allow_session_tools,

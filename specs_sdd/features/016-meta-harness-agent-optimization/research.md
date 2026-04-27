@@ -31,6 +31,27 @@ Important implication: the current proposer path is useful but insufficient
 because it compresses traces into short summaries. Feature 016 needs raw,
 queryable artifacts.
 
+## Official Repo / Domain-Spec Correction
+
+The official Stanford repo reinforces a stricter structure than the early
+Matrix implementation used:
+
+- every optimization target needs a domain-spec style contract: fixed task
+  definition, fixed harness interface, fixed evaluator, search set, holdout
+  set, allowed edit scope, budget and logging rules.
+- the proposer may inspect traces and candidate history, but it must not
+  change the evaluator during the same run.
+- the proposer does not self-certify. Promotion requires a separate outer-loop
+  evaluation against frozen gates.
+- one candidate should be a falsifiable harness change, config overlay or
+  bounded patch with a clear expected metric movement.
+
+Matrix implication after the 001-023 review: Feature 016 should first optimize
+source-grounding units that already have deterministic evidence paths
+(ingestion, retrieval, KG boundary, memory route correctness) before broad
+"make the agent better" loops. Full-stack UI behavior remains a live-verify
+surface, not the first Meta-Harness optimization domain.
+
 ## Why Simulated User Matters
 
 The paper evaluates harnesses by running task instances. For Matrix, task
@@ -155,3 +176,22 @@ Current live evidence:
 - The sandbox infra blocker is machine state, not agent planner behavior:
   OpenSandbox `:8080` starts, but `/` has about 4 GB free and pulling
   `opensandbox/code-interpreter:v1.0.2` failed with `no space left on device`.
+
+## 2026-04-27 Feature Review Consequence
+
+The 001-023 checkpoint split the remaining work into two categories:
+
+- live verification debt: Matrix UI, ElementX/Tuwunel, Control UI tabs and
+  Agent Chat surfaces need real user-flow evidence.
+- implementation/research debt: Python Agent, memory, RAG, KG, ingestion,
+  optimization loops and subagent routing still have concrete code/spec work.
+
+Meta-Harness should therefore operate on stable backend domains first:
+
+1. parser/chunk/retrieval benchmark candidates from Features 021/019/022/023.
+2. memory lifecycle and Hindsight/MemPalace/Fusion route correctness from
+   Feature 012.
+3. route/tool/provider/compression behavior from Features 011/013/016/020.
+
+It should not be used to claim UI completion unless the trace contains the
+actual frontend/API path being verified.

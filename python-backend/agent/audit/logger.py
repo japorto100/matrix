@@ -31,6 +31,7 @@ class AuditAction(StrEnum):
     SKILL_FOUND = "skill_found"
     SKILL_REFINED = "skill_refined"
     SKILL_USED = "skill_used"
+    ROUTE_DECISION = "route_decision"
 
 
 async def audit_log(

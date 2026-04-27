@@ -437,6 +437,7 @@ async def _run_graph(
         "routing_reason": "not_evaluated",
         "routing_used": False,
         "routing_picked_model": "",
+        "runner_variant": "langgraph",
     }
 
     config = {"configurable": {"thread_id": ctx.thread_id}}

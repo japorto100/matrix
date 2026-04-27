@@ -14,20 +14,20 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | ID | Feature | Status | Warum hier |
 |---|---|---|---|
 | 001 | `001-platform-baseline` | baseline | Projektgrundlage, kein aktiver Slice |
-| 002 | `002-devstack-bootstrap-env-persistence` | implementation_done | Lokale Ops weitgehend erledigt |
-| 003 | `003-frontend-merger-shell` | implementation_done | Shell gebaut, nur Live-Smoke offen |
+| 002 | `002-devstack-bootstrap-env-persistence` | static_done_live_open | Lokale Ops weitgehend erledigt; Postgres/Alembic/Bootstrap-Live-Evidence offen bzw. nachzuziehen |
+| 003 | `003-frontend-merger-shell` | static_done_live_open | Shell gebaut, aber Browser/Full-Stack-Live-Smoke offen |
 | 004 | `004-matrix-homeserver-connectivity` | active_monitoring | Externe Blocker/Monitoring, aber Basis fuer Matrix |
-| 005 | `005-matrix-chat-core` | implementation_done | Implementiert, Live-Verify-Schuld |
+| 005 | `005-matrix-chat-core` | static_done_live_open | Matrix UI stark implementiert, aber echte Homeserver-Sitzung/E2EE/Media/Calls live offen |
 | 006 | `006-appservice-nats-e2ee-bridges` | static_verified_live_pending | Go/Python statisch verifiziert, A4 E2E offen |
-| 007 | `007-agent-chat-voice-runtime` | static_verified_live_pending | Frontend/Python statisch verifiziert, Approval/Context/Sanitizer statisch nachgezogen, Stack/Voice offen |
+| 007 | `007-agent-chat-voice-runtime` | mixed_open | Agent Chat statisch verifiziert; Stack/Approval/Provenance live offen, Voice nicht vollständig implementiert/verifiziert |
 | 008 | `008-agentic-ui-generative-ui-mcp` | static_verified_live_pending | A2UI/Copilot/Python-Emitter statisch verifiziert, #93/#94/#95 entschieden |
-| 009 | `009-multi-agent-a2a-orchestration` | static_verified_live_pending | A2A-Client/AgentCards/Graph/Rollen statisch verifiziert, live offen |
-| 010 | `010-control-ui-runtime-surfaces` | static_verified_live_pending | Shell/BFF/Queries stehen; Control ist Anzeige/Admin, kein Agent-Tool-Surface by default |
+| 009 | `009-multi-agent-a2a-orchestration` | mixed_open | A2A-Client/AgentCards/Graph/Rollen statisch verifiziert; Delegation/Checkpoint/Per-User-Routing offen |
+| 010 | `010-control-ui-runtime-surfaces` | mixed_open | Shell/BFF/Queries stehen; viele Tabs brauchen Live-Daten-Audit; Control ist Anzeige/Admin, kein Agent-Tool-Surface by default |
 | 011 | `011-llm-gateway-models-routing-billing` | static_verified_live_pending | Billing/Model/Routing statisch verifiziert, Routing-Followups geschlossen |
-| 012 | `012-memory-context-world-personal-kb` | static_verified_live_pending | Hindsight/MemPalace/Fusion-Agent-Memory in Postgres; upstream/room-session live offen |
-| 013 | `013-sandbox-security-hitl` | static_verified_live_pending | Security-Logik statisch verifiziert, URL-preview dev config explizit, HITL/OpenSandbox live offen |
-| 014 | `014-observability-harness-evals` | static_verified_live_pending | Harness/Export statisch verifiziert, Evidence verlinkt, Live-Trace/Audit/Eval offen |
-| 015 | `015-scheduler-skills-planning-automation` | static_verified_live_pending | Scheduler/Skills/Plan statisch verifiziert, Loader-Source statisch nachgezogen, Live-Delivery offen |
+| 012 | `012-memory-context-world-personal-kb` | implementation_open | Hindsight/MemPalace/Fusion-Agent-Memory in Postgres; upstream/room-session/injection/hydration/eval offen |
+| 013 | `013-sandbox-security-hitl` | mixed_open | Security-Logik statisch verifiziert, URL-preview dev config explizit; HITL/OpenSandbox/Consent/Audit live offen |
+| 014 | `014-observability-harness-evals` | mixed_open | Harness/Export statisch verifiziert; Live-Trace/Audit/Eval-Persistence offen |
+| 015 | `015-scheduler-skills-planning-automation` | mixed_open | Scheduler/Skills/Plan statisch verifiziert; Live-Delivery, Skill-Feedback und Promotion offen |
 | 016 | `016-meta-harness-agent-optimization` | implementation_started | Scenario runner, trace gates, ToolRegistry eval, CLI/MCP run surface, artifact store, holdout split, official `_ref/meta-harness`, Matrix domain spec and proposer skill started |
 | 017 | `017-knowledge-graph-bitemporal-claims` | planned | Global/domain KG ueber nonicdb/NornicDB-Linie: bitemporale Claims, Projection, Decay-Retrieval und Provenance |
 | 018 | `018-database-schema-governance` | planned | Alembic bleibt authoritative, lesbare Current-Schema-Registry und Introspection-Gates |
@@ -35,6 +35,12 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 020 | `020-agent-harness-subagents-routing` | planned | Graphless/LangGraph/dispatcher routing, future subagent contracts and HermesAgent-style harness lessons without coding-agent product scope |
 | 021 | `021-ingestion-paperwatcher-researchwatcher` | planned | Source ingestion, Paperwatcher/Researchwatcher adoption, artifact registry, citations and KG proposal handoff |
 | 022 | `022-rag-kg-benchmark-lab` | planned | Evidence lane for vector, fused KG, LightRAG/HippoRAG-style candidates, matched budgets and Meta-Harness promotion decisions |
+| 023 | `023-auto-optimization-inner-loops` | planned | AutoRAG/autoresearch-style inner loops for RAG, extraction, memory/context and tool-policy candidates feeding Meta-Harness |
+
+See `REVIEW_001_023_2026-04-27.md` for the current done/live/research/open
+classification. Do not read `implementation_done` in older feature frontmatter
+as final closeout unless the corresponding `live-verify.md` has evidence or an
+explicit out-of-scope decision.
 
 ## Meta-Bereiche
 
@@ -62,7 +68,8 @@ Optional kommen beim eigentlichen Content-Import dazu:
 - `contracts/`
 - `evidence/`
 
-Cross-feature execution is tracked in `WORKPLAN_001_022.md`.
+Cross-feature execution is tracked in `WORKPLAN_001_022.md` and will be
+renamed after Feature 023 consolidation.
 
 ## Live-Verify-Schwerpunkte
 
@@ -89,3 +96,5 @@ Die umfangreichsten Live-Verify-Listen liegen hier:
   explicit KG proposal handoff
 - Feature 022: RAG/KG benchmark lab with fixed budgets, holdout and promotion
   evidence for graph retrieval candidates
+- Feature 023: bounded inner-loop optimization over RAG, extraction,
+  memory/context and tool-policy candidates that emits Meta-Harness artifacts

@@ -264,6 +264,7 @@ PORT_AGENT=8094
 PORT_BRIDGE=8097
 PORT_INGESTION=8098
 PORT_MERGER=3003
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-matrix-postgres}"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 log()  { printf "\033[36m[%s]\033[0m %s\n" "$(date +%H:%M:%S)" "$*"; }
@@ -281,6 +282,72 @@ wait_for_port() {
     sleep 1; i=$((i+1))
   done
   warn "timeout: $name :$port"; return 1
+}
+
+matrix_compose_container_label() {
+  local container=$1 label=$2
+  podman inspect "$container" --format "{{ index .Config.Labels \"$label\" }}" 2>/dev/null || true
+}
+
+prepare_postgres_namespace() {
+  $WANT_POSTGRES || return 0
+
+  if podman container exists matrix-memory-eval-postgres 2>/dev/null; then
+    local eval_status
+    eval_status=$(podman inspect matrix-memory-eval-postgres --format "{{.State.Status}}" 2>/dev/null || true)
+    if [ "$eval_status" = "created" ] || [ "$eval_status" = "exited" ]; then
+      warn "removing stale matrix-memory-eval-postgres container to free :$PORT_POSTGRES"
+      podman rm matrix-memory-eval-postgres >/dev/null 2>&1 || true
+    fi
+  fi
+
+  if podman container exists postgres 2>/dev/null && ! podman container exists "$POSTGRES_CONTAINER" 2>/dev/null; then
+    local project service
+    project=$(matrix_compose_container_label postgres "com.docker.compose.project")
+    service=$(matrix_compose_container_label postgres "com.docker.compose.service")
+    if [ "$project" = "matrix" ] && [ "$service" = "postgres" ]; then
+      warn "migrating legacy matrix postgres container name: postgres -> $POSTGRES_CONTAINER"
+      for dependent in pgbouncer postgres-exporter; do
+        if podman container exists "$dependent" 2>/dev/null; then
+          local dep_project dep_status
+          dep_project=$(matrix_compose_container_label "$dependent" "com.docker.compose.project")
+          dep_status=$(podman inspect "$dependent" --format "{{.State.Status}}" 2>/dev/null || true)
+          if [ "$dep_project" = "matrix" ] && [ "$dep_status" != "running" ]; then
+            podman rm "$dependent" >/dev/null 2>&1 || true
+          fi
+        fi
+      done
+      podman stop postgres >/dev/null 2>&1 || true
+      podman rm postgres >/dev/null 2>&1 || true
+    else
+      warn "container named 'postgres' exists but is not matrix compose; leaving it untouched"
+    fi
+  fi
+}
+
+verify_postgres_pgvector() {
+  $WANT_POSTGRES || return 0
+  if ! postgres_pgvector_ready; then
+    warn "$POSTGRES_CONTAINER is not running; cannot verify pgvector"
+    return 1
+  fi
+  ok "postgres pgvector extension ready (vector $POSTGRES_VECTOR_VERSION)"
+}
+
+POSTGRES_VECTOR_VERSION=""
+postgres_pgvector_ready() {
+  if ! podman ps --format "{{.Names}}" | grep -q "^${POSTGRES_CONTAINER}$"; then
+    return 1
+  fi
+  local db_user="${POSTGRES_USER:-postgres}"
+  local db_name="${POSTGRES_DB:-hindsight_dev}"
+  local ext
+  ext=$(podman exec "$POSTGRES_CONTAINER" psql -U "$db_user" -d "$db_name" -tAc \
+    "SELECT extversion FROM pg_extension WHERE extname='vector';" 2>/dev/null | xargs || true)
+  if [ -z "$ext" ]; then
+    return 1
+  fi
+  POSTGRES_VECTOR_VERSION="$ext"
 }
 
 kill_port() {
@@ -313,7 +380,7 @@ spawn() {
   log "spawning $name (cwd=$cwd)"
   (
     cd "$cwd" || exit 1
-    exec "$@"
+    exec setsid "$@"
   ) >"$logfile" 2>&1 &
   echo $! > "$pidfile"
   log "   pid=$(cat "$pidfile") log=$logfile"
@@ -528,12 +595,23 @@ $WANT_PGBOUNCER     && COMPOSE_SVCS+=("pgbouncer")
 $WANT_FALKORDB      && COMPOSE_SVCS+=("falkordb")
 $WANT_NORNIC        && COMPOSE_SVCS+=("nornic")
 
+if $WANT_POSTGRES && postgres_pgvector_ready; then
+  log "$POSTGRES_CONTAINER already running with pgvector $POSTGRES_VECTOR_VERSION"
+  filtered_svcs=()
+  for svc in "${COMPOSE_SVCS[@]}"; do
+    [ "$svc" = "postgres" ] || filtered_svcs+=("$svc")
+  done
+  COMPOSE_SVCS=("${filtered_svcs[@]}")
+fi
+
 if [ ${#COMPOSE_SVCS[@]} -gt 0 ]; then
+  prepare_postgres_namespace
   compose_up "${COMPOSE_SVCS[@]}"
   # Wait for critical ports
   $WANT_TUWUNEL  && wait_for_port $PORT_TUWUNEL "tuwunel" 60
   $WANT_NATS     && wait_for_port $PORT_NATS "nats" 20
   $WANT_POSTGRES && wait_for_port $PORT_POSTGRES "postgres" 30
+  $WANT_POSTGRES && verify_postgres_pgvector
   [ "$STORAGE_BACKEND" = "garage" ]    && wait_for_port $PORT_GARAGE_S3 "garage" 30
   [ "$STORAGE_BACKEND" = "seaweedfs" ] && wait_for_port $PORT_SEAWEED_S3 "seaweedfs" 30
   $WANT_LITELLM  && wait_for_port $PORT_LITELLM "litellm" 45
@@ -587,7 +665,7 @@ UV_APP_ENV="APP_ENV=development"
 
 if $WANT_LLM_MOCK; then
   spawn "llm-mock" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV MOCK_PORT="$PORT_LLM_MOCK" setsid .venv/bin/python -m mock.mock_agent
+    env $UV_APP_ENV MOCK_PORT="$PORT_LLM_MOCK" .venv/bin/python -m mock.mock_agent
   wait_for_port $PORT_LLM_MOCK "llm-mock" 45
 fi
 
@@ -597,18 +675,18 @@ if $WANT_AGENT; then
       env $UV_APP_ENV uv run python -m mock.mock_agent
   else
     spawn "python-agent" "$REPO_ROOT/python-backend" \
-      env $UV_APP_ENV uv run python -m uvicorn agent.app:app --host 127.0.0.1 --port "$PORT_AGENT" --reload
+      env $UV_APP_ENV uv run python -m uvicorn agent.app:app --host 127.0.0.1 --port "$PORT_AGENT"
   fi
 fi
 
 if $WANT_BRIDGE; then
   spawn "python-bridge" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV uv run python -m uvicorn bridge.app:app --host 127.0.0.1 --port "$PORT_BRIDGE" --reload
+    env $UV_APP_ENV uv run python -m uvicorn bridge.app:app --host 127.0.0.1 --port "$PORT_BRIDGE"
 fi
 
 if $WANT_INGESTION; then
   spawn "python-ingestion" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV uv run python -m ingestion.worker
+    env $UV_APP_ENV uv run python -m uvicorn ingestion.worker:app --host 127.0.0.1 --port "$PORT_INGESTION"
 fi
 
 # ─── Frontend ────────────────────────────────────────────────────────────────

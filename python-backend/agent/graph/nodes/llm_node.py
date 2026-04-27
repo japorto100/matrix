@@ -347,6 +347,34 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                     )
                 )
 
+        tool_names = [tc["tool_name"] for tc in tool_calls]
+        route_decision = "tool_use" if tool_calls else "direct_answer"
+        await audit_log(
+            action=AuditAction.ROUTE_DECISION,
+            thread_id=thread_id,
+            iteration=iteration,
+            success=True,
+            metadata={
+                "runner": state.get("runner_variant") or "unknown",
+                "decision": route_decision,
+                "delegation_decision": "none",
+                "spawn_depth": 0,
+                "tool_calls_count": len(tool_calls),
+                "tool_names": tool_names,
+                "routing_reason": routing_reason,
+                "routing_used": routing_used,
+                "routing_picked_model": routing_picked_model,
+                "memory_route_requested": any(
+                    name in {"memory_search", "memory_add", "save_memory", "load_memory"}
+                    for name in tool_names
+                ),
+                "retrieval_route_requested": any(
+                    name in {"memory_search", "kg_search", "retrieve_context"}
+                    for name in tool_names
+                ),
+            },
+        )
+
         # RL-2: Record token usage
         if token_usage > 0 and thread_id:
             from agent.consent.rate_limiter import get_rate_limiter

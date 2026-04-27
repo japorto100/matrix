@@ -25,26 +25,50 @@ class RetrievalCandidate:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
+_FIXTURE_METADATA: dict[str, Any] = {
+    "source_corpus": "matrix-retrieval-canaries@2026-04-27",
+    "parser_version": "deterministic-fixture/v1",
+    "chunker_version": "deterministic-fixture/v1",
+    "embedding_model": "deterministic-fixture",
+    "embedding_dimension": 0,
+}
+
+
 MATRIX_VECTOR_ONLY = RetrievalCandidate(
     id="matrix-vector-only",
     mode="text",
     include_vector=True,
     include_kg=False,
-    metadata={"feature": "019", "class": "baseline"},
+    metadata={
+        **_FIXTURE_METADATA,
+        "feature": "019",
+        "class": "baseline",
+        "kg_projection_version": "disabled",
+    },
 )
 MATRIX_KG_ONLY = RetrievalCandidate(
     id="matrix-kg-only",
     mode="graph",
     include_vector=False,
     include_kg=True,
-    metadata={"feature": "017", "class": "baseline"},
+    metadata={
+        **_FIXTURE_METADATA,
+        "feature": "017",
+        "class": "baseline",
+        "kg_projection_version": "postgres-fixture/v1",
+    },
 )
 MATRIX_FUSED = RetrievalCandidate(
     id="matrix-fused-vector-kg",
     mode=None,
     include_vector=True,
     include_kg=True,
-    metadata={"feature": "019/017", "class": "rrf"},
+    metadata={
+        **_FIXTURE_METADATA,
+        "feature": "019/017",
+        "class": "rrf",
+        "kg_projection_version": "postgres-fixture/v1",
+    },
 )
 DEFAULT_MATRIX_CANDIDATES = (MATRIX_VECTOR_ONLY, MATRIX_KG_ONLY, MATRIX_FUSED)
 

@@ -11,7 +11,10 @@
         }
       ],
       "expected_trace": {
-        "required_actions": ["llm_response"],
+        "required_actions": ["route_decision", "llm_response"],
+        "required_route_decisions": ["direct_answer"],
+        "required_delegation_decisions": ["none"],
+        "max_spawn_depth": 0,
         "forbidden_actions": ["tool_call"],
         "forbidden_tools": ["sandbox_browser", "memory_search", "sandbox_execute"]
       }

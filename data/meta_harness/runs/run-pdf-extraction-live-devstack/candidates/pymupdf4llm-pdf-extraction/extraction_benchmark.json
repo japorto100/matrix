@@ -1,0 +1,31 @@
+{
+  "benchmark_type": "pdf_extraction_ground_truth",
+  "candidate_id": "pymupdf4llm-pdf-extraction",
+  "extracted_chars": 905,
+  "extractor": "pymupdf4llm",
+  "failures": [],
+  "feature_id": "021",
+  "figure_count": 0,
+  "formula_count": 0,
+  "generated_at": "2026-04-27T13:54:19.720041+00:00",
+  "has_code_fence": false,
+  "latency_ms": 3549.987,
+  "page_count": 1,
+  "passed": true,
+  "pdf_path": "/home/lipfi2/code/matrix/_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf",
+  "phrase_coverage": 1.0,
+  "required_phrases": {
+    "Freie Fall": true,
+    "Messdaten": true,
+    "Protokoll": true,
+    "Python-Simulation": true,
+    "Theoretische Grundlagen": true,
+    "berechne_hoehe": true,
+    "h(t)": true
+  },
+  "section_count": 4,
+  "table_count": 1,
+  "token_recall": 0.9091,
+  "truth_chars": 1082,
+  "truth_path": "/home/lipfi2/code/matrix/_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.md"
+}

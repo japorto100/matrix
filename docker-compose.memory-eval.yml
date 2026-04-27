@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: hindsight_dev
     ports:
-      - "5433:5432"
+      - "55433:5432"
     volumes:
       - memory-eval-postgres:/var/lib/postgresql/data
     healthcheck:

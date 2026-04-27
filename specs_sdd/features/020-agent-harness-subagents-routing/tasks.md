@@ -61,8 +61,12 @@ feature_id: 020
   currently expected to defer because subagents are not implemented.
 - T023 Add failure scenarios for tool budget exhaustion, retry loops and
   provider errors.
-- T024 Add trace assertions for runner variant, route decision and delegation
-  decision.
+- T024 [done-static-live-smoke] Add trace assertions for runner variant, route
+  decision and delegation decision.
+  - 2026-04-27: `TraceExpectations` supports
+    `required_route_decisions`, `required_runner_variants`,
+    `required_delegation_decisions` and `max_spawn_depth`; runner-parity
+    smoke requires `direct_answer`, `none` delegation and `spawn_depth=0`.
 - T025 Add safety gates for reasoning leakage, resolved-secret persistence and
   provider-specific unsupported fields.
 - T026 Add compression/thrashing gates: no infinite compression loop, retry
@@ -82,6 +86,16 @@ feature_id: 020
 - T035 Add route-decision event schema before implementing domain delegates:
   `route_decision`, `delegation_decision`, `spawn_depth`, `delegate_kind`,
   `allowed_tools`, `memory_scope`, `budget`, `fallback_reason`.
+- T036 [done-static] Implement route-decision telemetry as the first code
+  slice; behavior may stay unchanged, but Meta-Harness must see why the runner
+  chose no tool, retrieval, tool use, memory lookup or future delegation.
+  - 2026-04-27: `llm_node` now emits a `route_decision` audit event for every
+    LLM turn with runner, direct-answer/tool-use decision, tool names,
+    memory/retrieval hints, `delegation_decision=none` and `spawn_depth=0`.
+    Unit coverage verifies the memory-tool route metadata.
+- T037 Add Hermes-inspired but Matrix-specific loop guards: max tool retries,
+  max provider retries, compression retry reset, stale async memory flush guard
+  and unsupported-provider-field guard.
 
 ## Verification
 

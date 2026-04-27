@@ -31,6 +31,14 @@ def test_load_recent_meta_harness_artifacts(tmp_path):
         json.dumps({"files": [{"path": "python-backend/meta_harness/evaluator.py"}]}),
         encoding="utf-8",
     )
+    (candidate_dir / "retrieval_benchmark.json").write_text(
+        json.dumps({"candidate": {"candidate_id": "matrix-fused-vector-kg"}}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "extraction_benchmark.json").write_text(
+        json.dumps({"candidate_id": "pymupdf4llm-pdf-extraction", "passed": True}),
+        encoding="utf-8",
+    )
     (trace_dir / "thread-1.json").write_text(
         json.dumps(
             [
@@ -50,6 +58,12 @@ def test_load_recent_meta_harness_artifacts(tmp_path):
     assert len(artifacts) == 1
     assert artifacts[0]["run"]["run_id"] == "run-1"
     assert artifacts[0]["verdicts"]["passed"] is False
+    assert artifacts[0]["retrieval_benchmark"]["candidate"]["candidate_id"] == (
+        "matrix-fused-vector-kg"
+    )
+    assert artifacts[0]["extraction_benchmark"]["candidate_id"] == (
+        "pymupdf4llm-pdf-extraction"
+    )
     assert artifacts[0]["raw_trace_previews"][0]["timeline"][0]["tool"] == (
         "memory_search"
     )

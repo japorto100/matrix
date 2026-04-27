@@ -240,3 +240,98 @@ async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
     assert captured["max_tokens"] == 64
     assert captured["model"] == "openrouter/test-model"
     assert result["final_response"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
+    from agent.audit.logger import AuditAction
+    from agent.graph.nodes import llm_node as llm_module
+
+    audit_events: list[dict] = []
+
+    class _FakeCompletions:
+        async def create(self, **kwargs):
+            message = SimpleNamespace(
+                content="",
+                tool_calls=[
+                    SimpleNamespace(
+                        id="call-1",
+                        function=SimpleNamespace(
+                            name="memory_search",
+                            arguments='{"query":"risk preference"}',
+                        ),
+                    )
+                ],
+            )
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)],
+                usage=None,
+                model=kwargs["model"],
+            )
+
+    class _FakeClient:
+        chat = SimpleNamespace(completions=_FakeCompletions())
+
+    class _FakePool:
+        async def acquire(self, **_kwargs):
+            return None
+
+    class _FakeSpan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def set_attribute(self, *_args, **_kwargs):
+            return None
+
+        def add_event(self, *_args, **_kwargs):
+            return None
+
+        def track_generation(self, *_args, **_kwargs):
+            return None
+
+    async def _capture_audit_log(**kwargs):
+        audit_events.append(kwargs)
+
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "64")
+    monkeypatch.setattr(llm_module, "get_litellm_client", lambda: _FakeClient())
+    monkeypatch.setattr(llm_module, "get_credential_pool", lambda: _FakePool())
+    monkeypatch.setattr("agent.tracing.turn_span", lambda *_args, **_kwargs: _FakeSpan())
+    monkeypatch.setattr("agent.audit.logger.audit_log", _capture_audit_log)
+
+    result = await llm_module.llm_node(
+        {
+            "model": "openrouter/test-model",
+            "messages": [{"role": "user", "content": "check memory"}],
+            "system_prompt": "test",
+            "thread_id": "t-route",
+            "iteration": 0,
+            "tool_definitions": [
+                {
+                    "name": "memory_search",
+                    "description": "Search memory",
+                    "input_schema": {"type": "object"},
+                }
+            ],
+            "user_id": "anonymous",
+            "runner_variant": "simple",
+            "routing_reason": "simple_turn",
+            "routing_used": True,
+            "routing_picked_model": "openrouter/test-model",
+        }
+    )
+
+    route_event = next(
+        event for event in audit_events if event["action"] == AuditAction.ROUTE_DECISION
+    )
+    assert route_event["thread_id"] == "t-route"
+    assert route_event["metadata"]["runner"] == "simple"
+    assert route_event["metadata"]["decision"] == "tool_use"
+    assert route_event["metadata"]["delegation_decision"] == "none"
+    assert route_event["metadata"]["spawn_depth"] == 0
+    assert route_event["metadata"]["tool_names"] == ["memory_search"]
+    assert route_event["metadata"]["memory_route_requested"] is True
+    assert route_event["metadata"]["retrieval_route_requested"] is True
+    assert result["tool_calls"][0]["tool_name"] == "memory_search"

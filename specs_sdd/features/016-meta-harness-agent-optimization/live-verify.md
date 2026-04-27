@@ -87,7 +87,7 @@ Evidence:
 
 - Dev stack used: Postgres `:5433`, LiteLLM `:4000`, Python Agent `:8094`.
 - Command:
-  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/search_set/queries.json --max-scenarios 1 --agent-url http://127.0.0.1:8094 --user-id anonymous --model openrouter/openrouter/auto`
+  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/search_set/queries.json --max-scenarios 1 --agent-url http://127.0.0.1:8094 --user-id anonymous --model openrouter/openrouter/free`
 - Latest pass run id: `run-cb0a1d988fe3`.
 - Latest pass thread id: `mh-q001-35773a17`.
 - Latest pass artifact dir:
@@ -218,6 +218,51 @@ Evidence:
   LiteLLM/OpenRouter. Result: `trace_gate_pass_rate=1.0`,
   `completion_rate=1.0`, `fitness_score=0.85`; decision recorded as `keep`.
 
+## MV-04 Live Dev Stack Meta-Harness Preconditions
+
+Status: pass on 2026-04-27.
+
+Scope: keep the minimum real backend stack running before iterative
+Meta-Harness runs; no frontend or Go required.
+
+Evidence:
+
+- Postgres `:5433`, NATS `:4222`, LiteLLM `:4000`, Python Agent `:8094`,
+  Python Bridge `:8097` and Python Ingestion `:8098` were healthy.
+- Agent health: `{"ok":true,"service":"agent-service"}`.
+- Bridge health: `agent_reachable=true`, `nats_connected=true`.
+- Ingestion health: `{"status":"ok","kg_pipeline_enabled":false}`.
+- Root cause fixed: ingestion initially ran without DB credentials because
+  `ingestion.core.config` did not load `python-backend/.env.development`.
+- Root cause fixed: `scripts/dev-stack.sh` spawned local Uvicorn services with
+  `--reload`, so the wrapper PID exited and status checks lost Agent/Bridge.
+
+## MV-05 Candidate Artifact Benchmarks
+
+Status: pass on 2026-04-27.
+
+Commands:
+
+- `cd python-backend && uv run python -m meta_harness.meta_cli rag-benchmark --run-id run-rag-kg-live-devstack`
+- `cd python-backend && uv run python -m meta_harness.meta_cli pdf-extraction-benchmark --run-id run-pdf-extraction-live-devstack`
+
+Evidence:
+
+- RAG/KG candidate artifacts written under
+  `data/meta_harness/runs/run-rag-kg-live-devstack/candidates/`.
+- Retrieval winner: `matrix-fused-vector-kg`, pass rate `1.0`, Recall@5 `1.0`,
+  nDCG@5 `0.8155`, fitness `0.9631`.
+- PDF extraction candidate artifact written under
+  `data/meta_harness/runs/run-pdf-extraction-live-devstack/candidates/pymupdf4llm-pdf-extraction/`.
+- ResearchWatcher fixture:
+  `_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf`
+  compared against the sibling Markdown ground truth.
+- PDF extraction passed with token recall `0.9091`, phrase coverage `1.0`,
+  page count `1`, table count `1`, latency about `3.55s`.
+- Observed extraction gaps for proposer/next candidates: code fences, formulas
+  and figures were not structured strongly enough by the current PyMuPDF4LLM
+  path despite high text/phrase recall.
+
 Expected evidence:
 
 - required tool gate pass.
@@ -226,7 +271,7 @@ Expected evidence:
 Evidence:
 
 - Command:
-  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/live_probe/scenarios.json --agent-url http://127.0.0.1:8094 --user-id anonymous --candidate-id baseline --model openrouter/openrouter/auto`
+  `cd python-backend && APP_ENV=development uv run --frozen python -m meta_harness.meta_cli run ../data/harness/live_probe/scenarios.json --agent-url http://127.0.0.1:8094 --user-id anonymous --candidate-id baseline --model openrouter/openrouter/free`
 - Run id: `run-8ba52ec0f56e`.
 - Artifact dir:
   `data/meta_harness/runs/run-8ba52ec0f56e/candidates/baseline/`.
@@ -851,3 +896,41 @@ Boundary:
 - This lane validates harness mechanics only. Real agent capability,
   reasoning, memory policy and tool-choice behavior still require OpenRouter or
   another real model lane.
+
+## MV-13 OpenRouter Free Router Live Lane
+
+Status: pass on 2026-04-27.
+
+Finding:
+
+- OpenRouter `openrouter/auto` is not the right default for free-tier
+  Meta-Harness work because it can route to paid models and return 402 when the
+  account has no paid credits.
+- OpenRouter's Free Models Router is `openrouter/free`; through Matrix LiteLLM
+  wildcard routing the model string is `openrouter/openrouter/free`.
+- OpenRouter free-tier limits as of 2026-04-27 are low-volume: 20 requests/min
+  and 50 free-model requests/day until the account has purchased at least 10
+  credits; then the daily free-model limit increases to 1000. Free-provider
+  availability/rate limits still vary.
+
+Implementation evidence:
+
+- Local Dev defaults changed from `openrouter/openrouter/auto` to
+  `openrouter/openrouter/free` in `.env.development`, `.env`,
+  `scripts/bootstrap-env.py` and this feature's gates.
+- Direct LiteLLM smoke:
+  `POST http://127.0.0.1:4000/v1/chat/completions` with
+  `model=openrouter/openrouter/free` returned `OK`.
+- Real Meta-Harness live probe:
+  `run-live-agent-devstack-free-router:live-agent-free-router`.
+- Result: `trace_gate_pass_rate=1.0`, `completion_rate=1.0`,
+  `fitness_score=0.9`, `tool_success_rate=1.0`.
+- Trace evidence includes `skill_used`, `tool_call`, `tool_result` for
+  `get_chart_state` and final model metadata `openrouter/openrouter/free`.
+
+Boundary:
+
+- Use the free router for small real-provider probes only.
+- Use pacing/backoff and avoid large autonomous loops on free-tier quota.
+- Use `openrouter/auto` only when paid credits or another funded provider lane
+  is available.

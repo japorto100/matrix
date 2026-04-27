@@ -1,0 +1,7 @@
+{"chunk": "data: {\"messageId\": \"mh-rp-no-tools-001-68f9c0a1\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-68f9c0a1\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"runner parity smoke.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-68f9c0a1\", \"promptTokens\": 140, \"completionTokens\": 3, \"reasoningTokens\": 0, \"cachedTokens\": 0, \"totalTokens\": 143, \"provider\": \"litellm\", \"model\": \"mock/local\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

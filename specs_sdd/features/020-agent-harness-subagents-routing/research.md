@@ -58,6 +58,33 @@ Non-transferable or deferred:
 - Plugin hooks that can mutate tool results or terminal output without a
   Matrix audit/policy layer.
 
+## Matrix Transfer Map
+
+Immediate transfer candidates:
+
+- Feature 011: provider transport boundary so OpenRouter/LiteLLM, embeddings,
+  rerankers and unsupported provider fields are not mixed into one agent loop.
+- Feature 012: compression and memory flush hardening; stale async flushes and
+  repeated memory writes must be trace-gated.
+- Feature 013: pre-tool veto, hook policy and secret/redaction behavior before
+  any plugin-like extension point is trusted.
+- Feature 016: route/delegation decisions must be emitted as audit metadata
+  before Matrix changes behavior.
+- Feature 020: subagent control model with `max_spawn_depth=0` by default;
+  first real promotion is flat, single-hop delegation only.
+
+Deferred transfer candidates:
+
+- Hermes-style coding subagents, file-editing workers and software-development
+  skills. Matrix is a trading/geo/strategy agent, not a coding-agent product.
+- TUI overlays except as event-model inspiration for Control UI.
+- Unreviewed shell/output transformation hooks.
+
+Open design pressure: route-decision telemetry should be implemented before
+subagent behavior. Without it, Meta-Harness cannot tell whether a future answer
+was improved by routing, retrieval, memory, model choice or accidental prompt
+variance.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

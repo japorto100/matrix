@@ -23,3 +23,23 @@ Initial candidate ordering:
 
 Production recommendation must come from benchmark evidence, not community
 hype or framework size.
+
+## 2026-04-27 Benchmark Update
+
+The benchmark lab must include ingestion quality, not only retrieval mode.
+`arXiv:2604.04948` is a warning: a naive GraphRAG setup can lose to basic RAG
+when parsing/chunking/metadata are weak. Therefore Feature 022 evaluates
+candidate families, not isolated frameworks:
+
+- parser/chunking candidates from Feature 021.
+- retrieval/fusion candidates from Feature 019.
+- KG/path candidates from Feature 017.
+- auto-optimization candidates from Feature 023.
+
+LightRAG is the first external GraphRAG adapter candidate because it is
+practical and has an active implementation. HippoRAG2 is still relevant for
+associative/multi-hop recall, but should be tested on multi-hop/world-model
+goldens rather than generic document QA.
+
+AutoRAG-style optimization belongs in Feature 023. Feature 022 consumes its
+candidate artifacts and judges them under matched budgets and holdout sets.

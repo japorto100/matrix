@@ -96,6 +96,35 @@ def test_trace_gates_do_not_count_consent_request_as_tool_success(monkeypatch):
     assert "missing tool_result events for tool success rate threshold" in verdict.failures
 
 
+def test_trace_gates_check_route_decision_metadata(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "route_decision",
+            "success": True,
+            "metadata": {
+                "runner": "simple",
+                "decision": "direct_answer",
+                "delegation_decision": "none",
+                "spawn_depth": 0,
+            },
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_actions=("route_decision",),
+            required_route_decisions=("direct_answer",),
+            required_runner_variants=("simple",),
+            required_delegation_decisions=("none",),
+            max_spawn_depth=0,
+        ),
+    )
+
+    assert verdict.passed is True
+
+
 def test_trace_gates_fail_on_observed_tool_errors_by_default(monkeypatch):
     monkeypatch.setattr(
         scenario_runner,
@@ -967,6 +996,63 @@ async def test_default_agent_runner_can_disable_env_credential(monkeypatch):
     )
 
     assert captured["api_key"] is None
+
+
+@pytest.mark.asyncio
+async def test_service_agent_runner_sends_meta_harness_env_key(monkeypatch):
+    captured = {}
+
+    class _Response:
+        def raise_for_status(self):
+            return None
+
+        async def aiter_lines(self):
+            yield 'data: {"type":"finish"}'
+
+    class _Stream:
+        async def __aenter__(self):
+            return _Response()
+
+        async def __aexit__(self, *args):
+            return None
+
+    class _Client:
+        def __init__(self, **kwargs):
+            captured["client_kwargs"] = kwargs
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        def stream(self, method, url, *, json, headers):
+            captured["method"] = method
+            captured["url"] = url
+            captured["json"] = json
+            captured["headers"] = headers
+            return _Stream()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
+    monkeypatch.delenv("META_HARNESS_ALLOW_ENV_CREDENTIALS", raising=False)
+    monkeypatch.setattr("httpx.AsyncClient", _Client)
+
+    runner = scenario_runner.service_agent_runner("http://agent.local")
+    chunks = await runner(
+        thread_id="thread-live",
+        user_id="meta-harness",
+        model="openrouter/openrouter/auto",
+        system_prompt="system",
+        messages=[{"role": "user", "content": "hi"}],
+        enable_tools=True,
+        run_id="run-live",
+        scenario_id="scenario-live",
+    )
+
+    assert chunks == ['data: {"type":"finish"}\n\n']
+    assert captured["headers"]["x-meta-harness-run-id"] == "run-live"
+    assert captured["json"]["metaHarnessRunId"] == "run-live"
+    assert captured["json"]["metaHarnessApiKey"] == "test-openrouter-key"
 
 
 @pytest.mark.asyncio

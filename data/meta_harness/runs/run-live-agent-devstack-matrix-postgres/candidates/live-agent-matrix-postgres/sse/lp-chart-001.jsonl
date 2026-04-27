@@ -1,0 +1,4 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-chart-001-5518aaa5\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-5518aaa5\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"errorText\": \"LangGraph error: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\\\"error\\\":{\\\"message\\\":\\\"Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\\\",\\\"code\\\":402}}. Received Model Group=openrouter/openrouter/auto\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}}\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"billing\", \"recovery_strategy\": \"rotate_immediately\", \"retryable\": true, \"status_code\": 402}}\n\n"}

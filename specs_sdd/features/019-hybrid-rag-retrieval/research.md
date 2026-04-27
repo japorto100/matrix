@@ -29,9 +29,38 @@ Use as eval references:
   search protocols.
 - RAGAS/RAGChecker/Phoenix/Langfuse style diagnostics for context and
   faithfulness.
+- AutoRAG/AutoRAG-HP: inner-loop optimization for retrieval/chunking configs,
+  now owned by Feature 023.
 
 ## Architecture Implication
 
 Dense/hybrid vector retrieval remains the default baseline. Graph retrieval is
 introduced for relational, temporal, multi-hop and world-model questions where
 explicit structure earns its offline cost.
+
+## 2026-04-27 Update
+
+The strongest new evidence is not "pick one GraphRAG framework". It is that
+preprocessing, hierarchy-aware chunking and metadata enrichment matter before
+graph complexity.
+
+`arXiv:2604.04948` compared Docling, MinerU, Marker and DeepSeek OCR across 19
+PDF-to-Markdown/RAG configurations. The result is directly relevant to Matrix:
+Docling plus hierarchical splitting and image descriptions reached the best
+reported automated QA accuracy, while a naive GraphRAG implementation
+underperformed basic RAG. The lesson is conservative:
+
+- make the document pipeline layout/hierarchy/citation aware first.
+- benchmark graph retrieval only on query classes where structure should help.
+- avoid making graph retrieval the default for all document QA.
+
+LightRAG remains the first practical GraphRAG baseline because it is runnable
+and ergonomically close to a production service. HippoRAG2 remains important
+for associative/multi-hop retrieval, but should be tested after Matrix's own
+vector/KG/fused baseline and LightRAG adapter exist.
+
+Feature 019 therefore depends on:
+
+- Feature 021 for parser/chunk/citation quality.
+- Feature 022 for matched retrieval benchmarks.
+- Feature 023 for bounded inner-loop config search.

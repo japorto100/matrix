@@ -297,6 +297,12 @@ def _load_recent_meta_harness_artifacts(
                 ),
                 "scores": _read_json_if_exists(candidate_dir / "scores.json"),
                 "verdicts": _read_json_if_exists(candidate_dir / "verdicts.json"),
+                "retrieval_benchmark": _read_json_if_exists(
+                    candidate_dir / "retrieval_benchmark.json"
+                ),
+                "extraction_benchmark": _read_json_if_exists(
+                    candidate_dir / "extraction_benchmark.json"
+                ),
                 "source_snapshot": _read_json_if_exists(
                     candidate_dir / "source_snapshot.json"
                 ),

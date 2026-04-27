@@ -1,0 +1,14 @@
+{
+  "run_id": "run-rag-kg-live-devstack",
+  "candidate_id": "matrix-fused-vector-kg",
+  "decision": "keep",
+  "rationale": "Only retrieval candidate passing both trading/geo multi-hop and plain document QA canaries; keep fused vector+KG as current baseline while live adapters mature.",
+  "decided_at": "2026-04-27T13:56:04.246510+00:00",
+  "metrics": {
+    "pass_rate": 1.0,
+    "recall@5": 1.0,
+    "ndcg@5": 0.8155,
+    "fitness_score": 0.9631
+  },
+  "follow_up": ""
+}
