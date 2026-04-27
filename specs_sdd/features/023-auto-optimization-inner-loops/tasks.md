@@ -46,6 +46,9 @@ feature_id: 023
   - 2026-04-27: parser candidate space now has an optional MarkItDown adapter
     in addition to PyMuPDF4LLM and remote Docling/MinerU placeholders. It must
     still be benchmarked before promotion.
+  - 2026-04-27: the PDF extraction benchmark accepts an explicit extractor
+    registry name, allowing parser candidates to share the same evaluator,
+    ground truth and Meta-Harness artifact shape.
 - T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.

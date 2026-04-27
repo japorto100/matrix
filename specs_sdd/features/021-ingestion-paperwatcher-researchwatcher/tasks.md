@@ -162,6 +162,10 @@ feature_id: 021
   - 2026-04-27: optional adapter and unit tests exist. Benchmark comparison is
     still open because `markitdown` is not installed as a hard dependency and
     must be run through the same Feature 023 extraction benchmark path.
+  - 2026-04-27: `meta_harness.meta_cli pdf-extraction-benchmark` now accepts
+    `--extractor <registry-name>` and records `extractor_requested`, so
+    MarkItDown/Docling/MinerU can be evaluated against the same ground-truth
+    fixture without changing benchmark code.
 - T041 Add one current trading/finance or macro PDF fixture so parser
   decisions are not based only on generic benchmark PDFs.
 - T042 [done-static-live-smoke] Add a paper/source provenance fixture where the expected answer must

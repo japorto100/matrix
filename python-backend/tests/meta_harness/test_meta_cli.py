@@ -298,6 +298,8 @@ async def test_cli_pdf_extraction_benchmark_uses_paths(tmp_path, monkeypatch):
             str(pdf),
             "--truth-path",
             str(truth),
+            "--extractor",
+            "markitdown",
             "--data-dir",
             str(tmp_path),
         ]
@@ -308,6 +310,28 @@ async def test_cli_pdf_extraction_benchmark_uses_paths(tmp_path, monkeypatch):
     assert result["run_id"] == "run-pdf"
     assert captured["pdf_path"] == pdf
     assert captured["truth_path"] == truth
+    assert captured["extractor_name"] == "markitdown"
+
+
+def test_pdf_extraction_benchmark_records_requested_extractor(tmp_path):
+    from meta_harness.extraction_benchmark import evaluate_pdf_extraction
+
+    pdf = tmp_path / "sample.pdf"
+    truth = tmp_path / "sample.md"
+    pdf.write_bytes(b"%PDF")
+    truth.write_text("truth", encoding="utf-8")
+
+    report = evaluate_pdf_extraction(
+        pdf_path=pdf,
+        truth_path=truth,
+        candidate_id="missing-extractor-candidate",
+        extractor_name="missing-extractor",
+    )
+
+    assert report["passed"] is False
+    assert report["extractor_requested"] == "missing-extractor"
+    assert report["extractor"] == "missing-extractor"
+    assert "Unknown extractor" in report["failures"][0]
 
 
 @pytest.mark.asyncio

@@ -83,6 +83,11 @@ def build_parser() -> argparse.ArgumentParser:
     pdf_benchmark.add_argument("--run-id", default="")
     pdf_benchmark.add_argument("--candidate-id", default="pymupdf4llm-pdf-extraction")
     pdf_benchmark.add_argument(
+        "--extractor",
+        default="pymupdf4llm",
+        help="Extractor registry name, e.g. pymupdf4llm or markitdown",
+    )
+    pdf_benchmark.add_argument(
         "--pdf-path",
         type=Path,
         default=None,
@@ -235,6 +240,7 @@ async def _main_async(args: argparse.Namespace) -> dict:
             "truth_path": truth_path,
             "run_id": args.run_id or None,
             "candidate_id": args.candidate_id,
+            "extractor_name": args.extractor,
         }
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir

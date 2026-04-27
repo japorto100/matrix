@@ -37,6 +37,7 @@ async def run_pdf_extraction_benchmark(
     truth_path: Path = DEFAULT_TRUTH_PATH,
     run_id: str | None = None,
     candidate_id: str = "pymupdf4llm-pdf-extraction",
+    extractor_name: str = "pymupdf4llm",
     data_dir: Path = META_HARNESS_DATA_DIR,
     required_phrases: tuple[str, ...] = DEFAULT_REQUIRED_PHRASES,
 ) -> dict[str, Any]:
@@ -47,6 +48,7 @@ async def run_pdf_extraction_benchmark(
         pdf_path=pdf_path,
         truth_path=truth_path,
         candidate_id=candidate_id,
+        extractor_name=extractor_name,
         required_phrases=required_phrases,
     )
     artifact = write_pdf_extraction_artifacts(
@@ -62,6 +64,7 @@ def evaluate_pdf_extraction(
     pdf_path: Path,
     truth_path: Path,
     candidate_id: str,
+    extractor_name: str = "pymupdf4llm",
     required_phrases: tuple[str, ...] = DEFAULT_REQUIRED_PHRASES,
 ) -> dict[str, Any]:
     """Extract one PDF and compare the markdown output with a ground-truth MD."""
@@ -69,30 +72,45 @@ def evaluate_pdf_extraction(
     pdf_path = pdf_path.resolve()
     truth_path = truth_path.resolve()
     started = perf_counter()
+    extractor_name = extractor_name.strip() or "pymupdf4llm"
     if not pdf_path.exists():
-        return _error_report(candidate_id, pdf_path, truth_path, f"missing PDF: {pdf_path}")
+        return _error_report(
+            candidate_id,
+            pdf_path,
+            truth_path,
+            f"missing PDF: {pdf_path}",
+            extractor_name=extractor_name,
+        )
     if not truth_path.exists():
         return _error_report(
             candidate_id,
             pdf_path,
             truth_path,
             f"missing ground-truth markdown: {truth_path}",
+            extractor_name=extractor_name,
         )
 
     try:
-        from ingestion.extractors.pymupdf_ext import PyMuPDF4LLMExtractor
+        from ingestion.extractors.registry import ExtractorRegistry
 
-        extractor = PyMuPDF4LLMExtractor()
+        extractor = ExtractorRegistry().get(extractor_name)
         if not extractor.is_available():
             return _error_report(
                 candidate_id,
                 pdf_path,
                 truth_path,
-                "pymupdf4llm extractor is not available",
+                f"{extractor_name} extractor is not available",
+                extractor_name=extractor_name,
             )
         extracted = extractor.extract(pdf_path)
     except Exception as exc:  # noqa: BLE001
-        return _error_report(candidate_id, pdf_path, truth_path, str(exc))
+        return _error_report(
+            candidate_id,
+            pdf_path,
+            truth_path,
+            str(exc),
+            extractor_name=extractor_name,
+        )
 
     truth_md = truth_path.read_text(encoding="utf-8")
     extracted_md = extracted.content_md or ""
@@ -127,6 +145,7 @@ def evaluate_pdf_extraction(
         "feature_id": "021",
         "benchmark_type": "pdf_extraction_ground_truth",
         "candidate_id": candidate_id,
+        "extractor_requested": extractor_name,
         "pdf_path": str(pdf_path),
         "truth_path": str(truth_path),
         "passed": passed,
@@ -252,12 +271,15 @@ def _error_report(
     pdf_path: Path,
     truth_path: Path,
     error: str,
+    *,
+    extractor_name: str = "pymupdf4llm",
 ) -> dict[str, Any]:
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "feature_id": "021",
         "benchmark_type": "pdf_extraction_ground_truth",
         "candidate_id": candidate_id,
+        "extractor_requested": extractor_name,
         "pdf_path": str(pdf_path),
         "truth_path": str(truth_path),
         "passed": False,
@@ -274,7 +296,7 @@ def _error_report(
         "extracted_chars": 0,
         "truth_chars": 0,
         "latency_ms": 0.0,
-        "extractor": "pymupdf4llm",
+        "extractor": extractor_name,
     }
 
 
@@ -308,6 +330,8 @@ def _config_snapshot() -> dict[str, Any]:
 def _source_snapshot() -> dict[str, Any]:
     paths = [
         "python-backend/ingestion/extractors/pymupdf_ext.py",
+        "python-backend/ingestion/extractors/markitdown_ext.py",
+        "python-backend/ingestion/extractors/registry.py",
         "python-backend/meta_harness/extraction_benchmark.py",
         "python-backend/meta_harness/proposer.py",
         "_ref/Researchwatcher/layout-module/tests/test_assets/"
