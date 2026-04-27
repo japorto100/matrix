@@ -93,6 +93,12 @@ feature_id: 020
     LLM turn with runner, direct-answer/tool-use decision, tool names,
     memory/retrieval hints, `delegation_decision=none` and `spawn_depth=0`.
     Unit coverage verifies the memory-tool route metadata.
+- T036a [done-live] Back runtime `agent.user_agent_settings` lookup with an
+  Alembic-managed table so per-user agent settings no longer generate Postgres
+  relation-missing errors during prompt preparation.
+  - 2026-04-27: added revision `032_user_agent_settings`; live Postgres
+    verification confirmed `agent.user_agent_settings` exists after
+    `alembic upgrade head`.
 - T037 Add Hermes-inspired but Matrix-specific loop guards: max tool retries,
   max provider retries, compression retry reset, stale async memory flush guard
   and unsupported-provider-field guard.

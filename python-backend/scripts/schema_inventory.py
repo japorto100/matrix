@@ -23,6 +23,7 @@ OWNER_FEATURES: dict[str, str] = {
     "agent.a2a_delegations": "009",
     "agent.skills_state": "015",
     "agent.user_llm_settings": "011",
+    "agent.user_agent_settings": "020",
     "agent.user_llm_api_keys": "011",
     "agent.agent_skills": "015",
     "agent.agent_skill_audit": "015",

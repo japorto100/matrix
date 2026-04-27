@@ -122,7 +122,7 @@ MENTION_ONLY_IN_GROUPS=false
 NATS_SUBJECT_ROUTING_ENABLED=false
 
 # ─── Service URLs (native-dev all localhost) ───────────────────────────────
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://localhost:14222
 AGENT_SERVICE_URL=http://127.0.0.1:8094
 MEMORY_SERVICE_URL=http://127.0.0.1:8093
 MCP_SERVICE_URL=http://127.0.0.1:8094
@@ -174,7 +174,7 @@ go_prod = go_dev.replace(
 ).replace(
     "http://localhost:29318", "http://go-appservice:29318"
 ).replace(
-    "nats://localhost:4222", "nats://nats:4222"
+    "nats://localhost:14222", "nats://nats:4222"
 ).replace(
     "http://127.0.0.1:8094", "http://agent-service:8094"
 ).replace(
@@ -307,7 +307,7 @@ OPENSANDBOX_USE_SERVER_PROXY=true
 CONTAINER_SOCK=/run/user/1002/podman/podman.sock
 
 # ─── Networking & Service Discovery ────────────────────────────────────────
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://localhost:14222
 MATRIX_HOMESERVER_URL=http://localhost:8448
 GO_GATEWAY_BASE_URL=http://localhost:8090
 AGENT_SERVICE_URL=http://localhost:8094
@@ -377,7 +377,7 @@ py_prod = py_dev.replace(
 ).replace(
     "http://localhost:8100", "http://opensandbox:8100"
 ).replace(
-    "nats://localhost:4222", "nats://nats:4222"
+    "nats://localhost:14222", "nats://nats:4222"
 ).replace(
     "http://localhost:8448", "http://tuwunel:8448"
 ).replace(

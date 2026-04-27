@@ -9,5 +9,22 @@ feature_id: 023
 
 # Closeout
 
-Open. Feature 023 is created to separate inner-loop optimization from
-Meta-Harness outer-loop evaluation.
+Partial implementation done, not fully closed.
+
+Done:
+
+- Deterministic RAG retrieval-mode inner-loop can emit typed
+  `InnerLoopCandidate` and `InnerLoopRun` artifacts.
+- Candidates write Meta-Harness-compatible `aggregate.json`, `scores.json`,
+  `verdicts.json`, `config.json`, source snapshot and run manifest.
+- Provider-call budget gate blocks live-provider loops unless explicit quota
+  env permits them.
+- Pareto sees the promoted fused retrieval candidate:
+  `run-inner-loop-rag-smoke:inner-matrix-fused-vector-kg`.
+
+Still open:
+
+- Parser/chunking loop over the ResearchWatcher PDF fixture.
+- Memory/context loop over Hindsight/MemPalace/Fusion routes.
+- Live-provider loop with bounded OpenRouter request caps.
+- Holdout separation beyond the current deterministic smoke.

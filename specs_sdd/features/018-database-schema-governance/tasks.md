@@ -38,6 +38,8 @@ feature_id: 018
   project's Postgres container/volume.
 - T026 [done-live] Move the memory-eval compose Postgres host port away from
   Matrix's `5433` to prevent runner collisions.
+- T027 [done-live] Add missing runtime-owned `agent.user_agent_settings`
+  migration and regenerate schema inventory after `alembic upgrade head`.
 
 ## Feature 017 Integration
 
@@ -53,3 +55,6 @@ feature_id: 018
   - 2026-04-27: `matrix-postgres` runs `pgvector/pgvector:pg17` on
     `matrix_postgres-data`; extensions verified: `vector 0.8.2`,
     `btree_gist`, `pg_trgm`, `pg_stat_statements`.
+- T042 [done-live] Verify Alembic head includes
+  `032_user_agent_settings` and `agent.user_agent_settings` exists in live
+  Postgres after upgrade.

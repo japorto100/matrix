@@ -21,10 +21,18 @@ migrated_from:
 - [x] T005 [P] Verify env examples are present for frontend, Go and Python.
 - [x] T006 Run operator bootstrap smoke or document why local secrets prevent it.
 - [x] T007 Mark archived `exec-19` stages as split across owning features.
+- [x] T008 [done-live] Keep Matrix infrastructure isolated from other projects:
+  `matrix-postgres` uses `matrix_postgres-data` on `5433`; `matrix-nats`
+  uses `matrix_nats-data` on host `14222/18222` so Tradeview's NATS on
+  `4222/8222` is not reused accidentally.
+- [x] T009 [done-static] After port/service changes, update local env files and
+  `scripts/bootstrap-env.py` defaults in the same pass.
 
 ## Verify Gates
 
 - [x] `bash -n scripts/*.sh`
 - [x] Compose YAML parses.
 - Alembic head is reachable when Postgres is running. Deferred to live/operator verify.
+- [x] Matrix-NATS host port is owned by `matrix-nats`, not a foreign project
+  container.
 - [x] Env examples match documented service roles.

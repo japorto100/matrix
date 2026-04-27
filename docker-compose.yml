@@ -54,11 +54,13 @@ services:
     # ── NATS Message Bus ─────────────────────────────────────────────────────
   nats:
     image: nats:2-alpine
-    container_name: nats
+    container_name: matrix-nats
     ports:
-      - "4222:4222"
-      - "8222:8222"
-    command: ["--js", "-m", "8222"]
+      - "${NATS_HOST_PORT:-14222}:4222"
+      - "${NATS_MONITOR_PORT:-18222}:8222"
+    command: ["--js", "--store_dir", "/data", "-m", "8222"]
+    volumes:
+      - nats-data:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
@@ -581,6 +583,7 @@ services:
 
 volumes:
   tuwunel-data:
+  nats-data:
   postgres-data:
   seaweedfs-data:
   valkey-data:

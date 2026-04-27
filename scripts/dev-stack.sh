@@ -21,7 +21,8 @@
 #   --matrix-chat    matrix-core + litellm                    (echte Agent-Replies)
 #   --matrix-full    matrix-chat + calls                      (alle Gates außer Tunnel)
 #   --matrix-mobile  matrix-full + tunnel                     (Mobile external)
-#   --matrix-mock    matrix-core + llm-mock + mock-agent      (UI-tests ohne API-Keys)
+#   --matrix-mock    matrix-core + mock-agent                 (UI-tests ohne API-Keys)
+#                    llm-mock :8095 nur explizit via --llm-mock
 #   --agent-dev      nats + postgres + litellm + agent + bridge (ohne Matrix)
 #   --memory-dev     postgres + falkordb + agent              (exec-memory)
 #   --sandbox-dev    postgres + sandbox + agent               (exec-12)
@@ -34,7 +35,7 @@
 #   --storage=garage|seaweedfs   Storage-Backend (Default: garage)
 #   --storage=off                kein S3 (tuwunel local-media)
 #   --litellm                    LLM Gateway (Port 4000)
-#   --llm-mock                   Mock-LLM-Server
+#   --llm-mock                   Mock-LLM-Server :8095 (Meta-Harness/local gates only)
 #   --sandbox                    OpenSandbox Pair (exec-12)
 #   --calls                      livekit + lk-jwt + coturn
 #   --tunnel                     cloudflared quick (trycloudflare.com)
@@ -138,7 +139,8 @@ apply_preset_matrix_mobile() {
 }
 apply_preset_matrix_mock() {
   apply_preset_matrix_core
-  WANT_LLM_MOCK=true
+  # Keep the OpenAI-compatible llm-mock off unless explicitly requested with
+  # --llm-mock. Matrix mock mode only replaces the agent service itself.
   USE_MOCK_AGENT=true
 }
 apply_preset_agent_dev() {
@@ -244,7 +246,8 @@ fi
 
 # ─── Ports ────────────────────────────────────────────────────────────────────
 PORT_TUWUNEL=8448
-PORT_NATS=4222
+PORT_NATS=${NATS_HOST_PORT:-14222}
+PORT_NATS_MONITOR=${NATS_MONITOR_PORT:-18222}
 PORT_POSTGRES=5433
 PORT_SEAWEED_S3=8333
 PORT_GARAGE_S3=3900
@@ -436,6 +439,8 @@ compose_up() {
   local common_env=(
     "TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:${TUWUNEL_IMAGE_TAG}"
     "TUWUNEL_CONFIG=${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}"
+    "NATS_HOST_PORT=${PORT_NATS}"
+    "NATS_MONITOR_PORT=${PORT_NATS_MONITOR}"
   )
 
   if [ ${#default_svcs[@]} -gt 0 ]; then
