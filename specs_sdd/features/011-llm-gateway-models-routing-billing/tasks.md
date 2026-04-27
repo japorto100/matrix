@@ -28,6 +28,9 @@ migrated_from:
 - T013 Verify tool-call response arguments shape.
 - T014 Verify direct provider fallback mode still works.
 - [x] T015 Decide whether docker-compose LiteLLM path remains active.
+- [x] T016 Live-verify LiteLLM container liveness separately from provider
+  diagnostics: compose healthcheck uses `/health/liveliness`, while `/health`
+  remains a provider/credential readiness gate.
 
 ## Credentials And Settings
 

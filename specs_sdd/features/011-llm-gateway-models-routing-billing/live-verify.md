@@ -75,11 +75,11 @@ partial pass
   path as `...@postgres:5432...`.
 - Recreated LiteLLM with `COMPOSE_PROFILES=litellm podman-compose up -d
   litellm`; the service listens on `:4000`.
-- `GET /health` eventually returns `200` and reports OpenRouter as a healthy
-  endpoint. The container healthcheck can still be slow/unhealthy because
-  LiteLLM checks all configured providers, including providers without local
-  API keys; that remains a healthcheck-hardening follow-up, not a gateway
-  startup blocker.
+- `GET /health/liveliness` returns `200` quickly and the compose healthcheck
+  now uses that endpoint. `GET /health` stays a provider/credential diagnostic;
+  it can fail or hang when configured provider keys are missing, invalid or
+  quota-exhausted, so it is not used as the container liveness gate.
+- `podman inspect litellm` reports container health `healthy`.
 - Meta-Harness run `run-5f24325e7b1c` used the in-process simple runner through
   LiteLLM/OpenRouter with model `openrouter/openrouter/free`; metadata showed
   provider `openrouter`, model `openrouter/openrouter/free`, and successful
