@@ -9,8 +9,9 @@ feature_id: 020
 
 # Gates
 
-- [ ] HermesAgent/reference research is summarized with transfer/non-transfer
-  decisions.
+- [x] HermesAgent v0.11 release research is summarized with transfer/non-
+  transfer decisions.
+- [ ] HermesAgent code deep-read is summarized with concrete Matrix diffs.
 - [ ] Route decisions are visible in audit artifacts before behavior changes.
 - [ ] Simple and LangGraph runners pass routing parity for no-tool scenarios.
 - [ ] Tool-budget and retry-loop failures become explicit gate failures.

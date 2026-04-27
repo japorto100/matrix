@@ -20,6 +20,29 @@ subagents. The current baseline has three runner shapes:
 Subagents, when introduced, must be audited domain delegates. They should not
 be used for routine retrieval, ordinary tool calls or hidden self-improvement.
 
+## HermesAgent Reference Boundary
+
+`_ref/hermes-agent` is pinned as an upstream reference and was updated to
+`v2026.4.23-600-g8ed599dc` on 2026-04-27. Its v0.11 "Interface" release is
+high-signal for harness architecture: pluggable provider transports, explicit
+subagent orchestration, max spawn depth, sibling coordination, plugin tool
+hooks, shell hooks, steering, context-compression hardening, memory metadata
+and provider/credential safety.
+
+This is a CLI coding-agent architecture, not Matrix's product target. Matrix
+must not import the coding-agent product behavior wholesale. Transfer the
+mechanisms, not the scope:
+
+- use transport separation to simplify model/provider routing.
+- use explicit delegation metadata before real subagents.
+- use max-depth and sibling-coordination ideas for future bounded delegates.
+- use pre-tool/transform hooks as ToolRegistry/HITL design input.
+- use compression/reasoning-leak/secret-persistence fixes as safety gates.
+- do not expose autonomous coding agents as a user-facing product mode in this
+  phase.
+- do not let subagents silently write memory, promote KG claims or schedule
+  tasks.
+
 ## Required Metadata
 
 Every routed turn should eventually expose:

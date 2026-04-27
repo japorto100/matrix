@@ -62,6 +62,8 @@ Optional kommen beim eigentlichen Content-Import dazu:
 - `contracts/`
 - `evidence/`
 
+Cross-feature execution is tracked in `WORKPLAN_001_022.md`.
+
 ## Live-Verify-Schwerpunkte
 
 Die umfangreichsten Live-Verify-Listen liegen hier:
