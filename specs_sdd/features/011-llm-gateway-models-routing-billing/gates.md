@@ -3,7 +3,7 @@ title: LLM Gateway, Models, Routing and Billing Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 011
 ---
 
@@ -11,8 +11,8 @@ feature_id: 011
 
 ## G1 Gateway / Provider
 
-- [ ] LiteLLM starts on port 4000.
-- [ ] `/v1/chat/completions` non-streaming response works.
+- [x] LiteLLM starts on port 4000.
+- [x] `/v1/chat/completions` non-streaming response works.
 - [ ] Streaming SSE response works.
 - [ ] Tool-call response arguments shape is compatible.
 - [ ] Direct provider fallback path still works.
@@ -35,7 +35,7 @@ feature_id: 011
 - [x] Model metadata tests pass.
 - [ ] Control UI model explorer loads live provider/model data.
 - [ ] Agent Chat model picker sends selected model through BFF/backend.
-- [ ] Selected model reaches LiteLLM/provider.
+- [x] Selected model reaches LiteLLM/provider.
 
 ## G4 Billing / Insights
 

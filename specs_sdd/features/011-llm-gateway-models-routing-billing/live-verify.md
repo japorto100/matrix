@@ -3,7 +3,7 @@ title: LLM Gateway, Models, Routing and Billing Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 011
 ---
 
@@ -65,4 +65,29 @@ feature_id: 011
 
 ## Result
 
-pending
+partial pass
+
+## Live Evidence 2026-04-27
+
+- Meta-Harness exposed a real DevStack issue: the LiteLLM container inherited
+  `HINDSIGHT_DB_URL=...@localhost:5433...`, which points at the LiteLLM
+  container itself. `docker-compose.yml` now overrides this for the container
+  path as `...@postgres:5432...`.
+- Recreated LiteLLM with `COMPOSE_PROFILES=litellm podman-compose up -d
+  litellm`; the service listens on `:4000`.
+- `GET /health` eventually returns `200` and reports OpenRouter as a healthy
+  endpoint. The container healthcheck can still be slow/unhealthy because
+  LiteLLM checks all configured providers, including providers without local
+  API keys; that remains a healthcheck-hardening follow-up, not a gateway
+  startup blocker.
+- Meta-Harness run `run-5f24325e7b1c` used the in-process simple runner through
+  LiteLLM/OpenRouter with model `openrouter/openrouter/free`; metadata showed
+  provider `openrouter`, model `openrouter/openrouter/free`, and successful
+  `llm_response`.
+
+Remaining:
+
+- streaming SSE and tool-call response shape through raw LiteLLM;
+- Control UI model explorer/picker;
+- DB-backed spend dashboard;
+- production credential/security review for anonymous dev Meta-Harness path.

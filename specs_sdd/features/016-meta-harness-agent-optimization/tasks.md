@@ -202,6 +202,9 @@ feature_id: 016
 - [x] T096i Pin the effective default model once per scenario-file run so later
   scenarios in the same candidate cannot lose the model through runtime/env
   mutation.
+- [x] T096j Use Meta-Harness runner-parity smoke after Feature 018 to expose
+  and fix LiteLLM container DB routing: container DSN must use `postgres:5432`,
+  not host-local `localhost:5433`.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
 - T098 Reduce skill over-selection in explicit memory probes; current

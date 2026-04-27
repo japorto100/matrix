@@ -235,6 +235,37 @@ Evidence:
   `postgres` container later exited cleanly. Live runner-parity comparison is
   therefore deferred until local DB port stability is fixed.
 
+## MV-03d Runner-Parity Live Pass After Schema Governance
+
+Status: pass on 2026-04-27.
+
+Meta-Harness role/use:
+
+- Codex acted as proposer/operator and simulated user.
+- The first post-Feature-018 runner-parity run failed because the in-process
+  agent could not reach the configured LiteLLM endpoint.
+- DevStack investigation found that the LiteLLM container inherited a host DSN
+  (`localhost:5433`) for Postgres. Inside the container this points to itself,
+  so `docker-compose.yml` now overrides `HINDSIGHT_DB_URL` to
+  `postgres:5432`.
+- Recreated LiteLLM with `COMPOSE_PROFILES=litellm podman-compose up -d
+  litellm` and reran the Meta-Harness scenario through LiteLLM/OpenRouter.
+
+Evidence:
+
+- Run id: `run-5f24325e7b1c`.
+- Candidate: `post-schema-governance`.
+- Artifact dir:
+  `data/meta_harness/runs/run-5f24325e7b1c/candidates/post-schema-governance/`.
+- Scenario: `rp-no-tools-001`.
+- Runner: `simple`.
+- Model/provider: `openrouter/openrouter/free` via LiteLLM/OpenRouter.
+- Result: `trace_gate_pass_rate=1.0`, `completion_rate=1.0`,
+  `fitness_score=1.0`.
+- Observed actions: `skill_found`, `llm_response`; no tools and no required
+  memory.
+- Response: `Runner parity smoke.`
+
 ## MV-04 Candidate Artifact Smoke
 
 Status: pass on 2026-04-26 for `run-7e71055b00bb`.

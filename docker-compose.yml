@@ -147,6 +147,8 @@ services:
     volumes:
       - ./python-backend/litellm-gateway/config.yaml:/app/config.yaml:ro
     env_file: ./python-backend/.env
+    environment:
+      HINDSIGHT_DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hindsight_dev}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     restart: unless-stopped
     healthcheck:

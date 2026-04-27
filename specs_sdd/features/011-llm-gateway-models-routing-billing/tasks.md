@@ -3,7 +3,7 @@ title: LLM Gateway, Models, Routing and Billing Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 011
 migrated_from:
   - specs/execution/exec-16-llm-provider-gateway.md
@@ -22,12 +22,12 @@ migrated_from:
 
 ## Gateway
 
-- T010 Verify LiteLLM starts on port 4000.
-- T011 Verify `/v1/chat/completions` non-streaming response.
+- [x] T010 Verify LiteLLM starts on port 4000.
+- [x] T011 Verify `/v1/chat/completions` non-streaming response.
 - T012 Verify streaming SSE response.
 - T013 Verify tool-call response arguments shape.
 - T014 Verify direct provider fallback mode still works.
-- T015 Decide whether docker-compose LiteLLM path remains active.
+- [x] T015 Decide whether docker-compose LiteLLM path remains active.
 
 ## Credentials And Settings
 
@@ -46,7 +46,7 @@ migrated_from:
 - T030 Verify Control UI model explorer loads live provider/model data.
 - T031 Verify Agent Chat model picker shows only active provider models.
 - T032 Verify selected model reaches backend request.
-- T033 Verify selected model reaches LiteLLM/provider.
+- [x] T033 Verify selected model reaches LiteLLM/provider.
 - [x] T034 Decide and implement/defer persisted user model selection.
 
 ## Billing And Insights
