@@ -166,5 +166,10 @@ feature_id: 022
     `citation_ref` metadata. This upgrades the dense baseline from naive
     chunk-id matching toward source-grounded RAG, but real parser-derived
     hierarchy canaries remain open.
+  - 2026-04-27: `url-source-provenance-001` adds a URL/arXiv source canary
+    tied to Feature 021 `ingest-url`: selected references must preserve
+    `source_uri`, `source_kind=url`, `fetch_method=http`, citation refs and
+    parser/chunker metadata. This keeps URL ingestion from drifting below the
+    local-file provenance standard.
 - T048 Add NornicDB/nonicdb projection canaries for temporal, relational and
   multi-hop KG queries once Feature 017 projection replay exists.

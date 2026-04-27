@@ -20,6 +20,7 @@ from retrieval.evals.canaries import (
     MULTIHOP_KG_HOLDOUT_CANARY,
     SIMPLE_DOC_HOLDOUT_CANARY,
     TRADING_GEO_KG_CANARY,
+    URL_SOURCE_PROVENANCE_CANARY,
     CanaryExpectation,
     RetrievalCanary,
     canaries_for_split,
@@ -68,6 +69,7 @@ async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
     ]
     assert canaries_for_split(DEFAULT_CANARIES, "search") == DEFAULT_SEARCH_CANARIES
     assert canaries_for_split(DEFAULT_CANARIES, "holdout") == DEFAULT_HOLDOUT_CANARIES
+    assert URL_SOURCE_PROVENANCE_CANARY in DEFAULT_SEARCH_CANARIES
     assert by_id["matrix-fused-vector-kg"]["split_summary"]["holdout"]["count"] == 2
     assert by_id["matrix-fused-vector-kg"]["holdout_pass_rate"] >= 0.5
     assert by_id["matrix-vector-only"]["split_summary"]["holdout"]["pass_rate"] < by_id[

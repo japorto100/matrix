@@ -329,6 +329,69 @@ SOURCE_PROVENANCE_CANARY = RetrievalCanary(
     tags=("source-grounding", "citation", "researchwatcher"),
 )
 
+URL_SOURCE_PROVENANCE_CANARY = RetrievalCanary(
+    id="url-source-provenance-001",
+    query="Which URL source supports the GraphRAG agentic-search paper note?",
+    mode="text",
+    question_class="source_provenance",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-arxiv-2604-09666-url",),
+        required_reference_metadata={
+            "chunk-arxiv-2604-09666-url": (
+                "source_artifact_id",
+                "source_uri",
+                "source_kind",
+                "fetch_method",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "parser_name",
+                "parser_version",
+                "chunker_name",
+            )
+        },
+        required_cited_reference_ids=("chunk-arxiv-2604-09666-url",),
+        generated_answer=(
+            "The arXiv 2604.09666 URL source says GraphRAG remains useful for "
+            "complex multi-hop agentic search [chunk-arxiv-2604-09666-url]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-arxiv-2604-09666-url",
+            "text": (
+                "The arXiv 2604.09666 URL source says agentic search narrows "
+                "the gap to GraphRAG, but GraphRAG remains useful for complex "
+                "multi-hop reasoning and stable behavior."
+            ),
+            "score": 0.93,
+            "source_uri": "https://arxiv.org/pdf/2604.09666",
+            "metadata": {
+                "source_artifact_id": "artifact-arxiv-2604-09666-url",
+                "source_uri": "https://arxiv.org/pdf/2604.09666",
+                "source_kind": "url",
+                "fetch_method": "http",
+                "chunk_id": "chunk-arxiv-2604-09666-url",
+                "chunk_index": 0,
+                "chunk_hash": "sha256:arxiv-2604-09666-url",
+                "citation_ref": (
+                    "https://arxiv.org/pdf/2604.09666"
+                    "#chunk=chunk-arxiv-2604-09666-url"
+                ),
+                "parser_name": "pymupdf4llm",
+                "parser_version": "2.0",
+                "chunker_name": "token",
+                "section": "agentic search",
+            },
+        },
+    ),
+    tags=("source-grounding", "citation", "url", "arxiv"),
+)
+
 SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
     id="holdout-simple-doc-001",
     query="What does the customs memo say about copper concentrate tariff status?",
@@ -403,6 +466,7 @@ DEFAULT_SEARCH_CANARIES = (
     TRADING_GEO_KG_CANARY,
     GENERAL_VECTOR_CANARY,
     SOURCE_PROVENANCE_CANARY,
+    URL_SOURCE_PROVENANCE_CANARY,
 )
 DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
 DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)
