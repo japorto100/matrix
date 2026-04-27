@@ -229,6 +229,11 @@ feature_id: 016
 - [x] T096j Use Meta-Harness runner-parity smoke after Feature 018 to expose
   and fix LiteLLM container DB routing: container DSN must use `postgres:5432`,
   not host-local `localhost:5433`.
+- T096k Add a Matrix-channel quality gate for Agent SSE error packets/fallback
+  answers. 2026-04-27 bridge live proof delivered `(keine Antwort)` after
+  `bridge.agent_client` logged `Agent error packet: None`; this is not a
+  Matrix delivery failure, but Meta-Harness should fail/score it as agent
+  quality until real assistant content is produced.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
 - [x] T098 Fix local dev-stack Python service activation so Meta-Harness can

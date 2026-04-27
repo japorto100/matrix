@@ -16,9 +16,9 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 001 | `001-platform-baseline` | baseline | Projektgrundlage, kein aktiver Slice |
 | 002 | `002-devstack-bootstrap-env-persistence` | static_done_live_open | Lokale Ops weitgehend erledigt; Postgres/Alembic/Bootstrap-Live-Evidence offen bzw. nachzuziehen |
 | 003 | `003-frontend-merger-shell` | static_done_live_open | Shell gebaut, aber Browser/Full-Stack-Live-Smoke offen |
-| 004 | `004-matrix-homeserver-connectivity` | active_monitoring | Externe Blocker/Monitoring, aber Basis fuer Matrix |
+| 004 | `004-matrix-homeserver-connectivity` | partial_local_live | Tuwunel, lokale `.well-known`, dev credential recovery und setup-users live verifiziert; Mobile/Tunnel/Federation bleiben offen |
 | 005 | `005-matrix-chat-core` | static_done_live_open | Matrix UI stark implementiert, aber echte Homeserver-Sitzung/E2EE/Media/Calls live offen |
-| 006 | `006-appservice-nats-e2ee-bridges` | static_verified_live_pending | Go/Python statisch verifiziert, A4 E2E offen |
+| 006 | `006-appservice-nats-e2ee-bridges` | unencrypted_live_verified_e2ee_open | Unverschlüsselter Matrix API -> Tuwunel -> Go -> NATS -> Python -> NATS -> Matrix Raum Pfad live grün; E2EE/Keys/Browser-Matrix offen |
 | 007 | `007-agent-chat-voice-runtime` | mixed_open | Agent Chat statisch verifiziert; Stack/Approval/Provenance live offen, Voice nicht vollständig implementiert/verifiziert |
 | 008 | `008-agentic-ui-generative-ui-mcp` | static_verified_live_pending | A2UI/Copilot/Python-Emitter statisch verifiziert, #93/#94/#95 entschieden |
 | 009 | `009-multi-agent-a2a-orchestration` | mixed_open | A2A-Client/AgentCards/Graph/Rollen statisch verifiziert; Delegation/Checkpoint/Per-User-Routing offen |

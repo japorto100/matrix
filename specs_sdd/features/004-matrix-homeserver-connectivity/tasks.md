@@ -1,6 +1,6 @@
 ---
 title: Matrix Homeserver, Connectivity and Mobile/Federation Tasks
-status: draft
+status: partial-local-live
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -31,5 +31,5 @@ migrated_from:
 ## Verify Gates
 
 - [x] Homeserver starts locally; devstack compose start-order still needs follow-up.
-- Client discovery works locally; LAN/mobile/tunnel discovery remains deferred.
+- [x] Client discovery works locally; LAN/mobile/tunnel discovery remains deferred.
 - [x] External blockers have owner/status/date.

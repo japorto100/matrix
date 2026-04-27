@@ -75,19 +75,23 @@ Purpose:
 
 Current status:
 
-- mostly static-done/live-open.
+- local backend/live Matrix runtime is now partially verified.
 - `004` remains active monitoring because upstream Tuwunel/Matrix/mobile items
-  can change.
-- `006` has the core Go/Python gateway shape, but A4 E2E and encrypted-room
-  proof remain closure blockers.
+  can change; local Tuwunel, `.well-known`, credential recovery and setup-users
+  now pass against the persisted dev volume.
+- `006` has an unencrypted live Matrix Client API -> Tuwunel -> Go appservice
+  -> NATS -> Python bridge/agent -> NATS reply -> Go appservice -> Matrix room
+  proof. Encrypted-room, key backup, cross-signing and browser/mobile proof
+  remain closure blockers.
 
 Next best work:
 
-- live-start Tuwunel/NATS/Go/Python bridge with dedicated Matrix containers.
-- verify Matrix UI login/room/timeline/send path.
-- verify Go appservice registration, inbound publish, Python bridge consume,
-  reply publish and Go send.
+- verify Matrix UI login/room/timeline/send path when browser render scope is
+  active.
+- execute encrypted-room Matrix bridge flow, key backup and key deletion gates.
 - verify Element X `.well-known` only when mobile/tunnel scope is active.
+- chase Python agent fallback `(keine Antwort)` through Agent/Harness quality
+  gates; bridge delivery is already proven.
 
 Research need:
 

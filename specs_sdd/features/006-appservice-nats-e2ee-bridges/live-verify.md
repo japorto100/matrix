@@ -1,6 +1,6 @@
 ---
 title: Appservice, NATS, E2EE and Bridges Live Verify
-status: draft
+status: unencrypted-live-pass-e2ee-open
 owner: filip
 created: 2026-04-25
 updated: 2026-04-27
@@ -46,7 +46,8 @@ feature_id: 006
 
 ## Result
 
-partial backend-only pass; Feature 006 is not closed.
+unencrypted live Matrix handoff pass; Feature 006 is not closed because
+encrypted-room, key backup, cross-signing and key-deletion gates remain open.
 
 ## Backend-Only Evidence 2026-04-27
 
@@ -70,11 +71,36 @@ Remaining full-live blockers:
 - This was not a "without stack" test. It used a real partial stack:
   `matrix-nats`, `python-bridge`, `python-agent`, `go-appservice` and
   Postgres. It did not use Tuwunel or a real Matrix client.
-- 2026-04-27 follow-up: Tuwunel and Garage were started and `/_matrix/client/versions`
-  plus local `.well-known` passed. Appservice registration still did not close:
-  `scripts/register-appservice.sh` failed because existing persisted
-  `@alice:matrix.local` rejects the expected dev password, and
-  `scripts/setup-users.sh` now exits nonzero when bootstrap/login fails.
-- Final Matrix room delivery still needs Tuwunel plus a real room/client.
+- 2026-04-27 follow-up: Tuwunel and Garage were started and
+  `/_matrix/client/versions` plus local `.well-known` passed. Persisted
+  `@alice`/`@bob` credentials were recovered through Tuwunel admin recovery,
+  `scripts/setup-users.sh` succeeded, and `scripts/register-appservice.sh`
+  accepted the admin token/password fallback.
 - E2EE decrypt/encrypt, cross-signing, key backup and key deletion gates remain
   open.
+
+## Full Unencrypted Evidence 2026-04-27
+
+- Stack status was green for `tuwunel`, `go-appservice`, `nats`,
+  `python-bridge`, `python-agent`, `postgres`, `valkey`, `garage`,
+  `litellm`, `sandbox` and `python-ingestion`.
+- Appservice health returned `{"status":"ok","service":"matrix-appservice",
+  "e2ee":"disabled"}`.
+- `scripts/register-appservice.sh` registered `trading-agent` after validating
+  Alice admin credentials.
+- Matrix Client API smoke created a private room, invited
+  `@agent-alice:matrix.local`, sent an Alice message, observed Go publish the
+  inbound event to NATS, let Python bridge/agent publish the reply, and then
+  found the reply in Matrix sync:
+  - `room_id`: `!q9zBX-Woqjq6SDFPfOEjWNV6m37zCgfTxgO6ui4rafk`
+  - `sent_event_id`: `$SO7kCxRFEyx6ZRy2JfTT5qYTnYY3SLxt2r4DEoFuVNE`
+  - `agent_reply_found`: `true`
+  - `agent_reply.event_id`: `$bqofG3Xk3-J0eq7arExjtwTdHj4RDWAy9HPNxHH52C4`
+- Bugs fixed during this pass:
+  - Go appservice now includes Matrix transaction IDs when sending agent
+    messages, avoiding `/_send/.../` 404s.
+  - Go appservice resolves DM replies to the joined room agent when no explicit
+    `@agent-*` mention exists, avoiding `@agent-bot` membership `M_FORBIDDEN`.
+- The Python agent currently returned fallback text `(keine Antwort)` because
+  the agent SSE emitted an error packet. That is an Agent/Harness quality gate,
+  not a Matrix bridge delivery failure.

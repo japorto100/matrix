@@ -42,8 +42,10 @@ partial local backend/live pass; browser/mobile/federation gates are not closed.
 - `./scripts/dev-stack.sh --tuwunel --storage=garage` timed out before manual
   recovery; this is tracked as a devstack orchestration/start-order issue, not
   as a Tuwunel runtime failure.
-- `scripts/setup-users.sh` failed against the existing persisted Tuwunel volume:
-  `@alice` and `@bob` exist but the expected dev passwords no longer match.
-  Appservice admin-command registration therefore remains blocked until the
-  persisted dev credentials are recovered or the Tuwunel dev volume is reset
-  intentionally.
+- Persisted `@alice` and `@bob` credentials were recovered without resetting the
+  Tuwunel volume: temporary Tuwunel admin recovery granted Alice admin and reset
+  Alice/Bob dev passwords. `scripts/setup-users.sh` then succeeded against the
+  existing volume.
+- Appservice admin-command registration is no longer blocked by credentials;
+  Feature 006 records the successful appservice registration and unencrypted
+  Matrix bridge proof.

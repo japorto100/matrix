@@ -1,6 +1,12 @@
 package handler
 
-import "testing"
+import (
+	"testing"
+
+	"matrix/go-appservice/internal/config"
+
+	"maunium.net/go/mautrix/id"
+)
 
 func TestExtractAgentNameSanitizesMention(t *testing.T) {
 	cases := []struct {
@@ -18,5 +24,25 @@ func TestExtractAgentNameSanitizesMention(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("extractAgentName(%q) = %q, want %q", tc.body, got, tc.want)
 		}
+	}
+}
+
+func TestTargetAgentForRoomUsesJoinedAgentMember(t *testing.T) {
+	roomID := id.RoomID("!room:matrix.local")
+	server := &Server{
+		cfg: &config.Config{
+			ServerName:  "matrix.local",
+			AgentPrefix: "agent-",
+		},
+		roomMembers: map[id.RoomID]map[id.UserID]bool{
+			roomID: {
+				id.UserID("@alice:matrix.local"):       true,
+				id.UserID("@agent-alice:matrix.local"): true,
+			},
+		},
+	}
+
+	if got := server.targetAgentForRoom(roomID); got != "alice" {
+		t.Fatalf("targetAgentForRoom() = %q, want alice", got)
 	}
 }

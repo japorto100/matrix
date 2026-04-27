@@ -617,6 +617,9 @@ func (s *Server) handleMessage(ctx context.Context, ev *event.Event) {
 
 	// exec-05c C2: Target-Agent aus Mention extrahieren
 	targetAgent := extractAgentName(content.Body, s.cfg.AgentPrefix)
+	if targetAgent == "" {
+		targetAgent = s.targetAgentForRoom(ev.RoomID)
+	}
 
 	// exec-05c C4: Thread-Kontext erkennen
 	threadID := ""
@@ -696,6 +699,11 @@ func (s *Server) handleMembership(ctx context.Context, ev *event.Event) {
 			agentID := id.UserID(stateKey)
 			if err := s.agent.JoinRoom(ctx, agentID, ev.RoomID); err != nil {
 				slog.Error("auto-join failed", "agent", agentID, "room", ev.RoomID, "error", err)
+			} else {
+				if s.roomMembers[ev.RoomID] == nil {
+					s.roomMembers[ev.RoomID] = make(map[id.UserID]bool)
+				}
+				s.roomMembers[ev.RoomID][agentID] = true
 			}
 		}
 	}
@@ -822,6 +830,21 @@ func (s *Server) shouldForwardToAgent(roomID id.RoomID, content *event.MessageEv
 	}
 
 	return false
+}
+
+// targetAgentForRoom resolves the DM agent when the user did not type an
+// explicit @agent-* mention. That keeps Python bridge replies on the same
+// virtual Matrix user that was invited into the room.
+func (s *Server) targetAgentForRoom(roomID id.RoomID) string {
+	for userID := range s.roomMembers[roomID] {
+		user := userID.String()
+		if !isAgentUser(user, s.cfg.ServerName, s.cfg.AgentPrefix) {
+			continue
+		}
+		localpart := strings.SplitN(strings.TrimPrefix(user, "@"), ":", 2)[0]
+		return agentintent.SanitizeAgentName(strings.TrimPrefix(localpart, s.cfg.AgentPrefix))
+	}
+	return ""
 }
 
 // extractAgentName extrahiert den Agent-Namen aus einer @agent-* Mention.

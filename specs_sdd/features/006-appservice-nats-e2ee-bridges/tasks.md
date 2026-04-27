@@ -1,6 +1,6 @@
 ---
 title: Appservice, NATS, E2EE and Bridges Tasks
-status: partial_live_backend_verified_not_closed
+status: unencrypted_live_verified_e2ee_open
 owner: filip
 created: 2026-04-25
 updated: 2026-04-27
@@ -32,25 +32,28 @@ that pass.
 
 - [x] T010 Run Go build/tests with `goolm`/E2EE tags where applicable
   (`go test -tags goolm ./...`).
-- T011 Verify appservice registration handshake with homeserver.
+- [x] T011 [done-live] Verify appservice registration handshake with homeserver.
 - T012 Verify Go message filter: DMs always forward; groups forward only
   mention/reply/trigger where `MENTION_ONLY_IN_GROUPS=true`.
-- T013 Verify Go publishes inbound event on `matrix.message.inbound`.
+- [x] T013 [done-live] Verify Go publishes inbound event on `matrix.message.inbound`.
 - [x] T014 [done-live-backend-only] Verify Python NATS subscriber consumes inbound
   message and calls agent HTTP/SSE endpoint.
 - [x] T015 [done-live-backend-only] Verify Python publishes reply on
   `matrix.message.reply`.
-- T016 [partial-live-backend] Verify Go receives reply and sends Matrix message
-  as agent intent. Go receives the reply and attempts send; final Matrix send
-  still needs homeserver live because Tuwunel was intentionally not started in
-  this backend-only pass.
+- [x] T016 [done-live-unencrypted] Verify Go receives reply and sends Matrix
+  message as agent intent. 2026-04-27: fixed Matrix send transaction IDs and
+  DM target-agent resolution; `@agent-alice:matrix.local` reply reached the
+  live Tuwunel room through Go appservice.
 - [x] T017 Add/static-test Python reply thread metadata propagation from
   inbound `thread_id` to reply `thread_root_id`.
 - [x] T018 Static-lint Python bridge/agent/voice code with ruff.
 
 ## E2EE
 
-- T020 Execute A4 unencrypted E2E handoff test.
+- [x] T020 [done-live-unencrypted] Execute A4 unencrypted E2E handoff test.
+  2026-04-27: Matrix Client API -> Tuwunel -> Go appservice -> NATS ->
+  Python bridge/agent -> NATS reply -> Go appservice -> Matrix room completed
+  without browser render.
 - T021 Execute encrypted room E2E handoff test.
 - T022 Verify Go decrypts `m.room.encrypted` event.
 - T023 Verify Go encrypts response in E2EE room.
@@ -103,5 +106,5 @@ that pass.
 - Go appservice starts.
 - NATS message path works.
 - Encrypted Matrix message can traverse appservice -> NATS -> Python.
-- Reply path works or is explicitly deferred.
+- [x] Reply path works for unencrypted live Matrix rooms.
 - Subject isolation/key deletion are verified or clearly deferred.

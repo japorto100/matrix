@@ -13,6 +13,9 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 HS="${MATRIX_HOMESERVER_URL:-http://localhost:8448}"
 YAML="$REPO/homeserver/appservices/registration.yaml"
 [ ! -f "$YAML" ] && YAML="$REPO/homeserver/registration.yaml"
+ADMIN_USER="${MATRIX_ADMIN_USER:-alice}"
+ADMIN_PASSWORD="${MATRIX_ADMIN_PASSWORD:-alice-dev-password-2026}"
+ADMIN_TOKEN="${MATRIX_ADMIN_ACCESS_TOKEN:-${MATRIX_ACCESS_TOKEN:-}}"
 
 log()  { printf "\033[36m[register-as]\033[0m %s\n" "$*"; }
 ok()   { printf "\033[32m[register-as]\033[0m %s\n" "$*"; }
@@ -21,21 +24,51 @@ die()  { printf "\033[31m[register-as] ERROR: %s\033[0m\n" "$*" >&2; exit 1; }
 
 [ ! -f "$YAML" ] && die "registration.yaml nicht gefunden in homeserver/"
 
-# Alice muss existieren (setup-users.sh vorher gelaufen) und admin sein
-ALICE_TOKEN=$(curl -sSf -X POST "$HS/_matrix/client/v3/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"type":"m.login.password","identifier":{"type":"m.id.user","user":"alice"},"password":"alice-dev-password-2026"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])" 2>/dev/null) || \
-  die "alice-login failed (setup-users.sh schon gelaufen?)"
+load_env_token() {
+  local env_file="$REPO/frontend_merger/.env.local"
+  [ -n "$ADMIN_TOKEN" ] && return 0
+  [ ! -f "$env_file" ] && return 0
+  ADMIN_TOKEN=$(grep -E '^MATRIX_ACCESS_TOKEN=' "$env_file" | tail -1 | cut -d= -f2-)
+}
 
-log "alice logged in"
+login_admin() {
+  curl -sSf -X POST "$HS/_matrix/client/v3/login" \
+    -H 'Content-Type: application/json' \
+    -d "$(python3 - "$ADMIN_USER" "$ADMIN_PASSWORD" <<'PY'
+import json
+import sys
 
-# Alice's admin-room finden
-ADMIN_ROOM=$(curl -sSf -H "Authorization: Bearer ${ALICE_TOKEN}" "$HS/_matrix/client/v3/joined_rooms" \
+print(json.dumps({
+    "type": "m.login.password",
+    "identifier": {"type": "m.id.user", "user": sys.argv[1]},
+    "password": sys.argv[2],
+}))
+PY
+)" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])" 2>/dev/null
+}
+
+validate_token() {
+  curl -sSf -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+    "$HS/_matrix/client/v3/account/whoami" >/dev/null
+}
+
+# Admin user muss existieren und im Tuwunel-Admin-Room sein.
+load_env_token
+if [ -n "$ADMIN_TOKEN" ] && validate_token; then
+  log "$ADMIN_USER token accepted"
+else
+  ADMIN_TOKEN=$(login_admin) || \
+    die "$ADMIN_USER login failed. Set MATRIX_ADMIN_ACCESS_TOKEN or refresh frontend_merger/.env.local via setup-users.sh."
+  log "$ADMIN_USER logged in"
+fi
+
+# Admin-room finden
+ADMIN_ROOM=$(curl -sSf -H "Authorization: Bearer ${ADMIN_TOKEN}" "$HS/_matrix/client/v3/joined_rooms" \
   | python3 -c "import sys,json; [print(r) for r in json.load(sys.stdin).get('joined_rooms',[])]" \
   | head -1)
 
-[ -z "$ADMIN_ROOM" ] && die "alice is in no admin room (is she first-user-admin?)"
+[ -z "$ADMIN_ROOM" ] && die "$ADMIN_USER is in no admin room (is this the first-user-admin?)"
 log "admin room: $ADMIN_ROOM"
 
 send_admin() {
@@ -43,7 +76,7 @@ send_admin() {
   local txn="t$(date +%s%N)"
   local body_json
   body_json=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$body")
-  curl -sSf -X PUT -H "Authorization: Bearer ${ALICE_TOKEN}" -H 'Content-Type: application/json' \
+  curl -sSf -X PUT -H "Authorization: Bearer ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
     -d "{\"msgtype\":\"m.text\",\"body\":${body_json}}" \
     "$HS/_matrix/client/v3/rooms/${ADMIN_ROOM}/send/m.room.message/${txn}" >/dev/null || \
     warn "send failed"
@@ -56,7 +89,7 @@ wait_reply() {
   while [ $i -lt $timeout ]; do
     sleep 1
     local latest
-    latest=$(curl -sSf -H "Authorization: Bearer ${ALICE_TOKEN}" \
+    latest=$(curl -sSf -H "Authorization: Bearer ${ADMIN_TOKEN}" \
       "$HS/_matrix/client/v3/rooms/${ADMIN_ROOM}/messages?limit=3&dir=b" \
       | python3 -c "import sys,json; [print(e.get('content',{}).get('body','')) for e in json.load(sys.stdin).get('chunk',[]) if e.get('sender','').startswith('@conduit')]" 2>/dev/null \
       | head -5)
