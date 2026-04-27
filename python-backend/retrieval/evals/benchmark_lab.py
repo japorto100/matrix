@@ -71,6 +71,14 @@ MATRIX_FUSED = RetrievalCandidate(
     },
 )
 DEFAULT_MATRIX_CANDIDATES = (MATRIX_VECTOR_ONLY, MATRIX_KG_ONLY, MATRIX_FUSED)
+REQUIRED_CANDIDATE_METADATA = (
+    "source_corpus",
+    "parser_version",
+    "chunker_version",
+    "embedding_model",
+    "embedding_dimension",
+    "kg_projection_version",
+)
 
 
 def _sources(hits: list[dict[str, Any]] | None) -> set[str]:
@@ -107,6 +115,22 @@ def _ndcg_at(ranked_ids: list[str], relevant_ids: set[str], k: int) -> float | N
     return dcg / ideal if ideal else 0.0
 
 
+def metadata_compatibility(candidate: RetrievalCandidate) -> dict[str, Any]:
+    """Check if a candidate can be compared under source-grounded RAG gates."""
+    missing = [
+        key
+        for key in REQUIRED_CANDIDATE_METADATA
+        if candidate.metadata.get(key) in (None, "")
+    ]
+    failures = [f"missing-candidate-metadata:{key}" for key in missing]
+    return {
+        "passed": not failures,
+        "required_keys": list(REQUIRED_CANDIDATE_METADATA),
+        "missing_keys": missing,
+        "failures": failures,
+    }
+
+
 async def evaluate_candidate(
     canary: RetrievalCanary,
     candidate: RetrievalCandidate,
@@ -130,7 +154,8 @@ async def evaluate_candidate(
     sources = _sources(result.hits)
     ranked_ids = _ranked_reference_ids(result.references)
     relevant = set(canary.expectation.required_reference_ids)
-    failures: list[str] = []
+    compatibility = metadata_compatibility(candidate)
+    failures: list[str] = list(compatibility["failures"])
 
     if result.degraded and canary.expectation.must_not_degrade:
         failures.append(f"degraded:{','.join(result.degraded_reasons or [])}")
@@ -152,6 +177,7 @@ async def evaluate_candidate(
         "intent": result.intent,
         "degraded": result.degraded,
         "degraded_reasons": result.degraded_reasons or [],
+        "metadata_compatibility": compatibility,
         "sources": sorted(sources),
         "ranked_reference_ids": ranked_ids,
         f"recall@{k}": _recall_at(ranked_ids, relevant, k),
@@ -183,6 +209,7 @@ async def compare_candidates(
             )
             for canary in canaries
         ]
+        compatibility = metadata_compatibility(candidate)
         recall_values = [
             result[f"recall@{k}"] for result in results if result[f"recall@{k}"] is not None
         ]
@@ -197,6 +224,7 @@ async def compare_candidates(
                 "include_vector": candidate.include_vector,
                 "include_kg": candidate.include_kg,
                 "metadata": candidate.metadata,
+                "metadata_compatibility": compatibility,
                 "count": len(results),
                 "passed": passed,
                 "pass_rate": round(passed / max(len(results), 1), 4),

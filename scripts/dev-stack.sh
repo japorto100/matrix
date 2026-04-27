@@ -41,7 +41,7 @@
 #   --tunnel                     cloudflared quick (trycloudflare.com)
 #   --tunnel-named               cloudflared named (braucht Token in .env)
 #   --observability              openobserve + otel-collector + postgres-exporter
-#   --valkey                     Redis-fork Cache
+#   --valkey                     Matrix-local Redis-fork Cache (:16379 default)
 #   --pgbouncer                  Postgres connection pooler
 #   --falkordb                   KG-Backend A (exec-memory)
 #   --nornic                     KG-Backend B (exec-memory)
@@ -258,7 +258,7 @@ PORT_LIVEKIT=7880
 PORT_LK_JWT=8082
 PORT_COTURN=3478
 PORT_OPENOBSERVE=5080
-PORT_VALKEY=6379
+PORT_VALKEY=${VALKEY_HOST_PORT:-16379}
 PORT_PGBOUNCER=6432
 PORT_FALKORDB=6380
 PORT_NORNIC=7474
@@ -277,6 +277,12 @@ die()  { printf "\033[31m[%s] ERROR: %s\033[0m\n" "$(date +%H:%M:%S)" "$*" >&2; 
 have() { command -v "$1" >/dev/null 2>&1; }
 
 port_up() { nc -z 127.0.0.1 "$1" 2>/dev/null; }
+container_up() { podman ps --format "{{.Names}}" 2>/dev/null | grep -qx "$1"; }
+service_up() {
+  local port=$1 expected_container=${2:-}
+  port_up "$port" || return 1
+  [ -z "$expected_container" ] || container_up "$expected_container"
+}
 
 wait_for_port() {
   local port=$1 name=${2:-:$1} timeout=${3:-30} i=0
@@ -441,6 +447,7 @@ compose_up() {
     "TUWUNEL_CONFIG=${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}"
     "NATS_HOST_PORT=${PORT_NATS}"
     "NATS_MONITOR_PORT=${PORT_NATS_MONITOR}"
+    "VALKEY_HOST_PORT=${PORT_VALKEY}"
   )
 
   if [ ${#default_svcs[@]} -gt 0 ]; then
@@ -480,9 +487,16 @@ if $STATUS_MODE; then
     [python-bridge]=$PORT_BRIDGE [python-ingestion]=$PORT_INGESTION
     [frontend-merger]=$PORT_MERGER
   )
+  declare -A SVC_CONTAINER=(
+    [tuwunel]=tuwunel [nats]=matrix-nats [postgres]=matrix-postgres
+    [seaweedfs]=seaweedfs [garage]=garage [litellm]=litellm
+    [sandbox]=opensandbox-api-gateway [livekit]=livekit [lk-jwt]=lk-jwt
+    [coturn]=coturn [openobserve]=openobserve [valkey]=matrix-valkey
+    [pgbouncer]=pgbouncer [falkordb]=falkordb [nornic]=nornic
+  )
   for svc in "${!SVC_PORT[@]}"; do
     p=${SVC_PORT[$svc]}
-    if port_up "$p"; then
+    if service_up "$p" "${SVC_CONTAINER[$svc]:-}"; then
       printf "  \033[32m✓\033[0m %-18s :%-5s\n" "$svc" "$p"
     fi
   done
@@ -731,7 +745,25 @@ for p in $PORT_TUWUNEL $PORT_NATS $PORT_POSTGRES $PORT_GARAGE_S3 $PORT_SEAWEED_S
          $PORT_COTURN $PORT_OPENOBSERVE $PORT_VALKEY $PORT_PGBOUNCER \
          $PORT_FALKORDB $PORT_NORNIC $PORT_GO $PORT_AGENT $PORT_BRIDGE \
          $PORT_INGESTION $PORT_MERGER; do
-  if port_up "$p"; then
+  expected_container=""
+  case "$p" in
+    "$PORT_TUWUNEL") expected_container=tuwunel ;;
+    "$PORT_NATS") expected_container=matrix-nats ;;
+    "$PORT_POSTGRES") expected_container=matrix-postgres ;;
+    "$PORT_GARAGE_S3") expected_container=garage ;;
+    "$PORT_SEAWEED_S3") expected_container=seaweedfs ;;
+    "$PORT_LITELLM") expected_container=litellm ;;
+    "$PORT_SANDBOX") expected_container=opensandbox-api-gateway ;;
+    "$PORT_LIVEKIT") expected_container=livekit ;;
+    "$PORT_LK_JWT") expected_container=lk-jwt ;;
+    "$PORT_COTURN") expected_container=coturn ;;
+    "$PORT_OPENOBSERVE") expected_container=openobserve ;;
+    "$PORT_VALKEY") expected_container=matrix-valkey ;;
+    "$PORT_PGBOUNCER") expected_container=pgbouncer ;;
+    "$PORT_FALKORDB") expected_container=falkordb ;;
+    "$PORT_NORNIC") expected_container=nornic ;;
+  esac
+  if service_up "$p" "$expected_container"; then
     printf "  \033[32m✓\033[0m :%-5s  %s\n" "$p" "${LBL[$p]}"
   fi
 done

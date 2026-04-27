@@ -40,6 +40,9 @@ feature_id: 018
   Matrix's `5433` to prevent runner collisions.
 - T027 [done-live] Add missing runtime-owned `agent.user_agent_settings`
   migration and regenerate schema inventory after `alembic upgrade head`.
+- T028 [done-live] Verify cache/persistence helpers do not reuse another
+  project's Redis/Valkey port: Matrix Valkey is `matrix-valkey` on `16379`,
+  with generated Python Redis defaults updated accordingly.
 
 ## Feature 017 Integration
 

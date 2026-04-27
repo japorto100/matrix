@@ -21,7 +21,7 @@
 #   --profile prod        → Container-Builds fuer Go/Python/Next.js + coturn (full-container Mode)
 #   --profile merger      → frontend_merger als Container (:3003)
 #   --profile calls        → livekit-server + lk-jwt-service + coturn (Video/Voice-Calls)
-#   --profile cache        → valkey (Redis-BSD-Fork, :6379)
+#   --profile cache        → matrix-valkey (Redis-BSD-Fork, :16379)
 #   --profile tunnel       → cloudflared quick-tunnel (free, wechselnde *.trycloudflare.com URL)
 #   --profile tunnel-named → cloudflared named-tunnel (paid/CF-Account, custom domain)
 #   --profile observability → OpenObserve + OTel-Collector (logs/metrics/traces UI :5080)
@@ -226,9 +226,9 @@ services:
   # podman-compose --profile cache up -d valkey
   valkey:
     image: valkey/valkey:8-alpine
-    container_name: valkey
+    container_name: matrix-valkey
     ports:
-      - "6379:6379"
+      - "${VALKEY_HOST_PORT:-16379}:6379"
     volumes:
       - valkey-data:/data
     command: ["valkey-server", "--appendonly", "yes"]
@@ -512,7 +512,7 @@ services:
     image: falkordb/falkordb:latest
     container_name: falkordb
     ports:
-      - "6380:6379"   # Redis-Protocol (6380 um Konflikt mit valkey zu vermeiden)
+      - "6380:6379"   # Redis-Protocol (6380 um Konflikt mit matrix-valkey zu vermeiden)
       - "3000:3000"   # FalkorDB Web UI
     volumes:
       - falkordb-data:/data

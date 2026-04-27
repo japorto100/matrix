@@ -29,10 +29,16 @@ feature_id: 021
     `ingestion.source_artifacts` with source URI/kind/fetch method, content
     hash, MIME, parser/chunker/embedding metadata and JSON metadata.
   - Remaining: license/source-policy and explicit citation rows.
-- T011 Define citation/provenance metadata for papers, URLs, filings, API
-  payloads and local docs.
-- T012 Keep raw artifacts immutable; derived chunks, embeddings and KG
-  proposals are rebuildable projections.
+- T011 [done-static] Define citation/provenance metadata for papers, URLs,
+  filings, API payloads and local docs.
+  - 2026-04-27: `DocumentPipeline` now attaches `source_artifact` and
+    per-chunk `chunk_metadata` with source URI, parser/version, content hash,
+    chunk hash, section/page fields and `citation_ref`.
+- T012 [done-static] Keep raw artifacts immutable; derived chunks, embeddings
+  and KG proposals are rebuildable projections.
+  - 2026-04-27: source artifacts remain durable provenance rows; chunk IDs and
+    citation refs are deterministic projections from artifact id, chunk index
+    and chunk text.
 - T013 [done] Add Alembic-backed schema changes if new persistent artifact
   fields are needed; do not create ad hoc schema-only Python tables.
   - 2026-04-27: source artifact registry added through Alembic and
@@ -45,9 +51,16 @@ feature_id: 021
   - 2026-04-27: `ingestion.cli ingest-file` now supports local files without
     SeaweedFS/Go via `DocumentPipeline.run_local_path`.
   - Remaining: URL/arXiv/API connectors and durable source artifact registry.
-- T021 Implement parser registry with explicit parser/version metadata.
-- T022 Implement chunking contract with deterministic chunk ids and citation
-  refs.
+- T021 [done-static] Implement parser registry with explicit parser/version
+  metadata.
+  - 2026-04-27: selected extractor name and document schema version flow into
+    `source_artifacts` and per-chunk metadata for both local-file and
+    Matrix-file document paths.
+- T022 [done-static] Implement chunking contract with deterministic chunk ids
+  and citation refs.
+  - 2026-04-27: document chunks receive stable IDs of
+    `<artifact-prefix>-<chunk-index>-<chunk-hash-prefix>` before embedding and
+    sink writes; Hindsight metadata now carries the same source/citation refs.
 - T023 Wire remote embedding provider config from Feature 019; local HF model
   downloads remain opt-in and use `HF_HOME=/mnt/cold-storage/models/huggingface`.
 - T024 Emit KG `ClaimProposal` objects for extraction outputs, but do not
@@ -75,10 +88,12 @@ feature_id: 021
 
 ## Verification
 
-- T030 [partial-done] Unit-test artifact id/hash stability.
+- T030 [done-static] Unit-test artifact id/hash stability.
   - 2026-04-27: local ingestion test verifies stable local `file_id`, chunk
     hash manifest write and no storage-service dependency.
-- T031 Unit-test chunk/source/citation refs.
+- T031 [done-static] Unit-test chunk/source/citation refs.
+  - 2026-04-27: local ingestion test asserts stable chunk id prefix,
+    `source_artifact_id`, `source_uri` and `citation_ref`.
 - T032 Unit-test optional KG proposal evidence refs.
 - T033 [done] Live-smoke local paper ingestion using
   `docs/papers/knowledgegraph/Do We Still Need GraphRAG Benchmarking RAG and GraphRAG for Agentic Search Systems arXiv 2604.09666.md`.

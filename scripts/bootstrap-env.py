@@ -273,6 +273,7 @@ VECTOR_STORE_PROVIDER=chroma
 VECTOR_STORE_PATH=./data/chroma
 VECTOR_STORE_MOCK=true
 MEMORY_CACHE_PROVIDER=local
+PYTHON_REDIS_URL=redis://127.0.0.1:16379/0
 
 # ─── Ingestion Pipeline ────────────────────────────────────────────────────
 INGESTION_HOST=127.0.0.1

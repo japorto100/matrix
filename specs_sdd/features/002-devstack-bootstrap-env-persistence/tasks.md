@@ -27,6 +27,12 @@ migrated_from:
   `4222/8222` is not reused accidentally.
 - [x] T009 [done-static] After port/service changes, update local env files and
   `scripts/bootstrap-env.py` defaults in the same pass.
+- [x] T010 [done-live] Keep Matrix Valkey isolated from other projects:
+  `matrix-valkey` uses `matrix_valkey-data` on host `16379`, so Geomap or
+  other Redis/Valkey containers on `6379` are not counted as Matrix cache.
+- [x] T011 [done-static-live-smoke] Make `scripts/dev-stack.sh --status`
+  require the expected Matrix container for compose-owned services instead of
+  trusting open host ports alone.
 
 ## Verify Gates
 
@@ -35,4 +41,6 @@ migrated_from:
 - Alembic head is reachable when Postgres is running. Deferred to live/operator verify.
 - [x] Matrix-NATS host port is owned by `matrix-nats`, not a foreign project
   container.
+- [x] Matrix-Valkey host port is owned by `matrix-valkey`, not a foreign
+  project container.
 - [x] Env examples match documented service roles.

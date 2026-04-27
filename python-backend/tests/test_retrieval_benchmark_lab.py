@@ -8,6 +8,7 @@ from retrieval.evals.benchmark_lab import (
     MATRIX_FUSED,
     MATRIX_KG_ONLY,
     MATRIX_VECTOR_ONLY,
+    RetrievalCandidate,
     compare_candidates,
     write_benchmark_report,
 )
@@ -32,6 +33,25 @@ async def test_compare_candidates_reports_vector_kg_and_fused_tradeoffs() -> Non
     assert by_id["matrix-kg-only"]["recall@5"] < by_id["matrix-fused-vector-kg"]["recall@5"]
     assert by_id["matrix-vector-only"]["results"][0]["passed"] is False
     assert by_id["matrix-kg-only"]["results"][1]["passed"] is False
+    assert by_id["matrix-fused-vector-kg"]["metadata_compatibility"]["passed"] is True
+
+
+@pytest.mark.asyncio
+async def test_compare_candidates_fails_missing_source_grounding_metadata() -> None:
+    candidate = RetrievalCandidate(
+        id="weak-baseline",
+        mode="text",
+        include_vector=True,
+        include_kg=False,
+        metadata={"source_corpus": "test"},
+    )
+
+    report = await compare_candidates([GENERAL_VECTOR_CANARY], candidates=(candidate,), k=5)
+    result = report["candidates"][0]["results"][0]
+
+    assert report["candidates"][0]["metadata_compatibility"]["passed"] is False
+    assert result["passed"] is False
+    assert "missing-candidate-metadata:parser_version" in result["failures"]
 
 
 @pytest.mark.asyncio

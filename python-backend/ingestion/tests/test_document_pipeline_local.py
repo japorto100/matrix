@@ -167,10 +167,20 @@ async def test_run_local_path_ingests_markdown_without_storage_services(tmp_path
     assert sink.doc.doc_id == str(job.file_id)
     assert len(sink.chunks) >= 1
     assert len(sink.embeddings) == len(sink.chunks)
+    assert sink.chunks[0].id.startswith(job.file_id.hex[:12])
+    assert "source_artifact" in job.metadata
+    assert "chunk_metadata" in job.metadata
+    first_chunk_meta = job.metadata["chunk_metadata"][sink.chunks[0].id]
+    assert first_chunk_meta["source_artifact_id"] == str(job.file_id)
+    assert first_chunk_meta["source_uri"] == f"file://{source.resolve()}"
+    assert first_chunk_meta["citation_ref"].startswith(
+        f"file://{source.resolve()}#chunk={sink.chunks[0].id}"
+    )
     assert source_artifacts.rows[0]["source_artifact_id"] == job.file_id
     assert source_artifacts.rows[0]["source_uri"] == f"file://{source.resolve()}"
     assert source_artifacts.rows[0]["content_hash"] == "doc-hash"
     assert source_artifacts.rows[0]["mime_type"] == "text/markdown"
+    assert source_artifacts.rows[0]["metadata"]["source_artifact_id"] == str(job.file_id)
     assert tracker.saved_doc_id == str(job.file_id)
     assert len(tracker.saved_chunks) == len(sink.chunks)
     assert audit.events[-1]["action"] == "INGESTION_LOCAL_FILE"

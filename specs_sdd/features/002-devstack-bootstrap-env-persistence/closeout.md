@@ -3,7 +3,7 @@ title: Devstack Bootstrap, Env and Persistence Ops Closeout
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 002
 ---
 
@@ -21,6 +21,12 @@ feature_id: 002
 - Tuwunel appservice registration helper exists in
   `scripts/register-appservice.sh`.
 - Root, frontend, Go appservice and Python backend env examples exist.
+- Matrix-local NATS, Postgres and Valkey are isolated by container name,
+  host port and named volume: `matrix-nats` on `14222/18222`,
+  `matrix-postgres` on `5433`, and `matrix-valkey` on `16379`.
+- `scripts/dev-stack.sh --status` checks expected Matrix container ownership
+  for compose-owned services, avoiding false-positive health from another
+  project's open port.
 - `exec-19` is no longer a single active execution plan. Its contents are split
   across Feature 002, Feature 003, Feature 011 and research backlog.
 
@@ -28,7 +34,8 @@ feature_id: 002
 
 - No automatic full secret generation/rotation pipeline is closed here.
 - No always-on env validator is implemented.
-- Alembic/DB reachability is not proven without a running local Postgres.
+- Full operator bootstrap from a clean machine still needs an intentional
+  end-to-end run.
 
 ## Deviations From Plan
 
@@ -43,11 +50,15 @@ feature_id: 002
 - PASS: `podman compose -f docker-compose.yml config`
 - PASS: required env examples are present for root compose, frontend, Go
   appservice and Python backend.
+- PASS: `matrix-valkey` runs on `:16379` and responds to `valkey-cli ping`;
+  foreign Valkey on `:6379` is no longer reported as Matrix cache.
+- PASS: `matrix-postgres` exposes pgvector after container restart and
+  `dev-stack --status` reports it only when the Matrix container owns `:5433`.
 
 ## Live Verify Result
 
-Deferred per current work order. Operator bootstrap, Alembic reachability and
-end-to-end local stack startup remain in `live-verify.md`.
+Partially executed on 2026-04-27. Matrix NATS/Postgres/Valkey ownership is
+live-proven. Full user-facing Matrix/chat bootstrap remains in `live-verify.md`.
 
 ## Follow-Ups
 

@@ -43,6 +43,9 @@ feature_id: 022
     `retrieval_benchmark.json` and `verdicts.json`; missing keys fail the
     candidate verdict. Smoke run `run-rag-metadata-compat-smoke` passed
     metadata compatibility for vector-only, KG-only and fused candidates.
+  - 2026-04-27: benchmark-level candidate evaluation now also fails individual
+    results when required metadata is missing, so weak baselines cannot pass
+    before artifact writing.
 
 ## Metrics
 

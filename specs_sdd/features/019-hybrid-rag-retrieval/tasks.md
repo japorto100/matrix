@@ -61,15 +61,24 @@ feature_id: 019
   retrieval.
 - T035 Use Feature 023 inner-loop outputs as retrieval candidates, but require
   Feature 022 holdout/Meta-Harness evidence before promotion.
-- T036 Add hierarchy-aware chunking and metadata-enriched retrieval as first
-  class candidates; do not compare graph methods only against weak naive
-  chunking baselines.
+- T036 [partial-static] Add hierarchy-aware chunking and metadata-enriched
+  retrieval as first class candidates; do not compare graph methods only
+  against weak naive chunking baselines.
+  - 2026-04-27: ingestion now emits deterministic chunk IDs and source/citation
+    metadata that retrieval candidates can require. Retrieval ranking itself
+    still needs to consume these fields in Feature 019/022.
 - T037 Add source-grounding baseline order for implementation: strong
   parser/chunker/citation pipeline first, Matrix vector baseline second,
   Matrix fused vector+KG third, external LightRAG/HippoRAG adapters fourth.
-- T038 Require every retrieval candidate to declare source artifact version,
-  parser version, chunking config, embedding model/dimension and KG projection
-  version before Feature 022 scores are comparable.
+- T038 [done-static] Require every retrieval candidate to declare source
+  artifact version, parser version, chunking config, embedding model/dimension
+  and KG projection version before Feature 022 scores are comparable.
+  - 2026-04-27: ingestion source artifact and chunk metadata now include the
+    source/parser/chunker/embedding fields; benchmark adapters still need to
+    fail candidates that omit them.
+  - 2026-04-27: `retrieval.evals.benchmark_lab` now emits
+    `metadata_compatibility` and marks candidate results failed when required
+    source-grounding metadata is missing.
 
 ## Verification
 
