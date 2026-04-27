@@ -17,12 +17,20 @@ def proposals_from_extraction(
 ) -> list[ClaimProposal]:
     """Convert extracted relations into explicit KG claim proposals."""
 
+    if result.skipped:
+        return []
+
     entity_by_id = {entity.id: entity for entity in result.entities}
     entity_by_label = {entity.label: entity for entity in result.entities}
     proposals: list[ClaimProposal] = []
     claim_valid_from = valid_from or datetime.now(UTC)
 
     for relation in result.relations:
+        source_ref = (relation.doc_id or result.doc_id).strip()
+        evidence_quote = relation.evidence.strip()
+        if not source_ref or not evidence_quote:
+            continue
+
         subject = entity_by_id.get(relation.subject) or entity_by_label.get(
             relation.subject
         )
@@ -31,9 +39,9 @@ def proposals_from_extraction(
             continue
         evidence = EvidenceRef(
             source_layer=source_layer,
-            source_ref=relation.doc_id or result.doc_id,
+            source_ref=source_ref,
             source_uri=source_uri,
-            quote=relation.evidence or None,
+            quote=evidence_quote,
             metadata={
                 "extractor": result.extractor,
                 "subject_entity_id": relation.subject,

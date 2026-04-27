@@ -56,6 +56,9 @@ feature_id: 017
   once per batch, `last_accessed` is populated, and claim cleanup cascades.
 - `kg_pipeline.sinks.global_kg` has unit tests for extraction-result to
   `ClaimProposal` mapping with evidence refs and NornicDB projection payloads.
+- `kg_pipeline.sinks.global_kg` now refuses skipped extraction results and
+  relations without both a source ref and evidence quote, preventing raw
+  tool/output blobs from becoming global KG claims without provenance.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is
   guarded and reports degraded state if the global KG store is unavailable.
 - Meta-Harness Feature 016 now includes

@@ -107,8 +107,8 @@ feature_id: 017
 ## Verification
 
 - T040 [partial-static] Unit-test bitemporal insert/correction/query semantics.
-- T041 Unit-test no raw tool output is promoted to KG without explicit claim
-  extraction and source refs.
+- T041 [done-static] Unit-test no raw tool output is promoted to KG without
+  explicit claim extraction and source refs.
 - T042 [partial-static-live-smoke] Unit-test decay ranking with stale, recently
   accessed and expired-valid claims.
 - T043 Live-smoke one evidence -> proposed claim -> promoted claim -> KG recall
