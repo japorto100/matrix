@@ -34,6 +34,10 @@ feature_id: 019
   retrieved with `search_claims(..., query_embedding=...)` despite no lexical
   overlap, and returned with `semantic_similarity`, decay-adjusted
   `final_score`, provenance and metadata.
+- KG hits now carry Feature-017 context metadata through the Feature-019
+  adapter: compact graph path, source refs, subject/object ids and lane/status/
+  confidence metadata. This is unit-tested and live-smoked through Postgres via
+  the global-KG store tests.
 - Added deterministic canaries for the two immediate eval boundaries:
   `trading-geo-kg-001` requires fused vector+KG evidence, while
   `general-vector-001` verifies simple document QA stays vector-only.

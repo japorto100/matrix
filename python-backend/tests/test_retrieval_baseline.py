@@ -122,6 +122,8 @@ def test_kg_claim_adapter_normalizes_rows() -> None:
                 "status": "promoted",
                 "predicate": "SANCTIONED_BY",
                 "path": ["EU", "SANCTIONED_BY", "Russia"],
+                "source_refs": [{"source_layer": "world_evidence", "source_ref": "doc-1"}],
+                "context_metadata": {"confidence": 0.91, "freshness_anchor": "2026-04-01"},
             }
         ]
     )
@@ -130,6 +132,8 @@ def test_kg_claim_adapter_normalizes_rows() -> None:
     assert hits[0].source == "kg"
     assert hits[0].score == 0.91
     assert hits[0].metadata["path"] == ["EU", "SANCTIONED_BY", "Russia"]
+    assert hits[0].metadata["source_refs"][0]["source_ref"] == "doc-1"
+    assert hits[0].metadata["context_metadata"]["confidence"] == 0.91
 
 
 @pytest.mark.asyncio

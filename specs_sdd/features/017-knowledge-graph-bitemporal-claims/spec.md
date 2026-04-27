@@ -133,6 +133,9 @@ to Feature 019:
 
 - KG retrieval for canonical entities, bitemporal claims and short paths.
 - graph context as compact explanatory paths, not full subgraphs.
+- selected claims can be expanded through `GlobalKGStore.expand_claim_context`
+  into subject/object identity, path, evidence refs and context metadata without
+  requiring a live graph backend projection.
 - entity signatures as merge candidates, with review for ambiguous nodes.
 - embedding/version metadata for rollback and eval comparisons.
 

@@ -30,10 +30,19 @@ feature_id: 017
   `ClaimProposal.metadata.embedding` and pgvector KNN candidate retrieval via
   `search_claims(..., query_embedding=..., embedding_model=...)`, with lexical
   fallback when no vector candidates exist.
+- KG claim rows now expose answer-time context metadata for Feature 019:
+  compact `[subject, predicate, object]` paths, subject/object identity,
+  evidence/source refs, status, lane, confidence, valid period and freshness
+  anchor.
+- `GlobalKGStore.expand_claim_context(claim_id)` is implemented for the
+  in-memory and Postgres stores so fused retrieval can expand a selected KG
+  claim without loading a large graph neighborhood.
 - Postgres smoke on 2026-04-27:
-  `GLOBAL_KG_DB_URL=postgresql://postgres:postgres@localhost:5433/hindsight_dev .venv/bin/python -m pytest tests/test_global_kg_store.py tests/test_retrieval_baseline.py -q`
-  => `19 passed`; this inserted a synthetic 3D test claim, retrieved it through
-  pgvector despite no lexical overlap, and cleaned up the claim row.
+  `.venv/bin/python -m pytest tests/test_global_kg_store.py tests/test_retrieval_baseline.py -q`
+  with `GLOBAL_KG_DB_URL` exported from local `.env` credentials => `22
+  passed`; this inserted a synthetic 3D test claim, retrieved it through
+  pgvector despite no lexical overlap, verified compact KG path/source-ref
+  output plus `expand_claim_context`, and cleaned up the claim row.
 - `kg_pipeline.sinks.global_kg` has unit tests for extraction-result to
   `ClaimProposal` mapping with evidence refs and NornicDB projection payloads.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is

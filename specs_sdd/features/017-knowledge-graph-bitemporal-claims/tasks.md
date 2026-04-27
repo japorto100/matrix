@@ -43,22 +43,22 @@ feature_id: 017
   signals.
 - T013 Store access telemetry in event/stats tables, not as per-query hot
   updates on claim rows.
-- T014 Add answer-time KG context metadata: status, freshness, confidence and
-  provenance refs.
+- T014 [done-static-live-smoke] Add answer-time KG context metadata: status,
+  freshness, confidence and provenance refs.
 - T015 Define vector chunk metadata contract: `chunk_id`, `source_uri`,
   `embedding_version`, ingest timestamp, TTL/validity metadata and candidate
   entity signatures.
-- T016 [partial-static] Expose KG entity/claim/path expansion API for Feature
-  019 fused retrieval.
+- T016 [done-static-live-smoke] Expose KG entity/claim/path expansion API for
+  Feature 019 fused retrieval.
 - T017 [done-static] Define deterministic KG candidate ordering before Feature
   019 fusion.
 - T018 Coordinate optional cross-encoder/MMR hooks with Feature 019.
-- T019 Add KG context output for compact graph paths plus claim/source
-  attribution.
-- T019a Add lane-aware retrieval policy: Fast Lane favors freshness and temporal
-  decay; Slow Lane favors stability/confidence and GraphMERT/adjudication
-  status; Intelligence/current-context stays outside KG retrieval unless
-  explicitly requested as runtime context.
+- T019 [done-static-live-smoke] Add KG context output for compact graph paths
+  plus claim/source attribution.
+- T019a [partial-static-live-smoke] Add lane-aware retrieval policy: Fast Lane
+  favors freshness and temporal decay; Slow Lane favors stability/confidence
+  and GraphMERT/adjudication status; Intelligence/current-context stays outside
+  KG retrieval unless explicitly requested as runtime context.
 
 ## Memory/KG Boundary
 

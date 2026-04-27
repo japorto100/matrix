@@ -23,6 +23,10 @@ def kg_claim_rows_to_hits(rows: list[dict[str, Any]]) -> list[RetrievalHit]:
             "valid_period": row.get("valid_period"),
             "provenance": row.get("provenance"),
             "path": row.get("path"),
+            "source_refs": row.get("source_refs"),
+            "context_metadata": row.get("context_metadata"),
+            "subject": row.get("subject"),
+            "object": row.get("object"),
             **(row.get("metadata") if isinstance(row.get("metadata"), dict) else {}),
         }
         score = row.get("final_score", row.get("score", row.get("confidence", 0.0)))

@@ -21,6 +21,7 @@ class GlobalKGStore(Protocol):
         query_embedding: Sequence[float] | None = None,
         embedding_model: str | None = None,
     ) -> list[dict[str, Any]]: ...
+    def expand_claim_context(self, claim_id: str, *, limit: int = 5) -> dict[str, Any] | None: ...
     def status(self) -> dict[str, Any]: ...
 
 
@@ -58,6 +59,13 @@ class InMemoryGlobalKGStore:
             rows.append(_proposal_to_row(proposal, final_score=score))
         rows.sort(key=lambda row: row["final_score"], reverse=True)
         return rows[: max(1, min(limit, 20))]
+
+    def expand_claim_context(self, claim_id: str, *, limit: int = 5) -> dict[str, Any] | None:
+        del limit
+        proposal = self._claims.get(claim_id)
+        if proposal is None:
+            return None
+        return _proposal_context(proposal)
 
     def status(self) -> dict[str, Any]:
         return {"status": "ready", "provider": "memory", "count": len(self._claims)}
@@ -219,8 +227,42 @@ class PostgresGlobalKGStore:
                                ELSE upper(c.valid_period)::text
                            END,
                            s.last_accessed,
+                           jsonb_build_object(
+                               'subject', jsonb_build_object(
+                                   'entity_id', sub.entity_id,
+                                   'canonical_key', sub.canonical_key,
+                                   'entity_type', sub.entity_type,
+                                   'name', COALESCE(sub.names->>0, sub.canonical_key)
+                               ),
+                               'object', jsonb_build_object(
+                                   'entity_id', obj.entity_id,
+                                   'canonical_key', obj.canonical_key,
+                                   'entity_type', obj.entity_type,
+                                   'name', COALESCE(obj.names->>0, c.object_value::text),
+                                   'value', c.object_value
+                               ),
+                               'path', jsonb_build_array(
+                                   COALESCE(sub.names->>0, sub.canonical_key),
+                                   c.predicate,
+                                   COALESCE(obj.names->>0, c.object_value::text)
+                               ),
+                               'evidence', COALESCE((
+                                   SELECT jsonb_agg(jsonb_build_object(
+                                       'evidence_id', e.evidence_id,
+                                       'source_layer', e.source_layer,
+                                       'source_ref', e.source_ref,
+                                       'source_uri', e.source_uri,
+                                       'content_hash', e.content_hash,
+                                       'quote', e.quote
+                                   ) ORDER BY e.created_at)
+                                   FROM agent.kg_claim_evidence e
+                                   WHERE e.claim_id = c.claim_id
+                               ), '[]'::jsonb)
+                           ) AS context,
                            1 - (c.embedding <=> %s::vector) AS semantic_similarity
                     FROM agent.kg_claims c
+                    JOIN agent.kg_entities sub ON sub.entity_id = c.subject_entity_id
+                    LEFT JOIN agent.kg_entities obj ON obj.entity_id = c.object_entity_id
                     LEFT JOIN agent.kg_claim_access_stats s ON s.claim_id = c.claim_id
                     WHERE c.sys_to = 'infinity'::timestamptz
                       AND c.status IN ('proposed', 'promoted')
@@ -239,7 +281,7 @@ class PostgresGlobalKGStore:
                 )
                 rows = cur.fetchall()
         now = datetime.now(UTC)
-        scored = [_row_to_claim_hit(row, now=now, semantic_index=12) for row in rows]
+        scored = [_row_to_claim_hit(row, now=now, semantic_index=13) for row in rows]
         scored.sort(key=lambda row: row["final_score"], reverse=True)
         return scored[:limit]
 
@@ -255,8 +297,42 @@ class PostgresGlobalKGStore:
                                WHEN upper(c.valid_period)::text = 'infinity' THEN NULL
                                ELSE upper(c.valid_period)::text
                            END,
-                           s.last_accessed
+                           s.last_accessed,
+                           jsonb_build_object(
+                               'subject', jsonb_build_object(
+                                   'entity_id', sub.entity_id,
+                                   'canonical_key', sub.canonical_key,
+                                   'entity_type', sub.entity_type,
+                                   'name', COALESCE(sub.names->>0, sub.canonical_key)
+                               ),
+                               'object', jsonb_build_object(
+                                   'entity_id', obj.entity_id,
+                                   'canonical_key', obj.canonical_key,
+                                   'entity_type', obj.entity_type,
+                                   'name', COALESCE(obj.names->>0, c.object_value::text),
+                                   'value', c.object_value
+                               ),
+                               'path', jsonb_build_array(
+                                   COALESCE(sub.names->>0, sub.canonical_key),
+                                   c.predicate,
+                                   COALESCE(obj.names->>0, c.object_value::text)
+                               ),
+                               'evidence', COALESCE((
+                                   SELECT jsonb_agg(jsonb_build_object(
+                                       'evidence_id', e.evidence_id,
+                                       'source_layer', e.source_layer,
+                                       'source_ref', e.source_ref,
+                                       'source_uri', e.source_uri,
+                                       'content_hash', e.content_hash,
+                                       'quote', e.quote
+                                   ) ORDER BY e.created_at)
+                                   FROM agent.kg_claim_evidence e
+                                   WHERE e.claim_id = c.claim_id
+                               ), '[]'::jsonb)
+                           ) AS context
                     FROM agent.kg_claims c
+                    JOIN agent.kg_entities sub ON sub.entity_id = c.subject_entity_id
+                    LEFT JOIN agent.kg_entities obj ON obj.entity_id = c.object_entity_id
                     LEFT JOIN agent.kg_claim_access_stats s ON s.claim_id = c.claim_id
                     WHERE c.sys_to = 'infinity'::timestamptz
                       AND c.status IN ('proposed', 'promoted')
@@ -270,6 +346,71 @@ class PostgresGlobalKGStore:
         now = datetime.now(UTC)
         return [_row_to_claim_hit(row, now=now, semantic_index=None) for row in rows]
 
+    def expand_claim_context(self, claim_id: str, *, limit: int = 5) -> dict[str, Any] | None:
+        safe_limit = max(1, min(limit, 20))
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT c.claim_id, c.claim_text, c.predicate, c.lane, c.status,
+                           c.confidence, c.valid_period::text, c.provenance,
+                           c.metadata, lower(c.valid_period)::text,
+                           CASE
+                               WHEN upper(c.valid_period)::text = 'infinity' THEN NULL
+                               ELSE upper(c.valid_period)::text
+                           END,
+                           s.last_accessed,
+                           jsonb_build_object(
+                               'subject', jsonb_build_object(
+                                   'entity_id', sub.entity_id,
+                                   'canonical_key', sub.canonical_key,
+                                   'entity_type', sub.entity_type,
+                                   'name', COALESCE(sub.names->>0, sub.canonical_key)
+                               ),
+                               'object', jsonb_build_object(
+                                   'entity_id', obj.entity_id,
+                                   'canonical_key', obj.canonical_key,
+                                   'entity_type', obj.entity_type,
+                                   'name', COALESCE(obj.names->>0, c.object_value::text),
+                                   'value', c.object_value
+                               ),
+                               'path', jsonb_build_array(
+                                   COALESCE(sub.names->>0, sub.canonical_key),
+                                   c.predicate,
+                                   COALESCE(obj.names->>0, c.object_value::text)
+                               ),
+                               'evidence', COALESCE((
+                                   SELECT jsonb_agg(jsonb_build_object(
+                                       'evidence_id', e.evidence_id,
+                                       'source_layer', e.source_layer,
+                                       'source_ref', e.source_ref,
+                                       'source_uri', e.source_uri,
+                                       'content_hash', e.content_hash,
+                                       'quote', e.quote
+                                   ) ORDER BY e.created_at)
+                                   FROM (
+                                       SELECT *
+                                       FROM agent.kg_claim_evidence
+                                       WHERE claim_id = c.claim_id
+                                       ORDER BY created_at
+                                       LIMIT %s
+                                   ) e
+                               ), '[]'::jsonb)
+                           ) AS context
+                    FROM agent.kg_claims c
+                    JOIN agent.kg_entities sub ON sub.entity_id = c.subject_entity_id
+                    LEFT JOIN agent.kg_entities obj ON obj.entity_id = c.object_entity_id
+                    LEFT JOIN agent.kg_claim_access_stats s ON s.claim_id = c.claim_id
+                    WHERE c.claim_id = %s
+                      AND c.sys_to = 'infinity'::timestamptz
+                    """,
+                    (safe_limit, claim_id),
+                )
+                row = cur.fetchone()
+        if row is None:
+            return None
+        return _row_to_claim_context(row)
+
     def status(self) -> dict[str, Any]:
         try:
             with self._connect() as conn:
@@ -282,6 +423,7 @@ class PostgresGlobalKGStore:
 
 
 def _proposal_to_row(proposal: ClaimProposal, *, final_score: float) -> dict[str, Any]:
+    context = _proposal_context(proposal)
     return {
         "claim_id": proposal.claim_id,
         "claim_text": proposal.claim_text,
@@ -295,7 +437,59 @@ def _proposal_to_row(proposal: ClaimProposal, *, final_score: float) -> dict[str
         },
         "provenance": [e.evidence_id for e in proposal.evidence],
         "metadata": proposal.metadata,
+        "path": context["path"],
+        "source_refs": context["source_refs"],
+        "context_metadata": context["context_metadata"],
         "final_score": final_score,
+    }
+
+
+def _proposal_context(proposal: ClaimProposal) -> dict[str, Any]:
+    subject_name = proposal.subject.name or proposal.subject.key
+    object_name = (
+        proposal.object_entity.name
+        if proposal.object_entity and proposal.object_entity.name
+        else proposal.object_entity.key
+        if proposal.object_entity
+        else str(proposal.object_value)
+    )
+    evidence = [
+        {
+            "evidence_id": evidence.evidence_id,
+            "source_layer": evidence.source_layer,
+            "source_ref": evidence.source_ref,
+            "source_uri": evidence.source_uri,
+            "content_hash": evidence.content_hash,
+            "quote": evidence.quote,
+        }
+        for evidence in proposal.evidence
+    ]
+    return {
+        "claim_id": proposal.claim_id,
+        "claim_text": proposal.claim_text,
+        "path": [subject_name, proposal.predicate, object_name],
+        "subject": {
+            "entity_id": proposal.subject.entity_id,
+            "canonical_key": proposal.subject.key,
+            "entity_type": proposal.subject.entity_type,
+            "name": proposal.subject.name,
+        },
+        "object": {
+            "entity_id": proposal.object_entity.entity_id if proposal.object_entity else None,
+            "canonical_key": proposal.object_entity.key if proposal.object_entity else None,
+            "entity_type": proposal.object_entity.entity_type if proposal.object_entity else None,
+            "name": proposal.object_entity.name if proposal.object_entity else None,
+            "value": proposal.object_value,
+        },
+        "source_refs": evidence,
+        "context_metadata": {
+            "lane": proposal.lane,
+            "status": proposal.status,
+            "confidence": proposal.confidence,
+            "valid_from": proposal.valid_from.isoformat(),
+            "valid_to": proposal.valid_to.isoformat() if proposal.valid_to else None,
+            "freshness_anchor": proposal.valid_from.isoformat(),
+        },
     }
 
 
@@ -316,6 +510,16 @@ def _row_to_claim_hit(
         last_accessed=row[11],
         valid_to=_parse_timestamptz(row[10]),
     )
+    context = row[12] if len(row) > 12 and isinstance(row[12], dict) else {}
+    context_metadata = {
+        "lane": row[3],
+        "status": row[4],
+        "confidence": float(row[5] or 0.0),
+        "valid_period": row[6],
+        "valid_from": row[9],
+        "valid_to": row[10],
+        "freshness_anchor": row[11] or row[9],
+    }
     return {
         "claim_id": row[0],
         "claim_text": row[1],
@@ -326,8 +530,29 @@ def _row_to_claim_hit(
         "valid_period": row[6],
         "provenance": row[7] or [],
         "metadata": row[8] or {},
+        "path": context.get("path"),
+        "source_refs": context.get("evidence", []),
+        "subject": context.get("subject"),
+        "object": context.get("object"),
+        "context_metadata": context_metadata,
         "semantic_similarity": semantic_similarity,
         "final_score": final_score,
+    }
+
+
+def _row_to_claim_context(row: Sequence[Any]) -> dict[str, Any]:
+    hit = _row_to_claim_hit(row, now=datetime.now(UTC), semantic_index=None)
+    return {
+        "claim_id": hit["claim_id"],
+        "claim_text": hit["claim_text"],
+        "predicate": hit["predicate"],
+        "path": hit.get("path"),
+        "subject": hit.get("subject"),
+        "object": hit.get("object"),
+        "source_refs": hit.get("source_refs", []),
+        "context_metadata": hit["context_metadata"],
+        "provenance": hit["provenance"],
+        "metadata": hit["metadata"],
     }
 
 

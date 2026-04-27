@@ -30,6 +30,8 @@ feature_id: 017
 - KG answer context exposes status, freshness, confidence and evidence refs.
 - Large graph neighborhoods are summarized into short paths before prompt
   insertion.
+- A selected claim can be expanded through the KG store API into a compact path
+  and source refs before the generator sees it.
 
 ## Boundary Gates
 

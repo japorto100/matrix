@@ -36,7 +36,25 @@ def test_in_memory_global_kg_store_roundtrip() -> None:
     assert rows[0]["claim_id"] == claim_id
     assert rows[0]["predicate"] == "SANCTIONED_BY"
     assert rows[0]["final_score"] > 0
+    assert rows[0]["path"] == ["European Union", "SANCTIONED_BY", "Russia"]
+    assert rows[0]["source_refs"][0]["source_ref"] == "doc-1"
     assert store.status()["count"] == 1
+
+
+def test_in_memory_global_kg_expands_claim_context() -> None:
+    store = InMemoryGlobalKGStore()
+    claim_id = store.propose_claim(_proposal())
+
+    context = store.expand_claim_context(claim_id)
+
+    assert context is not None
+    assert context["claim_id"] == claim_id
+    assert context["path"] == ["European Union", "SANCTIONED_BY", "Russia"]
+    assert context["subject"]["canonical_key"] == "european:union"
+    assert context["object"]["canonical_key"] == "russia"
+    assert context["context_metadata"]["status"] == "proposed"
+    assert context["context_metadata"]["confidence"] == 0.8
+    assert context["source_refs"][0]["source_ref"] == "doc-1"
 
 
 def test_create_global_kg_store_mock(monkeypatch) -> None:
@@ -107,8 +125,19 @@ def test_postgres_global_kg_vector_search_roundtrip() -> None:
         )
         assert rows
         assert rows[0]["claim_id"] == claim_id
+        assert rows[0]["path"] == [
+            f"Vector Test Subject {suffix}",
+            "AFFECTS",
+            f"Vector Test Object {suffix}",
+        ]
+        assert rows[0]["source_refs"][0]["source_ref"] == f"vector-test-{suffix}"
         assert rows[0]["semantic_similarity"] == pytest.approx(1.0)
         assert rows[0]["final_score"] > 0.9
+
+        context = store.expand_claim_context(claim_id)
+        assert context is not None
+        assert context["path"] == rows[0]["path"]
+        assert context["context_metadata"]["lane"] == "fast"
     finally:
         with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
             with conn.cursor() as cur:
