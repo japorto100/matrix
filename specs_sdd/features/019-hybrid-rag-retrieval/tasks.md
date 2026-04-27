@@ -57,7 +57,7 @@ feature_id: 019
 - T031 Test HippoRAG2 as associative memory/multi-hop baseline.
 - T032 Track LinearRAG for relation-free graph construction.
 - T033 Track E2GraphRAG for efficient graph+tree construction.
-- T034 Use GraphRAG-Bench/RAGSearch style comparison before defaulting graph
+- T034 [partial-static] Use GraphRAG-Bench/RAGSearch style comparison before defaulting graph
   retrieval.
 
 ## Verification
@@ -70,3 +70,5 @@ feature_id: 019
 - T043 [done-static] Canary: trading/geopolitical multi-hop question where KG should improve
   retrieval stability.
 - T044 [done-static] Canary: simple/general QA where dense retrieval should remain enough.
+- T045 [done-static] Aggregate retrieval canaries with Recall@k, nDCG@k and
+  pass-rate metrics before larger RAGChecker/RAGAS/GraphRAG-Bench runs.

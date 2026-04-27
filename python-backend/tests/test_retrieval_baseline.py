@@ -9,6 +9,7 @@ from retrieval.evals.canaries import (
     GENERAL_VECTOR_CANARY,
     TRADING_GEO_KG_CANARY,
     evaluate_canary,
+    evaluate_canary_set,
 )
 from retrieval.rerankers.rrf import reciprocal_rank_fusion
 from retrieval.searchers.kg_claims import kg_claim_hits, kg_claim_rows_to_hits
@@ -283,3 +284,16 @@ async def test_general_qa_canary_stays_vector_only() -> None:
     assert verdict["passed"] is True
     assert verdict["intent"] == "text"
     assert verdict["sources"] == ["vector"]
+
+
+@pytest.mark.asyncio
+async def test_canary_set_reports_recall_and_ndcg() -> None:
+    report = await evaluate_canary_set(
+        [TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY],
+        k=5,
+    )
+
+    assert report["count"] == 2
+    assert report["pass_rate"] == 1.0
+    assert report["recall@5"] == 1.0
+    assert report["ndcg@5"] >= 0.8

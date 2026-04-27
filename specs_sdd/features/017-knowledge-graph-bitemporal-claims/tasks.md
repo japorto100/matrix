@@ -115,11 +115,11 @@ feature_id: 017
   path.
 - T044 [done-static] Unit-test vector/KG RRF fusion, attribution and selected
   KG-claim access telemetry from Feature 019.
-- T045 Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
+- T045 [partial-static] Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
 - T046 [done-static] Verify global KG retrieval is not used as an agent-memory
   rail unless a scenario explicitly requests world/domain KG context.
-- T047 Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
+- T047 [partial-static] Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
   under matched query, context, model and retrieval budgets; implementation
   owner is Feature 019, KG claim/path source owner is Feature 017.
 - T048 Add multi-hop trading/geopolitical canaries where global KG/nonicdb is

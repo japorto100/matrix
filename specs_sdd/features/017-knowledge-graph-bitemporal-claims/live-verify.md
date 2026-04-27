@@ -71,6 +71,10 @@ feature_id: 017
   metadata contract for fused retrieval: chunk id, source URI, embedding
   model/version/dimension, ingest timestamp, TTL, validity window and entity
   signatures. `vector_search_hits(...)` normalizes rows through this contract.
+- Feature 019 canary aggregation now reports pass rate, Recall@k and nDCG@k
+  over small hybrid retrieval canaries. This is the first static slice of the
+  RAGSearch-style matched-budget comparison; answer faithfulness and latency
+  remain larger follow-up metrics.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is
   guarded and reports degraded state if the global KG store is unavailable.
 - Meta-Harness Feature 016 now includes

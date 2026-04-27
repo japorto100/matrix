@@ -8,6 +8,7 @@ real benchmark set is still small.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import log2
 from typing import Any
 
 from retrieval.api import retrieve
@@ -59,7 +60,8 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
         kg_hits=list(canary.kg_hits),
     )
     sources = _observed_sources(result.hits)
-    reference_ids = {str(ref.get("id")) for ref in result.references or []}
+    ranked_reference_ids = [str(ref.get("id")) for ref in result.references or []]
+    reference_ids = set(ranked_reference_ids)
 
     failures: list[str] = []
     if result.intent != canary.expectation.intent:
@@ -86,8 +88,45 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
         "degraded": result.degraded,
         "degraded_reasons": result.degraded_reasons or [],
         "sources": sorted(sources),
+        "ranked_reference_ids": ranked_reference_ids,
         "reference_ids": sorted(reference_ids),
         "hit_count": len(result.hits or []),
+    }
+
+
+async def evaluate_canary_set(
+    canaries: tuple[RetrievalCanary, ...] | list[RetrievalCanary],
+    *,
+    k: int = 5,
+) -> dict[str, Any]:
+    """Aggregate deterministic retrieval canaries with Recall@k and nDCG@k."""
+
+    results = [await evaluate_canary(canary) for canary in canaries]
+    recall_values: list[float] = []
+    ndcg_values: list[float] = []
+    for canary, result in zip(canaries, results, strict=True):
+        relevant = set(canary.expectation.required_reference_ids)
+        if not relevant:
+            continue
+        ranked = [str(ref_id) for ref_id in result["ranked_reference_ids"][:k]]
+        found = [ref_id for ref_id in ranked if ref_id in relevant]
+        recall_values.append(len(set(found)) / len(relevant))
+        dcg = sum(
+            1.0 / log2(rank + 2)
+            for rank, ref_id in enumerate(ranked)
+            if ref_id in relevant
+        )
+        ideal = sum(1.0 / log2(rank + 2) for rank in range(min(len(relevant), k)))
+        ndcg_values.append(dcg / ideal if ideal else 0.0)
+
+    passed = sum(1 for result in results if result["passed"])
+    return {
+        "count": len(results),
+        "passed": passed,
+        "pass_rate": round(passed / max(len(results), 1), 4),
+        f"recall@{k}": round(sum(recall_values) / max(len(recall_values), 1), 4),
+        f"ndcg@{k}": round(sum(ndcg_values) / max(len(ndcg_values), 1), 4),
+        "results": results,
     }
 
 

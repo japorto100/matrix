@@ -53,6 +53,9 @@ feature_id: 019
   `trading-geo-kg-001` requires fused vector+KG evidence, while
   `general-vector-001` verifies simple document QA stays vector-only.
   Covered by `tests/test_retrieval_baseline.py`.
+- Canary sets now aggregate pass rate, Recall@k and nDCG@k via
+  `evaluate_canary_set(...)`, giving a small RAGSearch-style regression gate
+  before larger benchmark integrations.
 - Retrieval reports `KG_SEARCH_FAILED`/`VECTOR_SEARCH_FAILED` as degraded
   reasons instead of raising through the agent path when an adapter is offline.
 - OpenRouter embedding behavior is unit-tested with a mocked
