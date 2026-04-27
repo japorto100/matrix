@@ -81,6 +81,19 @@ feature_id: 017
   `data/harness/global_kg_boundaries/scenarios.json`, which statically verifies
   the global KG/nonicdb boundary against personal memory routes and silent KG
   promotion.
+- `GlobalKGStore.correct_claim(...)` now implements append-only bitemporal
+  correction semantics without lossy valid-period truncation: current
+  overlapping claims for the same conflict key are system-time closed
+  (`sys_to=now()`), marked `superseded`, and the corrected claim is inserted as
+  the only current version.
+- `GlobalKGStore.list_claim_versions(conflict_key)` exposes historical and
+  current versions for audit/review. Unit and Postgres smoke tests verify that
+  superseded claims remain visible in version history but are excluded from
+  current `search_claims(...)` retrieval.
+- Postgres correction smoke with local `.env` credentials on 2026-04-27:
+  `HINDSIGHT_DB_URL=... .venv/bin/alembic upgrade head && .venv/bin/python -m pytest tests/test_global_kg_store.py tests/test_kg_claim_migration_static.py -q`
+  => `12 passed`; this verified correction history, current-truth filtering,
+  pgvector claim retrieval, schema constraints and cleanup.
 
 ## Live Stack
 

@@ -27,7 +27,7 @@ feature_id: 017
   Memory-Fusion, Personal KB and World Evidence refs.
 - T004 [done-static] Define conflict key semantics beyond a single
   `entity_key`.
-- T005 Decide whether overlap handling is append-only query logic or explicit
+- T005 [done-static] Decide whether overlap handling is append-only query logic or explicit
   split-on-insert; do not use lossy truncation triggers.
 - T006 [partial-static] Add Wisdom/validation fields or companion tables for adjudication state:
   validation method, validator version, plausibility score, contradiction refs,
@@ -70,7 +70,7 @@ feature_id: 017
 - T022 Keep personal memory, Hindsight KG-like memory, MemPalace loci, Personal
   KB and global/world KG namespaces separate in write policy and degradation
   flags.
-- T023 Add correction scenarios where old KG claims remain historically
+- T023 [done-static-live-smoke] Add correction scenarios where old KG claims remain historically
   visible but are not retrieved as current truth.
 
 ## GraphMERT / Wisdom Validation
@@ -106,7 +106,7 @@ feature_id: 017
 
 ## Verification
 
-- T040 [partial-static] Unit-test bitemporal insert/correction/query semantics.
+- T040 [done-static-live-smoke] Unit-test bitemporal insert/correction/query semantics.
 - T041 [done-static] Unit-test no raw tool output is promoted to KG without
   explicit claim extraction and source refs.
 - T042 [partial-static-live-smoke] Unit-test decay ranking with stale, recently

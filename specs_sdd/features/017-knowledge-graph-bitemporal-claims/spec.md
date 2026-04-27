@@ -118,6 +118,10 @@ Adopt:
 - pgvector embeddings on claim text or canonical relation text.
 - decay scoring during retrieval, not hard deletion.
 - separate access telemetry for recency/access signals.
+- explicit correction flow: close overlapping current system versions and mark
+  them `superseded`, then insert the corrected claim as a new current version.
+  Historical rows remain queryable for audit, while retrieval filters current
+  truth to `sys_to = infinity` and active statuses.
 
 Do not adopt blindly:
 

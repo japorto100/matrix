@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import os
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
@@ -13,6 +14,8 @@ from memory_engine.global_kg import ClaimProposal, decay_score
 
 class GlobalKGStore(Protocol):
     def propose_claim(self, proposal: ClaimProposal) -> str: ...
+    def correct_claim(self, proposal: ClaimProposal) -> str: ...
+    def list_claim_versions(self, conflict_key: str) -> list[dict[str, Any]]: ...
     def search_claims(
         self,
         query: str,
@@ -31,11 +34,48 @@ class InMemoryGlobalKGStore:
 
     def __init__(self) -> None:
         self._claims: dict[str, ClaimProposal] = {}
+        self._versions: dict[str, list[ClaimProposal]] = {}
         self._access_counts: dict[str, int] = {}
 
     def propose_claim(self, proposal: ClaimProposal) -> str:
         self._claims[proposal.claim_id] = proposal
+        versions = self._versions.setdefault(proposal.conflict_key, [])
+        if all(version.claim_id != proposal.claim_id for version in versions):
+            versions.append(proposal)
         return proposal.claim_id
+
+    def correct_claim(self, proposal: ClaimProposal) -> str:
+        for claim_id, current in list(self._claims.items()):
+            if current.conflict_key != proposal.conflict_key:
+                continue
+            if not _periods_overlap(
+                current.valid_from,
+                current.valid_to,
+                proposal.valid_from,
+                proposal.valid_to,
+            ):
+                continue
+            superseded = replace(current, status="superseded")
+            self._claims.pop(claim_id, None)
+            versions = self._versions.setdefault(current.conflict_key, [])
+            for idx, version in enumerate(versions):
+                if version.claim_id == claim_id:
+                    versions[idx] = superseded
+                    break
+            else:
+                versions.append(superseded)
+        return self.propose_claim(proposal)
+
+    def list_claim_versions(self, conflict_key: str) -> list[dict[str, Any]]:
+        versions = self._versions.get(conflict_key, [])
+        return [
+            {
+                **_proposal_to_row(version, final_score=0.0),
+                "conflict_key": version.conflict_key,
+                "is_current": version.claim_id in self._claims,
+            }
+            for version in versions
+        ]
 
     def search_claims(
         self,
@@ -100,103 +140,74 @@ class PostgresGlobalKGStore:
 
         with self._connect() as conn:
             with conn.cursor() as cur:
-                for entity in [proposal.subject, proposal.object_entity]:
-                    if entity is None:
-                        continue
-                    cur.execute(
-                        """
-                        INSERT INTO agent.kg_entities (
-                            entity_id, canonical_key, entity_type, names, aliases,
-                            provenance, metadata, updated_at
-                        )
-                        VALUES (%s, %s, %s, %s, '[]'::jsonb, '[]'::jsonb, '{}'::jsonb, now())
-                        ON CONFLICT (canonical_key) DO UPDATE SET
-                            entity_type = EXCLUDED.entity_type,
-                            names = EXCLUDED.names,
-                            updated_at = now()
-                        """,
-                        (
-                            entity.entity_id,
-                            entity.key,
-                            entity.entity_type,
-                            Json([entity.name] if entity.name else []),
-                        ),
-                    )
+                _insert_claim(cur, proposal, json_factory=Json)
+        return proposal.claim_id
 
-                embedding_literal, embedding_dim, embedding_model = _claim_embedding(proposal.metadata)
+    def correct_claim(self, proposal: ClaimProposal) -> str:
+        from psycopg.types.json import Json
+
+        with self._connect() as conn:
+            with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO agent.kg_claims (
-                        claim_id, conflict_key, subject_entity_id, predicate,
-                        object_entity_id, object_value, claim_text, lane, status,
-                        confidence, valid_period, embedding, embedding_model,
-                        embedding_dim, provenance, metadata
-                    )
-                    VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        tstzrange(%s, COALESCE(%s, 'infinity'::timestamptz), '[)'),
-                        %s::vector, %s, %s, %s, %s
-                    )
-                    ON CONFLICT (claim_id) DO NOTHING
+                    UPDATE agent.kg_claims
+                    SET sys_to = now(),
+                        status = 'superseded',
+                        metadata = jsonb_set(
+                            COALESCE(metadata, '{}'::jsonb),
+                            '{superseded_by}',
+                            to_jsonb(%s::text),
+                            true
+                        )
+                    WHERE conflict_key = %s
+                      AND sys_to = 'infinity'::timestamptz
+                      AND status IN ('proposed', 'promoted')
+                      AND valid_period && tstzrange(
+                          %s,
+                          COALESCE(%s, 'infinity'::timestamptz),
+                          '[)'
+                      )
                     """,
                     (
                         proposal.claim_id,
                         proposal.conflict_key,
-                        proposal.subject.entity_id,
-                        proposal.predicate,
-                        proposal.object_entity.entity_id if proposal.object_entity else None,
-                        Json(proposal.object_value) if proposal.object_value is not None else None,
-                        proposal.claim_text,
-                        proposal.lane,
-                        proposal.status,
-                        proposal.confidence,
                         proposal.valid_from,
                         proposal.valid_to,
-                        embedding_literal,
-                        embedding_model,
-                        embedding_dim,
-                        Json([e.evidence_id for e in proposal.evidence]),
-                        Json(proposal.metadata),
                     ),
                 )
+                _insert_claim(cur, proposal, json_factory=Json)
+        return proposal.claim_id
 
-                for evidence in proposal.evidence:
-                    cur.execute(
-                        """
-                        INSERT INTO agent.kg_claim_evidence (
-                            evidence_id, claim_id, source_layer, source_ref,
-                            source_uri, content_hash, quote, metadata
-                        )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (evidence_id) DO NOTHING
-                        """,
-                        (
-                            evidence.evidence_id,
-                            proposal.claim_id,
-                            evidence.source_layer,
-                            evidence.source_ref,
-                            evidence.source_uri,
-                            evidence.content_hash,
-                            evidence.quote,
-                            Json(evidence.metadata),
-                        ),
-                    )
-
+    def list_claim_versions(self, conflict_key: str) -> list[dict[str, Any]]:
+        with self._connect() as conn:
+            with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO agent.kg_projection_outbox (
-                        event_id, claim_id, projection_target, operation, payload
-                    )
-                    VALUES (%s, %s, 'nornicdb', 'upsert_claim', %s)
-                    ON CONFLICT (event_id) DO NOTHING
+                    SELECT claim_id, conflict_key, claim_text, lane, status,
+                           valid_period::text, sys_from::text, sys_to::text,
+                           metadata
+                    FROM agent.kg_claims
+                    WHERE conflict_key = %s
+                    ORDER BY sys_from, created_at, claim_id
                     """,
-                    (
-                        f"out_{proposal.claim_id}",
-                        proposal.claim_id,
-                        Json(proposal.projection_payload()),
-                    ),
+                    (conflict_key,),
                 )
-        return proposal.claim_id
+                rows = cur.fetchall()
+        return [
+            {
+                "claim_id": row[0],
+                "conflict_key": row[1],
+                "claim_text": row[2],
+                "lane": row[3],
+                "status": row[4],
+                "valid_period": row[5],
+                "sys_from": row[6],
+                "sys_to": row[7],
+                "is_current": row[7] == "infinity",
+                "metadata": row[8] or {},
+            }
+            for row in rows
+        ]
 
     def search_claims(
         self,
@@ -484,6 +495,116 @@ def _proposal_to_row(proposal: ClaimProposal, *, final_score: float) -> dict[str
         "context_metadata": context["context_metadata"],
         "final_score": final_score,
     }
+
+
+def _periods_overlap(
+    left_from: datetime,
+    left_to: datetime | None,
+    right_from: datetime,
+    right_to: datetime | None,
+) -> bool:
+    left_end = left_to or datetime.max.replace(tzinfo=UTC)
+    right_end = right_to or datetime.max.replace(tzinfo=UTC)
+    return left_from < right_end and right_from < left_end
+
+
+def _insert_claim(cur: Any, proposal: ClaimProposal, *, json_factory: Any) -> None:
+    for entity in [proposal.subject, proposal.object_entity]:
+        if entity is None:
+            continue
+        cur.execute(
+            """
+            INSERT INTO agent.kg_entities (
+                entity_id, canonical_key, entity_type, names, aliases,
+                provenance, metadata, updated_at
+            )
+            VALUES (%s, %s, %s, %s, '[]'::jsonb, '[]'::jsonb, '{}'::jsonb, now())
+            ON CONFLICT (canonical_key) DO UPDATE SET
+                entity_type = EXCLUDED.entity_type,
+                names = EXCLUDED.names,
+                updated_at = now()
+            """,
+            (
+                entity.entity_id,
+                entity.key,
+                entity.entity_type,
+                json_factory([entity.name] if entity.name else []),
+            ),
+        )
+
+    embedding_literal, embedding_dim, embedding_model = _claim_embedding(proposal.metadata)
+    cur.execute(
+        """
+        INSERT INTO agent.kg_claims (
+            claim_id, conflict_key, subject_entity_id, predicate,
+            object_entity_id, object_value, claim_text, lane, status,
+            confidence, valid_period, embedding, embedding_model,
+            embedding_dim, provenance, metadata
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            tstzrange(%s, COALESCE(%s, 'infinity'::timestamptz), '[)'),
+            %s::vector, %s, %s, %s, %s
+        )
+        ON CONFLICT (claim_id) DO NOTHING
+        """,
+        (
+            proposal.claim_id,
+            proposal.conflict_key,
+            proposal.subject.entity_id,
+            proposal.predicate,
+            proposal.object_entity.entity_id if proposal.object_entity else None,
+            json_factory(proposal.object_value) if proposal.object_value is not None else None,
+            proposal.claim_text,
+            proposal.lane,
+            proposal.status,
+            proposal.confidence,
+            proposal.valid_from,
+            proposal.valid_to,
+            embedding_literal,
+            embedding_model,
+            embedding_dim,
+            json_factory([e.evidence_id for e in proposal.evidence]),
+            json_factory(proposal.metadata),
+        ),
+    )
+
+    for evidence in proposal.evidence:
+        cur.execute(
+            """
+            INSERT INTO agent.kg_claim_evidence (
+                evidence_id, claim_id, source_layer, source_ref,
+                source_uri, content_hash, quote, metadata
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (evidence_id) DO NOTHING
+            """,
+            (
+                evidence.evidence_id,
+                proposal.claim_id,
+                evidence.source_layer,
+                evidence.source_ref,
+                evidence.source_uri,
+                evidence.content_hash,
+                evidence.quote,
+            json_factory(evidence.metadata),
+            ),
+        )
+
+    cur.execute(
+        """
+        INSERT INTO agent.kg_projection_outbox (
+            event_id, claim_id, projection_target, operation, payload
+        )
+        VALUES (%s, %s, 'nornicdb', 'upsert_claim', %s)
+        ON CONFLICT (event_id) DO NOTHING
+        """,
+        (
+            f"out_{proposal.claim_id}",
+            proposal.claim_id,
+            json_factory(proposal.projection_payload()),
+        ),
+    )
 
 
 def _proposal_context(proposal: ClaimProposal) -> dict[str, Any]:

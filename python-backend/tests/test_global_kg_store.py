@@ -27,6 +27,18 @@ def _proposal() -> ClaimProposal:
     )
 
 
+def _corrected_proposal(source_ref: str = "doc-2") -> ClaimProposal:
+    return ClaimProposal(
+        subject=EntityRef.from_name("European Union", entity_type="institution"),
+        predicate="SANCTIONED_BY",
+        object_entity=EntityRef.from_name("Russia", entity_type="country"),
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        confidence=0.95,
+        evidence=(EvidenceRef(source_layer="world_evidence", source_ref=source_ref),),
+        metadata={"correction_reason": "new corroborated evidence"},
+    )
+
+
 def test_in_memory_global_kg_store_roundtrip() -> None:
     store = InMemoryGlobalKGStore()
     claim_id = store.propose_claim(_proposal())
@@ -65,6 +77,23 @@ def test_in_memory_global_kg_records_access_once_per_batch() -> None:
 
     assert touched == 1
     assert store._access_counts[claim_id] == 1  # noqa: SLF001 - smoke state
+
+
+def test_in_memory_global_kg_correction_preserves_history_but_searches_current() -> None:
+    store = InMemoryGlobalKGStore()
+    original_id = store.propose_claim(_proposal())
+    corrected = _corrected_proposal()
+    corrected_id = store.correct_claim(corrected)
+
+    rows = store.search_claims("European Union SANCTIONED_BY Russia", limit=5)
+    versions = store.list_claim_versions(corrected.conflict_key)
+
+    assert rows[0]["claim_id"] == corrected_id
+    assert original_id not in {row["claim_id"] for row in rows}
+    assert [(row["claim_id"], row["status"], row["is_current"]) for row in versions] == [
+        (original_id, "superseded", False),
+        (corrected_id, "proposed", True),
+    ]
 
 
 def test_create_global_kg_store_mock(monkeypatch) -> None:
@@ -166,3 +195,56 @@ def test_postgres_global_kg_vector_search_roundtrip() -> None:
         with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM agent.kg_claims WHERE claim_id = %s", (claim_id,))
+
+
+def test_postgres_global_kg_correction_preserves_bitemporal_history() -> None:
+    db_url = (
+        os.environ.get("GLOBAL_KG_DB_URL")
+        or os.environ.get("MEMPALACE_DB_URL")
+        or os.environ.get("HINDSIGHT_DB_URL")
+    )
+    if not db_url:
+        pytest.skip("requires GLOBAL_KG_DB_URL, MEMPALACE_DB_URL or HINDSIGHT_DB_URL")
+
+    suffix = uuid.uuid4().hex
+    original = ClaimProposal(
+        subject=EntityRef.from_name(f"Correction Subject {suffix}", entity_type="test"),
+        predicate="AFFECTS",
+        object_entity=EntityRef.from_name(f"Correction Object {suffix}", entity_type="test"),
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        confidence=0.2,
+        evidence=(EvidenceRef(source_layer="manual", source_ref=f"correction-old-{suffix}"),),
+    )
+    corrected = ClaimProposal(
+        subject=original.subject,
+        predicate=original.predicate,
+        object_entity=original.object_entity,
+        valid_from=original.valid_from,
+        confidence=0.9,
+        evidence=(EvidenceRef(source_layer="manual", source_ref=f"correction-new-{suffix}"),),
+    )
+    store = PostgresGlobalKGStore(db_url)
+    original_id = store.propose_claim(original)
+    corrected_id = store.correct_claim(corrected)
+
+    try:
+        rows = store.search_claims(
+            f"Correction Subject {suffix} AFFECTS Correction Object {suffix}",
+            limit=5,
+        )
+        versions = store.list_claim_versions(original.conflict_key)
+
+        assert rows and rows[0]["claim_id"] == corrected_id
+        assert original_id not in {row["claim_id"] for row in rows}
+        assert [(row["claim_id"], row["status"], row["is_current"]) for row in versions] == [
+            (original_id, "superseded", False),
+            (corrected_id, "proposed", True),
+        ]
+        assert versions[0]["sys_to"] != "infinity"
+    finally:
+        with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM agent.kg_claims WHERE conflict_key = %s",
+                    (original.conflict_key,),
+                )
