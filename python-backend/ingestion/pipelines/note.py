@@ -44,14 +44,14 @@ class NotePipeline(Pipeline):
                     target_id=str(job.id),
                     metadata={
                         "document_hash": doc_hash,
-                        "existing_job_id": existing["id"],
+                        "existing_job_id": str(existing["id"]),
                     },
                 )
                 ctx.tracker.update(
                     job, status=JobStatus.SKIPPED_DEDUP, document_hash=doc_hash
                 )
                 ctx.tracker.complete(job)
-                raise DedupSkipError(doc_hash, existing["id"])
+                raise DedupSkipError(doc_hash, str(existing["id"]))
             ctx.tracker.update(job, document_hash=doc_hash)
 
             # Phase 3 (inline): NoteExtractor passthrough

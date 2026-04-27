@@ -15,4 +15,8 @@ feature_id: 021
 - KG proposals must include evidence refs and remain `candidate` until Feature
   017 promotion gates approve them.
 - No ingestion live smoke may require frontend or Go Gateway.
+  - 2026-04-27: verified for local Markdown CLI path with Postgres only.
 - Network-dependent paper/API smokes must have local fixture fallback.
+- Known text extensions must not be downgraded to generic `text/plain` when
+  MIME magic is less specific; parser selection must preserve Markdown/code
+  semantics.

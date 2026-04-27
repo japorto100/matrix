@@ -28,7 +28,19 @@ class DetectorRegistry:
         # Prefer magic when bytes available — most accurate
         if self._magic is not None and (data is not None or path is not None):
             try:
-                return self._magic.detect(path=path, data=data, filename=filename)
+                magic_result = self._magic.detect(
+                    path=path, data=data, filename=filename
+                )
+                if magic_result.mime_type in {"text/plain", "application/octet-stream"}:
+                    try:
+                        extension_result = self._extension.detect(
+                            path=path, data=data, filename=filename
+                        )
+                    except Exception:
+                        return magic_result
+                    if extension_result.mime_type != magic_result.mime_type:
+                        return extension_result
+                return magic_result
             except Exception:
                 pass
         return self._extension.detect(path=path, data=data, filename=filename)

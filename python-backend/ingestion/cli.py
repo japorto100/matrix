@@ -12,9 +12,9 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 from ingestion.core.config import get_config
+from ingestion.core.exceptions import DedupSkipError
 from ingestion.pipelines.base import PipelineContext
 from ingestion.pipelines.document import DocumentPipeline
 from ingestion.pipelines.note import NotePipeline
@@ -35,26 +35,29 @@ async def cmd_ingest_note(args: argparse.Namespace) -> int:
 
 
 async def cmd_ingest_file(args: argparse.Namespace) -> int:
-    """Local file → load → extract → ... pipeline.
-
-    For local files we bypass SeaweedFS by writing the file metadata
-    directly to the tracker (no Go gateway).
-    """
+    """Local file → load → extract → chunk → embed → sinks."""
     path = Path(args.path)
     if not path.is_file():
         logger.error("file not found: {}", path)
         return 1
 
     ctx = PipelineContext.from_config(get_config())
-
-    # Build a Job from local file (no SeaweedFS)
-    _ = uuid4()  # reserved for future SeaweedFS integration
-    _ = DocumentPipeline(ctx)  # reserved for future SeaweedFS integration
-    logger.warning(
-        "CLI ingest-file requires SeaweedFS upload first — use the worker /ingest/document API"
-    )
-    logger.warning("(Local-only ingestion bypassing SeaweedFS is not implemented yet)")
-    return 1
+    pipeline = DocumentPipeline(ctx)
+    try:
+        job = await pipeline.run_local_path(
+            path=path,
+            user_id=args.user,
+            tags=args.tags or [],
+            sinks_active=args.sinks,
+        )
+        logger.info("file ingested: job_id={} status={}", job.id, job.status.value)
+        return 0
+    except DedupSkipError as e:
+        logger.info("file skipped as duplicate: {}", e)
+        return 0
+    except Exception as e:  # noqa: BLE001
+        logger.error("ingest_file failed: {}", e)
+        return 1
 
 
 async def cmd_status(args: argparse.Namespace) -> int:
@@ -76,8 +79,15 @@ def main() -> int:
     p_note.add_argument("--user", default="local")
     p_note.add_argument("--tags", nargs="*")
 
-    p_file = sub.add_parser("ingest-file", help="(stub) local file ingestion")
+    p_file = sub.add_parser("ingest-file", help="ingest a local file")
     p_file.add_argument("--path", required=True)
+    p_file.add_argument("--user", default="local")
+    p_file.add_argument("--tags", nargs="*")
+    p_file.add_argument(
+        "--sinks",
+        nargs="*",
+        help="sink names to run (default: hindsight; examples: hindsight kg)",
+    )
 
     sub.add_parser("status", help="show job status counts")
 

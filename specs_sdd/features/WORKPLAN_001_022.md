@@ -31,8 +31,8 @@ verify and where Meta-Harness should drive the next iterations.
 
 1. Feature 020: complete HermesAgent code deep-read and define Matrix route/
    delegation event schema.
-2. Feature 021: run local paper ingestion over the GraphRAG paper artifact and
-   verify source/chunk/citation refs.
+2. Feature 021: extend the new local-file ingestion path into durable source
+   artifact/citation refs, then run it over the GraphRAG paper artifact.
 3. Feature 022: build the first RAG/KG canary runner comparing vector-only,
    KG-only and fused Matrix retrieval.
 4. Feature 019/017: use benchmark failures to harden retrieval, KG paths,
@@ -66,7 +66,7 @@ verify and where Meta-Harness should drive the next iterations.
 | 018 Schema governance | Maintain | Drift gate | Alembic + generated schema registry stays current |
 | 019 Hybrid RAG | Build/evaluate | Retrieval quality gates | Vector/KG/fused canaries with attribution and faithfulness |
 | 020 Harness/subagents | Research then implement metadata | Routing/delegation gates | Route-decision audit schema before behavior changes |
-| 021 Ingestion/Paperwatcher | Start build | Paper-grounded retrieval scenario | Local GraphRAG paper ingest with source/chunk refs |
+| 021 Ingestion/Paperwatcher | Local CLI path implemented | Paper-grounded retrieval scenario | Durable source/citation refs plus GraphRAG paper ingest |
 | 022 RAG/KG Benchmark Lab | Start build | Candidate comparison/Pareto | Vector-only vs KG-only vs fused baseline report |
 
 ## HermesAgent Transfer Backlog
