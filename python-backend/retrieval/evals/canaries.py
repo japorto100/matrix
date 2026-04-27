@@ -392,6 +392,51 @@ URL_SOURCE_PROVENANCE_CANARY = RetrievalCanary(
     tags=("source-grounding", "citation", "url", "arxiv"),
 )
 
+NORNICDB_PROJECTION_CANARY = RetrievalCanary(
+    id="nornicdb-projection-replay-001",
+    query="Which KG projection path links EU sanctions to Russian oil insurance?",
+    mode="graph",
+    question_class="projection_replay",
+    expectation=CanaryExpectation(
+        intent="graph",
+        required_sources=("kg",),
+        required_reference_ids=("claim-nornicdb-sanctions-insurance",),
+        required_reference_metadata={
+            "claim-nornicdb-sanctions-insurance": (
+                "projection_target",
+                "projection_event_id",
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+            )
+        },
+        required_kg_paths=(("EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"),),
+    ),
+    kg_hits=(
+        {
+            "claim_id": "claim-nornicdb-sanctions-insurance",
+            "content": "EU sanctions constrain Russian oil shipping insurance.",
+            "score": 0.95,
+            "source_uri": "https://arxiv.org/pdf/2604.09666",
+            "metadata": {
+                "projection_target": "nornicdb",
+                "projection_event_id": "out_claim-nornicdb-sanctions-insurance",
+                "source_artifact_id": "artifact-arxiv-2604-09666-url",
+                "source_uri": "https://arxiv.org/pdf/2604.09666",
+                "chunk_id": "chunk-arxiv-2604-09666-url",
+                "chunk_hash": "sha256:arxiv-2604-09666-url",
+                "citation_ref": (
+                    "https://arxiv.org/pdf/2604.09666"
+                    "#chunk=chunk-arxiv-2604-09666-url"
+                ),
+                "path": ["EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"],
+            },
+        },
+    ),
+    tags=("kg-projection", "nornicdb", "source-grounding"),
+)
+
 SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
     id="holdout-simple-doc-001",
     query="What does the customs memo say about copper concentrate tariff status?",
@@ -467,6 +512,7 @@ DEFAULT_SEARCH_CANARIES = (
     GENERAL_VECTOR_CANARY,
     SOURCE_PROVENANCE_CANARY,
     URL_SOURCE_PROVENANCE_CANARY,
+    NORNICDB_PROJECTION_CANARY,
 )
 DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
 DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)

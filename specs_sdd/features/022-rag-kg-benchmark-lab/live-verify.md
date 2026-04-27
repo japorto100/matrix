@@ -68,3 +68,12 @@ feature_id: 022
   - Results: `inner-matrix-vector-only` fitness `0.6667` deferred,
     `inner-matrix-kg-only` fitness `0.1666` deferred,
     `inner-matrix-fused-vector-kg` fitness `0.9754` promoted to outer loop.
+- LV011 [done-static-live-smoke] Verify projection-replay canary contract before
+  live NornicDB execution.
+  - 2026-04-27:
+    `uv run pytest tests/test_retrieval_benchmark_lab.py -q` passed `8`
+    tests.
+  - `nornicdb-projection-replay-001` now fails vector-only candidates and
+    passes KG candidates only when selected references preserve projection
+    target, projection event id, source artifact id, chunk id/hash,
+    citation ref and expected compact KG path.

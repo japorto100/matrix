@@ -137,8 +137,12 @@ feature_id: 017
 - T047 [partial-static] Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
   under matched query, context, model and retrieval budgets; implementation
   owner is Feature 019, KG claim/path source owner is Feature 017.
-- T048 Add multi-hop trading/geopolitical canaries where global KG/nonicdb is
+- T048 [done-static] Add multi-hop trading/geopolitical canaries where global KG/nonicdb is
   expected to improve retrieval stability over dense RAG.
+  - 2026-04-27: Feature 022 now includes `nornicdb-projection-replay-001`, a
+    static projection canary requiring NornicDB target metadata, projection
+    event id, source artifact/chunk/citation refs and the compact sanctions ->
+    oil insurance path. Live NornicDB benchmark remains open in Feature 022.
 - T049 Track offline KG build/update cost and online latency before promoting
   KG retrieval as default for any query class.
 - T049a [partial-static] Verify KG extraction/projection can be rebuilt from source artifacts,

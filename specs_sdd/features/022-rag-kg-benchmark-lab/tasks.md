@@ -171,9 +171,13 @@ feature_id: 022
     `source_uri`, `source_kind=url`, `fetch_method=http`, citation refs and
     parser/chunker metadata. This keeps URL ingestion from drifting below the
     local-file provenance standard.
-- T048 [partial-static] Add NornicDB/nonicdb projection canaries for temporal,
+- T048 [done-static] Add NornicDB/nonicdb projection canaries for temporal,
   relational and multi-hop KG queries once Feature 017 projection replay exists.
   - 2026-04-27: Feature 017 now has a static projection-event replay snapshot
     contract that preserves claim IDs, paths and citation refs. Use that as the
     input contract for the future NornicDB/nonicdb projection canaries; live
     graph projection benchmark remains open.
+  - 2026-04-27: `nornicdb-projection-replay-001` now requires a KG candidate
+    to expose `projection_target=nornicdb`, projection event id, source
+    artifact id, chunk id/hash, citation ref and the expected compact KG path.
+    This is a static adapter/canary gate; live NornicDB execution remains T043.

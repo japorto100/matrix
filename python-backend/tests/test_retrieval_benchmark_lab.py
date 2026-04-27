@@ -18,6 +18,7 @@ from retrieval.evals.canaries import (
     DEFAULT_SEARCH_CANARIES,
     GENERAL_VECTOR_CANARY,
     MULTIHOP_KG_HOLDOUT_CANARY,
+    NORNICDB_PROJECTION_CANARY,
     SIMPLE_DOC_HOLDOUT_CANARY,
     TRADING_GEO_KG_CANARY,
     URL_SOURCE_PROVENANCE_CANARY,
@@ -64,17 +65,45 @@ async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
     assert report["splits"] == ["holdout", "search"]
     assert report["question_classes"] == [
         "multi_hop_temporal",
+        "projection_replay",
         "simple_document_grounded",
         "source_provenance",
     ]
     assert canaries_for_split(DEFAULT_CANARIES, "search") == DEFAULT_SEARCH_CANARIES
     assert canaries_for_split(DEFAULT_CANARIES, "holdout") == DEFAULT_HOLDOUT_CANARIES
     assert URL_SOURCE_PROVENANCE_CANARY in DEFAULT_SEARCH_CANARIES
+    assert NORNICDB_PROJECTION_CANARY in DEFAULT_SEARCH_CANARIES
     assert by_id["matrix-fused-vector-kg"]["split_summary"]["holdout"]["count"] == 2
     assert by_id["matrix-fused-vector-kg"]["holdout_pass_rate"] >= 0.5
     assert by_id["matrix-vector-only"]["split_summary"]["holdout"]["pass_rate"] < by_id[
         "matrix-fused-vector-kg"
     ]["split_summary"]["holdout"]["pass_rate"]
+
+
+@pytest.mark.asyncio
+async def test_projection_replay_canary_requires_nornicdb_metadata() -> None:
+    report = await compare_candidates(
+        [NORNICDB_PROJECTION_CANARY],
+        candidates=(MATRIX_KG_ONLY, MATRIX_VECTOR_ONLY),
+        k=5,
+    )
+    by_id = {candidate["candidate_id"]: candidate for candidate in report["candidates"]}
+
+    kg_result = by_id["matrix-kg-only"]["results"][0]
+    vector_result = by_id["matrix-vector-only"]["results"][0]
+
+    assert kg_result["passed"] is True
+    assert kg_result["reference_metadata"]["claim-nornicdb-sanctions-insurance"][
+        "projection_target"
+    ] == "nornicdb"
+    assert [
+        "EU",
+        "SANCTIONS",
+        "Russian oil",
+        "SHIPPING_INSURANCE",
+    ] in kg_result["kg_paths"]
+    assert vector_result["passed"] is False
+    assert "missing-source:kg" in vector_result["failures"]
 
 
 @pytest.mark.asyncio
