@@ -32,13 +32,20 @@ feature_id: 022
 
 ## Metrics
 
-- T020 Implement Recall@k and nDCG@k over chunk/claim refs.
+- T020 [done-initial] Implement Recall@k and nDCG@k over chunk/claim refs.
+  - 2026-04-27: `retrieval.evals.benchmark_lab` compares candidates with
+    pass rate, Recall@k, nDCG@k and latency over deterministic canaries.
 - T021 Implement citation completeness and unsupported-claim checks.
 - T022 Implement multi-hop path completeness checks.
-- T023 Record offline indexing/update cost and online retrieval latency.
+- T023 [partial-done] Record offline indexing/update cost and online retrieval latency.
+  - 2026-04-27: benchmark report records per-candidate average retrieval
+    latency. Offline indexing cost still open.
 - T024 Record model/provider/token config, especially OpenRouter embedding
   model and dimension.
-- T025 Feed benchmark summaries into Meta-Harness candidate artifacts.
+- T025 [partial-done] Feed benchmark summaries into Meta-Harness candidate artifacts.
+  - 2026-04-27: `write_benchmark_report()` writes stable JSON suitable for
+    Meta-Harness artifact directories. Direct scenario-runner wiring remains
+    open.
 
 ## Meta-Harness Integration
 
@@ -53,7 +60,12 @@ feature_id: 022
 
 ## Verification
 
-- T040 Run local deterministic benchmark with mock embeddings/fixtures.
+- T040 [done-initial] Run local deterministic benchmark with mock embeddings/fixtures.
+  - 2026-04-27: local report written to
+    `/tmp/matrix-rag-kg-benchmark-report.json`.
+  - Results: `matrix-vector-only` pass_rate `0.5`, Recall@5 `0.5`; `matrix-kg-only`
+    pass_rate `0.0`, Recall@5 `0.5`; `matrix-fused-vector-kg` pass_rate `1.0`,
+    Recall@5 `1.0`, nDCG@5 `0.8155`.
 - T041 Run OpenRouter-embedding benchmark when credits/rate limits allow.
 - T042 Run Postgres/pgvector benchmark for Matrix retrieval.
 - T043 Run NornicDB/nonicdb projection benchmark when graph projection path is

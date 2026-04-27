@@ -11,6 +11,9 @@ feature_id: 022
 
 - Every candidate uses the same corpus, question set, retrieval budget and
   context budget.
+  - 2026-04-27: initial `compare_candidates()` runner enforces shared canary
+    set, `k`, token budget and max-hits budget for Matrix vector/KG/fused
+    candidates.
 - Graph candidates must improve relevant multi-hop cases without regressing
   simple factual cases beyond an accepted threshold.
 - KG retrieval cannot use personal memory lanes as evidence.
