@@ -17,12 +17,11 @@ from retrieval.evals.benchmark_lab import (
     compare_candidates,
 )
 from retrieval.evals.canaries import (
-    GENERAL_VECTOR_CANARY,
-    TRADING_GEO_KG_CANARY,
+    DEFAULT_SEARCH_CANARIES,
     RetrievalCanary,
 )
 
-DEFAULT_RETRIEVAL_CANARIES = (TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY)
+DEFAULT_RETRIEVAL_CANARIES = DEFAULT_SEARCH_CANARIES
 
 REQUIRED_CANDIDATE_METADATA = (
     "source_corpus",
@@ -77,6 +76,9 @@ def write_retrieval_benchmark_artifacts(
         "created_at": datetime.now(UTC).isoformat(),
         "kind": "retrieval_benchmark",
         "feature_id": report.get("feature_id", "022"),
+        "scenario_set": "matrix-retrieval-canaries@2026-04-27",
+        "splits": report.get("splits", []),
+        "holdout_protected": "holdout" not in set(report.get("splits", [])),
         "stack": {
             "python_agent": True,
             "frontend_required": False,
@@ -108,6 +110,8 @@ def write_retrieval_benchmark_artifacts(
             "token_budget": report.get("token_budget"),
             "max_hits": report.get("max_hits"),
             "canary_count": report.get("canary_count"),
+            "splits": report.get("splits", []),
+            "question_classes": report.get("question_classes", []),
             "metadata_compatibility": _metadata_compatibility(candidate),
             "candidate": candidate,
         }
@@ -218,6 +222,8 @@ def _scenario_set(candidate: dict[str, Any]) -> dict[str, Any]:
             {
                 "id": result.get("canary_id"),
                 "query": result.get("query", ""),
+                "split": result.get("split", ""),
+                "question_class": result.get("question_class", ""),
                 "ranked_reference_ids": result.get("ranked_reference_ids", []),
             }
             for result in candidate.get("results", [])

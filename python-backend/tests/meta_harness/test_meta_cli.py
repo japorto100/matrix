@@ -162,6 +162,41 @@ def test_inner_loop_provider_gate_enforces_request_cap(monkeypatch):
     assert MAX_PROVIDER_CALLS_ENV in gate["reason"]
 
 
+def test_inner_loop_protects_goldens_and_holdout_inputs():
+    from meta_harness.inner_loop import protected_input_gate, validate_inner_loop_run
+
+    run = {
+        "run_id": "run-protected",
+        "feature_owner": "023-auto-optimization-inner-loops",
+        "scenario_set": "matrix-retrieval-canaries@2026-04-27",
+        "train_split": "search/deterministic-fixture",
+        "holdout_split": "holdout/protected",
+        "frozen_evaluator": {
+            "type": "retrieval_benchmark",
+            "goldens_mutable": False,
+        },
+        "candidates": [
+            {
+                "candidate_id": "inner-bad",
+                "feature_owner": "019-hybrid-rag-retrieval",
+                "candidate_type": "benchmark_candidate",
+                "search_space_version": "rag-retrieval-modes/v1",
+                "parameters": {"holdout_score": 1.0},
+                "frozen_inputs": {},
+                "budget": {},
+            }
+        ],
+    }
+
+    gate = protected_input_gate(run)
+    validation = validate_inner_loop_run(run)
+
+    assert gate["passed"] is False
+    assert "protected-input:inner-bad:parameters.holdout_score" in gate["failures"]
+    assert validation["passed"] is False
+    assert "protected-input:inner-bad:parameters.holdout_score" in validation["failures"]
+
+
 @pytest.mark.asyncio
 async def test_cli_inner_loop_writes_candidate_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
@@ -190,8 +225,11 @@ async def test_cli_inner_loop_writes_candidate_artifacts(tmp_path, monkeypatch):
     assert payload["candidate_type"] == "benchmark_candidate"
     assert payload["budget"]["provider_calls"] == 0
     assert payload["frozen_inputs"]["source_run_id"] == "run-inner-retrieval"
+    assert payload["frozen_inputs"]["split_summary"]
     assert aggregate["completion_rate"] == 1.0
     assert aggregate["tool_success_rate"] == 1.0
+    run_manifest = json.loads((run_dir / "run.json").read_text())
+    assert run_manifest["protected_inputs"]["passed"] is True
     assert (candidate_dir / "config.json").exists()
 
 

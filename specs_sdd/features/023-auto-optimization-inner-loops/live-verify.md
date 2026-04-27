@@ -33,3 +33,13 @@ feature_id: 023
     `META_HARNESS_ALLOW_PROVIDER_CALLS` was not enabled.
 - LV006 Verify a promoted candidate can be rerun through a real agent
   Meta-Harness scenario.
+- LV007 [done-static-live-smoke] Verify protected benchmark inputs for
+  inner-loop candidates.
+  - 2026-04-27:
+    `uv run python -m meta_harness.meta_cli inner-loop --kind rag --run-id run-inner-rag-splits-20260427 --data-dir ../.meta-harness`
+    passed validation and wrote protected-input metadata.
+  - Result: `inner-matrix-vector-only` fitness `0.5` deferred,
+    `inner-matrix-kg-only` fitness `0.25` deferred,
+    `inner-matrix-fused-vector-kg` fitness `0.9631` promoted to outer loop.
+  - Generated run artifacts live under ignored local `.meta-harness/`; source
+    control tracks the runner, tests and spec evidence, not transient run logs.

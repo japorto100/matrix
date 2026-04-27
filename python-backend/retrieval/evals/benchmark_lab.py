@@ -126,6 +126,34 @@ def _ndcg_at(ranked_ids: list[str], relevant_ids: set[str], k: int) -> float | N
     return dcg / ideal if ideal else 0.0
 
 
+def _aggregate_split_results(results: list[dict[str, Any]], *, k: int) -> dict[str, Any]:
+    by_split: dict[str, list[dict[str, Any]]] = {}
+    for result in results:
+        by_split.setdefault(str(result.get("split") or "unknown"), []).append(result)
+
+    summary: dict[str, Any] = {}
+    for split, split_results in sorted(by_split.items()):
+        passed = sum(1 for result in split_results if result["passed"])
+        recall_values = [
+            result[f"recall@{k}"]
+            for result in split_results
+            if result[f"recall@{k}"] is not None
+        ]
+        ndcg_values = [
+            result[f"ndcg@{k}"]
+            for result in split_results
+            if result[f"ndcg@{k}"] is not None
+        ]
+        summary[split] = {
+            "count": len(split_results),
+            "passed": passed,
+            "pass_rate": round(passed / max(len(split_results), 1), 4),
+            f"recall@{k}": round(sum(recall_values) / max(len(recall_values), 1), 4),
+            f"ndcg@{k}": round(sum(ndcg_values) / max(len(ndcg_values), 1), 4),
+        }
+    return summary
+
+
 def metadata_compatibility(candidate: RetrievalCandidate) -> dict[str, Any]:
     """Check if a candidate can be compared under source-grounded RAG gates."""
     missing = [
@@ -219,6 +247,11 @@ async def evaluate_candidate(
 
     return {
         "canary_id": canary.id,
+        "query": canary.query,
+        "split": canary.split,
+        "question_class": canary.question_class,
+        "source_corpus": canary.source_corpus,
+        "tags": list(canary.tags),
         "candidate_id": candidate.id,
         "passed": not failures,
         "failures": failures,
@@ -268,6 +301,7 @@ async def compare_candidates(
             result[f"ndcg@{k}"] for result in results if result[f"ndcg@{k}"] is not None
         ]
         passed = sum(1 for result in results if result["passed"])
+        split_summary = _aggregate_split_results(results, k=k)
         report_candidates.append(
             {
                 "candidate_id": candidate.id,
@@ -283,6 +317,8 @@ async def compare_candidates(
                     sum(recall_values) / max(len(recall_values), 1), 4
                 ),
                 f"ndcg@{k}": round(sum(ndcg_values) / max(len(ndcg_values), 1), 4),
+                "split_summary": split_summary,
+                "holdout_pass_rate": split_summary.get("holdout", {}).get("pass_rate"),
                 "latency_ms_avg": round(
                     sum(result["latency_ms"] for result in results)
                     / max(len(results), 1),
@@ -299,6 +335,8 @@ async def compare_candidates(
         "token_budget": token_budget,
         "max_hits": max_hits,
         "canary_count": len(canaries),
+        "splits": sorted({canary.split for canary in canaries}),
+        "question_classes": sorted({canary.question_class for canary in canaries}),
         "candidates": report_candidates,
     }
 

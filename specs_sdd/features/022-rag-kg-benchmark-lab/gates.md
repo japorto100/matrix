@@ -21,3 +21,7 @@ feature_id: 022
 - External candidate setup must be reproducible on this machine or documented
   as deferred.
 - Promotion requires holdout results, not only search-set gains.
+  - 2026-04-27: benchmark code now separates `search` and `holdout` canaries
+    and reports `split_summary`/`holdout_pass_rate`; default Meta-Harness
+    optimization still runs search only, so holdout promotion must be an
+    explicit later gate.

@@ -38,3 +38,13 @@ feature_id: 022
     `retrieval_benchmark.json` and `verdicts.json`.
   - Matrix vector-only, KG-only and fused baselines declared source corpus,
     parser, chunker, embedding model/dimension and KG projection version.
+- LV009 [done-static-live-smoke] Verify search/holdout split reporting without
+  exposing holdout to the default optimization loop.
+  - 2026-04-27:
+    `uv run pytest tests/test_retrieval_benchmark_lab.py tests/meta_harness/test_meta_cli.py tests/test_retrieval_baseline.py -q`
+    passed `40` tests.
+  - `compare_candidates(DEFAULT_CANARIES, ...)` reports `splits:
+    [holdout, search]`, question classes and per-candidate
+    `split_summary`.
+  - The default Meta-Harness retrieval benchmark still uses
+    `DEFAULT_SEARCH_CANARIES`; holdout canaries are explicit rerun material.

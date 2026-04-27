@@ -42,6 +42,14 @@ REQUIRED_RUN_FIELDS = (
     "candidates",
     "frozen_evaluator",
 )
+PROTECTED_INPUT_KEYS = (
+    "golden_overrides",
+    "goldens_patch",
+    "holdout_results",
+    "holdout_score",
+    "evaluator_patch",
+    "canary_patch",
+)
 
 
 @dataclass(frozen=True)
@@ -133,7 +141,42 @@ def validate_inner_loop_run(run: dict[str, Any]) -> dict[str, Any]:
             failures.append("invalid-candidate-payload")
             continue
         failures.extend(validate_inner_loop_candidate(candidate)["failures"])
+    protected_gate = protected_input_gate(run)
+    failures.extend(protected_gate["failures"])
     return {"passed": not failures, "failures": failures}
+
+
+def protected_input_gate(run: dict[str, Any]) -> dict[str, Any]:
+    """Ensure inner-loop candidates cannot train on holdout or mutate goldens."""
+
+    failures: list[str] = []
+    frozen_evaluator = run.get("frozen_evaluator")
+    if not isinstance(frozen_evaluator, dict):
+        frozen_evaluator = {}
+    if frozen_evaluator.get("goldens_mutable") is not False:
+        failures.append("goldens-mutable-or-unspecified")
+
+    candidates = run.get("candidates")
+    if not isinstance(candidates, list):
+        candidates = []
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        candidate_id = str(candidate.get("candidate_id") or "unknown")
+        for section_name in ("parameters", "frozen_inputs", "metrics"):
+            section = candidate.get(section_name)
+            if not isinstance(section, dict):
+                continue
+            for key in PROTECTED_INPUT_KEYS:
+                if key in section:
+                    failures.append(
+                        f"protected-input:{candidate_id}:{section_name}.{key}"
+                    )
+    return {
+        "passed": not failures,
+        "failures": failures,
+        "protected_keys": list(PROTECTED_INPUT_KEYS),
+    }
 
 
 async def run_deterministic_rag_inner_loop(
@@ -173,7 +216,7 @@ async def run_deterministic_rag_inner_loop(
         feature_owner="023-auto-optimization-inner-loops",
         scenario_set="matrix-retrieval-canaries@2026-04-27",
         train_split="search/deterministic-fixture",
-        holdout_split="holdout/not-used-in-smoke",
+        holdout_split="holdout/protected",
         candidates=candidates,
         frozen_evaluator={
             "type": "retrieval_benchmark",
@@ -236,6 +279,7 @@ def write_inner_loop_artifacts(
 
     payload = inner_run.as_dict()
     validation = validate_inner_loop_run(payload)
+    protected_gate = protected_input_gate(payload)
     run_dir = data_dir / "runs" / inner_run.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     _write_json(
@@ -247,6 +291,7 @@ def write_inner_loop_artifacts(
             "feature_id": "023",
             "feature_owner": inner_run.feature_owner,
             "validation": validation,
+            "protected_inputs": protected_gate,
             "linked_artifacts": linked_artifacts or {},
             "provider_gate": provider_gate or provider_call_gate(0),
         },
@@ -318,6 +363,8 @@ def _candidate_from_retrieval_result(
         frozen_inputs={
             "source_run_id": source_run_id,
             "canary_count": int(result.get("count") or 0),
+            "split_summary": result.get("split_summary") or {},
+            "holdout_pass_rate": result.get("holdout_pass_rate"),
             "metadata": result.get("metadata") or {},
         },
         budget={"provider_calls": 0, "max_hits": 8, "token_budget": 1600},

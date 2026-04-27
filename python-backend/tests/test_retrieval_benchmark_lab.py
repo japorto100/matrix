@@ -13,10 +13,16 @@ from retrieval.evals.benchmark_lab import (
     write_benchmark_report,
 )
 from retrieval.evals.canaries import (
+    DEFAULT_CANARIES,
+    DEFAULT_HOLDOUT_CANARIES,
+    DEFAULT_SEARCH_CANARIES,
     GENERAL_VECTOR_CANARY,
+    MULTIHOP_KG_HOLDOUT_CANARY,
+    SIMPLE_DOC_HOLDOUT_CANARY,
     TRADING_GEO_KG_CANARY,
     CanaryExpectation,
     RetrievalCanary,
+    canaries_for_split,
 )
 
 
@@ -39,9 +45,55 @@ async def test_compare_candidates_reports_vector_kg_and_fused_tradeoffs() -> Non
     assert by_id["matrix-vector-only"]["results"][0]["passed"] is False
     assert by_id["matrix-kg-only"]["results"][1]["passed"] is False
     assert by_id["matrix-fused-vector-kg"]["metadata_compatibility"]["passed"] is True
+    assert by_id["matrix-fused-vector-kg"]["split_summary"]["search"]["count"] == 2
     assert ["EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"] in by_id[
         "matrix-fused-vector-kg"
     ]["results"][0]["kg_paths"]
+
+
+@pytest.mark.asyncio
+async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
+    report = await compare_candidates(
+        DEFAULT_CANARIES,
+        candidates=(MATRIX_VECTOR_ONLY, MATRIX_KG_ONLY, MATRIX_FUSED),
+        k=5,
+    )
+    by_id = {candidate["candidate_id"]: candidate for candidate in report["candidates"]}
+
+    assert report["splits"] == ["holdout", "search"]
+    assert report["question_classes"] == [
+        "multi_hop_temporal",
+        "simple_document_grounded",
+    ]
+    assert canaries_for_split(DEFAULT_CANARIES, "search") == DEFAULT_SEARCH_CANARIES
+    assert canaries_for_split(DEFAULT_CANARIES, "holdout") == DEFAULT_HOLDOUT_CANARIES
+    assert by_id["matrix-fused-vector-kg"]["split_summary"]["holdout"]["count"] == 2
+    assert by_id["matrix-fused-vector-kg"]["holdout_pass_rate"] >= 0.5
+    assert by_id["matrix-vector-only"]["split_summary"]["holdout"]["pass_rate"] < by_id[
+        "matrix-fused-vector-kg"
+    ]["split_summary"]["holdout"]["pass_rate"]
+
+
+@pytest.mark.asyncio
+async def test_holdout_canaries_cover_graph_overreach_and_multihop_path() -> None:
+    report = await compare_candidates(
+        [SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY],
+        candidates=(MATRIX_FUSED,),
+        k=5,
+    )
+    results = report["candidates"][0]["results"]
+
+    assert results[0]["split"] == "holdout"
+    assert results[0]["question_class"] == "simple_document_grounded"
+    assert results[0]["passed"] is True
+    assert results[1]["question_class"] == "multi_hop_temporal"
+    assert [
+        "Red Sea",
+        "DISRUPTS",
+        "Shipping lanes",
+        "AFFECTS",
+        "EU diesel cracks",
+    ] in results[1]["kg_paths"]
 
 
 @pytest.mark.asyncio

@@ -74,5 +74,10 @@ feature_id: 023
 - T043 Run one parser/chunking smoke over the ResearchWatcher PDF fixture.
 - T044 Run one memory/context smoke without live provider calls.
 - T045 [done-static-live-smoke] Gate all live-provider loops behind quota/cost config.
-- T046 Prove inner-loop candidates cannot modify benchmark goldens,
+- T046 [done-static-live-smoke] Prove inner-loop candidates cannot modify benchmark goldens,
   deterministic evaluator code or holdout sets during a run.
+  - 2026-04-27: `protected_input_gate()` fails candidates that expose
+    `holdout_score`, `holdout_results`, `goldens_patch`, `evaluator_patch` or
+    `canary_patch` in mutable candidate sections, and requires
+    `frozen_evaluator.goldens_mutable == False`. Inner-loop smoke
+    `run-inner-rag-splits-20260427` passed this gate.

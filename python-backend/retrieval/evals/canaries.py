@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import log2
-from typing import Any
+from typing import Any, Literal
 
 from retrieval.api import retrieve
+
+CanarySplit = Literal["search", "holdout"]
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,10 @@ class RetrievalCanary:
     vector_hits: tuple[dict[str, Any], ...] = ()
     kg_hits: tuple[dict[str, Any], ...] = ()
     mode: str | None = None
+    split: CanarySplit = "search"
+    question_class: str = "unspecified"
+    source_corpus: str = "matrix-retrieval-canaries@2026-04-27"
+    tags: tuple[str, ...] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -130,6 +136,11 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
 
     return {
         "id": canary.id,
+        "query": canary.query,
+        "split": canary.split,
+        "question_class": canary.question_class,
+        "source_corpus": canary.source_corpus,
+        "tags": list(canary.tags),
         "passed": not failures,
         "failures": failures,
         "intent": result.intent,
@@ -208,6 +219,8 @@ TRADING_GEO_KG_CANARY = RetrievalCanary(
             },
         },
     ),
+    question_class="multi_hop_temporal",
+    tags=("trading", "geopolitics", "kg-helpful"),
 )
 
 GENERAL_VECTOR_CANARY = RetrievalCanary(
@@ -235,4 +248,89 @@ GENERAL_VECTOR_CANARY = RetrievalCanary(
             "score": 0.99,
         },
     ),
+    question_class="simple_document_grounded",
+    tags=("dense-baseline", "graph-danger"),
 )
+
+SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
+    id="holdout-simple-doc-001",
+    query="What does the customs memo say about copper concentrate tariff status?",
+    mode="text",
+    split="holdout",
+    question_class="simple_document_grounded",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-copper-customs-status",),
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-copper-customs-status",
+            "text": "The customs memo says copper concentrate keeps its current tariff status.",
+            "score": 0.91,
+            "source_uri": "doc://customs-copper-memo",
+        },
+    ),
+    kg_hits=(
+        {
+            "claim_id": "claim-copper-unrelated-kg",
+            "content": "An unrelated KG claim about copper mine ownership.",
+            "score": 0.99,
+        },
+    ),
+    tags=("holdout", "dense-baseline", "graph-danger"),
+)
+
+MULTIHOP_KG_HOLDOUT_CANARY = RetrievalCanary(
+    id="holdout-red-sea-diesel-001",
+    query="Which route links Red Sea shipping risk to European diesel cracks today?",
+    split="holdout",
+    question_class="multi_hop_temporal",
+    expectation=CanaryExpectation(
+        intent="temporal",
+        required_sources=("vector", "kg"),
+        required_reference_ids=("claim-red-sea-diesel-cracks",),
+        required_kg_paths=(
+            ("Red Sea", "DISRUPTS", "Shipping lanes", "AFFECTS", "EU diesel cracks"),
+        ),
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-red-sea-shipping-risk",
+            "text": "Shipping disruptions in the Red Sea can lengthen routes into Europe.",
+            "score": 0.86,
+            "source_uri": "doc://red-sea-shipping-risk",
+        },
+    ),
+    kg_hits=(
+        {
+            "claim_id": "claim-red-sea-diesel-cracks",
+            "content": "Red Sea shipping risk can affect European diesel cracks through longer shipping lanes.",
+            "score": 0.93,
+            "metadata": {
+                "path": [
+                    "Red Sea",
+                    "DISRUPTS",
+                    "Shipping lanes",
+                    "AFFECTS",
+                    "EU diesel cracks",
+                ]
+            },
+        },
+    ),
+    tags=("holdout", "trading", "geopolitics", "kg-helpful"),
+)
+
+DEFAULT_SEARCH_CANARIES = (TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY)
+DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
+DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)
+
+
+def canaries_for_split(
+    canaries: tuple[RetrievalCanary, ...] | list[RetrievalCanary],
+    split: CanarySplit,
+) -> tuple[RetrievalCanary, ...]:
+    """Return canaries for one benchmark split without mutating the input set."""
+
+    return tuple(canary for canary in canaries if canary.split == split)

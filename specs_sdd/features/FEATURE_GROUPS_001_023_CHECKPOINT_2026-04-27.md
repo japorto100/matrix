@@ -205,6 +205,10 @@ Current status:
   URL/arXiv/API connectors and citation rows remain open.
 - `019/022/023` define the RAG and benchmark/eval path, but production adapters
   and search spaces are not complete.
+- `022/023` now have explicit search/holdout split metadata and protected
+  inner-loop input gates. The deterministic fused Matrix candidate is still a
+  search-set promotion candidate, not a production default until holdout/live
+  provider and source-derived canaries pass.
 - `017` is global/domain KG, not the agent personal-memory rail. It should use
   nonicdb/NornicDB projection work where useful, while Hindsight/MemPalace keep
   their own memory structures in Postgres.
@@ -216,6 +220,8 @@ Next best work:
 - benchmark parser/chunker candidates: PyMuPDF4LLM, Microsoft MarkItDown,
   Docling and MinerU.
 - implement vector-only, fused vector+KG and KG/path benchmark adapters.
+- expand holdout and strong dense/parser-derived canaries before promoting KG
+  routing defaults.
 - decide where LightRAG/HippoRAG/LinearRAG are references, adapters or deferred
   comparison systems.
 - wire inner-loop candidates from Feature 023 into Feature 022 benchmark

@@ -11,12 +11,23 @@ feature_id: 022
 
 ## Corpus And Questions
 
-- T001 Create canary corpus from `docs/papers/knowledgegraph/`, selected Matrix
+- T001 [partial-done] Create canary corpus from `docs/papers/knowledgegraph/`, selected Matrix
   docs and seeded trading/geopolitical KG claims.
-- T002 Create question classes: simple factual, document-grounded, multi-hop
+  - 2026-04-27: deterministic Matrix canary corpus now has explicit
+    `source_corpus`, split and tags on each canary. Full paper/doc-derived
+    corpus expansion remains open.
+- T002 [partial-done] Create question classes: simple factual, document-grounded, multi-hop
   KG, temporal/current-data and graph-overreach negative cases.
-- T003 Record source/citation goldens and expected KG path/claim refs.
-- T004 Keep search set and holdout set separate for benchmark tuning.
+  - 2026-04-27: implemented `simple_document_grounded` and
+    `multi_hop_temporal` classes plus graph-overreach negative tags.
+- T003 [partial-done] Record source/citation goldens and expected KG path/claim refs.
+  - 2026-04-27: canaries record required source refs, chunk/claim refs and
+    exact KG path tuples; full citation span rows remain open.
+- T004 [done-static-live-smoke] Keep search set and holdout set separate for benchmark tuning.
+  - 2026-04-27: `RetrievalCanary.split` separates `search` and `holdout`;
+    `DEFAULT_SEARCH_CANARIES` is the Meta-Harness optimization default while
+    `DEFAULT_HOLDOUT_CANARIES` contains graph-overreach and multi-hop checks.
+    `compare_candidates()` reports per-split summaries and `holdout_pass_rate`.
 
 ## Candidate Adapters
 
@@ -79,16 +90,25 @@ feature_id: 022
 
 ## Meta-Harness Integration
 
-- T030 Add Meta-Harness scenarios where simulated users ask paper/trading/KG
+- T030 [partial-done] Add Meta-Harness scenarios where simulated users ask paper/trading/KG
   questions and trace gates assert retrieval route, sources and memory/KG
   boundaries.
-- T031 Add Pareto candidates for retrieval mode and embedding dimension.
+  - 2026-04-27: retrieval benchmark artifacts now include query, split and
+    question class in `scenario_set.json`; real agent/user trace scenarios
+    remain open.
+- T031 [partial-done] Add Pareto candidates for retrieval mode and embedding dimension.
+  - 2026-04-27: retrieval mode candidates include split summaries and
+    holdout-pass fields for outer-loop decisions. Embedding-dimension
+    candidates remain open until provider-budget tests run.
 - [x] T031a Add Pareto-readable candidates for retrieval mode:
   `matrix-vector-only`, `matrix-kg-only` and `matrix-fused-vector-kg`.
 - T032 Add decision ledger entries when graph retrieval is kept, rejected or
   deferred for a query class.
-- T033 Ensure benchmark improvements do not become simulation-only hacks:
+- T033 [partial-done] Ensure benchmark improvements do not become simulation-only hacks:
   candidates must pass holdout and live/provider smokes before promotion.
+  - 2026-04-27: inner-loop artifacts carry protected holdout split metadata;
+    promotion is still search-set only until holdout/live provider smokes are
+    deliberately run.
 
 ## Verification
 
@@ -113,8 +133,13 @@ feature_id: 022
   retrieval by default for any query class.
 - T045 Compare graph/fused retrieval against a strong hierarchy-aware RAG
   baseline, not only against naive chunks.
-- T046 Add holdout canaries where GraphRAG is expected to fail or overreach.
-- T047 Add "strong dense baseline" canaries from Feature 021 so graph methods
+- T046 [done-static-live-smoke] Add holdout canaries where GraphRAG is expected to fail or overreach.
+  - 2026-04-27: `holdout-simple-doc-001` proves KG/fused retrieval must not
+    use a high-scoring irrelevant graph claim for plain document QA.
+- T047 [partial-done] Add "strong dense baseline" canaries from Feature 021 so graph methods
   are not rewarded for beating only weak naive chunking.
+  - 2026-04-27: the holdout simple-document canary acts as a first dense
+    baseline; hierarchy-aware/parser-derived canaries from Feature 021 are
+    still open.
 - T048 Add NornicDB/nonicdb projection canaries for temporal, relational and
   multi-hop KG queries once Feature 017 projection replay exists.
