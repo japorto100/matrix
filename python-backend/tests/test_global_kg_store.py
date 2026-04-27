@@ -57,6 +57,16 @@ def test_in_memory_global_kg_expands_claim_context() -> None:
     assert context["source_refs"][0]["source_ref"] == "doc-1"
 
 
+def test_in_memory_global_kg_records_access_once_per_batch() -> None:
+    store = InMemoryGlobalKGStore()
+    claim_id = store.propose_claim(_proposal())
+
+    touched = store.record_claim_access([claim_id, claim_id, "missing"])
+
+    assert touched == 1
+    assert store._access_counts[claim_id] == 1  # noqa: SLF001 - smoke state
+
+
 def test_create_global_kg_store_mock(monkeypatch) -> None:
     monkeypatch.setenv("GLOBAL_KG_MOCK", "true")
 
@@ -138,6 +148,20 @@ def test_postgres_global_kg_vector_search_roundtrip() -> None:
         assert context is not None
         assert context["path"] == rows[0]["path"]
         assert context["context_metadata"]["lane"] == "fast"
+
+        assert store.record_claim_access([claim_id, claim_id, "missing"]) == 1
+        with store._connect() as conn:  # noqa: SLF001 - live DB smoke
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT access_count, last_accessed IS NOT NULL
+                    FROM agent.kg_claim_access_stats
+                    WHERE claim_id = %s
+                    """,
+                    (claim_id,),
+                )
+                access_row = cur.fetchone()
+        assert access_row == (1, True)
     finally:
         with store._connect() as conn:  # noqa: SLF001 - cleanup for live DB smoke
             with conn.cursor() as cur:

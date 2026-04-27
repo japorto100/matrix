@@ -22,6 +22,7 @@ class GlobalKGStore(Protocol):
         embedding_model: str | None = None,
     ) -> list[dict[str, Any]]: ...
     def expand_claim_context(self, claim_id: str, *, limit: int = 5) -> dict[str, Any] | None: ...
+    def record_claim_access(self, claim_ids: Sequence[str]) -> int: ...
     def status(self) -> dict[str, Any]: ...
 
 
@@ -30,6 +31,7 @@ class InMemoryGlobalKGStore:
 
     def __init__(self) -> None:
         self._claims: dict[str, ClaimProposal] = {}
+        self._access_counts: dict[str, int] = {}
 
     def propose_claim(self, proposal: ClaimProposal) -> str:
         self._claims[proposal.claim_id] = proposal
@@ -66,6 +68,15 @@ class InMemoryGlobalKGStore:
         if proposal is None:
             return None
         return _proposal_context(proposal)
+
+    def record_claim_access(self, claim_ids: Sequence[str]) -> int:
+        touched = 0
+        for claim_id in sorted({str(value) for value in claim_ids if str(value).strip()}):
+            if claim_id not in self._claims:
+                continue
+            self._access_counts[claim_id] = self._access_counts.get(claim_id, 0) + 1
+            touched += 1
+        return touched
 
     def status(self) -> dict[str, Any]:
         return {"status": "ready", "provider": "memory", "count": len(self._claims)}
@@ -410,6 +421,37 @@ class PostgresGlobalKGStore:
         if row is None:
             return None
         return _row_to_claim_context(row)
+
+    def record_claim_access(self, claim_ids: Sequence[str]) -> int:
+        ids = sorted({str(value).strip() for value in claim_ids if str(value).strip()})
+        if not ids:
+            return 0
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    WITH ids AS (
+                        SELECT DISTINCT unnest(%s::text[]) AS claim_id
+                    ),
+                    upserted AS (
+                        INSERT INTO agent.kg_claim_access_stats (
+                            claim_id, access_count, last_accessed, updated_at
+                        )
+                        SELECT ids.claim_id, 1, now(), now()
+                        FROM ids
+                        JOIN agent.kg_claims c ON c.claim_id = ids.claim_id
+                        ON CONFLICT (claim_id) DO UPDATE SET
+                            access_count = agent.kg_claim_access_stats.access_count + 1,
+                            last_accessed = now(),
+                            updated_at = now()
+                        RETURNING claim_id
+                    )
+                    SELECT COUNT(*) FROM upserted
+                    """,
+                    (ids,),
+                )
+                row = cur.fetchone()
+        return int(row[0]) if row else 0
 
     def status(self) -> dict[str, Any]:
         try:

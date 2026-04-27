@@ -43,6 +43,13 @@ feature_id: 017
   passed`; this inserted a synthetic 3D test claim, retrieved it through
   pgvector despite no lexical overlap, verified compact KG path/source-ref
   output plus `expand_claim_context`, and cleaned up the claim row.
+- `GlobalKGStore.record_claim_access(claim_ids)` now records access telemetry
+  into `agent.kg_claim_access_stats`, not into the main claim row. In-memory
+  smoke mode deduplicates a batch and counts existing claims only.
+- Postgres smoke with local `.env` credentials on 2026-04-27:
+  `.venv/bin/python -m pytest tests/test_global_kg_store.py tests/test_global_kg.py -q`
+  => `13 passed`; this verified access-stat UPSERT, duplicate claim ids counted
+  once per batch, `last_accessed` is populated, and claim cleanup cascades.
 - `kg_pipeline.sinks.global_kg` has unit tests for extraction-result to
   `ClaimProposal` mapping with evidence refs and NornicDB projection payloads.
 - KG pipeline `/propose` is unit-tested in non-persist mode. Persist mode is

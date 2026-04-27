@@ -41,8 +41,8 @@ feature_id: 017
   candidate source for Feature 019.
 - T012 [done-static] Add decay scoring for recency, validity-end and access
   signals.
-- T013 Store access telemetry in event/stats tables, not as per-query hot
-  updates on claim rows.
+- T013 [done-static-live-smoke] Store access telemetry in event/stats tables,
+  not as per-query hot updates on claim rows.
 - T014 [done-static-live-smoke] Add answer-time KG context metadata: status,
   freshness, confidence and provenance refs.
 - T015 Define vector chunk metadata contract: `chunk_id`, `source_uri`,
@@ -108,8 +108,8 @@ feature_id: 017
 - T040 [partial-static] Unit-test bitemporal insert/correction/query semantics.
 - T041 Unit-test no raw tool output is promoted to KG without explicit claim
   extraction and source refs.
-- T042 Unit-test decay ranking with stale, recently accessed and expired-valid
-  claims.
+- T042 [partial-static-live-smoke] Unit-test decay ranking with stale, recently
+  accessed and expired-valid claims.
 - T043 Live-smoke one evidence -> proposed claim -> promoted claim -> KG recall
   path.
 - T044 [partial-static] Unit-test vector/KG RRF fusion and attribution.
