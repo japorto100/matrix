@@ -94,7 +94,11 @@ feature_id: 021
 - T031 [done-static] Unit-test chunk/source/citation refs.
   - 2026-04-27: local ingestion test asserts stable chunk id prefix,
     `source_artifact_id`, `source_uri` and `citation_ref`.
-- T032 Unit-test optional KG proposal evidence refs.
+- T032 [done-static] Unit-test optional KG proposal evidence refs.
+  - 2026-04-27: `proposals_from_extraction()` accepts
+    `evidence_metadata_by_ref` and preserves `source_artifact_id`, `chunk_id`,
+    `chunk_hash`, `citation_ref`, page and parser/chunker metadata in
+    `EvidenceRef.metadata`; test covers source URI override from chunk metadata.
 - T033 [done] Live-smoke local paper ingestion using
   `docs/papers/knowledgegraph/Do We Still Need GraphRAG Benchmarking RAG and GraphRAG for Agentic Search Systems arXiv 2604.09666.md`.
   - 2026-04-27: CLI local-file smoke passed against Postgres with

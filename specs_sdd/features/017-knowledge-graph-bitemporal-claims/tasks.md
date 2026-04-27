@@ -136,9 +136,13 @@ feature_id: 017
   expected to improve retrieval stability over dense RAG.
 - T049 Track offline KG build/update cost and online latency before promoting
   KG retrieval as default for any query class.
-- T049a Verify KG extraction/projection can be rebuilt from source artifacts,
+- T049a [partial-static] Verify KG extraction/projection can be rebuilt from source artifacts,
   chunks, embeddings and evidence refs without depending on a second graph DB
   as source of truth.
+  - 2026-04-27: KG proposal mapping now preserves ingestion
+    `source_artifact_id`, `chunk_id`, `chunk_hash`, `citation_ref`, page and
+    parser/chunker metadata in `EvidenceRef.metadata` when extraction is run
+    over source-grounded chunks. Projection replay itself remains open.
 - T049b Benchmark NornicDB/nonicdb path retrieval against Postgres-only KG
   candidate search and fused RAG on the same Feature 022 canaries; promote only
   for query classes where it improves path completeness, stability or latency.
@@ -152,5 +156,8 @@ feature_id: 017
 - T053 [done-static] Add KG-pipeline sink that maps extraction relations to
   explicit `ClaimProposal` objects with evidence refs, without automatic
   promotion.
+  - 2026-04-27: evidence refs can now carry source artifact/chunk/citation
+    metadata from Feature 021, so proposed claims can point back to exact
+    source chunks before promotion.
 - T054 [done-static] Add KG-pipeline `/propose` endpoint that returns
   Feature-017 claim proposals and only persists when explicitly requested.

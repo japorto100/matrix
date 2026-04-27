@@ -26,6 +26,35 @@ def test_proposals_from_extraction_maps_relations_to_claims() -> None:
     assert proposal.projection_payload()["predicate"] == "SANCTIONED_BY"
 
 
+def test_proposals_from_extraction_preserves_source_artifact_citation_metadata() -> None:
+    result = extract_heuristic("EU sanctions Russia.", doc_id="chunk-1")
+
+    proposals = proposals_from_extraction(
+        result,
+        source_uri="doc://fallback",
+        evidence_metadata_by_ref={
+            "chunk-1": {
+                "source_artifact_id": "artifact-1",
+                "source_uri": "file:///papers/sanctions.md",
+                "chunk_id": "chunk-1",
+                "chunk_index": 0,
+                "chunk_hash": "hash-1",
+                "citation_ref": "file:///papers/sanctions.md#chunk=chunk-1&page=4",
+                "page_start": 4,
+                "parser_name": "markdown",
+                "parser_version": "1",
+                "chunker_name": "token",
+            }
+        },
+    )
+
+    evidence = proposals[0].evidence[0]
+    assert evidence.source_uri == "file:///papers/sanctions.md"
+    assert evidence.metadata["source_artifact_id"] == "artifact-1"
+    assert evidence.metadata["citation_ref"].endswith("#chunk=chunk-1&page=4")
+    assert evidence.metadata["chunker_name"] == "token"
+
+
 def test_proposals_from_extraction_skip_skipped_results() -> None:
     result = ExtractionResult(
         doc_id="doc-1",

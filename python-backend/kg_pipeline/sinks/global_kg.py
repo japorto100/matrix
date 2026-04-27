@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 
 from kg_pipeline.core.types import ExtractionResult
@@ -14,6 +15,7 @@ def proposals_from_extraction(
     source_layer: str = "ingestion",
     source_uri: str | None = None,
     valid_from: datetime | None = None,
+    evidence_metadata_by_ref: Mapping[str, Mapping[str, object]] | None = None,
 ) -> list[ClaimProposal]:
     """Convert extracted relations into explicit KG claim proposals."""
 
@@ -24,12 +26,17 @@ def proposals_from_extraction(
     entity_by_label = {entity.label: entity for entity in result.entities}
     proposals: list[ClaimProposal] = []
     claim_valid_from = valid_from or datetime.now(UTC)
+    evidence_metadata_by_ref = evidence_metadata_by_ref or {}
 
     for relation in result.relations:
         source_ref = (relation.doc_id or result.doc_id).strip()
         evidence_quote = relation.evidence.strip()
         if not source_ref or not evidence_quote:
             continue
+        source_metadata = dict(evidence_metadata_by_ref.get(source_ref) or {})
+        resolved_source_uri = str(source_metadata.get("source_uri") or source_uri or "")
+        if not resolved_source_uri:
+            resolved_source_uri = None
 
         subject = entity_by_id.get(relation.subject) or entity_by_label.get(
             relation.subject
@@ -40,12 +47,30 @@ def proposals_from_extraction(
         evidence = EvidenceRef(
             source_layer=source_layer,
             source_ref=source_ref,
-            source_uri=source_uri,
+            source_uri=resolved_source_uri,
             quote=evidence_quote,
             metadata={
                 "extractor": result.extractor,
                 "subject_entity_id": relation.subject,
                 "object_entity_id": relation.object,
+                **{
+                    key: value
+                    for key, value in source_metadata.items()
+                    if key
+                    in {
+                        "source_artifact_id",
+                        "chunk_id",
+                        "chunk_index",
+                        "chunk_hash",
+                        "citation_ref",
+                        "section",
+                        "page_start",
+                        "page_end",
+                        "parser_name",
+                        "parser_version",
+                        "chunker_name",
+                    }
+                },
             },
         )
         proposals.append(
