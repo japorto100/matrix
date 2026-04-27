@@ -73,6 +73,9 @@ feature_id: 019
 - T037 Add source-grounding baseline order for implementation: strong
   parser/chunker/citation pipeline first, Matrix vector baseline second,
   Matrix fused vector+KG third, external LightRAG/HippoRAG adapters fourth.
+  - 2026-04-27: retrieval benchmark canaries now verify reference-level
+    source/citation metadata, so vector/fused candidates are judged against a
+    stronger source-grounded baseline before external GraphRAG adapters.
 - T038 [done-static] Require every retrieval candidate to declare source
   artifact version, parser version, chunking config, embedding model/dimension
   and KG projection version before Feature 022 scores are comparable.

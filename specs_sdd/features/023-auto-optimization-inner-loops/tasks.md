@@ -52,6 +52,9 @@ feature_id: 023
 - T024 Add source-grounding candidate generator for Feature 021/019:
   parser, chunker, metadata enrichment, top-k, RRF weight and citation-verifier
   settings.
+  - 2026-04-27: Feature 022 now exposes reference-level metadata failures
+    (`missing-reference-metadata:<ref>:<key>`) that inner-loop candidates can
+    optimize against without mutating goldens or holdout sets.
 
 ## Memory/Agent Inner Loop
 

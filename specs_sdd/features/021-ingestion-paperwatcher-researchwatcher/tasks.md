@@ -92,6 +92,9 @@ feature_id: 021
   parser registry, hierarchy-aware chunker, citation refs, embedding metadata
   and optional KG proposal emission must be testable as one pipeline before
   external GraphRAG candidates are judged.
+  - 2026-04-27: Feature 022 canaries now require selected references to retain
+    source artifact/chunk/citation/parser metadata, making this implementation
+    pack enforceable in retrieval benchmarks.
 
 ## Verification
 

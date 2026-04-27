@@ -25,6 +25,7 @@ class CanaryExpectation:
     forbidden_sources: tuple[str, ...] = ()
     must_not_degrade: bool = True
     required_reference_ids: tuple[str, ...] = ()
+    required_reference_metadata: dict[str, tuple[str, ...]] = field(default_factory=dict)
     required_kg_paths: tuple[tuple[str, ...], ...] = ()
     generated_answer: str | None = None
     require_citations: bool = False
@@ -73,6 +74,18 @@ def _observed_kg_paths(hits: list[dict[str, Any]] | None) -> set[tuple[str, ...]
     return paths
 
 
+def _reference_metadata_by_id(
+    references: list[dict[str, Any]] | None,
+) -> dict[str, dict[str, Any]]:
+    """Return selected reference metadata keyed by reference id."""
+
+    return {
+        str(ref.get("id")): ref.get("metadata", {})
+        for ref in references or []
+        if isinstance(ref.get("metadata"), dict)
+    }
+
+
 async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
     """Run one canary and return a stable pass/fail artifact."""
 
@@ -87,6 +100,7 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
     sources = _observed_sources(result.hits)
     kg_paths = _observed_kg_paths(result.hits)
     ranked_reference_ids = [str(ref.get("id")) for ref in result.references or []]
+    reference_metadata = _reference_metadata_by_id(result.references)
     reference_ids = set(ranked_reference_ids)
     verification = result.verification or {}
     cited_reference_ids = {
@@ -109,6 +123,11 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
     for reference_id in canary.expectation.required_reference_ids:
         if reference_id not in reference_ids:
             failures.append(f"missing reference {reference_id!r}")
+    for reference_id, required_keys in canary.expectation.required_reference_metadata.items():
+        metadata = reference_metadata.get(reference_id) or {}
+        for key in required_keys:
+            if metadata.get(key) in (None, ""):
+                failures.append(f"missing reference metadata {reference_id!r}:{key}")
     for required_path in canary.expectation.required_kg_paths:
         if required_path not in kg_paths:
             failures.append(f"missing kg path {required_path!r}")
@@ -150,6 +169,7 @@ async def evaluate_canary(canary: RetrievalCanary) -> dict[str, Any]:
         "kg_paths": [list(path) for path in sorted(kg_paths)],
         "ranked_reference_ids": ranked_reference_ids,
         "reference_ids": sorted(reference_ids),
+        "reference_metadata": reference_metadata,
         "verification": verification,
         "cited_reference_ids": sorted(cited_reference_ids),
         "hit_count": len(result.hits or []),
@@ -262,6 +282,17 @@ SOURCE_PROVENANCE_CANARY = RetrievalCanary(
         required_sources=("vector",),
         forbidden_sources=("kg",),
         required_reference_ids=("chunk-source-provenance",),
+        required_reference_metadata={
+            "chunk-source-provenance": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "parser_name",
+                "parser_version",
+                "chunker_name",
+            )
+        },
         required_cited_reference_ids=("chunk-source-provenance",),
         generated_answer=(
             "The ResearchWatcher provenance fixture says source artifact citations "

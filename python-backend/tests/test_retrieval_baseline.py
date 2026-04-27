@@ -415,6 +415,10 @@ async def test_source_provenance_canary_requires_chunk_citation_metadata() -> No
     assert verdict["sources"] == ["vector"]
     assert verdict["cited_reference_ids"] == ["chunk-source-provenance"]
     assert verdict["ranked_reference_ids"] == ["chunk-source-provenance"]
+    metadata = verdict["reference_metadata"]["chunk-source-provenance"]
+    assert metadata["source_artifact_id"] == "artifact-researchwatcher-provenance"
+    assert metadata["citation_ref"].endswith("#chunk=chunk-source-provenance")
+    assert metadata["parser_name"] == "markdown"
 
 
 @pytest.mark.asyncio

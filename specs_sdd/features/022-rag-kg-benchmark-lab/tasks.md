@@ -27,6 +27,9 @@ feature_id: 022
     exact KG path tuples; full citation span rows remain open.
   - 2026-04-27: `source-provenance-001` records source artifact id, source
     URI, chunk id/hash, parser/chunker metadata and `citation_ref`.
+  - 2026-04-27: canary expectations can now require metadata keys per selected
+    reference, so a result cannot pass by returning the right chunk id while
+    dropping source artifact, parser/chunker or citation metadata.
 - T004 [done-static-live-smoke] Keep search set and holdout set separate for benchmark tuning.
   - 2026-04-27: `RetrievalCanary.split` separates `search` and `holdout`;
     `DEFAULT_SEARCH_CANARIES` is the Meta-Harness optimization default while
@@ -148,5 +151,10 @@ feature_id: 022
   - 2026-04-27: the holdout simple-document canary acts as a first dense
     baseline; hierarchy-aware/parser-derived canaries from Feature 021 are
     still open.
+  - 2026-04-27: `source-provenance-001` now asserts that selected vector
+    references preserve source artifact, chunk hash, parser/chunker and
+    `citation_ref` metadata. This upgrades the dense baseline from naive
+    chunk-id matching toward source-grounded RAG, but real parser-derived
+    hierarchy canaries remain open.
 - T048 Add NornicDB/nonicdb projection canaries for temporal, relational and
   multi-hop KG queries once Feature 017 projection replay exists.

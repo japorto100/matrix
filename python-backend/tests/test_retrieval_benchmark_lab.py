@@ -116,6 +116,42 @@ async def test_compare_candidates_fails_missing_source_grounding_metadata() -> N
 
 
 @pytest.mark.asyncio
+async def test_compare_candidates_fails_missing_reference_source_metadata() -> None:
+    canary = RetrievalCanary(
+        id="missing-reference-metadata-001",
+        query="Which source metadata supports this chunk?",
+        mode="text",
+        expectation=CanaryExpectation(
+            intent="text",
+            required_sources=("vector",),
+            required_reference_ids=("chunk-without-metadata",),
+            required_reference_metadata={
+                "chunk-without-metadata": ("source_artifact_id", "citation_ref")
+            },
+        ),
+        vector_hits=(
+            {
+                "id": "chunk-without-metadata",
+                "text": "This chunk intentionally has no citation metadata.",
+                "score": 0.9,
+                "source_uri": "doc://weak-source",
+            },
+        ),
+    )
+
+    report = await compare_candidates([canary], candidates=(MATRIX_VECTOR_ONLY,), k=5)
+    result = report["candidates"][0]["results"][0]
+
+    assert result["passed"] is False
+    assert "missing-reference-metadata:chunk-without-metadata:source_artifact_id" in result[
+        "failures"
+    ]
+    assert "missing-reference-metadata:chunk-without-metadata:citation_ref" in result[
+        "failures"
+    ]
+
+
+@pytest.mark.asyncio
 async def test_compare_candidates_scores_citation_and_unsupported_claim_failures() -> None:
     canary = RetrievalCanary(
         id="citation-support-001",

@@ -108,6 +108,16 @@ def _ranked_reference_ids(references: list[dict[str, Any]] | None) -> list[str]:
     return [str(ref.get("id")) for ref in references or []]
 
 
+def _reference_metadata_by_id(
+    references: list[dict[str, Any]] | None,
+) -> dict[str, dict[str, Any]]:
+    return {
+        str(ref.get("id")): ref.get("metadata", {})
+        for ref in references or []
+        if isinstance(ref.get("metadata"), dict)
+    }
+
+
 def _recall_at(ranked_ids: list[str], relevant_ids: set[str], k: int) -> float | None:
     if not relevant_ids:
         return None
@@ -195,6 +205,7 @@ async def evaluate_candidate(
     sources = _sources(result.hits)
     kg_paths = _kg_paths(result.hits)
     ranked_ids = _ranked_reference_ids(result.references)
+    reference_metadata = _reference_metadata_by_id(result.references)
     relevant = set(canary.expectation.required_reference_ids)
     compatibility = metadata_compatibility(candidate)
     verification = result.verification or {}
@@ -214,6 +225,11 @@ async def evaluate_candidate(
     for reference_id in relevant:
         if reference_id not in ranked_ids:
             failures.append(f"missing-reference:{reference_id}")
+    for reference_id, required_keys in canary.expectation.required_reference_metadata.items():
+        metadata = reference_metadata.get(reference_id) or {}
+        for key in required_keys:
+            if metadata.get(key) in (None, ""):
+                failures.append(f"missing-reference-metadata:{reference_id}:{key}")
     for required_path in canary.expectation.required_kg_paths:
         if required_path not in kg_paths:
             failures.append(f"missing-kg-path:{' -> '.join(required_path)}")
@@ -264,6 +280,7 @@ async def evaluate_candidate(
         "sources": sorted(sources),
         "kg_paths": [list(path) for path in sorted(kg_paths)],
         "ranked_reference_ids": ranked_ids,
+        "reference_metadata": reference_metadata,
         f"recall@{k}": _recall_at(ranked_ids, relevant, k),
         f"ndcg@{k}": _ndcg_at(ranked_ids, relevant, k),
         "hit_count": len(result.hits or []),

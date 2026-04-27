@@ -25,3 +25,8 @@ feature_id: 022
     and reports `split_summary`/`holdout_pass_rate`; default Meta-Harness
     optimization still runs search only, so holdout promotion must be an
     explicit later gate.
+- Source-grounded candidates must preserve reference-level provenance, not just
+  answer-level citations.
+  - 2026-04-27: canary expectations can require reference metadata keys; the
+    benchmark runner fails candidates that lose source artifact, chunk hash,
+    parser/chunker or `citation_ref` metadata on selected references.
