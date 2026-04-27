@@ -3,7 +3,7 @@ title: Feature Index
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-26
+updated: 2026-04-27
 ---
 
 # Feature Index
@@ -32,6 +32,9 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 017 | `017-knowledge-graph-bitemporal-claims` | planned | Global/domain KG ueber nonicdb/NornicDB-Linie: bitemporale Claims, Projection, Decay-Retrieval und Provenance |
 | 018 | `018-database-schema-governance` | planned | Alembic bleibt authoritative, lesbare Current-Schema-Registry und Introspection-Gates |
 | 019 | `019-hybrid-rag-retrieval` | implementation_started | Eigenes RAG/HiRAG-Feature: OpenRouter Embeddings, LightRAG/HippoRAG/LinearRAG-Eval, Context Bubble, Self-RAG und Fusion |
+| 020 | `020-agent-harness-subagents-routing` | planned | Graphless/LangGraph/dispatcher routing, future subagent contracts and HermesAgent-style harness lessons without coding-agent product scope |
+| 021 | `021-ingestion-paperwatcher-researchwatcher` | planned | Source ingestion, Paperwatcher/Researchwatcher adoption, artifact registry, citations and KG proposal handoff |
+| 022 | `022-rag-kg-benchmark-lab` | planned | Evidence lane for vector, fused KG, LightRAG/HippoRAG-style candidates, matched budgets and Meta-Harness promotion decisions |
 
 ## Meta-Bereiche
 
@@ -78,3 +81,9 @@ Die umfangreichsten Live-Verify-Listen liegen hier:
   migration drift gates
 - Feature 019: provider-konfigurierbare Embeddings, vector/KG/fused retrieval,
   Context Bubble, Self-RAG/citation verification and GraphRAG candidate evals
+- Feature 020: agent harness routing/subagent contracts across dispatcher,
+  LangGraph and graphless simple runner
+- Feature 021: ingestion/Paperwatcher source artifacts, citation refs and
+  explicit KG proposal handoff
+- Feature 022: RAG/KG benchmark lab with fixed budgets, holdout and promotion
+  evidence for graph retrieval candidates

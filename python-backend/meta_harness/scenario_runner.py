@@ -909,9 +909,12 @@ def write_scenario_artifacts(
     data_dir: Path = META_HARNESS_DATA_DIR,
 ) -> Path:
     """Write a filesystem-queryable candidate artifact directory."""
+    from meta_harness.config import capture_trace_source_config
+
     candidate_dir = (
         data_dir / "runs" / result.run_id / "candidates" / result.candidate_id
     )
+    trace_source = capture_trace_source_config()
     trace_dir = candidate_dir / "traces" / result.scenario_id
     sse_dir = candidate_dir / "sse"
     result_dir = candidate_dir / "results"
@@ -930,6 +933,7 @@ def write_scenario_artifacts(
             "memory_engine": os.environ.get("AGENT_MEMORY_ENGINE", "auto"),
             "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
             "agent_max_output_tokens": os.environ.get("AGENT_MAX_OUTPUT_TOKENS", ""),
+            "trace_store": trace_source,
         },
     }
     (data_dir / "runs" / result.run_id / "run.json").write_text(

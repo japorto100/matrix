@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 feature_id: 016
 depends_on:
   - 007-agent-chat-voice-runtime
@@ -100,6 +100,11 @@ Phase 1 can run without frontend and without Go Gateway.
 Required:
 
 - PostgreSQL for audit, sessions, component configs, A/B rows and memory.
+  Trace gates read through `agent.audit.store.get_audit_store().query(...)`;
+  persistent live Meta-Harness runs therefore need `AUDIT_DB_URL` or
+  `HINDSIGHT_DB_URL` pointing at the Postgres-backed `agent.audit_events`
+  table. JSONL audit remains a local smoke fallback, not the preferred source
+  for full outer-loop evidence.
 - LiteLLM Gateway for Base Agent calls. External proposer/judge LLM calls are
   optional and off by default while Codex is acting as proposer in this repo.
 - Python Agent service or direct Python runner.
@@ -124,6 +129,10 @@ Not required for Phase 1:
 
 Those are live-product verification paths, not prerequisites for the
 Python-only Meta-Harness search loop.
+
+Sandbox is scenario-gated: missing OpenSandbox blocks sandbox/file/browser
+cases, but it must not block core chat, memory, routing, RAG/KG or trace-store
+Meta-Harness runs.
 
 ## Roles
 

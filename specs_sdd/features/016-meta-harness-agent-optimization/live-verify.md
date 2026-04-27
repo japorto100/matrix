@@ -139,6 +139,34 @@ Probe:
 - run one scenario that should call a specific tool.
 - assert `tool_call` and `tool_result` audit events.
 
+## MV-02b Trace Source Provenance Smoke
+
+Status: pass on 2026-04-27.
+
+Scope: in-process `simple` and `langgraph` runner parity with Postgres-backed
+audit traces, local OpenAI-compatible `llm-mock`, no frontend, no Go and no
+sandbox.
+
+Command:
+
+- `cd python-backend && AGENT_MEMORY_ENGINE=disabled AUDIT_DB_URL=postgresql://...@127.0.0.1:5433/hindsight_dev HINDSIGHT_DB_URL=postgresql://...@127.0.0.1:5433/hindsight_dev LITELLM_BASE_URL=http://127.0.0.1:8095 LITELLM_API_KEY=dummy AGENT_DEFAULT_MODEL=mock/local AGENT_MAX_OUTPUT_TOKENS=64 META_HARNESS_TURN_TIMEOUT_S=30 META_HARNESS_ALLOW_ENV_CREDENTIALS=false .venv/bin/python -m meta_harness.meta_cli parity ../data/harness/runner_parity/scenarios.json --max-scenarios 1 --model mock/local --run-id run-trace-source-postgres-smoke --candidate-id-prefix trace-source --variants simple,langgraph`
+
+Evidence:
+
+- Run id: `run-trace-source-postgres-smoke`.
+- Candidate artifacts:
+  `data/meta_harness/runs/run-trace-source-postgres-smoke/candidates/trace-source-simple/`
+  and
+  `data/meta_harness/runs/run-trace-source-postgres-smoke/candidates/trace-source-langgraph/`.
+- Result: `parity_passed=true`, `all_variants_trace_passed=true`,
+  `trace_gate_pass_rate=1.0` for both variants.
+- `run.json` and candidate `config.json` both record trace-store provenance:
+  `AUDIT_DB_URL -> HINDSIGHT_DB_URL -> JSONL`, configured Postgres URLs,
+  expected table `agent.audit_events`, JSONL fallback and
+  `sandbox_required_for_core_harness=false`.
+- Postgres verification for exact smoke thread ids showed only `llm_response`
+  and `skill_found` audit actions, matching the no-tool scenario gates.
+
 ## MV-03 Memory Lifecycle Meta-Harness Smoke
 
 Status: pass/kept on 2026-04-27.

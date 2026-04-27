@@ -23,6 +23,25 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def capture_trace_source_config() -> dict[str, Any]:
+    """Capture where Meta-Harness trace gates will read audit events from."""
+    jsonl_dir = os.environ.get(
+        "AUDIT_LOG_DIR",
+        str(Path(__file__).resolve().parents[1] / "data" / "audit"),
+    )
+    return {
+        "audit_store_priority": "AUDIT_DB_URL -> HINDSIGHT_DB_URL -> JSONL",
+        "audit_db_url_configured": bool(os.environ.get("AUDIT_DB_URL")),
+        "hindsight_db_url_configured": bool(os.environ.get("HINDSIGHT_DB_URL")),
+        "jsonl_dir": jsonl_dir,
+        "expected_postgres_table": "agent.audit_events",
+        "source_query": "agent.audit.store.get_audit_store().query(thread_id=...)",
+        "postgres_required_for_persistent_live_runs": True,
+        "jsonl_fallback_for_local_smoke": True,
+        "sandbox_required_for_core_harness": False,
+    }
+
+
 @dataclass
 class HarnessConfig:
     """Serializable snapshot of the agent harness configuration."""
@@ -115,7 +134,8 @@ def capture_current_config() -> HarnessConfig:
                 "reranker_strategy_quality_latency_cost",
                 "mempalace_trigger_policy_context_bloat",
             ],
-        }
+        },
+        "trace_store": capture_trace_source_config(),
     }
 
     # Consent config

@@ -223,6 +223,12 @@ feature_id: 016
   a local Python process, and runner-parity can point `LITELLM_BASE_URL` at it
   for deterministic harness plumbing checks. OpenRouter/free models remain
   explicit live-provider probes.
+- [x] T097e [done-static] Record Meta-Harness trace-source provenance in
+  config snapshots and run manifests. Full live outer-loop runs expect
+  Postgres-backed `agent.audit_events` through `AUDIT_DB_URL` or
+  `HINDSIGHT_DB_URL`; JSONL audit is documented as a local smoke fallback.
+  Sandbox availability is recorded as not required for core harness runs and
+  remains only a scenario-specific blocker.
 - [x] T097a Add explicit `memory_add` deduplication for repeated normalized
   content/fact-type writes in the same thread and short time window after
   Meta-Harness exposed duplicate writes in `run-eeb4e11fab0f`.
