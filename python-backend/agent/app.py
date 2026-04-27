@@ -801,12 +801,13 @@ async def _stream_agent_loop(
 
     # exec-16: Model + Key aus DB (control-ui), ENV als Fallback.
     from agent.security.credentials import (
+        get_env_default_model,
         get_user_api_key,
         get_user_default_model,
         provider_from_model,
     )
 
-    model = req.model or await get_user_default_model(user_id) or ""
+    model = req.model or await get_user_default_model(user_id) or get_env_default_model()
     if not model:
         from agent.streaming import ErrorPacket, sse
 

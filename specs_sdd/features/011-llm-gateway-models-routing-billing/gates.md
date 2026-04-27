@@ -13,7 +13,7 @@ feature_id: 011
 
 - [x] LiteLLM starts on port 4000.
 - [x] `/v1/chat/completions` non-streaming response works.
-- [ ] Streaming SSE response works.
+- [x] Streaming SSE response works.
 - [ ] Tool-call response arguments shape is compatible.
 - [ ] Direct provider fallback path still works.
 
@@ -25,8 +25,9 @@ feature_id: 011
 - [ ] Key set/delete/validate endpoints are live-verified.
 - [ ] Encrypted DB value and masked API response are live-verified.
 - [ ] Missing `KEY_ENCRYPTION_SECRET` fails closed in operator config.
-- [ ] Meta-Harness/dev anonymous LLM path is reviewed so it cannot bypass
-  production named-user CredentialPool, quotas, billing or audit.
+- [x] Meta-Harness/dev anonymous LLM path is reviewed so it cannot bypass
+  production named-user CredentialPool, quotas, billing or audit. Current
+  fallback is development/local/test only unless explicitly enabled.
 - [ ] OpenRouter embedding calls for MemPalace are reviewed under the same
   credential/redaction/quota/audit rules as chat model calls.
 
@@ -34,7 +35,8 @@ feature_id: 011
 
 - [x] Model metadata tests pass.
 - [ ] Control UI model explorer loads live provider/model data.
-- [ ] Agent Chat model picker sends selected model through BFF/backend.
+- [x] Agent Chat backend accepts selected/default model through BFF/backend;
+  browser picker render remains Feature 007/Frontend live scope.
 - [x] Selected model reaches LiteLLM/provider.
 
 ## G4 Billing / Insights

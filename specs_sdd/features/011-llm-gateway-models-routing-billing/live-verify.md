@@ -65,7 +65,9 @@ feature_id: 011
 
 ## Result
 
-partial pass
+partial pass; backend streaming/default-model path is live verified, UI picker,
+tool-call provider shape, spend dashboard and production credential drills remain
+open.
 
 ## Live Evidence 2026-04-27
 
@@ -84,10 +86,23 @@ partial pass
   LiteLLM/OpenRouter with model `openrouter/openrouter/free`; metadata showed
   provider `openrouter`, model `openrouter/openrouter/free`, and successful
   `llm_response`.
+- Direct Agent SSE smoke returned AI-SDK-v6 packets through the live Python
+  service:
+  - request: `POST http://localhost:8094/api/v1/agent/chat` with
+    `x-auth-user: @alice:matrix.local`
+  - model metadata: provider `openrouter`, model `openrouter/openrouter/free`
+  - text packet: `{"type":"text-delta","delta":"matrix parser fixed"}`
+- Matrix live bridge smoke then proved the same model response reaches the
+  Matrix room via Python Bridge and Go Appservice:
+  - room `!whDYMsaAvmfYe_DAuHoAO9GdXITGGtjMuNoDSBmpkKg`
+  - reply body `matrix parser fixed`
+- Credential boundary update: production still uses `agent.user_credentials`;
+  provider ENV fallback is limited to development/local/test by default, with
+  `AGENT_ALLOW_ENV_CREDENTIAL_FALLBACK` as an explicit override.
 
 Remaining:
 
-- streaming SSE and tool-call response shape through raw LiteLLM;
+- tool-call response shape through raw LiteLLM;
 - Control UI model explorer/picker;
 - DB-backed spend dashboard;
-- production credential/security review for anonymous dev Meta-Harness path.
+- production credential/security drill for missing/invalid configured keys.

@@ -101,6 +101,17 @@ Remaining full-live blockers:
     messages, avoiding `/_send/.../` 404s.
   - Go appservice resolves DM replies to the joined room agent when no explicit
     `@agent-*` mention exists, avoiding `@agent-bot` membership `M_FORBIDDEN`.
-- The Python agent currently returned fallback text `(keine Antwort)` because
-  the agent SSE emitted an error packet. That is an Agent/Harness quality gate,
-  not a Matrix bridge delivery failure.
+  - Python Bridge now parses AI-SDK-v6 `text-delta`/`delta` packets as well as
+    the legacy `text_delta`/`text` shape.
+  - Agent HTTP entry now honors `AGENT_DEFAULT_UTILITY_MODEL` when no
+    control-ui user model is selected, and development can use provider ENV
+    credentials when no per-user DB key is seeded.
+  - Python Bridge forwards the Matrix sender as `x-auth-user` so per-user model
+    and credential lookup can work for Matrix traffic.
+- Second full live proof used the real Python Agent/OpenRouter path, not a
+  manual NATS reply:
+  - `room_id`: `!whDYMsaAvmfYe_DAuHoAO9GdXITGGtjMuNoDSBmpkKg`
+  - `sent_event_id`: `$R8EnzPOnRY96Oh73U3N62mS5wUb2zPtmG2p7DT57YoY`
+  - `agent_reply_found`: `true`
+  - `agent_reply.event_id`: `$EdKTt1gKWBvMqyPbd1uZis9q6D73vqw-oERjt09myjk`
+  - `agent_reply.body`: `matrix parser fixed`

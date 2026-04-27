@@ -23,7 +23,7 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 008 | `008-agentic-ui-generative-ui-mcp` | static_verified_live_pending | A2UI/Copilot/Python-Emitter statisch verifiziert, #93/#94/#95 entschieden |
 | 009 | `009-multi-agent-a2a-orchestration` | mixed_open | A2A-Client/AgentCards/Graph/Rollen statisch verifiziert; Delegation/Checkpoint/Per-User-Routing offen |
 | 010 | `010-control-ui-runtime-surfaces` | mixed_open | Shell/BFF/Queries stehen; viele Tabs brauchen Live-Daten-Audit; Control ist Anzeige/Admin, kein Agent-Tool-Surface by default |
-| 011 | `011-llm-gateway-models-routing-billing` | static_verified_live_pending | Billing/Model/Routing statisch verifiziert, Routing-Followups geschlossen |
+| 011 | `011-llm-gateway-models-routing-billing` | backend_streaming_live_partial | Backend default-model/OpenRouter SSE live verifiziert; UI picker, tool-call shape, spend dashboard und Production credential drills offen |
 | 012 | `012-memory-context-world-personal-kb` | implementation_open | Hindsight/MemPalace/Fusion-Agent-Memory in Postgres; upstream/room-session/injection/hydration/eval offen |
 | 013 | `013-sandbox-security-hitl` | mixed_open | Security-Logik statisch verifiziert, URL-preview dev config explizit; HITL/OpenSandbox/Consent/Audit live offen |
 | 014 | `014-observability-harness-evals` | mixed_open | Harness/Export statisch verifiziert; Live-Trace/Audit/Eval-Persistence offen |

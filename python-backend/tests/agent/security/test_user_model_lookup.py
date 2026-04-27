@@ -28,6 +28,7 @@ async def _fake_connect_factory(row, hits):
 @pytest.fixture(autouse=True)
 def _db_url(monkeypatch):
     monkeypatch.setenv("HINDSIGHT_DB_URL", "postgresql://fake/test")
+    monkeypatch.setenv("AGENT_ALLOW_ENV_CREDENTIAL_FALLBACK", "false")
 
 
 @pytest.mark.asyncio
@@ -80,3 +81,25 @@ async def test_get_user_role_model_skips_empty_role(monkeypatch):
 
     assert await credentials.get_user_role_model("@alice:matrix.local", "") is None
     assert hits == []
+
+
+@pytest.mark.asyncio
+async def test_get_user_api_key_can_use_dev_env_fallback(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "development")
+    monkeypatch.setenv("AGENT_ALLOW_ENV_CREDENTIAL_FALLBACK", "true")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-openrouter-dev")
+    monkeypatch.delenv("HINDSIGHT_DB_URL", raising=False)
+
+    assert await credentials.get_user_api_key("@alice:matrix.local", "openrouter") == (
+        "sk-openrouter-dev"
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_user_api_key_env_fallback_disabled_in_production(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.delenv("AGENT_ALLOW_ENV_CREDENTIAL_FALLBACK", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-openrouter-dev")
+    monkeypatch.delenv("HINDSIGHT_DB_URL", raising=False)
+
+    assert await credentials.get_user_api_key("@alice:matrix.local", "openrouter") is None

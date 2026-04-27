@@ -90,8 +90,8 @@ Next best work:
   active.
 - execute encrypted-room Matrix bridge flow, key backup and key deletion gates.
 - verify Element X `.well-known` only when mobile/tunnel scope is active.
-- chase Python agent fallback `(keine Antwort)` through Agent/Harness quality
-  gates; bridge delivery is already proven.
+- keep a Matrix-channel regression gate for Python agent fallback
+  `(keine Antwort)`; the current full-path proof returns real model text.
 
 Research need:
 

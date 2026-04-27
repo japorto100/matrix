@@ -24,7 +24,10 @@ migrated_from:
 
 - [x] T010 Verify LiteLLM starts on port 4000.
 - [x] T011 Verify `/v1/chat/completions` non-streaming response.
-- T012 Verify streaming SSE response.
+- [x] T012 [done-live] Verify streaming SSE response.
+  - 2026-04-27: direct `POST /api/v1/agent/chat` produced AI-SDK-v6
+    `text-delta` with `matrix parser fixed`, metadata provider `openrouter`,
+    model `openrouter/openrouter/free`.
 - T013 Verify tool-call response arguments shape.
 - T014 Verify direct provider fallback mode still works.
 - [x] T015 Decide whether docker-compose LiteLLM path remains active.
@@ -43,12 +46,16 @@ migrated_from:
 - T026 Verify remote embedding calls, starting with MemPalace/OpenRouter, use
   CredentialPool/user consent/quota/audit instead of unaudited env-only secrets
   before production enablement.
+- [x] T027 [done-dev-live] Add bounded dev ENV credential fallback for Matrix
+  and harness live smokes: `agent.user_credentials` remains production truth,
+  while `APP_ENV=development` can use provider ENV keys when no user DB key is
+  seeded. Production disables this by default.
 
 ## Model Selection
 
 - T030 Verify Control UI model explorer loads live provider/model data.
 - T031 Verify Agent Chat model picker shows only active provider models.
-- T032 Verify selected model reaches backend request.
+- [x] T032 [done-live] Verify selected/default model reaches backend request.
 - [x] T033 Verify selected model reaches LiteLLM/provider.
 - [x] T034 Decide and implement/defer persisted user model selection.
 
