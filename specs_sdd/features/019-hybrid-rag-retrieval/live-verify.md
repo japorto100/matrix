@@ -34,6 +34,10 @@ feature_id: 019
   retrieved with `search_claims(..., query_embedding=...)` despite no lexical
   overlap, and returned with `semantic_similarity`, decay-adjusted
   `final_score`, provenance and metadata.
+- Added deterministic canaries for the two immediate eval boundaries:
+  `trading-geo-kg-001` requires fused vector+KG evidence, while
+  `general-vector-001` verifies simple document QA stays vector-only.
+  Covered by `tests/test_retrieval_baseline.py`.
 - Retrieval reports `KG_SEARCH_FAILED`/`VECTOR_SEARCH_FAILED` as degraded
   reasons instead of raising through the agent path when an adapter is offline.
 - OpenRouter embedding behavior is unit-tested with a mocked

@@ -60,6 +60,9 @@ lancedb, chromadb have no dep conflicts with the agent runtime).
   source-attributed prompt context.
 - `verifiers.citation.verify_context_support()` provides a deterministic first
   pass for unsupported answer claims.
+- `evals.canaries` provides fast canaries for two policy boundaries:
+  trading/geopolitical multi-hop retrieval must use KG+vector evidence, while
+  simple document QA must remain vector-only unless evals justify graph use.
 
 ## Activation (Live Adapters)
 

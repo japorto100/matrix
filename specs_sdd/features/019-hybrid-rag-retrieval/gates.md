@@ -17,3 +17,5 @@ feature_id: 019
 - Graph retrieval is not default for simple/general QA until eval shows value.
 - KG context can be disabled without breaking dense RAG.
 - Eval reports quality and latency, not only functional success.
+- Deterministic canaries cover at least one KG-improves scenario and one
+  vector-only-enough scenario before larger GraphRAG benchmarks are run.

@@ -64,6 +64,6 @@ feature_id: 019
 - T041 [done-static] Unit-test lightweight KG extraction service.
 - T042 [done-static] Unit-test vector-only, KG-only and fused retrieval result
   contracts.
-- T043 Canary: trading/geopolitical multi-hop question where KG should improve
+- T043 [done-static] Canary: trading/geopolitical multi-hop question where KG should improve
   retrieval stability.
-- T044 Canary: simple/general QA where dense retrieval should remain enough.
+- T044 [done-static] Canary: simple/general QA where dense retrieval should remain enough.

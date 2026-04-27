@@ -5,6 +5,11 @@ import pytest
 from retrieval.api import retrieve
 from retrieval.composers.context_bubble import build_context_bubble
 from retrieval.core.types import RetrievalHit, RetrievalMode
+from retrieval.evals.canaries import (
+    GENERAL_VECTOR_CANARY,
+    TRADING_GEO_KG_CANARY,
+    evaluate_canary,
+)
 from retrieval.rerankers.rrf import reciprocal_rank_fusion
 from retrieval.searchers.kg_claims import kg_claim_hits, kg_claim_rows_to_hits
 from retrieval.searchers.vector_store import vector_search_hits
@@ -206,3 +211,22 @@ def test_verify_context_support_flags_unsupported_claims() -> None:
     assert result.supported is False
     assert result.cited_reference_ids == ("claim-1",)
     assert result.unsupported_claims == ("Copper prices are guaranteed to rise.",)
+
+
+@pytest.mark.asyncio
+async def test_trading_geo_canary_requires_vector_and_kg_sources() -> None:
+    verdict = await evaluate_canary(TRADING_GEO_KG_CANARY)
+
+    assert verdict["passed"] is True
+    assert verdict["intent"] == "temporal"
+    assert "kg" in verdict["sources"]
+    assert "vector" in verdict["sources"]
+
+
+@pytest.mark.asyncio
+async def test_general_qa_canary_stays_vector_only() -> None:
+    verdict = await evaluate_canary(GENERAL_VECTOR_CANARY)
+
+    assert verdict["passed"] is True
+    assert verdict["intent"] == "text"
+    assert verdict["sources"] == ["vector"]
