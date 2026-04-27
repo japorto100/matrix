@@ -21,6 +21,7 @@ feature_id: 021
 - Text token recall against ground-truth Markdown.
 - Heading hierarchy preservation.
 - Page anchor/citation correctness.
+- Source artifact/chunk citation correctness.
 - Table extraction and table-boundary preservation.
 - Figure/image reference preservation.
 - Formula/code-block preservation.

@@ -48,3 +48,14 @@ feature_id: 022
     `split_summary`.
   - The default Meta-Harness retrieval benchmark still uses
     `DEFAULT_SEARCH_CANARIES`; holdout canaries are explicit rerun material.
+- LV010 [done-static-live-smoke] Verify source artifact/chunk citation in the
+  default search canary set.
+  - 2026-04-27:
+    `uv run pytest tests/test_retrieval_baseline.py tests/test_retrieval_benchmark_lab.py tests/meta_harness/test_meta_cli.py -q`
+    passed `41` tests.
+  - 2026-04-27:
+    `uv run python -m meta_harness.meta_cli inner-loop --kind rag --run-id run-inner-rag-provenance-20260427 --data-dir ../.meta-harness`
+    passed validation.
+  - Results: `inner-matrix-vector-only` fitness `0.6667` deferred,
+    `inner-matrix-kg-only` fitness `0.1666` deferred,
+    `inner-matrix-fused-vector-kg` fitness `0.9754` promoted to outer loop.

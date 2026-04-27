@@ -252,6 +252,52 @@ GENERAL_VECTOR_CANARY = RetrievalCanary(
     tags=("dense-baseline", "graph-danger"),
 )
 
+SOURCE_PROVENANCE_CANARY = RetrievalCanary(
+    id="source-provenance-001",
+    query="Which source artifact and chunk support the ResearchWatcher provenance fixture?",
+    mode="text",
+    question_class="source_provenance",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-source-provenance",),
+        required_cited_reference_ids=("chunk-source-provenance",),
+        generated_answer=(
+            "The ResearchWatcher provenance fixture says source artifact citations "
+            "must preserve chunk ids [chunk-source-provenance]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-source-provenance",
+            "text": (
+                "The ResearchWatcher provenance fixture says source artifact "
+                "citations must preserve chunk ids, parser metadata, chunk hashes "
+                "and citation refs."
+            ),
+            "score": 0.92,
+            "source_uri": "doc://researchwatcher/provenance-fixture",
+            "metadata": {
+                "source_artifact_id": "artifact-researchwatcher-provenance",
+                "chunk_id": "chunk-source-provenance",
+                "chunk_index": 0,
+                "chunk_hash": "sha256:provenance-fixture",
+                "citation_ref": (
+                    "doc://researchwatcher/provenance-fixture"
+                    "#chunk=chunk-source-provenance"
+                ),
+                "parser_name": "markdown",
+                "parser_version": "2.0",
+                "chunker_name": "token",
+                "section": "provenance",
+            },
+        },
+    ),
+    tags=("source-grounding", "citation", "researchwatcher"),
+)
+
 SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
     id="holdout-simple-doc-001",
     query="What does the customs memo say about copper concentrate tariff status?",
@@ -322,7 +368,11 @@ MULTIHOP_KG_HOLDOUT_CANARY = RetrievalCanary(
     tags=("holdout", "trading", "geopolitics", "kg-helpful"),
 )
 
-DEFAULT_SEARCH_CANARIES = (TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY)
+DEFAULT_SEARCH_CANARIES = (
+    TRADING_GEO_KG_CANARY,
+    GENERAL_VECTOR_CANARY,
+    SOURCE_PROVENANCE_CANARY,
+)
 DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
 DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)
 

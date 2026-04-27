@@ -20,9 +20,13 @@ feature_id: 022
   KG, temporal/current-data and graph-overreach negative cases.
   - 2026-04-27: implemented `simple_document_grounded` and
     `multi_hop_temporal` classes plus graph-overreach negative tags.
+  - 2026-04-27: added `source_provenance` class for answers that must cite
+    source artifact/chunk refs.
 - T003 [partial-done] Record source/citation goldens and expected KG path/claim refs.
   - 2026-04-27: canaries record required source refs, chunk/claim refs and
     exact KG path tuples; full citation span rows remain open.
+  - 2026-04-27: `source-provenance-001` records source artifact id, source
+    URI, chunk id/hash, parser/chunker metadata and `citation_ref`.
 - T004 [done-static-live-smoke] Keep search set and holdout set separate for benchmark tuning.
   - 2026-04-27: `RetrievalCanary.split` separates `search` and `holdout`;
     `DEFAULT_SEARCH_CANARIES` is the Meta-Harness optimization default while
@@ -100,6 +104,9 @@ feature_id: 022
   - 2026-04-27: retrieval mode candidates include split summaries and
     holdout-pass fields for outer-loop decisions. Embedding-dimension
     candidates remain open until provider-budget tests run.
+  - 2026-04-27: retrieval mode Pareto sweep now includes the
+    `source-provenance-001` search canary; `run-inner-rag-provenance-20260427`
+    scored fused Matrix RAG at fitness `0.9754`.
 - [x] T031a Add Pareto-readable candidates for retrieval mode:
   `matrix-vector-only`, `matrix-kg-only` and `matrix-fused-vector-kg`.
 - T032 Add decision ledger entries when graph retrieval is kept, rejected or

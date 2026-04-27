@@ -64,6 +64,7 @@ async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
     assert report["question_classes"] == [
         "multi_hop_temporal",
         "simple_document_grounded",
+        "source_provenance",
     ]
     assert canaries_for_split(DEFAULT_CANARIES, "search") == DEFAULT_SEARCH_CANARIES
     assert canaries_for_split(DEFAULT_CANARIES, "holdout") == DEFAULT_HOLDOUT_CANARIES

@@ -111,8 +111,11 @@ feature_id: 021
     PDF/full retrieval smoke remains covered by LV004/Feature 019 rather than
     this local-ingest gate.
 - T034 Live-smoke one URL or arXiv-source ingest when network/API keys allow.
-- T035 Meta-Harness scenario: user asks for paper-grounded answer; trace must
+- T035 [partial-done] Meta-Harness scenario: user asks for paper-grounded answer; trace must
   show retrieval/citation path, not memory-only answer.
+  - 2026-04-27: Feature 022 now includes `source-provenance-001`, a
+    source-grounding canary whose generated answer must cite the exact
+    `chunk-source-provenance` reference. Real agent trace remains open.
 - [x] T036 Add real PDF extraction benchmark using ResearchWatcher
   PDF/Markdown ground-truth fixture so Meta-Harness can evaluate parser quality
   instead of only synthetic retrieval canaries.
@@ -132,9 +135,16 @@ feature_id: 021
   source classes where it preserves citations and structure well enough.
 - T041 Add one current trading/finance or macro PDF fixture so parser
   decisions are not based only on generic benchmark PDFs.
-- T042 Add a paper/source provenance fixture where the expected answer must
+- T042 [done-static-live-smoke] Add a paper/source provenance fixture where the expected answer must
   cite paper id, page/section or chunk refs; this becomes the first
   Meta-Harness source-grounding scenario.
+  - 2026-04-27: `SOURCE_PROVENANCE_CANARY` carries source artifact id,
+    source URI, chunk id, chunk hash, parser/chunker metadata and
+    `citation_ref`; `evaluate_canary()` requires the generated answer to cite
+    `[chunk-source-provenance]`.
+  - 2026-04-27: deterministic Meta-Harness inner-loop
+    `run-inner-rag-provenance-20260427` included this source-grounding
+    scenario and passed validation.
 
 ## Bugs Found While Implementing
 

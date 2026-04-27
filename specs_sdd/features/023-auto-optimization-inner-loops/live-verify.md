@@ -43,3 +43,8 @@ feature_id: 023
     `inner-matrix-fused-vector-kg` fitness `0.9631` promoted to outer loop.
   - Generated run artifacts live under ignored local `.meta-harness/`; source
     control tracks the runner, tests and spec evidence, not transient run logs.
+- LV008 [done-static-live-smoke] Verify source-grounding canaries participate
+  in the deterministic RAG inner-loop.
+  - 2026-04-27: `run-inner-rag-provenance-20260427` included
+    `source-provenance-001`; the fused candidate stayed promotable while
+    vector-only and KG-only remained deferred.

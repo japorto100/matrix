@@ -7,6 +7,7 @@ from retrieval.composers.context_bubble import build_context_bubble
 from retrieval.core.types import RetrievalHit, RetrievalMode
 from retrieval.evals.canaries import (
     GENERAL_VECTOR_CANARY,
+    SOURCE_PROVENANCE_CANARY,
     TRADING_GEO_KG_CANARY,
     CanaryExpectation,
     RetrievalCanary,
@@ -406,13 +407,24 @@ async def test_canary_can_require_generated_answer_citations() -> None:
 
 
 @pytest.mark.asyncio
+async def test_source_provenance_canary_requires_chunk_citation_metadata() -> None:
+    verdict = await evaluate_canary(SOURCE_PROVENANCE_CANARY)
+
+    assert verdict["passed"] is True
+    assert verdict["intent"] == "text"
+    assert verdict["sources"] == ["vector"]
+    assert verdict["cited_reference_ids"] == ["chunk-source-provenance"]
+    assert verdict["ranked_reference_ids"] == ["chunk-source-provenance"]
+
+
+@pytest.mark.asyncio
 async def test_canary_set_reports_recall_and_ndcg() -> None:
     report = await evaluate_canary_set(
-        [TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY],
+        [TRADING_GEO_KG_CANARY, GENERAL_VECTOR_CANARY, SOURCE_PROVENANCE_CANARY],
         k=5,
     )
 
-    assert report["count"] == 2
+    assert report["count"] == 3
     assert report["pass_rate"] == 1.0
     assert report["recall@5"] == 1.0
     assert report["ndcg@5"] >= 0.8

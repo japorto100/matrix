@@ -209,6 +209,9 @@ Current status:
   inner-loop input gates. The deterministic fused Matrix candidate is still a
   search-set promotion candidate, not a production default until holdout/live
   provider and source-derived canaries pass.
+- Source provenance is now represented in the default search canaries:
+  `source-provenance-001` requires exact source artifact/chunk citation before
+  a candidate passes.
 - `017` is global/domain KG, not the agent personal-memory rail. It should use
   nonicdb/NornicDB projection work where useful, while Hindsight/MemPalace keep
   their own memory structures in Postgres.

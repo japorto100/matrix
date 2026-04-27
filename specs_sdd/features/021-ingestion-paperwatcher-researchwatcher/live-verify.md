@@ -27,6 +27,9 @@ feature_id: 021
 - LV005 If KG extraction is enabled, confirm outputs are claim proposals only.
 - LV006 Run a Meta-Harness paper-grounded scenario and inspect trace/source
   artifacts.
+  - 2026-04-27 partial: deterministic retrieval scenario
+    `source-provenance-001` is now part of the Meta-Harness RAG inner-loop and
+    requires exact chunk citation. Full real-agent trace remains open.
 - LV007 [done] Run ResearchWatcher PDF extraction benchmark against Markdown
   ground truth.
   - 2026-04-27: `uv run python -m meta_harness.meta_cli pdf-extraction-benchmark --run-id run-pdf-extraction-live-devstack`

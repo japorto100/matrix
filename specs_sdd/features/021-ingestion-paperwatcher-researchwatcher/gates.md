@@ -14,6 +14,9 @@ feature_id: 021
     `uuid5(file://resolved_path)` and can write a minimal artifact even when
     the file is skipped as duplicate.
 - Parsed chunks must carry source refs and parser/chunker versions.
+  - 2026-04-27: `source-provenance-001` asserts source artifact id, source
+    URI, chunk id/hash, citation ref and parser/chunker metadata survive into
+    retrieval references.
 - Embedding jobs must record provider, model, dimension and embedding version.
 - KG proposals must include evidence refs and remain `candidate` until Feature
   017 promotion gates approve them.
