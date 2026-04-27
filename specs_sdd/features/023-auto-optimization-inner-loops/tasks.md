@@ -52,6 +52,11 @@ feature_id: 023
 - T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.
+  - 2026-04-27: inner-loop retrieval candidates now carry concrete
+    `top_k`, `token_budget`, `max_hits`, `fusion` and `context_bubble`
+    parameters from the CLI run instead of only mode/vector/KG booleans.
+    RRF weighting remains open because the current runtime only exposes the
+    default RRF fusion.
 - T022 [done-static-live-smoke] Add budget-safe local/deterministic mode for repeated loops.
 - T023 Add optional OpenRouter-free/provider mode with strict request caps and
   pacing.
@@ -67,6 +72,9 @@ feature_id: 023
   - 2026-04-27: Feature 022 benchmark artifacts also emit decision-log entries
     for KG/fused candidates, giving the outer Meta-Harness proposer a concrete
     keep/discard/defer history instead of only raw scores.
+  - 2026-04-27: `meta_harness.inner_loop` now propagates CLI retrieval search
+    parameters into `inner_loop_candidate.json`, making source-grounding and
+    retrieval-budget candidates auditable by Feature 016 before promotion.
 
 ## Memory/Agent Inner Loop
 

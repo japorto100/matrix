@@ -207,7 +207,13 @@ async def run_deterministic_rag_inner_loop(
         max_hits=max_hits,
     )
     candidates = [
-        _candidate_from_retrieval_result(result, benchmark["run_id"])
+        _candidate_from_retrieval_result(
+            result,
+            benchmark["run_id"],
+            k=k,
+            token_budget=token_budget,
+            max_hits=max_hits,
+        )
         for result in benchmark["report"].get("candidates", [])
         if isinstance(result, dict)
     ]
@@ -335,7 +341,12 @@ def write_inner_loop_artifacts(
 
 
 def _candidate_from_retrieval_result(
-    result: dict[str, Any], source_run_id: str
+    result: dict[str, Any],
+    source_run_id: str,
+    *,
+    k: int = 5,
+    token_budget: int = 1600,
+    max_hits: int = 8,
 ) -> InnerLoopCandidate:
     candidate_id = str(result.get("candidate_id") or "unknown")
     pass_rate = _as_float(result.get("pass_rate"))
@@ -359,6 +370,15 @@ def _candidate_from_retrieval_result(
             "mode": result.get("mode"),
             "include_vector": bool(result.get("include_vector")),
             "include_kg": bool(result.get("include_kg")),
+            "top_k": int(k),
+            "token_budget": int(token_budget),
+            "max_hits": int(max_hits),
+            "fusion": "rrf" if bool(result.get("include_vector")) and bool(result.get("include_kg")) else "single",
+            "context_bubble": {
+                "max_hits": int(max_hits),
+                "token_budget": int(token_budget),
+                "diversity_gate": "enabled",
+            },
         },
         frozen_inputs={
             "source_run_id": source_run_id,
@@ -367,7 +387,12 @@ def _candidate_from_retrieval_result(
             "holdout_pass_rate": result.get("holdout_pass_rate"),
             "metadata": result.get("metadata") or {},
         },
-        budget={"provider_calls": 0, "max_hits": 8, "token_budget": 1600},
+        budget={
+            "provider_calls": 0,
+            "top_k": int(k),
+            "max_hits": int(max_hits),
+            "token_budget": int(token_budget),
+        },
         metrics={
             "pass_rate": pass_rate,
             "recall@5": recall,

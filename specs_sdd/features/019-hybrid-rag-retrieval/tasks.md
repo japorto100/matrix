@@ -64,6 +64,10 @@ feature_id: 019
   retrieval.
 - T035 Use Feature 023 inner-loop outputs as retrieval candidates, but require
   Feature 022 holdout/Meta-Harness evidence before promotion.
+  - 2026-04-27: Feature 023 inner-loop candidate artifacts now include
+    retrieval-budget dimensions (`top_k`, `token_budget`, `max_hits`) plus
+    fusion/context-bubble metadata. They are still candidate evidence only;
+    holdout/live gates decide promotion.
 - T036 [partial-static] Add hierarchy-aware chunking and metadata-enriched
   retrieval as first class candidates; do not compare graph methods only
   against weak naive chunking baselines.

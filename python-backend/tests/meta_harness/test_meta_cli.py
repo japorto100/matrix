@@ -224,6 +224,12 @@ async def test_cli_inner_loop_writes_candidate_artifacts(tmp_path, monkeypatch):
             "rag",
             "--run-id",
             "run-inner",
+            "--k",
+            "3",
+            "--token-budget",
+            "512",
+            "--max-hits",
+            "4",
             "--data-dir",
             str(tmp_path),
         ]
@@ -241,6 +247,13 @@ async def test_cli_inner_loop_writes_candidate_artifacts(tmp_path, monkeypatch):
     aggregate = json.loads((candidate_dir / "aggregate.json").read_text())
     assert payload["candidate_type"] == "benchmark_candidate"
     assert payload["budget"]["provider_calls"] == 0
+    assert payload["budget"]["top_k"] == 3
+    assert payload["budget"]["token_budget"] == 512
+    assert payload["budget"]["max_hits"] == 4
+    assert payload["parameters"]["top_k"] == 3
+    assert payload["parameters"]["context_bubble"]["token_budget"] == 512
+    assert payload["parameters"]["context_bubble"]["max_hits"] == 4
+    assert payload["parameters"]["fusion"] in {"rrf", "single"}
     assert payload["frozen_inputs"]["source_run_id"] == "run-inner-retrieval"
     assert payload["frozen_inputs"]["split_summary"]
     assert aggregate["completion_rate"] == 1.0
