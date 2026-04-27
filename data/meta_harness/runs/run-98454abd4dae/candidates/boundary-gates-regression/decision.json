@@ -1,0 +1,9 @@
+{
+  "run_id": "run-98454abd4dae",
+  "candidate_id": "boundary-gates-regression",
+  "decision": "keep",
+  "rationale": "Regression passed after adding global KG boundary trace gates; memory lifecycle still passes with Fusion route/provider metadata. Skill over-selection remains tracked by T098.",
+  "decided_at": "2026-04-27T03:50:45.982009+00:00",
+  "metrics": {},
+  "follow_up": ""
+}

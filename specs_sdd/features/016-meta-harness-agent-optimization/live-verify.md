@@ -594,3 +594,15 @@ Evidence:
   actions.
 - Static tests verify the new forbidden route/provider gates and scenario
   fixture load.
+- Regression candidate `boundary-gates-regression`, run
+  `run-98454abd4dae`, reran both memory lifecycle scenarios through the
+  in-process SimpleLoop with OpenRouter/LiteLLM and passed with
+  `trace_gate_pass_rate=1.0`, `completion_rate=1.0`, `fitness_score=0.8583`.
+  Observed memory route was `fusion` and providers included `fusion`,
+  `verbatim` and `summary_async`; candidate decision is `keep`.
+
+Follow-up:
+
+- Skill over-selection remains visible in this run (`plan`,
+  `market-research`/`risk-assessment` alongside `memory-usage`) and stays
+  tracked as T098.
