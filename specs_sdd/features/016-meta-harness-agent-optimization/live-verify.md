@@ -176,6 +176,10 @@ Evidence:
 - Candidate decision: `keep`; globally Pareto-dominated by unrelated tiny/no-
   tool scenarios, but kept because it fixes a scenario-specific duplicate-write
   regression and preserves all trace gates.
+- Static follow-up: `evaluate_trace_gates` now emits a deterministic warning
+  when multiple `memory_add` tool calls in a scenario use the same normalized
+  `content`/`fact_type`. Covered by
+  `tests/meta_harness/test_scenario_runner.py`.
 
 Expected evidence:
 

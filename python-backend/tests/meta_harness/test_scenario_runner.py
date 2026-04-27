@@ -159,6 +159,37 @@ def test_trace_gates_check_memory_routes_and_providers(monkeypatch):
     assert verdict.observed_memory_providers == ("fusion", "summary", "verbatim")
 
 
+def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: {"memory_add"})
+    events = [
+        {
+            "action": "tool_call",
+            "toolName": "memory_add",
+            "input": {"content": "Remember exact duplicate", "fact_type": "experience"},
+        },
+        {
+            "action": "tool_call",
+            "toolName": "memory_add",
+            "input": {"content": " remember   exact duplicate ", "fact_type": "experience"},
+        },
+        {
+            "action": "tool_result",
+            "toolName": "memory_add",
+            "success": True,
+        },
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(required_tools=("memory_add",)),
+    )
+
+    assert verdict.passed is True
+    assert verdict.warnings == (
+        "duplicate memory_add content observed: fact_type=experience count=2",
+    )
+
+
 def test_legacy_query_maps_to_scenario():
     scenario = scenario_runner.Scenario.from_mapping(
         {

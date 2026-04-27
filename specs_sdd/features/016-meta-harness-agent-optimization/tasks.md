@@ -210,10 +210,10 @@ feature_id: 016
 - [x] T097a Add explicit `memory_add` deduplication for repeated normalized
   content/fact-type writes in the same thread and short time window after
   Meta-Harness exposed duplicate writes in `run-eeb4e11fab0f`.
-- T097b Add a deterministic duplicate-memory-tool trace gate: if one assistant
-  turn calls `memory_add` multiple times with the same normalized content/fact
-  type, warn or fail the candidate unless the scenario explicitly expects
-  duplicate writes.
+- [x] T097b Add a deterministic duplicate-memory-tool trace warning: if one
+  assistant turn calls `memory_add` multiple times with the same normalized
+  content/fact type, the candidate verdict records a warning unless a future
+  scenario explicitly upgrades the condition to a failure.
 - T098 Reduce skill over-selection in explicit memory probes; current
   `lp-memory-001` passes but still loads `market-research`, `risk-assessment`
   and `plan` alongside `memory-usage`.

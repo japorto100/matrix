@@ -258,6 +258,43 @@ def _event_metadata(event: dict[str, Any]) -> dict[str, Any]:
     return meta if isinstance(meta, dict) else {}
 
 
+def _event_input(event: dict[str, Any]) -> dict[str, Any]:
+    value = event.get("input") or {}
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _normalized_memory_add_key(event: dict[str, Any]) -> tuple[str, str] | None:
+    if _event_action(event) != "tool_call" or _event_tool(event) != "memory_add":
+        return None
+    payload = _event_input(event)
+    content = " ".join(str(payload.get("content") or "").split()).casefold()
+    if not content:
+        return None
+    fact_type = str(payload.get("fact_type") or "experience").strip().casefold()
+    return content, fact_type
+
+
+def _duplicate_memory_add_warnings(events: list[dict[str, Any]]) -> list[str]:
+    counts: dict[tuple[str, str], int] = {}
+    for event in events:
+        key = _normalized_memory_add_key(event)
+        if key is None:
+            continue
+        counts[key] = counts.get(key, 0) + 1
+    return [
+        "duplicate memory_add content observed: "
+        f"fact_type={fact_type or 'experience'} count={count}"
+        for (_content, fact_type), count in sorted(counts.items())
+        if count > 1
+    ]
+
+
 def _registered_tool_names() -> set[str]:
     try:
         from agent.tools.registry import ToolRegistry
@@ -331,6 +368,7 @@ def evaluate_trace_gates(
 
     failures: list[str] = []
     warnings: list[str] = []
+    warnings.extend(_duplicate_memory_add_warnings(events))
 
     for action in expectations.required_actions:
         if action not in action_set:
