@@ -33,6 +33,9 @@ Progress on 2026-04-27:
   pass, but gives the pipeline a cheap first safety gate.
 - Added a mockable global KG claim-search adapter so Feature 017 Postgres/
   NornicDB claim rows can become fused RAG candidates through the same API.
+- Wired selected KG-hit access telemetry at retrieval output time: access stats
+  are recorded only for KG claims that survive ranking and Context Bubble
+  selection.
 
 This feature can close when Matrix has a tested retrieval layer with
 provider-configurable embeddings, vector/KG/fused retrieval modes, Context

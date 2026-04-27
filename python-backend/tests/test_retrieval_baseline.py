@@ -156,6 +156,9 @@ async def test_retrieve_can_pull_vector_store_when_requested() -> None:
 @pytest.mark.asyncio
 async def test_retrieve_can_pull_kg_store_when_requested() -> None:
     class FakeKGStore:
+        def __init__(self) -> None:
+            self.accessed: list[str] = []
+
         def search_claims(self, query: str, limit: int = 5) -> list[dict]:
             assert "sanctions" in query
             return [
@@ -167,15 +170,48 @@ async def test_retrieve_can_pull_kg_store_when_requested() -> None:
                 }
             ]
 
+        def record_claim_access(self, claim_ids: list[str]) -> int:
+            self.accessed.extend(claim_ids)
+            return len(claim_ids)
+
+    store = FakeKGStore()
     result = await retrieve(
         "How is Russia connected to EU sanctions?",
         use_kg_store=True,
-        kg_store=FakeKGStore(),
+        kg_store=store,
     )
 
     assert result.degraded is False
     assert result.intent == "graph"
     assert result.hits and result.hits[0]["source"] == "kg"
+    assert result.hits[0]["metadata"]["kg_access_recorded"] == 1
+    assert store.accessed == ["claim-1"]
+
+
+@pytest.mark.asyncio
+async def test_retrieve_records_access_only_for_selected_kg_hits() -> None:
+    class FakeKGStore:
+        def __init__(self) -> None:
+            self.accessed: list[str] = []
+
+        def record_claim_access(self, claim_ids: list[str]) -> int:
+            self.accessed.extend(claim_ids)
+            return len(claim_ids)
+
+    store = FakeKGStore()
+    result = await retrieve(
+        "How do EU sanctions affect Russian oil exports today?",
+        kg_store=store,
+        vector_hits=[{"id": "doc-1", "text": "Vector only", "score": 0.9}],
+        kg_hits=[
+            {"claim_id": "claim-1", "content": "Selected KG claim", "score": 0.8},
+            {"claim_id": "claim-2", "content": "Truncated KG claim", "score": 0.7},
+        ],
+        max_hits=1,
+    )
+
+    assert result.hits and result.hits[0]["id"] == "doc-1"
+    assert store.accessed == []
 
 
 def test_kg_claim_hits_without_store_is_empty() -> None:

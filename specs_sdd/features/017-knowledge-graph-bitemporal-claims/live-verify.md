@@ -46,6 +46,10 @@ feature_id: 017
 - `GlobalKGStore.record_claim_access(claim_ids)` now records access telemetry
   into `agent.kg_claim_access_stats`, not into the main claim row. In-memory
   smoke mode deduplicates a batch and counts existing claims only.
+- Feature 019 retrieval now calls `record_claim_access` after Context Bubble
+  selection, so only KG claims that reach answer-time context update access
+  signals. Static retrieval tests verify skipped/truncated KG candidates are not
+  counted.
 - Postgres smoke with local `.env` credentials on 2026-04-27:
   `.venv/bin/python -m pytest tests/test_global_kg_store.py tests/test_global_kg.py -q`
   => `13 passed`; this verified access-stat UPSERT, duplicate claim ids counted

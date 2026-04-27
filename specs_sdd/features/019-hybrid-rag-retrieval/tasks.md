@@ -37,6 +37,9 @@ feature_id: 019
 - T017 [done-static-live-smoke] Add global KG claim-search adapter behind the
   retrieval API with mockable tests and a Postgres pgvector KG candidate
   smoke.
+- T018 [done-static] Record KG access telemetry from retrieval only for claims
+  selected into Context Bubble output, not every KG candidate returned by
+  search.
 
 ## Researchwatcher Adoption
 

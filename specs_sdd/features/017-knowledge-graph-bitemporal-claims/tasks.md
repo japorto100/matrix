@@ -42,7 +42,8 @@ feature_id: 017
 - T012 [done-static] Add decay scoring for recency, validity-end and access
   signals.
 - T013 [done-static-live-smoke] Store access telemetry in event/stats tables,
-  not as per-query hot updates on claim rows.
+  not as per-query hot updates on claim rows; Feature 019 now records access
+  only for KG claims that survive ranking and Context Bubble selection.
 - T014 [done-static-live-smoke] Add answer-time KG context metadata: status,
   freshness, confidence and provenance refs.
 - T015 Define vector chunk metadata contract: `chunk_id`, `source_uri`,
@@ -112,7 +113,8 @@ feature_id: 017
   accessed and expired-valid claims.
 - T043 Live-smoke one evidence -> proposed claim -> promoted claim -> KG recall
   path.
-- T044 [partial-static] Unit-test vector/KG RRF fusion and attribution.
+- T044 [done-static] Unit-test vector/KG RRF fusion, attribution and selected
+  KG-claim access telemetry from Feature 019.
 - T045 Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
 - T046 Verify global KG retrieval is not used as an agent-memory rail unless a

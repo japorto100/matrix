@@ -38,6 +38,10 @@ feature_id: 019
   adapter: compact graph path, source refs, subject/object ids and lane/status/
   confidence metadata. This is unit-tested and live-smoked through Postgres via
   the global-KG store tests.
+- Retrieval records Feature-017 KG access telemetry after Context Bubble
+  selection when the KG store exposes `record_claim_access`. Unit tests verify
+  selected KG hits are counted and KG candidates dropped by `max_hits` are not
+  counted.
 - Added deterministic canaries for the two immediate eval boundaries:
   `trading-geo-kg-001` requires fused vector+KG evidence, while
   `general-vector-001` verifies simple document QA stays vector-only.

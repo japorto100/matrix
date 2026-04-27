@@ -7,6 +7,7 @@ composition. Live search adapters can attach behind the same contract.
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from typing import Any
 
@@ -38,6 +39,42 @@ def _normalize_hits(items: object, *, default_source: str) -> list[RetrievalHit]
         elif isinstance(item, dict):
             hits.append(RetrievalHit.from_mapping(item, default_source=default_source))
     return hits
+
+
+def _selected_kg_claim_ids(hits: list[RetrievalHit] | tuple[RetrievalHit, ...]) -> list[str]:
+    """Return KG claim ids that survived ranking and context-bubble selection."""
+
+    claim_ids: list[str] = []
+    seen: set[str] = set()
+    for hit in hits:
+        contributing = hit.metadata.get("contributing_sources")
+        has_kg_source = hit.source == "kg" or (
+            isinstance(contributing, list | tuple) and "kg" in contributing
+        )
+        if not has_kg_source:
+            continue
+        claim_id = str(hit.metadata.get("claim_id") or hit.id)
+        if claim_id and claim_id not in seen:
+            seen.add(claim_id)
+            claim_ids.append(claim_id)
+    return claim_ids
+
+
+async def _record_kg_access(
+    store: object,
+    claim_ids: list[str],
+) -> tuple[bool, int]:
+    """Best-effort KG access telemetry without making retrieval depend on it."""
+
+    if not claim_ids:
+        return True, 0
+    recorder = getattr(store, "record_claim_access", None)
+    if not callable(recorder):
+        return True, 0
+    result = recorder(claim_ids)
+    if inspect.isawaitable(result):
+        result = await result
+    return True, int(result or 0)
 
 
 async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
@@ -123,6 +160,15 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         token_budget=int(kwargs.get("token_budget", 1600)),
         max_hits=int(kwargs.get("max_hits", 8)),
     )
+    kg_access_count = 0
+    if kwargs.get("record_kg_access", True) is not False:
+        try:
+            _, kg_access_count = await _record_kg_access(
+                kwargs.get("kg_store"),
+                _selected_kg_claim_ids(bubble.hits),
+            )
+        except Exception:  # noqa: BLE001
+            degraded_reasons.append("KG_ACCESS_TELEMETRY_FAILED")
     return RetrievalResult(
         context=bubble.text,
         hits=[
@@ -132,7 +178,14 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 "source": hit.source,
                 "score": hit.score,
                 "source_uri": hit.source_uri,
-                "metadata": hit.metadata,
+                "metadata": {
+                    **hit.metadata,
+                    **(
+                        {"kg_access_recorded": kg_access_count}
+                        if hit.source == "kg" and kg_access_count
+                        else {}
+                    ),
+                },
             }
             for hit in bubble.hits
         ],
