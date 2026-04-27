@@ -70,8 +70,11 @@ Remaining full-live blockers:
 - This was not a "without stack" test. It used a real partial stack:
   `matrix-nats`, `python-bridge`, `python-agent`, `go-appservice` and
   Postgres. It did not use Tuwunel or a real Matrix client.
-- Homeserver/appservice registration was not verified in this pass because
-  Tuwunel was not started.
+- 2026-04-27 follow-up: Tuwunel and Garage were started and `/_matrix/client/versions`
+  plus local `.well-known` passed. Appservice registration still did not close:
+  `scripts/register-appservice.sh` failed because existing persisted
+  `@alice:matrix.local` rejects the expected dev password, and
+  `scripts/setup-users.sh` now exits nonzero when bootstrap/login fails.
 - Final Matrix room delivery still needs Tuwunel plus a real room/client.
 - E2EE decrypt/encrypt, cross-signing, key backup and key deletion gates remain
   open.

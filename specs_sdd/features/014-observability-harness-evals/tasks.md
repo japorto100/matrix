@@ -32,7 +32,11 @@ migrated_from:
 
 ## Agent Spans
 
-- T020 Verify `agent.session` root span.
+- T020 [done-live-postgres] Verify `agent.session` root span.
+  - 2026-04-27: `AGENT_PERSIST_TRACES=1` plus `PostgresSpanProcessor`
+    persisted an `agent.session` span for session
+    `codex-live-014-6e167f2a` with trace
+    `7b2483b8d6bb7265a703326386ce2f8a`.
 - T021 Verify prompt/LLM `agent.turn` spans.
 - T022 Verify `agent.tool_call` spans.
 - T023 Verify memory recall/retain spans.
@@ -42,8 +46,12 @@ migrated_from:
 
 ## Audit
 
-- T030 Verify auditable action writes `agent.audit_events`.
-- T031 Verify Control UI Audit tab/query route shows event.
+- T030 [done-live-postgres] Verify auditable action writes `agent.audit_events`.
+  - 2026-04-27: `audit_log(action=TOOL_CALL, user_id=local)` persisted a row
+    in live Matrix Postgres.
+- T031 [done-live-api] Verify Control UI Audit tab/query route shows event.
+  - 2026-04-27: `GET /api/v1/control/audit?thread_id=thread-014-route-fe8c0851`
+    returned `total=1`.
 - T032 Verify ADR-002 separation: tracing is not audit, audit is not tracing.
 - T033 Define/defer per-tool `audit_required` flag with Feature 013.
 
@@ -64,7 +72,9 @@ migrated_from:
 - [x] T050 Implement/verify async-parallel evaluator.
 - [x] T051 Implement/verify evaluator cache.
 - [x] T052 Implement/verify scorer interfaces.
-- T053 Run small search-set eval and persist results.
+- T053 [done-live-postgres] Run small search-set eval and persist results.
+  - 2026-04-27: added Alembic migration `033_agent_evals`; `save_eval_run`
+    inserted `eval-live-014-6e167f2a` into `agent.evals`.
 - [x] T054 Integrate proposer loop with real evaluator, not mocks.
 - T055 Add/defer Feedback Descent pairwise mode.
 
@@ -76,7 +86,8 @@ migrated_from:
 
 ## Verify Gates
 
-- One live trace is queryable.
-- One audit event is queryable.
+- [x] One live trace is queryable from Postgres.
+- [x] One audit event is queryable through the backend/control route.
 - [x] One harness/eval score is generated in static tests.
+- [x] One harness/eval result is persisted in `agent.evals`.
 - [x] Evidence is stored or linked under feature evidence.

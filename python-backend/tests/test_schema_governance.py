@@ -63,7 +63,7 @@ def test_alembic_revision_graph_has_single_current_head() -> None:
 
     heads = revisions - referenced_down_revisions
 
-    assert heads == {"032_user_agent_settings"}
+    assert heads == {"033_agent_evals"}
 
 
 def test_current_schema_doc_tracks_critical_feature_017_and_012_tables() -> None:
@@ -76,6 +76,7 @@ def test_current_schema_doc_tracks_critical_feature_017_and_012_tables() -> None
     assert "`agent.kg_claim_evidence`" in source
     assert "`agent.kg_projection_outbox`" in source
     assert "`agent.user_agent_settings`" in source
+    assert "`agent.evals`" in source
     assert "`ingestion.source_artifacts`" in source
     assert "`btree_gist`" in source
     assert "`vector`" in source

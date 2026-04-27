@@ -12,8 +12,11 @@ feature_id: 018
 ## Inventory
 
 - T001 [done-static] List current Alembic heads and branch state.
-- T002 [partial-static] Generate current DB table/column/index inventory from a fresh
+- T002 [done-live] Generate current DB table/column/index inventory from a fresh
   `alembic upgrade head`.
+  - 2026-04-27: verified against `matrix-postgres` on `localhost:5433`;
+    `alembic current` reports `032_user_agent_settings (head)` and
+    `tests/test_schema_governance.py` passes.
 - T003 [done-static] Identify undocumented schemas/tables.
 
 ## Registry
@@ -61,3 +64,7 @@ feature_id: 018
 - T042 [done-live] Verify Alembic head includes
   `032_user_agent_settings` and `agent.user_agent_settings` exists in live
   Postgres after upgrade.
+- T043 [done-live] Verify Alembic head includes `033_agent_evals` and
+  `agent.evals` exists in live Postgres after upgrade.
+  - 2026-04-27: `alembic current` reports `033_agent_evals (head)`;
+    regenerated `docs/database/current-schema.md` includes `agent.evals`.

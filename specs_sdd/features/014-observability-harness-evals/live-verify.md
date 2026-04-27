@@ -1,6 +1,6 @@
 ---
 title: Observability, Harness and Evals Live Verify
-status: draft
+status: partial-backend-live
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -117,4 +117,35 @@ owning feature's `live-verify.md` or `closeout.md`.
 
 ## Result
 
-pending
+partial backend live pass; OpenObserve/collector and browser dashboard gates
+remain open.
+
+## Backend Evidence 2026-04-27
+
+- Live Postgres migration:
+  `HINDSIGHT_DB_URL=... uv run alembic upgrade head` applied
+  `033_agent_evals`.
+- Schema inventory regenerated and `tests/test_schema_governance.py -q`
+  returned `3 passed`.
+- Trace persistence:
+  `AGENT_PERSIST_TRACES=1` plus `PostgresSpanProcessor` persisted an
+  `agent.session` span for session `codex-live-014-6e167f2a`; query returned
+  trace `7b2483b8d6bb7265a703326386ce2f8a`.
+- Audit persistence:
+  `audit_log(action=TOOL_CALL, user_id=local, thread_id=thread-014-route-fe8c0851)`
+  wrote `agent.audit_events`.
+- Control audit route:
+  `GET /api/v1/control/audit?thread_id=thread-014-route-fe8c0851&limit=5`
+  returned `total=1` and item `tool_name=feature014.control_route`.
+- Eval persistence:
+  `save_eval_run(run_id=eval-live-014-6e167f2a, eval_type=feature014_live_smoke)`
+  wrote one row into `agent.evals`.
+- Härtung: `audit_log()` now writes `userId` with default `local`, so scoped
+  Control queries can see backend-generated audit rows.
+
+Still open:
+
+- OpenObserve/OTel collector live query.
+- Go+Python distributed trace in the collector.
+- Full Agent Chat turn with LLM/tool/memory/approval spans.
+- Pareto dashboards and A/B backfill worker.

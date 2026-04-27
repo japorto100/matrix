@@ -1,6 +1,6 @@
 ---
 title: Database Schema Governance Live Verify
-status: pending
+status: passed-backend-live
 owner: filip
 created: 2026-04-26
 updated: 2026-04-26
@@ -42,9 +42,20 @@ uv run pytest tests/test_schema_governance.py
   existing Hindsight/public revision rows separately.
 - Verification passed:
   `uv run pytest tests/test_schema_governance.py tests/agent/security/test_agent_settings.py`.
+- 2026-04-27 recheck passed:
+  `HINDSIGHT_DB_URL=postgresql://postgres:...@localhost:5433/hindsight_dev uv run alembic current`
+  returned `032_user_agent_settings (head)` and
+  `uv run pytest tests/test_schema_governance.py -q` returned `3 passed`.
+- 2026-04-27 Feature 014 follow-up applied `033_agent_evals`; `alembic current`
+  now returns `033_agent_evals (head)`, `docs/database/current-schema.md`
+  includes `agent.evals`, and `tests/test_schema_governance.py -q` still
+  returns `3 passed`.
 - Runtime log issue investigated: Postgres itself did not crash; logs showed a
   clean smart shutdown and missing `agent.user_agent_settings` query errors.
   Revision `032_user_agent_settings` creates that table and live verification
   confirmed `to_regclass('agent.user_agent_settings')`.
-- Add one sample migration in a branch and verify checklist catches missing
-  registry/test updates.
+
+## Remaining Non-Blocking Governance Drill
+
+- Add one sample migration in a future branch and verify checklist catches
+  missing registry/test updates.

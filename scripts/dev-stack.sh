@@ -431,13 +431,15 @@ compose_up() {
     fi
   done
 
-  # Split in zwei phasen: default-services (kein profile) und profile-services
-  # getrennt aufrufen. Podman-compose mit COMPOSE_PROFILES=X skipped alle
-  # default-services — daher erst default ohne env-var, dann profile-services mit.
-  local default_svcs=() profile_svcs=()
+  # Split in drei Phasen. Storage-Profile muessen vor Tuwunel starten, weil
+  # Tuwunel mit startup_check=true sonst beim ersten S3-Connect abstuerzt.
+  # Podman-compose mit COMPOSE_PROFILES=X skipped default-services, daher
+  # default-services getrennt ohne env-var starten.
+  local default_svcs=() storage_profile_svcs=() profile_svcs=()
   for s in "${services[@]}"; do
     case "$s" in
       tuwunel|nats|postgres) default_svcs+=("$s") ;;
+      garage|seaweedfs) storage_profile_svcs+=("$s") ;;
       *) profile_svcs+=("$s") ;;
     esac
   done
@@ -450,18 +452,49 @@ compose_up() {
     "VALKEY_HOST_PORT=${PORT_VALKEY}"
   )
 
+  compose_up_profiles() {
+    local label=$1
+    shift
+    local selected=("$@")
+    [ ${#selected[@]} -eq 0 ] && return 0
+
+    local selected_profiles=""
+    for svc in "${selected[@]}"; do
+      local profile=""
+      case "$svc" in
+        litellm)                                       profile="litellm" ;;
+        opensandbox|opensandbox-server)                profile="sandbox" ;;
+        coturn|livekit-server|lk-jwt-service)          profile="calls" ;;
+        cloudflared)                                   profile="tunnel" ;;
+        cloudflared-named)                             profile="tunnel-named" ;;
+        openobserve|otel-collector|postgres-exporter)  profile="observability" ;;
+        valkey)                                        profile="cache" ;;
+        garage)                                        profile="storage-garage" ;;
+        seaweedfs)                                     profile="storage-seaweedfs" ;;
+        falkordb)                                      profile="kg-falkor" ;;
+        nornic)                                        profile="kg-nornic" ;;
+        pgbouncer)                                     profile="pooler" ;;
+      esac
+      if [ -n "$profile" ] && [[ ",$selected_profiles," != *",$profile,"* ]]; then
+        selected_profiles="${selected_profiles:+${selected_profiles},}$profile"
+      fi
+    done
+
+    log "compose up (profiles: $selected_profiles): ${selected[*]}"
+    (cd "$REPO_ROOT" && env "${common_env[@]}" COMPOSE_PROFILES="$selected_profiles" \
+      $COMPOSE up -d "${selected[@]}" 2>&1) \
+      | tee -a "$LOG_DIR/compose.log" || warn "compose up ($label profiles) failed"
+  }
+
+  compose_up_profiles "storage" "${storage_profile_svcs[@]}"
+
   if [ ${#default_svcs[@]} -gt 0 ]; then
     log "compose up (default): ${default_svcs[*]}"
     (cd "$REPO_ROOT" && env "${common_env[@]}" $COMPOSE up -d "${default_svcs[@]}" 2>&1) \
       | tee -a "$LOG_DIR/compose.log" || warn "compose up (default) failed"
   fi
 
-  if [ ${#profile_svcs[@]} -gt 0 ]; then
-    log "compose up (profiles: $profiles_csv): ${profile_svcs[*]}"
-    (cd "$REPO_ROOT" && env "${common_env[@]}" COMPOSE_PROFILES="$profiles_csv" \
-      $COMPOSE up -d "${profile_svcs[@]}" 2>&1) \
-      | tee -a "$LOG_DIR/compose.log" || warn "compose up (profiles) failed"
-  fi
+  compose_up_profiles "extra" "${profile_svcs[@]}"
 }
 
 compose_stop() {

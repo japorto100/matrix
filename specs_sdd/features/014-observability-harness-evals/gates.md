@@ -20,7 +20,7 @@ feature_id: 014
 
 ## Agent Spans
 
-- One Agent Chat turn produces `agent.session`.
+- [x] One backend trace produces persisted `agent.session` in Postgres.
 - LLM call produces `agent.turn` with provider/model/token/cost attrs.
 - Tool call produces `agent.tool_call` with success/error/duration attrs.
 - Memory recall/retain produces `agent.memory`.
@@ -28,8 +28,8 @@ feature_id: 014
 
 ## Audit
 
-- Auditable action creates `agent.audit_events` row.
-- Audit event is queryable from backend/control path.
+- [x] Auditable action creates `agent.audit_events` row.
+- [x] Audit event is queryable from backend/control path.
 - Tracing content and audit content follow ADR-002 separation.
 
 ## Harness
@@ -43,7 +43,7 @@ feature_id: 014
 ## Evaluator
 
 - small search set runs through evaluator.
-- result rows persist.
+- [x] result rows persist in `agent.evals`.
 - scorer output includes accuracy/cost/latency/grounding dimensions where
   applicable.
 - cache avoids re-running identical config/query/model combinations.

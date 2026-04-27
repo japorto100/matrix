@@ -1,6 +1,6 @@
 ---
 title: Matrix Chat Core Live Verify
-status: draft
+status: partial-api-live
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -92,4 +92,19 @@ run sheet. Gate IDs below refer to `gates.md`.
 
 ## Result
 
-pending
+partial API live pass; browser render and richer chat interactions remain open.
+
+## API Evidence 2026-04-27
+
+- Tuwunel was reachable on `http://localhost:8448`.
+- A fresh `@codex-smoke-*` user was registered with the current
+  `matrix-dev-token-2026` registration token.
+- The smoke user created room `!XG1qUg2zlFAr-infXHNYwKYHnNmUtO7yWg7HbXQov0Q`.
+- Plain-text send returned event `$g21dzH-_fzspnqlhJnDTz8bSxICFaW3GwZ5VmtSoxYs`.
+- `/sync?timeout=0` returned `timeline_found=1` for that event.
+
+Not covered in this pass:
+
+- Browser `/matrix` render.
+- Existing `@alice`/`@bob` dev credential recovery.
+- Edit, reaction, redact, second-client receive, media, calls and E2EE.

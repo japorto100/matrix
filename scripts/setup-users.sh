@@ -145,6 +145,8 @@ update_env() {
 }
 
 # ─── Create users ──────────────────────────────────────────────────────────
+failed_users=0
+
 USERS=(
     "alice:alice-dev-password-2026:frontend_merger/.env.local:MATRIX_ACCESS_TOKEN:MATRIX_DEVICE_ID:MATRIX_USER_ID"
     "bob:bob-dev-password-2026::::"  # no env-write for bob (manual mobile login)
@@ -183,13 +185,14 @@ for user_spec in "${USERS[@]}"; do
     else
         err "@$username: kein token erhalten"
         echo "    Response: $(echo "$response" | head -c 200)"
+        failed_users=$((failed_users + 1))
     fi
 done
 
 echo ""
 echo -e "${G}═══ Setup komplett ═══${R}"
 echo ""
-echo "Erstellte User:"
+echo "Soll-User:"
 echo "  - @alice:matrix.local       → token in frontend_merger/.env.local"
 echo "  - @bob:matrix.local         → Test-User (kein env-write, manual mobile login)"
 echo ""
@@ -200,3 +203,8 @@ echo ""
 echo "Next:"
 echo "  - Login als alice im Browser: http://localhost:3003"
 echo "  - DM mit @agent-bot → go-appservice auto-joint → mention + chat funktioniert"
+
+if [[ "$failed_users" -gt 0 ]]; then
+    err "$failed_users User konnten nicht registriert/eingeloggt werden; Setup ist nicht verifiziert."
+    exit 1
+fi

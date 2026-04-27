@@ -30,6 +30,7 @@ OWNER_FEATURES: dict[str, str] = {
     "agent.sessions": "007",
     "agent.traces": "014/016",
     "agent.spans": "014/016",
+    "agent.evals": "014/016/022/023",
     "agent.tool_servers": "008",
     "agent.tool_server_credentials": "008/013",
     "agent.agent_components": "008/010",

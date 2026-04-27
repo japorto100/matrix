@@ -33,6 +33,13 @@ migrated_from:
 - [x] T011 [done-static-live-smoke] Make `scripts/dev-stack.sh --status`
   require the expected Matrix container for compose-owned services instead of
   trusting open host ports alone.
+- [x] T012 [done-static-live-smoke] Start storage-profile services before
+  Tuwunel when `--storage=garage|seaweedfs` is selected.
+  - 2026-04-27: Tuwunel v1.6 with `startup_check=true` requires Garage before
+    homeserver start; `dev-stack.sh` now splits compose startup into
+    storage-profile, default and extra-profile phases. Re-run reported both
+    `tuwunel :8448` and `garage :3900` healthy; existing compose name warnings
+    still need non-destructive cleanup later.
 
 ## Verify Gates
 

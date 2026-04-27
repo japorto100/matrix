@@ -12,12 +12,15 @@ feature_id: 006
 ## G1 Core NATS Path
 
 - [x] Go appservice static tests pass with `go test -tags goolm ./...`.
-- [ ] Go appservice starts and registers.
-- [ ] Python bridge starts and subscribes.
+- [ ] Go appservice starts and registers. Starts locally; registration remains
+  blocked by stale Tuwunel dev credentials for the admin-command path.
+- [x] Python bridge starts and subscribes.
 - [ ] Go publishes inbound event.
-- [ ] Python consumes inbound and calls agent service.
-- [ ] Python publishes reply.
-- [ ] Go consumes reply and sends Matrix message.
+- [x] Python consumes inbound and calls agent service.
+- [x] Python publishes reply.
+- [ ] Go consumes reply and sends Matrix message. Go consumed the synthetic
+  reply and attempted Matrix send; final room delivery remains blocked until
+  appservice registration and a real Matrix room are verified.
 - [x] Python bridge/A2UI static tests pass.
 - [x] No legacy Python Matrix sync loop is in the current bridge path.
 

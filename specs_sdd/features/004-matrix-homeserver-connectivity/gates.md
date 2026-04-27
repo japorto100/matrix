@@ -11,16 +11,17 @@ feature_id: 004
 
 ## Local Homeserver
 
-- [ ] Tuwunel starts under selected profile. Deferred to live/operator verify.
+- [x] Tuwunel starts locally under the selected image/config.
 - [x] Current image/tag is stable v1.6.0 or intentional alternative.
-- [ ] Appservice registration loads. Deferred to live/operator verify.
+- [ ] Appservice registration loads. Blocked by stale local Alice/Bob
+  credentials in the persisted Tuwunel dev volume.
 - [ ] URL-preview disablement is confirmed in active config. Owned jointly with
   Feature 013.
 - [x] Media/upload config matches active Cloudflare/Tuwunel limits.
 
 ## Connectivity / Mobile
 
-- [ ] `.well-known/matrix/client` works when mobile scope is active. Deferred to live/mobile verify.
+- [x] `.well-known/matrix/client` works locally.
 - [ ] HTTPS tunnel/domain path works for Element X. Deferred to live/mobile verify.
 - [x] MatrixRTC/LiveKit transport is configured in `.well-known` when calls are active.
 - [ ] TURN/STUN config is tested or marked deferred. Deferred to live/calls verify.
