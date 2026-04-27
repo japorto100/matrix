@@ -29,6 +29,11 @@ feature_id: 019
 - Retrieval can optionally pull KG claim rows from a supplied global KG store
   adapter; this is unit-tested with a fake store and is not yet live-tested
   against Postgres/NornicDB.
+- The Postgres global-KG adapter is now live-smoked against pgvector: a
+  synthetic claim with a 3D embedding is stored from `ClaimProposal.metadata`,
+  retrieved with `search_claims(..., query_embedding=...)` despite no lexical
+  overlap, and returned with `semantic_similarity`, decay-adjusted
+  `final_score`, provenance and metadata.
 - Retrieval reports `KG_SEARCH_FAILED`/`VECTOR_SEARCH_FAILED` as degraded
   reasons instead of raising through the agent path when an adapter is offline.
 - OpenRouter embedding behavior is unit-tested with a mocked

@@ -34,8 +34,9 @@ feature_id: 019
   answers.
 - T016 [done-static] Add Matrix `memory_engine.VectorStore` adapter behind the
   retrieval API with mockable tests.
-- T017 [done-static] Add global KG claim-search adapter behind the retrieval
-  API with mockable tests.
+- T017 [done-static-live-smoke] Add global KG claim-search adapter behind the
+  retrieval API with mockable tests and a Postgres pgvector KG candidate
+  smoke.
 
 ## Researchwatcher Adoption
 

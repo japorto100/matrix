@@ -37,7 +37,7 @@ feature_id: 017
 
 - T010 [done-static] Define claim embedding text and embedding dimension
   configuration.
-- T011 Implement pgvector candidate retrieval for KG claims as a KG-side
+- T011 [done-static-live-smoke] Implement pgvector candidate retrieval for KG claims as a KG-side
   candidate source for Feature 019.
 - T012 [done-static] Add decay scoring for recency, validity-end and access
   signals.
@@ -112,7 +112,7 @@ feature_id: 017
   claims.
 - T043 Live-smoke one evidence -> proposed claim -> promoted claim -> KG recall
   path.
-- T044 Unit-test vector/KG RRF fusion and attribution.
+- T044 [partial-static] Unit-test vector/KG RRF fusion and attribution.
 - T045 Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
 - T046 Verify global KG retrieval is not used as an agent-memory rail unless a
