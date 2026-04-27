@@ -102,7 +102,8 @@ class JobTracker:
             )
 
     def complete(self, job: Job) -> None:
-        job.status = JobStatus.DONE
+        if job.status != JobStatus.SKIPPED_DEDUP:
+            job.status = JobStatus.DONE
         job.completed_at = datetime.now(UTC)
         job.progress = 1.0
         with self._connect() as conn:

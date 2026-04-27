@@ -10,6 +10,9 @@ feature_id: 021
 # Gates
 
 - Artifact registry writes must be idempotent for the same content hash.
+  - 2026-04-27: local source artifact upsert uses stable
+    `uuid5(file://resolved_path)` and can write a minimal artifact even when
+    the file is skipped as duplicate.
 - Parsed chunks must carry source refs and parser/chunker versions.
 - Embedding jobs must record provider, model, dimension and embedding version.
 - KG proposals must include evidence refs and remain `candidate` until Feature

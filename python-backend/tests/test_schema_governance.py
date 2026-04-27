@@ -63,7 +63,7 @@ def test_alembic_revision_graph_has_single_current_head() -> None:
 
     heads = revisions - referenced_down_revisions
 
-    assert heads == {"030_global_kg_bitemporal_claims"}
+    assert heads == {"031_ingestion_source_artifacts"}
 
 
 def test_current_schema_doc_tracks_critical_feature_017_and_012_tables() -> None:
@@ -75,10 +75,12 @@ def test_current_schema_doc_tracks_critical_feature_017_and_012_tables() -> None
     assert "`agent.kg_claims`" in source
     assert "`agent.kg_claim_evidence`" in source
     assert "`agent.kg_projection_outbox`" in source
+    assert "`ingestion.source_artifacts`" in source
     assert "`btree_gist`" in source
     assert "`vector`" in source
     assert "`sys_period`" in source
     assert "Owner feature: `017`" in source
+    assert "Owner feature: `021`" in source
 
 
 def test_schema_inventory_markdown_includes_owners_indexes_and_constraints() -> None:

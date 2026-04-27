@@ -78,6 +78,15 @@ class FakeAudit:
         self.events.append(event)
 
 
+class FakeSourceArtifacts:
+    def __init__(self) -> None:
+        self.rows: list[dict] = []
+
+    def upsert(self, **row: object) -> dict:
+        self.rows.append(row)
+        return row
+
+
 class CaptureSink(Sink):
     name = "capture"
 
@@ -121,9 +130,14 @@ async def test_run_local_path_ingests_markdown_without_storage_services(tmp_path
     )
     tracker = FakeTracker()
     audit = FakeAudit()
+    source_artifacts = FakeSourceArtifacts()
     sink = CaptureSink()
     ctx = SimpleNamespace(
-        config=SimpleNamespace(chunker_name="token", embedder_provider="deterministic"),
+        config=SimpleNamespace(
+            chunker_name="token",
+            embedder_provider="deterministic",
+            embedder_model="deterministic-test",
+        ),
         detectors=DetectorRegistry(),
         loaders=LoaderRegistry(),
         extractors=ExtractorRegistry(),
@@ -132,6 +146,7 @@ async def test_run_local_path_ingests_markdown_without_storage_services(tmp_path
         embedders=EmbedderRegistry(),
         sinks=FakeSinks(sink),
         tracker=tracker,
+        source_artifacts=source_artifacts,
         audit=audit,
         hasher=SimpleNamespace(hash_bytes=lambda data: "doc-hash"),
     )
@@ -147,10 +162,15 @@ async def test_run_local_path_ingests_markdown_without_storage_services(tmp_path
     assert job.file_id is not None
     assert job.metadata["source"] == "local"
     assert job.metadata["source_path"] == str(source.resolve())
+    assert job.metadata["source_artifact_id"] == str(job.file_id)
     assert sink.doc is not None
     assert sink.doc.doc_id == str(job.file_id)
     assert len(sink.chunks) >= 1
     assert len(sink.embeddings) == len(sink.chunks)
+    assert source_artifacts.rows[0]["source_artifact_id"] == job.file_id
+    assert source_artifacts.rows[0]["source_uri"] == f"file://{source.resolve()}"
+    assert source_artifacts.rows[0]["content_hash"] == "doc-hash"
+    assert source_artifacts.rows[0]["mime_type"] == "text/markdown"
     assert tracker.saved_doc_id == str(job.file_id)
     assert len(tracker.saved_chunks) == len(sink.chunks)
     assert audit.events[-1]["action"] == "INGESTION_LOCAL_FILE"

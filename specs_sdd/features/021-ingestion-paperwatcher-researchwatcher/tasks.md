@@ -22,15 +22,21 @@ feature_id: 021
 
 ## Source Artifact Model
 
-- T010 Define source artifact fields: source id, source URI, fetch method,
-  content hash, MIME/type, fetched_at, valid_from/to if known, license/source
-  policy and parser version.
+- T010 [partial-done] Define source artifact fields: source id, source URI,
+  fetch method, content hash, MIME/type, fetched_at, valid_from/to if known,
+  license/source policy and parser version.
+  - 2026-04-27: Alembic migration `031_ingestion_source_artifacts` adds
+    `ingestion.source_artifacts` with source URI/kind/fetch method, content
+    hash, MIME, parser/chunker/embedding metadata and JSON metadata.
+  - Remaining: license/source-policy and explicit citation rows.
 - T011 Define citation/provenance metadata for papers, URLs, filings, API
   payloads and local docs.
 - T012 Keep raw artifacts immutable; derived chunks, embeddings and KG
   proposals are rebuildable projections.
-- T013 Add Alembic-backed schema changes if new persistent artifact fields are
-  needed; do not create ad hoc schema-only Python tables.
+- T013 [done] Add Alembic-backed schema changes if new persistent artifact
+  fields are needed; do not create ad hoc schema-only Python tables.
+  - 2026-04-27: source artifact registry added through Alembic and
+    `SourceArtifactRegistry`.
 
 ## Pipeline
 
@@ -54,13 +60,17 @@ feature_id: 021
     hash manifest write and no storage-service dependency.
 - T031 Unit-test chunk/source/citation refs.
 - T032 Unit-test optional KG proposal evidence refs.
-- T033 [partial-done] Live-smoke local paper ingestion using
+- T033 [done] Live-smoke local paper ingestion using
   `docs/papers/knowledgegraph/Do We Still Need GraphRAG Benchmarking RAG and GraphRAG for Agentic Search Systems arXiv 2604.09666.md`.
   - 2026-04-27: CLI local-file smoke passed against Postgres with
     `EMBEDDER_PROVIDER=deterministic`, `KG_PIPELINE_ENABLED=false`,
     `--sinks kg`; markdown MIME override confirmed.
-  - Remaining: run the specific GraphRAG paper MD/PDF after retrieval sink
-    contract from Feature 019 is wired.
+  - 2026-04-27: specific GraphRAG paper MD ingested as job
+    `3fe95fde-5161-486a-b562-7470ebcad692`, status `done`, 6 chunks,
+    `ingestion.chunk_hashes` refs written. Source artifact
+    `c38f45c6-2595-5518-a78f-0b509a6eea09` written for the local file URI.
+    PDF/full retrieval smoke remains covered by LV004/Feature 019 rather than
+    this local-ingest gate.
 - T034 Live-smoke one URL or arXiv-source ingest when network/API keys allow.
 - T035 Meta-Harness scenario: user asks for paper-grounded answer; trace must
   show retrieval/citation path, not memory-only answer.

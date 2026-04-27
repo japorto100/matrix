@@ -11,12 +11,13 @@ import psycopg
 from psycopg import sql
 from psycopg.rows import dict_row
 
-DEFAULT_SCHEMAS = ("matrix", "agent", "public")
+DEFAULT_SCHEMAS = ("matrix", "agent", "ingestion", "public")
 
 OWNER_FEATURES: dict[str, str] = {
     "agent.audit_events": "001/014",
-    "agent.jobs": "002",
-    "agent.chunk_hashes": "002/019",
+    "ingestion.jobs": "002",
+    "ingestion.chunk_hashes": "002/019/021",
+    "ingestion.source_artifacts": "021",
     "agent.agent_role_overrides": "007/009",
     "agent.consent_overrides": "013",
     "agent.a2a_delegations": "009",

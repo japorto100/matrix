@@ -185,6 +185,7 @@ class DocumentPipeline(Pipeline):
                 "sinks": sinks_active,
                 "source": "local",
                 "source_path": str(resolved),
+                "source_artifact_id": str(file_id),
             },
         )
 
@@ -195,8 +196,39 @@ class DocumentPipeline(Pipeline):
             logger.info("loaded {} bytes from {}", loaded.size, resolved)
 
             doc_hash = ctx.hasher.hash_bytes(loaded.data)
+            ctx.tracker.update(job, status=JobStatus.DETECTING)
+            detection = ctx.detectors.detect(
+                path=resolved,
+                data=loaded.data,
+                filename=loaded.filename,
+            )
+            logger.info("detected mime={} for {}", detection.mime_type, resolved)
+
             existing = ctx.tracker.find_by_hash(doc_hash)
             if existing is not None:
+                ctx.source_artifacts.upsert(
+                    source_artifact_id=file_id,
+                    source_uri=f"file://{resolved}",
+                    source_kind="local_file",
+                    fetch_method="local",
+                    content_hash=doc_hash,
+                    mime_type=detection.mime_type,
+                    size_bytes=loaded.size,
+                    parser_name=None,
+                    parser_version=None,
+                    chunker_name=ctx.config.chunker_name,
+                    chunk_count=existing.get("chunks_total"),
+                    embedding_provider=ctx.config.embedder_provider,
+                    embedding_model=ctx.config.embedder_model,
+                    embedding_dim=None,
+                    metadata={
+                        "job_id": str(job.id),
+                        "dedup_existing_job_id": str(existing["id"]),
+                        "source_path": str(resolved),
+                        "tags": tags or [],
+                        "sinks": sinks_active,
+                    },
+                )
                 ctx.audit.emit(
                     action="INGESTION_DEDUP",
                     user_id=user_id,
@@ -215,14 +247,6 @@ class DocumentPipeline(Pipeline):
                 ctx.tracker.complete(job)
                 raise DedupSkipError(doc_hash, str(existing["id"]))
             ctx.tracker.update(job, document_hash=doc_hash)
-
-            ctx.tracker.update(job, status=JobStatus.DETECTING)
-            detection = ctx.detectors.detect(
-                path=resolved,
-                data=loaded.data,
-                filename=loaded.filename,
-            )
-            logger.info("detected mime={} for {}", detection.mime_type, resolved)
 
             ctx.tracker.update(job, status=JobStatus.EXTRACTING)
             extractor = ctx.extractors.get_for_mime(detection.mime_type)
@@ -252,6 +276,31 @@ class DocumentPipeline(Pipeline):
 
             embedder = ctx.embedders.get(ctx.config.embedder_provider)
             embeddings = embedder.embed([c.text for c in chunks])
+            embedding_dim = (
+                len(embeddings[0]) if embeddings else getattr(embedder, "dim", None)
+            )
+            ctx.source_artifacts.upsert(
+                source_artifact_id=file_id,
+                source_uri=f"file://{resolved}",
+                source_kind="local_file",
+                fetch_method="local",
+                content_hash=doc_hash,
+                mime_type=detection.mime_type,
+                size_bytes=loaded.size,
+                parser_name=doc.extractor,
+                parser_version=doc.schema_version,
+                chunker_name=ctx.config.chunker_name,
+                chunk_count=len(chunks),
+                embedding_provider=ctx.config.embedder_provider,
+                embedding_model=ctx.config.embedder_model,
+                embedding_dim=embedding_dim,
+                metadata={
+                    "job_id": str(job.id),
+                    "source_path": str(resolved),
+                    "tags": tags or [],
+                    "sinks": sinks_active,
+                },
+            )
 
             ctx.tracker.update(job, status=JobStatus.STORING)
             for sink_name in sinks_active:
