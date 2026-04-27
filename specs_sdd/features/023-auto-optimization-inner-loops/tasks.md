@@ -49,6 +49,9 @@ feature_id: 023
 - T022 [done-static-live-smoke] Add budget-safe local/deterministic mode for repeated loops.
 - T023 Add optional OpenRouter-free/provider mode with strict request caps and
   pacing.
+  - 2026-04-27: retrieval benchmark artifacts now record redacted provider and
+    budget config, so provider-mode inner loops can be audited for model,
+    embedding dimension and request-budget assumptions without storing secrets.
 - T024 Add source-grounding candidate generator for Feature 021/019:
   parser, chunker, metadata enrichment, top-k, RRF weight and citation-verifier
   settings.

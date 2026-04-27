@@ -78,6 +78,12 @@ async def test_cli_history_reads_decisions(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_cli_rag_benchmark_writes_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "openrouter/test-model")
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "2048")
+    monkeypatch.setenv("EMBEDDER_PROVIDER", "openrouter")
+    monkeypatch.setenv("EMBEDDER_MODEL", "openrouter/text-embedding-test")
+    monkeypatch.setenv("EMBEDDER_DIMENSION", "1536")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-redacted")
     args = meta_cli.build_parser().parse_args(
         ["rag-benchmark", "--run-id", "run-rag", "--data-dir", str(tmp_path)]
     )
@@ -95,6 +101,12 @@ async def test_cli_rag_benchmark_writes_artifacts(tmp_path, monkeypatch):
     assert report["metadata_compatibility"]["passed"] is True
     assert verdicts["metadata_compatibility"]["passed"] is True
     assert report["candidate"]["metadata"]["source_corpus"]
+    assert report["provider_config"]["agent_model"] == "openrouter/test-model"
+    assert report["provider_config"]["agent_max_output_tokens"] == "2048"
+    assert report["provider_config"]["embedding_provider"] == "openrouter"
+    assert report["provider_config"]["embedding_dimension"] == "1536"
+    assert report["provider_config"]["openrouter_api_key_present"] is True
+    assert "sk-redacted" not in json.dumps(report)
 
 
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():

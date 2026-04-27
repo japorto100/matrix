@@ -85,8 +85,13 @@ feature_id: 022
 - T023 [partial-done] Record offline indexing/update cost and online retrieval latency.
   - 2026-04-27: benchmark report records per-candidate average retrieval
     latency. Offline indexing cost still open.
-- T024 Record model/provider/token config, especially OpenRouter embedding
-  model and dimension.
+- T024 [done-static] Record model/provider/token config, especially
+  OpenRouter embedding model and dimension.
+  - 2026-04-27: `meta_harness.retrieval_benchmark` writes a redacted
+    `provider_config` into `run.json` and per-candidate
+    `retrieval_benchmark.json`: agent model, max output tokens, LiteLLM base
+    URL, embedding provider/model/dimension, `k`, token budget, max hits and
+    OpenRouter-key presence as a boolean only.
 - T025 [done] Feed benchmark summaries into Meta-Harness candidate artifacts.
   - 2026-04-27: `write_benchmark_report()` writes stable JSON suitable for
     Meta-Harness artifact directories.

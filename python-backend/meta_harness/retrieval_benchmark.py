@@ -71,6 +71,7 @@ def write_retrieval_benchmark_artifacts(
 
     run_dir = data_dir / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    provider_config = _provider_config(report)
     run_manifest = {
         "run_id": run_id,
         "created_at": datetime.now(UTC).isoformat(),
@@ -84,12 +85,12 @@ def write_retrieval_benchmark_artifacts(
             "frontend_required": False,
             "go_gateway_required": False,
             "postgres_required": True,
-            "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
-            "embedding_provider": os.environ.get("EMBEDDER_PROVIDER")
-            or os.environ.get("MEMORY_EMBEDDING_PROVIDER", ""),
-            "embedding_model": os.environ.get("EMBEDDER_MODEL")
-            or os.environ.get("MEMORY_EMBEDDING_MODEL", ""),
+            "litellm_base_url": provider_config["litellm_base_url"],
+            "embedding_provider": provider_config["embedding_provider"],
+            "embedding_model": provider_config["embedding_model"],
+            "embedding_dimension": provider_config["embedding_dimension"],
         },
+        "provider_config": provider_config,
     }
     (run_dir / "run.json").write_text(
         json.dumps(run_manifest, indent=2, default=str),
@@ -109,6 +110,7 @@ def write_retrieval_benchmark_artifacts(
             "k": report.get("k"),
             "token_budget": report.get("token_budget"),
             "max_hits": report.get("max_hits"),
+            "provider_config": provider_config,
             "canary_count": report.get("canary_count"),
             "splits": report.get("splits", []),
             "question_classes": report.get("question_classes", []),
@@ -213,6 +215,50 @@ def _metadata_compatibility(candidate: dict[str, Any]) -> dict[str, Any]:
         "required_keys": list(REQUIRED_CANDIDATE_METADATA),
         "missing_keys": missing,
         "failures": failures,
+    }
+
+
+def _env_first(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.environ.get(name)
+        if value not in (None, ""):
+            return value
+    return default
+
+
+def _provider_config(report: dict[str, Any]) -> dict[str, Any]:
+    """Capture non-secret model/provider/budget config for benchmark replay."""
+
+    candidate_dimensions = sorted(
+        {
+            str(candidate.get("metadata", {}).get("embedding_dimension"))
+            for candidate in report.get("candidates", [])
+            if isinstance(candidate, dict)
+            and isinstance(candidate.get("metadata"), dict)
+            and candidate.get("metadata", {}).get("embedding_dimension") not in (None, "")
+        }
+    )
+    return {
+        "llm_provider": _env_first("AGENT_LLM_PROVIDER", default="litellm"),
+        "agent_model": _env_first("AGENT_DEFAULT_MODEL", "AGENT_DEFAULT_UTILITY_MODEL"),
+        "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
+        "agent_max_output_tokens": os.environ.get("AGENT_MAX_OUTPUT_TOKENS", ""),
+        "embedding_provider": _env_first(
+            "EMBEDDER_PROVIDER",
+            "MEMORY_EMBEDDING_PROVIDER",
+        ),
+        "embedding_model": _env_first("EMBEDDER_MODEL", "MEMORY_EMBEDDING_MODEL"),
+        "embedding_dimension": _env_first(
+            "EMBEDDER_DIMENSION",
+            "EMBEDDING_DIMENSION",
+            "MEMORY_EMBEDDING_DIMENSION",
+            default=",".join(candidate_dimensions),
+        ),
+        "k": report.get("k"),
+        "token_budget": report.get("token_budget"),
+        "max_hits": report.get("max_hits"),
+        "openrouter_api_key_present": bool(os.environ.get("OPENROUTER_API_KEY")),
+        "secrets_redacted": True,
     }
 
 
