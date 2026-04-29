@@ -69,6 +69,18 @@ async def test_report_build_writes_only_configured_artifact_root(tmp_path, monke
 
 
 @pytest.mark.asyncio
+async def test_report_build_surfaces_validation_failures(tmp_path, monkeypatch):
+    monkeypatch.setenv("MATRIX_REPORT_ARTIFACT_DIR", str(tmp_path))
+    payload = {**_input(), "source_markdown": "# RAG Summary\nNo citation"}
+
+    result = await ReportBuildTool().execute(payload, _ctx())
+
+    assert result["ok"] is False
+    assert "citation-not-used:S1" in result["validation"]["failures"]
+    assert not (tmp_path / "report-1" / "manifest.json").exists()
+
+
+@pytest.mark.asyncio
 async def test_report_build_rejects_path_traversal_id(tmp_path, monkeypatch):
     monkeypatch.setenv("MATRIX_REPORT_ARTIFACT_DIR", str(tmp_path))
     payload = {**_input(), "report_id": "../escape"}

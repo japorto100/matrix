@@ -26,7 +26,10 @@ feature_id: 027
 - [x] T011 [done-static] Define report manifest with title, owner, input sources, generated_at,
   renderer version and checksum.
 - [x] T012 [done-static] Define citation block contract shared with Feature 019/021.
-- T013 Define generated chart/table input format.
+- [x] T013 [done-static] Define generated chart/table input format.
+  - 2026-04-29: `ReportDataArtifact` defines table/chart artifact ids,
+    source refs, columns/rows, chart type and Markdown references as
+    `{{artifact_id}}`; builds materialize them to `data.json`.
 - [x] T014 [done-static] Define validation rules before build.
 - T015 Define artifact retention and cleanup policy.
 
@@ -42,8 +45,14 @@ feature_id: 027
 - [x] T022 [done-static] Add report validation tool contract.
   - 2026-04-29: `report_validate` checks manifest metadata, citation usage and
     checksum without writing files.
-- T023 Add agent prompt constraints for source-grounded reports.
-- T024 Add Meta-Harness report scenario.
+- [x] T023 [done-static] Add agent prompt constraints for source-grounded reports.
+  - 2026-04-29: researcher and risk-manager role prompts/contracts require
+    source markers, explicit `[UNSUPPORTED]` markings and `report_validate`
+    before `report_build`.
+- [x] T024 [done-static] Add Meta-Harness report scenario.
+  - 2026-04-29: `meta_harness report-grounding` runs provider-free valid-build,
+    missing-citation and unsupported-marker scenarios and writes Pareto-readable
+    candidate artifacts.
 - T025 Add Matrix chat handoff: link/attachment plus provenance summary.
 - [x] T026 [done-static] Add Control UI report artifact list.
   - 2026-04-29: `/control/reports` provides the frontend artifact index for
@@ -59,15 +68,19 @@ feature_id: 027
 
 - [x] T030 Unit-test manifest validation.
 - [x] T031 Unit-test citation completeness.
-- T032 Integration-test renderer on fixture.
-- T033 Integration-test report build failure is surfaced to agent.
+- [x] T032 [done-static] Integration-test renderer on fixture.
+  - 2026-04-29: fallback renderer fixture writes HTML/text/manifest and escapes
+    HTML; Quarkdown fixture remains live-only until CLI/runtime is promoted.
+- [x] T033 [done-static] Integration-test report build failure is surfaced to agent.
+  - 2026-04-29: `report_build` returns structured validation failures for
+    missing citations and does not write artifacts.
 - T034 Live-verify generated HTML/PDF artifact.
 - T035 Live-verify Matrix chat can display generated artifact link safely.
-- T036 [partial-static] Meta-Harness score report against source-grounding gates.
+- [x] T036 [done-static] Meta-Harness score report against source-grounding gates.
   - 2026-04-29: Feature 022 canary `report-grounding-manifest-001` now scores
     whether report manifest/output/renderer metadata survives as cited
-    retrieval evidence. Full report-generation Meta-Harness scenario remains
-    open.
+    retrieval evidence. Feature 027 now adds provider-free `report-grounding`
+    scenarios for citation/build validation and unsupported-claim handling.
 - [x] T037 [done-static] Frontend typecheck/lint for `/control/reports`.
 - [x] T038 [done-static] Unit-test report artifact index over generated and
   invalid manifests.

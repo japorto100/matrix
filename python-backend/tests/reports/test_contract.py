@@ -4,6 +4,7 @@ import json
 
 from reports.contract import (
     Citation,
+    ReportDataArtifact,
     ReportManifest,
     build_report_artifacts,
     compute_checksum,
@@ -71,3 +72,54 @@ def test_build_report_artifacts_writes_manifest_and_outputs(tmp_path):
     assert manifest["checksum"] == compute_checksum(source)
     assert manifest["output_files"] == ["source.md", "report.html", "report.txt"]
     assert (tmp_path / "report-1" / "report.html").exists()
+
+
+def test_report_manifest_rejects_uncited_factual_paragraphs():
+    result = validate_report_manifest(
+        _manifest(),
+        source_markdown="# Brief\nThis factual paragraph has no support.\nEvidence [S1]",
+    )
+
+    assert result["passed"] is False
+    assert any(item.startswith("section-unsupported:Brief") for item in result["failures"])
+
+
+def test_report_manifest_accepts_explicit_unsupported_marker():
+    result = validate_report_manifest(
+        _manifest(),
+        source_markdown="# Brief\nSpeculative claim [UNSUPPORTED]\nEvidence [S1]",
+    )
+
+    assert result["passed"] is True
+
+
+def test_build_report_artifacts_writes_chart_table_data(tmp_path):
+    source = "# Risk Brief\nEvidence [S1]\n{{risk-table}}"
+    manifest = ReportManifest(
+        **{
+            **_manifest().as_dict(),
+            "citations": _manifest().citations,
+            "data_artifacts": (
+                ReportDataArtifact(
+                    artifact_id="risk-table",
+                    kind="table",
+                    title="Risk Table",
+                    source_id="source-a",
+                    columns=("metric", "value"),
+                    rows=({"metric": "drawdown", "value": "5%"},),
+                ),
+            ),
+        }
+    )
+
+    result = build_report_artifacts(
+        source_markdown=source,
+        manifest=manifest,
+        output_dir=tmp_path,
+    )
+
+    saved_manifest = json.loads((tmp_path / "report-1" / "manifest.json").read_text())
+    data = json.loads((tmp_path / "report-1" / "data.json").read_text())
+    assert result["passed"] is True
+    assert "data.json" in saved_manifest["output_files"]
+    assert data[0]["artifact_id"] == "risk-table"

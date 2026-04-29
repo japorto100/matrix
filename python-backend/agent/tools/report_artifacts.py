@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from agent.tools.base import TradingTool
 from reports.contract import (
     Citation,
+    ReportDataArtifact,
     ReportManifest,
     build_report_artifacts,
     compute_checksum,
@@ -33,6 +34,20 @@ class ReportCitationInput(BaseModel):
     source_type: str = "document"
 
 
+class ReportDataArtifactInput(BaseModel):
+    artifact_id: str = Field(
+        min_length=1,
+        description="Stable id referenced in Markdown as {{artifact_id}}.",
+    )
+    kind: Literal["table", "chart"]
+    title: str = Field(min_length=1)
+    source_id: str = Field(min_length=1)
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict[str, Any]] = Field(default_factory=list)
+    chart_type: str = ""
+    unit: str = ""
+
+
 class ReportArtifactInput(BaseModel):
     report_id: str = Field(
         min_length=1,
@@ -46,6 +61,10 @@ class ReportArtifactInput(BaseModel):
     )
     input_sources: list[str] = Field(default_factory=list)
     citations: list[ReportCitationInput] = Field(default_factory=list)
+    data_artifacts: list[ReportDataArtifactInput] = Field(
+        default_factory=list,
+        description="Optional chart/table artifacts referenced as {{artifact_id}}.",
+    )
     renderer: Literal["markdown-fallback", "quarkdown"] = "markdown-fallback"
     renderer_version: str = "builtin"
 
@@ -184,6 +203,19 @@ def _manifest(
                 source_type=item.source_type,
             )
             for item in params.citations
+        ),
+        data_artifacts=tuple(
+            ReportDataArtifact(
+                artifact_id=item.artifact_id,
+                kind=item.kind,
+                title=item.title,
+                source_id=item.source_id,
+                columns=tuple(item.columns),
+                rows=tuple(item.rows),
+                chart_type=item.chart_type,
+                unit=item.unit,
+            )
+            for item in params.data_artifacts
         ),
         renderer=renderer or params.renderer,
         renderer_version=params.renderer_version,

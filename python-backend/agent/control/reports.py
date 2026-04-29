@@ -9,7 +9,12 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from reports.contract import Citation, ReportManifest, validate_report_manifest
+from reports.contract import (
+    Citation,
+    ReportDataArtifact,
+    ReportManifest,
+    validate_report_manifest,
+)
 
 router = APIRouter(tags=["control", "reports"])
 
@@ -59,6 +64,7 @@ def _load_report_artifact(manifest_path: Path, root: Path) -> dict[str, Any] | N
         "manifest_path": _relative(manifest_path, root),
         "input_sources": list(manifest.input_sources),
         "citations": [citation.as_dict() for citation in manifest.citations],
+        "data_artifacts": [item.as_dict() for item in manifest.data_artifacts],
         "output_files": output_files,
         "validation": validation,
         "matrix_publication": raw.get("matrix_publication") or {"status": "not_published"},
@@ -78,6 +84,20 @@ def _manifest_from_raw(raw: dict[str, Any]) -> ReportManifest:
         for item in raw.get("citations") or ()
         if isinstance(item, dict)
     )
+    data_artifacts = tuple(
+        ReportDataArtifact(
+            artifact_id=str(item.get("artifact_id") or ""),
+            kind="chart" if item.get("kind") == "chart" else "table",
+            title=str(item.get("title") or ""),
+            source_id=str(item.get("source_id") or ""),
+            columns=tuple(str(column) for column in item.get("columns") or ()),
+            rows=tuple(dict(row) for row in item.get("rows") or () if isinstance(row, dict)),
+            chart_type=str(item.get("chart_type") or ""),
+            unit=str(item.get("unit") or ""),
+        )
+        for item in raw.get("data_artifacts") or ()
+        if isinstance(item, dict)
+    )
     renderer = raw.get("renderer")
     return ReportManifest(
         report_id=str(raw.get("report_id") or ""),
@@ -85,6 +105,7 @@ def _manifest_from_raw(raw: dict[str, Any]) -> ReportManifest:
         owner=str(raw.get("owner") or ""),
         input_sources=tuple(str(item) for item in raw.get("input_sources") or ()),
         citations=citations,
+        data_artifacts=data_artifacts,
         renderer="quarkdown" if renderer == "quarkdown" else "markdown-fallback",
         renderer_version=str(raw.get("renderer_version") or "unknown"),
         generated_at=str(raw.get("generated_at") or ""),
@@ -126,6 +147,7 @@ def _invalid_manifest_artifact(manifest_path: Path, root: Path) -> dict[str, Any
         "manifest_path": _relative(manifest_path, root),
         "input_sources": [],
         "citations": [],
+        "data_artifacts": [],
         "output_files": [
             {
                 "kind": "manifest",
@@ -161,6 +183,8 @@ def _output_kind(path: str) -> str:
         return "pdf"
     if suffix in {".pptx", ".slides"}:
         return "slides"
+    if suffix == ".json":
+        return "data"
     return "text"
 
 

@@ -55,7 +55,10 @@ TRADING_ROLE_PROMPTS: dict[TradingRole, str] = {
         "You are a Research Analyst. Synthesize findings from fundamental, sentiment, "
         "and technical analysis. Present balanced bull and bear arguments. "
         "Weigh evidence objectively and highlight key uncertainties. "
-        "Provide a research summary with confidence level."
+        "Provide a research summary with confidence level. "
+        "When producing report artifacts, every factual paragraph must cite source "
+        "markers like [S1] or explicitly mark unsupported material as [UNSUPPORTED]; "
+        "validate with report_validate before calling report_build."
     ),
     TradingRole.TRADER: (
         "You are a Trader. Based on the research summary, make actionable trading decisions. "
@@ -67,7 +70,9 @@ TRADING_ROLE_PROMPTS: dict[TradingRole, str] = {
         "You are a Risk Manager. Evaluate proposed trades for risk exposure. "
         "Check position sizing, portfolio concentration, correlation risk, and drawdown limits. "
         "Approve, modify, or reject trade proposals based on risk parameters. "
-        "Enforce maximum loss limits and diversification rules."
+        "Enforce maximum loss limits and diversification rules. "
+        "For generated risk reports, require source citations, checksum validation, "
+        "and report_validate evidence before publication or attachment handoff."
     ),
 }
 
@@ -149,6 +154,8 @@ TRADING_ROLE_CONTRACTS: dict[TradingRole, list[str]] = {
         "Must include bull arguments",
         "Must include bear arguments",
         "Must state confidence level",
+        "Report artifacts must cite every factual paragraph or mark it [UNSUPPORTED]",
+        "Report artifacts must pass report_validate before report_build",
     ],
     TradingRole.TRADER: [
         "Must define entry point",
@@ -158,5 +165,6 @@ TRADING_ROLE_CONTRACTS: dict[TradingRole, list[str]] = {
     TradingRole.RISK_MANAGER: [
         "Must state approval or rejection",
         "Must provide risk score",
+        "Risk reports must include citation and checksum validation evidence",
     ],
 }

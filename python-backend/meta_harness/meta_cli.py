@@ -108,6 +108,13 @@ def build_parser() -> argparse.ArgumentParser:
     widget_policy.add_argument("--run-id", default="")
     widget_policy.add_argument("--data-dir", type=Path, default=None)
 
+    report_grounding = sub.add_parser(
+        "report-grounding",
+        help="Run provider-free Feature 027 report citation/build scenarios",
+    )
+    report_grounding.add_argument("--run-id", default="")
+    report_grounding.add_argument("--data-dir", type=Path, default=None)
+
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
         help="Run Feature 021 PDF extraction against Markdown ground truth",
@@ -308,6 +315,13 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_matrix_widget_policy_scenarios(**kwargs)
+    if args.command == "report-grounding":
+        from meta_harness.report_grounding import run_report_grounding_scenarios
+
+        kwargs = {"run_id": args.run_id or "run-report-grounding"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_report_grounding_scenarios(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

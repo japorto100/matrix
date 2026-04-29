@@ -12,8 +12,9 @@ feature_id: 027
 - LV001 Build tiny Quarkdown fixture to HTML.
 - LV002 Build same fixture to PDF if renderer/runtime supports it locally.
 - LV003 Build same fixture to slides/plain text if supported.
-- LV004 Generate a report manifest and verify checksums.
-- LV005 Run report validator with a missing citation and verify failure.
+- LV004 [done-static-live-smoke] Generate a report manifest and verify checksums.
+- LV005 [done-static-live-smoke] Run report validator with a missing citation
+  and verify failure.
 - LV005a Ask an agent to call `report_validate` on a missing-citation report
   and verify the structured failure reaches the chat/tool trace.
 - LV006 Run agent report-generation scenario from RAG/KG sources.
@@ -27,7 +28,9 @@ feature_id: 027
   without executing a renderer.
 - LV009b Generate a report under `MATRIX_REPORT_ARTIFACT_DIR` and verify
   `/api/v1/control/reports` returns the manifest with validation status.
-- LV010 Run Meta-Harness report-grounding scenario.
+- LV010 [done-static-live-smoke] Run Meta-Harness report-grounding scenario.
+  - 2026-04-29: provider-free static command exists; full live run through an
+    agent chat trace remains tied to LV006/LV007a.
 - LV011 Verify renderer can be disabled and fallback path still returns
   structured markdown.
 - LV012 Verify no provider-specific dependency exists in report generation.

@@ -2,6 +2,7 @@
 
 from reports.contract import (
     Citation,
+    ReportDataArtifact,
     ReportManifest,
     build_report_artifacts,
     compute_checksum,
@@ -11,6 +12,7 @@ from reports.contract import (
 
 __all__ = [
     "Citation",
+    "ReportDataArtifact",
     "ReportManifest",
     "build_report_artifacts",
     "compute_checksum",

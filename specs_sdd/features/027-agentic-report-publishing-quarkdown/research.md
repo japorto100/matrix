@@ -75,6 +75,24 @@ and forces `markdown-fallback` even when the requested renderer is `quarkdown`.
 That keeps renderer promotion explicit while giving agents a safe contract for
 source-grounded reports.
 
+## 2026-04-29 Grounding Gate Follow-Up
+
+The report contract now treats data artifacts as first-class, provider-agnostic
+inputs. Tables and charts have stable ids, source ids and structured payloads;
+Markdown references them as `{{artifact_id}}`, and the fallback build writes
+`data.json` next to source, HTML, text and manifest artifacts.
+
+The validator now enforces the Z-derived report-publishing rule at static gate
+level: factual body paragraphs must cite known source markers, reference a data
+artifact, or explicitly mark speculative/unsupported material as `[UNSUPPORTED]`.
+This is intentionally renderer-independent and applies before Quarkdown, PDF or
+Matrix publication is involved.
+
+`meta_harness report-grounding` closes the provider-free Meta-Harness side: it
+builds a grounded report fixture, verifies a missing-citation failure and checks
+that explicit unsupported claims remain visible instead of silently passing as
+grounded facts.
+
 ## Checked Sources
 
 - Matrix root `Z_Tool_very interessting Quarkdown.md`.
