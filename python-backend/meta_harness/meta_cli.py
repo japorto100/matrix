@@ -119,6 +119,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pdf_benchmark.add_argument("--data-dir", type=Path, default=None)
 
+    pdf_sweep = sub.add_parser(
+        "pdf-extraction-sweep",
+        help="Run available Feature 021 parser candidates against Markdown truth",
+    )
+    pdf_sweep.add_argument("--run-id", default="")
+    pdf_sweep.add_argument(
+        "--extractors",
+        default="",
+        help="Comma-separated extractor registry names. Defaults to known profiles.",
+    )
+    pdf_sweep.add_argument(
+        "--include-unavailable",
+        action="store_true",
+        help="Write failure artifacts for unavailable optional parser candidates.",
+    )
+    pdf_sweep.add_argument("--pdf-path", type=Path, default=None)
+    pdf_sweep.add_argument("--truth-path", type=Path, default=None)
+    pdf_sweep.add_argument("--data-dir", type=Path, default=None)
+
     memory_smoke = sub.add_parser(
         "memory-smoke",
         help="Run deterministic Feature 023 memory/context smoke without provider calls",
@@ -277,6 +296,29 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_pdf_extraction_benchmark(**kwargs)
+    if args.command == "pdf-extraction-sweep":
+        from meta_harness.extraction_benchmark import (
+            DEFAULT_PDF_PATH,
+            run_pdf_extraction_sweep,
+        )
+
+        pdf_path = args.pdf_path or DEFAULT_PDF_PATH
+        truth_path = args.truth_path or pdf_path.with_suffix(".md")
+        extractor_names = tuple(
+            value.strip()
+            for value in str(args.extractors or "").split(",")
+            if value.strip()
+        )
+        kwargs = {
+            "pdf_path": pdf_path,
+            "truth_path": truth_path,
+            "run_id": args.run_id or None,
+            "extractor_names": extractor_names or None,
+            "available_only": not args.include_unavailable,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_pdf_extraction_sweep(**kwargs)
     if args.command == "memory-smoke":
         from meta_harness.memory_context_smoke import run_memory_context_smoke
 

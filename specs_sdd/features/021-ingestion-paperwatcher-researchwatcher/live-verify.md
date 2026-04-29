@@ -50,6 +50,14 @@ feature_id: 021
   - 2026-04-27 rerun for Feature 023:
     `run-pdf-extraction-feature023-20260427`, fitness `0.9682`, latency
     `3532.881ms`; same formula/figure/code-fence gaps remain.
+- LV008 [done-static-live-smoke] Run parser-candidate sweep over the same
+  ResearchWatcher fixture.
+  - 2026-04-29:
+    `uv run python -m meta_harness.meta_cli pdf-extraction-sweep --run-id run-pdf-extraction-sweep-20260429 --data-dir /tmp/matrix-meta-harness-sweep`
+  - Result: PyMuPDF4LLM passed, MarkItDown preserved text recall but lost page
+    count, Docling and MinerU wrote unavailable remote-worker failure
+    artifacts. This validates the candidate artifact contract without pulling
+    heavy optional dependencies.
 
 ## 2026-04-27 Local CLI Smoke
 

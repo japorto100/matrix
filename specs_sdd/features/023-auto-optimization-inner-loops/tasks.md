@@ -40,7 +40,7 @@ feature_id: 023
 
 ## RAG/Extraction Inner Loop
 
-- T020 [partial-static] Add search spaces for parser/splitter/chunking:
+- T020 [done-static] Add search spaces for parser/splitter/chunking:
   PyMuPDF4LLM, Docling, MinerU, recursive/character/hierarchy-aware chunking,
   chunk size, overlap and metadata enrichment.
   - 2026-04-27: parser candidate space now has an optional MarkItDown adapter
@@ -54,6 +54,9 @@ feature_id: 023
     hierarchy-aware chunking and metadata-enrichment handoff requirements.
     The next step is a bounded multi-candidate sweep over installed/available
     extractors.
+  - 2026-04-29: `pdf-extraction-sweep` now runs that bounded sweep, defaults
+    to available extractors and can optionally include unavailable candidates
+    as failure artifacts for planning without installing heavy dependencies.
 - T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.

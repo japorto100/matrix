@@ -473,6 +473,51 @@ async def test_cli_pdf_extraction_benchmark_uses_paths(tmp_path, monkeypatch):
     assert captured["extractor_name"] == "markitdown"
 
 
+@pytest.mark.asyncio
+async def test_cli_pdf_extraction_sweep_uses_requested_extractors(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    captured = {}
+
+    async def fake_run_pdf_extraction_sweep(**kwargs):
+        captured.update(kwargs)
+        return {
+            "run_id": kwargs["run_id"],
+            "artifacts": {"candidates": []},
+            "skipped_extractors": [],
+        }
+
+    monkeypatch.setattr(
+        "meta_harness.extraction_benchmark.run_pdf_extraction_sweep",
+        fake_run_pdf_extraction_sweep,
+    )
+    pdf = tmp_path / "sample.pdf"
+    truth = tmp_path / "sample.md"
+    args = meta_cli.build_parser().parse_args(
+        [
+            "pdf-extraction-sweep",
+            "--run-id",
+            "run-pdf-sweep",
+            "--pdf-path",
+            str(pdf),
+            "--truth-path",
+            str(truth),
+            "--extractors",
+            "pymupdf4llm,docling",
+            "--include-unavailable",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["run_id"] == "run-pdf-sweep"
+    assert captured["pdf_path"] == pdf
+    assert captured["truth_path"] == truth
+    assert captured["extractor_names"] == ("pymupdf4llm", "docling")
+    assert captured["available_only"] is False
+
+
 def test_pdf_extraction_benchmark_records_requested_extractor(tmp_path):
     from meta_harness.extraction_benchmark import (
         evaluate_pdf_extraction,
@@ -546,6 +591,42 @@ def test_pdf_extraction_artifacts_include_parser_and_chunker_search_space(tmp_pa
         "token",
         "hierarchy-aware",
     ]
+
+
+@pytest.mark.asyncio
+async def test_pdf_extraction_sweep_writes_multiple_candidate_artifacts(tmp_path):
+    from meta_harness.extraction_benchmark import run_pdf_extraction_sweep
+
+    pdf = tmp_path / "missing.pdf"
+    truth = tmp_path / "missing.md"
+
+    result = await run_pdf_extraction_sweep(
+        pdf_path=pdf,
+        truth_path=truth,
+        run_id="run-pdf-sweep",
+        extractor_names=("pymupdf4llm", "docling"),
+        available_only=False,
+        data_dir=tmp_path,
+    )
+
+    run_manifest = json.loads((tmp_path / "runs" / "run-pdf-sweep" / "run.json").read_text())
+    candidates = result["artifacts"]["candidates"]
+
+    assert run_manifest["kind"] == "pdf_extraction_sweep"
+    assert run_manifest["selected_extractors"] == ["pymupdf4llm", "docling"]
+    assert run_manifest["candidate_count"] == 2
+    assert [candidate["candidate_id"] for candidate in candidates] == [
+        "pymupdf4llm-pdf-extraction",
+        "docling-pdf-extraction",
+    ]
+    assert (
+        tmp_path
+        / "runs"
+        / "run-pdf-sweep"
+        / "candidates"
+        / "docling-pdf-extraction"
+        / "extraction_benchmark.json"
+    ).exists()
 
 
 @pytest.mark.asyncio

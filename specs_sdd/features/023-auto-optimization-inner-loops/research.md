@@ -129,3 +129,8 @@ parser profiles describe runtime/resource/source-class scope, and chunker
 spaces carry hierarchy-aware chunking, size/overlap and metadata enrichment
 requirements. This keeps heavy parsers such as Docling/MinerU optional until
 their local resource footprint is proven.
+
+`pdf-extraction-sweep` is the first bounded executor for that search space. It
+runs available extractor profiles by default and can include unavailable
+profiles as explicit failure artifacts, which is useful for planning without
+silently pulling heavy packages onto the 8GB development machine.

@@ -105,11 +105,14 @@ feature_id: 021
   chunking and citation refs.
 - T028 Prefer structured trading/finance inputs such as XBRL/CSV/API over PDF
   extraction when available.
-- T029 [partial-static] Feed parser/chunking configs into Feature 023 inner-loop experiments.
+- T029 [done-static] Feed parser/chunking configs into Feature 023 inner-loop experiments.
   - 2026-04-29: PDF extraction benchmark reports now include a
     `candidate_search_space` with parser profiles, chunker sizes/overlaps,
     hierarchy-aware chunking and metadata-enrichment handoff requirements.
     Full multi-candidate sweep remains Feature 023.
+  - 2026-04-29: `meta_harness.meta_cli pdf-extraction-sweep` can now run a
+    bounded parser sweep over requested or available extractor profiles and
+    writes one Meta-Harness candidate directory per parser.
 - T029a Maintain a source-date classification in Feature 021/019/023 docs:
   2026 papers and current official docs are decision evidence; older papers are
   method references unless validated by current repo state and local benchmark.
@@ -175,8 +178,12 @@ feature_id: 021
     search-space metadata so failures can be converted into bounded
     candidates instead of free-form code edits. Automatic candidate generation
     from observed failures remains open.
-- T038 Compare PyMuPDF4LLM vs Docling on the ResearchWatcher fixture and at
+- T038 [partial-static] Compare PyMuPDF4LLM vs Docling on the ResearchWatcher fixture and at
   least one financial/research PDF.
+  - 2026-04-29: sweep machinery can compare both profiles under the same
+    ResearchWatcher fixture and artifact contract. Actual Docling execution
+    remains open until the remote layout worker/dependency footprint is
+    available in the local stack.
 - T039 Evaluate MinerU only after resource footprint and install/cache location
   are clear.
 - T040 [partial-static] Compare MarkItDown against PyMuPDF4LLM, Docling and MinerU on the

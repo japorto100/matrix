@@ -76,3 +76,12 @@ feature_id: 023
     keep/discard/defer entries through the existing decision log. Fused RAG
     stayed deferred despite search pass_rate `1.0` because holdout was not part
     of the run.
+- LV011 [done-static-live-smoke] Run bounded parser-candidate sweep.
+  - 2026-04-29:
+    `uv run python -m meta_harness.meta_cli pdf-extraction-sweep --run-id run-pdf-extraction-sweep-20260429 --data-dir /tmp/matrix-meta-harness-sweep`
+  - Result: candidate artifacts written under
+    `/tmp/matrix-meta-harness-sweep/runs/run-pdf-extraction-sweep-20260429/`.
+    PyMuPDF4LLM passed with fitness `0.9682`; MarkItDown had matching text
+    recall/phrase coverage but failed `page_count <= 0` and fitness `0.5682`;
+    Docling and MinerU remained remote-layout-worker unavailable in the local
+    stack and produced explicit failure artifacts.

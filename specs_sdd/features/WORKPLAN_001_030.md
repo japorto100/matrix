@@ -80,8 +80,11 @@ and live-verify probes. This file defines execution order.
      profiles and chunker/metadata-enrichment candidate spaces for
      PyMuPDF4LLM, MarkItDown, Docling and MinerU without installing heavy
      optional dependencies.
-8. [next] Phase 5: add bounded multi-candidate extraction sweep over available
-   parser adapters, then feed the results into Meta-Harness/Feature 022.
+   - 2026-04-29: `pdf-extraction-sweep` now writes one Meta-Harness candidate
+     directory per available/requested parser profile and records skipped
+     optional extractors.
+8. [next] Phase 5: run the available parser sweep and use its artifacts to
+   tighten Feature 022 parser-derived retrieval canaries.
 
 ## Dependency Watchlist
 

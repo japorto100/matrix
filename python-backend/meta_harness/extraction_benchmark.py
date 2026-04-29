@@ -134,6 +134,127 @@ async def run_pdf_extraction_benchmark(
     return {"run_id": run_id, "report": report, "artifacts": artifact}
 
 
+async def run_pdf_extraction_sweep(
+    *,
+    pdf_path: Path = DEFAULT_PDF_PATH,
+    truth_path: Path = DEFAULT_TRUTH_PATH,
+    run_id: str | None = None,
+    extractor_names: tuple[str, ...] | None = None,
+    available_only: bool = True,
+    data_dir: Path = META_HARNESS_DATA_DIR,
+    required_phrases: tuple[str, ...] = DEFAULT_REQUIRED_PHRASES,
+) -> dict[str, Any]:
+    """Run a bounded parser-candidate sweep without installing dependencies."""
+
+    run_id = run_id or f"run-pdf-extraction-sweep-{uuid.uuid4().hex[:12]}"
+    selected, skipped = _select_sweep_extractors(
+        extractor_names=extractor_names,
+        available_only=available_only,
+    )
+    candidates: list[dict[str, Any]] = []
+    reports: list[dict[str, Any]] = []
+    for extractor_name in selected:
+        report = evaluate_pdf_extraction(
+            pdf_path=pdf_path,
+            truth_path=truth_path,
+            candidate_id=f"{extractor_name}-pdf-extraction",
+            extractor_name=extractor_name,
+            required_phrases=required_phrases,
+        )
+        reports.append(report)
+        candidates.append(
+            write_pdf_extraction_artifacts(
+                report,
+                run_id=run_id,
+                data_dir=data_dir,
+            )
+        )
+
+    run_dir = data_dir / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    best = max(candidates, key=lambda item: _as_float(item.get("fitness_score")), default=None)
+    _write_json(
+        run_dir / "run.json",
+        {
+            "run_id": run_id,
+            "created_at": datetime.now(UTC).isoformat(),
+            "kind": "pdf_extraction_sweep",
+            "feature_id": "023",
+            "scenario_set": "researchwatcher-small-pdf-ground-truth",
+            "available_only": available_only,
+            "selected_extractors": list(selected),
+            "skipped_extractors": skipped,
+            "candidate_count": len(candidates),
+            "best_candidate": best,
+        },
+    )
+    return {
+        "run_id": run_id,
+        "reports": reports,
+        "artifacts": {"run_path": str(run_dir), "candidates": candidates},
+        "skipped_extractors": skipped,
+        "best_candidate": best,
+    }
+
+
+def _select_sweep_extractors(
+    *,
+    extractor_names: tuple[str, ...] | None = None,
+    available_only: bool = True,
+) -> tuple[tuple[str, ...], list[dict[str, Any]]]:
+    requested = tuple(
+        dict.fromkeys(
+            name.strip().lower()
+            for name in (
+                extractor_names
+                if extractor_names is not None
+                else tuple(profile["extractor"] for profile in PARSER_CANDIDATE_PROFILES)
+            )
+            if name.strip()
+        )
+    )
+    if not available_only:
+        return requested, []
+
+    selected: list[str] = []
+    skipped: list[dict[str, Any]] = []
+    try:
+        from ingestion.extractors.registry import ExtractorRegistry
+
+        registry = ExtractorRegistry()
+        for name in requested:
+            try:
+                extractor = registry.get(name)
+                if extractor.is_available():
+                    selected.append(name)
+                else:
+                    skipped.append(
+                        {
+                            "extractor": name,
+                            "reason": "extractor-not-available",
+                            "profile": parser_candidate_profile(name),
+                        }
+                    )
+            except Exception as exc:  # noqa: BLE001
+                skipped.append(
+                    {
+                        "extractor": name,
+                        "reason": str(exc),
+                        "profile": parser_candidate_profile(name),
+                    }
+                )
+    except Exception as exc:  # noqa: BLE001
+        skipped.extend(
+            {
+                "extractor": name,
+                "reason": f"registry-unavailable:{exc}",
+                "profile": parser_candidate_profile(name),
+            }
+            for name in requested
+        )
+    return tuple(selected), skipped
+
+
 def evaluate_pdf_extraction(
     *,
     pdf_path: Path,
