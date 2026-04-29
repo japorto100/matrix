@@ -86,6 +86,9 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   catalog/policy view and an MCP gateway/catalog view. Normal builtin tool
   catalog metadata is owned by Feature 016 and exposed through `/control/tools`;
   external MCP descriptor/resource policy remains delegated to Feature 024.
+  2026-04-29 static UI follow-up: `ToolsTab` renders builtin risk, approval
+  and progressive-disclosure metadata; `McpTab` renders effective MCP catalog
+  approval/risk/denial/visibility state.
 - `Z_Semantik_layer and so on.md` requires semantic/metric definition
   inspection delegated to Feature 025.
 - `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface

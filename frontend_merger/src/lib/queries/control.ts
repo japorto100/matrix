@@ -16,6 +16,7 @@ import type {
 	ContextInspectorResponse,
 	EnvVar,
 	LlmProvider,
+	McpCatalogEntry,
 	McpServer,
 	ModelRouting,
 	OverviewSnapshot,
@@ -421,11 +422,17 @@ export const sessionsQueries = {
 export const mcpKeys = {
 	all: ["control", "mcp"] as const,
 	servers: () => ["control", "mcp", "servers"] as const,
+	catalog: () => ["control", "mcp", "catalog"] as const,
 };
 
 export const mcpQueries = {
 	servers: async (): Promise<{ items: McpServer[]; total: number }> =>
 		apiGet("/api/control/mcp/servers"),
+	catalog: async (): Promise<{
+		items: McpCatalogEntry[];
+		total: number;
+		secrets_redacted: boolean;
+	}> => apiGet("/api/control/mcp/catalog"),
 };
 
 // ─── A2A ───────────────────────────────────────────────────────────────────

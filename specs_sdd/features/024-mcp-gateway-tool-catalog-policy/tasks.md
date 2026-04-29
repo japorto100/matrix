@@ -92,8 +92,11 @@ feature_id: 024
 
 ## UI And Harness
 
-- T030 Add Control UI MCP catalog table with server, tool, risk, approval and
+- [x] T030 [done-static] Add Control UI MCP catalog table with server, tool, risk, approval and
   last-seen status.
+  - 2026-04-29: `McpTab` reads `/api/control/mcp/catalog` and displays
+    matrix tool name, provenance/server label, approval level, risk flags,
+    denial reasons and visible/blocked state.
 - T031 Add Control UI descriptor diff view.
 - T032 Add Meta-Harness scenario for benign external tool exposure.
 - T033 Add Meta-Harness scenario for tool poisoning in descriptor text.

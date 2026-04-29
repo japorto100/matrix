@@ -3,7 +3,7 @@
 // ToolsTab — registry of all tools (builtin + MCP + skills + A2A)
 // Slice 5.5 (NEU coverage gap): Tools Registry Browser
 
-import { Network, Package, Plus, Sparkles, Workflow } from "lucide-react";
+import { Network, Package, Plus, Shield, Sparkles, Workflow } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,13 @@ const TYPE_COLOR: Record<ToolType, string> = {
 	mcp: "border-purple-500/50 text-purple-400",
 	skill: "border-amber-500/50 text-amber-400",
 	a2a: "border-emerald-500/50 text-emerald-400",
+};
+
+const RISK_COLOR: Record<NonNullable<ToolDefinition["risk"]>, string> = {
+	low: "border-emerald-500/40 text-emerald-400",
+	medium: "border-amber-500/40 text-amber-400",
+	high: "border-orange-500/40 text-orange-400",
+	critical: "border-rose-500/50 text-rose-400",
 };
 
 export function ToolsTab() {
@@ -144,6 +151,7 @@ export function ToolsTab() {
 							<th className="py-2 px-3 font-semibold w-20">Type</th>
 							<th className="py-2 px-3 font-semibold">Name</th>
 							<th className="py-2 px-3 font-semibold">Description</th>
+							<th className="py-2 px-3 font-semibold w-28">Policy</th>
 							<th className="py-2 px-3 font-semibold w-24">Provider</th>
 							<th className="py-2 px-3 font-semibold w-20 text-right">Calls 24h</th>
 							<th className="py-2 px-3 font-semibold w-20 text-right">Avg ms</th>
@@ -170,7 +178,7 @@ export function ToolsTab() {
 								</td>
 								<td className="py-2 px-3">
 									<div className="line-clamp-2 leading-relaxed text-muted-foreground">
-										{tool.description}
+										{tool.summary ?? tool.description ?? "—"}
 									</div>
 									<div className="flex flex-wrap gap-1 mt-1">
 										{tool.categories.map((cat) => (
@@ -179,6 +187,34 @@ export function ToolsTab() {
 											</Badge>
 										))}
 									</div>
+								</td>
+								<td className="py-2 px-3">
+									<div className="flex flex-wrap gap-1">
+										{tool.risk && (
+											<Badge
+												variant="outline"
+												className={cn("text-[9px] h-4 gap-1 px-1.5", RISK_COLOR[tool.risk])}
+											>
+												<Shield className="h-2.5 w-2.5" />
+												{tool.risk}
+											</Badge>
+										)}
+										{tool.approval && (
+											<Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+												{tool.approval}
+											</Badge>
+										)}
+										{tool.progressive_disclosure_level !== undefined && (
+											<Badge variant="outline" className="text-[9px] h-4 px-1.5">
+												L{tool.progressive_disclosure_level}
+											</Badge>
+										)}
+									</div>
+									{tool.policy_reasons && tool.policy_reasons.length > 0 && (
+										<div className="mt-1 text-[10px] text-muted-foreground line-clamp-1">
+											{tool.policy_reasons.join(", ")}
+										</div>
+									)}
 								</td>
 								<td className="py-2 px-3 text-[10px] text-muted-foreground">
 									{tool.provider ?? "—"}

@@ -72,6 +72,9 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: MCP health/fixture primitives cover static server readiness
      without invoking model-visible tools and provide deterministic local
      descriptors for policy tests.
+   - 2026-04-29: Control UI Tools/MCP surfaces render builtin tool risk,
+     approval and disclosure metadata plus effective MCP catalog
+     approval/risk/denial/visibility state.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

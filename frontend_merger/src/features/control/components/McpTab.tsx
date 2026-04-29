@@ -7,7 +7,7 @@ import { CheckCircle2, Network, Plug, RefreshCw, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMcpServers } from "@/lib/queries/hooks";
+import { useMcpCatalog, useMcpServers } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockMcpServers } from "../mock-data";
 import type { McpServer } from "../types";
@@ -21,9 +21,13 @@ const STATUS_COLOR: Record<McpServer["status"], string> = {
 export function McpTab() {
 	// Slice 7 Phase H: real backend with mock fallback
 	const query = useMcpServers();
+	const catalogQuery = useMcpCatalog();
 	const servers = (query.data?.items as McpServer[] | undefined) ?? mockMcpServers;
+	const catalog = catalogQuery.data?.items ?? [];
 	const connected = servers.filter((s) => s.status === "connected").length;
 	const totalTools = servers.reduce((sum, s) => sum + s.tools.length, 0);
+	const visibleTools = catalog.filter((entry) => entry.visible).length;
+	const blockedTools = catalog.filter((entry) => !entry.visible).length;
 
 	return (
 		<div className="px-6 py-4 space-y-4">
@@ -32,6 +36,7 @@ export function McpTab() {
 					<h2 className="text-base font-semibold">MCP Servers</h2>
 					<p className="text-xs text-muted-foreground">
 						{servers.length} servers · {connected} connected · {totalTools} tools exposed
+						{catalog.length > 0 && ` · ${visibleTools} visible · ${blockedTools} blocked`}
 					</p>
 				</div>
 				<Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" disabled>
@@ -109,6 +114,74 @@ export function McpTab() {
 						</CardContent>
 					</Card>
 				))}
+			</div>
+
+			<div className="rounded-lg border border-border overflow-hidden">
+				<table className="w-full text-xs">
+					<thead className="bg-card/40">
+						<tr className="text-left">
+							<th className="py-2 px-3 font-semibold">Tool</th>
+							<th className="py-2 px-3 font-semibold w-28">Approval</th>
+							<th className="py-2 px-3 font-semibold">Risk / Denial</th>
+							<th className="py-2 px-3 font-semibold w-28">Visible</th>
+						</tr>
+					</thead>
+					<tbody>
+						{catalog.map((entry) => (
+							<tr key={entry.tool.matrix_name} className="border-t border-border hover:bg-card/20">
+								<td className="py-2 px-3">
+									<div className="font-mono text-[11px]">{entry.tool.matrix_name}</div>
+									<div className="text-[10px] text-muted-foreground line-clamp-1">
+										{entry.provenance?.server_label ?? entry.server.server_id}
+									</div>
+								</td>
+								<td className="py-2 px-3">
+									<Badge variant="outline" className="text-[9px] h-4 px-1.5">
+										{entry.tool.approval_level}
+									</Badge>
+								</td>
+								<td className="py-2 px-3">
+									<div className="flex flex-wrap gap-1">
+										{entry.tool.risk_flags.map((flag) => (
+											<Badge key={flag} variant="secondary" className="text-[9px] h-4 px-1.5">
+												{flag}
+											</Badge>
+										))}
+										{entry.denial_reasons.map((reason) => (
+											<Badge
+												key={reason}
+												variant="outline"
+												className="text-[9px] h-4 px-1.5 border-rose-500/50 text-rose-400"
+											>
+												{reason}
+											</Badge>
+										))}
+									</div>
+								</td>
+								<td className="py-2 px-3">
+									<Badge
+										variant="outline"
+										className={cn(
+											"text-[9px] h-4 px-1.5",
+											entry.visible
+												? "border-emerald-500/50 text-emerald-400"
+												: "border-rose-500/50 text-rose-400",
+										)}
+									>
+										{entry.visible ? "visible" : "blocked"}
+									</Badge>
+								</td>
+							</tr>
+						))}
+						{catalog.length === 0 && (
+							<tr className="border-t border-border">
+								<td colSpan={4} className="py-6 px-3 text-center text-muted-foreground">
+									No effective MCP catalog entries
+								</td>
+							</tr>
+						)}
+					</tbody>
+				</table>
 			</div>
 		</div>
 	);

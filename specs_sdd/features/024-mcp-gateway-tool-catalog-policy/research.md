@@ -69,6 +69,10 @@ explicit credential scopes, approval gates and audit evidence.
   non-tool probe callbacks provide readiness evidence, while deterministic
   fixture descriptors exercise policy tests without reaching external MCP
   servers.
+- 2026-04-29 Control UI follow-up: the MCP tab now consumes the effective
+  catalog endpoint and displays approval level, risk flags, denial reasons,
+  provenance/server label and visible/blocked state. This keeps Control aligned
+  with policy-filtered state instead of raw descriptors.
 
 ## Design Consequence
 

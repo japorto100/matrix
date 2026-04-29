@@ -91,10 +91,16 @@ export interface ToolDefinition {
 	id: string;
 	name: string;
 	type: ToolType;
-	description: string;
+	description?: string;
+	summary?: string;
 	provider?: string; // "matrix-builtin" | "exa" | "playwright-mcp" | ...
 	input_schema_summary: string; // human-readable
 	categories: string[];
+	group?: string;
+	risk?: "low" | "medium" | "high" | "critical";
+	approval?: "auto" | "inform" | "confirm" | "deny";
+	progressive_disclosure_level?: number;
+	policy_reasons?: string[];
 	last_called_at?: string;
 	call_count_24h: number;
 	avg_latency_ms?: number;
@@ -173,6 +179,37 @@ export interface McpServer {
 	tools: string[]; // tool names this server exposes
 	last_ping?: string;
 	error?: string;
+}
+
+export interface McpCatalogEntry {
+	server: {
+		server_id: string;
+		transport: string;
+		url?: string;
+		enabled: boolean;
+		env_keys: string[];
+	};
+	tool: {
+		original_name: string;
+		matrix_name: string;
+		descriptor_hash: string;
+		first_seen: string;
+		last_seen: string;
+		risk_flags: string[];
+		approval_level: "auto" | "confirm" | "destructive" | "admin" | "blocked";
+		enabled: boolean;
+	};
+	visible: boolean;
+	denial_reasons: string[];
+	provenance?: {
+		server_id: string;
+		server_label: string;
+		server_domain: string;
+		source: string;
+		tool_name: string;
+		matrix_name: string;
+	};
+	secrets_redacted: boolean;
 }
 
 // A2A Delegations (exec-10 Phase 4 scaffold)

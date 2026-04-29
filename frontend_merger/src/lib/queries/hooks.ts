@@ -464,6 +464,14 @@ export function useMcpServers() {
 	});
 }
 
+export function useMcpCatalog() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: mcpKeys.catalog(),
+		queryFn: () => mcpQueries.catalog(),
+	});
+}
+
 // ─── A2A ───────────────────────────────────────────────────────────────────
 export function useA2ADelegations(status?: string) {
 	return useQuery({

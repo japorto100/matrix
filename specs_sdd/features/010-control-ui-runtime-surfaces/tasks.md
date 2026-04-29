@@ -115,7 +115,9 @@ migrated_from:
 - T091 Decide Graphiti/Cognee backend scope with Feature 012.
 - T092 Decide Computer Use / Artifacts scope with Features 008 and 013.
 - T093 Decide Personal KB / World Model surfaces with Feature 012.
-- T094 Add effective MCP catalog/risk/policy surface from Feature 024.
+- [x] T094 [done-static] Add effective MCP catalog/risk/policy surface from Feature 024.
+  - 2026-04-29: Control `McpTab` consumes the effective MCP catalog endpoint
+    and renders approval, risk, denial and visibility state.
 - [x] T094a [done-static] Add normal builtin tool catalog/risk/policy metadata
   from Feature 016/`Z_Additional_For_Tool_Stuff.md`.
 - T095 Add semantic catalog and metric/claim definition inspector from Feature
