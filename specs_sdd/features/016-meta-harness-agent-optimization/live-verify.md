@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Live Verify
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 016
 ---
 
@@ -17,6 +17,22 @@ feature_id: 016
   assumptions.
 - Run report/visual/widget scenarios only after their contracts exist.
 - Run ops-room replay gate from Feature 029 over an existing Meta-Harness run.
+
+## 2026-04-30 Provider-Free Contract Suite
+
+Status: static-live-smoke pass.
+
+Command:
+
+- `cd python-backend && uv run python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
+
+Evidence:
+
+- Result: `passed=true`, `lane_count=4`, `scenario_count=16`,
+  `passed_count=16`.
+- Covered lanes: Feature 020 routing contract, Feature 024 MCP catalog policy,
+  Feature 027 report grounding and Feature 030 Matrix widget policy.
+- Browser/frontend and provider calls were not required.
 
 ## MV-00 Memory Lifecycle Unit Verify
 

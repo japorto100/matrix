@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Gates
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-30
 feature_id: 016
 ---
 
@@ -17,6 +17,8 @@ feature_id: 016
 - Feature 028 scenarios separate visual evidence from hallucinated screen state.
 - Feature 029 replay gates derive ops events from artifacts/traces.
 - Feature 030 widget gates prove approval/denial/fallback behavior.
+- 2026-04-30: `contract-suite` aggregates the stable provider-free lanes for
+  Features 020, 024, 027 and 030 and passed 16/16 scenarios.
 
 ## Stack Gates
 
@@ -72,6 +74,8 @@ PY
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli evaluate --split holdout --max-queries 1`
 - CLI proposer guard:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli propose --sessions 2`
+- CLI provider-free contract suite:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
 
 - Required env depends on runner mode: `AGENT_DEFAULT_MODEL` or request model,
   provider credentials/LiteLLM routing for LLM calls, and `HINDSIGHT_DB_URL` or

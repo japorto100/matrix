@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Tasks
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 016
 ---
 
@@ -325,8 +325,10 @@ feature_id: 016
   public skills and newly authored Matrix skills under the same trace gates.
 - [x] T114 Define a global-KG scenario set where nonicdb/NornicDB context is
   expected only for world/domain facts, not personal agent memory.
-- T115 Add Feature 024 MCP catalog policy scenarios: allowed tool, poisoned
-  descriptor, descriptor mutation and token passthrough denial.
+- [x] T115 [done-static] Add Feature 024 MCP catalog policy scenarios: allowed
+  tool, poisoned descriptor, descriptor mutation and token passthrough denial.
+  - 2026-04-30: `contract-suite` includes the provider-free
+    `mcp-catalog-policy` lane with 3/3 passing scenarios.
 - [x] T115a [done-static] Add normal ToolRegistry catalog scenarios from `Z_Additional_For_Tool_Stuff.md`:
   tool-group filtering, progressive disclosure, risky-tool approval and
   output-compaction behavior.
@@ -338,12 +340,21 @@ feature_id: 016
     raw artifact preservation.
 - T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
   metric and KG/RAG-linked term.
-- T117 Add Feature 027 report-publishing scenario with citation/manifest
-  scoring.
+- [x] T117 [done-static] Add Feature 027 report-publishing scenario with
+  citation/manifest scoring.
+  - 2026-04-30: `contract-suite` includes the provider-free
+    `report-grounding` lane with 3/3 passing scenarios.
 - T118 Add Feature 028 visual-memory scenario with visible/hidden/stale cases.
 - T119 Add Feature 029 ops-room replay gate using existing run artifacts.
-- T120 Add Feature 030 widget proposal scenario with approval, denial and
-  fallback rendering.
+- [x] T120 [done-static] Add Feature 030 widget proposal scenario with
+  approval, denial and fallback rendering.
+  - 2026-04-30: `contract-suite` includes the provider-free
+    `matrix-widget-policy` lane with 3/3 passing scenarios.
+- [x] T121 [done-static-live-smoke] Add cross-feature provider-free contract
+  suite for stable backend agent contracts.
+  - 2026-04-30:
+    `uv run python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
+    passed 16/16 scenarios across Features 020, 024, 027 and 030.
 
 ## Verify Gates
 

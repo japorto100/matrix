@@ -301,6 +301,22 @@ async def test_cli_routing_contract_writes_artifacts(tmp_path, monkeypatch):
     assert artifact.exists()
 
 
+@pytest.mark.asyncio
+async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["contract-suite", "--run-id", "run-suite", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["lane_count"] == 4
+    assert result["scenario_count"] == 16
+    artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
+    assert artifact.exists()
+
+
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():
     from meta_harness.retrieval_benchmark import _candidate_verdicts
 

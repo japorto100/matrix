@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Research
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-30
 feature_id: 016
 ---
 
@@ -166,6 +166,22 @@ ADR-0009: keep `llm-mock` as a deterministic contract lane, add
 and write provider capability snapshots into Meta-Harness run artifacts. This
 keeps Meta-Harness useful for static/non-browser gates before browser live
 verification starts.
+
+## 2026-04-30 Contract Suite Aggregation
+
+The stable provider-free lanes now have a single `contract-suite` command. This
+keeps static backend agent contracts visible before browser/live work starts:
+
+- Feature 020: route/delegation/loop-guard contract.
+- Feature 024: MCP catalog poisoning and descriptor-drift policy.
+- Feature 027: report artifact grounding, citations and unsupported-claim
+  failure.
+- Feature 030: Matrix widget approval, unsafe URL denial and MCP resource
+  handoff denial.
+
+This is intentionally not a substitute for live UI/provider verification. It is
+the frozen, cheap contract lane that should run before larger implementation
+passes and before any future subagent behavior is promoted.
 3. Write artifact directory.
 4. Add deterministic trace gates.
 5. Add CLI JSON output.
