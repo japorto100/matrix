@@ -18,6 +18,7 @@ from retrieval.searchers.kg_claims import kg_claim_hits
 from retrieval.searchers.vector_store import vector_search_hits
 from retrieval.understanders.intent_router import route_intent
 from retrieval.verifiers.citation import verify_context_support
+from semantic_layer.catalog import DEFAULT_SEMANTIC_CATALOG, lookup_phrase
 
 
 @dataclass
@@ -62,6 +63,81 @@ def _selected_kg_claim_ids(hits: list[RetrievalHit] | tuple[RetrievalHit, ...]) 
     return claim_ids
 
 
+def _as_tuple(value: object) -> tuple[str, ...]:
+    if value in (None, ""):
+        return ()
+    if isinstance(value, str):
+        return (value,)
+    if isinstance(value, list | tuple | set):
+        return tuple(str(item) for item in value if str(item))
+    return (str(value),)
+
+
+def _semantic_filter_from_kwargs(kwargs: dict[str, object]) -> dict[str, Any] | None:
+    raw_filter = kwargs.get("semantic_filter")
+    semantic_filter = dict(raw_filter) if isinstance(raw_filter, dict) else {}
+    phrase = kwargs.get("semantic_phrase")
+    if isinstance(phrase, str) and phrase.strip():
+        lookup = lookup_phrase(DEFAULT_SEMANTIC_CATALOG, phrase)
+        semantic_filter["phrase"] = phrase
+        semantic_filter["lookup_status"] = (
+            "ambiguous"
+            if lookup["ambiguous"]
+            else "matched"
+            if lookup["matched"]
+            else "not_found"
+        )
+        if lookup["ambiguous"] or not lookup["matched"]:
+            return semantic_filter
+        match = lookup["matches"][0]
+        item = match["item"]
+        if match["type"] == "term":
+            semantic_filter.setdefault("semantic_term_ids", (item["term_id"],))
+        elif match["type"] == "metric":
+            semantic_filter.setdefault("metric_id", item["metric_id"])
+    term_ids = _as_tuple(
+        semantic_filter.get("semantic_term_ids") or semantic_filter.get("term_ids")
+    )
+    metric_id = str(semantic_filter.get("metric_id") or "").strip()
+    if term_ids:
+        semantic_filter["semantic_term_ids"] = term_ids
+    if metric_id:
+        semantic_filter["metric_id"] = metric_id
+    if not semantic_filter:
+        return None
+    semantic_filter.setdefault("semantic_catalog_version", DEFAULT_SEMANTIC_CATALOG.version)
+    return semantic_filter
+
+
+def _hit_matches_semantic_filter(
+    hit: RetrievalHit,
+    semantic_filter: dict[str, Any] | None,
+) -> bool:
+    if not semantic_filter:
+        return True
+    if semantic_filter.get("lookup_status") in {"ambiguous", "not_found"}:
+        return False
+    metadata = hit.metadata if isinstance(hit.metadata, dict) else {}
+    required_terms = set(_as_tuple(semantic_filter.get("semantic_term_ids")))
+    if required_terms:
+        hit_terms = set(_as_tuple(metadata.get("semantic_term_ids")))
+        if not hit_terms & required_terms:
+            return False
+    required_metric = str(semantic_filter.get("metric_id") or "").strip()
+    if required_metric and str(metadata.get("metric_id") or "").strip() != required_metric:
+        return False
+    return True
+
+
+def _apply_semantic_filter(
+    hits: list[RetrievalHit],
+    semantic_filter: dict[str, Any] | None,
+) -> list[RetrievalHit]:
+    if not semantic_filter:
+        return hits
+    return [hit for hit in hits if _hit_matches_semantic_filter(hit, semantic_filter)]
+
+
 async def _record_kg_access(
     store: object,
     claim_ids: list[str],
@@ -82,6 +158,7 @@ async def _record_kg_access(
 async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
     """Run routing, fusion and context composition for retrieval candidates."""
 
+    semantic_filter = _semantic_filter_from_kwargs(kwargs)
     requested_mode = kwargs.get("mode")
     plan = route_intent(
         query,
@@ -126,6 +203,10 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
     else:
         kg_search_failed = False
 
+    pre_filter_hit_count = len(vector_hits) + len(kg_hits)
+    vector_hits = _apply_semantic_filter(vector_hits, semantic_filter)
+    kg_hits = _apply_semantic_filter(kg_hits, semantic_filter)
+
     degraded_reasons: list[str] = []
     if vector_search_failed:
         degraded_reasons.append("VECTOR_SEARCH_FAILED")
@@ -145,6 +226,12 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         degraded_reasons.append("NO_VECTOR_HITS")
     if uses_kg and not kg_hits:
         degraded_reasons.append("NO_KG_HITS")
+    if semantic_filter and pre_filter_hit_count and not (vector_hits or kg_hits):
+        degraded_reasons.append("SEMANTIC_FILTER_NO_MATCH")
+    if semantic_filter and semantic_filter.get("lookup_status") == "ambiguous":
+        degraded_reasons.append("SEMANTIC_FILTER_AMBIGUOUS")
+    if semantic_filter and semantic_filter.get("lookup_status") == "not_found":
+        degraded_reasons.append("SEMANTIC_FILTER_NOT_FOUND")
 
     match plan.mode:
         case RetrievalMode.text:
@@ -200,6 +287,11 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 "source_uri": hit.source_uri,
                 "metadata": {
                     **hit.metadata,
+                    **(
+                        {"semantic_filter": semantic_filter}
+                        if semantic_filter
+                        else {}
+                    ),
                     **(
                         {"kg_access_recorded": kg_access_count}
                         if hit.source == "kg" and kg_access_count

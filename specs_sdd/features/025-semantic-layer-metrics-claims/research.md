@@ -97,3 +97,9 @@ cross-feature semantic cases from `Z_Semantik_layer and so on.md`. It fails
 closed on ambiguous phrases, denies tenant-scoped metrics without tenant
 context, keeps `raw_sql_allowed=false`, requires semantic term links on KG/RAG
 context, and keeps memory/user corrections as reviewed proposals.
+
+Runtime follow-up: Feature 019 retrieval now consumes semantic constraints
+without binding to a vendor model. Callers can pass a reviewed
+`semantic_filter` or a catalog phrase; retrieval applies term/metric filters
+before fusion and Context Bubble assembly, then reports explicit degradation
+when the semantic filter is ambiguous, unknown or filters out all candidates.

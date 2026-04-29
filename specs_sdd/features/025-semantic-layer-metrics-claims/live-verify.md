@@ -32,3 +32,8 @@ feature_id: 025
   - 2026-04-30:
     `uv run python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-static --data-dir /tmp/matrix-knowledge-contract`
     passed 5/5. Live browser/agent semantic checks remain LV001-LV015.
+- LV017 [done-static] Verify retrieval applies semantic phrase/filter
+  constraints before context assembly.
+  - 2026-04-30:
+    `uv run pytest --import-mode=importlib tests/test_retrieval_baseline.py tests/test_retrieval_benchmark_lab.py -q`
+    passed 34/34.

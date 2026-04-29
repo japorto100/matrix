@@ -19,6 +19,9 @@ feature_id: 019
 - 2026-04-30: provider-free `knowledge-contract` validates selected RAG/KG
   context items for source artifact, chunk/hash, citation and semantic catalog
   metadata before they can support an answer.
+- 2026-04-30: `retrieve(...)` applies optional `semantic_filter`/
+  `semantic_phrase` constraints before fusion/context-bubble selection and
+  emits semantic-filter degradation reasons on no-match, ambiguity or not-found.
 
 - Remote embeddings are configurable without hardcoding one provider.
 - Local embedding downloads are disabled by default and cache to HDD when

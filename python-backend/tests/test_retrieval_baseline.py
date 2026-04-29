@@ -120,6 +120,89 @@ async def test_retrieve_hybrid_from_supplied_candidates() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_applies_semantic_filter_to_supplied_candidates() -> None:
+    result = await retrieve(
+        "What is the agent tool success rate?",
+        mode="text",
+        semantic_filter={
+            "semantic_term_ids": ("agent_tool_success_rate",),
+            "metric_id": "agent_tool_success_rate",
+        },
+        vector_hits=[
+            {
+                "id": "chunk-unrelated",
+                "text": "Generic agent audit prose.",
+                "score": 0.95,
+                "metadata": {"semantic_term_ids": ["tool_execution"]},
+            },
+            {
+                "id": "chunk-tool-success",
+                "text": "Agent tool success rate is successful_tool_results / total_tool_results.",
+                "score": 0.7,
+                "metadata": {
+                    "semantic_term_ids": [
+                        "agent_tool_success_rate",
+                        "tool_execution",
+                    ],
+                    "metric_id": "agent_tool_success_rate",
+                    "semantic_catalog_version": "1.0.0",
+                },
+            },
+        ],
+    )
+
+    assert result.degraded is False
+    assert result.hits and [hit["id"] for hit in result.hits] == ["chunk-tool-success"]
+    assert result.hits[0]["metadata"]["semantic_filter"]["metric_id"] == (
+        "agent_tool_success_rate"
+    )
+
+
+@pytest.mark.asyncio
+async def test_retrieve_degrades_when_semantic_filter_has_no_match() -> None:
+    result = await retrieve(
+        "What is the agent tool success rate?",
+        mode="text",
+        semantic_filter={"semantic_term_ids": ("agent_tool_success_rate",)},
+        vector_hits=[
+            {
+                "id": "chunk-unrelated",
+                "text": "Generic agent audit prose.",
+                "score": 0.95,
+                "metadata": {"semantic_term_ids": ["tool_execution"]},
+            },
+        ],
+    )
+
+    assert result.degraded is True
+    assert "SEMANTIC_FILTER_NO_MATCH" in (result.degraded_reasons or [])
+    assert result.hits == []
+
+
+@pytest.mark.asyncio
+async def test_retrieve_builds_semantic_filter_from_phrase() -> None:
+    result = await retrieve(
+        "Find retrieval quality evidence.",
+        mode="text",
+        semantic_phrase="retrieval quality",
+        vector_hits=[
+            {
+                "id": "chunk-retrieval-quality",
+                "text": "Retrieval pass rate is a run-scoped benchmark metric.",
+                "score": 0.8,
+                "metadata": {"metric_id": "retrieval_pass_rate"},
+            }
+        ],
+    )
+
+    assert result.degraded is False
+    assert result.hits and result.hits[0]["id"] == "chunk-retrieval-quality"
+    assert result.hits[0]["metadata"]["semantic_filter"]["metric_id"] == (
+        "retrieval_pass_rate"
+    )
+
+
+@pytest.mark.asyncio
 async def test_retrieve_reports_degraded_missing_kg_hits() -> None:
     result = await retrieve(
         "How is Russia connected to EU sanctions?",

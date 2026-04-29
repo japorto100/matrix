@@ -61,11 +61,14 @@ feature_id: 025
   promotion.
   - 2026-04-30: `knowledge-contract` requires `semantic_term_ids` on KG claim
     proposals and KG context.
-- T026 [partial-static] Coordinate semantic terms with Feature 019 retrieval
+- T026 [done-static] Coordinate semantic terms with Feature 019 retrieval
   filters.
   - 2026-04-30: selected RAG/KG context now has a static contract for
-    `semantic_catalog_version` and `semantic_term_ids`; runtime query-planning
-    filters remain open in Feature 019.
+    `semantic_catalog_version` and `semantic_term_ids`.
+  - 2026-04-30: Feature 019 runtime retrieval now accepts `semantic_filter`
+    and `semantic_phrase`, using the semantic catalog to derive metric filters
+    and filtering selected vector/KG candidates by `semantic_term_ids` and
+    `metric_id`.
 
 ## Verification
 

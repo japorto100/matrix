@@ -27,6 +27,8 @@ feature_id: 025
   `knowledge-semantic-ambiguity-permission-fail-closed`.
 - [x] G006/G007 are covered by
   `knowledge-rag-kg-semantic-context-grounded`.
+- [x] G007 also has runtime coverage through Feature 019 semantic retrieval
+  filters over `semantic_term_ids` and `metric_id`.
 - [x] G008 is covered by
   `knowledge-semantic-correction-review-proposal`.
 - [x] G010 has provider-free static coverage through `knowledge-contract`;

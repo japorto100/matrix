@@ -126,15 +126,20 @@ feature_id: 019
     forbid KG sources, so KG/fused promotion is measured against a stronger
     dense/parser-derived baseline.
 - T049 Add Feature 026 browser-local retrieval as a measured candidate lane.
-- T050 [partial-static] Add Feature 025 semantic filters/terms to retrieval query planning.
+- T050 [done-static] Add Feature 025 semantic filters/terms to retrieval query
+  planning.
   - 2026-04-29: `semantic-term-tool-success-001` now proves the retrieval
     benchmark can require semantic catalog version, term ids and metric id on
-    selected references. Runtime query-planning integration remains open.
+    selected references. Runtime query-planning integration was still open at
+    this checkpoint.
   - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` adds a
     cross-feature contract that selected vector/KG context must keep
     `semantic_catalog_version`, `semantic_term_ids`, source artifact,
-    chunk/hash and citation metadata before answer support. Runtime query
-    planning remains open.
+    chunk/hash and citation metadata before answer support.
+  - 2026-04-30: `retrieval.api.retrieve(...)` now accepts direct
+    `semantic_filter` and catalog-derived `semantic_phrase` constraints,
+    filters vector/KG candidates deterministically by `semantic_term_ids` and
+    `metric_id`, and reports explicit semantic-filter degradation reasons.
 - T051 [partial-static] Add Feature 028 visual-layout blocks as retrievable evidence with source
   coordinates.
   - 2026-04-29: `visual-layout-source-coordinates-001` now proves selected
