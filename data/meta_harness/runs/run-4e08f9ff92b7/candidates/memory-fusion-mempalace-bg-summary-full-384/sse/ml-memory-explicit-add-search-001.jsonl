@@ -1,0 +1,16 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Das Lifecycle\\u2011Probe **memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction** wurde in deinem Langzeit\\u2011Ged\\u00e4chtnis gespeichert und kann k\\u00fcnftig \\u00fcber `memory_search` wiedergefunden werden.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"tool_memory_add_ZPSahxKSCp5GCqpZyBUB\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"tool_memory_add_ZPSahxKSCp5GCqpZyBUB\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\", \"promptTokens\": 7782, \"completionTokens\": 131, \"reasoningTokens\": 44, \"cachedTokens\": 3407, \"totalTokens\": 7913, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-2816c25c\", \"promptTokens\": 0, \"completionTokens\": 0, \"reasoningTokens\": 0, \"cachedTokens\": 0, \"totalTokens\": 0, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

@@ -26,7 +26,7 @@ This is the **single public entry point** that replaces the direct
 
 Quality-signal: we populate cost/tokens/error fields from the turn
 itself. The user-satisfaction signal is filled in later by
-``agent/harness/scorer.py`` joining on ``session_id`` and writing into
+``meta_harness/scorer.py`` joining on ``session_id`` and writing into
 ``harness_fitness_score`` — this dispatcher does not know about harness.
 """
 from __future__ import annotations
@@ -168,7 +168,12 @@ async def _insert_ab_row(
                 INSERT INTO agent.ab_experiments
                     (id, experiment_id, user_id, thread_id, variant, bucket_hash)
                 VALUES (%s, 'phase-c-hybrid-loop', %s, %s, %s, %s)
-                ON CONFLICT (id) DO NOTHING
+                ON CONFLICT (id) DO UPDATE
+                SET experiment_id = EXCLUDED.experiment_id,
+                    user_id       = EXCLUDED.user_id,
+                    thread_id     = EXCLUDED.thread_id,
+                    variant       = EXCLUDED.variant,
+                    bucket_hash   = EXCLUDED.bucket_hash
                 """,
                 (row_id, user_id, thread_id, variant, bucket),
             )
@@ -182,12 +187,14 @@ async def _mark_routing(
     routing_used: bool,
     routing_reason: str | None,
     routing_picked_model: str | None,
+    user_id: str | None = None,
+    thread_id: str | None = None,
 ) -> None:
-    """ADR-001 G4 — fire-and-forget UPDATE of the routing dimension.
+    """ADR-001 G4 — fire-and-forget UPSERT of the routing dimension.
 
     Called from ``llm_node`` when smart-routing resolves a decision on
     iteration-0. Keeps the dispatcher hot-path free of extra await; the
-    UPDATE piggy-backs on a new psycopg connection like `_mark_fallback`.
+    write piggy-backs on a new psycopg connection like `_mark_fallback`.
     """
     if not row_id:
         return
@@ -201,13 +208,43 @@ async def _mark_routing(
         async with await psycopg.AsyncConnection.connect(dsn, autocommit=True) as conn:
             await conn.execute(
                 """
-                UPDATE agent.ab_experiments
-                SET routing_used = %s,
-                    routing_reason = COALESCE(%s, routing_reason),
-                    routing_picked_model = COALESCE(%s, routing_picked_model)
-                WHERE id = %s
+                INSERT INTO agent.ab_experiments
+                    (
+                        id,
+                        experiment_id,
+                        user_id,
+                        thread_id,
+                        variant,
+                        bucket_hash,
+                        routing_used,
+                        routing_reason,
+                        routing_picked_model
+                    )
+                VALUES
+                    (
+                        %s,
+                        'phase-c-hybrid-loop',
+                        COALESCE(%s, 'pending'),
+                        %s,
+                        'pending',
+                        0,
+                        %s,
+                        %s,
+                        %s
+                    )
+                ON CONFLICT (id) DO UPDATE
+                SET routing_used = EXCLUDED.routing_used,
+                    routing_reason = COALESCE(EXCLUDED.routing_reason, agent.ab_experiments.routing_reason),
+                    routing_picked_model = COALESCE(EXCLUDED.routing_picked_model, agent.ab_experiments.routing_picked_model)
                 """,
-                (routing_used, routing_reason, routing_picked_model, row_id),
+                (
+                    row_id,
+                    user_id,
+                    thread_id,
+                    routing_used,
+                    routing_reason,
+                    routing_picked_model,
+                ),
             )
     except Exception:  # noqa: BLE001
         logger.debug(

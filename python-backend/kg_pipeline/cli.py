@@ -6,8 +6,8 @@ import sys
 
 
 def main() -> int:
-    print("kg_pipeline is a Phase 2 skeleton.")
-    print("See kg_pipeline/README.md for activation steps.")
+    print("kg_pipeline lightweight extractor is available.")
+    print("Start with: uv run uvicorn kg_pipeline.server:app --port 8099")
     return 0
 
 

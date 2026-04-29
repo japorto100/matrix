@@ -28,6 +28,11 @@ Matrix/E2EE gateway; Python owns agent/business logic; `frontend_merger` is the
 current UI home; Tuwunel is the primary homeserver; NATS is only the Matrix
 event bus; Agent Chat and Voice use HTTP/SSE and LiveKit.
 
+Top-level legacy specs are now classified in `LEGACY_COVERAGE.md`. Binding
+machine, tooling, privacy, architecture and agent-output rules live in
+`constitution.md`. `FUTURE_IDEAS.md` has an SDD-facing split under
+`research/backlog/future-ideas.md`.
+
 ## Target State / Soll
 
 This feature is the stable baseline for all other specs: project purpose,
@@ -47,16 +52,20 @@ porting direction and backlog triage are documented in one place.
 
 ## Gap
 
-- Decide which top-level legacy docs are still accepted current state.
-- Move outdated material into historical notes instead of active guidance.
-- Extract non-negotiable rules into `specs_sdd/constitution.md`.
-- Keep porting direction to tradeview-fusion separate from current matrix-repo
-  runtime facts.
+- Live/runtime features still need their own feature-level verification.
+- Top-level legacy files remain in place as provenance, but the active working
+  surface is `specs_sdd/`.
+- Porting direction to tradeview-fusion is baseline guidance, not proof that
+  tradeview-fusion already contains these Matrix runtime changes.
 
 ## Verify
 
-- [ ] Every old top-level `specs/*.md` file is either referenced here, assigned
-  to another feature, or marked historical in `MIGRATION_MAP.md`.
+- [x] Every old top-level `specs/*.md` file is either referenced here, assigned
+  to another feature, or marked historical in `LEGACY_COVERAGE.md`.
+- [x] Binding machine/tooling/privacy/architecture rules are in
+  `constitution.md`.
+- [x] `FUTURE_IDEAS.md` is split into feature-owned backlog or research-only
+  backlog.
 
 ## Closeout Criteria
 

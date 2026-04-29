@@ -1,0 +1,23 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required response term: verbatim evidence"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "llm_response",
+    "memory_recall",
+    "skill_found",
+    "skill_used"
+  ],
+  "observed_tools": [],
+  "observed_skills": [
+    "global:memory-usage",
+    "memory-usage"
+  ],
+  "tool_success_rate": null,
+  "observed_memory_routes": [
+    "fusion"
+  ],
+  "observed_memory_providers": []
+}

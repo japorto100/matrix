@@ -7,12 +7,22 @@ from __future__ import annotations
 import base64
 import hashlib
 import logging
+import os
+import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from opentelemetry import trace
+
 from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
 from agent.errors import CriticalError, RepairableError
-from agent.sandbox.config import SandboxConfig, get_sandbox_server_url
+from agent.sandbox.config import (
+    CODE_SANDBOX,
+    SandboxConfig,
+    get_sandbox_connection_config,
+    get_sandbox_ready_timeout,
+    get_sandbox_server_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +43,7 @@ _LANGUAGE_MAP: dict[str, str] = {
 _MAX_STDOUT = 50_000
 _MAX_STDERR = 10_000
 _MAX_FILE_SIZE = 5_000_000  # 5 MB per file
+_MAX_DIAGNOSTIC = 8_000
 
 
 @dataclass
@@ -45,8 +56,27 @@ class SandboxResult:
     files: list[dict[str, str]] = field(
         default_factory=list
     )  # [{name, data_b64, mime}]
+    sandbox_id: str = ""
+    diagnostics: dict[str, str] = field(default_factory=dict)
     execution_time_ms: float = 0
     error: str | None = None
+
+    @property
+    def success(self) -> bool:
+        return self.exit_code == 0 and not self.error
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "exit_code": self.exit_code,
+            "files": self.files,
+            "sandbox_id": self.sandbox_id,
+            "diagnostics": self.diagnostics,
+            "execution_time_ms": self.execution_time_ms,
+            "error": self.error,
+            "success": self.success,
+        }
 
 
 class SandboxManager:
@@ -84,18 +114,31 @@ class SandboxManager:
         """
         start = audit_timer()
         sandbox = None
+        sandbox_id = ""
+        diagnostics: dict[str, str] = {}
         code_hash = hashlib.sha256(code.encode()).hexdigest()[:12]
+        trace_id = _current_trace_id()
 
         try:
             from opensandbox import Sandbox
-            from opensandbox_code_interpreter import CodeInterpreter, SupportedLanguage
+
+            try:
+                from opensandbox_code_interpreter import (
+                    CodeInterpreter,
+                    SupportedLanguage,
+                )
+            except ImportError:
+                from code_interpreter import CodeInterpreter, SupportedLanguage
 
             # 1. Create sandbox
             sandbox = await Sandbox.create(
                 config.image or "opensandbox/code-interpreter:v1.0.2",
                 entrypoint=list(config.entrypoint),
                 timeout=config.timeout,
+                ready_timeout=get_sandbox_ready_timeout(),
+                connection_config=get_sandbox_connection_config(),
             )
+            sandbox_id = getattr(sandbox, "id", "")
             logger.info(
                 "Sandbox created: %s (image=%s, timeout=%s)",
                 sandbox.id,
@@ -143,6 +186,12 @@ class SandboxManager:
                     exit_code=0 if not stderr_parts else 1,
                 )
 
+            result.sandbox_id = sandbox_id
+            result.diagnostics = await self._collect_diagnostics(
+                sandbox_id=sandbox_id,
+                scope=trace_id,
+            )
+
             # 4. Collect generated files (charts, images)
             result.files = await self._collect_output_files(sandbox)
             result.execution_time_ms = audit_duration(start)
@@ -160,7 +209,10 @@ class SandboxManager:
                 output_data={
                     "exit_code": result.exit_code,
                     "stdout_len": len(result.stdout),
+                    "sandbox_id": result.sandbox_id,
+                    "trace_id": trace_id,
                     "file_count": len(result.files),
+                    "diagnostic_sizes": _diagnostic_sizes(result.diagnostics),
                 },
                 duration_ms=result.execution_time_ms,
                 success=result.exit_code == 0,
@@ -180,6 +232,7 @@ class SandboxManager:
             ) from e
         except TimeoutError as e:
             elapsed = audit_duration(start)
+            diagnostics = await self._safe_collect_diagnostics(sandbox_id=sandbox_id, scope=trace_id)
             await audit_log(
                 action=AuditAction.SANDBOX_EXEC,
                 thread_id=thread_id,
@@ -187,7 +240,12 @@ class SandboxManager:
                 input_data={"language": language, "code_hash": code_hash},
                 duration_ms=elapsed,
                 success=False,
-                output_data={"error": "timeout"},
+                output_data={
+                    "error": "timeout",
+                    "sandbox_id": sandbox_id,
+                    "trace_id": trace_id,
+                    "diagnostic_sizes": _diagnostic_sizes(diagnostics),
+                },
             )
             raise RepairableError(
                 f"Sandbox execution timed out after {config.timeout.total_seconds():.0f}s. "
@@ -198,6 +256,10 @@ class SandboxManager:
             error_msg = str(e)
             logger.warning("Sandbox execution failed: %s", error_msg)
             elapsed = audit_duration(start)
+            diagnostics = await self._safe_collect_diagnostics(
+                sandbox_id=sandbox_id,
+                scope=trace_id,
+            )
             await audit_log(
                 action=AuditAction.SANDBOX_EXEC,
                 thread_id=thread_id,
@@ -205,7 +267,12 @@ class SandboxManager:
                 input_data={"language": language, "code_hash": code_hash},
                 duration_ms=elapsed,
                 success=False,
-                output_data={"error": error_msg},
+                output_data={
+                    "error": error_msg,
+                    "sandbox_id": sandbox_id,
+                    "trace_id": trace_id,
+                    "diagnostic_sizes": _diagnostic_sizes(diagnostics),
+                },
             )
             if "not found" in error_msg.lower() or "image" in error_msg.lower():
                 raise CriticalError(f"Sandbox image not found: {error_msg}") from e
@@ -217,6 +284,30 @@ class SandboxManager:
                     logger.info("Sandbox destroyed: %s", sandbox.id)
                 except Exception as kill_err:
                     logger.warning("Failed to destroy sandbox: %s", kill_err)
+
+    async def execute_file(
+        self,
+        *,
+        file_content: bytes,
+        file_name: str,
+        analysis_code: str,
+        thread_id: str = "",
+    ) -> SandboxResult:
+        """Analyze an uploaded file by staging it under `/tmp/uploads/`.
+
+        `FileAnalyzeTool` historically called this method, while the manager
+        only exposed `execute_code(upload_files=...)`. Keep the public helper so
+        file-analysis uses the same sandbox lifecycle and output collection as
+        `sandbox_execute`.
+        """
+        encoded = base64.b64encode(file_content).decode()
+        return await self.execute_code(
+            code=analysis_code,
+            language="python",
+            config=CODE_SANDBOX,
+            thread_id=thread_id,
+            upload_files=[{"name": file_name, "content_b64": encoded}],
+        )
 
     async def execute_browser(
         self,
@@ -251,17 +342,30 @@ class SandboxManager:
 
         start = audit_timer()
         sandbox = None
+        sandbox_id = ""
+        diagnostics: dict[str, str] = {}
+        trace_id = _current_trace_id()
 
         try:
             from opensandbox import Sandbox
-            from opensandbox_code_interpreter import CodeInterpreter, SupportedLanguage
+
+            try:
+                from opensandbox_code_interpreter import (
+                    CodeInterpreter,
+                    SupportedLanguage,
+                )
+            except ImportError:
+                from code_interpreter import CodeInterpreter, SupportedLanguage
 
             sandbox = await Sandbox.create(
                 config.image or "opensandbox/code-interpreter:v1.0.2",
                 entrypoint=list(config.entrypoint),
                 timeout=config.timeout,
+                ready_timeout=get_sandbox_ready_timeout(),
+                connection_config=get_sandbox_connection_config(),
             )
             logger.info("Browser sandbox created: %s", sandbox.id)
+            sandbox_id = getattr(sandbox, "id", "")
 
             interpreter = await CodeInterpreter.create(sandbox=sandbox)
             ctx = await interpreter.codes.create_context(SupportedLanguage.PYTHON)
@@ -280,6 +384,11 @@ class SandboxManager:
                 stdout="\n".join(stdout_parts)[:_MAX_STDOUT],
                 stderr="\n".join(stderr_parts)[:_MAX_STDERR],
                 exit_code=0 if not stderr_parts else 1,
+            )
+            result.sandbox_id = sandbox_id
+            result.diagnostics = await self._collect_diagnostics(
+                sandbox_id=sandbox_id,
+                scope=trace_id,
             )
 
             # Collect screenshots
@@ -300,7 +409,10 @@ class SandboxManager:
                 output_data={
                     "exit_code": result.exit_code,
                     "stdout_len": len(result.stdout),
+                    "sandbox_id": result.sandbox_id,
+                    "trace_id": trace_id,
                     "file_count": len(result.files),
+                    "diagnostic_sizes": _diagnostic_sizes(result.diagnostics),
                 },
                 duration_ms=result.execution_time_ms,
                 success=result.exit_code == 0,
@@ -315,12 +427,58 @@ class SandboxManager:
                 f"OpenSandbox server unreachable at {get_sandbox_server_url()}: {e}"
             ) from e
         except TimeoutError as e:
+            diagnostics = await self._safe_collect_diagnostics(
+                sandbox_id=sandbox_id,
+                scope=trace_id,
+            )
+            await audit_log(
+                action=AuditAction.SANDBOX_EXEC,
+                thread_id=thread_id,
+                tool_name="sandbox_browser",
+                input_data={
+                    "url": url,
+                    "extract_text": extract_text,
+                    "screenshot": screenshot,
+                    "trace_id": trace_id,
+                },
+                duration_ms=audit_duration(start),
+                success=False,
+                output_data={
+                    "error": "timeout",
+                    "sandbox_id": sandbox_id,
+                    "trace_id": trace_id,
+                    "diagnostic_sizes": _diagnostic_sizes(diagnostics),
+                },
+            )
             raise RepairableError(
                 f"Browser sandbox timed out after {config.timeout.total_seconds():.0f}s"
             ) from e
         except Exception as e:
             error_msg = str(e)
             logger.warning("Browser sandbox failed: %s", error_msg)
+            diagnostics = await self._safe_collect_diagnostics(
+                sandbox_id=sandbox_id,
+                scope=trace_id,
+            )
+            await audit_log(
+                action=AuditAction.SANDBOX_EXEC,
+                thread_id=thread_id,
+                tool_name="sandbox_browser",
+                input_data={
+                    "url": url,
+                    "extract_text": extract_text,
+                    "screenshot": screenshot,
+                    "trace_id": trace_id,
+                },
+                duration_ms=audit_duration(start),
+                success=False,
+                output_data={
+                    "error": error_msg,
+                    "sandbox_id": sandbox_id,
+                    "trace_id": trace_id,
+                    "diagnostic_sizes": _diagnostic_sizes(diagnostics),
+                },
+            )
             if "not found" in error_msg.lower() or "image" in error_msg.lower():
                 raise CriticalError(f"Browser image not found: {error_msg}") from e
             raise RepairableError(f"Browser sandbox failed: {error_msg}") from e
@@ -417,6 +575,88 @@ class SandboxManager:
 
         return files
 
+    async def _collect_diagnostics(
+        self, sandbox_id: str, trace_id: str
+    ) -> dict[str, str]:
+        """Collect lightweight diagnostics from OpenSandbox lifecycle APIs."""
+        if not sandbox_id:
+            return {}
+
+        base_url = get_sandbox_server_url().rstrip("/")
+        scopes = ("logs", "events")
+        diagnostic_scope = "all"
+
+        try:
+            import httpx
+
+            headers: dict[str, str] = {"X-Request-ID": trace_id}
+            api_key = os.environ.get("OPEN_SANDBOX_API_KEY") or os.environ.get(
+                "OPENSANDBOX_API_KEY"
+            )
+            if api_key:
+                headers["OPEN-SANDBOX-API-KEY"] = api_key
+
+            diagnostics: dict[str, str] = {}
+            async with httpx.AsyncClient() as client:
+                for scope in scopes:
+                    response = await client.get(
+                        f"{base_url}/v1/sandboxes/{sandbox_id}/diagnostics/{scope}",
+                        headers=headers,
+                        params={"scope": diagnostic_scope},
+                        timeout=5.0,
+                    )
+                    if response.status_code == 200:
+                        value = response.text
+                        try:
+                            payload = response.json()
+                            if isinstance(payload, dict):
+                                content = payload.get("content")
+                                if isinstance(content, str):
+                                    value = content
+                                elif isinstance(payload.get("contentUrl"), str):
+                                    content_url = payload["contentUrl"]
+                                    if content_url:
+                                        try:
+                                            content_response = await client.get(
+                                                content_url, headers=headers, timeout=5.0
+                                            )
+                                            if content_response.status_code == 200:
+                                                value = content_response.text
+                                            else:
+                                                value = (
+                                                    f"contentUrl={content_url} -> "
+                                                    f"HTTP {content_response.status_code}"
+                                                )
+                                        except Exception as error:
+                                            value = (
+                                                f"contentUrl fetch failed for {scope}: "
+                                                f"{error}"
+                                            )
+                        except ValueError:
+                            # Keep raw response body when JSON parse fails.
+                            pass
+                    else:
+                        value = (
+                            f"HTTP {response.status_code}: "
+                            f"{response.text[:320]}"
+                        )
+                    diagnostics[scope] = _truncate_diagnostic_text(value)
+                    diagnostics[f"{scope}_request_id"] = response.headers.get(
+                        "x-request-id", ""
+                    )
+            return diagnostics
+        except Exception as error:
+            return {"collect_error": str(error)}
+
+    async def _safe_collect_diagnostics(
+        self, sandbox_id: str, scope: str
+    ) -> dict[str, str]:
+        try:
+            return await self._collect_diagnostics(sandbox_id, scope)
+        except Exception as e:
+            logger.warning("Failed to collect sandbox diagnostics: %s", e)
+            return {}
+
     async def health_check(self) -> bool:
         """Check if OpenSandbox server is reachable."""
         try:
@@ -470,6 +710,29 @@ def _build_playwright_script(
     parts.append("asyncio.run(run())")
 
     return "\n".join(parts)
+
+
+def _current_trace_id() -> str:
+    """Return active OTel trace ID when available, else fallback to a UUID."""
+    try:
+        span_context = trace.get_current_span().get_span_context()
+        if getattr(span_context, "trace_id", 0):
+            return f"{span_context.trace_id:032x}"
+    except Exception:
+        pass
+    return str(uuid.uuid4())
+
+
+def _truncate_diagnostic_text(content: str) -> str:
+    """Keep diagnostics small and JSON-friendly for audit/result payloads."""
+    if len(content) <= _MAX_DIAGNOSTIC:
+        return content
+    return f"{content[:_MAX_DIAGNOSTIC]}\n[truncated]"
+
+
+def _diagnostic_sizes(diagnostics: dict[str, str]) -> dict[str, int]:
+    """Return short diagnostic size map for audit."""
+    return {key: len(value) for key, value in diagnostics.items()}
 
 
 def _infer_mime(filename: str) -> str:

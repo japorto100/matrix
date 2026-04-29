@@ -1,0 +1,28 @@
+{
+  "description": "Protected holdout queries for Feature 016. Proposer context must not include scores from this set; use only for promotion/regression gates.",
+  "queries": [
+    {
+      "id": "h001",
+      "message": "I previously said my maximum risk per trade is 1.25%. Do not change it, but use it to size a EUR/USD setup with a 42 pip stop.",
+      "expected_tools": [],
+      "expected_memory": true,
+      "expected_skills": ["memory-usage", "risk-assessment"],
+      "category": "memory_risk_holdout"
+    },
+    {
+      "id": "h002",
+      "message": "Create a two-step plan to review my open positions tomorrow morning, but do not send or schedule anything yet.",
+      "expected_tools": [],
+      "forbidden_tools": ["schedule_task"],
+      "expected_skills": ["planning"],
+      "category": "scheduler_safety_holdout"
+    },
+    {
+      "id": "h003",
+      "message": "Inspect the current chart state and explain whether the visible setup supports a continuation or reversal thesis.",
+      "expected_tools": ["get_chart_state"],
+      "expected_skills": ["trading-analysis"],
+      "category": "chart_tool_holdout"
+    }
+  ]
+}

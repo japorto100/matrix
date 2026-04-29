@@ -55,8 +55,21 @@ refiner, coverage gate, iterative search, audit events, usage counters, offline
 refiner, trigger-quality CLI, model-aware thresholds, skill extensions,
 user-skill preferences, general/task-specific split and harness skill tracking.
 
+Static gates additionally verified on 2026-04-25:
+
+- Scheduler adapter/service-user tests pass.
+- Plan skill loading/read-only planning tests pass.
+- Skill Finder tests pass.
+- Skill loader source modes and override order pass.
+- Disabled-skill filtering removes disabled skills instead of falling back to
+  all skills.
+- `api_version`, skill type and assets are preserved by file parsing and DB
+  row mapping shape.
+- Prompt Scanner and Skills-Guard tests pass.
+
 Remaining gates:
 
+- live DB seed/source-mode roundtrip.
 - real LLM refinement.
 - real LLM iterative search.
 - real LLM offline refinement.

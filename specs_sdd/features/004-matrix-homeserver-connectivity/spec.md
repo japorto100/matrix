@@ -25,6 +25,10 @@ but several items are upstream- or deployment-dependent. The monitor exec tracks
 Tuwunel v1.6, MSC3414/MSC4362, OIDC/MAS, federation readiness, MSC2246 async
 upload and known upstream bugs.
 
+Static config classification is documented in `research.md`. The current config
+is Tuwunel v1.6.0, private/dev federation-off, Cloudflare-compatible 100 MB
+upload cap, `.well-known` client/server discovery and LiveKit RTC transport.
+
 ## Target State / Soll
 
 Homeserver and connectivity decisions are clear enough that Matrix chat, mobile
@@ -45,15 +49,16 @@ and appservice/E2EE work can be verified against one expected runtime shape.
 
 - Some blockers belong in a monthly monitor, not active implementation tasks.
 - Mobile and federation gates need live environment evidence.
-- Tuwunel v1.6 stable is unblocked but the local running container may still be
-  an older rc image until pull/restart.
-- Upstream bugs that are fixed need config/workaround cleanup before closeout.
+- Tuwunel v1.6 stable is the compose default; a running old container still
+  needs pull/restart during live/operator verify.
+- Upstream-fixed workarounds are tracked; removing the Cloudflare-sized upload
+  cap is not useful until an active large-upload test scope exists.
 
 ## Verify
 
-- [ ] Tuwunel starts under the selected compose profile.
-- [ ] Mobile `.well-known` flow is verified when mobile scope is active.
-- [ ] Upstream blockers are marked `blocked_external` rather than open local work.
+- Tuwunel starts under the selected compose profile. Deferred to live verify.
+- Mobile `.well-known` flow is verified when mobile scope is active. Deferred to live verify.
+- [x] Upstream blockers are marked `blocked_external` rather than open local work.
 
 ## Closeout Criteria
 

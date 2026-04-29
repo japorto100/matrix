@@ -1,0 +1,24 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required tool: get_chart_state",
+    "missing tool_result events for tool success rate threshold"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "skill_found",
+    "skill_used"
+  ],
+  "observed_tools": [],
+  "observed_skills": [
+    "global:memory-usage",
+    "global:plan",
+    "global:trading-analysis",
+    "memory-usage",
+    "plan",
+    "trading-analysis"
+  ],
+  "tool_success_rate": null,
+  "observed_memory_routes": [],
+  "observed_memory_providers": []
+}

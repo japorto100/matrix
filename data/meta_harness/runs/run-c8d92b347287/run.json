@@ -1,0 +1,12 @@
+{
+  "run_id": "run-c8d92b347287",
+  "candidate_id": "pre-save-verbatim-archive-gated",
+  "created_at": "2026-04-27T04:42:10.286544+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://127.0.0.1:4000"
+  }
+}

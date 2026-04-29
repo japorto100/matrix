@@ -1,0 +1,22 @@
+{
+  "failures": [],
+  "metadata_compatibility": {
+    "failures": [],
+    "missing_keys": [],
+    "passed": true,
+    "required_keys": [
+      "source_corpus",
+      "parser_version",
+      "chunker_version",
+      "embedding_model",
+      "embedding_dimension",
+      "kg_projection_version"
+    ]
+  },
+  "observed_actions": [
+    "retrieval_benchmark"
+  ],
+  "observed_tools": [],
+  "passed": true,
+  "tool_success_rate": 1.0
+}

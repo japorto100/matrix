@@ -15,7 +15,9 @@ Graceful: Wenn Memory Engine nicht verfuegbar → Nodes sind No-Ops.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from datetime import UTC, datetime
 from typing import Any
 
@@ -37,6 +39,13 @@ logger = logging.getLogger(__name__)
 
 # Progressive Context: trackt was schon injiziert wurde pro Thread (Paper 3 Pattern)
 _injected_context: dict[str, set[str]] = {}
+
+
+def _memory_retain_timeout_seconds() -> float:
+    try:
+        return max(1.0, float(os.environ.get("MEMORY_RETAIN_TIMEOUT_SEC", "20.0")))
+    except ValueError:
+        return 20.0
 
 
 def _get_memory_config(role: str) -> dict:
@@ -317,7 +326,6 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
     Quality Gates: Hindsight built-in (coreference, self-containment, temporal).
     Read-only Rollen retainen nicht.
     """
-    from agent.tracing import memory_span
     from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
@@ -343,84 +351,196 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 user_msg = content[:500]
                 break
 
-    with memory_span("hindsight_retain", user_msg[:200]) as span:
+    timeout_s = _memory_retain_timeout_seconds()
+    try:
+        await asyncio.wait_for(
+            _retain_conversation_memory(
+                state=state,
+                engine=engine,
+                role=role,
+                user_msg=user_msg,
+                response=response,
+            ),
+            timeout=timeout_s,
+        )
+    except TimeoutError:
+        logger.warning(
+            "Memory retain timed out after %.1fs (thread=%s)",
+            timeout_s,
+            state.get("thread_id", ""),
+        )
         try:
-            from hindsight_api.models import RequestContext
-
-            from memory_fusion.coherence import get_coherence_manager
-
-            bank_id = get_bank_id(state.get("user_id", "default"))
-            thread_id = state.get("thread_id", "")
-            now = datetime.now(UTC)
-            content = f"User asked: {user_msg}\nAgent responded: {response[:2000]}"
-
-            # Cache Coherence: Write-Ahead Log + Conflict Detection
-            coherence = get_coherence_manager()
-            await coherence.write_ahead(
-                bank_id, role, content, tags=[role] if role != "default" else []
-            )
-            conflict = await coherence.detect_conflicts(bank_id)
-            if conflict.has_conflict:
-                span.set_attribute("memory.conflict", True)
-                logger.info(
-                    "Memory conflict detected: %d entries from %d roles in bank %s",
-                    len(conflict.entries),
-                    len({e.role for e in conflict.entries}),
-                    bank_id,
-                )
-
-            await engine.retain_batch_async(
-                bank_id=bank_id,
-                contents=[
-                    {
-                        "content": content,
-                        "context": f"thread:{thread_id} role:{role}",
-                        "event_date": now,
-                        "tags": [role] if role != "default" else [],
-                        "metadata": {
-                            "thread_id": thread_id,
-                            "role": role,
-                            "agent_class": state.get("agent_class", "advisory"),
-                        },
-                        "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
-                    }
-                ],
-                request_context=RequestContext(),
-                document_tags=[role] if role != "default" else [],
-                consumer="agent_writer",
-                operation_context={
-                    "thread_id": thread_id,
-                    "user_id": state.get("user_id", ""),
-                    "agent_id": state.get("agent_id", "default"),
-                    "actor_role": role,
-                },
-            )
-
-            span.set_attribute("memory.content_length", len(content))
-
             from agent.audit.logger import AuditAction, audit_log
 
             await audit_log(
                 action=AuditAction.MEMORY_RETAIN,
-                thread_id=thread_id,
-                input_data=content[:2000],
-                success=True,
+                thread_id=state.get("thread_id", ""),
+                input_data=f"User asked: {user_msg}\nAgent responded: {response[:2000]}",
+                success=False,
+                error=f"memory retain timed out after {timeout_s:.1f}s",
                 metadata={
-                    "bank_id": bank_id,
+                    "bank_id": get_bank_id(state.get("user_id", "default")),
                     "role": role,
-                    "content_length": len(content),
-                    "conflict": conflict.has_conflict if conflict else False,
+                    "timeout_s": timeout_s,
+                    "source": "memory_retain_node",
                 },
             )
-
-            logger.info(
-                "Retained conversation for %s (role=%s, thread=%s)",
-                bank_id,
-                role,
-                thread_id,
-            )
-
-        except Exception as e:
-            logger.debug("Memory retain skipped: %s", e)
+        except Exception:  # noqa: BLE001
+            logger.debug("Memory retain timeout audit failed", exc_info=True)
+    except Exception as e:
+        logger.debug("Memory retain skipped: %s", e)
 
     return {}
+
+
+async def _retain_conversation_memory(
+    *,
+    state: AgentGraphState,
+    engine: Any,
+    role: str,
+    user_msg: str,
+    response: str,
+) -> None:
+    from hindsight_api.models import RequestContext
+
+    from agent.tracing import memory_span
+    from memory_fusion.coherence import get_coherence_manager
+    from memory_fusion.engine import get_bank_id
+
+    with memory_span("hindsight_retain", user_msg[:200]) as span:
+        bank_id = get_bank_id(state.get("user_id", "default"))
+        thread_id = state.get("thread_id", "")
+        now = datetime.now(UTC)
+        content = f"User asked: {user_msg}\nAgent responded: {response[:2000]}"
+
+        # Cache Coherence: Write-Ahead Log + Conflict Detection
+        coherence = get_coherence_manager()
+        await coherence.write_ahead(
+            bank_id, role, content, tags=[role] if role != "default" else []
+        )
+        conflict = await coherence.detect_conflicts(bank_id)
+        if conflict.has_conflict:
+            span.set_attribute("memory.conflict", True)
+            logger.info(
+                "Memory conflict detected: %d entries from %d roles in bank %s",
+                len(conflict.entries),
+                len({e.role for e in conflict.entries}),
+                bank_id,
+            )
+
+        content_items = [
+            {
+                "content": content,
+                "context": f"thread:{thread_id} role:{role}",
+                "event_date": now,
+                "tags": [role] if role != "default" else [],
+                "metadata": {
+                    "thread_id": thread_id,
+                    "role": role,
+                    "agent_class": state.get("agent_class", "advisory"),
+                    "source": "automatic_memory_retain",
+                },
+                "document_id": f"{thread_id}:{role}:{now.strftime('%Y%m%d%H%M')}",
+            }
+        ]
+        operation_context = {
+            "thread_id": thread_id,
+            "user_id": state.get("user_id", ""),
+            "agent_id": state.get("agent_id", "default"),
+            "actor_role": role,
+        }
+        document_tags = [role] if role != "default" else []
+        storage_route = "fusion"
+        storage_providers = "fusion"
+        summary_status = "not_supported"
+        try:
+            await engine.retain_batch_async(
+                bank_id=bank_id,
+                contents=content_items,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+                route="verbatim",
+            )
+            storage_route = "verbatim"
+            storage_providers = "verbatim,summary_async"
+            summary_status = _queue_summary_retain(
+                engine=engine,
+                bank_id=bank_id,
+                contents=content_items,
+                document_tags=document_tags,
+                operation_context=operation_context,
+            )
+        except TypeError:
+            await engine.retain_batch_async(
+                bank_id=bank_id,
+                contents=content_items,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+            )
+
+        span.set_attribute("memory.content_length", len(content))
+
+        from agent.audit.logger import AuditAction, audit_log
+
+        await audit_log(
+            action=AuditAction.MEMORY_RETAIN,
+            thread_id=thread_id,
+            input_data=content[:2000],
+            success=True,
+            metadata={
+                "bank_id": bank_id,
+                "role": role,
+                "content_length": len(content),
+                "conflict": conflict.has_conflict if conflict else False,
+                "route": storage_route,
+                "provider": "fusion",
+                "providers": storage_providers,
+                "summary_status": summary_status,
+            },
+        )
+
+        logger.info(
+            "Retained conversation for %s (role=%s, thread=%s)",
+            bank_id,
+            role,
+            thread_id,
+        )
+
+
+def _queue_summary_retain(
+    *,
+    engine: Any,
+    bank_id: str,
+    contents: list[dict[str, Any]],
+    document_tags: list[str],
+    operation_context: dict[str, Any],
+) -> str:
+    submit_async = getattr(engine, "submit_async_retain", None)
+    if not callable(submit_async):
+        return "not_supported"
+
+    async def _submit() -> None:
+        try:
+            from hindsight_api.models import RequestContext
+
+            await submit_async(
+                bank_id,
+                contents,
+                request_context=RequestContext(),
+                document_tags=document_tags,
+                consumer="agent_writer",
+                operation_context=operation_context,
+                route="summary",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("automatic memory summary retain failed: %s", exc)
+
+    try:
+        asyncio.create_task(_submit())
+        return "background_queued"
+    except Exception:
+        return "background_dispatch_failed"

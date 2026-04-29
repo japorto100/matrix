@@ -1,0 +1,51 @@
+{
+  "run_id": "run-1092e58f12cb",
+  "candidate_id": "baseline",
+  "scenario_id": "q001",
+  "thread_id": "mh-q001-19161e11",
+  "user_id": "anonymous",
+  "category": "simple_query",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "What is the current market sentiment for AAPL?"
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-q001-19161e11\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-q001-19161e11\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-q001-19161e11\", \"promptTokens\": 4302, \"completionTokens\": 138, \"reasoningTokens\": 85, \"cachedTokens\": 0, \"totalTokens\": 4440, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [],
+  "score": {
+    "thread_id": "mh-q001-19161e11",
+    "error": "no events found",
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required skill: market-research"
+      ],
+      "warnings": [],
+      "observed_actions": [],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required skill: market-research"
+    ],
+    "warnings": [],
+    "observed_actions": [],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null
+  },
+  "artifact_dir": null
+}

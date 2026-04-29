@@ -1,0 +1,226 @@
+{
+  "run_id": "run-20229d39026e",
+  "candidate_id": "baseline",
+  "scenario_id": "lp-portfolio-001",
+  "thread_id": "mh-lp-portfolio-001-2181fd2c",
+  "user_id": "anonymous",
+  "category": "tool_portfolio_risk",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-lp-portfolio-001-2181fd2c\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-2181fd2c\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"errorText\": \"LangGraph error: Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"x-api-key header is required\\\"},\\\"request_id\\\":\\\"req_011CaRTCWdurRPGJsLvXRBeF\\\"}. Received Model Group=claude-3-haiku-20240307\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"auth\", \"recovery_strategy\": \"rotate_immediately\", \"retryable\": true, \"status_code\": 401}}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 148,
+      "timestamp": "2026-04-26 00:40:56.025787+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-lp-portfolio-001-2181fd2c",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 461,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "default",
+        "item_count": 0,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+      },
+      "iteration": null
+    },
+    {
+      "id": 147,
+      "timestamp": "2026-04-26 00:40:55.290612+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-lp-portfolio-001-2181fd2c",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 1245,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "advisory",
+        "item_count": 0,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+      },
+      "iteration": null
+    },
+    {
+      "id": 146,
+      "timestamp": "2026-04-26 00:40:53.882090+00:00",
+      "action": "skill_used",
+      "user_id": null,
+      "thread_id": "mh-lp-portfolio-001-2181fd2c",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:risk-assessment",
+          "global:plan",
+          "global:market-research"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "risk-assessment",
+          "plan",
+          "market-research"
+        ],
+        "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+        "user_id": "anonymous",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 145,
+      "timestamp": "2026-04-26 00:40:53.784252+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-lp-portfolio-001-2181fd2c",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:risk-assessment",
+          "global:plan",
+          "global:market-research"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "risk-assessment",
+          "plan",
+          "market-research"
+        ],
+        "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+        "user_id": "anonymous",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-lp-portfolio-001-2181fd2c",
+    "model": "",
+    "completed": false,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 0,
+    "turn_efficiency": 1.0,
+    "total_tokens": 0,
+    "token_efficiency": 0,
+    "total_duration_ms": 0,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 2,
+    "memory_retains": 0,
+    "memory_utilization": true,
+    "skills_loaded": [
+      "global:market-research",
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.75,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required tool: get_portfolio_summary",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "tool_success_rate": null
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required tool: get_portfolio_summary",
+      "missing tool_result events for tool success rate threshold"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:market-research",
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment",
+      "market-research",
+      "memory-usage",
+      "plan",
+      "risk-assessment"
+    ],
+    "tool_success_rate": null
+  },
+  "artifact_dir": null
+}

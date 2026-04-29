@@ -26,7 +26,7 @@ class LoadMemoryInput(BaseModel):
 
 
 class SaveMemoryTool(TradingTool):
-    """Save a note to agent working memory (M5 scratchpad) for later retrieval."""
+    """Save a note to thread working memory (M5 scratchpad) for later retrieval."""
 
     input_model = SaveMemoryInput
 
@@ -38,9 +38,11 @@ class SaveMemoryTool(TradingTool):
         return {
             "name": self.name,
             "description": (
-                "Save a note or piece of information to working memory so it can be "
-                "retrieved later in the same session or future sessions. "
-                "Use this to remember key insights, market observations, or analysis results."
+                "Save a short scratchpad note by key for this thread/work session. "
+                "This is not the long-term memory store and it does not emit memory_retain. "
+                "Use memory_add instead whenever the user asks you to remember something, "
+                "or when a fact, preference, decision, exact evidence, or project memory must "
+                "survive compaction and future conversations."
             ),
             "input_schema": SaveMemoryInput.model_json_schema(),
         }

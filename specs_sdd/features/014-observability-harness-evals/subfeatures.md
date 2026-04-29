@@ -103,7 +103,7 @@ Scope:
 
 - async parallel evaluator.
 - evaluator cache.
-- `agent/harness/scorers/`.
+- `meta_harness/scorers/`.
 - full eval aggregation into persistent rows.
 - skill and Hermes-pattern consumers.
 - optional feedback descent pairwise scoring.

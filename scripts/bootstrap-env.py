@@ -122,7 +122,7 @@ MENTION_ONLY_IN_GROUPS=false
 NATS_SUBJECT_ROUTING_ENABLED=false
 
 # ─── Service URLs (native-dev all localhost) ───────────────────────────────
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://localhost:14222
 AGENT_SERVICE_URL=http://127.0.0.1:8094
 MEMORY_SERVICE_URL=http://127.0.0.1:8093
 MCP_SERVICE_URL=http://127.0.0.1:8094
@@ -174,7 +174,7 @@ go_prod = go_dev.replace(
 ).replace(
     "http://localhost:29318", "http://go-appservice:29318"
 ).replace(
-    "nats://localhost:4222", "nats://nats:4222"
+    "nats://localhost:14222", "nats://nats:4222"
 ).replace(
     "http://127.0.0.1:8094", "http://agent-service:8094"
 ).replace(
@@ -219,7 +219,7 @@ OPENAI_BASE_URL=
 # ─── LiteLLM Gateway (wenn via --profile litellm gestartet) ────────────────
 LITELLM_BASE_URL=http://localhost:4000
 LITELLM_PORT=4000
-AGENT_DEFAULT_UTILITY_MODEL=claude-3-haiku-20240307
+AGENT_DEFAULT_UTILITY_MODEL=openrouter/openrouter/free
 
 # ─── Agent Core (LangGraph exec-10) ────────────────────────────────────────
 AGENT_USE_LANGGRAPH=true
@@ -273,6 +273,7 @@ VECTOR_STORE_PROVIDER=chroma
 VECTOR_STORE_PATH=./data/chroma
 VECTOR_STORE_MOCK=true
 MEMORY_CACHE_PROVIDER=local
+PYTHON_REDIS_URL=redis://127.0.0.1:16379/0
 
 # ─── Ingestion Pipeline ────────────────────────────────────────────────────
 INGESTION_HOST=127.0.0.1
@@ -294,16 +295,20 @@ KG_PIPELINE_URL=http://localhost:8099
 KG_PIPELINE_ENABLED=false
 
 # ─── Sandbox (exec-12) ─────────────────────────────────────────────────────
-OPENSANDBOX_SERVER_URL=http://localhost:8100
-OPEN_SANDBOX_URL=http://localhost:8100
+OPENSANDBOX_SERVER_URL=http://localhost:8080
+OPEN_SANDBOX_URL=http://localhost:8080
+OPEN_SANDBOX_DOMAIN=http://localhost:8080
 OPEN_SANDBOX_API_KEY={S['OPEN_SANDBOX_API_KEY']}
-SANDBOX_CODE_IMAGE=opensandbox/code-interpreter:v1.0.2
+SANDBOX_CODE_IMAGE=sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2
 SANDBOX_BROWSER_IMAGE=tradeview/sandbox-browser:v1
 SANDBOX_TOOL_TIMEOUT_SEC=1800
+OPENSANDBOX_REQUEST_TIMEOUT_SEC=180
+OPENSANDBOX_READY_TIMEOUT_SEC=90
+OPENSANDBOX_USE_SERVER_PROXY=true
 CONTAINER_SOCK=/run/user/1002/podman/podman.sock
 
 # ─── Networking & Service Discovery ────────────────────────────────────────
-NATS_URL=nats://localhost:4222
+NATS_URL=nats://localhost:14222
 MATRIX_HOMESERVER_URL=http://localhost:8448
 GO_GATEWAY_BASE_URL=http://localhost:8090
 AGENT_SERVICE_URL=http://localhost:8094
@@ -373,7 +378,7 @@ py_prod = py_dev.replace(
 ).replace(
     "http://localhost:8100", "http://opensandbox:8100"
 ).replace(
-    "nats://localhost:4222", "nats://nats:4222"
+    "nats://localhost:14222", "nats://nats:4222"
 ).replace(
     "http://localhost:8448", "http://tuwunel:8448"
 ).replace(

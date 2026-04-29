@@ -1,0 +1,13 @@
+{
+  "run_id": "run-8608162b9557",
+  "candidate_id": "live-probe-chart-portfolio-pinned-model",
+  "decision": "keep",
+  "rationale": "Meta-Harness live probes for chart and portfolio pass through dispatcher with tool calls, SSE finish, clean output, retained model pinning, and bounded post-answer memory retain.",
+  "decided_at": "2026-04-26T16:49:24.209157+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.9
+  },
+  "follow_up": ""
+}

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 from ingestion.core.exceptions import EmbeddingError
 from ingestion.embedders.base import Embedder
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 
 class SentenceTransformerEmbedder(Embedder):
@@ -28,7 +30,11 @@ class SentenceTransformerEmbedder(Embedder):
     def _ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        if os.getenv("EMBEDDER_ALLOW_MODEL_DOWNLOAD", "true").lower() not in (
+        allow_download = os.getenv(
+            "EMBEDDER_ALLOW_MODEL_DOWNLOAD",
+            os.getenv("EMBEDDER_ALLOW_DOWNLOAD", "false"),
+        ).lower()
+        if allow_download not in (
             "1",
             "true",
             "yes",
@@ -43,10 +49,11 @@ class SentenceTransformerEmbedder(Embedder):
             raise EmbeddingError(
                 "sentence-transformers not installed. Run: uv add sentence-transformers"
             ) from e
-        logger.info("loading embedding model {}", self.model_name)
-        self._model = SentenceTransformer(self.model_name)
+        hf_home = os.getenv("HF_HOME", "/mnt/cold-storage/models/huggingface")
+        logger.info("loading embedding model %s", self.model_name)
+        self._model = SentenceTransformer(self.model_name, cache_folder=hf_home)
         self.dim = int(self._model.get_sentence_embedding_dimension() or self.dim)
-        logger.info("embedder loaded — dim={}", self.dim)
+        logger.info("embedder loaded; dim=%s", self.dim)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:

@@ -1,0 +1,17 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required action: route_decision",
+    "missing required action: llm_response",
+    "missing required route decision: direct_answer",
+    "missing required delegation decision: none",
+    "missing route spawn depth"
+  ],
+  "warnings": [],
+  "observed_actions": [],
+  "observed_tools": [],
+  "observed_skills": [],
+  "tool_success_rate": null,
+  "observed_memory_routes": [],
+  "observed_memory_providers": []
+}

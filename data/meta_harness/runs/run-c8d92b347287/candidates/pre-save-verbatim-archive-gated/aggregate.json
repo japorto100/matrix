@@ -1,0 +1,23 @@
+{
+  "run_id": "run-c8d92b347287",
+  "candidate_id": "pre-save-verbatim-archive-gated",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.85,
+  "fitness_score": 0.85,
+  "total_tokens": 39828,
+  "avg_tokens": 19914.0,
+  "token_efficiency": 0.050216,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 85788.0,
+  "avg_duration_ms": 42894.0,
+  "latency_efficiency": 0.023313,
+  "failed_scenarios": []
+}

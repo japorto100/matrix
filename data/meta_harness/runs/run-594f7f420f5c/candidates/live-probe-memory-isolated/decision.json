@@ -1,0 +1,12 @@
+{
+  "run_id": "run-594f7f420f5c",
+  "candidate_id": "live-probe-memory-isolated",
+  "decision": "keep",
+  "rationale": "Explicit memory live probe passes with memory_add and memory_search over Fusion, including verbatim and summary_async providers. Remaining issue is skill over-selection and retain latency, not memory tool correctness.",
+  "decided_at": "2026-04-26T16:49:24.233208+00:00",
+  "metrics": {
+    "tool_success_rate": 1.0,
+    "fitness_score": 0.85
+  },
+  "follow_up": "Pareto candidate: reduce memory prompt skill over-selection and warm/accelerate post-answer retain."
+}

@@ -128,6 +128,12 @@ uv run python experiments/memory_eval/aggregate_memory_suite.py \
   --out suite-shared.json
 ```
 
+Die Suite enthaelt zusaetzlich `eval_classes` fuer `verbatim`, `derived`,
+`cross_session` und `forgetting`. Jede Klasse fuehrt dieselben Task-, Quality-,
+Efficiency- und Governance-Metriken wie die Top-Level-Summary, damit
+Cost/Latency/Provenance-Regressions getrennt von Retrieval Accuracy sichtbar
+bleiben.
+
 ### Verifizierter Smoke-Stand
 
 Der gemeinsame Mini-Korpus wurde lokal gegen den Minimal-Stack verifiziert:

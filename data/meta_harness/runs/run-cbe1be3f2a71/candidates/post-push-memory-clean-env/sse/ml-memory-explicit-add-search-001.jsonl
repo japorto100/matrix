@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"The memory system appears to be unavailable right now \\u2014 `memory_add` returned \\\"Memory not available\\\" twice. \\n\\nLet me save this in the working session memory instead as a fallback:\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-b118b582c61a9fea\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-b118b582c61a9fea\", \"output\": {\"stored\": false, \"message\": \"Memory not available\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\", \"promptTokens\": 10694, \"completionTokens\": 359, \"reasoningTokens\": 11, \"cachedTokens\": 80, \"totalTokens\": 11053, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"I wasn\\u2019t able to locate that entry in the long\\u2011term memory store \\u2013 the memory system is currently reporting that it\\u2019s not available. If you\\u2019d like, I can keep the phrase in the short\\u2011term scratchpad for this conversation. Let me know how you\\u2019d like to proceed.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_search\", \"toolCallId\": \"chatcmpl-tool-b62c89c8253c8e82\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-b62c89c8253c8e82\", \"output\": {\"results\": [], \"message\": \"Memory not available\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-b9bd1cb9\", \"promptTokens\": 8862, \"completionTokens\": 110, \"reasoningTokens\": 7, \"cachedTokens\": 144, \"totalTokens\": 8972, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

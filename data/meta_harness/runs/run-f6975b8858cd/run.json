@@ -1,0 +1,12 @@
+{
+  "run_id": "run-f6975b8858cd",
+  "candidate_id": "runner-parity-dispatcher-tools-disabled-fixed",
+  "created_at": "2026-04-26T16:01:44.097657+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000"
+  }
+}

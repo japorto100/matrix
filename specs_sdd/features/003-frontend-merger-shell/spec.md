@@ -33,6 +33,12 @@ The old verify-gates file is stronger than the current SDD stub: it records
 which gates actually ran, which were only code/doku changes, and which require
 the user's local full stack. That distinction is part of this feature.
 
+Static frontend gates passed on 2026-04-25: lint, typecheck, Vitest and
+Turbopack production build. The shell exposes page routes for `/`, `/matrix`,
+`/control`, `/files` and `/memory`. Agent Chat is mounted as a global overlay
+and API surface (`/api/agent/*`), with agent configuration under Control tabs;
+it is not a required top-level `/agent` page.
+
 ## Target State / Soll
 
 The frontend shell is the accepted home for all user-facing surfaces. Old
@@ -58,13 +64,15 @@ and a few explicitly extracted phase-2 gaps.
   integration, route consolidation decision.
 - Some old `nextjs-chat`/`agent-chat` references are historical; current
   canonical UI path is `frontend_merger`.
+- Current accepted shell route set is `/`, `/matrix`, `/control`, `/files` and
+  `/memory`; Agent Chat remains overlay/API plus Control integration.
 
 ## Verify
 
-- [ ] `frontend_merger` production build passes locally.
-- [ ] Full stack live smoke covers `/matrix`, `/agent`, `/control`, `/files`,
-  `/memory`.
-- [ ] Legacy `exec-merge-chat` is referenced only as historical rationale.
+- [x] `frontend_merger` production build passes locally.
+- Full stack live smoke covers `/matrix`, `/control`, `/files`, `/memory`
+  and the Agent Chat overlay. Deferred to live verify.
+- [x] Legacy `exec-merge-chat` is referenced only as historical rationale.
 
 ## Closeout Criteria
 

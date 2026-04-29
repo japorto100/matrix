@@ -1,0 +1,11 @@
+{
+  "failures": [
+    "trading-geo-kg-001: missing-source:kg, missing-reference:claim-sanctions-insurance"
+  ],
+  "observed_actions": [
+    "retrieval_benchmark"
+  ],
+  "observed_tools": [],
+  "passed": false,
+  "tool_success_rate": 1.0
+}

@@ -1,6 +1,6 @@
 ---
 title: Agent Chat and Voice Runtime
-status: implementation_done_live_verify_open
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -35,6 +35,18 @@ verification is open. Hermes-derived title generation and compression status
 backend pieces are done; frontend display, async title dispatch and manual
 compression feedback are still follow-up or nice-to-have depending on scope.
 
+Static verification on 2026-04-25 passed `frontend_merger` lint, typecheck,
+Vitest and Turbopack build. The current app exposes `/api/agent/chat`,
+`/api/agent/approve`, `/api/agent/compression-status`, `/api/agent/models` and
+`/api/agent/completion`; Agent Chat is a global overlay/control surface, not a
+top-level `/agent` route. Python A2UI streaming tests pass, but live BFF -> Go
+Gateway -> Python Agent proof is still open.
+
+Static cleanup on 2026-04-25 adds focused Agent Chat component tests for
+approval controls, context/degradation rail visibility and markdown sanitizer
+XSS handling. These do not replace browser/live approval or backend roundtrip
+verification.
+
 ## Target State / Soll
 
 Agent Chat is a first-class runtime surface with text chat, tool rendering,
@@ -60,21 +72,36 @@ voice. Its status must separate code-complete UI from live backend proof.
 - True token streaming is deferred; current implementation must be documented
   as final-packet-over-SSE until Phase-D changes it.
 - Voice needs LiveKit/STT/TTS live verification or explicit deferral.
-- Context provenance still needs visible memory/world/KB source rendering beyond
-  degradation flags.
-- CompressionIndicator frontend and async session-title dispatch remain open
-  unless already implemented in current code and verified.
+- Context provenance still needs live visual verification for memory/world/KB
+  sources beyond static component existence.
+- Compression indicator and session-title code exist, but visible browser
+  behavior and async title dispatch remain live/open until proven.
 - Manual compression feedback remains nice-to-have unless promoted.
 - Primary browser-side title generation belongs to client-side ML backlog.
 
-## Verify
+## Static Verify
 
-- [ ] Agent chat sends a message and receives streamed response.
-- [ ] Tool-call result renders in UI.
-- [ ] Approval flow works.
-- [ ] Context provenance and degradation flags render correctly.
-- [ ] Title/compression state is visible or explicitly deferred.
-- [ ] Voice path is either live-verified or explicitly deferred.
+- [x] `bun run lint` passes in `frontend_merger`.
+- [x] `bun run typecheck` passes in `frontend_merger`.
+- [x] `bun run test` passes in `frontend_merger`.
+- [x] `NEXT_TELEMETRY_DISABLED=1 bun run build` passes in `frontend_merger`.
+- [x] `uv run pytest tests/agent/test_streaming_a2ui.py -q` passes in
+  `python-backend`.
+- [x] `uv run ruff check bridge tests/bridge agent voice` passes in
+  `python-backend`.
+- [x] Agent API routes exist under `/api/agent/*`; no top-level `/agent` route
+  is expected.
+- [x] Approval controls, context rail and markdown sanitizer have component
+  tests.
+
+## Live Verify
+
+- Agent chat sends a message and receives streamed response.
+- Tool-call result renders in UI.
+- Approval flow works.
+- Context provenance and degradation flags render correctly.
+- Title/compression state is visible or explicitly deferred.
+- Voice path is either live-verified or explicitly deferred.
 
 ## Closeout Criteria
 

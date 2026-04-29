@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 013
 migrated_from:
   - specs/execution/exec-12-sandbox-security.md
@@ -18,90 +18,128 @@ migrated_from:
   one feature boundary.
 - [x] T002 Record source/paper/repo context in `sources.md`.
 - [x] T003 Split feature into explicit subfeatures and gates.
-- [ ] T004 Mirror ADR-004 into `specs_sdd/adr/` or mark old ADR path as accepted
+- [x] T004 Mirror ADR-004 into `specs_sdd/adr/` or mark old ADR path as accepted
   canonical until ADR migration pass.
 
 ## OpenSandbox Runtime
 
-- [ ] T010 Verify compose/podman profile starts `opensandbox-server`.
-- [ ] T011 Verify safe Python execution returns stdout/stderr/files.
-- [ ] T012 Verify file upload is copied into sandbox and result is returned while
-  original stays outside agent process.
-- [ ] T013 Verify browser sandbox screenshot/artifact path.
-- [ ] T014 Verify denied egress or empty `allowed_domains` prevents network
-  access where configured.
-- [ ] T015 Verify resource/time/output limits: TTL destroy, stdout/stderr caps,
+- [x] T010 Verify compose/podman profile starts `opensandbox-server`.
+- [x] T011 Verify safe Python execution returns stdout/stderr/files.
+- [x] T011a Add sandbox runtime observability payload (`sandbox_id` + `trace_id` + `diagnostics`)
+  for `SandboxResult` and audit trail.
+- [x] T011b Add ansteuerbare OpenSandbox-CLI (`python-backend/scripts/opensandbox_cli.py`)
+  for health/create/list/diagnostics/delete smoke workflows.
+- T012 [partial-static-live-blocked] Verify file upload is copied into sandbox
+  and result is returned while original stays outside agent process.
+  - 2026-04-27: fixed missing `SandboxManager.execute_file` compatibility path
+    used by `FileAnalyzeTool`; static tests verify file bytes are staged through
+    `execute_code(upload_files=...)`.
+  - Live OpenSandbox server health passed, but sandbox creation failed before
+    code execution with Podman/Docker API `broken pipe` while creating
+    `/opt/opensandbox`; likely runtime/storage pressure on the 93%-full SSD or
+    OpenSandbox rootless Podman archive issue. Keep full live file upload open.
+- T013 Verify browser sandbox screenshot/artifact path.
+- T014 Verify denied egress via OpenSandbox `networkPolicy`/egress sidecar.
+  Docker `network_mode="none"` is not valid for Matrix because it prevents
+  execd/proxy endpoint resolution; local runtime uses `bridge`.
+- T015 [partial-live-blocked] Verify resource/time/output limits: TTL destroy, stdout/stderr caps,
   max file size, per-tool timeout.
+- [x] T016 Align Matrix OpenSandbox config with upstream SDK/runtime:
+  `opensandbox-server` on `:8080`, SDK `OPEN_SANDBOX_DOMAIN` bridge,
+  server-proxy mode for Podman bridge, official code-interpreter image and
+  longer cold-start timeouts for image/execd warmup.
 
 ## Consent / RBAC / Rate Limits
 
-- [ ] T020 Verify `sandbox_execute` and `sandbox_browser` require confirm-level
+- [x] T020 Verify `sandbox_execute` and `sandbox_browser` require confirm-level
   consent.
-- [ ] T021 Verify session cache paths: allow once, allow session, deny, deny
+- T021 Verify session cache paths: allow once, allow session, deny, deny
   session.
-- [ ] T022 Verify per-tool and per-session rate limits stop execution.
-- [ ] T023 Verify role forwarding (`X-User-Role`, `X-Auth-User`) reaches consent
+- T022 [partial-static] Verify per-tool and per-session rate limits stop
+  execution.
+  - 2026-04-27: tool execution audit now carries budget snapshots for
+    per-session tool calls, per-tool calls, tokens and iterations. Static
+    coverage proves the telemetry path; live deny/stop behavior remains open.
+- [x] T023 Verify role forwarding (`X-User-Role`, `X-Auth-User`) reaches consent
   checks and blocks insufficient roles.
+- [x] T024 Static-verify graphless SimpleLoop cannot bypass `approval_node`:
+  deny/hard-deny emits OpenAI-compatible tool denial messages, and confirm-level
+  tools fail closed when the runner cannot interrupt/resume approval.
 
 ## Prompt Injection / Sanitization
 
-- [ ] T030 Verify scheduled-task prompt scanner blocks malicious create and edit
-  prompts before DB write.
-- [ ] T031 Verify safe multilingual scheduler prompts pass.
-- [ ] T032 Verify sanitizer P0 XML content tagging around untrusted tool output.
-- [ ] T033 Verify P1 regex warning for high-risk tool output.
-- [ ] T034 Verify optional ProtectAI DeBERTa classifier behavior when model is
+- [x] T030 Static-test scheduled-task prompt scanner blocks malicious create and
+  edit prompts before DB write.
+- [x] T031 Static-test safe multilingual scheduler prompts pass.
+- [x] T032 Static-test sanitizer P0 XML content tagging around untrusted tool
+  output.
+- [x] T033 Static-test P1 regex warning for high-risk tool output.
+- T034 Verify optional ProtectAI DeBERTa classifier behavior when model is
   present, with graceful degradation when absent.
-- [ ] T035 Verify P3 output anomaly scan catches suspicious exfil outputs.
-- [ ] T036 Verify prompt template validator blocks dangerous variable/code
+- T035 Verify P3 output anomaly scan catches suspicious exfil outputs.
+- T036 Verify prompt template validator blocks dangerous variable/code
   access.
 
 ## Redaction / Secret Leak Prevention
 
-- [ ] T040 Verify Tier-1 redaction corpus for static secret patterns.
-- [ ] T041 Verify non-secret corpus has acceptable false-positive rate.
-- [ ] T042 Verify Postgres span processor redacts before persistence.
-- [ ] T043 Verify trajectory exporter redacts before ShareGPT/fine-tuning output.
-- [ ] T044 Verify Tier-2 redaction consumer is disabled by default and ReDoS
+- [x] T040 Verify Tier-1 redaction corpus for static secret patterns.
+- [x] T041 Verify non-secret corpus has acceptable false-positive rate.
+- [x] T042 Static-test redaction primitives used before persistence paths.
+- [x] T043 Verify trajectory exporter redacts before ShareGPT/fine-tuning output.
+- T044 Verify Tier-2 redaction consumer is disabled by default and ReDoS
   guarded when enabled.
-- [ ] T045 Decide whether Tier-3 ML redaction research is needed after benchmark.
+- T045 Decide whether Tier-3 ML redaction research is needed after benchmark.
 
 ## Skills-Guard HITL
 
-- [ ] T050 Verify dangerous skill import returns structured 422 with
+- [x] T050 Static-test dangerous skill import returns structured verdict with
   `suggested_action: "hitl_confirm"`.
-- [ ] T051 Verify BFF parses Skills-Guard verdict instead of showing generic
+- [x] T051 Verify BFF parses Skills-Guard verdict instead of showing generic
   toast.
-- [ ] T052 Verify `SkillsGuardDrawer` shows verdict, findings and allow/reject
-  actions.
-- [ ] T053 Verify allow-once/allow-session retries import with human-approved
+- [x] T052 Static-test `SkillsGuardDrawer` verdict extraction for findings and
+  HITL action body shapes.
+- T053 Verify allow-once/allow-session retries import with human-approved
   trust source.
-- [ ] T054 Verify deny path keeps import blocked.
-- [ ] T055 Verify CONSENT_REQUEST/CONSENT_DECISION audit metadata includes
+- T054 Verify deny path keeps import blocked.
+- T055 Verify CONSENT_REQUEST/CONSENT_DECISION audit metadata includes
   verdict and matched patterns.
 
 ## Matrix-Specific Security
 
-- [ ] T060 Verify URL preview remains disabled in dev/prod homeserver config.
-- [ ] T061 Verify E2EE trust model is represented in Matrix Chat feature docs
+- [x] T060 Verify URL preview remains disabled in active dev homeserver config.
+- T060b Verify URL preview remains disabled in active prod homeserver
+  config when prod config exists.
+- [x] T061 Verify E2EE trust model is represented in Matrix Chat feature docs
   and agent-room bridge docs.
-- [ ] T062 Verify markdown/HTML sanitizer strips script/event/javascript payloads.
-- [ ] T063 Verify `pendingEventOrdering: "detached"` remains in Matrix client
+- [x] T062 Static-verify markdown/HTML sanitizer strips script/event/javascript
+  payloads.
+- [x] T063 Verify `pendingEventOrdering: "detached"` remains in Matrix client
   creation.
+- [x] T065 Static-verify Matrix widget events do not embed arbitrary iframes and
+  unsafe widget URLs remain passive text.
+- T064 Security-review Meta-Harness/dev anonymous LLM path together with
+  Feature 011: anonymous may be allowed for local eval, but named production
+  users must fail closed without valid CredentialPool/user credentials.
 
 ## Control UI
 
-- [ ] T070 Verify Security tab loads live backend state.
-- [ ] T071 Verify Sandbox tab reports OpenSandbox health and unavailable state
+- T070 Verify Security tab loads live backend state.
+- T071 Verify Sandbox tab reports OpenSandbox health and unavailable state
   clearly.
-- [ ] T072 Verify Permissions tab shows real consent/RBAC policy where available.
-- [ ] T073 Verify audit/raw-access UI requires admin role and reason if raw span
+- T072 Verify Permissions tab shows real consent/RBAC policy where available.
+- T073 Verify audit/raw-access UI requires admin role and reason if raw span
   access is exposed.
+- T074 Add MCP STDIO config hardening with Feature 024: users/prompts cannot
+  control command, args, env, cwd or package name.
+- T075 Add Streamable HTTP MCP origin/auth checks with Feature 024.
+- T076 Add Matrix widget/app host sandbox/CSP checks with Feature 030.
+- T077 Add report renderer execution policy with Feature 027: generated docs
+  cannot execute arbitrary local code by default.
 
 ## Verify Gates
 
-- [ ] Sandbox starts or is explicitly unavailable.
-- [ ] Prompt scanner has positive and negative tests.
-- [ ] Redaction behavior is tested.
-- [ ] HITL decision path is live-verified.
-- [ ] Matrix SSRF/XSS decisions are checked.
+- Sandbox starts or is explicitly unavailable.
+- [x] Prompt scanner has positive and negative tests.
+- [x] Redaction behavior is tested.
+- HITL decision path is live-verified.
+- [x] Matrix SSRF/XSS decisions are checked statically for active dev config.

@@ -1,0 +1,132 @@
+{
+  "canary_count": 2,
+  "candidate": {
+    "candidate_id": "matrix-vector-only",
+    "count": 2,
+    "include_kg": false,
+    "include_vector": true,
+    "latency_ms_avg": 0.073,
+    "metadata": {
+      "chunker_version": "deterministic-fixture/v1",
+      "class": "baseline",
+      "embedding_dimension": 0,
+      "embedding_model": "deterministic-fixture",
+      "feature": "019",
+      "kg_projection_version": "disabled",
+      "parser_version": "deterministic-fixture/v1",
+      "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+    },
+    "metadata_compatibility": {
+      "failures": [],
+      "missing_keys": [],
+      "passed": true,
+      "required_keys": [
+        "source_corpus",
+        "parser_version",
+        "chunker_version",
+        "embedding_model",
+        "embedding_dimension",
+        "kg_projection_version"
+      ]
+    },
+    "mode": "text",
+    "ndcg@5": 0.5,
+    "pass_rate": 0.5,
+    "passed": 1,
+    "recall@5": 0.5,
+    "results": [
+      {
+        "canary_id": "trading-geo-kg-001",
+        "candidate_id": "matrix-vector-only",
+        "cited_reference_ids": [],
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:kg",
+          "missing-reference:claim-sanctions-insurance",
+          "missing-kg-path:EU -> SANCTIONS -> Russian oil -> SHIPPING_INSURANCE"
+        ],
+        "hit_count": 1,
+        "intent": "text",
+        "kg_paths": [],
+        "latency_ms": 0.093,
+        "metadata_compatibility": {
+          "failures": [],
+          "missing_keys": [],
+          "passed": true,
+          "required_keys": [
+            "source_corpus",
+            "parser_version",
+            "chunker_version",
+            "embedding_model",
+            "embedding_dimension",
+            "kg_projection_version"
+          ]
+        },
+        "ndcg@5": 0.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "chunk-shipping-brief"
+        ],
+        "recall@5": 0.0,
+        "sources": [
+          "vector"
+        ],
+        "verification": {}
+      },
+      {
+        "canary_id": "general-vector-001",
+        "candidate_id": "matrix-vector-only",
+        "cited_reference_ids": [],
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [],
+        "hit_count": 1,
+        "intent": "text",
+        "kg_paths": [],
+        "latency_ms": 0.054,
+        "metadata_compatibility": {
+          "failures": [],
+          "missing_keys": [],
+          "passed": true,
+          "required_keys": [
+            "source_corpus",
+            "parser_version",
+            "chunker_version",
+            "embedding_model",
+            "embedding_dimension",
+            "kg_projection_version"
+          ]
+        },
+        "ndcg@5": 1.0,
+        "passed": true,
+        "ranked_reference_ids": [
+          "chunk-revenue-summary"
+        ],
+        "recall@5": 1.0,
+        "sources": [
+          "vector"
+        ],
+        "verification": {}
+      }
+    ]
+  },
+  "feature_id": "022",
+  "generated_at": "2026-04-27T17:14:45.158752+00:00",
+  "k": 5,
+  "max_hits": 8,
+  "metadata_compatibility": {
+    "failures": [],
+    "missing_keys": [],
+    "passed": true,
+    "required_keys": [
+      "source_corpus",
+      "parser_version",
+      "chunker_version",
+      "embedding_model",
+      "embedding_dimension",
+      "kg_projection_version"
+    ]
+  },
+  "token_budget": 1600
+}

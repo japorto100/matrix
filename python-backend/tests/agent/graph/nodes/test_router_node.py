@@ -143,16 +143,26 @@ async def test_complex_message_stays_primary():
 
 @pytest.mark.asyncio
 async def test_ab_row_id_triggers_mark_routing():
-    """When running under an experiment, fire-and-forget UPDATE is scheduled."""
+    """When running under an experiment, fire-and-forget UPSERT is scheduled."""
     marks: list[dict] = []
 
-    async def fake_mark(row_id, *, routing_used, routing_reason, routing_picked_model):
+    async def fake_mark(
+        row_id,
+        *,
+        routing_used,
+        routing_reason,
+        routing_picked_model,
+        user_id=None,
+        thread_id=None,
+    ):
         marks.append(
             {
                 "row_id": row_id,
                 "routing_used": routing_used,
                 "routing_reason": routing_reason,
                 "routing_picked_model": routing_picked_model,
+                "user_id": user_id,
+                "thread_id": thread_id,
             }
         )
 
@@ -172,13 +182,15 @@ async def test_ab_row_id_triggers_mark_routing():
     assert len(marks) == 1
     assert marks[0]["row_id"] == "row-xyz"
     assert marks[0]["routing_used"] is True
+    assert marks[0]["user_id"] == "alice"
+    assert marks[0]["thread_id"] == "t-1"
 
 
 @pytest.mark.asyncio
 async def test_no_ab_row_id_skips_mark_routing():
     marks: list[dict] = []
 
-    async def fake_mark(row_id, *, routing_used, routing_reason, routing_picked_model):
+    async def fake_mark(row_id, **_kwargs):
         marks.append({"row_id": row_id})
 
     with patch(

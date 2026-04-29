@@ -1,0 +1,23 @@
+{
+  "run_id": "run-96e8e1d01cfa",
+  "candidate_id": "post-push-simple-free",
+  "scenarios_evaluated": 1,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 1.0,
+  "turn_efficiency": 1.0,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 0.0,
+  "avg_fitness_score": 1.0,
+  "fitness_score": 1.0,
+  "total_tokens": 301,
+  "avg_tokens": 301.0,
+  "token_efficiency": 3.322259,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 2639.0,
+  "avg_duration_ms": 2639.0,
+  "latency_efficiency": 0.378931,
+  "failed_scenarios": []
+}

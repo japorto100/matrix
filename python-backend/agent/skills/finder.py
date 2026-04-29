@@ -23,6 +23,34 @@ _RRF_K = 60
 # BM25 Okapi defaults
 _BM25_K1 = 1.2
 _BM25_B = 0.75
+_STOPWORDS = frozenset(
+    {
+        "a", "an", "and", "are", "as", "at", "be", "but", "by", "can", "do",
+        "for", "from", "how", "i", "in", "is", "it", "me", "my", "of", "on",
+        "one", "or", "please", "reply", "respond", "sentence", "short",
+        "summarize", "tell", "the", "then", "this", "to", "use", "what",
+        "when", "with", "you", "your",
+        "bitte", "das", "der", "die", "du", "ein", "eine", "einen", "ich",
+        "kurz", "mit", "mir", "und", "was", "wie",
+    }
+)
+_MEMORY_INTENT_TERMS = frozenset(
+    {
+        "compaction",
+        "erinnere",
+        "erinnern",
+        "erinnerung",
+        "gedaechtnis",
+        "memory",
+        "memory_add",
+        "memory_search",
+        "past",
+        "previous",
+        "recall",
+        "remember",
+        "verbatim",
+    }
+)
 
 
 def _env_bool(key: str, default: bool) -> bool:
@@ -32,8 +60,32 @@ def _env_bool(key: str, default: bool) -> bool:
     return v in ("1", "true", "yes", "on")
 
 
+def _env_int(key: str, default: int) -> int:
+    try:
+        return int(os.environ.get(key, str(default)))
+    except ValueError:
+        return default
+
+
+def _dense_enabled_for(skills: list[Skill]) -> bool:
+    if not _env_bool("AGENT_SKILL_FINDER_DENSE", True):
+        return False
+    if _env_bool("AGENT_SKILL_FINDER_DENSE_FORCE", False):
+        return True
+
+    # Cold-loading sentence-transformers costs seconds on this machine. For
+    # tiny corpora BM25 is deterministic and sufficient; reserve dense ranking
+    # for larger registries unless explicitly forced.
+    min_skills = max(1, _env_int("AGENT_SKILL_FINDER_DENSE_MIN_SKILLS", 10))
+    return len(skills) >= min_skills
+
+
 def tokenize(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9]+", text.lower())
+    return [
+        token
+        for token in re.findall(r"[a-z0-9]+", text.lower())
+        if token not in _STOPWORDS
+    ]
 
 
 def _doc_text(skill: Skill, max_content_chars: int = 4000) -> str:
@@ -118,15 +170,36 @@ def _dense_ranks(skills: list[Skill], query: str) -> list[int]:
     return [int(x) for x in order]
 
 
-def _bm25_ranks(skills: list[Skill], query: str) -> list[int]:
+def _bm25_scores(skills: list[Skill], query: str) -> list[float]:
     toks = [tokenize(_doc_text(s)) for s in skills]
     q = tokenize(query)
     if not q:
-        return list(range(len(skills)))
+        return [0.0] * len(skills)
     bm = _BM25(toks)
-    sc = bm.scores(q)
+    return bm.scores(q)
+
+
+def _bm25_ranks(skills: list[Skill], query: str) -> list[int]:
+    sc = _bm25_scores(skills, query)
+    if not sc:
+        return list(range(len(skills)))
     order = sorted(range(len(skills)), key=lambda i: sc[i], reverse=True)
     return order
+
+
+def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
+    normalized = query.casefold()
+    query_terms = set(tokenize(query))
+    has_memory_intent = any(term in normalized for term in _MEMORY_INTENT_TERMS) or bool(
+        query_terms & _MEMORY_INTENT_TERMS
+    )
+    if not has_memory_intent:
+        return []
+    return [
+        skill
+        for skill in skills
+        if skill.name == "memory-usage" or skill.skill_type == "memory"
+    ]
 
 
 def find_skills_for_query(
@@ -143,20 +216,34 @@ def find_skills_for_query(
     if not q or not _env_bool("AGENT_SKILL_FINDER", True):
         return skills
 
+    memory_intent_skills = _memory_intent_skill_subset(skills, q)
+    if memory_intent_skills:
+        return memory_intent_skills
+
     tk = top_k if top_k is not None else int(os.environ.get("AGENT_SKILL_FINDER_TOP_K", "3"))
     max_tok = max_tokens if max_tokens is not None else int(
         os.environ.get("AGENT_SKILL_FINDER_MAX_TOKENS", "2000")
     )
 
-    bm_order = _bm25_ranks(skills, q)
-    if _env_bool("AGENT_SKILL_FINDER_DENSE", True):
+    bm_scores = _bm25_scores(skills, q)
+    dense_enabled = _dense_enabled_for(skills)
+    if not dense_enabled and (not bm_scores or max(bm_scores) <= 0.0):
+        return []
+
+    bm_order = sorted(range(len(skills)), key=lambda i: bm_scores[i], reverse=True)
+    if dense_enabled:
         dn_order = _dense_ranks(skills, q)
         rrf = _rrf([bm_order, dn_order])
     else:
         rrf = _rrf([bm_order])
 
-    # Sort by RRF score desc
-    idx_sorted = sorted(rrf.keys(), key=lambda i: rrf[i], reverse=True)
+    # Sort by RRF score desc. In BM25-only mode, do not pad the prompt with
+    # zero-overlap skills just because top_k has spare capacity.
+    idx_sorted = [
+        i
+        for i in sorted(rrf.keys(), key=lambda i: rrf[i], reverse=True)
+        if dense_enabled or bm_scores[i] > 0.0
+    ]
 
     picked: list[Skill] = []
     est = 0
@@ -194,4 +281,4 @@ def filter_disabled_skills(skills: list[Skill], user_id: str | None) -> list[Ski
         if sid in ov and not ov[sid]:
             continue
         out.append(s)
-    return out if out else skills
+    return out

@@ -1,0 +1,330 @@
+{
+  "run_id": "run-bb0cd93f12b6",
+  "candidate_id": "runner-parity-langgraph-llm-timeout",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-eee5a18b",
+  "user_id": "anonymous",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-rp-no-tools-001-eee5a18b\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-eee5a18b\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-eee5a18b\", \"promptTokens\": 7958, \"completionTokens\": 10, \"reasoningTokens\": 0, \"cachedTokens\": 3507, \"totalTokens\": 7968, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {\"personal_raw\": 1}, \"degradationFlags\": [\"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [{\"id\": \"fusion:0:user_anonymous__verbatim:0:1cd06e021b40ccd73263e162#0\", \"title\": \"Chat Turn\", \"preview\": \"before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"user_anonymous__verbatim:0:1cd06e021b40ccd73263e162#0\", \"sourceConfidence\": \"1\", \"actorRole\": \"user\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"experience\", \"route\": \"fusion\", \"tokenCount\": 15, \"contextTier\": \"L1\"}], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 759,
+      "timestamp": "2026-04-26 15:56:25.920743+00:00",
+      "action": "llm_response",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 923,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "openrouter/openrouter/auto",
+        "done": true,
+        "tool_calls_count": 0,
+        "token_usage": 3984
+      },
+      "iteration": 2
+    },
+    {
+      "id": 758,
+      "timestamp": "2026-04-26 15:56:24.887929+00:00",
+      "action": "consent_decision",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "sandbox_execute",
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": false,
+      "error": null,
+      "metadata": {
+        "decision": "hard_deny",
+        "reason": "Tool 'sandbox_execute' requires role 'analyst', user has 'viewer'",
+        "policy_id": "yaml:tool:sandbox_execute:role_denied"
+      },
+      "iteration": null
+    },
+    {
+      "id": 757,
+      "timestamp": "2026-04-26 15:56:24.763667+00:00",
+      "action": "consent_request",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "sandbox_execute",
+      "input": {
+        "code": "print(\"runner parity smoke\")"
+      },
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "level": "deny",
+        "severity": "high",
+        "reason": "Tool 'sandbox_execute' requires role 'analyst', user has 'viewer'",
+        "policy_id": "yaml:tool:sandbox_execute:role_denied"
+      },
+      "iteration": null
+    },
+    {
+      "id": 756,
+      "timestamp": "2026-04-26 15:56:24.653194+00:00",
+      "action": "llm_response",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "Reply with one short sentence: runner parity smoke.",
+      "output": null,
+      "duration_ms": 1618,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "openrouter/openrouter/auto",
+        "done": false,
+        "tool_calls_count": 1,
+        "token_usage": 3984
+      },
+      "iteration": 0
+    },
+    {
+      "id": 755,
+      "timestamp": "2026-04-26 15:56:22.820905+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": "### Personal Raw Evidence\n- [available] before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence. (user_anonymous__verbatim:0:1cd06e021b40ccd73263e162#0)",
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "role": "default",
+        "facts_recalled": 1,
+        "entities": 0,
+        "tokens_used": 200
+      },
+      "iteration": null
+    },
+    {
+      "id": 754,
+      "timestamp": "2026-04-26 15:56:22.715733+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 2607,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "default",
+        "item_count": 1,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "Reply with one short sentence: runner parity smoke."
+      },
+      "iteration": null
+    },
+    {
+      "id": 753,
+      "timestamp": "2026-04-26 15:56:04.524128+00:00",
+      "action": "skill_used",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:plan",
+          "global:market-research",
+          "global:trading-analysis"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "plan",
+          "market-research",
+          "trading-analysis"
+        ],
+        "query_preview": "Reply with one short sentence: runner parity smoke.",
+        "user_id": "anonymous",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 752,
+      "timestamp": "2026-04-26 15:56:04.337591+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-eee5a18b",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:plan",
+          "global:market-research",
+          "global:trading-analysis"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "plan",
+          "market-research",
+          "trading-analysis"
+        ],
+        "query_preview": "Reply with one short sentence: runner parity smoke.",
+        "user_id": "anonymous",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-eee5a18b",
+    "model": "openrouter/openrouter/auto",
+    "completed": true,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 2,
+    "turn_efficiency": 0.5,
+    "total_tokens": 7968,
+    "token_efficiency": 3984,
+    "total_duration_ms": 2541,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 1,
+    "memory_recalls": 2,
+    "memory_retains": 0,
+    "memory_utilization": true,
+    "skills_loaded": [
+      "global:market-research",
+      "global:memory-usage",
+      "global:plan",
+      "global:trading-analysis"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.9,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "forbidden tool observed: sandbox_execute"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "consent_request",
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [
+        "sandbox_execute"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "forbidden tool observed: sandbox_execute"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "consent_decision",
+      "consent_request",
+      "llm_response",
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [
+      "sandbox_execute"
+    ],
+    "observed_skills": [
+      "global:market-research",
+      "global:memory-usage",
+      "global:plan",
+      "global:trading-analysis",
+      "market-research",
+      "memory-usage",
+      "plan",
+      "trading-analysis"
+    ],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion"
+    ],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "langgraph"
+}

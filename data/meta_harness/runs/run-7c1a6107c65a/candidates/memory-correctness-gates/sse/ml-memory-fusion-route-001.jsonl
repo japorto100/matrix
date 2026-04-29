@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it. I\\u2019ve stored the instruction that any tool outputs and decisions should be archived verbatim before context compaction. Let me know how you\\u2019d like to proceed!\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-8cf55a728a768d9b\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-8cf55a728a768d9b\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\", \"promptTokens\": 6485, \"completionTokens\": 117, \"reasoningTokens\": 31, \"cachedTokens\": 160, \"totalTokens\": 6602, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"If exact tool outputs are still only in the chat (ephemeral context), they should be **archived to long-term memory** using `memory_add` before context compaction occurs. That's the mechanism to preserve them as verbatim evidence beyond the current conversation context.\\n\\nIn short: **store them in memory** before compaction wipes them from the chat.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-a7307a8bd1f2708b\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-a7307a8bd1f2708b\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f0cdf2d0\", \"promptTokens\": 10234, \"completionTokens\": 3620, \"reasoningTokens\": 222, \"cachedTokens\": 0, \"totalTokens\": 13854, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

@@ -1,0 +1,22 @@
+{
+  "avg_duration_ms": 0.128,
+  "avg_turns": 1.0,
+  "benchmark_type": "inner_loop",
+  "candidate_id": "inner-matrix-fused-vector-kg",
+  "candidate_type": "benchmark_candidate",
+  "completion_rate": 1.0,
+  "cost_efficiency": 1.0,
+  "decision": "promote_outer_loop",
+  "feature_owner": "019-hybrid-rag-retrieval",
+  "fitness_score": 0.9631,
+  "ndcg@5": 0.8155,
+  "recall@5": 1.0,
+  "retrieval_pass_rate": 1.0,
+  "run_id": "run-inner-loop-rag-smoke",
+  "scenarios_evaluated": 2,
+  "token_efficiency": 1000.0,
+  "tool_success_rate": 1.0,
+  "total_cost_usd": 0.0,
+  "total_tokens": 0,
+  "trace_gate_pass_rate": 1.0
+}

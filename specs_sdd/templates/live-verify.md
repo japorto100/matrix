@@ -11,7 +11,7 @@ feature_id: NNN
 
 ## Required Flows
 
-- [ ] TBD
+- TBD
 
 ## Evidence
 

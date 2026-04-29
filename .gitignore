@@ -61,8 +61,10 @@ homeserver/*.pem
 !homeserver/tuwunel.example.toml
 
 # ─── Reference Repos (exec-10+) ──────────────────────────────────────────────
-# _ref/ Repos sind als git submodules getrackt (.gitmodules)
-# Git trackt nur die SHA-Referenzen, nicht den Code selbst
+# _ref/ Repos sind eigenständige lokale Fork-/Reference-Clones.
+# GitNexus indexiert relevante _ref-Repos separat; Matrix trackt den Code nicht.
+_ref/
+.ref-migration-backup/
 
 # paperwatcher/ ist ein separat geklontes Repo (eigenes git), nicht im matrix git tracken
 # Dient als Source fuer python-backend/ingestion/ + kg_pipeline/ Adoption
@@ -102,6 +104,7 @@ archive/control-ui/.env.local
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 logs/
+.meta-harness/
 
 # ─── Build Artifacts ─────────────────────────────────────────────────────────
 go-appservice/tmp/
@@ -123,4 +126,3 @@ target-local/
 python-backend/rust_core/target/
 python-backend/rust_core/target-local/
 python-backend/rust_core/target-host/
-

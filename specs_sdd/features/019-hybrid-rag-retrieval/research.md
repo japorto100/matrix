@@ -1,0 +1,90 @@
+---
+title: Hybrid RAG Retrieval Research
+status: draft
+owner: filip
+created: 2026-04-27
+updated: 2026-04-29
+feature_id: 019
+---
+
+# Research
+
+## Current Judgement
+
+There is no single best open-source RAG system. For Matrix, the relevant
+class is small, methodical retrieval systems rather than enterprise RAG apps.
+
+Adopt as direct references:
+
+- Researchwatcher HiRAG: intent routing, hybrid retriever, Context Bubble,
+  Self-RAG and citation verification.
+- LightRAG: practical GraphRAG baseline and graph extraction/query ergonomics.
+- HippoRAG2: memory-like associative multi-hop retrieval baseline.
+- LinearRAG: relation-free graph construction candidate.
+
+Use as eval references:
+
+- GraphRAG-Bench: when graph structures help over traditional RAG.
+- arXiv 2604.09666 / RAGSearch: dense vs GraphRAG under identical agentic
+  search protocols.
+- RAGAS/RAGChecker/Phoenix/Langfuse style diagnostics for context and
+  faithfulness.
+- AutoRAG/AutoRAG-HP: inner-loop optimization for retrieval/chunking configs,
+  now owned by Feature 023.
+
+## Architecture Implication
+
+Dense/hybrid vector retrieval remains the default baseline. Graph retrieval is
+introduced for relational, temporal, multi-hop and world-model questions where
+explicit structure earns its offline cost.
+
+## 2026-04-27 Update
+
+The strongest new evidence is not "pick one GraphRAG framework". It is that
+preprocessing, hierarchy-aware chunking and metadata enrichment matter before
+graph complexity.
+
+`arXiv:2604.04948` compared Docling, MinerU, Marker and DeepSeek OCR across 19
+PDF-to-Markdown/RAG configurations. The result is directly relevant to Matrix:
+Docling plus hierarchical splitting and image descriptions reached the best
+reported automated QA accuracy, while a naive GraphRAG implementation
+underperformed basic RAG. The lesson is conservative:
+
+- make the document pipeline layout/hierarchy/citation aware first.
+- benchmark graph retrieval only on query classes where structure should help.
+- avoid making graph retrieval the default for all document QA.
+
+LightRAG remains the first practical GraphRAG baseline because it is runnable
+and ergonomically close to a production service. HippoRAG2 remains important
+for associative/multi-hop retrieval, but should be tested after Matrix's own
+vector/KG/fused baseline and LightRAG adapter exist.
+
+Feature 019 therefore depends on:
+
+- Feature 021 for parser/chunk/citation quality.
+- Feature 022 for matched retrieval benchmarks.
+- Feature 023 for bounded inner-loop config search.
+
+## 2026-04-29 Agentic RAG / GraphRAG Source Check
+
+[RAGSearch](https://arxiv.org/abs/2604.09666) directly tests the question raised
+in the fresh Z-MDs: whether agentic multi-round search reduces the need for
+explicit graph retrieval. Current reading: do not remove graph retrieval from
+the roadmap, but do not promote GraphRAG as default either.
+
+Implications:
+
+- Dense/hybrid RAG plus agentic re-query remains the default baseline.
+- Graph/KG retrieval is a measured candidate for multi-hop, temporal and
+relational questions where explicit structure should pay for its offline cost.
+- Feature 022 benchmark canaries should include both answer-quality and
+efficiency/stability metrics, matching RAGSearch's focus beyond final accuracy.
+
+## 2026-04-29 Z_ Follow-Up
+
+`Z_Browser_RAG_WebGPU_CPU_Models.md` adds browser-local retrieval as a candidate
+lane, not as a backend replacement. Feature 026 owns the runtime; Feature 019
+owns answer-time assembly and comparison to backend retrieval.
+
+`Z_Semantik_layer and so on.md` means retrieval should accept semantic
+term/metric filters from Feature 025 rather than relying only on raw user text.

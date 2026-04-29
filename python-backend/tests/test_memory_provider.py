@@ -210,9 +210,14 @@ class _StubFusionEngine:
     def __init__(self, recall_items: list[dict[str, Any]] | None = None) -> None:
         self._recall_items = recall_items or []
         self.retain_calls: list[tuple[str, str, str, str]] = []
+        self.retain_batch_calls: list[dict[str, Any]] = []
 
     async def recall(self, query, *, bank_id, limit=5):
         return list(self._recall_items)
+
+    async def retain_batch_async(self, **kwargs) -> list[list[str]]:
+        self.retain_batch_calls.append(kwargs)
+        return [["unit-1"]]
 
     async def retain(
         self, *, user_message, assistant_message, bank_id, user_id,
@@ -220,6 +225,22 @@ class _StubFusionEngine:
         self.retain_calls.append(
             (user_message, assistant_message, bank_id, user_id),
         )
+
+
+class _KeywordFusionEngine:
+    async def recall(self, *, bank_id, query, n_results, request_context):
+        return [
+            type(
+                "FusionHit",
+                (),
+                {
+                    "text": f"{bank_id}:{query}",
+                    "ref": "fusion-ref",
+                    "score": 0.77,
+                    "metadata": {"route": "fusion", "n_results": n_results},
+                },
+            )()
+        ]
 
 
 @pytest.mark.asyncio
@@ -241,11 +262,27 @@ async def test_fusion_provider_recall_shapes_to_memory_recall():
 
 
 @pytest.mark.asyncio
+async def test_fusion_provider_prefetch_supports_keyword_only_fusion_recall():
+    provider = FusionProvider(_KeywordFusionEngine())
+    recalls = await provider.prefetch("risk preference", user_id="u1", bank_id="b1")
+    assert len(recalls) == 1
+    assert recalls[0].content == "b1:risk preference"
+    assert recalls[0].source_ref == "fusion-ref"
+    assert recalls[0].confidence == 0.77
+    assert recalls[0].metadata["route"] == "fusion"
+
+
+@pytest.mark.asyncio
 async def test_fusion_provider_sync_turn_calls_retain():
     engine = _StubFusionEngine()
     provider = FusionProvider(engine)
     await provider.sync_turn("hi", "hello", user_id="u1", bank_id="b1")
-    assert engine.retain_calls == [("hi", "hello", "b1", "u1")]
+    assert engine.retain_batch_calls
+    call = engine.retain_batch_calls[0]
+    assert call["bank_id"] == "b1"
+    assert call["consumer"] == "agent_writer"
+    assert call["contents"][0]["content"] == "User: hi\nAssistant: hello"
+    assert call["contents"][0]["metadata"]["source"] == "sync_turn"
 
 
 @pytest.mark.asyncio
@@ -283,8 +320,19 @@ async def test_fusion_provider_system_block_passes_through():
 
 @pytest.mark.asyncio
 async def test_fusion_provider_default_pre_compress_returns_none():
-    """ABC default: no snippet unless subclass overrides."""
+    """FusionProvider archives pre-compress messages via the fusion engine."""
     engine = _StubFusionEngine()
     provider = FusionProvider(engine)
-    result = await provider.on_pre_compress([], user_id="u1", bank_id="b1")
-    assert result is None
+    result = await provider.on_pre_compress(
+        [{"role": "user", "content": "important detail"}],
+        user_id="u1",
+        bank_id="b1",
+    )
+    assert result == "Archived 1 messages before context reduction."
+    call = engine.retain_batch_calls[0]
+    assert call["bank_id"] == "b1"
+    assert call["consumer"] == "agent_context_archive"
+    assert call["route"] == "verbatim"
+    assert call["defer_embedding"] is True
+    assert call["contents"][0]["metadata"]["source"] == "pre_compress"
+    assert "important detail" in call["contents"][0]["content"]

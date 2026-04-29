@@ -44,6 +44,10 @@ class AgentGraphState(TypedDict):
     # Current pending tool calls from LLM
     tool_calls: list[ToolCall]
 
+    # Tool definitions allowed for this turn. ``None``/missing means legacy
+    # registry fallback; an empty list means tools are explicitly disabled.
+    tool_definitions: list[dict[str, Any]] | None
+
     # Accumulated tool results
     tool_results: Annotated[list[ToolResult], operator.add]
 
@@ -102,6 +106,9 @@ class AgentGraphState(TypedDict):
     # User role from Go Gateway (viewer/analyst/trader/admin)
     user_role: str
 
+    # Whether approval_node may use resumable LangGraph interrupts.
+    approval_interrupts: bool
+
     # ADR-001 G4: A/B experiment row id (UUID) when this turn runs under
     # an active dispatcher experiment. Used by the router_node smart-
     # routing decision to mark the routing dimension on the same
@@ -117,3 +124,6 @@ class AgentGraphState(TypedDict):
     routing_reason: str
     routing_used: bool
     routing_picked_model: str
+
+    # Observability label for Meta-Harness route-decision traces.
+    runner_variant: str

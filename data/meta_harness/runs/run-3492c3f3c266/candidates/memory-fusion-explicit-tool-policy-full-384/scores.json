@@ -1,0 +1,23 @@
+{
+  "run_id": "run-3492c3f3c266",
+  "candidate_id": "memory-fusion-explicit-tool-policy-full-384",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8533,
+  "fitness_score": 0.8533,
+  "total_tokens": 36115,
+  "avg_tokens": 18057.5,
+  "token_efficiency": 0.055379,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 16693.0,
+  "avg_duration_ms": 8346.5,
+  "latency_efficiency": 0.119811,
+  "failed_scenarios": []
+}

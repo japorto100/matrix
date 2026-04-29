@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required action: llm_response",
+    "harness runner error"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "memory_recall",
+    "skill_found"
+  ],
+  "observed_tools": [],
+  "observed_skills": [],
+  "tool_success_rate": null,
+  "observed_memory_routes": [
+    "fusion"
+  ],
+  "observed_memory_providers": []
+}

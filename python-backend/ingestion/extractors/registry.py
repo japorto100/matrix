@@ -1,7 +1,7 @@
 """Extractor registry — auto-select by mime type or name.
 
 In-process extractors (lightweight, in ingestion venv):
-    pymupdf4llm, markdown, html, csv, code, note
+    pymupdf4llm, markitdown, markdown, html, csv, code, note
 
 Remote extractors (heavy, in extraction_layout venv via HTTP, Phase 2):
     docling, marker, mineru
@@ -16,6 +16,7 @@ from ingestion.extractors.code_ext import CodeExtractor
 from ingestion.extractors.csv_ext import CSVExtractor
 from ingestion.extractors.html_ext import HTMLExtractor
 from ingestion.extractors.markdown_ext import MarkdownExtractor
+from ingestion.extractors.markitdown_ext import MarkItDownExtractor
 from ingestion.extractors.note_ext import NoteExtractor
 from ingestion.extractors.pymupdf_ext import PyMuPDF4LLMExtractor
 from ingestion.extractors.remote import (
@@ -48,6 +49,7 @@ class ExtractorRegistry:
         # In-process extractors (always loaded)
         self._by_name: dict[str, DocumentExtractor] = {
             "pymupdf4llm": PyMuPDF4LLMExtractor(),
+            "markitdown": MarkItDownExtractor(),
             "markdown": MarkdownExtractor(),
             "html": HTMLExtractor(),
             "csv": CSVExtractor(),

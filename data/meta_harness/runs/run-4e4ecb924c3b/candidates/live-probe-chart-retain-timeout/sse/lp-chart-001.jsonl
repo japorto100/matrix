@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-chart-001-61657029\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-61657029\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"**Aktiver Chart\\u2011Zustand**\\n\\n- **Symbol:**\\u202fEUR/USD  \\n- **Zeitfenster:**\\u202f4\\u2011Stunden\\u2011Chart (4H)  \\n- **Aktivierte Indikatoren:**\\u202fRSI, MACD  \\n\\nDas ist der aktuelle Chart, den du gerade betrachtest.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"tool_get_chart_state_mtDX1jA0OZrZowryYf0M\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"tool_get_chart_state_mtDX1jA0OZrZowryYf0M\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-61657029\", \"promptTokens\": 8074, \"completionTokens\": 164, \"reasoningTokens\": 84, \"cachedTokens\": 80, \"totalTokens\": 8238, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"openrouter/openrouter/auto\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

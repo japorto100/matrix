@@ -5,7 +5,8 @@ Genutzt von:
   - control/user_llm.py (für UI: masked Key anzeigen)
 
 Greift NICHT auf LLM zu. Nur DB + KeyVault.
-Kein ENV Fallback fuer Model/Key — alles aus DB (control-ui).
+Production keys stay DB/control-ui owned. Development can opt into an ENV key
+fallback so local Matrix/API smokes work before per-user credentials are seeded.
 """
 
 from __future__ import annotations
@@ -43,7 +44,7 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
     """
     db_url = os.environ.get("HINDSIGHT_DB_URL")
     if not db_url:
-        return None
+        return get_env_provider_api_key(provider)
 
     try:
         import psycopg
@@ -61,7 +62,7 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
             ).fetchone()
 
             if not row or not row[0]:
-                return None
+                return get_env_provider_api_key(provider)
 
             # Prefer Virtual Key if available (budget-enforced, real key hidden)
             meta = row[1] if row[1] else {}
@@ -73,13 +74,13 @@ async def get_user_api_key(user_id: str, provider: str) -> str | None:
     except Exception as e:
         logger.warning("get_user_api_key failed for %s/%s: %s", user_id, provider, e)
 
-    return None
+    return get_env_provider_api_key(provider)
 
 
 async def get_user_default_model(user_id: str) -> str | None:
     """Holt User's gewaehltes Default-Model aus DB. None wenn nicht gesetzt."""
     db_url = os.environ.get("HINDSIGHT_DB_URL")
-    if not db_url:
+    if not db_url or not user_id:
         return None
 
     try:
@@ -104,7 +105,7 @@ async def get_user_default_model(user_id: str) -> str | None:
 async def get_user_role_model(user_id: str, role: str) -> str | None:
     """Holt per-role Model Override aus DB. None wenn kein Override."""
     db_url = os.environ.get("HINDSIGHT_DB_URL")
-    if not db_url:
+    if not db_url or not user_id or not role:
         return None
 
     try:
@@ -129,6 +130,31 @@ async def get_user_role_model(user_id: str, role: str) -> str | None:
 def get_env_default_model() -> str:
     """Fallback: AGENT_DEFAULT_UTILITY_MODEL aus ENV."""
     return os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
+
+
+def get_env_provider_api_key(provider: str) -> str | None:
+    """Development-only provider key fallback.
+
+    This is intentionally not the production credential path. It exists for
+    local Matrix/API smoke tests where no per-user control-ui credential row has
+    been seeded yet. Production must use `agent.user_credentials`.
+    """
+    if not provider:
+        return None
+
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    default_allowed = app_env in {"development", "dev", "local", "test"}
+    raw_allowed = os.environ.get("AGENT_ALLOW_ENV_CREDENTIAL_FALLBACK")
+    if raw_allowed is None:
+        allowed = default_allowed
+    else:
+        allowed = raw_allowed.strip().lower() in {"1", "true", "yes", "on"}
+    if not allowed:
+        return None
+
+    env_name = f"{provider.strip().upper()}_API_KEY"
+    value = os.environ.get(env_name, "").strip()
+    return value or None
 
 
 async def user_has_provider_credential(user_id: str, provider: str) -> bool:

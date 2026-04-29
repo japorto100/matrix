@@ -1,0 +1,17 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-febf1f6c\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-febf1f6c\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it! I've saved that as a project memory note.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"tool_memory_add_rHffD6V0Huxk3A3UdtW1\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"tool_memory_add_rHffD6V0Huxk3A3UdtW1\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-febf1f6c\", \"promptTokens\": 8147, \"completionTokens\": 95, \"reasoningTokens\": 61, \"cachedTokens\": 3428, \"totalTokens\": 8242, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-febf1f6c\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-febf1f6c\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Before context compaction, if exact tool outputs are still only in the chat, they need to be explicitly archived. This is what the project memory you just asked me to save addresses: \\\"before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.\\\"\\n\\nTo archive them, I should use a tool like `memory_add` to store them as verbatim evidence. This ensures they are preserved and not lost when the context is compacted. I have saved this instruction itself as a project memory note.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-febf1f6c\", \"promptTokens\": 3723, \"completionTokens\": 769, \"reasoningTokens\": 666, \"cachedTokens\": 3431, \"totalTokens\": 4492, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

@@ -18,8 +18,9 @@ Zero duplication → zero drift.
 **What this file actually does:**
 1. Prep system-prompt + messages via reused :func:`runner._prepare_system_prompt`
    / :func:`runner._prepare_messages`.
-2. Run a multi-turn loop: ``llm_node(state)`` → if tool_calls → ``tool_node(state)``
-   → repeat until no tool_calls or MAX_ITERATIONS.
+2. Run a multi-turn loop: ``llm_node(state)`` → if tool_calls →
+   ``approval_node(state)`` → approved calls only → ``tool_node(state)`` →
+   repeat until no tool_calls or MAX_ITERATIONS.
 3. Emit the identical SSE packet sequence as :func:`runner._run_graph` so
    the frontend cannot tell which runner served the turn.
 4. Same session-row bookkeeping, same fire-and-forget ``_safe_sync_turn``.
@@ -123,6 +124,7 @@ async def _run_simple(
     """Core multi-turn loop — delegates to llm_node + tool_node."""
     from agent.graph.nodes.llm_node import llm_node
     from agent.graph.nodes.tool_node import tool_node
+    from agent.graph.runner import _memory_bank_id_for_user
     from agent.security.credentials import get_user_role_model
     from agent.sessions import create_session, update_session
     from agent.tracing import session_span, set_session_summary
@@ -142,7 +144,7 @@ async def _run_simple(
             agent_id=getattr(ctx, "agent_id", "default"),
             user_id=ctx.user_id,
             thread_id=ctx.thread_id,
-            bank_id=f"user-{ctx.user_id}" if ctx.user_id else None,
+            bank_id=_memory_bank_id_for_user(ctx.user_id),
         )
     except Exception:  # noqa: BLE001
         pass
@@ -150,6 +152,7 @@ async def _run_simple(
     state: dict[str, Any] = {
         "messages": list(messages),
         "tool_calls": [],
+        "tool_definitions": [tool.definition() for tool in ctx.tools],
         "tool_results": [],
         "iteration": 0,
         "max_iterations": MAX_ITERATIONS,
@@ -174,6 +177,8 @@ async def _run_simple(
         "user_id": ctx.user_id,
         "agent_class": getattr(ctx, "agent_class", "advisory"),
         "user_role": getattr(ctx, "user_role", "viewer"),
+        "approval_interrupts": False,
+        "runner_variant": "simple",
     }
 
     with session_span(
@@ -196,13 +201,30 @@ async def _run_simple(
                 if not tool_calls:
                     break
 
+                from agent.graph.nodes.approval_node import approval_node
+
+                approval_out = await approval_node(
+                    {**state, "approval_interrupts": False}
+                )
+                _merge(state, approval_out)
+
+                approved_tool_calls = state.get("tool_calls") or []
+                if not approved_tool_calls:
+                    _record_iteration(ctx.thread_id)
+                    state["iteration"] = iteration + 1
+                    continue
+
                 # Reuses tool-dispatch pipeline: timeout enforcement,
                 # parallel exec, ToolResult construction.
                 tool_out = await tool_node(state)
                 new_results = tool_out.get("tool_results") or []
                 all_tool_results.extend(new_results)
+                tool_node_emitted_messages = bool(tool_out.get("messages"))
                 _merge(state, tool_out)
-                _append_tool_messages(state, tool_calls, new_results)
+                if not tool_node_emitted_messages:
+                    _append_tool_messages(state, approved_tool_calls, new_results)
+                _record_iteration(ctx.thread_id)
+                state["iteration"] = iteration + 1
 
             final = state.get("final_response", "") or _last_assistant_text(
                 state["messages"]
@@ -366,11 +388,11 @@ def _append_tool_messages(
                 "content": state.get("final_response", "") or "",
                 "tool_calls": [
                     {
-                        "id": tc.tool_call_id,
+                        "id": _tool_call_value(tc, "tool_call_id", "id"),
                         "type": "function",
                         "function": {
-                            "name": tc.tool_name,
-                            "arguments": _json.dumps(tc.tool_input),
+                            "name": _tool_call_value(tc, "tool_name", "name"),
+                            "arguments": _tool_call_arguments(tc),
                         },
                     }
                     for tc in tool_calls
@@ -389,6 +411,41 @@ def _append_tool_messages(
                 "content": content,
             }
         )
+
+
+def _record_iteration(thread_id: str) -> None:
+    """Best-effort parity with LangGraph's increment node."""
+    if not thread_id:
+        return
+    try:
+        from agent.consent.rate_limiter import get_rate_limiter
+
+        get_rate_limiter().record_iteration(thread_id)
+    except Exception:  # noqa: BLE001
+        logger.debug("SimpleLoop iteration accounting skipped", exc_info=True)
+
+
+def _tool_call_value(tool_call: Any, primary: str, fallback: str) -> Any:
+    """Read tool-call fields from either ToolCall objects or dict payloads."""
+    if isinstance(tool_call, dict):
+        if primary in tool_call:
+            return tool_call[primary]
+        if fallback in tool_call:
+            return tool_call[fallback]
+        function = tool_call.get("function")
+        if isinstance(function, dict):
+            return function.get(fallback) or function.get(primary)
+        return None
+    return getattr(tool_call, primary, getattr(tool_call, fallback, None))
+
+
+def _tool_call_arguments(tool_call: Any) -> str:
+    import json as _json
+
+    value = _tool_call_value(tool_call, "tool_input", "arguments")
+    if isinstance(value, str):
+        return value
+    return _json.dumps(value or {}, default=str)
 
 
 async def _finalize_ab_row(

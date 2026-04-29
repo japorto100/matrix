@@ -3,7 +3,7 @@ title: Memory Context World KB Sources
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-26
 feature_id: 012
 ---
 
@@ -51,4 +51,15 @@ feature_id: 012
   sources until explicitly superseded by accepted SDD decisions.
 - Memory, context, world and KB are separate layers with separate write paths.
 - Context assembly must be source/status/provenance aware.
-- GraphRAG and NornicDB ideas are research inputs, not automatic backend choices.
+- GraphRAG and NornicDB ideas are research inputs; global KG backend ownership
+  is now Feature 017.
+- Hindsight/MemPalace docs and `_ref` repos must be refreshed before production
+  schema lock, especially for Postgres vs SQLite/file-store divergence and
+  room/session semantics.
+- ADR-0006 supersedes upstream MemPalace storage for Matrix runtime:
+  `_ref/mempalace` remains concept/test/reference source for loci, drawers and
+  MCP tool semantics, while Matrix production uses Postgres/pgvector plus
+  OpenRouter embeddings.
+- OpenRouter embedding docs and model catalogue are source material for current
+  remote embedding setup; free models are dev/smoke candidates until quality
+  gates pass.

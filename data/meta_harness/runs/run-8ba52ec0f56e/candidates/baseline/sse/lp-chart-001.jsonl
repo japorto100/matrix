@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-chart-001-aa476f07\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-aa476f07\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"The active chart is displaying **EUR/USD** on a **4\\u2011hour (4H)** timeframe. The chart currently has two technical indicators applied:\\n\\n* **RSI** (Relative Strength Index)  \\n* **MACD** (Moving Average Convergence Divergence)  \\n\\nLet me know if you\\u2019d like any further analysis or a deeper look at these indicators.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"chatcmpl-tool-20782a3fdaec48e78517c1753007be2d\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-20782a3fdaec48e78517c1753007be2d\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-aa476f07\", \"promptTokens\": 9177, \"completionTokens\": 158, \"reasoningTokens\": 65, \"cachedTokens\": 0, \"totalTokens\": 9335, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

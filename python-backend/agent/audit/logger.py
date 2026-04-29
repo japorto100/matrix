@@ -31,12 +31,14 @@ class AuditAction(StrEnum):
     SKILL_FOUND = "skill_found"
     SKILL_REFINED = "skill_refined"
     SKILL_USED = "skill_used"
+    ROUTE_DECISION = "route_decision"
 
 
 async def audit_log(
     *,
     action: AuditAction,
     agent_id: str = "default",
+    user_id: str = "local",
     session_id: str = "",
     thread_id: str = "",
     tool_name: str | None = None,
@@ -51,6 +53,7 @@ async def audit_log(
     entry = {
         "timestamp": datetime.now(UTC).isoformat(),
         "action": action.value,
+        "userId": user_id,
         "agentId": agent_id,
         "sessionId": session_id,
         "threadId": thread_id,

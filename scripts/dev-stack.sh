@@ -21,7 +21,8 @@
 #   --matrix-chat    matrix-core + litellm                    (echte Agent-Replies)
 #   --matrix-full    matrix-chat + calls                      (alle Gates außer Tunnel)
 #   --matrix-mobile  matrix-full + tunnel                     (Mobile external)
-#   --matrix-mock    matrix-core + llm-mock + mock-agent      (UI-tests ohne API-Keys)
+#   --matrix-mock    matrix-core + mock-agent                 (UI-tests ohne API-Keys)
+#                    llm-mock :8095 nur explizit via --llm-mock
 #   --agent-dev      nats + postgres + litellm + agent + bridge (ohne Matrix)
 #   --memory-dev     postgres + falkordb + agent              (exec-memory)
 #   --sandbox-dev    postgres + sandbox + agent               (exec-12)
@@ -34,13 +35,13 @@
 #   --storage=garage|seaweedfs   Storage-Backend (Default: garage)
 #   --storage=off                kein S3 (tuwunel local-media)
 #   --litellm                    LLM Gateway (Port 4000)
-#   --llm-mock                   Mock-LLM-Server
+#   --llm-mock                   Mock-LLM-Server :8095 (Meta-Harness/local gates only)
 #   --sandbox                    OpenSandbox Pair (exec-12)
 #   --calls                      livekit + lk-jwt + coturn
 #   --tunnel                     cloudflared quick (trycloudflare.com)
 #   --tunnel-named               cloudflared named (braucht Token in .env)
 #   --observability              openobserve + otel-collector + postgres-exporter
-#   --valkey                     Redis-fork Cache
+#   --valkey                     Matrix-local Redis-fork Cache (:16379 default)
 #   --pgbouncer                  Postgres connection pooler
 #   --falkordb                   KG-Backend A (exec-memory)
 #   --nornic                     KG-Backend B (exec-memory)
@@ -138,7 +139,8 @@ apply_preset_matrix_mobile() {
 }
 apply_preset_matrix_mock() {
   apply_preset_matrix_core
-  WANT_LLM_MOCK=true
+  # Keep the OpenAI-compatible llm-mock off unless explicitly requested with
+  # --llm-mock. Matrix mock mode only replaces the agent service itself.
   USE_MOCK_AGENT=true
 }
 apply_preset_agent_dev() {
@@ -244,18 +246,19 @@ fi
 
 # ─── Ports ────────────────────────────────────────────────────────────────────
 PORT_TUWUNEL=8448
-PORT_NATS=4222
+PORT_NATS=${NATS_HOST_PORT:-14222}
+PORT_NATS_MONITOR=${NATS_MONITOR_PORT:-18222}
 PORT_POSTGRES=5433
 PORT_SEAWEED_S3=8333
 PORT_GARAGE_S3=3900
 PORT_LITELLM=4000
 PORT_LLM_MOCK=8095
-PORT_SANDBOX=8100
+PORT_SANDBOX=8080
 PORT_LIVEKIT=7880
-PORT_LK_JWT=8080
+PORT_LK_JWT=8082
 PORT_COTURN=3478
 PORT_OPENOBSERVE=5080
-PORT_VALKEY=6379
+PORT_VALKEY=${VALKEY_HOST_PORT:-16379}
 PORT_PGBOUNCER=6432
 PORT_FALKORDB=6380
 PORT_NORNIC=7474
@@ -264,6 +267,7 @@ PORT_AGENT=8094
 PORT_BRIDGE=8097
 PORT_INGESTION=8098
 PORT_MERGER=3003
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-matrix-postgres}"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 log()  { printf "\033[36m[%s]\033[0m %s\n" "$(date +%H:%M:%S)" "$*"; }
@@ -273,6 +277,12 @@ die()  { printf "\033[31m[%s] ERROR: %s\033[0m\n" "$(date +%H:%M:%S)" "$*" >&2; 
 have() { command -v "$1" >/dev/null 2>&1; }
 
 port_up() { nc -z 127.0.0.1 "$1" 2>/dev/null; }
+container_up() { podman ps --format "{{.Names}}" 2>/dev/null | grep -qx "$1"; }
+service_up() {
+  local port=$1 expected_container=${2:-}
+  port_up "$port" || return 1
+  [ -z "$expected_container" ] || container_up "$expected_container"
+}
 
 wait_for_port() {
   local port=$1 name=${2:-:$1} timeout=${3:-30} i=0
@@ -281,6 +291,72 @@ wait_for_port() {
     sleep 1; i=$((i+1))
   done
   warn "timeout: $name :$port"; return 1
+}
+
+matrix_compose_container_label() {
+  local container=$1 label=$2
+  podman inspect "$container" --format "{{ index .Config.Labels \"$label\" }}" 2>/dev/null || true
+}
+
+prepare_postgres_namespace() {
+  $WANT_POSTGRES || return 0
+
+  if podman container exists matrix-memory-eval-postgres 2>/dev/null; then
+    local eval_status
+    eval_status=$(podman inspect matrix-memory-eval-postgres --format "{{.State.Status}}" 2>/dev/null || true)
+    if [ "$eval_status" = "created" ] || [ "$eval_status" = "exited" ]; then
+      warn "removing stale matrix-memory-eval-postgres container to free :$PORT_POSTGRES"
+      podman rm matrix-memory-eval-postgres >/dev/null 2>&1 || true
+    fi
+  fi
+
+  if podman container exists postgres 2>/dev/null && ! podman container exists "$POSTGRES_CONTAINER" 2>/dev/null; then
+    local project service
+    project=$(matrix_compose_container_label postgres "com.docker.compose.project")
+    service=$(matrix_compose_container_label postgres "com.docker.compose.service")
+    if [ "$project" = "matrix" ] && [ "$service" = "postgres" ]; then
+      warn "migrating legacy matrix postgres container name: postgres -> $POSTGRES_CONTAINER"
+      for dependent in pgbouncer postgres-exporter; do
+        if podman container exists "$dependent" 2>/dev/null; then
+          local dep_project dep_status
+          dep_project=$(matrix_compose_container_label "$dependent" "com.docker.compose.project")
+          dep_status=$(podman inspect "$dependent" --format "{{.State.Status}}" 2>/dev/null || true)
+          if [ "$dep_project" = "matrix" ] && [ "$dep_status" != "running" ]; then
+            podman rm "$dependent" >/dev/null 2>&1 || true
+          fi
+        fi
+      done
+      podman stop postgres >/dev/null 2>&1 || true
+      podman rm postgres >/dev/null 2>&1 || true
+    else
+      warn "container named 'postgres' exists but is not matrix compose; leaving it untouched"
+    fi
+  fi
+}
+
+verify_postgres_pgvector() {
+  $WANT_POSTGRES || return 0
+  if ! postgres_pgvector_ready; then
+    warn "$POSTGRES_CONTAINER is not running; cannot verify pgvector"
+    return 1
+  fi
+  ok "postgres pgvector extension ready (vector $POSTGRES_VECTOR_VERSION)"
+}
+
+POSTGRES_VECTOR_VERSION=""
+postgres_pgvector_ready() {
+  if ! podman ps --format "{{.Names}}" | grep -q "^${POSTGRES_CONTAINER}$"; then
+    return 1
+  fi
+  local db_user="${POSTGRES_USER:-postgres}"
+  local db_name="${POSTGRES_DB:-hindsight_dev}"
+  local ext
+  ext=$(podman exec "$POSTGRES_CONTAINER" psql -U "$db_user" -d "$db_name" -tAc \
+    "SELECT extversion FROM pg_extension WHERE extname='vector';" 2>/dev/null | xargs || true)
+  if [ -z "$ext" ]; then
+    return 1
+  fi
+  POSTGRES_VECTOR_VERSION="$ext"
 }
 
 kill_port() {
@@ -313,7 +389,7 @@ spawn() {
   log "spawning $name (cwd=$cwd)"
   (
     cd "$cwd" || exit 1
-    exec "$@"
+    exec setsid "$@"
   ) >"$logfile" 2>&1 &
   echo $! > "$pidfile"
   log "   pid=$(cat "$pidfile") log=$logfile"
@@ -348,21 +424,22 @@ compose_up() {
       falkordb)                                      p="kg-falkor" ;;
       nornic)                                        p="kg-nornic" ;;
       pgbouncer)                                     p="pooler" ;;
-      llm-mock)                                      p="mock" ;;
-    esac
+  esac
     # Dedupe: skip wenn profile schon in der csv
     if [ -n "$p" ] && [[ ",$profiles_csv," != *",$p,"* ]]; then
       profiles_csv="${profiles_csv:+${profiles_csv},}$p"
     fi
   done
 
-  # Split in zwei phasen: default-services (kein profile) und profile-services
-  # getrennt aufrufen. Podman-compose mit COMPOSE_PROFILES=X skipped alle
-  # default-services — daher erst default ohne env-var, dann profile-services mit.
-  local default_svcs=() profile_svcs=()
+  # Split in drei Phasen. Storage-Profile muessen vor Tuwunel starten, weil
+  # Tuwunel mit startup_check=true sonst beim ersten S3-Connect abstuerzt.
+  # Podman-compose mit COMPOSE_PROFILES=X skipped default-services, daher
+  # default-services getrennt ohne env-var starten.
+  local default_svcs=() storage_profile_svcs=() profile_svcs=()
   for s in "${services[@]}"; do
     case "$s" in
       tuwunel|nats|postgres) default_svcs+=("$s") ;;
+      garage|seaweedfs) storage_profile_svcs+=("$s") ;;
       *) profile_svcs+=("$s") ;;
     esac
   done
@@ -370,7 +447,46 @@ compose_up() {
   local common_env=(
     "TUWUNEL_IMAGE=ghcr.io/matrix-construct/tuwunel:${TUWUNEL_IMAGE_TAG}"
     "TUWUNEL_CONFIG=${TUWUNEL_CONFIG:-tuwunel.v1.6.toml}"
+    "NATS_HOST_PORT=${PORT_NATS}"
+    "NATS_MONITOR_PORT=${PORT_NATS_MONITOR}"
+    "VALKEY_HOST_PORT=${PORT_VALKEY}"
   )
+
+  compose_up_profiles() {
+    local label=$1
+    shift
+    local selected=("$@")
+    [ ${#selected[@]} -eq 0 ] && return 0
+
+    local selected_profiles=""
+    for svc in "${selected[@]}"; do
+      local profile=""
+      case "$svc" in
+        litellm)                                       profile="litellm" ;;
+        opensandbox|opensandbox-server)                profile="sandbox" ;;
+        coturn|livekit-server|lk-jwt-service)          profile="calls" ;;
+        cloudflared)                                   profile="tunnel" ;;
+        cloudflared-named)                             profile="tunnel-named" ;;
+        openobserve|otel-collector|postgres-exporter)  profile="observability" ;;
+        valkey)                                        profile="cache" ;;
+        garage)                                        profile="storage-garage" ;;
+        seaweedfs)                                     profile="storage-seaweedfs" ;;
+        falkordb)                                      profile="kg-falkor" ;;
+        nornic)                                        profile="kg-nornic" ;;
+        pgbouncer)                                     profile="pooler" ;;
+      esac
+      if [ -n "$profile" ] && [[ ",$selected_profiles," != *",$profile,"* ]]; then
+        selected_profiles="${selected_profiles:+${selected_profiles},}$profile"
+      fi
+    done
+
+    log "compose up (profiles: $selected_profiles): ${selected[*]}"
+    (cd "$REPO_ROOT" && env "${common_env[@]}" COMPOSE_PROFILES="$selected_profiles" \
+      $COMPOSE up -d "${selected[@]}" 2>&1) \
+      | tee -a "$LOG_DIR/compose.log" || warn "compose up ($label profiles) failed"
+  }
+
+  compose_up_profiles "storage" "${storage_profile_svcs[@]}"
 
   if [ ${#default_svcs[@]} -gt 0 ]; then
     log "compose up (default): ${default_svcs[*]}"
@@ -378,12 +494,7 @@ compose_up() {
       | tee -a "$LOG_DIR/compose.log" || warn "compose up (default) failed"
   fi
 
-  if [ ${#profile_svcs[@]} -gt 0 ]; then
-    log "compose up (profiles: $profiles_csv): ${profile_svcs[*]}"
-    (cd "$REPO_ROOT" && env "${common_env[@]}" COMPOSE_PROFILES="$profiles_csv" \
-      $COMPOSE up -d "${profile_svcs[@]}" 2>&1) \
-      | tee -a "$LOG_DIR/compose.log" || warn "compose up (profiles) failed"
-  fi
+  compose_up_profiles "extra" "${profile_svcs[@]}"
 }
 
 compose_stop() {
@@ -409,9 +520,16 @@ if $STATUS_MODE; then
     [python-bridge]=$PORT_BRIDGE [python-ingestion]=$PORT_INGESTION
     [frontend-merger]=$PORT_MERGER
   )
+  declare -A SVC_CONTAINER=(
+    [tuwunel]=tuwunel [nats]=matrix-nats [postgres]=matrix-postgres
+    [seaweedfs]=seaweedfs [garage]=garage [litellm]=litellm
+    [sandbox]=opensandbox-api-gateway [livekit]=livekit [lk-jwt]=lk-jwt
+    [coturn]=coturn [openobserve]=openobserve [valkey]=matrix-valkey
+    [pgbouncer]=pgbouncer [falkordb]=falkordb [nornic]=nornic
+  )
   for svc in "${!SVC_PORT[@]}"; do
     p=${SVC_PORT[$svc]}
-    if port_up "$p"; then
+    if service_up "$p" "${SVC_CONTAINER[$svc]:-}"; then
       printf "  \033[32m✓\033[0m %-18s :%-5s\n" "$svc" "$p"
     fi
   done
@@ -447,10 +565,11 @@ if [ -n "$KILL_TARGET" ]; then
     go|go-appservice)   kill_port $PORT_GO "go-appservice"; rm -f "$PID_DIR/go-appservice.pid" ;;
     agent|python-agent) kill_port $PORT_AGENT "python-agent"; rm -f "$PID_DIR/python-agent.pid" ;;
     bridge|python-bridge) kill_port $PORT_BRIDGE "python-bridge"; rm -f "$PID_DIR/python-bridge.pid" ;;
+    llm-mock)         kill_port $PORT_LLM_MOCK "llm-mock"; rm -f "$PID_DIR/llm-mock.pid" ;;
     ingestion|python-ingestion) kill_port $PORT_INGESTION "python-ingestion"; rm -f "$PID_DIR/python-ingestion.pid" ;;
     frontend|frontend-merger) kill_port $PORT_MERGER "frontend"; rm -f "$PID_DIR/frontend-merger.pid" ;;
     # Compose services — nutze compose stop um cleanly herunterzufahren
-    tuwunel|nats|postgres|seaweedfs|garage|litellm|llm-mock|coturn|livekit|lk-jwt|\
+    tuwunel|nats|postgres|seaweedfs|garage|litellm|coturn|livekit|lk-jwt|\
     livekit-server|lk-jwt-service|cloudflared|cloudflared-named|openobserve|\
     otel-collector|postgres-exporter|valkey|pgbouncer|falkordb|nornic|\
     opensandbox|opensandbox-server)
@@ -518,8 +637,7 @@ $WANT_POSTGRES      && COMPOSE_SVCS+=("postgres")
 [ "$STORAGE_BACKEND" = "garage" ]    && COMPOSE_SVCS+=("garage")
 [ "$STORAGE_BACKEND" = "seaweedfs" ] && COMPOSE_SVCS+=("seaweedfs")
 $WANT_LITELLM       && COMPOSE_SVCS+=("litellm")
-$WANT_LLM_MOCK      && COMPOSE_SVCS+=("llm-mock")
-$WANT_SANDBOX       && COMPOSE_SVCS+=("opensandbox-server" "opensandbox")
+$WANT_SANDBOX       && COMPOSE_SVCS+=("opensandbox-server")
 $WANT_CALLS         && COMPOSE_SVCS+=("livekit-server" "lk-jwt-service" "coturn")
 $WANT_TUNNEL        && COMPOSE_SVCS+=("cloudflared")
 $WANT_TUNNEL_NAMED  && COMPOSE_SVCS+=("cloudflared-named")
@@ -529,12 +647,23 @@ $WANT_PGBOUNCER     && COMPOSE_SVCS+=("pgbouncer")
 $WANT_FALKORDB      && COMPOSE_SVCS+=("falkordb")
 $WANT_NORNIC        && COMPOSE_SVCS+=("nornic")
 
+if $WANT_POSTGRES && postgres_pgvector_ready; then
+  log "$POSTGRES_CONTAINER already running with pgvector $POSTGRES_VECTOR_VERSION"
+  filtered_svcs=()
+  for svc in "${COMPOSE_SVCS[@]}"; do
+    [ "$svc" = "postgres" ] || filtered_svcs+=("$svc")
+  done
+  COMPOSE_SVCS=("${filtered_svcs[@]}")
+fi
+
 if [ ${#COMPOSE_SVCS[@]} -gt 0 ]; then
+  prepare_postgres_namespace
   compose_up "${COMPOSE_SVCS[@]}"
   # Wait for critical ports
   $WANT_TUWUNEL  && wait_for_port $PORT_TUWUNEL "tuwunel" 60
   $WANT_NATS     && wait_for_port $PORT_NATS "nats" 20
   $WANT_POSTGRES && wait_for_port $PORT_POSTGRES "postgres" 30
+  $WANT_POSTGRES && verify_postgres_pgvector
   [ "$STORAGE_BACKEND" = "garage" ]    && wait_for_port $PORT_GARAGE_S3 "garage" 30
   [ "$STORAGE_BACKEND" = "seaweedfs" ] && wait_for_port $PORT_SEAWEED_S3 "seaweedfs" 30
   $WANT_LITELLM  && wait_for_port $PORT_LITELLM "litellm" 45
@@ -586,24 +715,30 @@ fi
 # ─── Python services via uv run (APP_ENV=development lädt .env.development) ──
 UV_APP_ENV="APP_ENV=development"
 
+if $WANT_LLM_MOCK; then
+  spawn "llm-mock" "$REPO_ROOT/python-backend" \
+    env $UV_APP_ENV MOCK_PORT="$PORT_LLM_MOCK" .venv/bin/python -m mock.mock_agent
+  wait_for_port $PORT_LLM_MOCK "llm-mock" 45
+fi
+
 if $WANT_AGENT; then
   if $USE_MOCK_AGENT; then
     spawn "python-agent" "$REPO_ROOT/python-backend" \
       env $UV_APP_ENV uv run python -m mock.mock_agent
   else
     spawn "python-agent" "$REPO_ROOT/python-backend" \
-      env $UV_APP_ENV uv run python -m uvicorn agent.app:app --host 127.0.0.1 --port "$PORT_AGENT" --reload
+      env $UV_APP_ENV uv run python -m uvicorn agent.app:app --host 127.0.0.1 --port "$PORT_AGENT"
   fi
 fi
 
 if $WANT_BRIDGE; then
   spawn "python-bridge" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV uv run python -m uvicorn bridge.app:app --host 127.0.0.1 --port "$PORT_BRIDGE" --reload
+    env $UV_APP_ENV uv run python -m uvicorn bridge.app:app --host 127.0.0.1 --port "$PORT_BRIDGE"
 fi
 
 if $WANT_INGESTION; then
   spawn "python-ingestion" "$REPO_ROOT/python-backend" \
-    env $UV_APP_ENV uv run python -m ingestion.worker
+    env $UV_APP_ENV uv run python -m uvicorn ingestion.worker:app --host 127.0.0.1 --port "$PORT_INGESTION"
 fi
 
 # ─── Frontend ────────────────────────────────────────────────────────────────
@@ -643,7 +778,25 @@ for p in $PORT_TUWUNEL $PORT_NATS $PORT_POSTGRES $PORT_GARAGE_S3 $PORT_SEAWEED_S
          $PORT_COTURN $PORT_OPENOBSERVE $PORT_VALKEY $PORT_PGBOUNCER \
          $PORT_FALKORDB $PORT_NORNIC $PORT_GO $PORT_AGENT $PORT_BRIDGE \
          $PORT_INGESTION $PORT_MERGER; do
-  if port_up "$p"; then
+  expected_container=""
+  case "$p" in
+    "$PORT_TUWUNEL") expected_container=tuwunel ;;
+    "$PORT_NATS") expected_container=matrix-nats ;;
+    "$PORT_POSTGRES") expected_container=matrix-postgres ;;
+    "$PORT_GARAGE_S3") expected_container=garage ;;
+    "$PORT_SEAWEED_S3") expected_container=seaweedfs ;;
+    "$PORT_LITELLM") expected_container=litellm ;;
+    "$PORT_SANDBOX") expected_container=opensandbox-api-gateway ;;
+    "$PORT_LIVEKIT") expected_container=livekit ;;
+    "$PORT_LK_JWT") expected_container=lk-jwt ;;
+    "$PORT_COTURN") expected_container=coturn ;;
+    "$PORT_OPENOBSERVE") expected_container=openobserve ;;
+    "$PORT_VALKEY") expected_container=matrix-valkey ;;
+    "$PORT_PGBOUNCER") expected_container=pgbouncer ;;
+    "$PORT_FALKORDB") expected_container=falkordb ;;
+    "$PORT_NORNIC") expected_container=nornic ;;
+  esac
+  if service_up "$p" "$expected_container"; then
     printf "  \033[32m✓\033[0m :%-5s  %s\n" "$p" "${LBL[$p]}"
   fi
 done

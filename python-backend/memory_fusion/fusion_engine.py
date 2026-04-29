@@ -76,7 +76,7 @@ class FusionMemoryEngine:
         cls,
         *,
         db_url: str | None,
-        palace_path: str | None = None,  # noqa: ARG003 - compatibility with older callers
+        palace_path: str | None = None,
     ) -> FusionMemoryEngine:
         summary_provider = os.environ.get("MEMORY_FUSION_SUMMARY_LLM_PROVIDER", "inherit").strip() or "inherit"
         if summary_provider == "inherit":
@@ -100,13 +100,24 @@ class FusionMemoryEngine:
             enable_observations=_env_bool("MEMORY_FUSION_SUMMARY_ENABLE_OBSERVATIONS", True),
             retain_default_strategy=os.environ.get("MEMORY_FUSION_SUMMARY_STRATEGY"),
         )
-        verbatim_engine = await create_hindsight_engine(
-            db_url=db_url,
-            llm_provider=verbatim_provider,
-            retain_extraction_mode=verbatim_extraction_mode,
-            enable_observations=_env_bool("MEMORY_FUSION_VERBATIM_ENABLE_OBSERVATIONS", False),
-            retain_default_strategy=os.environ.get("MEMORY_FUSION_VERBATIM_STRATEGY"),
-        )
+        verbatim_backend = os.environ.get("MEMORY_FUSION_VERBATIM_BACKEND", "mempalace").strip().lower()
+        if verbatim_backend == "mempalace":
+            from memory_fusion.mempalace_engine import MempalaceMemoryEngine
+
+            verbatim_engine = MempalaceMemoryEngine(palace_path=palace_path, db_url=db_url)
+            await verbatim_engine.initialize()
+            verbatim_provider = "mempalace-postgres"
+            verbatim_extraction_mode = "verbatim"
+        elif verbatim_backend == "hindsight":
+            verbatim_engine = await create_hindsight_engine(
+                db_url=db_url,
+                llm_provider=verbatim_provider,
+                retain_extraction_mode=verbatim_extraction_mode,
+                enable_observations=_env_bool("MEMORY_FUSION_VERBATIM_ENABLE_OBSERVATIONS", False),
+                retain_default_strategy=os.environ.get("MEMORY_FUSION_VERBATIM_STRATEGY"),
+            )
+        else:
+            raise RuntimeError(f"Unsupported MEMORY_FUSION_VERBATIM_BACKEND={verbatim_backend!r}")
         return cls(
             summary_engine=summary_engine,
             verbatim_engine=verbatim_engine,

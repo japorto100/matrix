@@ -29,9 +29,23 @@ from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
 from pydantic import BaseModel, ConfigDict, Field  # noqa: E402
 
 from agent.context_assembler import assemble_context  # noqa: E402
+
+# ABP.2c: close shared httpx client on shutdown to release connections cleanly.
+from agent.http_client import close_client as _close_http_client  # noqa: E402
 from agent.mcp_server import create_mcp_server  # noqa: E402
 from agent.mcp_traces import create_trace_mcp_server  # noqa: E402
+
+# exec-hermes Phase-B P1: seed CredentialPool + MemoryManager + ContextEngine
+# singletons + probe agent.sync_failures table. Failures are soft (service
+# stays up) — every failure surfaces via OTel span + /health/resilience.
+from agent.resilience.init_stack import (  # noqa: E402
+    init_agent_resilience_stack,
+    resilience_health,
+)
 from agent.roles import AgentRole  # noqa: E402
+
+# exec-17: Auto-run Alembic migrations on startup (idempotent, non-fatal on error)
+from agent.startup_migrations import run_migrations_if_enabled  # noqa: E402
 from agent.tools.chart_state import get_chart_state, set_chart_state  # noqa: E402
 from agent.tools.geomap import get_geomap_focus  # noqa: E402
 from agent.tools.portfolio import get_portfolio_summary  # noqa: E402
@@ -53,32 +67,17 @@ async def _lifespan(_app):
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(_mcp_app.router.lifespan_context(_app))
         await stack.enter_async_context(_trace_mcp_app.router.lifespan_context(_app))
-        yield
+        await run_migrations_if_enabled()
+        await init_agent_resilience_stack()
+        try:
+            yield
+        finally:
+            await _close_http_client()
 
 
 app = create_service_app("agent-service", lifespan=_lifespan)
 app.mount("/mcp", _mcp_app)
 app.mount("/mcp-traces", _trace_mcp_app)
-
-# ABP.2c: close shared httpx client on shutdown to release connections cleanly.
-from agent.http_client import close_client as _close_http_client  # noqa: E402
-
-app.add_event_handler("shutdown", _close_http_client)
-
-# exec-17: Auto-run Alembic migrations on startup (idempotent, non-fatal on error)
-from agent.startup_migrations import run_migrations_if_enabled  # noqa: E402
-
-app.add_event_handler("startup", run_migrations_if_enabled)
-
-# exec-hermes Phase-B P1: seed CredentialPool + MemoryManager + ContextEngine
-# singletons + probe agent.sync_failures table. Failures are soft (service
-# stays up) — every failure surfaces via OTel span + /health/resilience.
-from agent.resilience.init_stack import (  # noqa: E402
-    init_agent_resilience_stack,
-    resilience_health,
-)
-
-app.add_event_handler("startup", init_agent_resilience_stack)
 
 
 @app.get("/health/resilience")
@@ -114,7 +113,7 @@ async def _harness_backfill(request: Request) -> JSONResponse:
 
     Polls ``agent.ab_experiments`` for rows where
     ``harness_fitness_score IS NULL AND finished_at IS NOT NULL``, then
-    calls ``agent.harness.scorer.score_session(thread_id)`` for each.
+    calls ``meta_harness.scorer.score_session(thread_id)`` for each.
     The scorer's own fire-and-forget UPDATE path writes the fitness
     score back into the same row.
 
@@ -180,7 +179,7 @@ async def _harness_backfill(request: Request) -> JSONResponse:
     if not rows:
         return JSONResponse({"scored": 0, "skipped": 0, "eval_id": eval_id})
 
-    from agent.harness.scorer import score_session
+    from meta_harness.scorer import score_session
 
     for (thread_id,) in rows:
         try:
@@ -254,6 +253,37 @@ class AgentChatRequest(BaseModel):
     attachments: list[FileAttachment] | None = None
     reasoning_effort: str | None = Field(None, alias="reasoningEffort")
     browser_tools: list[BrowserToolDef] | None = Field(None, alias="browserTools")
+    meta_harness_run_id: str | None = Field(None, alias="metaHarnessRunId")
+    meta_harness_scenario_id: str | None = Field(None, alias="metaHarnessScenarioId")
+    meta_harness_api_key: str | None = Field(None, alias="metaHarnessApiKey")
+
+
+def _meta_harness_api_key(req: AgentChatRequest, model: str) -> str | None:
+    """Allow local Meta-Harness live probes to use a process env credential."""
+    run_id = (req.meta_harness_run_id or "").strip()
+    api_key = (req.meta_harness_api_key or "").strip()
+    if not run_id or not api_key:
+        return None
+    if os.environ.get("META_HARNESS_ALLOW_ENV_CREDENTIALS", "true").strip().lower() in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }:
+        return None
+    provider = _provider_from_model(model)
+    env_name = f"META_HARNESS_{provider.upper()}_API_KEY"
+    allowed = os.environ.get(env_name) or os.environ.get(f"{provider.upper()}_API_KEY")
+    if not allowed or not os.environ.get("HINDSIGHT_DB_URL"):
+        return None
+    return api_key if api_key == allowed else None
+
+
+def _provider_from_model(model: str) -> str:
+    provider = (model or "").split("/", 1)[0].strip().lower()
+    if provider == "google":
+        return "gemini"
+    return provider or "litellm"
 
 
 class AudioTranscribeRequest(BaseModel):
@@ -673,6 +703,15 @@ def _build_user_content(req: AgentChatRequest) -> list | str:
     return content
 
 
+def _parse_meta_harness_consent_tools(request: Request) -> tuple[str, ...]:
+    """Read explicit Meta-Harness-only session consent pregrants from headers."""
+    if not request.headers.get("x-meta-harness-run-id"):
+        return ()
+    raw = request.headers.get("x-meta-harness-consent-allow-tools", "")
+    tools = [tool.strip() for tool in raw.split(",") if tool.strip()]
+    return tuple(dict.fromkeys(tools))
+
+
 async def _store_file_attachments(
     attachments: list[FileAttachment], thread_id: str
 ) -> None:
@@ -714,13 +753,19 @@ async def agent_chat(req: AgentChatRequest, request: Request):
     # exec-12 Phase 2.6: Read user role + id from Go Gateway headers
     user_role = request.headers.get("x-user-role", "viewer").lower()
     user_id = request.headers.get("x-auth-user", "default")
+    meta_harness_consent_tools = _parse_meta_harness_consent_tools(request)
 
     # exec-12 Phase 1.4: Store sandbox-bound file attachments in working memory
     if req.attachments:
         await _store_file_attachments(req.attachments, thread_id)
 
     generator = _stream_agent_loop(
-        req, system_prompt, thread_id, user_role=user_role, user_id=user_id
+        req,
+        system_prompt,
+        thread_id,
+        user_role=user_role,
+        user_id=user_id,
+        meta_harness_consent_tools=meta_harness_consent_tools,
     )
     return StreamingResponse(
         generator,
@@ -740,6 +785,7 @@ async def _stream_agent_loop(
     *,
     user_role: str = "viewer",
     user_id: str = "default",
+    meta_harness_consent_tools: tuple[str, ...] = (),
 ):
     """Phase 22g: LLM-agnostic loop — Anthropic + OpenAI-compatible (OpenRouter, Ollama, vLLM).
     Builds AgentExecutionContext, loads ToolRegistry, runs run_agent_loop()."""
@@ -755,12 +801,13 @@ async def _stream_agent_loop(
 
     # exec-16: Model + Key aus DB (control-ui), ENV als Fallback.
     from agent.security.credentials import (
+        get_env_default_model,
         get_user_api_key,
         get_user_default_model,
         provider_from_model,
     )
 
-    model = req.model or await get_user_default_model(user_id) or ""
+    model = req.model or await get_user_default_model(user_id) or get_env_default_model()
     if not model:
         from agent.streaming import ErrorPacket, sse
 
@@ -772,6 +819,8 @@ async def _stream_agent_loop(
         return
 
     api_key = await get_user_api_key(user_id, provider_from_model(model))
+    if api_key is None:
+        api_key = _meta_harness_api_key(req, model)
 
     registry = ToolRegistry.load()
 
@@ -783,6 +832,19 @@ async def _stream_agent_loop(
             registry.register(
                 BrowserToolProxy(bt.name, bt.description, bt.input_schema)
             )
+
+    if meta_harness_consent_tools:
+        from agent.consent import record_consent_decision
+
+        registered_tools = {tool.name for tool in registry.all()}
+        for tool_name in meta_harness_consent_tools:
+            if tool_name in registered_tools:
+                await record_consent_decision(
+                    thread_id=thread_id,
+                    tool_name=tool_name,
+                    user_decision="allow_session",
+                    allow_session_cache=True,
+                )
 
     ctx = AgentExecutionContext(
         user_id=user_id,

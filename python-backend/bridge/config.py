@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 _ROOT = Path(__file__).resolve().parents[1]
 _ENV_BASE = _ROOT / ".env"
@@ -13,16 +13,36 @@ _ENV_BASE = _ROOT / ".env"
 def _load_env() -> None:
     """Lädt .env als baseline, dann .env.<APP_ENV> als override (analog GO_ENV).
 
-    Shell-Env hat weiterhin Vorrang (nicht überschrieben). `.env.<APP_ENV>` override=True
-    ersetzt nur zuvor aus Datei geladene Werte.
+    Shell-Env hat weiterhin Vorrang. `.env.<APP_ENV>` ueberschreibt `.env`,
+    aber nicht bereits gesetzte Prozess-Env.
     """
+    file_env: dict[str, str] = {}
     if _ENV_BASE.exists():
-        load_dotenv(dotenv_path=_ENV_BASE, override=False)
+        file_env.update(
+            {
+                key: value
+                for key, value in dotenv_values(_ENV_BASE).items()
+                if value is not None
+            }
+        )
 
     app_env = os.getenv("APP_ENV", "development").strip().lower()
     env_specific = _ROOT / f".env.{app_env}"
     if env_specific.exists():
-        load_dotenv(dotenv_path=env_specific, override=True)
+        file_env.update(
+            {
+                key: value
+                for key, value in dotenv_values(env_specific).items()
+                if value is not None
+            }
+        )
+
+    for key, value in file_env.items():
+        os.environ.setdefault(key, value)
+
+
+def _csv(value: str | None) -> tuple[str, ...]:
+    return tuple(part.strip() for part in str(value or "").split(",") if part.strip())
 
 
 @dataclass
@@ -40,6 +60,7 @@ class Config:
     # ── Service ──────────────────────────────────────────────────────────────
     host: str
     port: int
+    nats_allowed_agents: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> Config:
@@ -54,4 +75,5 @@ class Config:
             ),
             host=os.getenv("HOST", "127.0.0.1"),
             port=int(os.getenv("PORT", "8097")),
+            nats_allowed_agents=_csv(os.getenv("NATS_ALLOWED_AGENTS")),
         )

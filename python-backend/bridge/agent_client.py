@@ -16,8 +16,9 @@ from bridge.config import Config
 
 logger = logging.getLogger(__name__)
 
-# SSE Packet-Typen aus dem Hauptprojekt (agent/streaming.py)
-_TEXT_DELTA = "text_delta"
+# SSE packet types from agent/streaming.py. Keep the legacy underscore aliases
+# because older scheduler/A2A helpers still emit them in tests and fixtures.
+_TEXT_DELTA_TYPES = {"text_delta", "text-delta"}
 _FINISH = "finish"
 _ERROR = "error"
 
@@ -69,6 +70,7 @@ class AgentClient:
                 "POST",
                 f"{self.base_url}/api/v1/agent/chat",
                 json=payload,
+                headers={"x-auth-user": sender} if sender else None,
             ) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
@@ -84,10 +86,13 @@ class AgentClient:
                         continue
 
                     ptype = packet.get("type", "")
-                    if ptype == _TEXT_DELTA:
-                        full_text += packet.get("text", "")
+                    if ptype in _TEXT_DELTA_TYPES:
+                        full_text += packet.get("delta") or packet.get("text", "")
                     elif ptype == _ERROR:
-                        logger.error("Agent error packet: %s", packet.get("error"))
+                        logger.error(
+                            "Agent error packet: %s",
+                            packet.get("errorText") or packet.get("error"),
+                        )
                     elif ptype == _FINISH:
                         logger.debug(
                             "Agent finished, usage=%s", packet.get("usage", {})

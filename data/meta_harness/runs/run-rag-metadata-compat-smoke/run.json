@@ -1,0 +1,15 @@
+{
+  "run_id": "run-rag-metadata-compat-smoke",
+  "created_at": "2026-04-27T15:14:14.085786+00:00",
+  "kind": "retrieval_benchmark",
+  "feature_id": "022",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "postgres_required": true,
+    "litellm_base_url": "http://localhost:4000",
+    "embedding_provider": "local",
+    "embedding_model": "sentence-transformers/all-minilm-l6-v2"
+  }
+}

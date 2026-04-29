@@ -23,7 +23,12 @@ Adopted:
 - coverage gate before refinement.
 - iterative search when top-k is weak.
 - offline refinement as preprocessing.
-- general always-load vs task-specific retrieval split.
+- general skills are broad but should still be query-gated by default; always
+  loading `memory-usage` caused trivial/no-tool turns to over-inject skills and
+  inflate prompt tokens. `AGENT_SKILL_ALWAYS_LOAD_GENERAL=1` remains an escape
+  hatch.
+- stopword/instruction-token filtering before BM25 so words like "reply",
+  "short", "sentence", "with" do not trigger unrelated Matrix domain skills.
 
 Open:
 

@@ -119,7 +119,7 @@ async def check_consent(
     if cached == "deny":
         return ConsentDecision(
             needs_consent=True,
-            level=ConsentLevel.CONFIRM,
+            level=ConsentLevel.DENY,
             reason="Previously denied in this session",
             policy_id="cache:session_deny",
             metadata={"cached": True, "session_denied": True},

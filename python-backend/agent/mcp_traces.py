@@ -7,6 +7,7 @@ Provides 6 tools for trace inspection + harness analysis:
   - trace_compare: Compare two sessions side-by-side
   - trace_score: Derived scores for a session (efficiency, tool usage, cost)
   - harness_config: Current agent configuration (system prompts, tools, memory)
+  - harness_run_scenarios: Feature 016 scenario runner with trace gates
 
 Data source: Audit Store (JSONL or PostgreSQL) — same data that Phase 2 spans generate.
 
@@ -23,6 +24,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -323,11 +325,11 @@ async def harness_config(role: str = "") -> str:
 
 @trace_mcp.tool(
     name="harness_propose",
-    description="Run the Meta-Harness proposer: analyze recent traces + scores via LLM, suggest harness improvements. Saves proposal to data/harness/candidates/.",
+    description="Run the Meta-Harness proposer. External LLM calls are disabled by default; enable META_HARNESS_ENABLE_EXTERNAL_LLM=true to use API proposer mode.",
 )
 async def harness_propose(last_n_sessions: int = 10, model: str = "") -> str:
-    """Run the harness proposer — LLM analyzes traces and proposes changes."""
-    from agent.harness.proposer import propose
+    """Run the harness proposer guard or explicit external-LLM proposer."""
+    from meta_harness.proposer import propose
 
     result = await propose(model=model, last_n_sessions=last_n_sessions)
     return json.dumps(result, indent=2, default=str)
@@ -339,7 +341,7 @@ async def harness_propose(last_n_sessions: int = 10, model: str = "") -> str:
 )
 async def harness_history() -> str:
     """List previous harness proposals from data/harness/candidates/."""
-    from agent.harness.proposer import HARNESS_DATA_DIR
+    from meta_harness.proposer import HARNESS_DATA_DIR
 
     candidates_dir = HARNESS_DATA_DIR / "candidates"
     if not candidates_dir.exists():
@@ -364,11 +366,49 @@ async def harness_history() -> str:
     name="harness_evaluate",
     description="Run the agent against the search set and collect scores. Use to evaluate the current harness or a proposed variant.",
 )
-async def harness_evaluate(max_queries: int = 5) -> str:
+async def harness_evaluate(
+    max_queries: int = 5,
+    concurrency: int = 4,
+    use_cache: bool = True,
+    split: str = "search",
+    allow_holdout: bool = False,
+) -> str:
     """Evaluate current harness against search set queries."""
-    from agent.harness.evaluator import evaluate_search_set
+    from meta_harness.evaluator import evaluate_search_set
 
-    result = await evaluate_search_set(max_queries=max_queries)
+    result = await evaluate_search_set(
+        max_queries=max_queries,
+        concurrency=concurrency,
+        use_cache=use_cache,
+        split=split,
+        allow_holdout=allow_holdout,
+    )
+    return json.dumps(result, indent=2, default=str)
+
+
+@trace_mcp.tool(
+    name="harness_run_scenarios",
+    description="Run Feature 016 Meta-Harness scenario JSON with trace gates and write raw candidate artifacts.",
+)
+async def harness_run_scenarios(
+    path: str,
+    max_scenarios: int = 0,
+    candidate_id: str = "baseline",
+    user_id: str = "anonymous",
+    model: str = "",
+    agent_url: str = "",
+) -> str:
+    """Run multi-turn scenario fixtures through in-process or live-service agent."""
+    from meta_harness.scenario_runner import run_scenario_file
+
+    result = await run_scenario_file(
+        Path(path),
+        max_scenarios=max_scenarios,
+        candidate_id=candidate_id,
+        user_id=user_id,
+        model=model,
+        agent_url=agent_url,
+    )
     return json.dumps(result, indent=2, default=str)
 
 
@@ -378,21 +418,57 @@ async def harness_evaluate(max_queries: int = 5) -> str:
 )
 async def harness_pareto() -> str:
     """Get the Pareto frontier summary."""
-    from agent.harness.pareto import get_frontier_summary
+    from meta_harness.pareto import get_frontier_summary
 
     return json.dumps(get_frontier_summary(), indent=2, default=str)
 
 
 @trace_mcp.tool(
-    name="harness_loop",
-    description="Run multiple proposer iterations (Meta-Harness style). Each iteration analyzes traces and proposes improvements.",
+    name="harness_decide_candidate",
+    description="Record a keep/discard/defer decision for a Meta-Harness candidate with rationale and metrics.",
 )
-async def harness_loop(iterations: int = 3, model: str = "") -> str:
+async def harness_decide_candidate(
+    run_id: str,
+    candidate_id: str,
+    decision: str,
+    rationale: str,
+    metrics_json: str = "{}",
+    follow_up: str = "",
+) -> str:
+    """Record candidate decision for future proposer inspection."""
+    from meta_harness.decisions import record_candidate_decision
+
+    metrics = json.loads(metrics_json or "{}")
+    if not isinstance(metrics, dict):
+        raise ValueError("metrics_json must decode to an object")
+    entry = record_candidate_decision(
+        run_id=run_id,
+        candidate_id=candidate_id,
+        decision=decision,  # type: ignore[arg-type]
+        rationale=rationale,
+        metrics=metrics,
+        follow_up=follow_up,
+    )
+    return json.dumps(entry.as_dict(), indent=2, default=str)
+
+
+@trace_mcp.tool(
+    name="harness_loop",
+    description="Run multiple proposer iterations. External LLM proposer is disabled by default; Codex should act as proposer unless explicitly enabled.",
+)
+async def harness_loop(
+    iterations: int = 3,
+    model: str = "",
+    eval_max_queries: int = 1,
+) -> str:
     """Run the proposer loop for N iterations."""
-    from agent.harness.proposer import propose_loop
+    from meta_harness.proposer import propose_loop
 
     results = await propose_loop(
-        iterations=iterations, candidates_per_iter=1, model=model
+        iterations=iterations,
+        candidates_per_iter=1,
+        model=model,
+        eval_max_queries=eval_max_queries,
     )
     return json.dumps(
         {"iterations": len(results), "proposals": results}, indent=2, default=str

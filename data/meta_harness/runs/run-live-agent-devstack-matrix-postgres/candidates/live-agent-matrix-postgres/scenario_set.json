@@ -1,0 +1,42 @@
+{
+  "scenarios": [
+    {
+      "id": "lp-chart-001",
+      "category": "tool_chart_state",
+      "turns": [
+        {
+          "user": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "skill_used"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "get_chart_state"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "trading-analysis"
+        ],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "expected_memory": false,
+        "min_tool_success_rate": 1.0,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {},
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

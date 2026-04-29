@@ -1,0 +1,27 @@
+{
+  "scenarios": [
+    {
+      "id": "q001",
+      "category": "simple_query",
+      "turns": [
+        {
+          "user": "What is the current market sentiment for AAPL?"
+        }
+      ],
+      "expectations": {
+        "required_actions": [],
+        "forbidden_actions": [],
+        "required_tools": [],
+        "forbidden_tools": [],
+        "required_skills": [
+          "market-research"
+        ],
+        "expected_memory": false,
+        "min_tool_success_rate": null
+      },
+      "judge": {},
+      "metadata": {},
+      "enable_tools": true
+    }
+  ]
+}

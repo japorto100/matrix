@@ -3,7 +3,7 @@ title: Matrix Chat Gate Ledger
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 005
 migrated_from:
   - specs/execution/exec2-04-verify-gates.md
@@ -130,6 +130,9 @@ the operational source of truth once these are classified.
 - D1: polls: create/vote/live results/Element X interop.
 - D2: threads: side panel, reply count, routing, Element X interop.
 - D3: media: images, thumbnails, legacy media off, video/audio, no 401s.
+- D4: widgets: `m.widget` / `im.vector.modular.widgets` state events render as
+  safe external link cards only; unknown or unsafe URLs remain passive text
+  until a sandboxed Matrix Widget API host is implemented.
 
 ## E — WYSIWYG Composer
 
@@ -287,14 +290,27 @@ Current minimal production-readiness scope:
 - dynamic reply routing resolves `target_agent`,
 - deeper orchestrator/subagent design is Feature 009 scope.
 
-## Classification Required
+## Classification
 
-Every gate above must be classified during migration as:
+Group-level classification for the current non-live pass:
 
-- `active`
-- `done`
-- `blocked_external`
-- `deferred`
-- `superseded`
-- `moved_to_feature:<id>`
+| Group | Status | Owner / Note |
+|---|---|---|
+| A Infrastructure | `active_live_verify` | Feature 004 owns homeserver/connectivity sub-gates; Feature 005 owns `/matrix` route. |
+| B Auth + E2EE | `active_live_verify` | Requires real browser/session/device state. |
+| C Chat Core | `active_live_verify` | Requires local homeserver and at least one room/session. |
+| D Advanced Features | `active_live_verify` | Requires second client and feature-specific room state. |
+| E WYSIWYG Composer | `active_live_verify` | UI exists; behavior proof is browser/live. |
+| F MatrixRTC / LiveKit Calls | `moved_to_feature:004` for transport, `active_live_verify` for Matrix UI calls. |
+| G Navigation + Shortcuts | `partly_static_done` | Route is compiled; keyboard/browser behavior is live verify. |
+| H Optional SOTA Packages | `deferred` | Blur/perf extras are optional, not required for core closure. |
+| I Connectivity + Tunnel | `moved_to_feature:004` | Mobile/tunnel/federation ownership moved. |
+| J Tuwunel v1.6 / Storage Provider | `moved_to_feature:004` | Upstream monitor and config ownership moved. |
+| K Config SOTA / Breaking Changes | `moved_to_feature:004` / `done_static` | Config parse and appservice strategy documented in Feature 004. |
+| L Cinny Integration Tier A-C | `active_live_verify` | Code exists; session/device proof remains live. |
+| M Cinny Full Expansion | `active_live_verify` | Broad UI feature proof remains live. |
+| N Phase 3/3.5 | `active_live_verify_or_deferred` | Some items intentionally skipped/deferred. |
+| O Architecture Decisions | `done_static` | Bridge option C and topology decisions preserved; Feature 006/009 own runtime proof. |
 
+Every detailed gate above inherits its group status unless a later feature
+overrides it with a narrower task.

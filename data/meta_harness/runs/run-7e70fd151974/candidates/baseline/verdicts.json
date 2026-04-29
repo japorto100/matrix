@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "failures": [],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "llm_response",
+    "memory_recall",
+    "memory_retain",
+    "skill_found",
+    "skill_used",
+    "tool_call",
+    "tool_result"
+  ],
+  "observed_tools": [
+    "get_portfolio_summary"
+  ],
+  "observed_skills": [
+    "global:market-research",
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment",
+    "market-research",
+    "memory-usage",
+    "plan",
+    "risk-assessment"
+  ],
+  "tool_success_rate": 1.0
+}

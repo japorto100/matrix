@@ -126,6 +126,8 @@ async def router_node(state: AgentGraphState) -> dict[str, Any]:
                     routing_used=routing_used,
                     routing_reason=routing_reason,
                     routing_picked_model=routing_picked_model,
+                    user_id=user_id,
+                    thread_id=state.get("thread_id") or None,
                 )
             )
         except Exception:  # noqa: BLE001 — telemetry must never break the call

@@ -9,6 +9,13 @@ feature_id: 014
 
 # Gate Ledger
 
+## 2026-04-29 Feature 024-030 Trace Follow-Up
+
+- MCP policy decisions include descriptor hash and policy verdict.
+- Semantic answers include lookup and definition-version traces.
+- Ops-room events can be derived from trace/audit data without hidden state.
+- Widget proposal/approval/revoke events are traceable.
+
 ## OTel / OpenObserve
 
 - OpenObserve starts on configured ports.
@@ -20,7 +27,7 @@ feature_id: 014
 
 ## Agent Spans
 
-- One Agent Chat turn produces `agent.session`.
+- [x] One backend trace produces persisted `agent.session` in Postgres.
 - LLM call produces `agent.turn` with provider/model/token/cost attrs.
 - Tool call produces `agent.tool_call` with success/error/duration attrs.
 - Memory recall/retain produces `agent.memory`.
@@ -28,27 +35,29 @@ feature_id: 014
 
 ## Audit
 
-- Auditable action creates `agent.audit_events` row.
-- Audit event is queryable from backend/control path.
+- [x] Auditable action creates `agent.audit_events` row.
+- [x] Audit event is queryable from backend/control path.
 - Tracing content and audit content follow ADR-002 separation.
 
 ## Harness
 
-- `score_session` produces composite fitness.
+- [x] `score_session` produces composite fitness in tests.
 - A/B backfill worker fills missing fitness scores.
-- eval id behavior is deterministic/documented.
+- [x] eval id behavior is deterministic/documented in tests.
+- [x] routing-specific follow-ups are synchronized with Feature 011.
 - Pareto frontier can compute from real candidate data.
 
 ## Evaluator
 
 - small search set runs through evaluator.
-- result rows persist.
+- [x] result rows persist in `agent.evals`.
 - scorer output includes accuracy/cost/latency/grounding dimensions where
   applicable.
 - cache avoids re-running identical config/query/model combinations.
 
 ## Eval Workpacks
 
+- [x] Historical Superpowers harness-mode CSV is linked with checksum.
 - Each workpack records prerequisites, command/probe, expected evidence and
   owning feature.
 - A workpack is closed only with evidence, not by code existence.

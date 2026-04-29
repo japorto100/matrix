@@ -68,7 +68,7 @@ def main() -> int:
     Path(args.out).write_text(json.dumps(result, indent=2), encoding="utf-8")
 
     if args.persist:
-        from agent.harness.evals_store import save_memory_ab_eval
+        from meta_harness.evals_store import save_memory_ab_eval
 
         run_id = save_memory_ab_eval(
             corpus_id=result["corpus_id"],

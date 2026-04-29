@@ -1,0 +1,14 @@
+{
+  "run_id": "run-live-agent-devstack-free-router",
+  "candidate_id": "live-agent-free-router",
+  "decision": "keep",
+  "rationale": "OpenRouter Free Models Router path passed live agent Meta-Harness probe: LiteLLM model openrouter/openrouter/free completed lp-chart-001 with get_chart_state tool_call/tool_result and trace gate pass. Prefer free router for free-tier dev runs; avoid openrouter/auto unless paid credits are available.",
+  "decided_at": "2026-04-27T14:19:32.719230+00:00",
+  "metrics": {
+    "trace_gate_pass_rate": 1.0,
+    "completion_rate": 1.0,
+    "fitness_score": 0.9,
+    "tool_success_rate": 1.0
+  },
+  "follow_up": "Run remaining live_probe scenarios under free-router budget with pacing/backoff; switch to paid/verified provider for larger loops."
+}

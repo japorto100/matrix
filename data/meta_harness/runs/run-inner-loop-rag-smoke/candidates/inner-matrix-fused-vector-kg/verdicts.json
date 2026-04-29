@@ -1,0 +1,13 @@
+{
+  "decision": "promote_outer_loop",
+  "decision_reason": "Promote as deterministic retrieval baseline candidate.",
+  "observed_actions": [
+    "inner_loop_candidate"
+  ],
+  "observed_tools": [],
+  "passed": true,
+  "validation": {
+    "failures": [],
+    "passed": true
+  }
+}

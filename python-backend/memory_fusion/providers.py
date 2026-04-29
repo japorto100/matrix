@@ -68,24 +68,36 @@ async def create_hindsight_engine(
     with _temporary_env(overrides):
         from hindsight_api.engine.memory_engine import MemoryEngine
 
+        from memory_fusion.embeddings import create_hindsight_embedder
+
+        # Hindsight's package import loads .env with override=True. Re-apply our
+        # explicit runtime bridge so harness/dev-stack DB URLs keep winning.
+        for key, value in overrides.items():
+            if value is not None:
+                os.environ[key] = value
+
+        embeddings = create_hindsight_embedder()
+
         task_backend = None
         if use_sync_tasks:
             from hindsight_api.engine.task_backend import SyncTaskBackend
 
             task_backend = SyncTaskBackend()
 
-        engine = MemoryEngine(db_url=db_url, task_backend=task_backend)
+        engine = MemoryEngine(db_url=db_url, embeddings=embeddings, task_backend=task_backend)
         await engine.initialize()
         return engine
 
 
-async def create_mempalace_engine(palace_path: str | None = None):
-    palace_path = palace_path or os.environ.get(
-        "MEMPALACE_PALACE_PATH",
-        str(_repo_root() / "python-backend" / ".tmp" / "mempalace_fusion"),
-    )
+async def create_mempalace_engine(
+    palace_path: str | None = None,
+    *,
+    db_url: str | None = None,
+):
+    palace_path = palace_path or os.environ.get("MEMPALACE_PALACE_PATH", "postgres")
+    db_url = db_url or os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
     from memory_fusion.mempalace_engine import MempalaceMemoryEngine
 
-    engine = MempalaceMemoryEngine(palace_path=palace_path)
+    engine = MempalaceMemoryEngine(palace_path=palace_path, db_url=db_url)
     await engine.initialize()
     return engine

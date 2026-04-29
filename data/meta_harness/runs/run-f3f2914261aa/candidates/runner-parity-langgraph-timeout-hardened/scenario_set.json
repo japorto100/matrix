@@ -1,0 +1,38 @@
+{
+  "scenarios": [
+    {
+      "id": "rp-no-tools-001",
+      "category": "runner_parity",
+      "turns": [
+        {
+          "user": "Reply with one short sentence: runner parity smoke."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "llm_response"
+        ],
+        "forbidden_actions": [
+          "tool_call"
+        ],
+        "required_tools": [],
+        "forbidden_tools": [
+          "sandbox_browser",
+          "memory_search",
+          "sandbox_execute"
+        ],
+        "required_skills": [],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "expected_memory": false,
+        "min_tool_success_rate": null,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {},
+      "consent_allow_session_tools": [],
+      "enable_tools": false,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

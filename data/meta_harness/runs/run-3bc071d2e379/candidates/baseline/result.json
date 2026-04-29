@@ -1,0 +1,278 @@
+{
+  "run_id": "run-3bc071d2e379",
+  "candidate_id": "baseline",
+  "scenario_id": "lp-sandbox-001",
+  "thread_id": "mh-lp-sandbox-001-544257c2",
+  "user_id": "anonymous",
+  "category": "tool_sandbox_compute",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-lp-sandbox-001-544257c2\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-544257c2\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-544257c2\", \"promptTokens\": 4353, \"completionTokens\": 233, \"reasoningTokens\": 123, \"cachedTokens\": 0, \"totalTokens\": 4586, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 141,
+      "timestamp": "2026-04-26 00:35:25.515045+00:00",
+      "action": "consent_request",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "sandbox_execute",
+      "input": {
+        "code": "equity = 100000\nrisk_percent = 0.01\nrisk_dollars = equity * risk_percent\nentry = 68000\nstop = 66000\nprice_diff = entry - stop\nposition_size = risk_dollars / price_diff\nprint(f\"Risk dollars: {risk_dollars}\\nPosition size: {position_size}\")",
+        "language": "python"
+      },
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "level": "confirm",
+        "severity": "high",
+        "reason": "Fuehrt Code in isolierter Sandbox aus",
+        "policy_id": "yaml:tool:sandbox_execute"
+      },
+      "iteration": null
+    },
+    {
+      "id": 140,
+      "timestamp": "2026-04-26 00:35:25.421738+00:00",
+      "action": "llm_response",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+      "output": null,
+      "duration_ms": 1818,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "openrouter/openrouter/auto",
+        "done": false,
+        "tool_calls_count": 1,
+        "token_usage": 4586
+      },
+      "iteration": 0
+    },
+    {
+      "id": 139,
+      "timestamp": "2026-04-26 00:35:23.503829+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 419,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "default",
+        "item_count": 0,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+      },
+      "iteration": null
+    },
+    {
+      "id": 138,
+      "timestamp": "2026-04-26 00:35:22.774605+00:00",
+      "action": "memory_recall",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 1117,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "advisory",
+        "item_count": 0,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+      },
+      "iteration": null
+    },
+    {
+      "id": 137,
+      "timestamp": "2026-04-26 00:35:21.446487+00:00",
+      "action": "skill_used",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:risk-assessment",
+          "global:plan",
+          "global:trading-analysis"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "risk-assessment",
+          "plan",
+          "trading-analysis"
+        ],
+        "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+        "user_id": "anonymous",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 136,
+      "timestamp": "2026-04-26 00:35:21.326079+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:memory-usage",
+          "global:risk-assessment",
+          "global:plan",
+          "global:trading-analysis"
+        ],
+        "skill_names": [
+          "memory-usage",
+          "risk-assessment",
+          "plan",
+          "trading-analysis"
+        ],
+        "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+        "user_id": "anonymous",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-lp-sandbox-001-544257c2",
+    "model": "openrouter/openrouter/auto",
+    "completed": true,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 1,
+    "turn_efficiency": 1.0,
+    "total_tokens": 4586,
+    "token_efficiency": 4586,
+    "total_duration_ms": 1818,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 2,
+    "memory_retains": 0,
+    "memory_utilization": true,
+    "skills_loaded": [
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment",
+      "global:trading-analysis"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 1.0,
+    "completion_source": "sse_finish",
+    "trace_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_request",
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [
+        "sandbox_execute"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "tool_success_rate": null
+    }
+  },
+  "trace_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "consent_request",
+      "llm_response",
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [
+      "sandbox_execute"
+    ],
+    "observed_skills": [
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment",
+      "global:trading-analysis",
+      "memory-usage",
+      "plan",
+      "risk-assessment",
+      "trading-analysis"
+    ],
+    "tool_success_rate": null
+  },
+  "artifact_dir": null
+}

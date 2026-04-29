@@ -1,6 +1,6 @@
 ---
 title: Observability, Harness and Evals Plan
-status: in_progress
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -28,7 +28,7 @@ backend/UI consumer.
 
 - `python-backend/agent/tracing/**`
 - `python-backend/agent/audit/**`
-- `python-backend/agent/harness/**`
+- `python-backend/meta_harness/**`
 - `python-backend/shared/app_factory.py`
 - `go-appservice/internal/telemetry/**`
 - `otel-collector.yaml`

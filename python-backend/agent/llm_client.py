@@ -16,8 +16,19 @@ from functools import lru_cache
 from openai import AsyncOpenAI
 
 
+def _client_timeout_seconds() -> float:
+    try:
+        return max(5.0, float(os.environ.get("AGENT_LLM_TIMEOUT_S", "45.0")))
+    except ValueError:
+        return 45.0
+
+
 @lru_cache(maxsize=1)
 def get_litellm_client() -> AsyncOpenAI:
     """Singleton OpenAI Client der auf LiteLLM zeigt."""
     base_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
-    return AsyncOpenAI(base_url=base_url, api_key="sk-litellm")
+    return AsyncOpenAI(
+        base_url=base_url,
+        api_key="sk-litellm",
+        timeout=_client_timeout_seconds(),
+    )

@@ -18,13 +18,13 @@ migrated_from: []
 
 ## Tasks
 
-- [ ] T001 Define missing tasks.
+- T001 Define missing tasks.
 
 ## Verify Gates
 
-- [ ] Automated verify gate defined.
+- Automated verify gate defined.
 
 ## Live Verify
 
-- [ ] Live verify requirement either defined or explicitly not needed.
+- Live verify requirement either defined or explicitly not needed.
 

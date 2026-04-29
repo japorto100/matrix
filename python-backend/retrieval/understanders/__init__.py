@@ -1,1 +1,5 @@
-"""retrieval.understanders (Phase 3 Skeleton — see retrieval/README.md)."""
+"""Query understanding helpers."""
+
+from retrieval.understanders.intent_router import route_intent
+
+__all__ = ["route_intent"]

@@ -16,14 +16,13 @@ migrated_from:
 
 # Tasks
 
-- [ ] T001 Classify all top-level legacy specs as current, historical or split.
-- [ ] T002 Move binding machine/tooling/privacy rules into `specs_sdd/constitution.md`.
-- [ ] T003 Split `specs/FUTURE_IDEAS.md` into backlog entries or owning features.
-- [ ] T004 Summarize current architecture baseline in this feature.
-- [ ] T005 Add closeout once no top-level legacy spec is unclassified.
+- [x] T001 Classify all top-level legacy specs as current, historical or split.
+- [x] T002 Move binding machine/tooling/privacy rules into `specs_sdd/constitution.md`.
+- [x] T003 Split `specs/FUTURE_IDEAS.md` into backlog entries or owning features.
+- [x] T004 Summarize current architecture baseline in this feature.
+- [x] T005 Add closeout once no top-level legacy spec is unclassified.
 
 ## Verify Gates
 
-- [ ] `LEGACY_COVERAGE.md` has no unassigned top-level `specs/*.md`.
-- [ ] No feature duplicates constitution-level rules without reference.
-
+- [x] `LEGACY_COVERAGE.md` has no unassigned top-level `specs/*.md`.
+- [x] No feature duplicates constitution-level rules without reference.

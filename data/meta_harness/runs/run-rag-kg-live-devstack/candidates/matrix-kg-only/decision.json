@@ -1,0 +1,13 @@
+{
+  "run_id": "run-rag-kg-live-devstack",
+  "candidate_id": "matrix-kg-only",
+  "decision": "discard",
+  "rationale": "KG-only retrieves the KG claim but fails vector evidence requirements and overuses graph evidence for plain document QA.",
+  "decided_at": "2026-04-27T13:56:04.365252+00:00",
+  "metrics": {
+    "pass_rate": 0.0,
+    "recall@5": 0.5,
+    "fitness_score": 0.25
+  },
+  "follow_up": ""
+}

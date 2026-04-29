@@ -1,0 +1,41 @@
+{
+  "avg_cost_usd": 0.0,
+  "avg_duration_ms": 0.044,
+  "avg_tokens": 0.0,
+  "avg_turns": 1.0,
+  "benchmark_type": "rag_kg_retrieval",
+  "candidate_id": "matrix-kg-only",
+  "completion_rate": 1.0,
+  "cost_efficiency": 1.0,
+  "failed_scenarios": [
+    {
+      "failures": [
+        "missing-source:vector"
+      ],
+      "scenario_id": "trading-geo-kg-001"
+    },
+    {
+      "failures": [
+        "missing-source:vector",
+        "forbidden-source:kg",
+        "missing-reference:chunk-revenue-summary"
+      ],
+      "scenario_id": "general-vector-001"
+    }
+  ],
+  "fitness_score": 0.25,
+  "latency_efficiency": 1000.0,
+  "memory_utilization_rate": 0.0,
+  "ndcg@5": 0.5,
+  "recall@5": 0.5,
+  "retrieval_pass_rate": 0.0,
+  "run_id": "run-rag-citation-path-smoke",
+  "scenarios_evaluated": 2,
+  "token_efficiency": 1000.0,
+  "tool_success_rate": 1.0,
+  "total_cost_usd": 0.0,
+  "total_duration_ms": 0.088,
+  "total_tokens": 0,
+  "trace_gate_pass_rate": 0.0,
+  "turn_efficiency": 1.0
+}

@@ -1,0 +1,23 @@
+{
+  "run_id": "run-98454abd4dae",
+  "candidate_id": "boundary-gates-regression",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.8583,
+  "fitness_score": 0.8583,
+  "total_tokens": 36616,
+  "avg_tokens": 18308.0,
+  "token_efficiency": 0.054621,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 44477.0,
+  "avg_duration_ms": 22238.5,
+  "latency_efficiency": 0.044967,
+  "failed_scenarios": []
+}

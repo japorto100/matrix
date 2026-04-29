@@ -1,0 +1,23 @@
+{
+  "run_id": "run-7c1a6107c65a",
+  "candidate_id": "memory-correctness-gates",
+  "scenarios_evaluated": 2,
+  "completion_rate": 1.0,
+  "trace_gate_pass_rate": 1.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.85,
+  "fitness_score": 0.85,
+  "total_tokens": 38099,
+  "avg_tokens": 19049.5,
+  "token_efficiency": 0.052495,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 74041.0,
+  "avg_duration_ms": 37020.5,
+  "latency_efficiency": 0.027012,
+  "failed_scenarios": []
+}

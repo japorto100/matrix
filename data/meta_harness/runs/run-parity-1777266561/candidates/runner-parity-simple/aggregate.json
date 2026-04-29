@@ -1,0 +1,37 @@
+{
+  "run_id": "run-parity-1777266561",
+  "candidate_id": "runner-parity-simple",
+  "scenarios_evaluated": 1,
+  "completion_rate": 0.0,
+  "trace_gate_pass_rate": 0.0,
+  "avg_turns": 1.0,
+  "turn_efficiency": 1.0,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.7,
+  "fitness_score": 0.7,
+  "total_tokens": 0,
+  "avg_tokens": 0.0,
+  "token_efficiency": 1000.0,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 0.0,
+  "avg_duration_ms": 0.0,
+  "latency_efficiency": 1.0,
+  "failed_scenarios": [
+    {
+      "scenario_id": "rp-no-tools-001",
+      "failures": [
+        "missing required action: llm_response",
+        "harness runner error"
+      ],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found"
+      ],
+      "observed_tools": [],
+      "observed_skills": []
+    }
+  ]
+}

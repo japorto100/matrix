@@ -1,0 +1,327 @@
+[
+  {
+    "id": 1265,
+    "timestamp": "2026-04-27 03:33:19.708945+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "What should happen before context compaction if exact tool outputs are still only in the chat?",
+    "output": "Before the system performs any context\u2011compaction, you must copy the raw tool results (the exact JSON/text that the tool returned) and any decisions that were based on those results into a persistent archive (e.g., long\u2011term memory or a dedicated evidence store). In practice this means:\n\n1. **Capture the verbatim tool output** \u2013 take the `<tool_output \u2026>` block exactly as it appears, without trimming or re\u2011phrasing.\n2. **Record the associated decision** \u2013 store the rationale or action that followed the tool output (e.g., \u201cset_chart_state was queued\u201d, \u201ctrade size was calculated as 0.5\u202f% of equity\u201d).\n3. **Persist both items** \u2013 use a durable storage mechanism (`memory_add` or an evidence\u2011log) so they survive any later pruning of the chat history.\n4. **Mark them as evidence** \u2013 optionally tag the entry (e.g., `fact_type: \"evidence\"`) so that future audits can locate the original source quickly.\n\nOnly after these steps have been completed may the system safely discard or compress the surrounding conversational context, ensuring a complete audit trail remains available.",
+    "duration_ms": 13118,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/free",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 4653,
+      "content_cleaned": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 1264,
+    "timestamp": "2026-04-27 03:33:06.306179+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 1263,
+    "timestamp": "2026-04-27 03:33:06.158099+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "query_preview": "What should happen before context compaction if exact tool outputs are still only in the chat?",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 1262,
+    "timestamp": "2026-04-27 03:33:06.081714+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "query_preview": "What should happen before context compaction if exact tool outputs are still only in the chat?",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 1261,
+    "timestamp": "2026-04-27 03:33:05.856003+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "{\"stored\": true, \"facts_extracted\": 1}",
+    "output": "Verstanden. Ich habe die Information in meinem Langzeit\u2011Speicher abgelegt: *\u201eBevor jegliche Kontextkompression erfolgt, sollten genaue Tool\u2011Ausgaben und Entscheidungen als w\u00f6rtliche Belege archiviert werden.\u201c* Sie ist jetzt als persistentes Erlebnis gespeichert. Soll ich sonst noch etwas tun?",
+    "duration_ms": 5004,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/free",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 4541,
+      "content_cleaned": false
+    },
+    "iteration": 1
+  },
+  {
+    "id": 1260,
+    "timestamp": "2026-04-27 03:33:00.776941+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+      "fact_type": "experience"
+    },
+    "output": {
+      "stored": true,
+      "facts_extracted": 1
+    },
+    "duration_ms": 1464,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 1259,
+    "timestamp": "2026-04-27 03:33:00.700976+00:00",
+    "action": "memory_retain",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "storage_route": "verbatim",
+      "fact_type": "experience",
+      "original_fact_type": "experience",
+      "item_count": 1,
+      "tool_name": "memory_add",
+      "source": "explicit_memory_tool",
+      "summary_status": "background_queued"
+    },
+    "iteration": null
+  },
+  {
+    "id": 1257,
+    "timestamp": "2026-04-27 03:32:59.312830+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+      "fact_type": "experience"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 1256,
+    "timestamp": "2026-04-27 03:32:59.223015+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Remember this project memory: before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+    "output": null,
+    "duration_ms": 2664,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/free",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4361,
+      "content_cleaned": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 1255,
+    "timestamp": "2026-04-27 03:32:56.320807+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 1254,
+    "timestamp": "2026-04-27 03:32:56.156516+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "query_preview": "Remember this project memory: before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 1253,
+    "timestamp": "2026-04-27 03:32:56.058063+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-fusion-route-001-ed848547",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "query_preview": "Remember this project memory: before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

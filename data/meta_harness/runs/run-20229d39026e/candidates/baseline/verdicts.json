@@ -1,0 +1,26 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required tool: sandbox_execute",
+    "missing tool_result events for tool success rate threshold"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "memory_recall",
+    "skill_found",
+    "skill_used"
+  ],
+  "observed_tools": [],
+  "observed_skills": [
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment",
+    "global:trading-analysis",
+    "memory-usage",
+    "plan",
+    "risk-assessment",
+    "trading-analysis"
+  ],
+  "tool_success_rate": null
+}

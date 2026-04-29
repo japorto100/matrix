@@ -14,18 +14,40 @@ migrated_from:
 
 # Tasks
 
-- [ ] T001 Summarize devstack implementation state into `closeout.md`.
-- [ ] T002 Extract env layout rationale into `research.md` or ADR candidate.
-- [ ] T003 [P] Verify shell syntax for scripts -> `scripts/*.sh`.
-- [ ] T004 [P] Verify compose parse -> `docker-compose.yml`.
-- [ ] T005 [P] Verify env examples are present for frontend, Go and Python.
-- [ ] T006 Run operator bootstrap smoke or document why local secrets prevent it.
-- [ ] T007 Mark archived `exec-19` stages as split across owning features.
+- [x] T001 Summarize devstack implementation state into `closeout.md`.
+- [x] T002 Extract env layout rationale into `research.md` or ADR candidate.
+- [x] T003 [P] Verify shell syntax for scripts -> `scripts/*.sh`.
+- [x] T004 [P] Verify compose parse -> `docker-compose.yml`.
+- [x] T005 [P] Verify env examples are present for frontend, Go and Python.
+- [x] T006 Run operator bootstrap smoke or document why local secrets prevent it.
+- [x] T007 Mark archived `exec-19` stages as split across owning features.
+- [x] T008 [done-live] Keep Matrix infrastructure isolated from other projects:
+  `matrix-postgres` uses `matrix_postgres-data` on `5433`; `matrix-nats`
+  uses `matrix_nats-data` on host `14222/18222` so Tradeview's NATS on
+  `4222/8222` is not reused accidentally.
+- [x] T009 [done-static] After port/service changes, update local env files and
+  `scripts/bootstrap-env.py` defaults in the same pass.
+- [x] T010 [done-live] Keep Matrix Valkey isolated from other projects:
+  `matrix-valkey` uses `matrix_valkey-data` on host `16379`, so Geomap or
+  other Redis/Valkey containers on `6379` are not counted as Matrix cache.
+- [x] T011 [done-static-live-smoke] Make `scripts/dev-stack.sh --status`
+  require the expected Matrix container for compose-owned services instead of
+  trusting open host ports alone.
+- [x] T012 [done-static-live-smoke] Start storage-profile services before
+  Tuwunel when `--storage=garage|seaweedfs` is selected.
+  - 2026-04-27: Tuwunel v1.6 with `startup_check=true` requires Garage before
+    homeserver start; `dev-stack.sh` now splits compose startup into
+    storage-profile, default and extra-profile phases. Re-run reported both
+    `tuwunel :8448` and `garage :3900` healthy; existing compose name warnings
+    still need non-destructive cleanup later.
 
 ## Verify Gates
 
-- [ ] `bash -n scripts/*.sh`
-- [ ] Compose YAML parses.
-- [ ] Alembic head is reachable when Postgres is running.
-- [ ] Env examples match documented service roles.
-
+- [x] `bash -n scripts/*.sh`
+- [x] Compose YAML parses.
+- Alembic head is reachable when Postgres is running. Deferred to live/operator verify.
+- [x] Matrix-NATS host port is owned by `matrix-nats`, not a foreign project
+  container.
+- [x] Matrix-Valkey host port is owned by `matrix-valkey`, not a foreign
+  project container.
+- [x] Env examples match documented service roles.

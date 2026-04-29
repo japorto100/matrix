@@ -1,0 +1,1651 @@
+[
+  {
+    "run_id": "run-3bc071d2e379",
+    "candidate_id": "baseline",
+    "scenario_id": "lp-chart-001",
+    "thread_id": "mh-lp-chart-001-6407b458",
+    "user_id": "anonymous",
+    "category": "tool_chart_state",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+      },
+      {
+        "role": "assistant",
+        "content": "**Current Chart State**\n\n- **Symbol:** EUR/USD (EURUSD)  \n- **Timeframe:** 4\u2011hour (4H)  \n- **Enabled Indicators:** RSI, MACD  \n\nLet me know if you\u2019d like any analysis, strategy ideas, or a deeper look at this pair."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-chart-001-6407b458\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-6407b458\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"**Current Chart State**\\n\\n- **Symbol:** EUR/USD (EURUSD)  \\n- **Timeframe:** 4\\u2011hour (4H)  \\n- **Enabled Indicators:** RSI, MACD  \\n\\nLet me know if you\\u2019d like any analysis, strategy ideas, or a deeper look at this pair.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"chatcmpl-tool-4ae14c73424e43d88174fdbe03d8d069\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-4ae14c73424e43d88174fdbe03d8d069\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-chart-001-6407b458\", \"promptTokens\": 9179, \"completionTokens\": 135, \"reasoningTokens\": 51, \"cachedTokens\": 96, \"totalTokens\": 9314, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 104,
+        "timestamp": "2026-04-26 00:34:24.780495+00:00",
+        "action": "memory_retain",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 688,
+        "success": false,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "agent_writer",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 1,
+          "policy_decision": "write_rejected"
+        },
+        "iteration": null
+      },
+      {
+        "id": 103,
+        "timestamp": "2026-04-26 00:34:23.824299+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"get_chart_state\" trusted=\"true\">\n{\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}\n</tool_output>",
+        "output": "**Current Chart State**\n\n- **Symbol:** EUR/USD (EURUSD)  \n- **Timeframe:** 4\u2011hour (4H)  \n- **Enabled Indicators:** RSI, MACD  \n\nLet me know if you\u2019d like any analysis, strategy ideas, or a deeper look at this pair.",
+        "duration_ms": 4121,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4714
+        },
+        "iteration": 2
+      },
+      {
+        "id": 102,
+        "timestamp": "2026-04-26 00:34:19.458776+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": {
+          "symbol": "EURUSD",
+          "timeframe": "4H",
+          "indicators": [
+            "RSI",
+            "MACD"
+          ],
+          "source": "stub"
+        },
+        "duration_ms": 373,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 101,
+        "timestamp": "2026-04-26 00:34:19.086042+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 100,
+        "timestamp": "2026-04-26 00:34:18.931966+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_chart_state",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 99,
+        "timestamp": "2026-04-26 00:34:18.745218+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+        "output": null,
+        "duration_ms": 4696,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4600
+        },
+        "iteration": 0
+      },
+      {
+        "id": 98,
+        "timestamp": "2026-04-26 00:34:13.867175+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 604,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+        },
+        "iteration": null
+      },
+      {
+        "id": 97,
+        "timestamp": "2026-04-26 00:34:12.886138+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 2117,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "advisory",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+        },
+        "iteration": null
+      },
+      {
+        "id": 96,
+        "timestamp": "2026-04-26 00:34:10.494712+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:trading-analysis",
+            "global:plan",
+            "global:market-research"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "trading-analysis",
+            "plan",
+            "market-research"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "anonymous",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 95,
+        "timestamp": "2026-04-26 00:34:10.388942+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-chart-001-6407b458",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:trading-analysis",
+            "global:plan",
+            "global:market-research"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "trading-analysis",
+            "plan",
+            "market-research"
+          ],
+          "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-chart-001-6407b458",
+      "model": "openrouter/openrouter/auto",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 2,
+      "turn_efficiency": 0.5,
+      "total_tokens": 9314,
+      "token_efficiency": 4657,
+      "total_duration_ms": 8817,
+      "tool_calls": 1,
+      "tool_success_rate": 1.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 2,
+      "memory_retains": 1,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.9,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_decision",
+          "llm_response",
+          "memory_recall",
+          "memory_retain",
+          "skill_found",
+          "skill_used",
+          "tool_call",
+          "tool_result"
+        ],
+        "observed_tools": [
+          "get_chart_state"
+        ],
+        "observed_skills": [
+          "global:market-research",
+          "global:memory-usage",
+          "global:plan",
+          "global:trading-analysis",
+          "market-research",
+          "memory-usage",
+          "plan",
+          "trading-analysis"
+        ],
+        "tool_success_rate": 1.0
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": 1.0
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-3bc071d2e379/candidates/baseline"
+  },
+  {
+    "run_id": "run-3bc071d2e379",
+    "candidate_id": "baseline",
+    "scenario_id": "lp-portfolio-001",
+    "thread_id": "mh-lp-portfolio-001-b71711cb",
+    "user_id": "anonymous",
+    "category": "tool_portfolio_risk",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+      },
+      {
+        "role": "assistant",
+        "content": "**Portfolio\u2011Risk Assessment**\n\n- **Current holdings:**\u202fNone (0\u202f% exposure).  \n- **Concentration risk:**\u202fNo assets are held, so concentration risk is **nil**.  \n- **Correlation risk:**\u202fWith no positions, there is no exposure to any market or currency, thus **no correlation risk** exists.\n\n*Bottom line:* Your portfolio is currently free from both concentration and correlation risks. If you add positions later, we can re\u2011evaluate based on the specific assets and their weights."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-portfolio-001-b71711cb\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-b71711cb\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"**Portfolio\\u2011Risk Assessment**\\n\\n- **Current holdings:**\\u202fNone (0\\u202f% exposure).  \\n- **Concentration risk:**\\u202fNo assets are held, so concentration risk is **nil**.  \\n- **Correlation risk:**\\u202fWith no positions, there is no exposure to any market or currency, thus **no correlation risk** exists.\\n\\n*Bottom line:* Your portfolio is currently free from both concentration and correlation risks. If you add positions later, we can re\\u2011evaluate based on the specific assets and their weights.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"get_portfolio_summary\", \"toolCallId\": \"chatcmpl-tool-f97110f32c65479c9d2870cd7de17bf3\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-f97110f32c65479c9d2870cd7de17bf3\", \"output\": {\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-b71711cb\", \"promptTokens\": 8690, \"completionTokens\": 239, \"reasoningTokens\": 136, \"cachedTokens\": 2512, \"totalTokens\": 8929, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 113,
+        "timestamp": "2026-04-26 00:34:56.821257+00:00",
+        "action": "memory_retain",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 321,
+        "success": false,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "agent_writer",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 1,
+          "policy_decision": "write_rejected"
+        },
+        "iteration": null
+      },
+      {
+        "id": 112,
+        "timestamp": "2026-04-26 00:34:56.370254+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"get_portfolio_summary\" trusted=\"true\">\n{\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}\n</tool_output>",
+        "output": "**Portfolio\u2011Risk Assessment**\n\n- **Current holdings:**\u202fNone (0\u202f% exposure).  \n- **Concentration risk:**\u202fNo assets are held, so concentration risk is **nil**.  \n- **Correlation risk:**\u202fWith no positions, there is no exposure to any market or currency, thus **no correlation risk** exists.\n\n*Bottom line:* Your portfolio is currently free from both concentration and correlation risks. If you add positions later, we can re\u2011evaluate based on the specific assets and their weights.",
+        "duration_ms": 6576,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4550
+        },
+        "iteration": 2
+      },
+      {
+        "id": 111,
+        "timestamp": "2026-04-26 00:34:49.665648+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_portfolio_summary",
+        "input": null,
+        "output": {
+          "positions": [],
+          "total_exposure": 0,
+          "source": "stub"
+        },
+        "duration_ms": 171,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 110,
+        "timestamp": "2026-04-26 00:34:49.494839+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_portfolio_summary",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 109,
+        "timestamp": "2026-04-26 00:34:49.409081+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "get_portfolio_summary",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 108,
+        "timestamp": "2026-04-26 00:34:49.312142+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+        "output": null,
+        "duration_ms": 3905,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4379
+        },
+        "iteration": 0
+      },
+      {
+        "id": 107,
+        "timestamp": "2026-04-26 00:34:45.203282+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 3507,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+        },
+        "iteration": null
+      },
+      {
+        "id": 106,
+        "timestamp": "2026-04-26 00:34:35.737838+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:risk-assessment",
+            "global:plan",
+            "global:market-research"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "risk-assessment",
+            "plan",
+            "market-research"
+          ],
+          "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+          "user_id": "anonymous",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 105,
+        "timestamp": "2026-04-26 00:34:35.530147+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-portfolio-001-b71711cb",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:risk-assessment",
+            "global:plan",
+            "global:market-research"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "risk-assessment",
+            "plan",
+            "market-research"
+          ],
+          "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-portfolio-001-b71711cb",
+      "model": "openrouter/openrouter/auto",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 2,
+      "turn_efficiency": 0.5,
+      "total_tokens": 8929,
+      "token_efficiency": 4464,
+      "total_duration_ms": 10481,
+      "tool_calls": 1,
+      "tool_success_rate": 1.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 1,
+      "memory_retains": 1,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.9,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_decision",
+          "llm_response",
+          "memory_recall",
+          "memory_retain",
+          "skill_found",
+          "skill_used",
+          "tool_call",
+          "tool_result"
+        ],
+        "observed_tools": [
+          "get_portfolio_summary"
+        ],
+        "observed_skills": [
+          "global:market-research",
+          "global:memory-usage",
+          "global:plan",
+          "global:risk-assessment",
+          "market-research",
+          "memory-usage",
+          "plan",
+          "risk-assessment"
+        ],
+        "tool_success_rate": 1.0
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_portfolio_summary"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "tool_success_rate": 1.0
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-3bc071d2e379/candidates/baseline"
+  },
+  {
+    "run_id": "run-3bc071d2e379",
+    "candidate_id": "baseline",
+    "scenario_id": "lp-memory-001",
+    "thread_id": "mh-lp-memory-001-9752626b",
+    "user_id": "anonymous",
+    "category": "tool_memory_add_search",
+    "turns": 2,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade."
+      },
+      {
+        "role": "assistant",
+        "content": "Entschuldigung \u2013 beim Versuch, Ihre Pr\u00e4ferenz **\u201emeta_harness_probe_prefers_1_percent_risk_per_trade\u201c** im Langzeit\u2011Ged\u00e4chtnis zu speichern, ist ein Authentifizierungs\u2011Fehler aufgetreten. Deshalb konnte die Information nicht gespeichert werden.\n\nIch kann diesen Schritt jetzt nicht erneut ausf\u00fchren, da ich keinen Zugriff auf die erforderlichen Anmeldedaten habe. Bitte versuchen Sie es sp\u00e4ter noch einmal oder teilen Sie mir die Pr\u00e4ferenz erneut mit, wenn das System wieder korrekt funktioniert. Ich werde dann sofort daf\u00fcr sorgen, dass sie im Ged\u00e4chtnis abgelegt wird."
+      },
+      {
+        "role": "user",
+        "content": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found."
+      },
+      {
+        "role": "assistant",
+        "content": "I checked the long\u2011term memory for a fact named **\u201cmeta_harness_probe.\u201d** The search returned no matching entries, so there isn\u2019t a stored preference or note under that name. Let me know if you\u2019d like to create one or if there\u2019s another term to look up."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-memory-001-9752626b\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-9752626b\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"Entschuldigung \\u2013 beim Versuch, Ihre Pr\\u00e4ferenz **\\u201emeta_harness_probe_prefers_1_percent_risk_per_trade\\u201c** im Langzeit\\u2011Ged\\u00e4chtnis zu speichern, ist ein Authentifizierungs\\u2011Fehler aufgetreten. Deshalb konnte die Information nicht gespeichert werden.\\n\\nIch kann diesen Schritt jetzt nicht erneut ausf\\u00fchren, da ich keinen Zugriff auf die erforderlichen Anmeldedaten habe. Bitte versuchen Sie es sp\\u00e4ter noch einmal oder teilen Sie mir die Pr\\u00e4ferenz erneut mit, wenn das System wieder korrekt funktioniert. Ich werde dann sofort daf\\u00fcr sorgen, dass sie im Ged\\u00e4chtnis abgelegt wird.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-fa4286c2ecc94af6b9318eab4977af3a\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-fa4286c2ecc94af6b9318eab4977af3a\", \"output\": {\"stored\": false, \"error\": \"Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"x-api-key header is required\\\"},\\\"request_id\\\":\\\"req_011CaRSkQZ4pubBd1Hc9cY63\\\"}. Received Model Group=claude-3-haiku-20240307\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}\"}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-9752626b\", \"promptTokens\": 8877, \"completionTokens\": 383, \"reasoningTokens\": 242, \"cachedTokens\": 2912, \"totalTokens\": 9260, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n",
+      "data: {\"messageId\": \"mh-lp-memory-001-9752626b\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-9752626b\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"I checked the long\\u2011term memory for a fact named **\\u201cmeta_harness_probe.\\u201d** The search returned no matching entries, so there isn\\u2019t a stored preference or note under that name. Let me know if you\\u2019d like to create one or if there\\u2019s another term to look up.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"type\": \"start-step\"}\n\n",
+      "data: {\"toolName\": \"memory_search\", \"toolCallId\": \"chatcmpl-tool-04621e8f323c4096928c13b6e0617e6d\", \"type\": \"tool-input-start\"}\n\n",
+      "data: {\"toolCallId\": \"chatcmpl-tool-04621e8f323c4096928c13b6e0617e6d\", \"output\": {\"results\": [], \"count\": 0}, \"type\": \"tool-output-available\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-9752626b\", \"promptTokens\": 8743, \"completionTokens\": 166, \"reasoningTokens\": 72, \"cachedTokens\": 48, \"totalTokens\": 8909, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 135,
+        "timestamp": "2026-04-26 00:35:20.559701+00:00",
+        "action": "memory_retain",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 343,
+        "success": false,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "agent_writer",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 1,
+          "policy_decision": "write_rejected"
+        },
+        "iteration": null
+      },
+      {
+        "id": 134,
+        "timestamp": "2026-04-26 00:35:20.113032+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"memory_search\" trusted=\"true\">\n{\"results\": [], \"count\": 0}\n</tool_output>",
+        "output": "I checked the long\u2011term memory for a fact named **\u201cmeta_harness_probe.\u201d** The search returned no matching entries, so there isn\u2019t a stored preference or note under that name. Let me know if you\u2019d like to create one or if there\u2019s another term to look up.",
+        "duration_ms": 6369,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4504
+        },
+        "iteration": 2
+      },
+      {
+        "id": 133,
+        "timestamp": "2026-04-26 00:35:13.606534+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_search",
+        "input": {
+          "query": "meta_harness_probe",
+          "fact_type": "world"
+        },
+        "output": {
+          "results": [],
+          "count": 0
+        },
+        "duration_ms": 717,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 131,
+        "timestamp": "2026-04-26 00:35:12.889130+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_search",
+        "input": {
+          "query": "meta_harness_probe",
+          "fact_type": "world"
+        },
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 130,
+        "timestamp": "2026-04-26 00:35:12.786178+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_search",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 129,
+        "timestamp": "2026-04-26 00:35:12.681983+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found.",
+        "output": null,
+        "duration_ms": 1360,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4405
+        },
+        "iteration": 0
+      },
+      {
+        "id": 128,
+        "timestamp": "2026-04-26 00:35:11.211366+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 513,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found."
+        },
+        "iteration": null
+      },
+      {
+        "id": 127,
+        "timestamp": "2026-04-26 00:35:10.352824+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 1164,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "advisory",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+        },
+        "iteration": null
+      },
+      {
+        "id": 126,
+        "timestamp": "2026-04-26 00:35:09.007226+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:plan",
+            "global:trading-analysis",
+            "global:risk-assessment"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "plan",
+            "trading-analysis",
+            "risk-assessment"
+          ],
+          "query_preview": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found.",
+          "user_id": "anonymous",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 125,
+        "timestamp": "2026-04-26 00:35:08.917473+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:plan",
+            "global:trading-analysis",
+            "global:risk-assessment"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "plan",
+            "trading-analysis",
+            "risk-assessment"
+          ],
+          "query_preview": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      },
+      {
+        "id": 124,
+        "timestamp": "2026-04-26 00:35:08.508034+00:00",
+        "action": "memory_retain",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 282,
+        "success": false,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "agent_writer",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 1,
+          "policy_decision": "write_rejected"
+        },
+        "iteration": null
+      },
+      {
+        "id": 123,
+        "timestamp": "2026-04-26 00:35:08.125729+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "<tool_output source=\"memory_add\" trusted=\"true\">\n{\"stored\": false, \"error\": \"Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"x-api-key header is required\\\"},\\\"request_id\\\":\\\"req_011CaRSkQZ4pubBd1Hc9cY63\\\"}. Received Model Group=claude-3-haiku-20240307\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}\"}\n</tool_output>",
+        "output": "Entschuldigung \u2013 beim Versuch, Ihre Pr\u00e4ferenz **\u201emeta_harness_probe_prefers_1_percent_risk_per_trade\u201c** im Langzeit\u2011Ged\u00e4chtnis zu speichern, ist ein Authentifizierungs\u2011Fehler aufgetreten. Deshalb konnte die Information nicht gespeichert werden.\n\nIch kann diesen Schritt jetzt nicht erneut ausf\u00fchren, da ich keinen Zugriff auf die erforderlichen Anmeldedaten habe. Bitte versuchen Sie es sp\u00e4ter noch einmal oder teilen Sie mir die Pr\u00e4ferenz erneut mit, wenn das System wieder korrekt funktioniert. Ich werde dann sofort daf\u00fcr sorgen, dass sie im Ged\u00e4chtnis abgelegt wird.",
+        "duration_ms": 5678,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 4804
+        },
+        "iteration": 2
+      },
+      {
+        "id": 122,
+        "timestamp": "2026-04-26 00:35:02.340374+00:00",
+        "action": "tool_result",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_add",
+        "input": {
+          "content": "meta_harness_probe_prefers_1_percent_risk_per_trade",
+          "fact_type": "world"
+        },
+        "output": {
+          "stored": false,
+          "error": "Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"x-api-key header is required\"},\"request_id\":\"req_011CaRSkQZ4pubBd1Hc9cY63\"}. Received Model Group=claude-3-haiku-20240307\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}"
+        },
+        "duration_ms": 437,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 120,
+        "timestamp": "2026-04-26 00:35:01.903502+00:00",
+        "action": "tool_call",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_add",
+        "input": {
+          "content": "meta_harness_probe_prefers_1_percent_risk_per_trade",
+          "fact_type": "world"
+        },
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": null,
+        "iteration": null
+      },
+      {
+        "id": 119,
+        "timestamp": "2026-04-26 00:35:01.810661+00:00",
+        "action": "consent_decision",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "memory_add",
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "decision": "auto_allow",
+          "policy_id": "yaml:default"
+        },
+        "iteration": null
+      },
+      {
+        "id": 118,
+        "timestamp": "2026-04-26 00:35:01.709725+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade.",
+        "output": null,
+        "duration_ms": 1536,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4456
+        },
+        "iteration": 0
+      },
+      {
+        "id": 117,
+        "timestamp": "2026-04-26 00:35:00.073178+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 564,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade."
+        },
+        "iteration": null
+      },
+      {
+        "id": 116,
+        "timestamp": "2026-04-26 00:34:59.165867+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 1135,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "advisory",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+        },
+        "iteration": null
+      },
+      {
+        "id": 115,
+        "timestamp": "2026-04-26 00:34:57.841700+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:plan",
+            "global:risk-assessment",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "plan",
+            "risk-assessment",
+            "trading-analysis"
+          ],
+          "query_preview": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade.",
+          "user_id": "anonymous",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 114,
+        "timestamp": "2026-04-26 00:34:57.731798+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-memory-001-9752626b",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:plan",
+            "global:risk-assessment",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "plan",
+            "risk-assessment",
+            "trading-analysis"
+          ],
+          "query_preview": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-memory-001-9752626b",
+      "model": "openrouter/openrouter/auto",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 4,
+      "turn_efficiency": 0.25,
+      "total_tokens": 18169,
+      "token_efficiency": 4542,
+      "total_duration_ms": 14943,
+      "tool_calls": 2,
+      "tool_success_rate": 1.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 4,
+      "memory_retains": 2,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis"
+      ],
+      "skill_events": 4,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.85,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_decision",
+          "llm_response",
+          "memory_recall",
+          "memory_retain",
+          "skill_found",
+          "skill_used",
+          "tool_call",
+          "tool_result"
+        ],
+        "observed_tools": [
+          "memory_add",
+          "memory_search"
+        ],
+        "observed_skills": [
+          "global:memory-usage",
+          "global:plan",
+          "global:risk-assessment",
+          "global:trading-analysis",
+          "memory-usage",
+          "plan",
+          "risk-assessment",
+          "trading-analysis"
+        ],
+        "tool_success_rate": 1.0
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "memory_add",
+        "memory_search"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "tool_success_rate": 1.0
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-3bc071d2e379/candidates/baseline"
+  },
+  {
+    "run_id": "run-3bc071d2e379",
+    "candidate_id": "baseline",
+    "scenario_id": "lp-sandbox-001",
+    "thread_id": "mh-lp-sandbox-001-544257c2",
+    "user_id": "anonymous",
+    "category": "tool_sandbox_compute",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-lp-sandbox-001-544257c2\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-544257c2\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-sandbox-001-544257c2\", \"promptTokens\": 4353, \"completionTokens\": 233, \"reasoningTokens\": 123, \"cachedTokens\": 0, \"totalTokens\": 4586, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 141,
+        "timestamp": "2026-04-26 00:35:25.515045+00:00",
+        "action": "consent_request",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": "sandbox_execute",
+        "input": {
+          "code": "equity = 100000\nrisk_percent = 0.01\nrisk_dollars = equity * risk_percent\nentry = 68000\nstop = 66000\nprice_diff = entry - stop\nposition_size = risk_dollars / price_diff\nprint(f\"Risk dollars: {risk_dollars}\\nPosition size: {position_size}\")",
+          "language": "python"
+        },
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "level": "confirm",
+          "severity": "high",
+          "reason": "Fuehrt Code in isolierter Sandbox aus",
+          "policy_id": "yaml:tool:sandbox_execute"
+        },
+        "iteration": null
+      },
+      {
+        "id": 140,
+        "timestamp": "2026-04-26 00:35:25.421738+00:00",
+        "action": "llm_response",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+        "output": null,
+        "duration_ms": 1818,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "model": "openrouter/openrouter/auto",
+          "done": false,
+          "tool_calls_count": 1,
+          "token_usage": 4586
+        },
+        "iteration": 0
+      },
+      {
+        "id": 139,
+        "timestamp": "2026-04-26 00:35:23.503829+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 419,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+        },
+        "iteration": null
+      },
+      {
+        "id": 138,
+        "timestamp": "2026-04-26 00:35:22.774605+00:00",
+        "action": "memory_recall",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 1117,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_anonymous",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "anonymous",
+          "actor_role": "advisory",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+        },
+        "iteration": null
+      },
+      {
+        "id": 137,
+        "timestamp": "2026-04-26 00:35:21.446487+00:00",
+        "action": "skill_used",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:risk-assessment",
+            "global:plan",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "risk-assessment",
+            "plan",
+            "trading-analysis"
+          ],
+          "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+          "user_id": "anonymous",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 136,
+        "timestamp": "2026-04-26 00:35:21.326079+00:00",
+        "action": "skill_found",
+        "user_id": null,
+        "thread_id": "mh-lp-sandbox-001-544257c2",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:memory-usage",
+            "global:risk-assessment",
+            "global:plan",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "memory-usage",
+            "risk-assessment",
+            "plan",
+            "trading-analysis"
+          ],
+          "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-lp-sandbox-001-544257c2",
+      "model": "openrouter/openrouter/auto",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 1,
+      "turn_efficiency": 1.0,
+      "total_tokens": 4586,
+      "token_efficiency": 4586,
+      "total_duration_ms": 1818,
+      "tool_calls": 0,
+      "tool_success_rate": 0.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 2,
+      "memory_retains": 0,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 1.0,
+      "completion_source": "sse_finish",
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "consent_request",
+          "llm_response",
+          "memory_recall",
+          "skill_found",
+          "skill_used"
+        ],
+        "observed_tools": [
+          "sandbox_execute"
+        ],
+        "observed_skills": [
+          "global:memory-usage",
+          "global:plan",
+          "global:risk-assessment",
+          "global:trading-analysis",
+          "memory-usage",
+          "plan",
+          "risk-assessment",
+          "trading-analysis"
+        ],
+        "tool_success_rate": null
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_request",
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [
+        "sandbox_execute"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "tool_success_rate": null
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-3bc071d2e379/candidates/baseline"
+  }
+]

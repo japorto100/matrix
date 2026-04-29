@@ -9,10 +9,11 @@ feature_id: 001
 
 # Gates
 
-- [ ] Every top-level legacy spec is assigned in `MIGRATION_MAP.md`.
-- [ ] Future ideas are marked backlog/research, not active work.
-- [ ] Service ports in baseline match current devstack docs.
-- [ ] Porting assumptions to tradeview-fusion are explicitly separated from
+- [x] Every top-level legacy spec is assigned and classified in
+  `LEGACY_COVERAGE.md`; `MIGRATION_MAP.md` still carries the route table.
+- [x] Future ideas are marked backlog/research, not active work.
+- [x] Service ports in baseline match current devstack docs.
+- [x] Porting assumptions to tradeview-fusion are explicitly separated from
   current matrix repo facts.
-- [ ] Constitution carries non-negotiable rules: source preservation,
+- [x] Constitution carries non-negotiable rules: source preservation,
   live-verify, old-spec non-deletion and SDD status model.

@@ -21,7 +21,7 @@
 #   --profile prod        → Container-Builds fuer Go/Python/Next.js + coturn (full-container Mode)
 #   --profile merger      → frontend_merger als Container (:3003)
 #   --profile calls        → livekit-server + lk-jwt-service + coturn (Video/Voice-Calls)
-#   --profile cache        → valkey (Redis-BSD-Fork, :6379)
+#   --profile cache        → matrix-valkey (Redis-BSD-Fork, :16379)
 #   --profile tunnel       → cloudflared quick-tunnel (free, wechselnde *.trycloudflare.com URL)
 #   --profile tunnel-named → cloudflared named-tunnel (paid/CF-Account, custom domain)
 #   --profile observability → OpenObserve + OTel-Collector (logs/metrics/traces UI :5080)
@@ -54,11 +54,13 @@ services:
     # ── NATS Message Bus ─────────────────────────────────────────────────────
   nats:
     image: nats:2-alpine
-    container_name: nats
+    container_name: matrix-nats
     ports:
-      - "4222:4222"
-      - "8222:8222"
-    command: ["--js", "-m", "8222"]
+      - "${NATS_HOST_PORT:-14222}:4222"
+      - "${NATS_MONITOR_PORT:-18222}:8222"
+    command: ["--js", "--store_dir", "/data", "-m", "8222"]
+    volumes:
+      - nats-data:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
@@ -71,7 +73,7 @@ services:
   # Schema-Setup via `python -m alembic upgrade head` aus python-backend/.
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: postgres
+    container_name: matrix-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -147,10 +149,12 @@ services:
     volumes:
       - ./python-backend/litellm-gateway/config.yaml:/app/config.yaml:ro
     env_file: ./python-backend/.env
+    environment:
+      HINDSIGHT_DB_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hindsight_dev}
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:4000/health\")' || exit 1"]
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:4000/health/liveliness\", timeout=5)' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -173,7 +177,7 @@ services:
     profiles:
       - sandbox
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080/health\", timeout=5)' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -197,21 +201,23 @@ services:
     profiles:
       - sandbox
 
-  # ── LLM Mock Agent (:8094) — opt-in ──────────────────────────────────────
-  # Ersatz fuer real Python agent-service beim Isolationstest der BFF-Routen.
+  # ── LLM Mock (:8095) — opt-in ────────────────────────────────────────────
+  # OpenAI-compatible local mock for deterministic harness/LiteLLM smoke gates.
+  # Also exposes /api/v1/agent/chat for legacy service-level mock probes.
   # podman-compose --profile mock up -d llm-mock
   llm-mock:
     image: python:3.13-slim
     container_name: llm-mock
     working_dir: /app
     volumes:
-      - ./llm-mock:/app:ro
+      - ./python-backend/mock:/app:ro
     environment:
       - MOCK_HOST=0.0.0.0
+      - MOCK_PORT=8095
     entrypoint:
       ["sh", "-c", "pip install -q 'fastapi>=0.116.0' 'uvicorn>=0.35.0' && python mock_agent.py"]
     ports:
-      - "8094:8094"
+      - "8095:8095"
     profiles:
       - mock
 
@@ -220,9 +226,9 @@ services:
   # podman-compose --profile cache up -d valkey
   valkey:
     image: valkey/valkey:8-alpine
-    container_name: valkey
+    container_name: matrix-valkey
     ports:
-      - "6379:6379"
+      - "${VALKEY_HOST_PORT:-16379}:6379"
     volumes:
       - valkey-data:/data
     command: ["valkey-server", "--appendonly", "yes"]
@@ -506,7 +512,7 @@ services:
     image: falkordb/falkordb:latest
     container_name: falkordb
     ports:
-      - "6380:6379"   # Redis-Protocol (6380 um Konflikt mit valkey zu vermeiden)
+      - "6380:6379"   # Redis-Protocol (6380 um Konflikt mit matrix-valkey zu vermeiden)
       - "3000:3000"   # FalkorDB Web UI
     volumes:
       - falkordb-data:/data
@@ -577,6 +583,7 @@ services:
 
 volumes:
   tuwunel-data:
+  nats-data:
   postgres-data:
   seaweedfs-data:
   valkey-data:

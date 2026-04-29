@@ -1,0 +1,31 @@
+{
+  "passed": false,
+  "failures": [
+    "tool success rate below threshold: 0.0 < 1.0"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "llm_response",
+    "memory_recall",
+    "memory_retain",
+    "skill_found",
+    "skill_used",
+    "tool_call",
+    "tool_result"
+  ],
+  "observed_tools": [
+    "sandbox_execute"
+  ],
+  "observed_skills": [
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment",
+    "global:trading-analysis",
+    "memory-usage",
+    "plan",
+    "risk-assessment",
+    "trading-analysis"
+  ],
+  "tool_success_rate": 0.0
+}

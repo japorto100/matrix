@@ -1,0 +1,15 @@
+{
+  "thread_id": "mh-q001-55c4be65",
+  "error": "no events found",
+  "trace_gates": {
+    "passed": false,
+    "failures": [
+      "missing required skill: market-research"
+    ],
+    "warnings": [],
+    "observed_actions": [],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null
+  }
+}

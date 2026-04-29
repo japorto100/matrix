@@ -1,0 +1,141 @@
+{
+  "canary_count": 2,
+  "candidate": {
+    "candidate_id": "matrix-kg-only",
+    "count": 2,
+    "include_kg": true,
+    "include_vector": false,
+    "latency_ms_avg": 0.044,
+    "metadata": {
+      "chunker_version": "deterministic-fixture/v1",
+      "class": "baseline",
+      "embedding_dimension": 0,
+      "embedding_model": "deterministic-fixture",
+      "feature": "017",
+      "kg_projection_version": "postgres-fixture/v1",
+      "parser_version": "deterministic-fixture/v1",
+      "source_corpus": "matrix-retrieval-canaries@2026-04-27"
+    },
+    "metadata_compatibility": {
+      "failures": [],
+      "missing_keys": [],
+      "passed": true,
+      "required_keys": [
+        "source_corpus",
+        "parser_version",
+        "chunker_version",
+        "embedding_model",
+        "embedding_dimension",
+        "kg_projection_version"
+      ]
+    },
+    "mode": "graph",
+    "ndcg@5": 0.5,
+    "pass_rate": 0.0,
+    "passed": 0,
+    "recall@5": 0.5,
+    "results": [
+      {
+        "canary_id": "trading-geo-kg-001",
+        "candidate_id": "matrix-kg-only",
+        "cited_reference_ids": [],
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:vector"
+        ],
+        "hit_count": 1,
+        "intent": "graph",
+        "kg_paths": [
+          [
+            "EU",
+            "SANCTIONS",
+            "Russian oil",
+            "SHIPPING_INSURANCE"
+          ]
+        ],
+        "latency_ms": 0.046,
+        "metadata_compatibility": {
+          "failures": [],
+          "missing_keys": [],
+          "passed": true,
+          "required_keys": [
+            "source_corpus",
+            "parser_version",
+            "chunker_version",
+            "embedding_model",
+            "embedding_dimension",
+            "kg_projection_version"
+          ]
+        },
+        "ndcg@5": 1.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "claim-sanctions-insurance"
+        ],
+        "recall@5": 1.0,
+        "sources": [
+          "kg"
+        ],
+        "verification": {}
+      },
+      {
+        "canary_id": "general-vector-001",
+        "candidate_id": "matrix-kg-only",
+        "cited_reference_ids": [],
+        "degraded": false,
+        "degraded_reasons": [],
+        "failures": [
+          "missing-source:vector",
+          "forbidden-source:kg",
+          "missing-reference:chunk-revenue-summary"
+        ],
+        "hit_count": 1,
+        "intent": "graph",
+        "kg_paths": [],
+        "latency_ms": 0.043,
+        "metadata_compatibility": {
+          "failures": [],
+          "missing_keys": [],
+          "passed": true,
+          "required_keys": [
+            "source_corpus",
+            "parser_version",
+            "chunker_version",
+            "embedding_model",
+            "embedding_dimension",
+            "kg_projection_version"
+          ]
+        },
+        "ndcg@5": 0.0,
+        "passed": false,
+        "ranked_reference_ids": [
+          "claim-irrelevant-kg"
+        ],
+        "recall@5": 0.0,
+        "sources": [
+          "kg"
+        ],
+        "verification": {}
+      }
+    ]
+  },
+  "feature_id": "022",
+  "generated_at": "2026-04-27T17:14:45.158752+00:00",
+  "k": 5,
+  "max_hits": 8,
+  "metadata_compatibility": {
+    "failures": [],
+    "missing_keys": [],
+    "passed": true,
+    "required_keys": [
+      "source_corpus",
+      "parser_version",
+      "chunker_version",
+      "embedding_model",
+      "embedding_dimension",
+      "kg_projection_version"
+    ]
+  },
+  "token_budget": 1600
+}

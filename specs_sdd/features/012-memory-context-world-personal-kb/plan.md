@@ -1,6 +1,6 @@
 ---
 title: Memory, Context, World Model and Personal KB Plan
-status: mixed_active
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25

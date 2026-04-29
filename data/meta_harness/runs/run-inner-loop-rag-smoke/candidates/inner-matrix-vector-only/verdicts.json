@@ -1,0 +1,13 @@
+{
+  "decision": "defer",
+  "decision_reason": "Needs more canary coverage before outer-loop promotion.",
+  "observed_actions": [
+    "inner_loop_candidate"
+  ],
+  "observed_tools": [],
+  "passed": true,
+  "validation": {
+    "failures": [],
+    "passed": true
+  }
+}

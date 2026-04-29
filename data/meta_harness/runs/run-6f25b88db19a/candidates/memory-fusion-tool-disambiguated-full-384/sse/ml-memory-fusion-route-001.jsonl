@@ -1,0 +1,17 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-f2ee2358\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f2ee2358\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it\\u202f\\u2014\\u202fich habe die Anweisung \\u201evor jeder Kontextkomprimierung sollten genaue Tool\\u2011Ausgaben und Entscheidungen wortw\\u00f6rtlich archiviert werden\\u201c als Projekt\\u2011Memory gespeichert. Wenn du sp\\u00e4ter darauf zur\\u00fcckkommen willst, sag einfach Bescheid!\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"tool_memory_add_PFbAkYV48utexLRgS3B0\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"tool_memory_add_PFbAkYV48utexLRgS3B0\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f2ee2358\", \"promptTokens\": 8138, \"completionTokens\": 149, \"reasoningTokens\": 87, \"cachedTokens\": 0, \"totalTokens\": 8287, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-f2ee2358\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f2ee2358\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Wenn sich exakte Tool-Ausgaben noch im Chat befinden und nicht explizit archiviert wurden (z. B. mit `memory_add`), dann sind sie vor der Kontextverdichtung nicht als wortw\\u00f6rtliche Beweise gesichert. Die Kontextverdichtung k\\u00f6nnte dazu f\\u00fchren, dass diese Informationen zusammengefasst oder gek\\u00fcrzt werden, anstatt im genauen Wortlaut erhalten zu bleiben. Die Projektweisung besagt, dass sie \\\"vor jeder Kontextverdichtung\\\" archiviert werden sollen, um genau diesen Verlust zu vermeiden.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-f2ee2358\", \"promptTokens\": 3914, \"completionTokens\": 722, \"reasoningTokens\": 614, \"cachedTokens\": 0, \"totalTokens\": 4636, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

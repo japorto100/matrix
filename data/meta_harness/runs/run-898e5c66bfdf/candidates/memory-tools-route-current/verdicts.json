@@ -1,0 +1,19 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required action: memory_retain",
+    "missing required tool: memory_add",
+    "missing required tool: memory_search",
+    "missing required skill: memory-usage",
+    "missing expected memory activity",
+    "missing required memory route: fusion",
+    "missing tool_result events for tool success rate threshold"
+  ],
+  "warnings": [],
+  "observed_actions": [],
+  "observed_tools": [],
+  "observed_skills": [],
+  "tool_success_rate": null,
+  "observed_memory_routes": [],
+  "observed_memory_providers": []
+}

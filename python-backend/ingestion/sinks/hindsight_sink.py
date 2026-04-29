@@ -90,13 +90,21 @@ class HindsightSink(Sink):
 
         bank_id = f"user_{job.user_id}"
         job_tags: list[str] = list((job.metadata or {}).get("tags", []))
+        source_artifact = (job.metadata or {}).get("source_artifact") or {}
+        chunk_metadata_by_id = (job.metadata or {}).get("chunk_metadata") or {}
         now = datetime.now(UTC)
 
         contents: list[dict[str, Any]] = []
         for chunk in chunks:
+            chunk_source_metadata = dict(source_artifact)
+            if isinstance(chunk_metadata_by_id, dict):
+                chunk_source_metadata.update(chunk_metadata_by_id.get(chunk.id) or {})
             chunk_tags = list(job_tags)
             chunk_tags.append(f"doc:{doc.doc_id}")
             chunk_tags.append(f"extractor:{doc.extractor}")
+            source_artifact_id = chunk_source_metadata.get("source_artifact_id")
+            if source_artifact_id:
+                chunk_tags.append(f"source_artifact:{source_artifact_id}")
             if chunk.section:
                 chunk_tags.append(f"section:{chunk.section}")
 
@@ -110,6 +118,7 @@ class HindsightSink(Sink):
                 "extractor": doc.extractor,
                 "ingestion_job_id": str(job.id),
                 "pipeline": job.pipeline.value,
+                **chunk_source_metadata,
             }
             if doc.source_path:
                 metadata["source_path"] = str(doc.source_path)

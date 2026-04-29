@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1613,
+    "timestamp": "2026-04-27 05:09:35.572844+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-93da17c4",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": "### Personal Raw Evidence\n- [available] meta_harness_probe_prefers_1_percent_risk_per_trade (user_meta-harness__verbatim:0:2988b7f623d0498d2465c6b2#0)",
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_meta-harness",
+      "role": "default",
+      "facts_recalled": 1,
+      "entities": 0,
+      "tokens_used": 150
+    },
+    "iteration": null
+  },
+  {
+    "id": 1612,
+    "timestamp": "2026-04-27 05:09:35.495325+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-93da17c4",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 2075,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_meta-harness",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "meta-harness",
+      "actor_role": "default",
+      "item_count": 1,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Reply with one short sentence: runner parity smoke."
+    },
+    "iteration": null
+  },
+  {
+    "id": 1611,
+    "timestamp": "2026-04-27 05:09:25.445727+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-rp-no-tools-001-93da17c4",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [],
+      "skill_names": [],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "meta-harness",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

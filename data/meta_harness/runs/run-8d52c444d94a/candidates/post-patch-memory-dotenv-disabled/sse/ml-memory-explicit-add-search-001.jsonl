@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Die Anforderung wurde erfolgreich in den Langzeit\\u2011Speicher aufgenommen.  \\nFragen Sie mich gerne, wenn Sie sp\\u00e4ter darauf zur\\u00fcckkommen m\\u00f6chten.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"call_354217ce0d584a3bb483d97b\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"call_354217ce0d584a3bb483d97b\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\", \"promptTokens\": 10468, \"completionTokens\": 200, \"reasoningTokens\": 141, \"cachedTokens\": 3968, \"totalTokens\": 10668, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Die exakte Phrase, die ich im Langzeitspeicher gefunden habe, lautet:\\n\\n**memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction**\\n\\nDas ist genau der Text, den ich zuvor mit `memory_add` gespeichert hatte.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_search\", \"toolCallId\": \"chatcmpl-tool-9daa16413fcd541c\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-9daa16413fcd541c\", \"output\": {\"results\": [{\"text\": \"memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\", \"type\": \"experience\", \"entities\": []}], \"count\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-7076c9fb\", \"promptTokens\": 10842, \"completionTokens\": 235, \"reasoningTokens\": 7, \"cachedTokens\": 5760, \"totalTokens\": 11077, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

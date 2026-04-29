@@ -22,6 +22,7 @@ _MODEL_NAME = "all-MiniLM-L6-v2"
 _DEFAULT_COLLECTION = "memory"
 _DEFAULT_PGVECTOR_TABLE = "memory_embeddings"
 _VECTOR_DIMENSION = 384
+_EMBEDDING_VERSION = f"sentence-transformers/{_MODEL_NAME}"
 
 
 class _VectorBackend(Protocol):
@@ -55,6 +56,16 @@ def _sanitize_identifier(value: str, fallback: str) -> str:
 
 def _vector_literal(embedding: list[float]) -> str:
     return "[" + ",".join(f"{float(value):.8f}" for value in embedding) + "]"
+
+
+def _with_embedding_metadata(metadata: dict[str, Any] | None) -> dict[str, Any]:
+    """Attach stable embedding provenance without overwriting caller metadata."""
+
+    enriched = dict(metadata or {})
+    enriched.setdefault("embedding_model", _MODEL_NAME)
+    enriched.setdefault("embedding_version", _EMBEDDING_VERSION)
+    enriched.setdefault("embedding_dimension", _VECTOR_DIMENSION)
+    return enriched
 
 
 class _DeterministicEmbeddingFunction:
@@ -141,14 +152,15 @@ class _ChromaVectorStore:
     def add(
         self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
     ) -> None:
+        metadata = _with_embedding_metadata(metadata)
         if self._mock:
-            self._mock_docs[doc_id] = (text, metadata or {})
+            self._mock_docs[doc_id] = (text, metadata)
             return
         assert self._collection is not None
         self._collection.upsert(
             ids=[doc_id],
             documents=[text],
-            metadatas=[metadata or {}],
+            metadatas=[metadata],
         )
 
     def search(self, query: str, n_results: int = 5) -> list[dict[str, Any]]:
@@ -301,6 +313,7 @@ class _PgVectorStore:
         from psycopg.types.json import Json
 
         self._ensure_schema()
+        metadata = _with_embedding_metadata(metadata)
         embedding = _vector_literal(self._embed_one(text))
         with self._connect() as conn:
             with conn.cursor() as cur:
@@ -316,7 +329,7 @@ class _PgVectorStore:
                             updated_at = NOW()
                         """
                     ).format(table=pg_sql.Identifier(self._table_name)),
-                    (doc_id, text, Json(metadata or {}), embedding),
+                    (doc_id, text, Json(metadata), embedding),
                 )
 
     def search(self, query: str, n_results: int = 5) -> list[dict[str, Any]]:
@@ -468,8 +481,9 @@ class _LanceDBVectorStore:
     def add(
         self, doc_id: str, text: str, metadata: dict[str, Any] | None = None
     ) -> None:
+        metadata = _with_embedding_metadata(metadata)
         if self._mock:
-            self._mock_docs[doc_id] = (text, metadata or {})
+            self._mock_docs[doc_id] = (text, metadata)
             return
         import json as _json
 
@@ -483,7 +497,7 @@ class _LanceDBVectorStore:
                     "id": doc_id,
                     "text": text,
                     "vector": vector,
-                    "metadata_json": _json.dumps(metadata or {}),
+                    "metadata_json": _json.dumps(metadata),
                 }
             ]
         )

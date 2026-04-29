@@ -13,6 +13,30 @@ def test_vector_store_mock_roundtrip() -> None:
     assert len(results) == 1
     assert results[0]["id"] == "doc-1"
     assert results[0]["metadata"]["type"] == "note"
+    assert results[0]["metadata"]["embedding_model"] == "all-MiniLM-L6-v2"
+    assert results[0]["metadata"]["embedding_version"] == (
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
+    assert results[0]["metadata"]["embedding_dimension"] == 384
+
+
+def test_vector_store_preserves_explicit_embedding_metadata() -> None:
+    store = VectorStore(mock=True, provider="chroma")
+    store.add(
+        "doc-1",
+        "macro regime change",
+        {
+            "embedding_model": "custom-model",
+            "embedding_version": "custom-model@2026-04",
+            "embedding_dimension": 768,
+        },
+    )
+
+    results = store.search("macro regime", n_results=3)
+
+    assert results[0]["metadata"]["embedding_model"] == "custom-model"
+    assert results[0]["metadata"]["embedding_version"] == "custom-model@2026-04"
+    assert results[0]["metadata"]["embedding_dimension"] == 768
 
 
 def test_vector_store_mock_delete() -> None:

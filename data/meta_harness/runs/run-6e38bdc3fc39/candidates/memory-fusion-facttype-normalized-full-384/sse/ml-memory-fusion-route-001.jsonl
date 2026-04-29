@@ -1,0 +1,17 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-8380d6cc\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-8380d6cc\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Got it! I\\u2019ve stored the project memory:\\n\\n**\\u201cBefore any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.\\u201d**  \\n\\nThis will be retained as a permanent fact for future reference. Let me know if you\\u2019d like to add anything else.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"tool_memory_add_ZDV2MS0OnQaquFpWXCbO\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"tool_memory_add_ZDV2MS0OnQaquFpWXCbO\", \"output\": {\"stored\": true, \"facts_extracted\": 1}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-8380d6cc\", \"promptTokens\": 8350, \"completionTokens\": 155, \"reasoningTokens\": 84, \"cachedTokens\": 3496, \"totalTokens\": 8505, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-fusion-route-001-8380d6cc\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-8380d6cc\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Before context compaction, if exact tool outputs and decisions are only in the chat, they should be archived as verbatim evidence using the `memory_add` tool. This ensures that this crucial information is saved in persistent long-term memory and is not lost during context compaction.\\n\\nEssentially, we need to proactively store these details so they are available for future reference, as per your earlier instruction.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-fusion-route-001-8380d6cc\", \"promptTokens\": 4027, \"completionTokens\": 197, \"reasoningTokens\": 119, \"cachedTokens\": 0, \"totalTokens\": 4224, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

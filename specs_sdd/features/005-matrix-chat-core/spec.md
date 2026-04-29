@@ -30,6 +30,10 @@ review/fix slices and `exec2-*`. Cinny integration has a `sota-verify PASS`.
 are external-blocked, and live room/timeline/E2EE/call checks still need a real
 stack.
 
+The current static pass confirmed that `/matrix` is part of the successful
+`frontend_merger` Turbopack production build. `exec2-04` gate groups A-O are
+preserved in `gates.md` and classified by ownership/status.
+
 ## Target State / Soll
 
 Matrix chat in `frontend_merger` is the canonical Matrix UI. It supports the
@@ -50,20 +54,20 @@ advanced options and clear live verify gates.
 
 ## Gap
 
-- Collapse old archived feature lists into history/closeout.
-- Split `exec2-04` into current gates, blocked gates and superseded gates.
 - Run full-stack live Matrix session.
+- Browser route smoke, protocol session, E2EE and calls remain live-gated.
+- Feature 004 owns homeserver/connectivity/mobile/federation gates.
 
 ## Verify
 
-- [ ] Matrix login and room list.
-- [ ] Send/receive text.
-- [ ] E2EE handshake or documented blocked reason.
-- [ ] Upload/media path.
-- [ ] Calls path if in current scope.
+- [x] `/matrix` static build route exists.
+- Matrix login and room list.
+- Send/receive text.
+- E2EE handshake or documented blocked reason.
+- Upload/media path.
+- Calls path if in current scope.
 
 ## Closeout Criteria
 
 - Historical execs are not used as task sources.
 - `live-verify.md` records the real Matrix stack run.
-

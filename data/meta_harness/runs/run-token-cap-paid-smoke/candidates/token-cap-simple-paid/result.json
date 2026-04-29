@@ -1,0 +1,108 @@
+{
+  "run_id": "run-token-cap-paid-smoke",
+  "candidate_id": "token-cap-simple-paid",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-9b7ef35e",
+  "user_id": "anonymous",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    },
+    {
+      "role": "assistant",
+      "content": "[meta-harness runner error] runner error APIStatusError: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\"error\":{\"message\":\"Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\",\"code\":402}}. Received Model Group=openrouter/openai/gpt-4.1-nano\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}} (scenario=rp-no-tools-001, runner=simple)"
+    }
+  ],
+  "sse_chunks": [],
+  "trace_events": [
+    {
+      "id": 1624,
+      "timestamp": "2026-04-27 11:42:52.378607+00:00",
+      "action": "skill_found",
+      "user_id": null,
+      "thread_id": "mh-rp-no-tools-001-9b7ef35e",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [],
+        "skill_names": [],
+        "query_preview": "Reply with one short sentence: runner parity smoke.",
+        "user_id": "anonymous",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-9b7ef35e",
+    "model": "",
+    "completed": false,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 0,
+    "turn_efficiency": 1.0,
+    "total_tokens": 0,
+    "token_efficiency": 0,
+    "total_duration_ms": 0,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 0,
+    "memory_retains": 0,
+    "memory_utilization": false,
+    "skills_loaded": [],
+    "skill_events": 1,
+    "cost_estimate_usd": 0.0,
+    "fitness_score": 0.7,
+    "harness_runner_error": true,
+    "runner_errors": [
+      "runner error APIStatusError: Error code: 402 - {'error': {'message': 'litellm.APIError: APIError: OpenrouterException - {\"error\":{\"message\":\"Insufficient credits. This account never purchased credits. Make sure your key is on the correct account or org, and if so, purchase more at https://openrouter.ai/settings/credits\",\"code\":402}}. Received Model Group=openrouter/openai/gpt-4.1-nano\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '402'}} (scenario=rp-no-tools-001, runner=simple)"
+    ],
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required action: llm_response",
+        "harness runner error"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "skill_found"
+      ],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required action: llm_response",
+      "harness runner error"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "skill_found"
+    ],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null,
+    "observed_memory_routes": [],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "simple"
+}

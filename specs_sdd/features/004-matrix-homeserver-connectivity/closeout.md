@@ -11,25 +11,38 @@ feature_id: 004
 
 ## Built
 
-Pending.
+- Tuwunel v1.6.0 is the documented Linux/podman homeserver baseline.
+- Static config parse passes for `homeserver/tuwunel.v1.6.toml`.
+- Federation-off, presence, upload-size, `.well-known`, LiveKit RTC transport
+  and appservice-registration strategy are documented.
+- `exec-blocking` C1-C6 are classified into external blockers, deferred
+  deployment work or owning SDD features.
 
 ## Not Built
 
-Pending.
+- No live homeserver startup proof in this pass.
+- No mobile Element X / tunnel proof in this pass.
+- No federation deployment runbook is active because current deployment remains
+  private/dev.
 
 ## Deviations From Plan
 
-Pending.
+- Dendrite/Zendrite remains historical fallback only.
+- Keeping the 100 MB upload cap is intentional for Cloudflare alignment even
+  though Tuwunel #411 is upstream-fixed.
 
 ## Verify Result
 
-Pending.
+- PASS: Tuwunel TOML parses.
+- PASS: compose default image points at Tuwunel v1.6.0.
+- PASS: external/deferred blockers have feature ownership and review triggers.
 
 ## Live Verify Result
 
-Pending.
+Deferred per current work order.
 
 ## Follow-Ups
 
-Monthly/upstream monitor items pending.
-
+- Monthly/upstream monitor remains active.
+- Pull/restart the Tuwunel container during live/operator verify if an older
+  image is still running.

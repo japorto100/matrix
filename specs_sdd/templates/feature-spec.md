@@ -26,9 +26,9 @@ What must change between Ist and Soll.
 
 ## Acceptance Criteria
 
-- [ ] Requirement is testable.
-- [ ] Verify gate is defined.
-- [ ] Live verify is defined if user-facing/runtime-critical.
+- Requirement is testable.
+- Verify gate is defined.
+- Live verify is defined if user-facing/runtime-critical.
 
 ## Out of Scope
 

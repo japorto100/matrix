@@ -1,9 +1,9 @@
 ---
 title: Appservice, NATS, E2EE and Bridges
-status: implementation_done_live_verify_open
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-27
 feature_id: 006
 migrated_from:
   - specs/02-go-appservice.md
@@ -31,8 +31,24 @@ end-to-end Matrix -> Go -> NATS -> Python -> NATS -> Go -> Matrix as pending,
 and the E2EE gate still needs live proof that encrypted messages decrypt and
 encrypted replies reach the client. `exec-05c` added subject routing, agent
 routing, thread support, key deletion flags and hybrid-interface scaffolding,
-but subject routing is default-disabled and NATS authorization is still open.
-`exec-05b` is planned future bridge scope, not current built state.
+but subject routing is default-disabled, Python currently subscribes to the
+global inbound subject only, and NATS authorization is still open. `exec-05b`
+is planned future bridge scope, not current built state.
+
+Static verification on 2026-04-25 passed the Go appservice test suite with the
+`goolm` tag, Python bridge/agent tests for NATS thread replies and A2UI
+streaming, and Python lint for bridge/agent/voice code. One implementation gap
+was closed during this SDD pass: inbound NATS `thread_id` is now forwarded as
+reply `thread_root_id`, so Matrix threaded replies can keep their root event
+metadata when the live path is exercised.
+
+Backend-only live verification on 2026-04-27 started Go appservice on `:29318`
+against Matrix-local NATS `:14222`, verified `/health`, published a synthetic
+`matrix.message.inbound` event, observed Python bridge consuming it, observed
+Agent HTTP/SSE call, observed Python publishing `matrix.message.reply` with
+`thread_root_id`, and observed Go receiving that reply. The final Matrix send
+failed because the homeserver was not running in this no-frontend/no-homeserver
+backend pass; that remains a full live Matrix gate, not a NATS/bridge blocker.
 
 ## Target State / Soll
 
@@ -58,22 +74,33 @@ streaming; they use HTTP/SSE and LiveKit respectively.
 - E2EE live proof is still needed: encrypted inbound decrypt, encrypted reply,
   Cross-Signing, key backup restart behavior.
 - NATS authorization for per-agent isolation is not implemented.
-- Subject routing exists behind `NATS_SUBJECT_ROUTING_ENABLED=false`; Python
-  side subscription behavior and live routing need proof.
+- Subject routing exists behind `NATS_SUBJECT_ROUTING_ENABLED=false`; Python now
+  subscribes to both the global inbound subject and routed
+  `matrix.message.inbound.>` subjects. Live routing still needs proof with Go
+  publishing enabled.
 - Key deletion is implemented as a config path, but live key-retention/deletion
   behavior is unverified.
 - Future messaging bridges stay backlog/research until exec-05 A/B are
   live-verified.
 - vodozemac-python / per-agent native E2EE remains research, not active scope.
 
-## Verify
+## Static Verify
 
-- [ ] Go appservice starts with current config.
-- [ ] Python subscriber receives NATS message.
-- [ ] End-to-end encrypted Matrix message can cross the gateway.
-- [ ] Reply path sends as expected agent identity.
-- [ ] Isolation/key-deletion behavior is either verified or explicitly deferred.
-- [ ] Future bridges are classified as backlog, not current done work.
+- [x] `go test -tags goolm ./...` passes in `go-appservice`.
+- [x] `uv run pytest tests/bridge/test_nats_handler.py tests/agent/test_streaming_a2ui.py -q` passes in `python-backend`.
+- [x] `uv run ruff check bridge tests/bridge agent voice` passes in `python-backend`.
+- [x] Thread reply metadata is covered by `tests/bridge/test_nats_handler.py`.
+- [x] Future bridges are classified as backlog, not current done work.
+
+## Live Verify
+
+- Go appservice starts with current config.
+- Python subscriber receives NATS message.
+- Python bridge publishes a reply with thread metadata.
+- Go receives the reply and attempts Matrix send.
+- End-to-end encrypted Matrix message can cross the gateway.
+- Reply path sends as expected agent identity.
+- Isolation/key-deletion behavior is either verified or explicitly deferred.
 
 ## Closeout Criteria
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 import nats
 from nats.aio.client import Client as NATSClient
@@ -18,7 +19,20 @@ from bridge.config import Config
 logger = logging.getLogger(__name__)
 
 SUBJECT_INBOUND = "matrix.message.inbound"
+SUBJECT_INBOUND_ROUTED = "matrix.message.inbound.>"
+SUBJECT_INBOUND_AGENT_PREFIX = "matrix.message.inbound.agent."
 SUBJECT_REPLY = "matrix.message.reply"
+_AGENT_NAME_RE = re.compile(r"[^a-z0-9_-]+")
+
+
+def sanitize_agent_name(agent_name: str) -> str:
+    """Normalize agent names before constructing Matrix user IDs."""
+    value = (agent_name or "").strip().lower()
+    value = value.removeprefix("@").removeprefix("agent-")
+    value = value.split(":", 1)[0]
+    value = _AGENT_NAME_RE.sub("-", value)
+    value = re.sub(r"-{2,}", "-", value).strip("-_")
+    return (value[:64].strip("-_")) or "default"
 
 
 class NATSHandler:
@@ -28,6 +42,9 @@ class NATSHandler:
         self._config = config
         self._agent = agent_client
         self._nc: NATSClient | None = None
+        self._allowed_agents = tuple(
+            sanitize_agent_name(agent) for agent in config.nats_allowed_agents
+        )
 
     async def connect(self) -> None:
         url = self._config.nats_url
@@ -44,8 +61,12 @@ class NATSHandler:
         )
         logger.info("NATS connected: %s", url)
 
-        await self._nc.subscribe(SUBJECT_INBOUND, cb=self._on_inbound)
-        logger.info("Subscribed to %s", SUBJECT_INBOUND)
+        for subject in self._subscription_subjects():
+            await self._nc.subscribe(subject, cb=self._on_inbound)
+        logger.info(
+            "Subscribed to NATS inbound subjects: %s",
+            self._subscription_subjects(),
+        )
 
     async def close(self) -> None:
         if self._nc and not self._nc.is_closed:
@@ -58,6 +79,13 @@ class NATSHandler:
 
     async def _on_inbound(self, msg: nats.aio.msg.Msg) -> None:
         """Handler für eingehende Matrix-Messages von Go Appservice."""
+        if not self._is_subject_allowed(str(getattr(msg, "subject", "") or "")):
+            logger.warning(
+                "Rejected unauthorized NATS subject: %s",
+                getattr(msg, "subject", ""),
+            )
+            return
+
         try:
             data = json.loads(msg.data)
         except json.JSONDecodeError:
@@ -69,6 +97,10 @@ class NATSHandler:
         body = data.get("body", "")
         thread_id = data.get("thread_id")
         target_agent = data.get("target_agent", "")
+
+        if not self._is_target_allowed(target_agent):
+            logger.warning("Rejected unauthorized target_agent: %s", target_agent)
+            return
 
         if not body:
             return
@@ -110,6 +142,8 @@ class NATSHandler:
             "text": reply_text,
             "is_streaming": False,
         }
+        if thread_id:
+            reply["thread_root_id"] = thread_id
 
         if self._nc and not self._nc.is_closed:
             await self._nc.publish(SUBJECT_REPLY, json.dumps(reply).encode())
@@ -135,7 +169,34 @@ class NATSHandler:
         # Server-name aus default user_id extrahieren: "@agent-trading:matrix.local" → "matrix.local"
         default = self._config.agent_user_id
         server_name = default.split(":", 1)[1] if ":" in default else "matrix.local"
-        return f"@agent-{target_agent}:{server_name}"
+        return f"@agent-{sanitize_agent_name(target_agent)}:{server_name}"
+
+    def _subscription_subjects(self) -> list[str]:
+        """Subjects this bridge instance is allowed to read.
+
+        Empty allowlist preserves the historical single-bridge behavior:
+        consume global and all routed subjects. A non-empty allowlist makes the
+        instance agent-scoped; it reads only explicit agent subjects and does
+        not subscribe to the global catch-all.
+        """
+        if not self._allowed_agents:
+            return [SUBJECT_INBOUND, SUBJECT_INBOUND_ROUTED]
+        return [
+            SUBJECT_INBOUND_AGENT_PREFIX + agent for agent in self._allowed_agents
+        ]
+
+    def _is_subject_allowed(self, subject: str) -> bool:
+        if not self._allowed_agents:
+            return True
+        prefix = SUBJECT_INBOUND_AGENT_PREFIX
+        if not subject.startswith(prefix):
+            return False
+        return sanitize_agent_name(subject.removeprefix(prefix)) in self._allowed_agents
+
+    def _is_target_allowed(self, target_agent: str) -> bool:
+        if not self._allowed_agents:
+            return True
+        return sanitize_agent_name(target_agent) in self._allowed_agents
 
     async def _on_disconnect(self) -> None:
         logger.warning("NATS disconnected")

@@ -16,6 +16,7 @@ import anyio
 
 from agent.context import AgentExecutionContext
 from agent.graph.state import AgentGraphState, ToolResult
+from agent.roles import TRADING_ROLE_TOOLS, TradingRole
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,16 @@ TOOL_TIMEOUT_SEC = _get_tool_timeout()
 # Sandbox tools need much longer timeouts (up to 30min for backtesting)
 SANDBOX_TOOL_TIMEOUT_SEC = float(os.environ.get("SANDBOX_TOOL_TIMEOUT_SEC", "1800"))
 SANDBOX_TOOLS = {"sandbox_execute", "sandbox_browser"}
+MEMORY_TOOL_TIMEOUT_SEC = float(os.environ.get("MEMORY_TOOL_TIMEOUT_SEC", "90"))
+MEMORY_TOOLS = {"memory_add", "memory_search"}
+
+
+def _effective_tool_timeout(tool_name: str) -> float:
+    if tool_name in SANDBOX_TOOLS:
+        return SANDBOX_TOOL_TIMEOUT_SEC
+    if tool_name in MEMORY_TOOLS:
+        return MEMORY_TOOL_TIMEOUT_SEC
+    return TOOL_TIMEOUT_SEC
 
 
 async def tool_node(state: AgentGraphState) -> dict[str, Any]:
@@ -44,6 +55,9 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         return {"tool_results": [], "tool_calls": []}
 
     registry = ToolRegistry.load()
+    role = _trading_role_from_state(state)
+    if role is not None:
+        registry = registry.filter_by_names(TRADING_ROLE_TOOLS.get(role, set()))
 
     # Minimaler Context fuer Tool-Execution
     ctx = AgentExecutionContext(
@@ -114,6 +128,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         tool_messages.append(
             {
                 "role": "tool",
+                "tool_call_id": tc["tool_call_id"],
                 "tool_use_id": tc["tool_call_id"],
                 "content": llm_content,
             }
@@ -126,6 +141,16 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
     }
 
 
+def _trading_role_from_state(state: AgentGraphState) -> TradingRole | None:
+    role = state.get("current_role")
+    if not role:
+        return None
+    try:
+        return TradingRole(role)
+    except ValueError:
+        return None
+
+
 async def _execute_single(
     tc: dict[str, Any],
     registry: ToolRegistry,
@@ -136,6 +161,7 @@ async def _execute_single(
     from agent.tracing import tool_span
 
     tool = registry.lookup(tc["tool_name"])
+    budget_metadata = _tool_budget_metadata(ctx.thread_id, tc["tool_name"])
     if not tool:
         await audit_log(
             action=AuditAction.TOOL_RESULT,
@@ -144,6 +170,7 @@ async def _execute_single(
             input_data=tc["tool_input"],
             success=False,
             output_data={"error": f"Unknown tool: {tc['tool_name']}"},
+            metadata=budget_metadata,
         )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
@@ -162,6 +189,7 @@ async def _execute_single(
             agent_id=ctx.user_id,
             tool_name=tc["tool_name"],
             input_data=tc["tool_input"],
+            metadata=budget_metadata,
         )
 
         try:
@@ -169,11 +197,7 @@ async def _execute_single(
             tool.validate(tc["tool_input"], ctx)
 
             # Execute with timeout (sandbox tools get extended timeout)
-            timeout = (
-                SANDBOX_TOOL_TIMEOUT_SEC
-                if tc["tool_name"] in SANDBOX_TOOLS
-                else TOOL_TIMEOUT_SEC
-            )
+            timeout = _effective_tool_timeout(tc["tool_name"])
             with anyio.fail_after(timeout):
                 result = await tool.execute(tc["tool_input"], ctx)
 
@@ -187,6 +211,7 @@ async def _execute_single(
                 output_data=result,
                 duration_ms=elapsed,
                 success=True,
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -200,11 +225,7 @@ async def _execute_single(
             )
         except TimeoutError:
             elapsed = audit_duration(start)
-            effective_timeout = (
-                SANDBOX_TOOL_TIMEOUT_SEC
-                if tc["tool_name"] in SANDBOX_TOOLS
-                else TOOL_TIMEOUT_SEC
-            )
+            effective_timeout = _effective_tool_timeout(tc["tool_name"])
             await audit_log(
                 action=AuditAction.TOOL_RESULT,
                 thread_id=ctx.thread_id,
@@ -214,6 +235,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": f"timeout after {effective_timeout}s"},
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -237,6 +259,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": str(e)},
+                metadata=budget_metadata,
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -249,3 +272,34 @@ async def _execute_single(
                 result={},
                 error=str(e),
             )
+
+
+def _tool_budget_metadata(thread_id: str, tool_name: str) -> dict[str, Any]:
+    """Return non-blocking budget context for audit/Meta-Harness traces."""
+    metadata: dict[str, Any] = {"thread_id": thread_id, "tool_name": tool_name}
+    try:
+        from agent.consent.config import get_consent_config
+        from agent.consent.rate_limiter import get_rate_limiter
+
+        config = get_consent_config().rate_limits
+        limiter = get_rate_limiter()
+        usage = limiter.get_usage(thread_id)
+        tool_limit = config.per_tool.get(tool_name)
+        metadata.update(
+            {
+                "tool_calls_total_before": usage.tool_calls_total,
+                "tool_calls_total_limit": config.max_tool_calls_total,
+                "tool_calls_for_tool_before": usage.tool_calls_per_tool.get(
+                    tool_name, 0
+                ),
+                "tool_calls_for_tool_limit": tool_limit.max_calls if tool_limit else 0,
+                "tokens_used": usage.tokens_used,
+                "tokens_limit": config.max_tokens_per_session,
+                "iterations_used": usage.iterations,
+                "iterations_limit": config.get_max_iterations(),
+            }
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("tool budget metadata unavailable", exc_info=True)
+        metadata["budget_metadata_available"] = False
+    return metadata

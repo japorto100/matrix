@@ -12,7 +12,7 @@
 # Cron-entry (daily 3am):
 #   0 3 * * *  /home/lipfi2/code/matrix/scripts/backup-postgres.sh >> /tmp/pg-backup.log 2>&1
 #
-# Voraussetzung: postgres-container läuft.
+# Voraussetzung: matrix-postgres-container läuft.
 
 set -euo pipefail
 
@@ -36,6 +36,7 @@ if [[ -f "$REPO/.env" ]]; then
 fi
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_DB=${POSTGRES_DB:-hindsight_dev}
+POSTGRES_CONTAINER=${POSTGRES_CONTAINER:-matrix-postgres}
 
 mkdir -p "$BACKUP_DIR"
 TS=$(date +%Y-%m-%d_%H-%M-%S)
@@ -49,15 +50,15 @@ echo "  Retention: $KEEP_DAYS days"
 echo ""
 
 # Check container is running
-if ! podman ps --format "{{.Names}}" | grep -q "^postgres$"; then
-    echo "ERROR: postgres container is not running" >&2
-    echo "       Run: podman-compose up -d postgres" >&2
+if ! podman ps --format "{{.Names}}" | grep -q "^${POSTGRES_CONTAINER}$"; then
+    echo "ERROR: $POSTGRES_CONTAINER container is not running" >&2
+    echo "       Run: ./scripts/dev-stack.sh --postgres" >&2
     exit 1
 fi
 
 # Dump (all schemas: public, storage, matrix_crypto, agent, ingestion)
 echo "[$(date +%H:%M:%S)] Starting pg_dump..."
-podman exec postgres pg_dump \
+podman exec "$POSTGRES_CONTAINER" pg_dump \
     -U "$POSTGRES_USER" \
     -d "$POSTGRES_DB" \
     --format=plain \
@@ -91,4 +92,4 @@ fi
 
 echo ""
 echo "═══ Done ═══"
-echo "  Restore: gunzip -c $OUTFILE | podman exec -i postgres psql -U $POSTGRES_USER -d $POSTGRES_DB"
+echo "  Restore: gunzip -c $OUTFILE | podman exec -i $POSTGRES_CONTAINER psql -U $POSTGRES_USER -d $POSTGRES_DB"

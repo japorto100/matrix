@@ -7,6 +7,8 @@ import os
 from dataclasses import dataclass
 from datetime import timedelta
 
+from opensandbox.config import ConnectionConfig
+
 
 @dataclass(frozen=True)
 class SandboxConfig:
@@ -23,12 +25,53 @@ class SandboxConfig:
 
 
 def get_sandbox_server_url() -> str:
-    """OpenSandbox Server URL. Docker Compose service name as default."""
-    return os.environ.get("OPENSANDBOX_SERVER_URL", "http://opensandbox-server:8080")
+    """OpenSandbox server URL for health checks and diagnostics."""
+    return (
+        os.environ.get("OPENSANDBOX_SERVER_URL")
+        or os.environ.get("OPEN_SANDBOX_URL")
+        or "http://localhost:8080"
+    )
+
+
+def get_sandbox_connection_config() -> ConnectionConfig:
+    """ConnectionConfig for the OpenSandbox Python SDK.
+
+    The SDK reads OPEN_SANDBOX_DOMAIN, while older Matrix env files used
+    OPENSANDBOX_SERVER_URL/OPEN_SANDBOX_URL. Normalize those names here so the
+    agent and health checks target the same server.
+    """
+    domain = (
+        os.environ.get("OPEN_SANDBOX_DOMAIN")
+        or os.environ.get("OPENSANDBOX_SERVER_URL")
+        or os.environ.get("OPEN_SANDBOX_URL")
+        or "http://localhost:8080"
+    )
+    request_timeout = float(os.environ.get("OPENSANDBOX_REQUEST_TIMEOUT_SEC", "180"))
+    use_server_proxy = _env_bool("OPENSANDBOX_USE_SERVER_PROXY", default=True)
+    return ConnectionConfig(
+        domain=domain,
+        request_timeout=timedelta(seconds=request_timeout),
+        use_server_proxy=use_server_proxy,
+    )
+
+
+def get_sandbox_ready_timeout() -> timedelta:
+    """Maximum time to wait for a created sandbox to become usable."""
+    return timedelta(seconds=float(os.environ.get("OPENSANDBOX_READY_TIMEOUT_SEC", "90")))
+
+
+def _env_bool(name: str, *, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def get_code_image() -> str:
-    return os.environ.get("SANDBOX_CODE_IMAGE", "tradeview/sandbox-code-interpreter:v1")
+    return os.environ.get(
+        "SANDBOX_CODE_IMAGE",
+        "sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2",
+    )
 
 
 def get_browser_image() -> str:

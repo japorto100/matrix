@@ -1,0 +1,166 @@
+[
+  {
+    "id": 162,
+    "timestamp": "2026-04-26 00:41:05.815795+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 380,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+    },
+    "iteration": null
+  },
+  {
+    "id": 161,
+    "timestamp": "2026-04-26 00:41:05.143617+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 1247,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "You are a professional trading assistant for TradeView Fusion.\nYou provide market analysis, strategy insights, and research.\nPOLICY: no_trading_actions \u2014 you NEVER execute trades, place orders, or mod"
+    },
+    "iteration": null
+  },
+  {
+    "id": 160,
+    "timestamp": "2026-04-26 00:41:03.708704+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan",
+        "trading-analysis"
+      ],
+      "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 159,
+    "timestamp": "2026-04-26 00:41:03.629716+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan",
+        "trading-analysis"
+      ],
+      "query_preview": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 158,
+    "timestamp": "2026-04-26 00:41:03.439516+00:00",
+    "action": "consent_decision",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "sandbox_execute",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "allow_session",
+      "cached": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 157,
+    "timestamp": "2026-04-26 00:41:03.217887+00:00",
+    "action": "consent_decision",
+    "user_id": null,
+    "thread_id": "mh-lp-sandbox-001-a9c30dca",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "sandbox_execute",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "allow_session",
+      "cached": true
+    },
+    "iteration": null
+  }
+]

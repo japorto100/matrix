@@ -1,0 +1,31 @@
+{
+  "scenarios": [
+    {
+      "id": "lp-sandbox-001",
+      "category": "tool_sandbox_compute",
+      "turns": [
+        {
+          "user": "Use sandbox_execute with Python to calculate position size for 100000 equity, 1% risk, entry 68000, stop 66000. Return only the position size and risk dollars."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "skill_used"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "sandbox_execute"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "risk-assessment"
+        ],
+        "expected_memory": false,
+        "min_tool_success_rate": 1.0
+      },
+      "judge": {},
+      "metadata": {},
+      "enable_tools": true
+    }
+  ]
+}

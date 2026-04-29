@@ -25,11 +25,19 @@ frontend merger, LLM routing and research backlog. The active machine target is
 Linux Mint with SSD/HDD split; hot build/runtime artifacts stay on SSD while
 cold package/model caches can live on HDD.
 
+Static bootstrap gates passed on 2026-04-25: shell syntax for `scripts/*.sh`,
+compose parse for `docker-compose.yml`, and env-example presence for the root,
+frontend, Go appservice and Python backend scopes.
+
 ## Target State / Soll
 
 The local stack can be bootstrapped predictably on the Linux Mint machine:
 Compose profiles are documented, env files are generated/synced safely, secrets
 are handled through SOPS/age, and Postgres defaults fit the 8GB host.
+Matrix-owned infrastructure must not silently attach to another project's
+running containers. Local Matrix NATS therefore uses host `14222/18222` with
+its own `matrix_nats-data` volume; Postgres uses `5433` and
+`matrix_postgres-data`.
 
 ## Subfeatures
 
@@ -44,17 +52,23 @@ are handled through SOPS/age, and Postgres defaults fit the 8GB host.
 
 ## Gap
 
-- Convert implementation notes into `closeout.md`.
-- Keep only live environment drift as open work.
-- Decide whether the env-layout finding becomes an ADR.
-- Reconcile legacy Windows-specific commands with current Linux-first runtime.
+- Operator/live bootstrap smoke remains open because it requires a running local
+  stack and secrets.
+- Alembic reachability remains a live/operator gate tied to a running Postgres.
+- Devstack status must be interpreted as Matrix-owned service health, not just
+  "some process listens on the port"; this was tightened after a Tradeview
+  NATS instance occupied `4222`.
+- Env-layout rationale is documented in `research.md`; promote to ADR only if
+  automatic env generation/validation becomes binding.
+- Legacy Windows-specific commands are historical/porting material, not the
+  Linux-first runtime path.
 
 ## Verify
 
-- [ ] Compose parse still passes.
-- [ ] Shell syntax for scripts passes.
-- [ ] Secrets bootstrap runbook is operator-verifiable.
-- [ ] Postgres tuning assumptions still fit current hardware.
+- [x] Compose parse still passes.
+- [x] Shell syntax for scripts passes.
+- [x] Secrets bootstrap runbook is operator-verifiable.
+- [x] Postgres tuning assumptions still fit current hardware.
 
 ## Closeout Criteria
 

@@ -1,0 +1,113 @@
+{
+  "run_id": "run-20229d39026e",
+  "candidate_id": "baseline",
+  "scenarios_evaluated": 4,
+  "completion_rate": 0.0,
+  "trace_gate_pass_rate": 0.0,
+  "avg_turns": 1.25,
+  "turn_efficiency": 0.8,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.75,
+  "fitness_score": 0.75,
+  "total_tokens": 0,
+  "avg_tokens": 0.0,
+  "token_efficiency": 1000.0,
+  "total_cost_usd": 0.0,
+  "failed_scenarios": [
+    {
+      "scenario_id": "lp-chart-001",
+      "failures": [
+        "missing required tool: get_chart_state",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "trading-analysis"
+      ]
+    },
+    {
+      "scenario_id": "lp-portfolio-001",
+      "failures": [
+        "missing required tool: get_portfolio_summary",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:market-research",
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "market-research",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ]
+    },
+    {
+      "scenario_id": "lp-memory-001",
+      "failures": [
+        "missing required tool: memory_add",
+        "missing required tool: memory_search",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ]
+    },
+    {
+      "scenario_id": "lp-sandbox-001",
+      "failures": [
+        "missing required tool: sandbox_execute",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "observed_actions": [
+        "consent_decision",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ]
+    }
+  ]
+}

@@ -1,21 +1,22 @@
-"""Local MemPalace-style adapter for memory_fusion.
+"""Postgres/pgvector MemPalace-style adapter for memory_fusion.
 
-Wichtig:
-- produktiver Zielpfad ist Postgres/pgvector via `FusionMemoryEngine`
-- diese Engine bleibt als lokaler verbatim/reference adapter fuer parity/evals
-- keine Runtime-Imports aus `_ref/mempalace`
+This keeps the Hindsight-like async API used by Matrix while moving the
+MemPalace verbatim/loci path off Chroma/SQLite. Upstream MemPalace concepts
+are preserved as metadata: wings, rooms, halls, closets, drawers, and verbatim
+drawer content.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-from memory_fusion.mempalace import build_where_filter, get_collection, sanitize_query
+from memory_fusion.embeddings import Embedder, create_mempalace_embedder
+from memory_fusion.loci import derive_loci_metadata, loci_tags
+from memory_fusion.mempalace import sanitize_query
 
 
 def _now_iso() -> str:
@@ -24,6 +25,14 @@ def _now_iso() -> str:
 
 def _hash_id(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
+
+
+def _content_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _vector_literal(embedding: list[float]) -> str:
+    return "[" + ",".join(f"{float(value):.8f}" for value in embedding) + "]"
 
 
 def _unique_strs(values: list[Any] | None) -> list[str]:
@@ -39,19 +48,6 @@ def _unique_strs(values: list[Any] | None) -> list[str]:
     return out
 
 
-def _decode_tags(meta: dict[str, Any]) -> list[str]:
-    tags = meta.get("tags")
-    if isinstance(tags, list):
-        return _unique_strs(tags)
-    tags_json = meta.get("tags_json")
-    if isinstance(tags_json, str) and tags_json.strip():
-        try:
-            return _unique_strs(json.loads(tags_json))
-        except json.JSONDecodeError:
-            return []
-    return []
-
-
 def _matches_fact_type(meta: dict[str, Any], fact_type: str | list[str] | None) -> bool:
     if not fact_type:
         return True
@@ -63,41 +59,43 @@ def _matches_fact_type(meta: dict[str, Any], fact_type: str | list[str] | None) 
 def _matches_tags(meta: dict[str, Any], tags: list[str] | None) -> bool:
     if not tags:
         return True
-    current = set(_decode_tags(meta))
+    current = set(_unique_strs(list(meta.get("tags") or [])))
     wanted = set(_unique_strs(tags))
     return wanted.issubset(current)
 
 
-def _item_from_row(
-    *,
-    unit_id: str,
-    document: str,
-    meta: dict[str, Any],
-    distance: float | None = None,
-) -> dict[str, Any]:
-    tags = _decode_tags(meta)
+def _item_from_row(row: dict[str, Any], *, distance: float | None = None) -> dict[str, Any]:
+    metadata = dict(row.get("metadata") or {})
+    tags = _unique_strs(list(row.get("tags") or metadata.get("tags") or []))
+    metadata.update(
+        {
+            "bank_id": row.get("bank_id"),
+            "wing": row.get("wing"),
+            "room": row.get("room"),
+            "hall": row.get("hall"),
+            "closet_id": row.get("closet_id"),
+            "drawer_id": row.get("drawer_id"),
+            "loci_path": row.get("loci_path"),
+            "source_file": row.get("source_file"),
+            "source_ref": row.get("source_ref"),
+            "chunk_id": row.get("chunk_id"),
+            "document_id": row.get("document_id"),
+            "embedding_model": row.get("embedding_model"),
+        }
+    )
+    content = str(row.get("content") or "")
     return {
-        "id": unit_id,
-        "episode_id": unit_id,
-        "text": document,
-        "content": document,
-        "summary": document[:280],
-        "fact_type": str(meta.get("fact_type") or "experience"),
+        "id": row["drawer_id"],
+        "episode_id": row["drawer_id"],
+        "text": content,
+        "content": content,
+        "summary": content[:280],
+        "fact_type": str(row.get("fact_type") or "experience"),
         "tags": tags,
         "entities": [],
-        "metadata": {
-            "user_id": meta.get("user_id"),
-            "thread_id": meta.get("thread_id"),
-            "agent_role": meta.get("agent_role"),
-            "source_file": meta.get("source_file"),
-            "source_ref": meta.get("source_ref"),
-            "chunk_id": meta.get("chunk_id"),
-            "document_id": meta.get("document_id"),
-            "room": meta.get("room"),
-            "wing": meta.get("wing"),
-        },
-        "event_date": meta.get("event_date"),
-        "timestamp": meta.get("filed_at") or meta.get("event_date"),
+        "metadata": metadata,
+        "event_date": row.get("event_date"),
+        "timestamp": row.get("filed_at") or row.get("event_date"),
         "weight": round(max(0.0, 1 - distance), 4) if distance is not None else None,
     }
 
@@ -121,25 +119,99 @@ class MemoryRecallResponse:
 
 
 class MempalaceMemoryEngine:
-    """Thin local MemPalace adapter with a Hindsight-like async API surface."""
+    """MemPalace-compatible verbatim drawer store backed by Postgres/pgvector."""
 
-    def __init__(self, palace_path: str):
-        self.palace_path = str(Path(palace_path).expanduser())
+    def __init__(
+        self,
+        palace_path: str | None = None,  # kept for older callers; ignored by Postgres path
+        *,
+        db_url: str | None = None,
+        embedder: Embedder | None = None,
+    ):
+        self.palace_path = palace_path or "postgres"
+        self.db_url = db_url or os.environ.get("MEMPALACE_DB_URL") or os.environ.get("HINDSIGHT_DB_URL")
+        if not self.db_url:
+            raise RuntimeError("MEMPALACE_DB_URL or HINDSIGHT_DB_URL not set")
+        self.embedder = embedder or create_mempalace_embedder()
 
     async def initialize(self) -> None:
-        get_collection(self.palace_path, create=True)
+        await self._ensure_schema()
 
-    def _collection(self):
-        return get_collection(self.palace_path, create=True)
+    async def _connect(self):
+        import psycopg
+        from psycopg.rows import dict_row
+
+        return await psycopg.AsyncConnection.connect(
+            self.db_url,
+            autocommit=True,
+            row_factory=dict_row,
+        )
+
+    async def _ensure_schema(self) -> None:
+        async with await self._connect() as conn:
+            await conn.execute("CREATE SCHEMA IF NOT EXISTS agent")
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS agent.mempalace_drawers (
+                    drawer_id TEXT PRIMARY KEY,
+                    bank_id TEXT NOT NULL,
+                    wing TEXT NOT NULL,
+                    room TEXT NOT NULL,
+                    hall TEXT NOT NULL DEFAULT 'misc',
+                    closet_id TEXT NOT NULL,
+                    loci_path TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    document_id TEXT NULL,
+                    source_file TEXT NULL,
+                    source_ref TEXT NULL,
+                    chunk_id TEXT NULL,
+                    fact_type TEXT NOT NULL DEFAULT 'experience',
+                    tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    embedding vector NULL,
+                    embedding_model TEXT NOT NULL,
+                    embedding_dim INTEGER NOT NULL,
+                    event_date TEXT NULL,
+                    filed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS ux_mempalace_drawers_bank_loci_hash
+                ON agent.mempalace_drawers (bank_id, wing, room, content_hash)
+                """
+            )
+            await conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS ix_mempalace_drawers_loci
+                ON agent.mempalace_drawers (bank_id, wing, room, hall)
+                """
+            )
+            await conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS ix_mempalace_drawers_model_dim
+                ON agent.mempalace_drawers (embedding_model, embedding_dim)
+                """
+            )
 
     def _wing_for_bank(self, bank_id: str) -> str:
         return str(bank_id).strip() or "user_default"
 
+    async def _embed_one(self, text: str) -> list[float]:
+        vectors = await self.embedder.embed([text])
+        if len(vectors) != 1 or not vectors[0]:
+            raise RuntimeError("MemPalace embedding provider returned no vector")
+        return vectors[0]
+
     async def recall_async(
         self,
-        *,
-        bank_id: str,
-        query: str,
+        *args: Any,
+        bank_id: str | None = None,
+        query: str | None = None,
         fact_type: str | list[str] | None = None,
         budget: Any = None,  # noqa: ARG002
         max_tokens: int | None = None,  # noqa: ARG002
@@ -150,42 +222,89 @@ class MempalaceMemoryEngine:
         question_date: Any = None,  # noqa: ARG002
         include_chunks: bool | None = None,  # noqa: ARG002
         max_chunk_tokens: int | None = None,  # noqa: ARG002
+        wing: str | None = None,
+        room: str | None = None,
+        hall: str | None = None,
+        closet: str | None = None,
+        drawer: str | None = None,
         **_: Any,
     ) -> MemoryRecallResponse:
-        collection = self._collection()
-        wing = self._wing_for_bank(bank_id)
+        if args:
+            if bank_id is None and len(args) >= 1:
+                bank_id = str(args[0])
+            if query is None and len(args) >= 2:
+                query = str(args[1])
+        if not bank_id:
+            raise TypeError("bank_id is required")
+        if query is None:
+            raise TypeError("query is required")
         sanitized = sanitize_query(query)
-        where = build_where_filter(wing=wing)
-        result = collection.query(
-            query_texts=[sanitized["clean_query"]],
-            n_results=12,
-            where=where if where else None,
-            include=["documents", "metadatas", "distances"],
-        )
+        clean_query = str(sanitized.get("clean_query") or query)
+        embedding = await self._embed_one(clean_query)
+        vector = _vector_literal(embedding)
+        embedding_dim = len(embedding)
+        search_limit = 50
 
-        docs = list(result.get("documents", [[]])[0])
-        metas = list(result.get("metadatas", [[]])[0])
-        ids = list(result.get("ids", [[]])[0])
-        distances = list(result.get("distances", [[]])[0])
+        sql = """
+            SELECT
+                drawer_id, bank_id, wing, room, hall, closet_id, loci_path,
+                content, document_id, source_file, source_ref, chunk_id,
+                fact_type, tags, metadata, embedding_model, event_date,
+                filed_at::text AS filed_at,
+                embedding <=> %(embedding)s::vector AS distance
+            FROM agent.mempalace_drawers
+            WHERE bank_id = %(bank_id)s
+              AND embedding IS NOT NULL
+              AND embedding_model = %(embedding_model)s
+              AND embedding_dim = %(embedding_dim)s
+        """
+        params: dict[str, Any] = {
+            "bank_id": bank_id,
+            "embedding": vector,
+            "embedding_model": self.embedder.model,
+            "embedding_dim": embedding_dim,
+            "limit": search_limit,
+        }
+        for key, value in {
+            "wing": wing,
+            "room": room,
+            "hall": hall,
+            "closet_id": closet,
+            "drawer_id": drawer,
+        }.items():
+            if value:
+                params[key] = str(value)
+                sql += f" AND {key} = %({key})s"
+        sql += """
+            ORDER BY embedding <=> %(embedding)s::vector
+            LIMIT %(limit)s
+        """
+
+        async with await self._connect() as conn:
+            rows = [dict(row) for row in await (await conn.execute(sql, params)).fetchall()]
 
         items: list[MemoryRecallItem] = []
-        for unit_id, document, meta, distance in zip(ids, docs, metas, distances):
-            meta = meta or {}
-            if not _matches_fact_type(meta, fact_type):
+        for row in rows:
+            meta = {**dict(row.get("metadata") or {}), "tags": list(row.get("tags") or [])}
+            meta.update({k: row.get(k) for k in ("wing", "room", "hall", "closet_id", "drawer_id")})
+            if not _matches_fact_type({**meta, "fact_type": row.get("fact_type")}, fact_type):
                 continue
             if not _matches_tags(meta, tags):
                 continue
+            item = _item_from_row(row, distance=float(row.get("distance") or 0.0))
             items.append(
                 MemoryRecallItem(
-                    id=str(unit_id),
-                    text=str(document),
-                    fact_type=str(meta.get("fact_type") or "experience"),
-                    weight=round(max(0.0, 1 - float(distance)), 4),
+                    id=str(item["id"]),
+                    text=str(item["text"]),
+                    fact_type=str(item["fact_type"]),
+                    weight=float(item["weight"] or 0.0),
                     entities=[],
-                    tags=_decode_tags(meta),
-                    metadata=dict(meta),
+                    tags=list(item["tags"]),
+                    metadata=dict(item["metadata"]),
                 )
             )
+            if len(items) >= 12:
+                break
         return MemoryRecallResponse(results=items, entities={}, chunks={})
 
     async def retain_batch_async(
@@ -195,56 +314,131 @@ class MempalaceMemoryEngine:
         contents: list[dict[str, Any]],
         request_context: Any = None,  # noqa: ARG002
         document_tags: list[str] | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> list[list[str]]:
-        collection = self._collection()
-        wing = self._wing_for_bank(bank_id)
+        from psycopg.types.json import Json
+
+        defer_embedding = bool(kwargs.get("defer_embedding", False))
         results: list[list[str]] = []
+        async with await self._connect() as conn:
+            for idx, item in enumerate(contents):
+                content = str(item.get("content") or "").strip()
+                if not content:
+                    results.append([])
+                    continue
 
-        for idx, item in enumerate(contents):
-            content = str(item.get("content") or "").strip()
-            if not content:
-                results.append([])
-                continue
+                metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+                fact_type = str(item.get("fact_type") or metadata.get("fact_type") or "experience")
+                document_id = str(
+                    item.get("document_id")
+                    or metadata.get("document_id")
+                    or f"{bank_id}:{idx}:{_hash_id(content)}"
+                )
+                merged_metadata = {
+                    **dict(metadata),
+                    "bank_id": bank_id,
+                    "wing": metadata.get("wing") or bank_id,
+                    "document_id": document_id,
+                    "fact_type": fact_type,
+                }
+                loci = derive_loci_metadata(
+                    {**item, "fact_type": fact_type},
+                    merged_metadata,
+                    bank_id=bank_id,
+                )
+                item_tags = loci_tags(
+                    {**item, "tags": _unique_strs(list(item.get("tags") or []) + list(document_tags or []))},
+                    loci,
+                )
+                drawer_id = str(loci["drawer_id"] or f"drawer_{loci['wing']}_{loci['room']}_{_hash_id(document_id)}")
+                content_sha = _content_hash(content)
 
-            metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
-            item_tags = _unique_strs(list(item.get("tags") or []) + list(document_tags or []))
-            fact_type = str(item.get("fact_type") or "experience")
-            document_id = str(
-                item.get("document_id")
-                or metadata.get("document_id")
-                or f"{bank_id}:{idx}:{_hash_id(content)}"
-            )
-            room = (
-                str(metadata.get("room") or "").strip()
-                or str(metadata.get("agent_role") or "").strip()
-                or fact_type
-                or "general"
-            )
-            drawer_id = f"drawer_{wing}_{room}_{_hash_id(document_id)}"
+                existing = await (
+                    await conn.execute(
+                        """
+                        SELECT drawer_id, embedding IS NULL AS embedding_pending
+                        FROM agent.mempalace_drawers
+                        WHERE bank_id = %s AND wing = %s AND room = %s AND content_hash = %s
+                        LIMIT 1
+                        """,
+                        (bank_id, loci["wing"], loci["room"], content_sha),
+                    )
+                ).fetchone()
+                if existing and (defer_embedding or not bool(existing["embedding_pending"])):
+                    results.append([str(existing["drawer_id"])])
+                    continue
 
-            meta = {
-                "wing": wing,
-                "room": room,
-                "bank_id": bank_id,
-                "document_id": document_id,
-                "source_file": str(metadata.get("source_file") or f"memory://{bank_id}/{document_id}"),
-                "source_ref": str(metadata.get("source_ref") or ""),
-                "chunk_index": int(metadata.get("chunk_index") or 0),
-                "chunk_id": str(metadata.get("chunk_id") or metadata.get("source_ref") or "0"),
-                "added_by": "memory-fusion",
-                "filed_at": _now_iso(),
-                "ingest_mode": "memory_fusion",
-                "fact_type": fact_type,
-                "event_date": str(item.get("event_date") or ""),
-                "user_id": metadata.get("user_id"),
-                "thread_id": metadata.get("thread_id"),
-                "agent_role": metadata.get("role") or metadata.get("agent_role"),
-                "tags_json": json.dumps(item_tags),
-            }
-            meta = {key: value for key, value in meta.items() if value not in (None, "")}
-            collection.upsert(documents=[content], ids=[drawer_id], metadatas=[meta])
-            results.append([drawer_id])
+                drawer_id = str(existing["drawer_id"]) if existing else drawer_id
+                if defer_embedding:
+                    embedding: list[float] = []
+                    vector = None
+                    embedding_dim = 0
+                    embedding_status = "pending"
+                else:
+                    embedding = await self._embed_one(content)
+                    vector = _vector_literal(embedding)
+                    embedding_dim = len(embedding)
+                    embedding_status = "ready"
+                row_metadata = {
+                    **merged_metadata,
+                    **loci,
+                    "tags": item_tags,
+                    "added_by": "memory-fusion",
+                    "ingest_mode": "memory_fusion",
+                    "embedding_status": embedding_status,
+                    "embedding_deferred": defer_embedding,
+                    "filed_at": _now_iso(),
+                }
+                source_file = str(metadata.get("source_file") or f"memory://{bank_id}/{document_id}")
+                await conn.execute(
+                    """
+                    INSERT INTO agent.mempalace_drawers (
+                        drawer_id, bank_id, wing, room, hall, closet_id, loci_path,
+                        content, content_hash, document_id, source_file, source_ref,
+                        chunk_id, fact_type, tags, metadata, embedding, embedding_model,
+                        embedding_dim, event_date, updated_at
+                    )
+                    VALUES (
+                        %(drawer_id)s, %(bank_id)s, %(wing)s, %(room)s, %(hall)s,
+                        %(closet_id)s, %(loci_path)s, %(content)s, %(content_hash)s,
+                        %(document_id)s, %(source_file)s, %(source_ref)s, %(chunk_id)s,
+                        %(fact_type)s, %(tags)s, %(metadata)s, %(embedding)s::vector,
+                        %(embedding_model)s, %(embedding_dim)s, %(event_date)s, now()
+                    )
+                    ON CONFLICT (drawer_id) DO UPDATE SET
+                        content = EXCLUDED.content,
+                        content_hash = EXCLUDED.content_hash,
+                        tags = EXCLUDED.tags,
+                        metadata = EXCLUDED.metadata,
+                        embedding = EXCLUDED.embedding,
+                        embedding_model = EXCLUDED.embedding_model,
+                        embedding_dim = EXCLUDED.embedding_dim,
+                        updated_at = now()
+                    """,
+                    {
+                        "drawer_id": drawer_id,
+                        "bank_id": bank_id,
+                        "wing": loci["wing"],
+                        "room": loci["room"],
+                        "hall": loci["hall"],
+                        "closet_id": loci["closet_id"],
+                        "loci_path": loci["loci_path"],
+                        "content": content,
+                        "content_hash": content_sha,
+                        "document_id": document_id,
+                        "source_file": source_file,
+                        "source_ref": loci["source_ref"],
+                        "chunk_id": str(metadata.get("chunk_id") or metadata.get("source_ref") or "0"),
+                        "fact_type": fact_type,
+                        "tags": Json(item_tags),
+                        "metadata": Json(row_metadata),
+                        "embedding": vector,
+                        "embedding_model": self.embedder.model,
+                        "embedding_dim": embedding_dim,
+                        "event_date": str(item.get("event_date") or ""),
+                    },
+                )
+                results.append([drawer_id])
 
         return results
 
@@ -257,68 +451,269 @@ class MempalaceMemoryEngine:
         limit: int = 50,
         offset: int = 0,
         request_context: Any = None,  # noqa: ARG002
+        wing: str | None = None,
+        room: str | None = None,
+        hall: str | None = None,
+        thread_id: str | None = None,
+        session_id: str | None = None,
         **_: Any,
     ) -> dict[str, Any]:
-        collection = self._collection()
-        wing = self._wing_for_bank(bank_id)
-
         if search_query:
             recall = await self.recall_async(
                 bank_id=bank_id,
                 query=search_query,
                 fact_type=fact_type,
+                wing=wing,
+                room=room,
+                hall=hall,
             )
             filtered = [
                 _item_from_row(
-                    unit_id=item.id,
-                    document=item.text,
-                    meta=item.metadata,
+                    {
+                        **item.metadata,
+                        "drawer_id": item.id,
+                        "bank_id": bank_id,
+                        "content": item.text,
+                        "fact_type": item.fact_type,
+                        "tags": item.tags,
+                    },
                     distance=max(0.0, 1 - item.weight),
                 )
                 for item in recall.results
             ]
             return {"items": filtered[offset : offset + limit], "total": len(filtered)}
 
-        rows = collection.get(where={"wing": wing}, include=["documents", "metadatas"])
-        ids = list(rows.get("ids") or [])
-        docs = list(rows.get("documents") or [])
-        metas = list(rows.get("metadatas") or [])
+        sql = """
+            SELECT
+                drawer_id, bank_id, wing, room, hall, closet_id, loci_path,
+                content, document_id, source_file, source_ref, chunk_id,
+                fact_type, tags, metadata, embedding_model, event_date,
+                filed_at::text AS filed_at
+            FROM agent.mempalace_drawers
+            WHERE bank_id = %(bank_id)s
+        """
+        params: dict[str, Any] = {"bank_id": bank_id, "limit": limit, "offset": offset}
+        for key, value in {"wing": wing, "room": room, "hall": hall}.items():
+            if value:
+                params[key] = str(value)
+                sql += f" AND {key} = %({key})s"
+        if fact_type:
+            params["fact_type"] = fact_type
+            sql += " AND fact_type = %(fact_type)s"
+        if thread_id:
+            params["thread_id"] = str(thread_id)
+            sql += " AND metadata->>'thread_id' = %(thread_id)s"
+        if session_id:
+            params["session_id"] = str(session_id)
+            sql += " AND metadata->>'session_id' = %(session_id)s"
+        sql += " ORDER BY filed_at DESC, drawer_id ASC LIMIT %(limit)s OFFSET %(offset)s"
 
-        items = []
-        for unit_id, document, meta in zip(ids, docs, metas):
-            meta = meta or {}
-            if not _matches_fact_type(meta, fact_type):
-                continue
-            items.append(_item_from_row(unit_id=str(unit_id), document=str(document), meta=meta))
-
-        items.sort(key=lambda item: str(item.get("timestamp") or ""), reverse=True)
-        return {"items": items[offset : offset + limit], "total": len(items)}
+        count_sql = "SELECT count(*) AS total FROM (" + sql.rsplit(" ORDER BY ", 1)[0] + ") q"
+        async with await self._connect() as conn:
+            total_row = await (await conn.execute(count_sql, params)).fetchone()
+            rows = [dict(row) for row in await (await conn.execute(sql, params)).fetchall()]
+        return {
+            "items": [_item_from_row(row) for row in rows],
+            "total": int(total_row["total"] if total_row else len(rows)),
+        }
 
     async def get_memory_unit(self, *, unit_id: str, request_context: Any = None, **_: Any) -> dict[str, Any] | None:
-        collection = self._collection()
-        rows = collection.get(ids=[unit_id], include=["documents", "metadatas"])
-        ids = list(rows.get("ids") or [])
-        if not ids:
-            return None
-        document = str((rows.get("documents") or [""])[0])
-        meta = dict((rows.get("metadatas") or [{}])[0] or {})
-        return _item_from_row(unit_id=unit_id, document=document, meta=meta)
+        async with await self._connect() as conn:
+            row = await (
+                await conn.execute(
+                    """
+                    SELECT drawer_id, bank_id, wing, room, hall, closet_id, loci_path,
+                           content, document_id, source_file, source_ref, chunk_id,
+                           fact_type, tags, metadata, embedding_model, event_date,
+                           filed_at::text AS filed_at
+                    FROM agent.mempalace_drawers
+                    WHERE drawer_id = %s
+                    """,
+                    (unit_id,),
+                )
+            ).fetchone()
+        return _item_from_row(dict(row)) if row else None
 
     async def delete_memory_unit(self, *, unit_id: str, request_context: Any = None, **_: Any) -> dict[str, Any]:
-        collection = self._collection()
-        collection.delete(ids=[unit_id])
-        return {"deleted": True, "id": unit_id}
+        async with await self._connect() as conn:
+            result = await conn.execute(
+                "DELETE FROM agent.mempalace_drawers WHERE drawer_id = %s",
+                (unit_id,),
+            )
+        return {"deleted": result.rowcount > 0, "id": unit_id}
+
+    async def delete_memory_units_by_scope(
+        self,
+        *,
+        bank_id: str,
+        room: str | None = None,
+        thread_id: str | None = None,
+        session_id: str | None = None,
+        request_context: Any = None,  # noqa: ARG002
+        **_: Any,
+    ) -> dict[str, Any]:
+        """Delete MemPalace drawers for an explicit room/thread/session scope."""
+
+        if not any((room, thread_id, session_id)):
+            raise ValueError("refusing unscoped MemPalace delete")
+        sql = "DELETE FROM agent.mempalace_drawers WHERE bank_id = %(bank_id)s"
+        params: dict[str, Any] = {"bank_id": bank_id}
+        if room:
+            params["room"] = str(room)
+            sql += " AND room = %(room)s"
+        if thread_id:
+            params["thread_id"] = str(thread_id)
+            sql += " AND metadata->>'thread_id' = %(thread_id)s"
+        if session_id:
+            params["session_id"] = str(session_id)
+            sql += " AND metadata->>'session_id' = %(session_id)s"
+        async with await self._connect() as conn:
+            result = await conn.execute(sql, params)
+        return {"deleted": int(result.rowcount or 0), "bank_id": bank_id}
+
+    async def hydrate_pending_embeddings(
+        self,
+        *,
+        bank_id: str | None = None,
+        limit: int = 25,
+        request_context: Any = None,  # noqa: ARG002
+    ) -> dict[str, Any]:
+        """Embed durable pending drawers and mark failures explicitly.
+
+        Pre-compaction/pre-compression writes may persist verbatim content with
+        `embedding_status=pending` so exact evidence survives even when the
+        embedding provider is slow or unavailable. This worker is the bounded
+        follow-up path: it only promotes rows after the active provider returns
+        a non-empty vector with a dimension compatible with existing rows for
+        that model.
+        """
+        from psycopg.types.json import Json
+
+        limit = max(1, min(int(limit), 250))
+        sql = """
+            SELECT drawer_id, bank_id, content, metadata
+            FROM agent.mempalace_drawers
+            WHERE embedding IS NULL
+              AND COALESCE(metadata->>'embedding_status', 'pending') = 'pending'
+        """
+        params: dict[str, Any] = {"limit": limit}
+        if bank_id:
+            params["bank_id"] = bank_id
+            sql += " AND bank_id = %(bank_id)s"
+        sql += " ORDER BY filed_at ASC LIMIT %(limit)s"
+
+        async with await self._connect() as conn:
+            rows = [dict(row) for row in await (await conn.execute(sql, params)).fetchall()]
+            expected_dim = await self._ready_dimension_for_model(conn)
+
+            hydrated: list[str] = []
+            failed: list[dict[str, str]] = []
+            for row in rows:
+                drawer_id = str(row["drawer_id"])
+                metadata = dict(row.get("metadata") or {})
+                try:
+                    embedding = await self._embed_one(str(row.get("content") or ""))
+                    embedding_dim = len(embedding)
+                    if embedding_dim <= 0:
+                        raise RuntimeError("embedding provider returned empty vector")
+                    if expected_dim is not None and embedding_dim != expected_dim:
+                        raise RuntimeError(
+                            f"embedding dimension {embedding_dim} does not match active "
+                            f"{self.embedder.model} dimension {expected_dim}"
+                        )
+                    await conn.execute(
+                        """
+                        UPDATE agent.mempalace_drawers
+                        SET embedding = %(embedding)s::vector,
+                            embedding_model = %(embedding_model)s,
+                            embedding_dim = %(embedding_dim)s,
+                            metadata = %(metadata)s,
+                            updated_at = now()
+                        WHERE drawer_id = %(drawer_id)s
+                        """,
+                        {
+                            "drawer_id": drawer_id,
+                            "embedding": _vector_literal(embedding),
+                            "embedding_model": self.embedder.model,
+                            "embedding_dim": embedding_dim,
+                            "metadata": Json(
+                                {
+                                    **metadata,
+                                    "embedding_status": "ready",
+                                    "embedding_deferred": False,
+                                    "embedding_hydrated_at": _now_iso(),
+                                    "embedding_failed_reason": None,
+                                }
+                            ),
+                        },
+                    )
+                    expected_dim = embedding_dim if expected_dim is None else expected_dim
+                    hydrated.append(drawer_id)
+                except Exception as exc:  # noqa: BLE001
+                    reason = str(exc)[:500]
+                    await conn.execute(
+                        """
+                        UPDATE agent.mempalace_drawers
+                        SET metadata = %(metadata)s,
+                            updated_at = now()
+                        WHERE drawer_id = %(drawer_id)s
+                        """,
+                        {
+                            "drawer_id": drawer_id,
+                            "metadata": Json(
+                                {
+                                    **metadata,
+                                    "embedding_status": "failed",
+                                    "embedding_deferred": True,
+                                    "embedding_failed_at": _now_iso(),
+                                    "embedding_failed_reason": reason,
+                                }
+                            ),
+                        },
+                    )
+                    failed.append({"drawer_id": drawer_id, "reason": reason})
+
+        return {
+            "provider": "mempalace-postgres",
+            "embedding_model": self.embedder.model,
+            "scanned": len(rows),
+            "hydrated": hydrated,
+            "failed": failed,
+        }
+
+    async def _ready_dimension_for_model(self, conn: Any) -> int | None:
+        row = await (
+            await conn.execute(
+                """
+                SELECT embedding_dim
+                FROM agent.mempalace_drawers
+                WHERE embedding_model = %s
+                  AND embedding IS NOT NULL
+                  AND embedding_dim > 0
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (self.embedder.model,),
+            )
+        ).fetchone()
+        return int(row["embedding_dim"]) if row else None
 
     async def list_banks(self, *, request_context: Any = None, **_: Any) -> list[dict[str, Any]]:
-        collection = self._collection()
-        rows = collection.get(include=["metadatas"])
-        metas = list(rows.get("metadatas") or [])
-        banks: set[str] = set()
-        for meta in metas:
-            bank_id = str((meta or {}).get("bank_id") or "").strip()
-            if bank_id:
-                banks.add(bank_id)
-        return [{"bank_id": bank_id, "name": bank_id} for bank_id in sorted(banks)]
+        async with await self._connect() as conn:
+            rows = await (
+                await conn.execute(
+                    """
+                    SELECT bank_id, count(*) AS count
+                    FROM agent.mempalace_drawers
+                    GROUP BY bank_id
+                    ORDER BY bank_id
+                    """
+                )
+            ).fetchall()
+        return [
+            {"bank_id": str(row["bank_id"]), "name": str(row["bank_id"]), "count": int(row["count"])}
+            for row in rows
+        ]
 
     async def list_mental_models_consolidated(
         self,
@@ -331,9 +726,35 @@ class MempalaceMemoryEngine:
         return []
 
     async def status(self) -> dict[str, Any]:
-        collection = self._collection()
+        async with await self._connect() as conn:
+            row = await (
+                await conn.execute("SELECT count(*) AS count FROM agent.mempalace_drawers")
+            ).fetchone()
+            pending = await (
+                await conn.execute(
+                    """
+                    SELECT count(*) AS count
+                    FROM agent.mempalace_drawers
+                    WHERE embedding IS NULL
+                      AND COALESCE(metadata->>'embedding_status', 'pending') = 'pending'
+                    """
+                )
+            ).fetchone()
+            failed = await (
+                await conn.execute(
+                    """
+                    SELECT count(*) AS count
+                    FROM agent.mempalace_drawers
+                    WHERE metadata->>'embedding_status' = 'failed'
+                    """
+                )
+            ).fetchone()
         return {
-            "provider": "mempalace-local",
-            "palace_path": self.palace_path,
-            "count": collection.count(),
+            "provider": "mempalace-postgres",
+            "storage": "postgres-pgvector",
+            "embedding_provider": "openrouter" if self.embedder.model != "deterministic-test-8d" else "deterministic",
+            "embedding_model": self.embedder.model,
+            "count": int(row["count"] if row else 0),
+            "embedding_pending": int(pending["count"] if pending else 0),
+            "embedding_failed": int(failed["count"] if failed else 0),
         }

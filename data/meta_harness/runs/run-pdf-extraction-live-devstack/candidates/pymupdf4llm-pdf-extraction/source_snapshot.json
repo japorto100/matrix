@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "bytes": 6915,
+      "path": "python-backend/ingestion/extractors/pymupdf_ext.py"
+    },
+    {
+      "bytes": 11138,
+      "path": "python-backend/meta_harness/extraction_benchmark.py"
+    },
+    {
+      "bytes": 22257,
+      "path": "python-backend/meta_harness/proposer.py"
+    },
+    {
+      "bytes": 74326,
+      "path": "_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf"
+    },
+    {
+      "bytes": 1089,
+      "path": "_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.md"
+    }
+  ]
+}

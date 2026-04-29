@@ -1,6 +1,6 @@
 ---
 title: Observability, Harness and Evals
-status: in_progress
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -17,6 +17,14 @@ adrs:
   - 0002
 ---
 
+> IMPORTANT: The large OpenSandbox Code Interpreter image is archived on HDD to
+> keep the SSD free. Before running sandbox/observability flows that need it,
+> load it with:
+>
+> ```bash
+> podman load -i /mnt/cold-storage/archive/podman-images/opensandbox-code-interpreter-v1.0.2.tar
+> ```
+
 # Observability, Harness and Evals
 
 ## Current State / Ist
@@ -27,6 +35,10 @@ implemented, but live `dev-stack --observability` verification is still pending.
 Tracing and audit are intentionally parallel stores per ADR-002. Harness
 composite fitness, A/B backfill and eval-id wiring have landed, while full
 Evaluator Stage-4, dashboards and weighting remain open.
+
+Static verification on 2026-04-25 passes harness scorer, billing insights,
+trajectory export and control runtime tests. This proves local scoring/export
+logic, not a live OpenObserve/audit/eval persistence path.
 
 ## Target State / Soll
 
@@ -56,13 +68,27 @@ or context decisions.
 - Browser RUM tier remains a separate follow-up because of security/privacy.
 - CSV/source evidence should be copied or referenced under feature evidence.
 
-## Verify
+Static cleanup on 2026-04-25 adds `evidence.md`, which references the
+Superpowers harness-mode report/CSV, records the CSV fingerprint and clarifies
+that the historical CSV is header-only because no audit-event threads were
+found. Eval-id semantics are synchronized with Feature 011 as first-write-wins.
 
-- [ ] Live trace reaches OpenObserve or documented target.
-- [ ] Audit event is persisted and queryable.
-- [ ] Harness backfill produces expected score rows.
-- [ ] One eval run fills persistent eval/score data.
-- [ ] Eval runbook can be executed on current stack.
+## Static Verify
+
+- [x] `uv run pytest tests/meta_harness/test_scorer.py tests/agent/billing/test_insights.py tests/agent/test_trajectory_export.py tests/agent/test_control_runtime.py -q` passes.
+- [x] Harness scorer composite fitness logic is covered.
+- [x] Insights rollup and trajectory export logic are covered.
+- [x] Control runtime static tests pass.
+- [x] Historical harness-mode report/CSV is linked with checksum in
+  `evidence.md`.
+
+## Live Verify
+
+- Live trace reaches OpenObserve or documented target.
+- Audit event is persisted and queryable.
+- Harness backfill produces expected score rows.
+- One eval run fills persistent eval/score data.
+- Eval runbook can be executed on current stack.
 
 ## Closeout Criteria
 

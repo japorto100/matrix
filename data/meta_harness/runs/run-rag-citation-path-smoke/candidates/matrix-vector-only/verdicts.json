@@ -1,0 +1,24 @@
+{
+  "failures": [
+    "trading-geo-kg-001: missing-source:kg, missing-reference:claim-sanctions-insurance, missing-kg-path:EU -> SANCTIONS -> Russian oil -> SHIPPING_INSURANCE"
+  ],
+  "metadata_compatibility": {
+    "failures": [],
+    "missing_keys": [],
+    "passed": true,
+    "required_keys": [
+      "source_corpus",
+      "parser_version",
+      "chunker_version",
+      "embedding_model",
+      "embedding_dimension",
+      "kg_projection_version"
+    ]
+  },
+  "observed_actions": [
+    "retrieval_benchmark"
+  ],
+  "observed_tools": [],
+  "passed": false,
+  "tool_success_rate": 1.0
+}

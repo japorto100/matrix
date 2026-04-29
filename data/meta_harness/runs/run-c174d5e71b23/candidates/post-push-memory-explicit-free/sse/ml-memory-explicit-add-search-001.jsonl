@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"The memory service returned \\\"Memory not available\\\" on both attempts \\u2014 it appears the persistent memory store is currently unavailable or offline.\\n\\n**Options:**\\n1. **Retry** \\u2014 I can try again in a moment\\n2. **Use `save_memory`** instead \\u2014 session-scoped scratchpad (survives this conversation but not beyond)\\n3. **Wait** \\u2014 come back to this later\\n\\nWhat would you like to do?\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-adcf23ee97f34883\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-adcf23ee97f34883\", \"output\": {\"stored\": false, \"message\": \"Memory not available\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\", \"promptTokens\": 12394, \"completionTokens\": 711, \"reasoningTokens\": 127, \"cachedTokens\": 0, \"totalTokens\": 13105, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"The memory service is returning **\\\"Memory not available\\\"** \\u2014 it's currently offline or experiencing issues.\\n\\n**Summary:**\\n- I couldn't store your phrase earlier (both `memory_add` attempts failed)\\n- I can't recall it now (both `memory_search` attempts failed)\\n- The lifecycle probe cannot be executed until the memory backend recovers\\n\\nWould you like me to:\\n1. Retry again?\\n2. Use `save_memory` (scratchpad) instead for this session?\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_search\", \"toolCallId\": \"call_f6af26a0a5874876be13ef6f\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"call_f6af26a0a5874876be13ef6f\", \"output\": {\"results\": [], \"message\": \"Memory not available\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-ml-memory-explicit-add-search-001-1c93f254\", \"promptTokens\": 12379, \"completionTokens\": 290, \"reasoningTokens\": 195, \"cachedTokens\": 7552, \"totalTokens\": 12669, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/free\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

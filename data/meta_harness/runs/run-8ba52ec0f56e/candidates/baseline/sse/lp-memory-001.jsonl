@@ -1,0 +1,20 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-memory-001-0fa96095\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-0fa96095\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"Ich konnte den Eintrag nicht in das Langzeit\\u2011Ged\\u00e4chtnis schreiben \\u2013 die Anfrage wurde wegen fehlender Authentifizierung abgelehnt.  \\nWenn Sie m\\u00f6chten, k\\u00f6nnen wir den Wunsch sp\\u00e4ter noch einmal versuchen, sobald die n\\u00f6tige Autorisierung vorhanden ist.  \\n\\nSoll ich sonst noch etwas f\\u00fcr Sie tun?\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_add\", \"toolCallId\": \"chatcmpl-tool-1c43c0664496471dbaf55242c7176de6\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-1c43c0664496471dbaf55242c7176de6\", \"output\": {\"stored\": false, \"error\": \"Error code: 401 - {'error': {'message': 'litellm.AuthenticationError: AnthropicException - {\\\"type\\\":\\\"error\\\",\\\"error\\\":{\\\"type\\\":\\\"authentication_error\\\",\\\"message\\\":\\\"x-api-key header is required\\\"},\\\"request_id\\\":\\\"req_011CaRTJxruL9AmcZ7ucKjsV\\\"}. Received Model Group=claude-3-haiku-20240307\\\\nAvailable Model Group Fallbacks=None', 'type': None, 'param': None, 'code': '401'}}\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-0fa96095\", \"promptTokens\": 8898, \"completionTokens\": 228, \"reasoningTokens\": 108, \"cachedTokens\": 0, \"totalTokens\": 9126, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}
+{"chunk": "data: {\"messageId\": \"mh-lp-memory-001-0fa96095\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-0fa96095\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"I checked the long\\u2011term memory for any entry matching **\\u201cmeta_harness_probe preference.\\u201d**  \\nNo matching fact was found in the stored memory. If you\\u2019d like to record a specific preference or detail, just let me know and I\\u2019ll add it for future reference.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"memory_search\", \"toolCallId\": \"chatcmpl-tool-9215eeae39744726a5dc32028a4a10dd\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-9215eeae39744726a5dc32028a4a10dd\", \"output\": {\"results\": [], \"count\": 0}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-memory-001-0fa96095\", \"promptTokens\": 8744, \"completionTokens\": 181, \"reasoningTokens\": 106, \"cachedTokens\": 0, \"totalTokens\": 8925, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

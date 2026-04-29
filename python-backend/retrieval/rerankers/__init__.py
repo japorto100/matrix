@@ -1,1 +1,5 @@
-"""retrieval.rerankers (Phase 3 Skeleton — see retrieval/README.md)."""
+"""Retrieval rerankers and fusion helpers."""
+
+from retrieval.rerankers.rrf import reciprocal_rank_fusion
+
+__all__ = ["reciprocal_rank_fusion"]

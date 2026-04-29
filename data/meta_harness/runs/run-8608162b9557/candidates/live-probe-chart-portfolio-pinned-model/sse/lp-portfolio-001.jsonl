@@ -1,0 +1,10 @@
+{"chunk": "data: {\"messageId\": \"mh-lp-portfolio-001-11e0a762\", \"type\": \"start\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-11e0a762\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n"}
+{"chunk": "data: {\"delta\": \"**Portfolio\\u2011Konzentrations\\u2011 und Korrelations\\u2011Check**\\n\\n- **Aktuelle Positionen:**\\u202fKeine offenen Positionen  \\n- **Gesamtexposition:**\\u202f0\\u202f% des Kapitals  \\n\\n**Ergebnis:**  \\nDa Sie momentan keinerlei Positionen halten, besteht weder ein Konzentrations\\u2011 noch ein Korrelationsrisiko in Ihrem Portfolio.  \\n\\n*Hinweis:* Sobald Sie neue Trades er\\u00f6ffnen, k\\u00f6nnen wir gern wieder eine Risiko\\u2011 und Korrelationsanalyse durchf\\u00fchren.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n"}
+{"chunk": "data: {\"type\": \"start-step\"}\n\n"}
+{"chunk": "data: {\"toolName\": \"get_portfolio_summary\", \"toolCallId\": \"chatcmpl-tool-e822fc2ec33a45269111c71d302bea11\", \"type\": \"tool-input-start\"}\n\n"}
+{"chunk": "data: {\"toolCallId\": \"chatcmpl-tool-e822fc2ec33a45269111c71d302bea11\", \"output\": {\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n"}
+{"chunk": "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n"}
+{"chunk": "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-11e0a762\", \"promptTokens\": 8656, \"completionTokens\": 208, \"reasoningTokens\": 111, \"cachedTokens\": 0, \"totalTokens\": 8864, \"provider\": \"openrouter\", \"model\": \"openrouter/openrouter/auto\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"openrouter/openrouter/auto\"}, \"type\": \"message-metadata\"}\n\n"}
+{"chunk": "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"}

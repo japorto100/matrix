@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"github.com/nats-io/nats.go"
 )
@@ -13,28 +15,55 @@ import (
 const (
 	// SubjectInbound: Matrix-Nachricht → Python Agent
 	SubjectInbound = "matrix.message.inbound"
+	// SubjectInboundAgentPrefix: agent-specific inbound routing.
+	SubjectInboundAgentPrefix = SubjectInbound + ".agent."
 	// SubjectReply: Python Agent-Antwort → Matrix-Raum
 	SubjectReply = "matrix.message.reply"
 )
 
+var (
+	natsSubjectUnsafe = regexp.MustCompile(`[^a-z0-9_-]+`)
+	natsSubjectDashes = regexp.MustCompile(`-{2,}`)
+)
+
+// SubjectAgentToken normalisiert Agent-Namen fuer NATS-Subjects.
+func SubjectAgentToken(agent string) string {
+	value := strings.ToLower(strings.TrimSpace(agent))
+	value = strings.TrimPrefix(value, "@")
+	value = strings.TrimPrefix(value, "agent-")
+	if idx := strings.Index(value, ":"); idx >= 0 {
+		value = value[:idx]
+	}
+	value = natsSubjectUnsafe.ReplaceAllString(value, "-")
+	value = natsSubjectDashes.ReplaceAllString(value, "-")
+	value = strings.Trim(value, "-_")
+	if len(value) > 64 {
+		value = strings.Trim(value[:64], "-_")
+	}
+	if value == "" {
+		return "default"
+	}
+	return value
+}
+
 // InboundMessage repräsentiert eine eingehende Matrix-Nachricht.
 type InboundMessage struct {
-	RoomID       string `json:"room_id"`
-	Sender       string `json:"sender"`
-	Body         string `json:"body"`
-	EventID      string `json:"event_id"`
-	ThreadID     string `json:"thread_id,omitempty"`      // exec-05c C4: Thread-Root Event-ID
-	TargetAgent  string `json:"target_agent,omitempty"`   // exec-05c C2: z.B. "trading", "research"
-	IsThreadReply bool  `json:"is_thread_reply,omitempty"` // exec-05c C4: true wenn Thread-Reply
+	RoomID        string `json:"room_id"`
+	Sender        string `json:"sender"`
+	Body          string `json:"body"`
+	EventID       string `json:"event_id"`
+	ThreadID      string `json:"thread_id,omitempty"`       // exec-05c C4: Thread-Root Event-ID
+	TargetAgent   string `json:"target_agent,omitempty"`    // exec-05c C2: z.B. "trading", "research"
+	IsThreadReply bool   `json:"is_thread_reply,omitempty"` // exec-05c C4: true wenn Thread-Reply
 }
 
 // ReplyMessage repräsentiert eine Antwort vom Agent.
 type ReplyMessage struct {
-	RoomID        string `json:"room_id"`
-	AgentUserID   string `json:"agent_user_id"`              // @agent-trading:matrix.local
-	Text          string `json:"text"`
-	IsStreaming   bool   `json:"is_streaming"`
-	ThreadRootID  string `json:"thread_root_id,omitempty"`   // exec-05c C4: Thread-Root Event-ID
+	RoomID       string `json:"room_id"`
+	AgentUserID  string `json:"agent_user_id"` // @agent-trading:matrix.local
+	Text         string `json:"text"`
+	IsStreaming  bool   `json:"is_streaming"`
+	ThreadRootID string `json:"thread_root_id,omitempty"` // exec-05c C4: Thread-Root Event-ID
 }
 
 // Bridge verwaltet die NATS-Verbindung.
@@ -77,7 +106,7 @@ func (b *Bridge) PublishInbound(ctx context.Context, msg InboundMessage) error {
 	if b.subjectRouting {
 		// exec-05c C2: Agent-spezifisches Routing hat Vorrang vor Room-Routing
 		if msg.TargetAgent != "" {
-			subject = SubjectInbound + ".agent." + msg.TargetAgent
+			subject = SubjectInboundAgentPrefix + SubjectAgentToken(msg.TargetAgent)
 		} else if msg.RoomID != "" {
 			subject = SubjectInbound + ".room." + msg.RoomID
 		}

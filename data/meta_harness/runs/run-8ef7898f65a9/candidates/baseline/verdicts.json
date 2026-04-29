@@ -1,0 +1,35 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required action: memory_recall",
+    "missing required action: memory_retain",
+    "missing required memory route: fusion"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "llm_response",
+    "skill_found",
+    "skill_used",
+    "tool_call",
+    "tool_result"
+  ],
+  "observed_tools": [
+    "memory_add"
+  ],
+  "observed_skills": [
+    "global:market-research",
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment",
+    "global:trading-analysis",
+    "market-research",
+    "memory-usage",
+    "plan",
+    "risk-assessment",
+    "trading-analysis"
+  ],
+  "tool_success_rate": 1.0,
+  "observed_memory_routes": [],
+  "observed_memory_providers": []
+}

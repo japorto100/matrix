@@ -1,0 +1,12 @@
+{
+  "run_id": "run-cbe1be3f2a71",
+  "candidate_id": "post-push-memory-clean-env",
+  "created_at": "2026-04-27T02:30:42.647116+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000"
+  }
+}

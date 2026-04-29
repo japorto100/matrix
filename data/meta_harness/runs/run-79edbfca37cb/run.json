@@ -1,0 +1,12 @@
+{
+  "run_id": "run-79edbfca37cb",
+  "candidate_id": "memory-trigger-policy-gates-v2",
+  "created_at": "2026-04-27T04:48:22.540490+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://127.0.0.1:4000"
+  }
+}

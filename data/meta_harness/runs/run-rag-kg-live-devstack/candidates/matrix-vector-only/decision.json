@@ -1,0 +1,13 @@
+{
+  "run_id": "run-rag-kg-live-devstack",
+  "candidate_id": "matrix-vector-only",
+  "decision": "discard",
+  "rationale": "Vector-only passes plain document QA but fails trading/geo multi-hop boundary because KG source and claim reference are missing.",
+  "decided_at": "2026-04-27T13:56:04.299257+00:00",
+  "metrics": {
+    "pass_rate": 0.5,
+    "recall@5": 0.5,
+    "fitness_score": 0.5
+  },
+  "follow_up": ""
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": "run-502b65a06880",
+  "candidate_id": "live-probe-sandbox-isolated",
+  "decision": "defer",
+  "rationale": "Agent selected sandbox_execute and consent path worked, but OpenSandbox endpoint was unreachable, causing ConnectError and tool success 0.0. Defer until sandbox service is started or mocked for live probes.",
+  "decided_at": "2026-04-26T16:49:24.281235+00:00",
+  "metrics": {
+    "tool_success_rate": 0.0,
+    "fitness_score": 0.55
+  },
+  "follow_up": "Start OpenSandbox/dev stack or add an explicit sandbox-unavailable fixture gate before treating sandbox probe as agent regression."
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": "run-d7e589486e09",
+  "candidate_id": "skill-finder-zero-overlap-filter",
+  "created_at": "2026-04-27T03:55:39.630629+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://127.0.0.1:4000"
+  }
+}

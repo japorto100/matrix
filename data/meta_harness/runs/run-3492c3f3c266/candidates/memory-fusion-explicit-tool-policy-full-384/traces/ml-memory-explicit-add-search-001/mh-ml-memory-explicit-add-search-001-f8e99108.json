@@ -1,0 +1,536 @@
+[
+  {
+    "id": 657,
+    "timestamp": "2026-04-26 15:19:13.365786+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "{\"results\": [{\"text\": \"memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\", \"type\": \"memory_lifecycle_probe\", \"entities\": []}, {\"text\": \"Agent best\\u00e4tigte, dass der Text \\u201ememory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\\u201c im Langzeit\\u2011Ged\\u00e4chtnis abgelegt wurde und jederzeit abgerufen werden kann. | When: 2026-04-26 | Involving: Agent\", \"type\": \"world\", \"entities\": []}, {\"text\": \"Agent stored the lifecycle probe identifier as requested. | When: 2026-04-26 | Involving: Agent (advisory)\", \"type\": \"world\", \"entities\": []}, {\"text\": \"The memory lifecycle probe prefers verbatim evidence before compaction. | When: 2026-04-26 | Involving: memory_lifecycle_probe\", \"type\": \"world\", \"entities\": []}, {\"text\": \"The stored memory phrase is \\u201cMemory lifecycle probe prefers verbatim evidence before compaction.\\u201d | When: 2026-04-26 | Involving: user, agent\", \"type\": \"world\", \"entities\": []}, {\"text\": \"before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.\", \"type\": \"project_memory\", \"entities\": []}, {\"text\": \"memory lifecycle probe prefers verbatim evidence before compaction | Involving: memory lifecycle probe\", \"type\": \"world\", \"entities\": []}, {\"text\": \"User states that the memory lifecycle probe prefers verbatim evidence before compaction | Involving: user\", \"type\": \"world\", \"entities\": []}, {\"text\": \"Memory lifecycle probe prefers verbatim evidence before compaction. | When: 2026-04-26 | Involving: memory lifecycle probe\", \"type\": \"world\", \"entities\": []}, {\"text\": \"The memory lifecycle probe prefers verbatim evidence before compaction. | Involving: memory lifecycle probe\", \"type\": \"world\", \"entities\": []}], \"count\": 10}",
+    "output": "Der exakt gespeicherte Begriff lautet:\n\n**memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction**",
+    "duration_ms": 2116,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 5777
+    },
+    "iteration": 2
+  },
+  {
+    "id": 656,
+    "timestamp": "2026-04-26 15:19:11.108356+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": {
+      "results": [
+        {
+          "text": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+          "type": "memory_lifecycle_probe",
+          "entities": []
+        },
+        {
+          "text": "Agent best\u00e4tigte, dass der Text \u201ememory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\u201c im Langzeit\u2011Ged\u00e4chtnis abgelegt wurde und jederzeit abgerufen werden kann. | When: 2026-04-26 | Involving: Agent",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "Agent stored the lifecycle probe identifier as requested. | When: 2026-04-26 | Involving: Agent (advisory)",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "The memory lifecycle probe prefers verbatim evidence before compaction. | When: 2026-04-26 | Involving: memory_lifecycle_probe",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "The stored memory phrase is \u201cMemory lifecycle probe prefers verbatim evidence before compaction.\u201d | When: 2026-04-26 | Involving: user, agent",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence.",
+          "type": "project_memory",
+          "entities": []
+        },
+        {
+          "text": "memory lifecycle probe prefers verbatim evidence before compaction | Involving: memory lifecycle probe",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "User states that the memory lifecycle probe prefers verbatim evidence before compaction | Involving: user",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "Memory lifecycle probe prefers verbatim evidence before compaction. | When: 2026-04-26 | Involving: memory lifecycle probe",
+          "type": "world",
+          "entities": []
+        },
+        {
+          "text": "The memory lifecycle probe prefers verbatim evidence before compaction. | Involving: memory lifecycle probe",
+          "type": "world",
+          "entities": []
+        }
+      ],
+      "count": 10
+    },
+    "duration_ms": 3057,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 655,
+    "timestamp": "2026-04-26 15:19:10.990585+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "fusion",
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+      "fact_type": "",
+      "item_count": 10,
+      "tool_name": "memory_search",
+      "source": "explicit_memory_tool"
+    },
+    "iteration": null
+  },
+  {
+    "id": 653,
+    "timestamp": "2026-04-26 15:19:08.051769+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 652,
+    "timestamp": "2026-04-26 15:19:07.877758+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "{\"results\": [], \"error\": \"Invalid fact type(s): memory_lifecycle_probe. Must be one of: experience, observation, world\"}",
+    "output": null,
+    "duration_ms": 1953,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4729
+    },
+    "iteration": 1
+  },
+  {
+    "id": 651,
+    "timestamp": "2026-04-26 15:19:05.796175+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "fact_type": "memory_lifecycle_probe",
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": {
+      "results": [],
+      "error": "Invalid fact type(s): memory_lifecycle_probe. Must be one of: experience, observation, world"
+    },
+    "duration_ms": 381,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 650,
+    "timestamp": "2026-04-26 15:19:05.645734+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": false,
+    "error": null,
+    "metadata": {
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "fusion",
+      "tool_name": "memory_search",
+      "source": "explicit_memory_tool",
+      "error": "Invalid fact type(s): memory_lifecycle_probe. Must be one of: experience, observation, world"
+    },
+    "iteration": null
+  },
+  {
+    "id": 648,
+    "timestamp": "2026-04-26 15:19:05.414896+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "fact_type": "memory_lifecycle_probe",
+      "query": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 647,
+    "timestamp": "2026-04-26 15:19:05.316019+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+    "output": null,
+    "duration_ms": 1707,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4196
+    },
+    "iteration": 0
+  },
+  {
+    "id": 646,
+    "timestamp": "2026-04-26 15:19:03.271068+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false
+    },
+    "iteration": null
+  },
+  {
+    "id": 645,
+    "timestamp": "2026-04-26 15:19:03.060455+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "market-research"
+      ],
+      "query_preview": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 644,
+    "timestamp": "2026-04-26 15:19:02.941209+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:trading-analysis",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "trading-analysis",
+        "market-research"
+      ],
+      "query_preview": "Use memory_search now to recall memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction and tell me the exact phrase you found.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  },
+  {
+    "id": 643,
+    "timestamp": "2026-04-26 15:19:02.582888+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "{\"stored\": true, \"facts_extracted\": 1}",
+    "output": "Der Hinweis wurde in meinem Langzeit\u2011Ged\u00e4chtnis gespeichert:\n\n**Gespeicherter Fakt**  \n- **Content:** `memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction`  \n- **Fact\u2011Typ:** `memory_lifecycle_probe`\n\nIch kann diese Information jederzeit wieder abrufen, wenn du sie sp\u00e4ter brauchst.",
+    "duration_ms": 2828,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 4533
+    },
+    "iteration": 1
+  },
+  {
+    "id": 642,
+    "timestamp": "2026-04-26 15:17:54.488778+00:00",
+    "action": "tool_result",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+      "fact_type": "memory_lifecycle_probe"
+    },
+    "output": {
+      "stored": true,
+      "facts_extracted": 1
+    },
+    "duration_ms": 22604,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 641,
+    "timestamp": "2026-04-26 15:17:54.331164+00:00",
+    "action": "memory_retain",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "storage_route": "verbatim",
+      "fact_type": "memory_lifecycle_probe",
+      "original_fact_type": "memory_lifecycle_probe",
+      "item_count": 1,
+      "tool_name": "memory_add",
+      "source": "explicit_memory_tool",
+      "summary_status": "background_queued"
+    },
+    "iteration": null
+  },
+  {
+    "id": 639,
+    "timestamp": "2026-04-26 15:17:31.885132+00:00",
+    "action": "tool_call",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction",
+      "fact_type": "memory_lifecycle_probe"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": null,
+    "iteration": null
+  },
+  {
+    "id": 638,
+    "timestamp": "2026-04-26 15:17:31.744944+00:00",
+    "action": "llm_response",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+    "output": null,
+    "duration_ms": 3409,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "openrouter/openrouter/auto",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 4208
+    },
+    "iteration": 0
+  },
+  {
+    "id": 637,
+    "timestamp": "2026-04-26 15:17:23.849904+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "market-research"
+      ],
+      "query_preview": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 636,
+    "timestamp": "2026-04-26 15:17:23.727091+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-ml-memory-explicit-add-search-001-f8e99108",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "plan",
+        "risk-assessment",
+        "market-research"
+      ],
+      "query_preview": "Use memory_add now to remember this exact lifecycle probe: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

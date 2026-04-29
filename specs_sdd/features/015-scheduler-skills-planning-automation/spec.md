@@ -1,6 +1,6 @@
 ---
 title: Scheduler, Skills, Formal Planning and Automation
-status: mixed_active
+status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
 updated: 2026-04-25
@@ -29,6 +29,16 @@ refiner/pareto pieces are largely implemented; Hindsight outcome feedback,
 promotion pipeline and real-LLM skill verify remain open. PDDL and DSPy are
 gated planning/optimization tracks, not default automation runtime.
 
+Static verification on 2026-04-25 passes Scheduler adapter/service-user tests,
+Plan skill tests, Skill Finder tests, Prompt Scanner tests and Skills-Guard
+tests. Go scheduler packages also passed in the earlier `go test -tags goolm
+./...` appservice run. These checks do not prove live cron tick, NATS delivery
+or Matrix delivery. A later static cleanup on 2026-04-25 adds coverage for
+skill source modes and loader semantics: filesystem, DB-only and hybrid global
+sources; global/team/personal override order; `api_version`, skill type and
+asset preservation; and disabled-skill filtering, including the all-disabled
+case.
+
 ## Target State / Soll
 
 Agent automation has a coherent path: scheduled tasks, skill retrieval and
@@ -55,16 +65,28 @@ behind explicit gates.
 - Skills Hindsight feedback/promotion remains open.
 - Skills real-LLM refinement/iterative search/offline-refiner verify remains
   open.
+- Skills DB roundtrip still needs live Postgres proof; static source-mode and
+  row-mapping behavior are covered.
 - PDDL is scoped but not an active implementation default.
 - DSPy requires ADR-003 gates before broader work.
 
-## Verify
+## Static Verify
 
-- [ ] Scheduled task fires end-to-end.
-- [ ] Skill retrieval/refinement path works with current feature flags.
-- [ ] Prompt scanner gates scheduled tasks.
-- [ ] PDDL/DSPy work is gated, not silently active.
-- [ ] Plan skill behaves as read-only planning with confirmation gate.
+- [x] `uv run pytest tests/agent/scheduler tests/agent/skills/test_plan_skill.py tests/agent/test_skill_finder.py tests/agent/security/test_prompt_scanner.py tests/agent/security/test_skills_guard.py -q` passes.
+- [x] Scheduler adapter drains SSE and summarizes turns in unit tests.
+- [x] Plan skill is loaded and encodes read-only planning behavior.
+- [x] Skill source-mode, override, asset/API-version and disabled-filter tests
+  pass.
+- [x] Prompt scanner and Skills-Guard tests pass.
+- [x] PDDL/DSPy are documented as gated, not default runtime.
+
+## Live Verify
+
+- Scheduled task fires end-to-end.
+- Skill retrieval/refinement path works with current feature flags.
+- Prompt scanner gates scheduled tasks through the live API.
+- PDDL/DSPy work is gated, not silently active.
+- Plan skill behavior is verified in a real agent turn.
 
 ## Closeout Criteria
 

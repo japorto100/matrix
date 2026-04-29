@@ -16,6 +16,7 @@ from ingestion.extractors.registry import ExtractorRegistry
 from ingestion.loaders.registry import LoaderRegistry
 from ingestion.normalizers.markdown_cleaner import MarkdownCleaner
 from ingestion.sinks.registry import SinkRegistry
+from ingestion.tracking.artifacts import SourceArtifactRegistry
 from ingestion.tracking.audit import AuditEmitter
 from ingestion.tracking.dedup import DocumentHasher
 from ingestion.tracking.jobs import JobTracker
@@ -37,6 +38,7 @@ class PipelineContext:
     embedders: EmbedderRegistry
     sinks: SinkRegistry
     tracker: JobTracker
+    source_artifacts: SourceArtifactRegistry
     audit: AuditEmitter
     hasher: DocumentHasher
     go_storage: GoStorageClient
@@ -58,13 +60,18 @@ class PipelineContext:
             chunkers=ChunkerRegistry(
                 chunk_size=config.chunker_size, chunk_overlap=config.chunker_overlap
             ),
-            embedders=EmbedderRegistry(default_model=config.embedder_model),
+            embedders=EmbedderRegistry(
+                default_model=config.embedder_model,
+                remote_base_url=config.embedder_base_url,
+                remote_api_key=config.embedder_api_key,
+            ),
             sinks=SinkRegistry(
                 go_storage_client=go_storage,
                 kg_client=kg_client,
                 hindsight_db_url=config.db_url,
             ),
             tracker=JobTracker(db_url=config.db_url),
+            source_artifacts=SourceArtifactRegistry(db_url=config.db_url),
             audit=AuditEmitter(db_url=config.db_url),
             hasher=DocumentHasher(),
             go_storage=go_storage,

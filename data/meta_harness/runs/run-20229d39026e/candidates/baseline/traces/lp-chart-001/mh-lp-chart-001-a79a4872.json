@@ -1,0 +1,99 @@
+[
+  {
+    "id": 144,
+    "timestamp": "2026-04-26 00:40:51.821558+00:00",
+    "action": "memory_recall",
+    "user_id": null,
+    "thread_id": "mh-lp-chart-001-a79a4872",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 4218,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "query": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators."
+    },
+    "iteration": null
+  },
+  {
+    "id": 143,
+    "timestamp": "2026-04-26 00:40:21.486480+00:00",
+    "action": "skill_used",
+    "user_id": null,
+    "thread_id": "mh-lp-chart-001-a79a4872",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:trading-analysis",
+        "global:plan",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "trading-analysis",
+        "plan",
+        "market-research"
+      ],
+      "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 142,
+    "timestamp": "2026-04-26 00:40:21.356318+00:00",
+    "action": "skill_found",
+    "user_id": null,
+    "thread_id": "mh-lp-chart-001-a79a4872",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:trading-analysis",
+        "global:plan",
+        "global:market-research"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "trading-analysis",
+        "plan",
+        "market-research"
+      ],
+      "query_preview": "Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    },
+    "iteration": null
+  }
+]

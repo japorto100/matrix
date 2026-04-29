@@ -1,0 +1,18 @@
+{
+  "scenarios": [
+    {
+      "id": "trading-geo-kg-001",
+      "query": "",
+      "ranked_reference_ids": [
+        "claim-sanctions-insurance"
+      ]
+    },
+    {
+      "id": "general-vector-001",
+      "query": "",
+      "ranked_reference_ids": [
+        "claim-irrelevant-kg"
+      ]
+    }
+  ]
+}

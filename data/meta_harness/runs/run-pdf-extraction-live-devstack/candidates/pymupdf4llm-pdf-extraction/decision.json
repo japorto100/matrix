@@ -1,0 +1,13 @@
+{
+  "run_id": "run-pdf-extraction-live-devstack",
+  "candidate_id": "pymupdf4llm-pdf-extraction",
+  "decision": "keep",
+  "rationale": "Real ResearchWatcher PDF-to-Markdown ground-truth benchmark passes with high text recall and phrase coverage; keep as fast baseline while deferring structured formula/figure/code-fence improvements to parser candidates.",
+  "decided_at": "2026-04-27T13:56:04.386124+00:00",
+  "metrics": {
+    "token_recall": 0.9091,
+    "phrase_coverage": 1.0,
+    "fitness_score": 0.9682
+  },
+  "follow_up": "Evaluate docling/marker/mineru or post-processing candidates for formula, figure and code-fence preservation."
+}

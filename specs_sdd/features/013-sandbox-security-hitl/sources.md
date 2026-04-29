@@ -27,6 +27,9 @@ feature_id: 013
 | Source | Use |
 |---|---|
 | OpenSandbox / `open-sandbox.ai` / `github.com/alibaba/OpenSandbox` | Code-execution runtime boundary, container lifecycle, SDK/API behavior. Adopted as sandbox provider. |
+| OpenSandbox Code Interpreter example (`https://open-sandbox.ai/examples/code-interpreter/readme`) | Adopted local code-interpreter image source: `sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2`. |
+| OpenSandbox server/development docs (`https://open-sandbox.ai/server/development`) | Docker egress/networking reference: `networkPolicy` egress sidecar requires Docker `network_mode="bridge"`, so Matrix cannot use Docker `none` while expecting execd/proxy endpoints. |
+| OpenSandbox single-host networking docs (`https://open-sandbox.ai/design/single-host-network`) | Explains endpoint/proxy resolution and why local clients may need server-proxy mode or host-reachable endpoint configuration. |
 | `opensandbox`, `opensandbox-code-interpreter` PyPI packages | Python SDK and code-interpreter integration; old SDK notes document API mismatches. |
 | pentagi patterns | Structured audit, rate limiting, grace termination, installer hardening, template validation inspiration. |
 | deer-flow GuardrailProvider pattern | Consent provider abstraction and guardrail framing. |

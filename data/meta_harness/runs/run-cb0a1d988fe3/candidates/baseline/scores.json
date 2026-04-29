@@ -1,0 +1,52 @@
+{
+  "thread_id": "mh-q001-35773a17",
+  "model": "openrouter/openrouter/auto",
+  "completed": true,
+  "session_status": null,
+  "session_summary": null,
+  "turns": 1,
+  "turn_efficiency": 1.0,
+  "total_tokens": 4471,
+  "token_efficiency": 4471,
+  "total_duration_ms": 1640,
+  "tool_calls": 0,
+  "tool_success_rate": 0.0,
+  "tool_failures": 0,
+  "tools_denied": 0,
+  "memory_recalls": 1,
+  "memory_retains": 0,
+  "memory_utilization": true,
+  "skills_loaded": [
+    "global:market-research",
+    "global:memory-usage",
+    "global:plan",
+    "global:risk-assessment"
+  ],
+  "skill_events": 2,
+  "cost_estimate_usd": 0.0,
+  "fitness_score": 1.0,
+  "completion_source": "sse_finish",
+  "trace_gates": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "llm_response",
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:market-research",
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment",
+      "market-research",
+      "memory-usage",
+      "plan",
+      "risk-assessment"
+    ],
+    "tool_success_rate": null
+  }
+}

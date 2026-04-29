@@ -1,0 +1,9 @@
+{
+  "run_id": "run-live-agent-devstack-matrix-postgres",
+  "candidate_id": "live-agent-matrix-postgres",
+  "decision": "discard",
+  "rationale": "Real agent/LiteLLM path reached OpenRouter, but provider returned 402 insufficient credits before tool use; keep runner/credential fix, block live-provider promotion until funded or alternate real provider is configured.",
+  "decided_at": "2026-04-27T14:15:30.481405+00:00",
+  "metrics": {},
+  "follow_up": "Configure a funded OpenRouter key or another real LiteLLM provider, then rerun lp-chart-001 and memory/tool scenarios."
+}

@@ -1,0 +1,40 @@
+{
+  "scenarios": [
+    {
+      "id": "ml-memory-fusion-route-001",
+      "category": "memory_lifecycle_fusion_route",
+      "turns": [
+        {
+          "user": "Remember this project memory: before any context compaction, exact tool outputs and decisions should be archived as verbatim evidence."
+        },
+        {
+          "user": "What should happen before context compaction if exact tool outputs are still only in the chat?"
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "memory_recall",
+          "memory_retain"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [],
+        "forbidden_tools": [],
+        "required_skills": [
+          "memory-usage"
+        ],
+        "required_memory_routes": [
+          "fusion"
+        ],
+        "required_memory_providers": [],
+        "expected_memory": true,
+        "min_tool_success_rate": null
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "automatic recall/retain and Fusion route visibility"
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": true
+    }
+  ]
+}
