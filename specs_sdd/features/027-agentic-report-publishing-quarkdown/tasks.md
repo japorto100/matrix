@@ -43,6 +43,10 @@ feature_id: 027
     report manifests, renderer/version, checksum, output files, citations,
     validation failures and Matrix publication readiness. It remains read-only
     and uses fallback fixtures until persisted report artifact listing exists.
+- [x] T026a [done-static] Add read-only Control API report artifact index.
+  - 2026-04-29: `/api/v1/control/reports` scans `MATRIX_REPORT_ARTIFACT_DIR`
+    or `data/reports`, reads `manifest.json`, revalidates against the Feature
+    027 report contract and returns normalized artifact rows for Control UI.
 
 ## Verification
 
@@ -58,3 +62,5 @@ feature_id: 027
     retrieval evidence. Full report-generation Meta-Harness scenario remains
     open.
 - [x] T037 [done-static] Frontend typecheck/lint for `/control/reports`.
+- [x] T038 [done-static] Unit-test report artifact index over generated and
+  invalid manifests.

@@ -109,6 +109,8 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   delegated to Feature 027. 2026-04-29 static UI follow-up: `/control/reports`
   now exposes the report artifact index shape with manifest, renderer,
   checksum, outputs, citations, validation and Matrix-publication readiness.
+  The matching read-only Control API endpoint scans existing report manifests;
+  Control UI still does not own report generation or rendering.
 
 Control UI should expose effective state from owning features. It should not
 become the owner of MCP policy, semantic truth, report rendering or agent

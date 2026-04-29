@@ -142,8 +142,8 @@ migrated_from:
   - 2026-04-29: `/control/reports` renders a read-only report artifact index
     with manifest path, renderer/version, checksum, outputs, citations,
     validation failures and Matrix publication readiness. It uses the
-    provider-agnostic Feature 027 contract and a frontend fallback until a
-    persisted report artifact backend index exists.
+    provider-agnostic Feature 027 contract and consumes `/api/v1/control/reports`
+    when report manifests exist.
 
 ## Verify Gates
 

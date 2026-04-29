@@ -61,7 +61,10 @@ renderer is promoted in live Matrix chat.
 provider-agnostic contract: manifest path, renderer/version, checksum, output
 files, citations/source refs, validation failures and safe Matrix publication
 readiness. It intentionally does not start Quarkdown or any renderer from the
-browser. A persisted backend report index is still needed for live artifacts.
+browser. `/api/v1/control/reports` now provides a matching read-only backend
+index over existing `manifest.json` artifacts. A richer persisted report table
+is still optional future work once artifact retention and cleanup policy are
+settled.
 
 ## Checked Sources
 
