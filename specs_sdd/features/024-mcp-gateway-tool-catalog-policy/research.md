@@ -88,6 +88,10 @@ explicit credential scopes, approval gates and audit evidence.
   `McpDescriptorSnapshotStore` with in-memory and JSON adapters. This documents
   the transient-cache path while leaving the production DB table as a later
   adapter, not a policy rewrite.
+- 2026-04-29 fixture execution follow-up: fixture descriptors now pass through
+  the same effective-catalog policy and bounded `execute_mcp_tool_call()` path
+  used for real MCP calls, proving catalog-to-gateway wiring without an
+  external server.
 
 ## Design Consequence
 

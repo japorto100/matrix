@@ -88,6 +88,9 @@ and live-verify probes. This file defines execution order.
      separately.
    - 2026-04-29: MCP descriptor persistence has a migration-neutral
      `McpDescriptorSnapshotStore` protocol with in-memory and JSON adapters.
+   - 2026-04-29: fixture MCP descriptors now have a catalog-to-gateway
+     integration test covering visible tool execution and `tool_call_id`
+     preservation.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

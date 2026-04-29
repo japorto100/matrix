@@ -10,6 +10,8 @@ from agent.mcp_gateway.execution import (
     McpToolCallRequest,
     execute_mcp_tool_call,
 )
+from agent.mcp_gateway.health import fixture_mcp_descriptors, fixture_mcp_server_config
+from agent.mcp_gateway.policy import build_effective_catalog
 
 
 @pytest.mark.asyncio
@@ -120,3 +122,35 @@ async def test_execute_mcp_tool_call_caps_output_before_agent_context():
     assert result.truncated is True
     assert content["truncated"] is True
     assert content["original_bytes"] > content["max_output_bytes"]
+
+
+@pytest.mark.asyncio
+async def test_fixture_mcp_catalog_tool_executes_through_gateway():
+    server = fixture_mcp_server_config()
+    catalog = build_effective_catalog(server, fixture_mcp_descriptors())
+    lookup = next(entry for entry in catalog if entry.snapshot.original_name == "fixture_lookup")
+
+    async def fixture_invoker(request: McpToolCallRequest) -> dict:
+        assert request.matrix_name == lookup.snapshot.matrix_name
+        return {
+            "source": "fixture-mcp",
+            "query": request.tool_input["query"],
+            "rows": [{"id": "row-1", "value": 42}],
+        }
+
+    request = McpToolCallRequest(
+        tool_call_id="call-fixture",
+        matrix_name=lookup.snapshot.matrix_name,
+        tool_input={"query": "portfolio"},
+        session_id="session-fixture",
+        audit_ref="audit-fixture",
+    )
+
+    result = await execute_mcp_tool_call(request, fixture_invoker)
+    content = json.loads(result.content)
+
+    assert lookup.visible is True
+    assert result.ok is True
+    assert result.to_tool_message()["tool_call_id"] == "call-fixture"
+    assert content["matrix_name"] == lookup.snapshot.matrix_name
+    assert content["result"]["rows"][0]["value"] == 42

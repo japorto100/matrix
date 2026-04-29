@@ -127,7 +127,10 @@ feature_id: 024
 - [x] T042 [done-static] Unit-test confirm-unavailable fail-closed behavior.
 - [x] T043 Unit-test token passthrough redaction and denial.
 - [x] T044 Unit-test descriptor diff risk escalation.
-- T045 Integration-test fixture MCP server through gateway.
+- [x] T045 [done-static] Integration-test fixture MCP server through gateway.
+  - 2026-04-29: `test_fixture_mcp_catalog_tool_executes_through_gateway`
+    builds the fixture catalog, selects a visible descriptor and executes it
+    through `execute_mcp_tool_call()` with preserved `tool_call_id`.
 - T046 Live-verify Control UI reads the effective catalog.
 - [x] T047 [done-static-live-smoke] Live-verify Meta-Harness blocks poisoned descriptors.
   - 2026-04-29: provider-free CLI smoke `mcp-catalog-policy` writes artifacts
