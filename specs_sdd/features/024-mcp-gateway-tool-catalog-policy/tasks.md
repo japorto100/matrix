@@ -13,28 +13,28 @@ feature_id: 024
 
 - T001 Inventory current Python `ToolRegistry`, tool nodes, approval node and
   MCP server stubs.
-- T002 Define `McpServerConfig` with transport, command/url, env, scopes,
+- [x] T002 [done-static] Define `McpServerConfig` with transport, command/url, env, scopes,
   tenant allowlist, user allowlist and enabled flag.
-- T003 Define `McpToolDescriptorSnapshot` with source server, descriptor hash,
+- [x] T003 [done-static] Define `McpToolDescriptorSnapshot` with source server, descriptor hash,
   first_seen, last_seen, security schemes and risk flags.
-- T004 Normalize MCP descriptors into Matrix tool names without collisions.
-- T005 Add descriptor diff detection for changed name, description, schema,
+- [x] T004 [done-static] Normalize MCP descriptors into Matrix tool names without collisions.
+- [x] T005 [done-static] Add descriptor diff detection for changed name, description, schema,
   output template, auth and destructive hints.
 - T006 Persist descriptor snapshots in a migration-owned table or documented
   transient cache decision.
-- T007 Expose read-only catalog endpoint for Control UI.
+- [x] T007 [done-static] Expose read-only catalog endpoint for Control UI.
 - T008 Expose agent-facing catalog endpoint filtered by user/session policy.
 
 ## Policy And Consent
 
-- T010 Map MCP tools to Matrix approval levels: auto, confirm, destructive,
+- [x] T010 [done-static] Map MCP tools to Matrix approval levels: auto, confirm, destructive,
   admin and blocked.
 - T011 Fail closed when a confirm/destructive tool is requested without an
   available approval channel.
-- T012 Block token passthrough unless server config explicitly permits a named
+- [x] T012 [done-static] Block token passthrough unless server config explicitly permits a named
   credential scope.
-- T013 Redact descriptor/env/secrets in traces and Meta-Harness artifacts.
-- T014 Add tool-description prompt-injection scan before exposure.
+- [x] T013 [done-static] Redact descriptor/env/secrets in traces and Meta-Harness artifacts.
+- [x] T014 [done-static] Add tool-description prompt-injection scan before exposure.
 - T015 Add lookalike/collision checks for high-trust tools.
 - T016 Require user-visible provenance for external tools.
 - T017 Add per-session temporary grants with expiry and audit refs.
@@ -48,7 +48,7 @@ feature_id: 024
   agent runners.
 - T022 Preserve tool_call_id across approvals, denials and execution errors.
 - T023 Add resource fetch policy separate from tool execution policy.
-- T024 Add metadata-only mode for catalog review without tool execution.
+- [x] T024 [done-static] Add metadata-only mode for catalog review without tool execution.
 - T025 Add server health probe without invoking model-visible tools.
 - T026 Add deterministic local fixture server for tests.
 - T027 Add configured-provider-backed live lane only after catalog policy is
@@ -67,11 +67,11 @@ feature_id: 024
 
 ## Verification
 
-- T040 Unit-test descriptor normalization and collision handling.
-- T041 Unit-test policy filtering by user/session/tenant.
+- [x] T040 Unit-test descriptor normalization and collision handling.
+- [x] T041 Unit-test policy filtering by user/session/tenant.
 - T042 Unit-test confirm-unavailable fail-closed behavior.
-- T043 Unit-test token passthrough redaction and denial.
-- T044 Unit-test descriptor diff risk escalation.
+- [x] T043 Unit-test token passthrough redaction and denial.
+- [x] T044 Unit-test descriptor diff risk escalation.
 - T045 Integration-test fixture MCP server through gateway.
 - T046 Live-verify Control UI reads the effective catalog.
 - T047 Live-verify Meta-Harness blocks poisoned descriptors.

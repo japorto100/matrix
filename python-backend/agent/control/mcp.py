@@ -14,6 +14,8 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from agent.mcp_gateway.policy import McpServerConfig, build_effective_catalog
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["control", "mcp"])
@@ -62,3 +64,32 @@ async def list_mcp_tools(server_id: str) -> dict[str, Any]:
         return {"items": [], "total": 0, "note": "External MCP introspection Phase 2"}
     server = _internal_matrix_mcp()
     return {"items": server["tools"], "total": len(server["tools"])}
+
+
+@router.get("/mcp/catalog")
+async def list_mcp_catalog() -> dict[str, Any]:
+    """Read-only effective MCP catalog with descriptor policy metadata."""
+
+    server = _internal_matrix_mcp()
+    server_config = McpServerConfig(
+        server_id="matrix-internal",
+        transport="streamable-http",
+        url=server["url"],
+        enabled=True,
+    )
+    descriptors = [
+        {
+            "name": tool_name,
+            "description": "Matrix internal MCP tool",
+            "inputSchema": {"type": "object"},
+        }
+        for tool_name in server["tools"]
+    ]
+    catalog = build_effective_catalog(
+        server_config,
+        descriptors,
+        tenant_id="matrix-local",
+        user_id="control-ui",
+    )
+    items = [entry.as_dict() for entry in catalog]
+    return {"items": items, "total": len(items), "secrets_redacted": True}
