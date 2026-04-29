@@ -28,3 +28,11 @@ feature_id: 030
   - 2026-04-29 live-smoke:
     `run-matrix-widget-policy-20260429-rerun` passed in
     `/tmp/matrix-meta-harness-widget-policy-rerun`.
+- LV015 Open own Matrix webclient and verify an approved policy widget renders
+  as a sandboxed iframe only when audit/approval metadata is present.
+- LV016 Open own Matrix webclient and verify the same safe widget URL without
+  approval metadata remains fallback-only and never embeds an iframe.
+- LV017 Open room info in own Matrix webclient and verify active room-state
+  widgets list status, origin and blocked reason.
+- LV018 Verify `matrix-js-sdk` 41.4.0 + `matrix-widget-api` 1.17.0 room widget
+  parsing behavior against a real room-state event from the dev homeserver.

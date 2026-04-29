@@ -28,24 +28,37 @@ host/client decides what can render.
   code blocks are safe common denominator; interactive widgets need fallback.
 - MCP Apps-style resources and Matrix widgets are conceptually adjacent, but
   Matrix must gate them through local policy and client compatibility.
-- SOTA web check 2026-04-29:
-  - `matrix-widget-api` latest visible npm release is 1.13.1 and its readme
-    still warns widgets are not yet in the Matrix spec, so Matrix widget
-    behavior must be treated as client/toolkit-specific rather than universal.
+- SOTA/package check 2026-04-29:
+  - npm registry reports `matrix-js-sdk` latest as 41.4.0 and
+    `matrix-widget-api` latest as 1.17.0. The frontend now pins ranges to
+    `matrix-js-sdk` `^41.4.0` and direct `matrix-widget-api` `^1.17.0` so
+    widget parsing is not an undeclared transitive dependency.
+  - `matrix-widget-api` 1.17.0 exposes `WidgetParser.parseRoomWidget()` and
+    validates widget room-state events against `id`, `creatorUserId`, `type`
+    and URL. The local webclient should use that parser for Matrix-shaped
+    widget events, then layer Matrix-local approval/sandbox policy on top.
+  - Matrix widget behavior must still be treated as client/toolkit-specific
+    rather than universal because Element-family and third-party clients differ
+    in support.
   - Matrix.org TWIM 2026-01-09 confirms active Matrix Widget Toolkit work,
     including custom CSP `frame-src` support in
     `@matrix-widget-toolkit/widget-server` 1.2.0. This directly supports the
     local host policy choice to model sandbox/CSP and frame origins explicitly.
-  - `matrix-js-sdk` raw changelog shows recent widget-adjacent changes in the
-    40.x line, including `RoomWidgetClient` sticky event support. The
-    implementation should keep room-state/sticky-event semantics separate from
-    plain chat-message rendering.
+  - `matrix-js-sdk` changelog shows 41.4.0 released on 2026-04-28. Widget-
+    adjacent changes remain relevant from the 40.x line, including
+    `RoomWidgetClient` sticky event support. The implementation should keep
+    room-state/sticky-event semantics separate from plain chat-message
+    rendering.
 - Local implementation 2026-04-29:
   - `agent.matrix_widgets.policy` defines provider-free proposal, approval,
     allowlist, power-level, lifecycle revoke and fallback contracts.
   - `meta_harness matrix-widget-policy` writes deterministic artifacts for
     approved state-event draft, unsafe URL blocking and Feature 024 MCP resource
     handoff denial.
+  - The own Matrix webclient now parses `m.widget` and
+    `im.vector.modular.widgets` via `matrix-widget-api` and renders approved
+    policy widgets as sandboxed iframes while keeping unapproved/unsafe widgets
+    as fallback cards.
 
 ## Design Consequence
 

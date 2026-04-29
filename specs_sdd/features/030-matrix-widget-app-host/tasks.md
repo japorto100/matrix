@@ -55,10 +55,18 @@ feature_id: 030
 
 ## UI
 
-- T020 Keep safe link-card fallback in chat.
+- [x] T020 [done-static] Keep safe link-card fallback in chat.
+  - 2026-04-29: Matrix chat now parses widget state/message events through
+    `matrix-widget-api` `WidgetParser`; unapproved widgets remain fallback
+    link/status cards and unsafe URLs remain passive blocked text.
 - T021 Add widget proposal approval UI.
-- T022 Add widget status display in room details.
-- T023 Add error/fallback display for clients without widget support.
+- [x] T022 [done-static] Add widget status display in room details.
+  - 2026-04-29: `RoomInfoPanel` lists room-state widgets from `m.widget` and
+    `im.vector.modular.widgets` with approved/pending/blocked/denied/revoked/
+    expired/fallback status, origin and block reason.
+- [x] T023 [done-static] Add error/fallback display for clients without widget support.
+  - 2026-04-29: timeline widget cards distinguish approved sandbox iframe
+    rendering from fallback-only, blocked, revoked and expired states.
 - T024 Add report-artifact link integration from Feature 027.
 - T025 Add A2UI handoff compatibility notes from Feature 008.
 
@@ -74,3 +82,9 @@ feature_id: 030
   remains safe.
   - 2026-04-29: `matrix-widget-policy` covers approved state-event draft,
     unsafe URL blocking and Feature 024 MCP resource denial.
+- [x] T037 [done-static] Align frontend widget parsing with current Matrix JS SDK
+  and `matrix-widget-api`.
+  - 2026-04-29: frontend dependencies were updated to `matrix-js-sdk` 41.4.0
+    and direct `matrix-widget-api` 1.17.0; widget parsing now uses
+    `WidgetParser.parseRoomWidget()` before applying Matrix-local policy
+    rendering state.

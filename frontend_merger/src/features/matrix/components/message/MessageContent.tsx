@@ -1,7 +1,16 @@
 "use client";
 
 import type { ResolvedMessage } from "@matrix/lib/types";
-import { ExternalLink, LayoutGrid } from "lucide-react";
+import type { MatrixWidgetStatus } from "@matrix/lib/widgets";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	Clock3,
+	ExternalLink,
+	LayoutGrid,
+	ShieldCheck,
+	XCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
 	AudioContent,
@@ -26,31 +35,114 @@ export function ReplyBanner({ replyTo }: { replyTo: NonNullable<ResolvedMessage[
 	);
 }
 
+const WIDGET_STATUS_LABEL: Record<MatrixWidgetStatus, string> = {
+	approved: "approved",
+	pending: "pending",
+	blocked: "blocked",
+	denied: "denied",
+	revoked: "revoked",
+	expired: "expired",
+	unsupported: "fallback",
+};
+
+const WIDGET_STATUS_CLASS: Record<MatrixWidgetStatus, string> = {
+	approved: "border-emerald-500/40 text-emerald-500",
+	pending: "border-amber-500/40 text-amber-500",
+	blocked: "border-rose-500/40 text-rose-500",
+	denied: "border-rose-500/40 text-rose-500",
+	revoked: "border-zinc-500/40 text-zinc-500",
+	expired: "border-zinc-500/40 text-zinc-500",
+	unsupported: "border-sky-500/40 text-sky-500",
+};
+
+function WidgetStatusIcon({ status }: { status: MatrixWidgetStatus }) {
+	if (status === "approved") return <CheckCircle2 className="h-3.5 w-3.5" />;
+	if (status === "pending") return <Clock3 className="h-3.5 w-3.5" />;
+	if (status === "blocked" || status === "denied") return <XCircle className="h-3.5 w-3.5" />;
+	if (status === "unsupported") return <AlertTriangle className="h-3.5 w-3.5" />;
+	return <ShieldCheck className="h-3.5 w-3.5" />;
+}
+
 function WidgetContent({ message }: { message: ResolvedMessage }) {
-	if (!message.url) {
+	const widget = message.widget;
+	const title = widget?.name ?? message.body.replace(/^\[Widget:\s*/, "").replace(/\]$/, "");
+	const status = widget?.status ?? (message.url ? "unsupported" : "blocked");
+	const reason = widget?.blockedReason ?? widget?.fallbackText;
+
+	if (widget?.isIframeAllowed && widget.url) {
 		return (
-			<div className="flex max-w-[320px] items-center gap-2 text-xs text-muted-foreground italic">
-				<LayoutGrid className="h-4 w-4 shrink-0" />
-				<span className="min-w-0 truncate">{message.body}</span>
+			<div className="w-[min(560px,calc(100vw-7rem))] overflow-hidden rounded-lg border border-border/70 bg-background/70">
+				<div className="flex items-center gap-2 border-b border-border/60 px-2.5 py-2 text-xs">
+					<LayoutGrid className="h-4 w-4 shrink-0 text-primary" />
+					<span className="min-w-0 flex-1 truncate font-medium">{title}</span>
+					<span
+						className={cn(
+							"inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
+							WIDGET_STATUS_CLASS.approved,
+						)}
+					>
+						<WidgetStatusIcon status="approved" />
+						{WIDGET_STATUS_LABEL.approved}
+					</span>
+					<a
+						href={widget.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						title="Widget in neuem Tab öffnen"
+						className="text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ExternalLink className="h-3.5 w-3.5" />
+					</a>
+				</div>
+				<iframe
+					src={widget.url}
+					title={title}
+					sandbox="allow-scripts allow-forms allow-popups"
+					referrerPolicy="no-referrer"
+					className="block h-[320px] w-full bg-background"
+				/>
 			</div>
 		);
 	}
 
 	return (
-		<a
-			href={message.url}
-			target="_blank"
-			rel="noopener noreferrer"
-			title="Widget in neuem Tab öffnen"
-			className="flex max-w-[320px] items-center gap-2 rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 text-left text-foreground no-underline transition-colors hover:bg-background/80"
+		<div
+			className={cn(
+				"flex max-w-[360px] items-start gap-2 rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 text-left text-foreground",
+				status === "blocked" || status === "denied" ? "border-rose-500/30" : "",
+			)}
 		>
-			<LayoutGrid className="h-4 w-4 shrink-0 text-primary" />
-			<span className="min-w-0 flex-1">
-				<span className="block truncate text-xs font-medium">{message.body}</span>
-				<span className="block truncate text-[10px] text-muted-foreground">{message.url}</span>
+			<LayoutGrid className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+			<span className="min-w-0 flex-1 space-y-1">
+				<span className="flex min-w-0 items-center gap-1.5">
+					<span className="min-w-0 flex-1 truncate text-xs font-medium">{title}</span>
+					<span
+						className={cn(
+							"inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
+							WIDGET_STATUS_CLASS[status],
+						)}
+					>
+						<WidgetStatusIcon status={status} />
+						{WIDGET_STATUS_LABEL[status]}
+					</span>
+				</span>
+				{message.url && (
+					<span className="block truncate text-[10px] text-muted-foreground">{message.url}</span>
+				)}
+				{reason && <span className="block text-[10px] text-muted-foreground">{reason}</span>}
 			</span>
-			<ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-		</a>
+			{message.url && status !== "blocked" && status !== "denied" && (
+				<a
+					href={message.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					title="Widget in neuem Tab öffnen"
+					className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<ExternalLink className="h-3.5 w-3.5" />
+				</a>
+			)}
+		</div>
 	);
 }
 

@@ -3,7 +3,19 @@
 import { usePinnedMessages } from "@matrix/lib/hooks/usePinnedMessages";
 import { useRoomMembers } from "@matrix/lib/hooks/useRoomMembers";
 import { mxcToHttp } from "@matrix/lib/utils";
-import { Camera, Check, Copy, Pencil, Pin, PinOff, Trash2, X } from "lucide-react";
+import { getRoomWidgets } from "@matrix/lib/widgets";
+import {
+	Camera,
+	Check,
+	Copy,
+	ExternalLink,
+	LayoutGrid,
+	Pencil,
+	Pin,
+	PinOff,
+	Trash2,
+	X,
+} from "lucide-react";
 import type { MatrixClient } from "matrix-js-sdk";
 import { EventType } from "matrix-js-sdk";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -145,6 +157,7 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 	const initials = displayName.slice(0, 2).toUpperCase() || "?";
 	const mxcAvatar = room?.getMxcAvatarUrl();
 	const avatarSrc = avatarPreview ?? (mxcAvatar ? mxcToHttp(mxcAvatar) : undefined);
+	const roomWidgets = getRoomWidgets(room);
 
 	return (
 		<div className="w-[380px] shrink-0 flex flex-col border-l border-border bg-background overflow-hidden">
@@ -346,6 +359,67 @@ export function RoomInfoPanel({ client, roomId, onClose }: Props) {
 								</div>
 							);
 						})()}
+
+					{/* Matrix Widgets */}
+					<div>
+						<label className="mb-2 block text-xs font-medium text-muted-foreground">
+							<LayoutGrid className="mr-1 inline h-3 w-3" />
+							Widgets ({roomWidgets.length})
+						</label>
+						{roomWidgets.length > 0 ? (
+							<div className="flex flex-col gap-1.5">
+								{roomWidgets.map((widget) => (
+									<div
+										key={`${widget.id}:${widget.url ?? ""}`}
+										className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2 text-xs"
+									>
+										<LayoutGrid className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+										<div className="min-w-0 flex-1">
+											<div className="flex items-center gap-1.5">
+												<span className="min-w-0 flex-1 truncate font-medium">{widget.name}</span>
+												<span
+													className={
+														widget.status === "approved"
+															? "shrink-0 rounded border border-emerald-500/40 px-1.5 py-0.5 text-[10px] text-emerald-500"
+															: widget.status === "blocked" || widget.status === "denied"
+																? "shrink-0 rounded border border-rose-500/40 px-1.5 py-0.5 text-[10px] text-rose-500"
+																: "shrink-0 rounded border border-amber-500/40 px-1.5 py-0.5 text-[10px] text-amber-500"
+													}
+												>
+													{widget.status}
+												</span>
+											</div>
+											{widget.origin && (
+												<div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+													{widget.origin}
+												</div>
+											)}
+											{widget.blockedReason && (
+												<div className="mt-0.5 text-[10px] text-muted-foreground">
+													{widget.blockedReason}
+												</div>
+											)}
+										</div>
+										{widget.url && widget.status !== "blocked" && widget.status !== "denied" && (
+											<a
+												href={widget.url}
+												target="_blank"
+												rel="noopener noreferrer"
+												title="Widget öffnen"
+												className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
+											>
+												<ExternalLink className="h-3.5 w-3.5" />
+											</a>
+										)}
+									</div>
+								))}
+							</div>
+						) : (
+							<p className="rounded-lg border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
+								Keine Raum-Widgets.
+							</p>
+						)}
+					</div>
 
 					{/* Shared Media */}
 					<SharedMedia room={room} />

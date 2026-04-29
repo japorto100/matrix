@@ -20,6 +20,10 @@ describe("resolveMessage widget events", () => {
 			matrixEvent("m.widget", {
 				name: "Status Board",
 				url: "https://widgets.example.test/board?room=!abc",
+				data: {
+					audit_refs: ["audit-approval"],
+					permissions: ["read_room"],
+				},
 			}),
 			"@bob:example.test",
 		);
@@ -27,6 +31,9 @@ describe("resolveMessage widget events", () => {
 		expect(message?.msgType).toBe("m.widget");
 		expect(message?.body).toBe("[Widget: Status Board]");
 		expect(message?.url).toBe("https://widgets.example.test/board?room=!abc");
+		expect(message?.widget?.status).toBe("approved");
+		expect(message?.widget?.isIframeAllowed).toBe(true);
+		expect(message?.widget?.auditRefs).toEqual(["audit-approval"]);
 	});
 
 	it("blocks non-http widget URLs", () => {
@@ -41,5 +48,20 @@ describe("resolveMessage widget events", () => {
 		expect(message?.msgType).toBe("m.widget");
 		expect(message?.body).toBe("[Widget: Bad Widget] (blocked URL)");
 		expect(message?.url).toBeUndefined();
+		expect(message?.widget?.status).toBe("blocked");
+		expect(message?.widget?.blockedReason).toBe("unsafe-widget-url");
+	});
+
+	it("keeps safe unapproved widgets as fallback-only", () => {
+		const message = resolveMessage(
+			matrixEvent("m.widget", {
+				name: "Third Party Widget",
+				url: "https://widgets.example.test/board",
+			}),
+			"@bob:example.test",
+		);
+
+		expect(message?.widget?.status).toBe("unsupported");
+		expect(message?.widget?.isIframeAllowed).toBe(false);
 	});
 });

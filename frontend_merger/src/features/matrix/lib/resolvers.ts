@@ -6,6 +6,7 @@
 import { EventType, type MatrixClient, type MatrixEvent, type Room } from "matrix-js-sdk";
 import type { ResolvedMessage, RoomInfo } from "./types";
 import { mxcToHttp, mxcToThumbnail } from "./utils";
+import { parseMatrixWidgetEvent } from "./widgets";
 
 /** Konfigurierbarer Agent-Prefix (aus NEXT_PUBLIC_MATRIX_AGENT_PREFIX oder Standard "agent-"). */
 const AGENT_PREFIX = `@${process.env.NEXT_PUBLIC_MATRIX_AGENT_PREFIX ?? "agent-"}`;
@@ -13,17 +14,6 @@ const AGENT_PREFIX = `@${process.env.NEXT_PUBLIC_MATRIX_AGENT_PREFIX ?? "agent-"
 /** Prueft ob eine User-ID aus dem Agent-Namespace kommt. */
 export function isAgentUser(userId: string): boolean {
 	return userId.startsWith(AGENT_PREFIX);
-}
-
-function normalizeWidgetUrl(value: unknown): string | undefined {
-	if (typeof value !== "string") return undefined;
-	try {
-		const url = new URL(value);
-		if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
-		return url.toString();
-	} catch {
-		return undefined;
-	}
 }
 
 function readString(value: unknown): string | undefined {
@@ -134,23 +124,22 @@ export function resolveMessage(
 	// F-5: Widget placeholder (m.widget / im.vector.modular.widgets)
 	if (evType === "m.widget" || evType === "im.vector.modular.widgets") {
 		const sender = ev.getSender() ?? "";
-		const widgetName = readString(content.name) ?? readString(content.type) ?? "Widget";
-		const rawWidgetUrl = content.url;
-		const widgetUrl = normalizeWidgetUrl(rawWidgetUrl);
+		const widget = parseMatrixWidgetEvent(ev);
+		const widgetName =
+			widget?.name ?? readString(content.name) ?? readString(content.type) ?? "Widget";
 		return {
 			eventId: ev.getId() ?? "",
 			sender,
 			senderDisplayName: sender.split(":")[0]?.replace("@", "") ?? sender,
-			body: `[Widget: ${widgetName}]${
-				typeof rawWidgetUrl === "string" && !widgetUrl ? " (blocked URL)" : ""
-			}`,
+			body: `[Widget: ${widgetName}]${widget?.blockedReason === "unsafe-widget-url" ? " (blocked URL)" : ""}`,
 			timestamp: ev.getTs(),
 			isOwn: sender === myUserId,
 			isBot: isAgentUser(sender),
 			isEdited: false,
 			isRedacted: false,
 			msgType: "m.widget",
-			url: widgetUrl,
+			url: widget?.url,
+			widget: widget ?? undefined,
 		};
 	}
 

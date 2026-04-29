@@ -12,6 +12,8 @@ export interface MatrixCredentials {
 	deviceId?: string;
 }
 
+import type { MatrixWidgetSummary } from "./widgets";
+
 /** Eine aufgelöste Nachricht für die UI. */
 export interface ResolvedMessage {
 	eventId: string;
@@ -56,6 +58,8 @@ export interface ResolvedMessage {
 	// B-8: Threads (MSC3440)
 	isThreadRoot?: boolean;
 	threadReplyCount?: number;
+	// Feature 030: Matrix widget/app host metadata.
+	widget?: MatrixWidgetSummary;
 }
 
 /** Raum-Info für die Raumliste. */
