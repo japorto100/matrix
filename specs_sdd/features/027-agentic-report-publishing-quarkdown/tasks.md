@@ -14,18 +14,20 @@ feature_id: 027
 - T001 Install/evaluate Quarkdown locally without global toolchain churn.
 - T002 Verify HTML, PDF, slides and plain text outputs on a tiny fixture.
 - T003 Compare fallback options: Pandoc, MkDocs, plain Markdown/MDX.
-- T004 Define renderer capability matrix.
-- T005 Decide whether Quarkdown is default, optional or experimental.
+- [x] T004 [done-static] Define renderer capability matrix.
+- [x] T005 [done-static] Decide whether Quarkdown is default, optional or experimental.
+  - 2026-04-29: Quarkdown remains experimental; `markdown-fallback` is the
+    deterministic contract renderer until local Quarkdown CLI builds pass.
 
 ## Report Contract
 
-- T010 Define report source layout: `.qd` or markdown, data, charts, citations,
+- [x] T010 [done-static] Define report source layout: `.qd` or markdown, data, charts, citations,
   output and manifest.
-- T011 Define report manifest with title, owner, input sources, generated_at,
+- [x] T011 [done-static] Define report manifest with title, owner, input sources, generated_at,
   renderer version and checksum.
-- T012 Define citation block contract shared with Feature 019/021.
+- [x] T012 [done-static] Define citation block contract shared with Feature 019/021.
 - T013 Define generated chart/table input format.
-- T014 Define validation rules before build.
+- [x] T014 [done-static] Define validation rules before build.
 - T015 Define artifact retention and cleanup policy.
 
 ## Agent Integration
@@ -40,8 +42,8 @@ feature_id: 027
 
 ## Verification
 
-- T030 Unit-test manifest validation.
-- T031 Unit-test citation completeness.
+- [x] T030 Unit-test manifest validation.
+- [x] T031 Unit-test citation completeness.
 - T032 Integration-test renderer on fixture.
 - T033 Integration-test report build failure is surfaced to agent.
 - T034 Live-verify generated HTML/PDF artifact.
