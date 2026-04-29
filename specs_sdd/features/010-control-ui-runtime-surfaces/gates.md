@@ -11,6 +11,8 @@ feature_id: 010
 
 ## 2026-04-29 Feature 024-029 Follow-Up
 
+- Tools tab shows effective ToolRegistry policy metadata, including risk,
+  approval, group, provider and last-seen state.
 - MCP tab shows effective filtered catalog and risk state from Feature 024, not
   raw untrusted descriptors only.
 - Semantic tab or inspector shows metric/term owner, version, provenance and
@@ -48,6 +50,7 @@ feature_id: 010
 - [ ] Files tab and upload/preview/reindex path live-verified.
 - [ ] Memory browser/KG live data path live-verified.
 - [ ] Agents/permissions/skills/tools/sandbox live or empty-state verified.
+  Tools static frontend coverage is done; browser/live proof remains pending.
 - [ ] System/audit/sessions/MCP/A2A live or empty-state verified.
 - [ ] Models/provider/billing live or empty-state verified.
 

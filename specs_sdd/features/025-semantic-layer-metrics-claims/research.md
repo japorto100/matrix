@@ -47,6 +47,11 @@ tables, KG claims, RAG documents and operational metrics.
   route alongside memory/KG/RAG lookup. Metric-sensitive questions should be
   treated as "retrieve authoritative meaning first", not as generic tool-use or
   model-only answers.
+- 2026-04-29 Control UI follow-up: Feature 010 `ToolsTab` now exposes
+  `semantic_lookup` in the normal ToolRegistry view with `semantic` group,
+  risk/approval metadata and filters. This references the same root Z_ semantic
+  note, but intentionally keeps rich metric owner/version/provenance/conflict
+  inspection as a separate Feature 025 semantic catalog surface.
 
 ## Design Consequence
 

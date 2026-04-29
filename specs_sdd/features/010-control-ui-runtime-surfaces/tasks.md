@@ -120,6 +120,11 @@ migrated_from:
     and renders approval, risk, denial and visibility state.
 - [x] T094a [done-static] Add normal builtin tool catalog/risk/policy metadata
   from Feature 016/`Z_Additional_For_Tool_Stuff.md`.
+- [x] T094b [done-static] Upgrade frontend ToolsTab as effective ToolRegistry
+  inspector.
+  - 2026-04-29: `ToolsTab` now shows enabled/guarded/high-risk/semantic summary
+    cards, risk and group filters, group badges, provider metadata and last-seen
+    timestamps. The fallback catalog includes Feature 025 `semantic_lookup`.
 - T095 Add semantic catalog and metric/claim definition inspector from Feature
   025.
 - T096 Add agent ops-room entrypoint from Feature 029: live sessions, tool

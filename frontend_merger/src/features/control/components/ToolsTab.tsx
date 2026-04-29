@@ -3,7 +3,18 @@
 // ToolsTab — registry of all tools (builtin + MCP + skills + A2A)
 // Slice 5.5 (NEU coverage gap): Tools Registry Browser
 
-import { Network, Package, Plus, Shield, Sparkles, Workflow } from "lucide-react";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	Clock,
+	Layers3,
+	Network,
+	Package,
+	Plus,
+	Shield,
+	Sparkles,
+	Workflow,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -53,9 +64,29 @@ const RISK_COLOR: Record<NonNullable<ToolDefinition["risk"]>, string> = {
 	critical: "border-rose-500/50 text-rose-400",
 };
 
+const RISK_OPTIONS = ["low", "medium", "high", "critical"] as const;
+
+function getToolGroup(tool: ToolDefinition): string {
+	return tool.group ?? tool.categories[0] ?? "uncategorized";
+}
+
+function formatLastCalled(value?: string): string {
+	if (!value) return "—";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toLocaleString(undefined, {
+		month: "short",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
+}
+
 export function ToolsTab() {
 	const [filter, setFilter] = useState("");
 	const [typeFilter, setTypeFilter] = useState<ToolType | "all">("all");
+	const [riskFilter, setRiskFilter] = useState<NonNullable<ToolDefinition["risk"]> | "all">("all");
+	const [groupFilter, setGroupFilter] = useState("all");
 	const [addOpen, setAddOpen] = useState(false);
 	const [toolUrl, setToolUrl] = useState("");
 	const [toolName, setToolName] = useState("");
@@ -67,13 +98,33 @@ export function ToolsTab() {
 	const query = useTools();
 	const allTools = (query.data?.items as ToolDefinition[] | undefined) ?? mockTools;
 
+	const groups = useMemo(() => {
+		return Array.from(new Set(allTools.map(getToolGroup))).sort((a, b) => a.localeCompare(b));
+	}, [allTools]);
+
 	const filtered = useMemo(() => {
 		return allTools.filter((tool) => {
 			if (typeFilter !== "all" && tool.type !== typeFilter) return false;
-			if (filter && !tool.name.toLowerCase().includes(filter.toLowerCase())) return false;
+			if (riskFilter !== "all" && tool.risk !== riskFilter) return false;
+			if (groupFilter !== "all" && getToolGroup(tool) !== groupFilter) return false;
+			if (filter) {
+				const query = filter.toLowerCase();
+				const searchable = [
+					tool.name,
+					tool.description,
+					tool.summary,
+					tool.provider,
+					getToolGroup(tool),
+					...tool.categories,
+				]
+					.filter(Boolean)
+					.join(" ")
+					.toLowerCase();
+				if (!searchable.includes(query)) return false;
+			}
 			return true;
 		});
-	}, [allTools, filter, typeFilter]);
+	}, [allTools, filter, groupFilter, riskFilter, typeFilter]);
 
 	const counts = allTools.reduce<Record<ToolType, number>>(
 		(acc, t) => {
@@ -82,6 +133,15 @@ export function ToolsTab() {
 		},
 		{ builtin: 0, mcp: 0, skill: 0, a2a: 0 },
 	);
+
+	const enabledCount = allTools.filter((tool) => tool.enabled).length;
+	const guardedCount = allTools.filter(
+		(tool) => tool.approval === "confirm" || tool.approval === "deny",
+	).length;
+	const highRiskCount = allTools.filter(
+		(tool) => tool.risk === "high" || tool.risk === "critical",
+	).length;
+	const semanticCount = allTools.filter((tool) => getToolGroup(tool) === "semantic").length;
 
 	const handleAddTool = async () => {
 		if (!toolUrl.trim()) return;
@@ -105,7 +165,7 @@ export function ToolsTab() {
 
 	return (
 		<div className="px-6 py-4 space-y-4">
-			<header className="flex items-baseline justify-between">
+			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<h2 className="text-base font-semibold">Tools Registry</h2>
 					<p className="text-xs text-muted-foreground">
@@ -113,7 +173,7 @@ export function ToolsTab() {
 						skill · {counts.a2a} A2A
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center justify-end gap-2">
 					<Button
 						variant="outline"
 						size="sm"
@@ -127,7 +187,7 @@ export function ToolsTab() {
 						placeholder="Search tools..."
 						value={filter}
 						onChange={(e) => setFilter(e.target.value)}
-						className="h-8 w-48 text-xs"
+						className="h-8 w-52 text-xs"
 					/>
 					<Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as ToolType | "all")}>
 						<SelectTrigger className="h-8 w-32 text-xs">
@@ -141,20 +201,84 @@ export function ToolsTab() {
 							<SelectItem value="a2a">A2A</SelectItem>
 						</SelectContent>
 					</Select>
+					<Select
+						value={riskFilter}
+						onValueChange={(v) => setRiskFilter(v as NonNullable<ToolDefinition["risk"]> | "all")}
+					>
+						<SelectTrigger className="h-8 w-32 text-xs">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All risk</SelectItem>
+							{RISK_OPTIONS.map((risk) => (
+								<SelectItem key={risk} value={risk}>
+									{risk}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<Select value={groupFilter} onValueChange={setGroupFilter}>
+						<SelectTrigger className="h-8 w-36 text-xs">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All groups</SelectItem>
+							{groups.map((group) => (
+								<SelectItem key={group} value={group}>
+									{group}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</div>
 			</header>
 
-			<div className="rounded-lg border border-border overflow-hidden">
-				<table className="w-full text-xs">
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">Enabled</span>
+						<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">
+						{enabledCount}/{allTools.length}
+					</div>
+				</div>
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">Confirm/Deny</span>
+						<Shield className="h-3.5 w-3.5 text-amber-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">{guardedCount}</div>
+				</div>
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">High Risk</span>
+						<AlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">{highRiskCount}</div>
+				</div>
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">Semantic</span>
+						<Layers3 className="h-3.5 w-3.5 text-sky-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">{semanticCount}</div>
+				</div>
+			</div>
+
+			<div className="overflow-x-auto rounded-lg border border-border">
+				<table className="w-full min-w-[1060px] text-xs">
 					<thead className="bg-card/40">
 						<tr className="text-left">
 							<th className="py-2 px-3 font-semibold w-20">Type</th>
 							<th className="py-2 px-3 font-semibold">Name</th>
+							<th className="py-2 px-3 font-semibold w-28">Group</th>
 							<th className="py-2 px-3 font-semibold">Description</th>
 							<th className="py-2 px-3 font-semibold w-28">Policy</th>
 							<th className="py-2 px-3 font-semibold w-24">Provider</th>
 							<th className="py-2 px-3 font-semibold w-20 text-right">Calls 24h</th>
 							<th className="py-2 px-3 font-semibold w-20 text-right">Avg ms</th>
+							<th className="py-2 px-3 font-semibold w-28">Last Seen</th>
 							<th className="py-2 px-3 font-semibold w-16 text-center">Enabled</th>
 						</tr>
 					</thead>
@@ -175,6 +299,11 @@ export function ToolsTab() {
 									<div className="text-[10px] text-muted-foreground font-mono mt-0.5 line-clamp-1">
 										{tool.input_schema_summary}
 									</div>
+								</td>
+								<td className="py-2 px-3">
+									<Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+										{getToolGroup(tool)}
+									</Badge>
 								</td>
 								<td className="py-2 px-3">
 									<div className="line-clamp-2 leading-relaxed text-muted-foreground">
@@ -222,6 +351,12 @@ export function ToolsTab() {
 								<td className="py-2 px-3 text-right font-mono">{tool.call_count_24h}</td>
 								<td className="py-2 px-3 text-right font-mono text-muted-foreground">
 									{tool.avg_latency_ms ?? "—"}
+								</td>
+								<td className="py-2 px-3 text-[10px] text-muted-foreground">
+									<div className="flex items-center gap-1">
+										<Clock className="h-3 w-3" />
+										{formatLastCalled(tool.last_called_at)}
+									</div>
 								</td>
 								<td className="py-2 px-3 text-center">
 									<Switch checked={tool.enabled} disabled />

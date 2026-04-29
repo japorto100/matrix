@@ -389,6 +389,27 @@ export const mockTools: ToolDefinition[] = [
 		enabled: true,
 	},
 	{
+		id: "tool_semantic_lookup",
+		name: "semantic_lookup",
+		type: "builtin",
+		description:
+			"Resolve Matrix semantic terms and governed metric definitions before metric-sensitive answers",
+		summary:
+			"Authoritative semantic lookup with provenance, freshness, ambiguity handling and raw SQL disabled.",
+		provider: "matrix-builtin",
+		input_schema_summary: "{ phrase: str, tenant_id?: str, include_metric_plan?: bool = true }",
+		categories: ["semantic", "metrics", "governance"],
+		group: "semantic",
+		risk: "low",
+		approval: "auto",
+		progressive_disclosure_level: 1,
+		policy_reasons: ["raw-sql-disabled", "authoritative-definition"],
+		last_called_at: "2026-04-29T19:00:00Z",
+		call_count_24h: 0,
+		avg_latency_ms: 12,
+		enabled: true,
+	},
+	{
 		id: "tool_calc_var",
 		name: "calc_var",
 		type: "builtin",

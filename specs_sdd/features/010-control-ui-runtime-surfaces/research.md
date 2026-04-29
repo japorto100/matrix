@@ -89,8 +89,14 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   2026-04-29 static UI follow-up: `ToolsTab` renders builtin risk, approval
   and progressive-disclosure metadata; `McpTab` renders effective MCP catalog
   approval/risk/denial/visibility state.
+  2026-04-29 second UI follow-up: `ToolsTab` is now a practical effective
+  catalog inspector with summary cards, group/risk facets, last-seen metadata
+  and a semantic-tool fallback entry. This implements the normal-tool side of
+  the Z_ tool note; it does not turn Control UI into an execution surface.
 - `Z_Semantik_layer and so on.md` requires semantic/metric definition
-  inspection delegated to Feature 025.
+  inspection delegated to Feature 025. `semantic_lookup` appears in the normal
+  Tools registry so frontend operators can see it, but metric owner/version/
+  provenance/conflict inspection remains a Feature 025 semantic inspector task.
 - `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface
   delegated to Feature 029.
 - `Z_Tool_very interessting Quarkdown.md` supports report artifact inspection

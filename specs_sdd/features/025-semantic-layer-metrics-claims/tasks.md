@@ -66,6 +66,11 @@ feature_id: 025
 - [x] T033 Unit-test correction proposal workflow.
 - [x] T033a [done-static] Unit-test `semantic_lookup` tool registration,
   permission-fail-closed behavior, refusal guidance and compact model output.
+- [x] T033b [done-static] Expose `semantic_lookup` in Control UI Tools registry
+  fallback and filters.
+  - 2026-04-29: Feature 010 `ToolsTab` shows the semantic group, risk/approval
+    policy and last-seen state; Feature 025 still owns the richer semantic
+    catalog/metric inspector.
 - T034 Integration-test agent uses semantic lookup before metric answer.
 - T035 Meta-Harness scenario: two similar metrics must not be conflated.
 - T036 Meta-Harness scenario: unstructured document concept must link to a KG

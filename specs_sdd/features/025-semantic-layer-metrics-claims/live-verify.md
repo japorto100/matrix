@@ -23,3 +23,5 @@ feature_id: 025
 - LV012 Verify no provider-specific prompt or model dependency is required.
 - LV013 Verify `semantic_lookup` appears in the agent-visible tool list for
   advisory/trading roles and is tagged as retrieval in route telemetry.
+- LV014 Open Control UI Tools tab and verify `semantic_lookup` is visible under
+  group `semantic`, with risk/approval metadata and no execution affordance.

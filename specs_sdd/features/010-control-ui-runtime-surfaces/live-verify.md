@@ -13,6 +13,7 @@ migrated_from:
 
 ## 2026-04-29 Feature 024-029 Follow-Up
 
+- Tools tab shows ToolRegistry policy summaries, filters and `semantic_lookup`.
 - MCP tab shows Feature 024 effective policy/risk state.
 - Semantic catalog inspector shows one metric, one KG-linked term and one
   ambiguity/conflict.
@@ -102,6 +103,9 @@ migrated_from:
 - Right-click reset removes override.
 - Skills toggle calls backend and shows persisted or pending status.
 - Tools tab lists registry/tool schemas.
+- Tools tab filters by type, risk and group without layout overflow.
+- Tools tab shows `semantic_lookup` as group `semantic` when backend or fallback
+  catalog includes it.
 - Sandbox tab lists runs or healthy empty state.
 
 ## Observability / System
