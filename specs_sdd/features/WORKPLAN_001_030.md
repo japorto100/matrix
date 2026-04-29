@@ -67,8 +67,14 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: report manifest, citation validation, safe fallback renderer
      and artifact writer are implemented; Quarkdown remains experimental until
      local CLI builds pass.
-7. [next] Phase 5: strengthen RAG/Ingestion/Benchmark source-ref and holdout
+7. [partial] Phase 5: strengthen RAG/Ingestion/Benchmark source-ref and holdout
    gates using the semantic/report contracts.
+   - 2026-04-29: Feature 022 canaries now cover semantic-term, visual-layout
+     and report-grounding metadata/citation contracts. Remaining Phase 5 work:
+     real parser/chunker candidates, browser-local retrieval lane, live
+     pgvector/NornicDB/provider benchmarks and inner-loop search spaces.
+8. [next] Phase 5: implement parser/chunker and retrieval candidate spaces
+   that consume the new cross-feature canaries without browser dependencies.
 
 ## Dependency Watchlist
 

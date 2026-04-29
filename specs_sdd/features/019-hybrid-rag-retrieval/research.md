@@ -88,3 +88,14 @@ owns answer-time assembly and comparison to backend retrieval.
 
 `Z_Semantik_layer and so on.md` means retrieval should accept semantic
 term/metric filters from Feature 025 rather than relying only on raw user text.
+
+2026-04-29 implementation note: semantic, visual and report evidence now enter
+the deterministic retrieval benchmark as reference-metadata contracts:
+
+- `semantic-term-tool-success-001` covers Feature 025 term/metric metadata.
+- `visual-layout-source-coordinates-001` covers Feature 028 page/bbox layout
+  evidence.
+- `report-grounding-manifest-001` covers Feature 027 report manifest citations.
+
+This keeps GraphRAG/RAG experiments provider-agnostic and source-grounded: the
+benchmark checks metadata and citations, not any single vendor model behavior.

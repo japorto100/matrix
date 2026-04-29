@@ -44,7 +44,11 @@ feature_id: 028
 ## Verification
 
 - T030 Unit-test visual evidence schema.
-- T031 Unit-test layout coordinate refs.
+- T031 [partial-static] Unit-test layout coordinate refs.
+  - 2026-04-29: Feature 022 canary
+    `visual-layout-source-coordinates-001` statically verifies coordinate refs
+    survive retrieval selection. Dedicated Feature 028 schema/unit tests remain
+    open.
 - T032 Unit-test screenshot redaction policy.
 - T033 Integration-test OCR fixture to visual memory.
 - T034 Meta-Harness scenario: recall visible screen text.

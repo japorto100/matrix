@@ -45,3 +45,14 @@ capture -> OCR/layout -> source-linked blocks -> summary -> memory/RAG search
 
 Optical compression can be a candidate in Feature 023/Meta-Harness later, not a
 default memory format.
+
+## 2026-04-29 Benchmark Handoff
+
+Feature 022 now includes `visual-layout-source-coordinates-001` as a
+deterministic RAG benchmark case. It turns the Z-derived visual-layout concern
+into a concrete metadata contract: page number, bbox, layout block type, OCR
+confidence, image checksum, source artifact id, chunk hash and citation ref
+must survive retrieval.
+
+This is not a full visual-memory implementation yet. It is the static gate that
+will catch extraction/search candidates that drop coordinates or provenance.

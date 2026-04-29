@@ -19,9 +19,12 @@ from retrieval.evals.canaries import (
     GENERAL_VECTOR_CANARY,
     MULTIHOP_KG_HOLDOUT_CANARY,
     NORNICDB_PROJECTION_CANARY,
+    REPORT_GROUNDING_CANARY,
+    SEMANTIC_TERM_CANARY,
     SIMPLE_DOC_HOLDOUT_CANARY,
     TRADING_GEO_KG_CANARY,
     URL_SOURCE_PROVENANCE_CANARY,
+    VISUAL_LAYOUT_CANARY,
     CanaryExpectation,
     RetrievalCanary,
     canaries_for_split,
@@ -66,8 +69,11 @@ async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
     assert report["question_classes"] == [
         "multi_hop_temporal",
         "projection_replay",
+        "report_grounding",
+        "semantic_term_grounded",
         "simple_document_grounded",
         "source_provenance",
+        "visual_layout_grounded",
     ]
     assert canaries_for_split(DEFAULT_CANARIES, "search") == DEFAULT_SEARCH_CANARIES
     assert canaries_for_split(DEFAULT_CANARIES, "holdout") == DEFAULT_HOLDOUT_CANARIES
@@ -78,6 +84,42 @@ async def test_compare_candidates_separates_search_and_holdout_splits() -> None:
     assert by_id["matrix-vector-only"]["split_summary"]["holdout"]["pass_rate"] < by_id[
         "matrix-fused-vector-kg"
     ]["split_summary"]["holdout"]["pass_rate"]
+
+
+@pytest.mark.asyncio
+async def test_cross_feature_canaries_require_semantic_visual_and_report_metadata() -> None:
+    report = await compare_candidates(
+        [SEMANTIC_TERM_CANARY, VISUAL_LAYOUT_CANARY, REPORT_GROUNDING_CANARY],
+        candidates=(MATRIX_VECTOR_ONLY, MATRIX_KG_ONLY, MATRIX_FUSED),
+        k=5,
+    )
+    by_id = {candidate["candidate_id"]: candidate for candidate in report["candidates"]}
+
+    vector_results = {
+        result["canary_id"]: result for result in by_id["matrix-vector-only"]["results"]
+    }
+    kg_results = {
+        result["canary_id"]: result for result in by_id["matrix-kg-only"]["results"]
+    }
+    fused_results = {
+        result["canary_id"]: result for result in by_id["matrix-fused-vector-kg"]["results"]
+    }
+
+    assert by_id["matrix-vector-only"]["pass_rate"] == 1.0
+    assert by_id["matrix-fused-vector-kg"]["pass_rate"] == 1.0
+    assert by_id["matrix-kg-only"]["pass_rate"] == 0.0
+    assert vector_results["semantic-term-tool-success-001"]["reference_metadata"][
+        "chunk-semantic-tool-success-rate"
+    ]["semantic_term_ids"] == ["agent_tool_success_rate", "tool_execution"]
+    assert vector_results["visual-layout-source-coordinates-001"]["reference_metadata"][
+        "chunk-visual-layout-table-cell"
+    ]["bbox"] == [118, 248, 410, 286]
+    assert fused_results["report-grounding-manifest-001"]["reference_metadata"][
+        "chunk-report-rag-summary-citation"
+    ]["report_manifest_id"] == "manifest-rag-benchmark-summary"
+    assert "missing-source:vector" in kg_results["semantic-term-tool-success-001"][
+        "failures"
+    ]
 
 
 @pytest.mark.asyncio

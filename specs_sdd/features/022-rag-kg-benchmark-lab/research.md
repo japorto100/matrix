@@ -55,3 +55,15 @@ The benchmark lab now needs new candidate dimensions:
 
 Keep the same rule: every candidate is compared against strong dense/hybrid
 baselines under matched budgets before promotion.
+
+2026-04-29 implementation note: the benchmark lab now includes three
+cross-feature source-grounding cases derived from the Z-MDs:
+
+- Feature 025 semantic-term case: `semantic-term-tool-success-001`.
+- Feature 028 visual-layout case: `visual-layout-source-coordinates-001`.
+- Feature 027 report-grounding case: `report-grounding-manifest-001`.
+
+These cases intentionally use the same provider-agnostic canary machinery as
+the existing vector/KG/fused comparisons. A candidate passes by preserving
+source/citation metadata and citing the selected reference, not by calling a
+specific commercial provider.

@@ -437,6 +437,187 @@ NORNICDB_PROJECTION_CANARY = RetrievalCanary(
     tags=("kg-projection", "nornicdb", "source-grounding"),
 )
 
+SEMANTIC_TERM_CANARY = RetrievalCanary(
+    id="semantic-term-tool-success-001",
+    query=(
+        "Which approved semantic term defines agent tool success rate for "
+        "Matrix operations?"
+    ),
+    mode="text",
+    question_class="semantic_term_grounded",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-semantic-tool-success-rate",),
+        required_reference_metadata={
+            "chunk-semantic-tool-success-rate": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "semantic_catalog_version",
+                "semantic_term_ids",
+                "metric_id",
+            )
+        },
+        required_cited_reference_ids=("chunk-semantic-tool-success-rate",),
+        generated_answer=(
+            "The approved Matrix semantic term for agent tool success rate is "
+            "agent_tool_success_rate [chunk-semantic-tool-success-rate]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-semantic-tool-success-rate",
+            "text": (
+                "The Matrix semantic catalog defines agent_tool_success_rate "
+                "as successful tool executions divided by total tool "
+                "executions under tenant-scoped audit events."
+            ),
+            "score": 0.94,
+            "source_uri": "semantic://matrix/catalog/agent_tool_success_rate",
+            "metadata": {
+                "source_artifact_id": "artifact-semantic-catalog-v2026-04-29",
+                "source_uri": "semantic://matrix/catalog/agent_tool_success_rate",
+                "chunk_id": "chunk-semantic-tool-success-rate",
+                "chunk_hash": "sha256:semantic-tool-success-rate",
+                "citation_ref": (
+                    "semantic://matrix/catalog/agent_tool_success_rate"
+                    "#metric=agent_tool_success_rate"
+                ),
+                "semantic_catalog_version": "2026-04-29",
+                "semantic_term_ids": [
+                    "agent_tool_success_rate",
+                    "tool_execution",
+                ],
+                "metric_id": "agent_tool_success_rate",
+                "section": "semantic metric",
+            },
+        },
+    ),
+    tags=("semantic-layer", "source-grounding", "metric"),
+)
+
+VISUAL_LAYOUT_CANARY = RetrievalCanary(
+    id="visual-layout-source-coordinates-001",
+    query="Which visual table cell supports the ResearchWatcher layout metric?",
+    mode="text",
+    question_class="visual_layout_grounded",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-visual-layout-table-cell",),
+        required_reference_metadata={
+            "chunk-visual-layout-table-cell": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "page_number",
+                "bbox",
+                "layout_block_type",
+                "ocr_confidence",
+                "image_sha256",
+            )
+        },
+        required_cited_reference_ids=("chunk-visual-layout-table-cell",),
+        generated_answer=(
+            "The ResearchWatcher visual-layout fixture cites the table cell "
+            "with bbox coordinates on page 2 [chunk-visual-layout-table-cell]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-visual-layout-table-cell",
+            "text": (
+                "The ResearchWatcher visual-layout fixture records a table "
+                "cell on page 2 with bbox [118, 248, 410, 286] as the source "
+                "for the layout metric."
+            ),
+            "score": 0.91,
+            "source_uri": "doc://researchwatcher/layout-fixture.pdf",
+            "metadata": {
+                "source_artifact_id": "artifact-researchwatcher-layout-fixture",
+                "source_uri": "doc://researchwatcher/layout-fixture.pdf",
+                "chunk_id": "chunk-visual-layout-table-cell",
+                "chunk_hash": "sha256:visual-layout-table-cell",
+                "citation_ref": (
+                    "doc://researchwatcher/layout-fixture.pdf"
+                    "#page=2&bbox=118,248,410,286"
+                ),
+                "page_number": 2,
+                "bbox": [118, 248, 410, 286],
+                "layout_block_type": "table_cell",
+                "ocr_confidence": 0.98,
+                "image_sha256": "sha256:researchwatcher-page-2",
+                "section": "table",
+            },
+        },
+    ),
+    tags=("visual-layout", "source-grounding", "coordinates"),
+)
+
+REPORT_GROUNDING_CANARY = RetrievalCanary(
+    id="report-grounding-manifest-001",
+    query="Which report manifest citation supports the Matrix RAG benchmark summary?",
+    mode="text",
+    question_class="report_grounding",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-report-rag-summary-citation",),
+        required_reference_metadata={
+            "chunk-report-rag-summary-citation": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "report_manifest_id",
+                "report_output_path",
+                "report_renderer",
+            )
+        },
+        required_cited_reference_ids=("chunk-report-rag-summary-citation",),
+        generated_answer=(
+            "The Matrix RAG benchmark summary is grounded by the report "
+            "manifest citation [chunk-report-rag-summary-citation]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-report-rag-summary-citation",
+            "text": (
+                "The Matrix RAG benchmark summary report cites retrieval "
+                "candidate pass rates through a manifest-backed citation "
+                "entry."
+            ),
+            "score": 0.9,
+            "source_uri": "report://matrix/rag-benchmark-summary",
+            "metadata": {
+                "source_artifact_id": "artifact-report-rag-benchmark-summary",
+                "source_uri": "report://matrix/rag-benchmark-summary",
+                "chunk_id": "chunk-report-rag-summary-citation",
+                "chunk_hash": "sha256:report-rag-summary-citation",
+                "citation_ref": (
+                    "report://matrix/rag-benchmark-summary"
+                    "#citation=chunk-report-rag-summary-citation"
+                ),
+                "report_manifest_id": "manifest-rag-benchmark-summary",
+                "report_output_path": "reports/rag-benchmark-summary/report.html",
+                "report_renderer": "markdown-fallback",
+                "section": "report citation",
+            },
+        },
+    ),
+    tags=("report-grounding", "citation", "source-grounding"),
+)
+
 SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
     id="holdout-simple-doc-001",
     query="What does the customs memo say about copper concentrate tariff status?",
@@ -513,6 +694,9 @@ DEFAULT_SEARCH_CANARIES = (
     SOURCE_PROVENANCE_CANARY,
     URL_SOURCE_PROVENANCE_CANARY,
     NORNICDB_PROJECTION_CANARY,
+    SEMANTIC_TERM_CANARY,
+    VISUAL_LAYOUT_CANARY,
+    REPORT_GROUNDING_CANARY,
 )
 DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
 DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)

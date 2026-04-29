@@ -118,6 +118,13 @@ feature_id: 019
 - T048 Verify graph retrieval does not degrade simple document-grounded QA
   when parser/chunking quality is held constant.
 - T049 Add Feature 026 browser-local retrieval as a measured candidate lane.
-- T050 Add Feature 025 semantic filters/terms to retrieval query planning.
-- T051 Add Feature 028 visual-layout blocks as retrievable evidence with source
+- T050 [partial-static] Add Feature 025 semantic filters/terms to retrieval query planning.
+  - 2026-04-29: `semantic-term-tool-success-001` now proves the retrieval
+    benchmark can require semantic catalog version, term ids and metric id on
+    selected references. Runtime query-planning integration remains open.
+- T051 [partial-static] Add Feature 028 visual-layout blocks as retrievable evidence with source
   coordinates.
+  - 2026-04-29: `visual-layout-source-coordinates-001` now proves selected
+    references can carry page number, bbox, layout block type, OCR confidence
+    and image checksum through the Context Bubble benchmark path. Runtime
+    visual extraction/search remains Feature 028.

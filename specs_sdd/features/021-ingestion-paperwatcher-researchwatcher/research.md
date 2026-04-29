@@ -73,3 +73,16 @@ Feature 019 retrieval can cite exact regions.
 `Z_Tool_very interessting Quarkdown.md` adds a report-publishing consumer:
 Feature 027 should reference ingestion artifacts instead of copying unverifiable
 text into generated reports.
+
+2026-04-29 implementation note: Feature 022 now carries static handoff canaries
+for the Z-derived consumers:
+
+- semantic handoff from `Z_Semantik_layer and so on.md`: catalog version, term
+  ids and metric id must survive on selected references.
+- visual handoff from `Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md`: page,
+  bbox, block type, OCR confidence and image checksum must survive.
+- report handoff from `Z_Tool_very interessting Quarkdown.md`: report manifest
+  id, output path and renderer must remain attached to citations.
+
+These are metadata contracts for Matrix ingestion/retrieval. They do not make
+Docling, MinerU, MarkItDown, Quarkdown or any LLM provider mandatory defaults.

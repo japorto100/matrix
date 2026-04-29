@@ -198,9 +198,20 @@ feature_id: 021
 - B002 [done] Dedup audit metadata wrote Postgres UUID objects directly and
   could fail JSON serialization. Document and note pipelines now stringify
   `existing_job_id`.
-- T043 Add visual-layout extraction handoff to Feature 028 for screenshots,
+- T043 [partial-static] Add visual-layout extraction handoff to Feature 028 for screenshots,
   page images and coordinate-preserving blocks.
-- T044 Add report-source artifact handoff to Feature 027 so generated reports
+  - 2026-04-29: retrieval canary
+    `visual-layout-source-coordinates-001` now defines the handoff metadata
+    expected from ingestion/visual extraction: source artifact, chunk hash,
+    citation ref, page number, bbox, layout block type, OCR confidence and
+    image checksum. Actual extraction adapter remains Feature 028.
+- T044 [partial-static] Add report-source artifact handoff to Feature 027 so generated reports
   can cite ingestion artifacts directly.
-- T045 Add semantic concept extraction handoff to Feature 025 for glossary/term
+  - 2026-04-29: retrieval canary `report-grounding-manifest-001` now requires
+    report manifest id, report output path, renderer and source artifact
+    citation metadata on selected references.
+- T045 [partial-static] Add semantic concept extraction handoff to Feature 025 for glossary/term
   proposals.
+  - 2026-04-29: retrieval canary `semantic-term-tool-success-001` now requires
+    semantic catalog version, term ids and metric id, giving Feature 025 a
+    benchmarkable ingestion/RAG handoff contract.

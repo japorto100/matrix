@@ -48,4 +48,8 @@ feature_id: 027
 - T033 Integration-test report build failure is surfaced to agent.
 - T034 Live-verify generated HTML/PDF artifact.
 - T035 Live-verify Matrix chat can display generated artifact link safely.
-- T036 Meta-Harness score report against source-grounding gates.
+- T036 [partial-static] Meta-Harness score report against source-grounding gates.
+  - 2026-04-29: Feature 022 canary `report-grounding-manifest-001` now scores
+    whether report manifest/output/renderer metadata survives as cited
+    retrieval evidence. Full report-generation Meta-Harness scenario remains
+    open.
