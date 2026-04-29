@@ -22,8 +22,12 @@ feature_id: 024
 - [x] T004 [done-static] Normalize MCP descriptors into Matrix tool names without collisions.
 - [x] T005 [done-static] Add descriptor diff detection for changed name, description, schema,
   output template, auth and destructive hints.
-- T006 Persist descriptor snapshots in a migration-owned table or documented
+- [x] T006 [done-static] Persist descriptor snapshots in a migration-owned table or documented
   transient cache decision.
+  - 2026-04-29: `agent.mcp_gateway.storage` defines a migration-neutral
+    snapshot-store protocol plus in-memory and JSON-file adapters. Production
+    can later bind the protocol to a migration-owned table without changing
+    policy/diff call sites.
 - [x] T007 [done-static] Expose read-only catalog endpoint for Control UI.
 - [x] T008 [done-static] Expose agent-facing catalog endpoint filtered by user/session policy.
   - 2026-04-29: `/control/mcp/catalog/agent` returns only visible catalog

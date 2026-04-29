@@ -86,6 +86,8 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: normal builtin ToolRegistry outputs now have an immediate
      sanitized tool-message cap before LLM re-entry, preserving raw artifacts
      separately.
+   - 2026-04-29: MCP descriptor persistence has a migration-neutral
+     `McpDescriptorSnapshotStore` protocol with in-memory and JSON adapters.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

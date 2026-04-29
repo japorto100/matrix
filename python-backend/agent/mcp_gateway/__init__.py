@@ -22,11 +22,20 @@ from agent.mcp_gateway.policy import (
     snapshot_descriptor,
     tool_provenance,
 )
+from agent.mcp_gateway.storage import (
+    InMemoryMcpDescriptorSnapshotStore,
+    JsonMcpDescriptorSnapshotStore,
+    McpDescriptorSnapshotStore,
+    McpDescriptorSnapshotWrite,
+    persist_descriptor_snapshot,
+)
 
 __all__ = [
     "McpCatalogEntry",
     "McpGatewayExecutionConfig",
     "McpGatewayExecutionResult",
+    "McpDescriptorSnapshotStore",
+    "McpDescriptorSnapshotWrite",
     "McpServerConfig",
     "McpSessionGrant",
     "McpToolCallRequest",
@@ -38,8 +47,11 @@ __all__ = [
     "evaluate_tool_invocation_policy",
     "evaluate_token_passthrough",
     "execute_mcp_tool_call",
+    "InMemoryMcpDescriptorSnapshotStore",
     "issue_session_grant",
+    "JsonMcpDescriptorSnapshotStore",
     "normalize_tool_name",
+    "persist_descriptor_snapshot",
     "snapshot_descriptor",
     "tool_provenance",
 ]
