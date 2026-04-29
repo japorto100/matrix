@@ -14,6 +14,7 @@ from typing import Any
 
 from agent.errors import CredentialExhaustedError
 from agent.graph.state import AgentGraphState, ToolCall
+from agent.llm.provider_capabilities import model_capabilities
 from agent.llm_client import get_litellm_client
 from agent.resilience.credential_pool import (
     Credential,
@@ -102,7 +103,7 @@ def _clean_assistant_content(content: str) -> str:
     for marker in ("assistantfinal", "assistant_final", "<|assistant|>final"):
         idx = lowered.rfind(marker)
         if idx >= 0:
-            text = text[idx + len(marker):].lstrip(" :\n\r\t")
+            text = text[idx + len(marker) :].lstrip(" :\n\r\t")
             break
 
     cleaned = _TEXTUAL_TOOL_CALL_RE.sub("", text).strip()
@@ -182,9 +183,23 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         if _model_may_use_ephemeral_cache(model):
             _apply_anthropic_caching(oai_messages)
 
+        capabilities = model_capabilities(model)
+        known_capabilities = bool(capabilities.get("known_to_litellm"))
         kwargs: dict[str, Any] = {"model": model, "messages": oai_messages}
-        if openai_tools:
+        if openai_tools and not _known_false(
+            known_capabilities,
+            capabilities.get("supports_tools"),
+        ):
             kwargs["tools"] = openai_tools
+        elif openai_tools:
+            span.add_event(
+                "provider_field_omitted",
+                {
+                    "field": "tools",
+                    "reason": "unsupported_by_model_capabilities",
+                    "model": model,
+                },
+            )
         max_output_tokens = _max_output_tokens_from_env()
         if max_output_tokens is not None:
             kwargs["max_tokens"] = max_output_tokens
@@ -237,7 +252,20 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         # OpenAI → reasoning_effort, Anthropic → thinking block, DeepSeek → their format
         reasoning_effort = state.get("reasoning_effort")
         if reasoning_effort and reasoning_effort in ("low", "medium", "high"):
-            kwargs["reasoning_effort"] = reasoning_effort
+            if not _known_false(
+                known_capabilities,
+                capabilities.get("supports_reasoning_effort"),
+            ):
+                kwargs["reasoning_effort"] = reasoning_effort
+            else:
+                span.add_event(
+                    "provider_field_omitted",
+                    {
+                        "field": "reasoning_effort",
+                        "reason": "unsupported_by_model_capabilities",
+                        "model": model,
+                    },
+                )
 
         if extra_body:
             kwargs["extra_body"] = extra_body
@@ -269,7 +297,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 if credential is not None:
                     try:
                         await apply_recovery(
-                            get_credential_pool(), credential, _cls,
+                            get_credential_pool(),
+                            credential,
+                            _cls,
                         )
                     except Exception:  # noqa: BLE001 — recovery failure mustn't hide root cause
                         logger.debug("apply_recovery failed", exc_info=True)
@@ -302,8 +332,12 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             )
             if _rpm_bucket is not None and _rpm_bucket.limit > 0:
                 span.set_attribute("ratelimit.requests.limit", _rpm_bucket.limit)
-                span.set_attribute("ratelimit.requests.remaining", _rpm_bucket.remaining)
-                span.set_attribute("ratelimit.requests.usage_pct", _rpm_bucket.usage_pct)
+                span.set_attribute(
+                    "ratelimit.requests.remaining", _rpm_bucket.remaining
+                )
+                span.set_attribute(
+                    "ratelimit.requests.usage_pct", _rpm_bucket.usage_pct
+                )
         except Exception:  # noqa: BLE001 — rate-limit capture must never fail the call
             logger.debug("rate-limit capture skipped", exc_info=True)
 
@@ -456,8 +490,12 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         )
 
         total_prompt_tokens = int(state.get("prompt_tokens", 0) or 0) + prompt_tokens
-        total_completion_tokens = int(state.get("completion_tokens", 0) or 0) + completion_tokens
-        total_reasoning_tokens = int(state.get("reasoning_tokens", 0) or 0) + reasoning_tokens
+        total_completion_tokens = (
+            int(state.get("completion_tokens", 0) or 0) + completion_tokens
+        )
+        total_reasoning_tokens = (
+            int(state.get("reasoning_tokens", 0) or 0) + reasoning_tokens
+        )
         total_cached_tokens = int(state.get("cached_tokens", 0) or 0) + cached_tokens
         total_token_usage = int(state.get("token_usage", 0) or 0) + token_usage
         resolved_model = str(getattr(response, "model", "") or model)
@@ -485,13 +523,14 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         else:
             result["final_response"] = assistant_content
             result["done"] = True
-            result["messages"] = [
-                {"role": "assistant", "content": assistant_content}
-            ]
+            result["messages"] = [{"role": "assistant", "content": assistant_content}]
 
         return result
 
 
+def _known_false(known_capabilities: bool, value: Any) -> bool:
+    """Return True only when model metadata explicitly says a field is unsupported."""
+    return known_capabilities and value is False
 
 
 def _model_may_use_ephemeral_cache(model: str) -> bool:
@@ -541,8 +580,6 @@ def _apply_anthropic_caching(messages: list[dict[str, Any]]) -> None:
         _mark_cache_control(messages[0])
 
     # 2. Last-3 rolling window over NON-system messages.
-    non_system_positions = [
-        i for i, m in enumerate(messages) if i != system_idx
-    ]
+    non_system_positions = [i for i, m in enumerate(messages) if i != system_idx]
     for idx in non_system_positions[-3:]:
         _mark_cache_control(messages[idx])

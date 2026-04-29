@@ -73,6 +73,9 @@ feature_id: 020
     smoke requires `direct_answer`, `none` delegation and `spawn_depth=0`.
 - T025 Add safety gates for reasoning leakage, resolved-secret persistence and
   provider-specific unsupported fields.
+  - 2026-04-29: runtime now omits `tools` and `reasoning_effort` only when
+    LiteLLM-derived metadata explicitly marks the model as incompatible; unknown
+    custom/provider models retain previous behavior.
 - T026 Add compression/thrashing gates: no infinite compression loop, retry
   counters reset after compression, no context poisoning.
 - T027 Add hook-policy gates: pre-tool veto, transformed tool result and shell
@@ -123,6 +126,9 @@ feature_id: 020
 - T037 Add Hermes-inspired but Matrix-specific loop guards: max tool retries,
   max provider retries, compression retry reset, stale async memory flush guard
   and unsupported-provider-field guard.
+  - 2026-04-29: unsupported-provider-field guard implemented for known model
+    capability metadata in `llm_node`; broader retry/thrashing guards remain
+    open.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.

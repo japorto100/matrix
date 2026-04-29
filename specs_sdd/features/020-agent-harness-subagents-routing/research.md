@@ -85,6 +85,17 @@ subagent behavior. Without it, Meta-Harness cannot tell whether a future answer
 was improved by routing, retrieval, memory, model choice or accidental prompt
 variance.
 
+## 2026-04-29 Runtime Guard Slice
+
+The fresh `Z_` docs and ADR-0009 reinforce a provider-agnostic boundary:
+Matrix can learn from provider SDK examples, but runtime requests should be
+shaped from capability data, not vendor-specific prompts or assumptions. The
+implemented slice keeps unknown/custom LiteLLM models on the existing behavior
+and only omits `tools` or `reasoning_effort` when LiteLLM-derived metadata
+explicitly says the model does not support that field. This gives Feature 020
+an unsupported-provider-field guard without forcing a full transport
+abstraction through the agent runtime yet.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

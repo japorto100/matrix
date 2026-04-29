@@ -114,6 +114,8 @@ migrated_from:
   metadata, embeddings, max output and cost, without provider-specific prompts.
   - 2026-04-29: provider snapshots now record LiteLLM-derived model
     capabilities plus generic chat/embedding config in Meta-Harness artifacts.
+  - 2026-04-29: `llm_node` consumes the same capability data to omit known
+    unsupported `tools` and `reasoning_effort` request fields.
 
 ## Verify Gates
 
