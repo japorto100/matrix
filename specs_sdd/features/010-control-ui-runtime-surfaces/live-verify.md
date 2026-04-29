@@ -20,6 +20,8 @@ migrated_from:
 - `/control/semantic` opens from the Control nav and shows validation,
   owner/version/source refs, metric scopes and raw-SQL-disabled plan state.
 - Ops room shows one live agent session and one Meta-Harness replay.
+- `/control/ops?mode=dev` opens from Developer Mode and shows session board,
+  tool timeline, blockers, audit link and Matrix handoff link.
 - Report artifact list opens one generated report manifest from Feature 027.
 
 ## Prerequisites

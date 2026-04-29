@@ -22,7 +22,11 @@ feature_id: 029
 
 ## UI
 
-- T010 Add dense 2D ops board in Control UI.
+- [x] T010 [done-static] Add dense 2D ops board in Control UI.
+  - 2026-04-29: `/control/ops` renders a Developer Mode board from existing
+    sessions, tool catalog and audit query surfaces with active/waiting/blocked
+    status, tool-risk badges, blocker cards, audit drilldown link and Matrix
+    handoff link.
 - T011 Add timeline view for one session/run.
 - T012 Add tool-call drilldown with approval and audit refs.
 - T013 Add memory/RAG/KG event markers.
@@ -41,6 +45,7 @@ feature_id: 029
 
 ## Verification
 
+- [x] T030a [done-static] Frontend typecheck/lint for `/control/ops`.
 - T030 Unit-test status derivation.
 - T031 Unit-test redaction.
 - T032 Integration-test trace-to-ops-event read model.

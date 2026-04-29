@@ -147,6 +147,13 @@ const TABS: SubTab[] = [
 		section: "dev",
 	},
 	{
+		href: "/control/ops",
+		label: "Ops",
+		icon: <Activity className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/ops"),
+		section: "dev",
+	},
+	{
 		href: "/control/mcp",
 		label: "MCP",
 		icon: <Workflow className="h-3 w-3" />,

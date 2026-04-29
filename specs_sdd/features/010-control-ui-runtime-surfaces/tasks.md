@@ -130,8 +130,13 @@ migrated_from:
   - 2026-04-29: `/control/semantic` renders the Feature 025 semantic catalog,
     validation state, alias collision count, KG/RAG term metadata, metric
     owner/scope/freshness/source refs and a read-only metric-plan inspector.
-- T096 Add agent ops-room entrypoint from Feature 029: live sessions, tool
-  state, approvals and replay.
+- [x] T096 [done-static] Add agent ops-room entrypoint from Feature 029: live
+  sessions, tool state, approvals and replay.
+  - 2026-04-29: `/control/ops` is available in Developer Mode and renders a
+    dense 2D board from existing Sessions/Tools/Audit query surfaces with
+    active/waiting/blocked/replay lanes, tool risk badges, blockers, audit link
+    and Matrix handoff link. Live stream and Meta-Harness replay endpoints stay
+    Feature 029 backend work.
 - T097 Add report artifact list from Feature 027 with source/manifest links.
 
 ## Verify Gates

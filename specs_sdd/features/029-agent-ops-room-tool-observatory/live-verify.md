@@ -10,6 +10,8 @@ feature_id: 029
 # Live Verify
 
 - LV001 Start dev stack and open Control UI ops room.
+- LV001a Open `/control/ops?mode=dev` and verify static board renders without
+  browser layout overflow.
 - LV002 Run a simple agent session and verify live timeline events.
 - LV003 Trigger tool call and verify tool status/risk appears.
 - LV004 Trigger approval-needed state and verify blocker display.

@@ -101,7 +101,10 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   existing semantic catalog API and renders catalog validation, KG/RAG term
   metadata, metric scope/freshness/source refs and a no-raw-SQL metric plan.
 - `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface
-  delegated to Feature 029.
+  delegated to Feature 029. 2026-04-29 static UI follow-up: `/control/ops`
+  adds the dense 2D board entrypoint and consumes existing Sessions/Tools/Audit
+  surfaces; live event streaming and Meta-Harness replay remain Feature 029
+  backend tasks.
 - `Z_Tool_very interessting Quarkdown.md` supports report artifact inspection
   delegated to Feature 027.
 

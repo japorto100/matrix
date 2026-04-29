@@ -39,3 +39,10 @@ trace/audit/Meta-Harness events -> ops event read model -> 2D control board
 ```
 
 No provider-specific runtime is implied.
+
+## 2026-04-29 Static UI Follow-Up
+
+`/control/ops` now implements the first dense 2D board using already available
+Control data: sessions, normal tool catalog metadata and audit events. This is
+deliberately not a new event store. It proves the frontend shape and leaves the
+real read model, live stream and Meta-Harness replay endpoints as backend work.

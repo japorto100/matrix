@@ -15,6 +15,7 @@ import { AuditTab } from "./components/AuditTab";
 import { ContextTab } from "./components/ContextTab";
 import { ControlTopNav } from "./components/ControlTopNav";
 import { McpTab } from "./components/McpTab";
+import { OpsRoomTab } from "./components/OpsRoomTab";
 import { OverviewTab } from "./components/OverviewTab";
 import { PermissionsTab } from "./components/PermissionsTab";
 import { SandboxTab } from "./components/SandboxTab";
@@ -49,6 +50,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/system")) return <SystemTab />;
 		if (pathname.startsWith("/control/sandbox")) return <SandboxTab />;
 		if (pathname.startsWith("/control/audit")) return <AuditTab />;
+		if (pathname.startsWith("/control/ops")) return <OpsRoomTab />;
 		if (pathname.startsWith("/control/mcp")) return <McpTab />;
 		if (pathname.startsWith("/control/a2a")) return <A2aTab />;
 
