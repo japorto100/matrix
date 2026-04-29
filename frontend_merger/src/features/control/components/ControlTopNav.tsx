@@ -10,6 +10,7 @@ import {
 	Boxes,
 	CalendarClock,
 	FileSearch,
+	GitBranch,
 	LayoutDashboard,
 	Network,
 	Server,
@@ -98,6 +99,13 @@ const TABS: SubTab[] = [
 		label: "Context",
 		icon: <Network className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/context"),
+		section: "user",
+	},
+	{
+		href: "/control/semantic",
+		label: "Semantic",
+		icon: <GitBranch className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/semantic"),
 		section: "user",
 	},
 	{

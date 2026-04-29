@@ -52,6 +52,11 @@ tables, KG claims, RAG documents and operational metrics.
   risk/approval metadata and filters. This references the same root Z_ semantic
   note, but intentionally keeps rich metric owner/version/provenance/conflict
   inspection as a separate Feature 025 semantic catalog surface.
+- 2026-04-29 inspector follow-up: Feature 010 `/control/semantic` now renders
+  that separate catalog surface. It remains provider-agnostic and read-only:
+  users can inspect definitions, aliases, KG/RAG ties, metric scope/freshness
+  and permission-aware plans, but the UI does not generate SQL or execute a
+  metric.
 
 ## Design Consequence
 

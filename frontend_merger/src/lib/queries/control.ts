@@ -25,6 +25,8 @@ import type {
 	ScheduledTask,
 	ScheduledTaskStatus,
 	SecurityPosture,
+	SemanticCatalogResponse,
+	SemanticMetricPlanResponse,
 	ServiceStatus,
 	Session,
 	Skill,
@@ -448,6 +450,25 @@ export const mcpQueries = {
 		total: number;
 		secrets_redacted: boolean;
 	}> => apiGet("/api/control/mcp/catalog"),
+};
+
+// ─── Semantic Catalog ─────────────────────────────────────────────────────
+
+export const semanticKeys = {
+	all: ["control", "semantic"] as const,
+	catalog: () => ["control", "semantic", "catalog"] as const,
+	metricPlan: (metricId: string, tenantId: string) =>
+		["control", "semantic", "metrics", metricId, "plan", tenantId] as const,
+};
+
+export const semanticQueries = {
+	catalog: async (): Promise<SemanticCatalogResponse> => apiGet("/api/control/semantic/catalog"),
+	metricPlan: async (metricId: string, tenantId = ""): Promise<SemanticMetricPlanResponse> =>
+		apiGet(
+			`/api/control/semantic/metrics/${encodeURIComponent(metricId)}/plan${
+				tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : ""
+			}`,
+		),
 };
 
 // ─── A2A ───────────────────────────────────────────────────────────────────

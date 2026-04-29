@@ -19,6 +19,7 @@ import { OverviewTab } from "./components/OverviewTab";
 import { PermissionsTab } from "./components/PermissionsTab";
 import { SandboxTab } from "./components/SandboxTab";
 import { SecurityTab } from "./components/SecurityTab";
+import { SemanticTab } from "./components/SemanticTab";
 import { SessionsTab } from "./components/SessionsTab";
 import { SkillsTab } from "./components/SkillsTab";
 import { SystemTab } from "./components/SystemTab";
@@ -37,6 +38,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/sessions")) return <SessionsTab />;
 		if (pathname.startsWith("/control/tasks")) return <TasksTab />;
 		if (pathname.startsWith("/control/context")) return <ContextTab />;
+		if (pathname.startsWith("/control/semantic")) return <SemanticTab />;
 		if (pathname.startsWith("/control/security")) return <SecurityTab />;
 
 		// ─── Developer Mode Tabs ────────────────────────────────────────────

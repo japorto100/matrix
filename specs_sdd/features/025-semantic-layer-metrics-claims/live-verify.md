@@ -25,3 +25,5 @@ feature_id: 025
   advisory/trading roles and is tagged as retrieval in route telemetry.
 - LV014 Open Control UI Tools tab and verify `semantic_lookup` is visible under
   group `semantic`, with risk/approval metadata and no execution affordance.
+- LV015 Open `/control/semantic`, verify one KG-linked term, one RAG term, one
+  tenant-scoped metric plan and raw SQL disabled.

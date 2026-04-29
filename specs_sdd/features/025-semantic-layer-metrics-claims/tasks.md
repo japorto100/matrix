@@ -71,6 +71,11 @@ feature_id: 025
   - 2026-04-29: Feature 010 `ToolsTab` shows the semantic group, risk/approval
     policy and last-seen state; Feature 025 still owns the richer semantic
     catalog/metric inspector.
+- [x] T033c [done-static] Expose semantic catalog/metric inspector in Control
+  UI.
+  - 2026-04-29: `/control/semantic` consumes the semantic catalog API with a
+    fallback fixture, renders validation/conflicts, KG/RAG term metadata,
+    metric permissions/freshness/source refs and a no-raw-SQL plan panel.
 - T034 Integration-test agent uses semantic lookup before metric answer.
 - T035 Meta-Harness scenario: two similar metrics must not be conflated.
 - T036 Meta-Harness scenario: unstructured document concept must link to a KG

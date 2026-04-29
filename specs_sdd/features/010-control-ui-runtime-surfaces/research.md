@@ -97,6 +97,9 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   inspection delegated to Feature 025. `semantic_lookup` appears in the normal
   Tools registry so frontend operators can see it, but metric owner/version/
   provenance/conflict inspection remains a Feature 025 semantic inspector task.
+  2026-04-29 static inspector follow-up: `/control/semantic` now consumes the
+  existing semantic catalog API and renders catalog validation, KG/RAG term
+  metadata, metric scope/freshness/source refs and a no-raw-SQL metric plan.
 - `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface
   delegated to Feature 029.
 - `Z_Tool_very interessting Quarkdown.md` supports report artifact inspection

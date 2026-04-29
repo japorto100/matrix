@@ -17,6 +17,8 @@ migrated_from:
 - MCP tab shows Feature 024 effective policy/risk state.
 - Semantic catalog inspector shows one metric, one KG-linked term and one
   ambiguity/conflict.
+- `/control/semantic` opens from the Control nav and shows validation,
+  owner/version/source refs, metric scopes and raw-SQL-disabled plan state.
 - Ops room shows one live agent session and one Meta-Harness replay.
 - Report artifact list opens one generated report manifest from Feature 027.
 

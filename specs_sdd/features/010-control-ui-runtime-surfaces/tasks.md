@@ -125,8 +125,11 @@ migrated_from:
   - 2026-04-29: `ToolsTab` now shows enabled/guarded/high-risk/semantic summary
     cards, risk and group filters, group badges, provider metadata and last-seen
     timestamps. The fallback catalog includes Feature 025 `semantic_lookup`.
-- T095 Add semantic catalog and metric/claim definition inspector from Feature
-  025.
+- [x] T095 [done-static] Add semantic catalog and metric/claim definition
+  inspector from Feature 025.
+  - 2026-04-29: `/control/semantic` renders the Feature 025 semantic catalog,
+    validation state, alias collision count, KG/RAG term metadata, metric
+    owner/scope/freshness/source refs and a read-only metric-plan inspector.
 - T096 Add agent ops-room entrypoint from Feature 029: live sessions, tool
   state, approvals and replay.
 - T097 Add report artifact list from Feature 027 with source/manifest links.

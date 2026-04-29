@@ -15,8 +15,8 @@ feature_id: 010
   approval, group, provider and last-seen state.
 - MCP tab shows effective filtered catalog and risk state from Feature 024, not
   raw untrusted descriptors only.
-- Semantic tab or inspector shows metric/term owner, version, provenance and
-  conflict status from Feature 025.
+- [x] Semantic tab or inspector shows metric/term owner, version, provenance
+  and conflict status from Feature 025 in static frontend coverage.
 - Ops room shows live/replayed agent status from Feature 029 before optional
   spatial/3D experiments.
 
@@ -36,6 +36,8 @@ feature_id: 010
   API surfaces.
 - [ ] Header/body/query preservation is live-verified through the BFF.
 - [ ] Every backend route has real owner-feature status or documented mock
+  fallback.
+- [x] Semantic catalog route has live backend endpoint plus documented frontend
   fallback.
 
 ## G3 Mock Fallback Discipline

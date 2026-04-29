@@ -42,6 +42,8 @@ import {
 	schedulerQueries,
 	securityKeys,
 	securityQueries,
+	semanticKeys,
+	semanticQueries,
 	sessionsKeys,
 	sessionsQueries,
 	skillsKeys,
@@ -479,6 +481,24 @@ export function useMcpCatalog() {
 		...DEFAULTS,
 		queryKey: mcpKeys.catalog(),
 		queryFn: () => mcpQueries.catalog(),
+	});
+}
+
+// ─── Semantic Catalog ─────────────────────────────────────────────────────
+export function useSemanticCatalog() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: semanticKeys.catalog(),
+		queryFn: () => semanticQueries.catalog(),
+	});
+}
+
+export function useSemanticMetricPlan(metricId: string, tenantId = "") {
+	return useQuery({
+		...DEFAULTS,
+		enabled: metricId.length > 0,
+		queryKey: semanticKeys.metricPlan(metricId, tenantId),
+		queryFn: () => semanticQueries.metricPlan(metricId, tenantId),
 	});
 }
 

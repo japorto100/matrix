@@ -107,6 +107,79 @@ export interface ToolDefinition {
 	enabled: boolean;
 }
 
+export type SemanticStatus = "draft" | "active" | "deprecated";
+export type SemanticMetricScope = "public" | "tenant" | "user" | "admin";
+
+export interface SemanticTerm {
+	term_id: string;
+	name: string;
+	aliases: string[];
+	owner: string;
+	status: SemanticStatus;
+	description: string;
+	source_refs: string[];
+	allowed_use: string[];
+	kg_claim_types: string[];
+	rag_source_classes: string[];
+	version: string;
+	deprecated_by?: string | null;
+}
+
+export interface SemanticMetric {
+	metric_id: string;
+	name: string;
+	measure: string;
+	dimensions: string[];
+	filters: string[];
+	grain: string;
+	time_field: string;
+	freshness_sla: string;
+	allowed_aggregations: string[];
+	aliases: string[];
+	owner: string;
+	status: SemanticStatus;
+	permission_scope: SemanticMetricScope;
+	source_table: string;
+	source_refs: string[];
+	version: string;
+	deprecated_by?: string | null;
+}
+
+export interface SemanticCatalog {
+	version: string;
+	terms: SemanticTerm[];
+	metrics: SemanticMetric[];
+}
+
+export interface SemanticCatalogValidation {
+	passed: boolean;
+	failures: string[];
+	alias_collisions: Record<string, string[]>;
+}
+
+export interface SemanticCatalogResponse {
+	catalog: SemanticCatalog;
+	validation: SemanticCatalogValidation;
+}
+
+export interface SemanticMetricPlanResponse {
+	allowed: boolean;
+	reason?: string;
+	metric?: SemanticMetric;
+	semantic_contract?: {
+		measure: string;
+		dimensions: string[];
+		filters: string[];
+		grain: string;
+		time_field: string;
+		source_table: string;
+		source_refs: string[];
+	};
+	sql: string | null;
+	raw_sql_allowed: boolean;
+	freshness_sla?: string;
+}
+
 // ─── Slice 6: System Observability ─────────────────────────────────────────
 
 export type ServiceHealth = "healthy" | "degraded" | "unhealthy" | "unknown";
