@@ -38,5 +38,7 @@ feature_id: 024
   session grant.
 - [x] G007 MCP gateway execution caps output bytes before provider-facing tool
   messages are emitted.
+- [x] G012 deterministic fixture descriptors and health probes cover allowed
+  local MCP policy without invoking model-visible tools.
 - [x] G011 Control and agent-facing catalog endpoints expose policy-filtered
   entries, not raw unfiltered descriptors.

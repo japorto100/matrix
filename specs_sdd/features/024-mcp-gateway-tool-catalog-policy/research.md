@@ -64,6 +64,11 @@ explicit credential scopes, approval gates and audit evidence.
   structured tool messages and caps output before agent-context entry. This is
   MCP-specific plumbing; the same output-compaction pressure for normal tools is
   tracked through Feature 016.
+- 2026-04-29 fixture/health follow-up: health checks are deliberately separate
+  from tool listing or tool invocation. Static config validation and explicit
+  non-tool probe callbacks provide readiness evidence, while deterministic
+  fixture descriptors exercise policy tests without reaching external MCP
+  servers.
 
 ## Design Consequence
 

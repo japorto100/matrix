@@ -79,8 +79,14 @@ feature_id: 024
     scheme, domain and resource-prefix denylist independently from tool
     invocation.
 - [x] T024 [done-static] Add metadata-only mode for catalog review without tool execution.
-- T025 Add server health probe without invoking model-visible tools.
-- T026 Add deterministic local fixture server for tests.
+- [x] T025 [done-static] Add server health probe without invoking model-visible tools.
+  - 2026-04-29: `probe_mcp_server_health()` validates disabled/static config
+    and optional explicit probe callbacks while recording
+    `model_visible_tools_invoked=false`.
+- [x] T026 [done-static] Add deterministic local fixture server for tests.
+  - 2026-04-29: `fixture_mcp_server_config()` and
+    `fixture_mcp_descriptors()` provide stable local policy/health fixtures
+    without external MCP network dependency.
 - T027 Add configured-provider-backed live lane only after catalog policy is
   green.
 
