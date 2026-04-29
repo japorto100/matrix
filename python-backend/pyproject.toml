@@ -31,7 +31,7 @@ torch = { index = "pytorch-cpu" }
 [tool.setuptools.packages.find]
 where = ["."]
 namespaces = true
-include = ["context*", "retrieval*", "memory*", "shared*", "meta_harness*"]
+include = ["context*", "retrieval*", "memory*", "shared*", "meta_harness*", "semantic_layer*"]
 
 [project]
 name = "matrix-python-backend"

@@ -32,6 +32,12 @@ tables, KG claims, RAG documents and operational metrics.
   and documents, but they should not bypass Feature 017 claim provenance.
 - Semantic feedback loops are valuable only if they produce proposals with
   review/audit state.
+- Current dbt/MetricFlow and Cube references reinforce definitions-as-code,
+  semantic manifests and permission-aware query planning. Matrix implements a
+  smaller local catalog first instead of adopting a platform dependency.
+- Text-to-SQL research still highlights ambiguity and semantic-equivalence
+  issues. The first Matrix slice therefore returns a semantic contract and
+  `raw_sql_allowed=false` instead of generating ad-hoc SQL.
 
 ## Design Consequence
 
@@ -44,3 +50,13 @@ phrase -> semantic term/metric -> permission check -> source query/retrieval
 ```
 
 The provider is irrelevant. The contract is what matters.
+
+## Checked Sources
+
+- Matrix root `Z_Semantik_layer and so on.md`.
+- dbt MetricFlow repository: `https://github.com/dbt-labs/metricflow`.
+- dbt Semantic Layer overview:
+  `https://www.getdbt.com/blog/how-the-dbt-semantic-layer-works`.
+- Cube semantic layer references from current web review.
+- Text-to-SQL semantic equivalence paper:
+  `https://arxiv.org/abs/2506.09359`.

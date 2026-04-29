@@ -25,6 +25,7 @@ from agent.control.overview import router as overview_router
 from agent.control.permissions import router as permissions_router
 from agent.control.sandbox import router as sandbox_router
 from agent.control.security import router as security_router
+from agent.control.semantic import router as semantic_router
 from agent.control.sessions import router as sessions_router
 from agent.control.skills import router as skills_router
 from agent.control.system import router as system_router
@@ -64,6 +65,7 @@ router.include_router(a2a_router)
 router.include_router(overview_router)
 router.include_router(security_router)
 router.include_router(models_router)
+router.include_router(semantic_router)
 
 # exec-16: Per-user LLM settings (API keys, default model, per-role routing)
 router.include_router(user_llm_router)
