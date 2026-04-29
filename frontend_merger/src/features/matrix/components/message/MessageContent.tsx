@@ -68,6 +68,7 @@ function WidgetContent({ message }: { message: ResolvedMessage }) {
 	const title = widget?.name ?? message.body.replace(/^\[Widget:\s*/, "").replace(/\]$/, "");
 	const status = widget?.status ?? (message.url ? "unsupported" : "blocked");
 	const reason = widget?.blockedReason ?? widget?.fallbackText;
+	const report = widget?.reportArtifact;
 
 	return (
 		<div
@@ -93,6 +94,13 @@ function WidgetContent({ message }: { message: ResolvedMessage }) {
 				{message.url && (
 					<span className="block truncate text-[10px] text-muted-foreground">{message.url}</span>
 				)}
+				{report?.manifestId || report?.outputPath ? (
+					<span className="block space-y-0.5 text-[10px] text-muted-foreground">
+						<span className="block truncate">report {report.manifestId ?? "manifest pending"}</span>
+						{report.outputPath ? <span className="block truncate">{report.outputPath}</span> : null}
+						{report.renderer ? <span className="block truncate">{report.renderer}</span> : null}
+					</span>
+				) : null}
 				{reason && <span className="block text-[10px] text-muted-foreground">{reason}</span>}
 			</span>
 			{message.url && status !== "blocked" && status !== "denied" && (

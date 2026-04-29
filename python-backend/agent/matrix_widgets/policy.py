@@ -43,6 +43,9 @@ class MatrixWidgetProposal:
     resource_uri: str = ""
     permissions: tuple[str, ...] = ()
     audit_refs: tuple[str, ...] = ()
+    report_manifest_id: str = ""
+    report_output_path: str = ""
+    report_renderer: str = ""
     required_power_level: int | None = None
     created_at: str = ""
     expires_at: str = ""
@@ -171,6 +174,9 @@ def build_widget_state_event(
             "permissions": sorted(set(proposal.permissions)),
             "audit_refs": list(proposal.audit_refs) + [approval.audit_ref],
             "resource_uri": proposal.resource_uri.strip() or None,
+            "report_manifest_id": proposal.report_manifest_id.strip() or None,
+            "report_output_path": proposal.report_output_path.strip() or None,
+            "report_renderer": proposal.report_renderer.strip() or None,
         },
     }
     return MatrixWidgetDecision(
@@ -230,6 +236,37 @@ def build_widget_revoke_state_event(
             },
         },
         fallback_markdown=f"Widget revoked: {proposal.title.strip()}",
+    )
+
+
+def build_report_artifact_widget_proposal(
+    *,
+    report_id: str,
+    title: str,
+    output_path: str,
+    manifest_path: str,
+    renderer: str,
+    room_id: str,
+    requester_user_id: str,
+    widget_url: str,
+    audit_refs: tuple[str, ...] = (),
+) -> MatrixWidgetProposal:
+    """Create a mobile-safe widget proposal for a generated report artifact."""
+
+    report_title = title.strip() or report_id.strip() or "Report Artifact"
+    return MatrixWidgetProposal(
+        proposal_id=f"report-{_state_key(report_id or report_title)}",
+        room_id=room_id,
+        title=report_title,
+        url=widget_url,
+        requester_user_id=requester_user_id,
+        fallback_text=f"Open report artifact: {output_path or manifest_path}",
+        resource_uri=f"report://matrix/{report_id}",
+        permissions=("read_room",),
+        audit_refs=audit_refs,
+        report_manifest_id=manifest_path,
+        report_output_path=output_path,
+        report_renderer=renderer,
     )
 
 

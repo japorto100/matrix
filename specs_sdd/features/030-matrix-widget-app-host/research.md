@@ -59,6 +59,10 @@ host/client decides what can render.
     `im.vector.modular.widgets` via `matrix-widget-api` and renders approved
     policy widgets as sandboxed iframes while keeping unapproved/unsafe widgets
     as fallback cards.
+  - Feature 027 report artifacts now have a Matrix widget handoff path:
+    backend state-event drafts carry report manifest id/path, output path and
+    renderer metadata; the webclient displays those fields as passive card
+    metadata, not as executable report content.
 
 ## Design Consequence
 

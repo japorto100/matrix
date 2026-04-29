@@ -64,4 +64,25 @@ describe("resolveMessage widget events", () => {
 		expect(message?.widget?.status).toBe("unsupported");
 		expect(message?.widget?.isIframeAllowed).toBe(false);
 	});
+
+	it("preserves report artifact metadata for widget link handoff", () => {
+		const message = resolveMessage(
+			matrixEvent("m.widget", {
+				name: "Risk Brief",
+				url: "https://widgets.example.test/reports/risk-brief",
+				data: {
+					audit_refs: ["audit-report-approval"],
+					report_manifest_id: "reports/risk-brief/manifest.json",
+					report_output_path: "reports/risk-brief/report.html",
+					report_renderer: "markdown-fallback",
+				},
+			}),
+			"@bob:example.test",
+		);
+
+		expect(message?.widget?.status).toBe("approved");
+		expect(message?.widget?.reportArtifact?.manifestId).toBe("reports/risk-brief/manifest.json");
+		expect(message?.widget?.reportArtifact?.outputPath).toBe("reports/risk-brief/report.html");
+		expect(message?.widget?.reportArtifact?.renderer).toBe("markdown-fallback");
+	});
 });

@@ -85,4 +85,33 @@ describe("MessageBubble widget rendering", () => {
 		expect(screen.getByText("unsafe-widget-url")).toBeTruthy();
 		expect(container.querySelector("a")).toBeNull();
 	});
+
+	it("renders report artifact metadata on widget cards", () => {
+		render(
+			<MessageBubble
+				message={resolvedWidget({
+					widget: {
+						id: "risk-brief",
+						name: "Risk Brief",
+						type: "matrix-widget",
+						url: "https://widgets.example.test/reports/risk-brief",
+						status: "approved",
+						permissions: ["read_room"],
+						auditRefs: ["audit-report-approval"],
+						reportArtifact: {
+							manifestId: "reports/risk-brief/manifest.json",
+							outputPath: "reports/risk-brief/report.html",
+							renderer: "markdown-fallback",
+						},
+						isIframeAllowed: true,
+						waitForIframeLoad: true,
+					},
+				})}
+			/>,
+		);
+
+		expect(screen.getByText("report reports/risk-brief/manifest.json")).toBeTruthy();
+		expect(screen.getByText("reports/risk-brief/report.html")).toBeTruthy();
+		expect(screen.getByText("markdown-fallback")).toBeTruthy();
+	});
 });

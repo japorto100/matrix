@@ -68,7 +68,10 @@ feature_id: 030
   - 2026-04-29: timeline widget cards distinguish approved fallback,
     fallback-only, blocked, revoked and expired states without embedding iframe
     apps in the Matrix timeline by default.
-- T024 Add report-artifact link integration from Feature 027.
+- [x] T024 [done-static] Add report-artifact link integration from Feature 027.
+  - 2026-04-29: report widget proposals carry manifest id/path, output path
+    and renderer into state-event data; the Matrix webclient preserves and
+    renders those fields as passive link-card metadata.
 - T025 Add A2UI handoff compatibility notes from Feature 008.
 
 ## Verification

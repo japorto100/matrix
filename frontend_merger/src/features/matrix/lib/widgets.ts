@@ -25,6 +25,11 @@ export interface MatrixWidgetSummary {
 	permissions: string[];
 	auditRefs: string[];
 	resourceUri?: string;
+	reportArtifact?: {
+		manifestId?: string;
+		outputPath?: string;
+		renderer?: string;
+	};
 	descriptorHash?: string;
 	expiresAt?: string;
 	isIframeAllowed: boolean;
@@ -200,6 +205,14 @@ export function parseMatrixWidgetEvent(ev: MatrixEvent): MatrixWidgetSummary | n
 		permissions,
 		auditRefs,
 		resourceUri: readString(data.resource_uri) ?? readString(data.resourceUri),
+		reportArtifact: {
+			manifestId:
+				readString(data.report_manifest_id) ??
+				readString(data.reportManifestId) ??
+				readString(data.report_manifest_path),
+			outputPath: readString(data.report_output_path) ?? readString(data.reportOutputPath),
+			renderer: readString(data.report_renderer) ?? readString(data.reportRenderer),
+		},
 		descriptorHash: readString(data.descriptor_hash) ?? readString(data.descriptorHash),
 		expiresAt,
 		isIframeAllowed: status.iframeAllowed,

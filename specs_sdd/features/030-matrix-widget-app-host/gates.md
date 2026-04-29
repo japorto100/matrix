@@ -13,10 +13,11 @@ feature_id: 030
 - G002 Agent-created room-state widget events require approval.
 - G003 Unsafe URL schemes remain passive text.
 - G004 Hosted apps use allowlisted origins/resources.
-- G005 Unsupported clients receive stable markdown/link fallback.
+- [x] G005 Unsupported clients receive stable markdown/link fallback.
 - G006 Room power levels are checked before widget state mutation.
 - G007 Widget lifecycle supports revoke/expire.
 - G008 MCP/App resources pass Feature 024 policy before hosting.
-- G009 Audit events exist for proposal, approval, update and revoke.
+- [x] G009 Audit events exist for proposal, approval, update and revoke in
+  static state-event draft metadata.
 - G010 Live compatibility matrix is updated for Element Web, Element X and
   FluffyChat.

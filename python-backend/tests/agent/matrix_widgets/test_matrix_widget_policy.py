@@ -6,6 +6,7 @@ from agent.matrix_widgets.policy import (
     MatrixWidgetApproval,
     MatrixWidgetHostPolicy,
     MatrixWidgetProposal,
+    build_report_artifact_widget_proposal,
     build_widget_revoke_state_event,
     build_widget_state_event,
     evaluate_widget_proposal,
@@ -164,3 +165,45 @@ def test_widget_fallback_markdown_escapes_title() -> None:
     markdown = render_widget_fallback_markdown(proposal)
 
     assert markdown == "[\\[Danger\\]\\(x\\)](https://widgets.example/app) - open"
+
+
+def test_report_artifact_widget_proposal_carries_manifest_metadata() -> None:
+    now = datetime(2026, 4, 29, 12, 0, tzinfo=UTC)
+    policy = MatrixWidgetHostPolicy(
+        allowed_origins=("https://widgets.example",),
+        allowed_resource_prefixes=("report://matrix/",),
+    )
+    proposal = build_report_artifact_widget_proposal(
+        report_id="risk-brief",
+        title="Risk Brief",
+        output_path="reports/risk-brief/report.html",
+        manifest_path="reports/risk-brief/manifest.json",
+        renderer="markdown-fallback",
+        room_id="!room:example",
+        requester_user_id="@agent:example",
+        widget_url="https://widgets.example/reports/risk-brief",
+        audit_refs=("audit-report-build",),
+    )
+    approval = MatrixWidgetApproval(
+        proposal_id=proposal.proposal_id,
+        status="approved",
+        decided_by="@alice:example",
+        audit_ref="audit-report-approval",
+        decided_at=now.isoformat(),
+    )
+
+    decision = build_widget_state_event(
+        proposal,
+        policy,
+        approval,
+        actor_power_level=50,
+        now=now,
+    )
+
+    assert decision.allowed is True
+    assert decision.state_event is not None
+    data = decision.state_event["content"]["data"]
+    assert data["report_manifest_id"] == "reports/risk-brief/manifest.json"
+    assert data["report_output_path"] == "reports/risk-brief/report.html"
+    assert data["report_renderer"] == "markdown-fallback"
+    assert data["audit_refs"] == ["audit-report-build", "audit-report-approval"]

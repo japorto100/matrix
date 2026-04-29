@@ -17,7 +17,10 @@ feature_id: 030
 - LV006 Verify room power-level failure is surfaced cleanly.
 - LV007 Verify hosted app/resource origin allowlist.
 - LV008 Verify widget revoke/expire lifecycle.
-- LV009 Verify report artifact link from Feature 027 renders safely.
+- LV009 [done-static-live-smoke] Verify report artifact link from Feature 027
+  renders safely.
+  - 2026-04-29: static frontend/backend tests verify report manifest/output/
+    renderer metadata survives widget parsing and renders as passive card text.
 - LV010 Verify MCP resource handoff passes Feature 024 policy.
 - LV011 Test Element Web/Matrix Web rendering.
 - LV012 Test Element X behavior if local/mobile device is available.
