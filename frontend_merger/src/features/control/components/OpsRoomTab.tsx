@@ -8,24 +8,28 @@ import {
 	ExternalLink,
 	History,
 	Radar,
+	Search,
 	Wrench,
 } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuditEvents, useSessions, useTools } from "@/lib/queries/hooks";
+import { useOpsEvents, useTools } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
-import { mockAuditEvents, mockSessions, mockTools } from "../mock-data";
-import type { AuditEvent, Session, ToolDefinition } from "../types";
+import { mockOpsReadModel, mockTools } from "../mock-data";
+import type { AgentOpsEvent, AgentOpsReadModel, AgentOpsSession, ToolDefinition } from "../types";
 
-type LaneStatus = "active" | "waiting" | "blocked" | "replay";
+type LaneStatus = "active" | "waiting" | "blocked" | "replay" | "needs_approval" | "failed";
 
 const STATUS_COLOR: Record<LaneStatus, string> = {
 	active: "border-emerald-500/40 text-emerald-400",
 	waiting: "border-sky-500/40 text-sky-400",
 	blocked: "border-rose-500/40 text-rose-400",
 	replay: "border-amber-500/40 text-amber-400",
+	needs_approval: "border-orange-500/40 text-orange-400",
+	failed: "border-rose-500/40 text-rose-400",
 };
 
 function formatRelative(iso?: string): string {
@@ -47,29 +51,41 @@ function riskClass(tool?: ToolDefinition): string {
 	return "border-emerald-500/40 text-emerald-400";
 }
 
-function statusForSession(session: Session, events: AuditEvent[]): LaneStatus {
-	if (session.is_active) return "active";
-	const failedEvent = events.find(
-		(event) => event.thread_id === session.thread_id && !event.success,
-	);
-	if (failedEvent) return "blocked";
-	if ((session.tool_calls ?? 0) > 0) return "waiting";
-	return "replay";
+function compactJson(value: unknown): string {
+	if (!value || typeof value !== "object") return "";
+	try {
+		return JSON.stringify(value, null, 2);
+	} catch {
+		return String(value);
+	}
 }
 
 export function OpsRoomTab() {
-	const sessionsQuery = useSessions();
+	const [statusFilter, setStatusFilter] = useState("all");
+	const [riskFilter, setRiskFilter] = useState("all");
+	const [toolFilter, setToolFilter] = useState("all");
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+	const filters = useMemo(() => {
+		const next: Record<string, string> = {};
+		if (statusFilter !== "all") next.status = statusFilter;
+		if (riskFilter !== "all") next.risk = riskFilter;
+		if (toolFilter !== "all") next.tool = toolFilter;
+		return next;
+	}, [riskFilter, statusFilter, toolFilter]);
+	const opsQuery = useOpsEvents(filters);
 	const toolsQuery = useTools();
-	const auditQuery = useAuditEvents({ limit: 12 });
-	const sessions = (sessionsQuery.data?.items as Session[] | undefined) ?? mockSessions;
 	const tools = (toolsQuery.data?.items as ToolDefinition[] | undefined) ?? mockTools;
-	const events = (auditQuery.data?.items as AuditEvent[] | undefined) ?? mockAuditEvents;
+	const ops = (opsQuery.data as AgentOpsReadModel | undefined) ?? mockOpsReadModel;
+	const sessions = ops.sessions as AgentOpsSession[];
+	const events = ops.items as AgentOpsEvent[];
 	const toolByName = new Map(tools.map((tool) => [tool.name, tool]));
 	const toolEvents = events.filter((event) => event.tool_name);
-	const blockedEvents = events.filter((event) => !event.success);
+	const blockedEvents = ops.blockers;
+	const selectedEvent = events.find((event) => event.id === selectedEventId) ?? toolEvents[0];
 	const approvalTools = tools.filter(
 		(tool) => tool.approval === "confirm" || tool.approval === "deny" || tool.risk === "high",
 	);
+	const toolNames = Array.from(new Set(toolEvents.map((event) => event.tool_name).filter(Boolean)));
 
 	return (
 		<div className="px-6 py-4 space-y-4">
@@ -77,8 +93,8 @@ export function OpsRoomTab() {
 				<div>
 					<h2 className="text-base font-semibold">Agent Ops Room</h2>
 					<p className="text-xs text-muted-foreground">
-						{sessions.length} sessions · {toolEvents.length} recent tool events ·{" "}
-						{blockedEvents.length} blockers
+						{ops.summary.sessions} sessions · {ops.summary.tool_events} recent tool events ·{" "}
+						{ops.summary.blockers} blockers
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -97,6 +113,48 @@ export function OpsRoomTab() {
 				</div>
 			</header>
 
+			<div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/30 p-2">
+				<Search className="h-3.5 w-3.5 text-muted-foreground" />
+				<select
+					value={statusFilter}
+					onChange={(event) => setStatusFilter(event.target.value)}
+					className="h-8 rounded border border-border bg-background px-2 text-xs"
+				>
+					<option value="all">All status</option>
+					<option value="active">Active</option>
+					<option value="waiting">Waiting</option>
+					<option value="blocked">Blocked</option>
+					<option value="needs_approval">Needs approval</option>
+				</select>
+				<select
+					value={riskFilter}
+					onChange={(event) => setRiskFilter(event.target.value)}
+					className="h-8 rounded border border-border bg-background px-2 text-xs"
+				>
+					<option value="all">All risk</option>
+					<option value="critical">Critical</option>
+					<option value="high">High</option>
+					<option value="medium">Medium</option>
+					<option value="low">Low</option>
+					<option value="unrated">Unrated</option>
+				</select>
+				<select
+					value={toolFilter}
+					onChange={(event) => setToolFilter(event.target.value)}
+					className="h-8 rounded border border-border bg-background px-2 text-xs"
+				>
+					<option value="all">All tools</option>
+					{toolNames.map((name) => (
+						<option key={name} value={name}>
+							{name}
+						</option>
+					))}
+				</select>
+				<Badge variant="outline" className="ml-auto h-6 px-2 text-[10px]">
+					{ops.contract}
+				</Badge>
+			</div>
+
 			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
 				<div className="rounded-lg border border-border bg-card/30 p-3">
 					<div className="flex items-center justify-between gap-2">
@@ -104,7 +162,7 @@ export function OpsRoomTab() {
 						<Activity className="h-3.5 w-3.5 text-emerald-400" />
 					</div>
 					<div className="mt-2 text-lg font-semibold">
-						{sessions.filter((session) => session.is_active).length}
+						{sessions.filter((session) => session.status === "active").length}
 					</div>
 				</div>
 				<div className="rounded-lg border border-border bg-card/30 p-3">
@@ -127,7 +185,7 @@ export function OpsRoomTab() {
 						<Radar className="h-3.5 w-3.5 text-purple-400" />
 					</div>
 					<div className="mt-2 text-lg font-semibold">
-						{sessions.filter((session) => !session.is_active).length}
+						{sessions.filter((session) => session.status === "replay").length}
 					</div>
 				</div>
 			</div>
@@ -142,14 +200,14 @@ export function OpsRoomTab() {
 					</CardHeader>
 					<CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
 						{sessions.map((session) => {
-							const status = statusForSession(session, events);
+							const status = session.status;
 							return (
 								<div key={session.thread_id} className="rounded border border-border/50 p-3">
 									<div className="flex flex-wrap items-start justify-between gap-2">
 										<div className="min-w-0">
 											<p className="truncate font-mono text-xs">{session.thread_id}</p>
 											<p className="text-[10px] text-muted-foreground">
-												{session.role?.replaceAll("_", " ") ?? "unknown role"}
+												{session.agent_role?.replaceAll("_", " ") ?? "unknown role"}
 											</p>
 										</div>
 										<Badge
@@ -160,14 +218,12 @@ export function OpsRoomTab() {
 										</Badge>
 									</div>
 									<p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-										{session.last_message_preview ?? "No preview available"}
+										{session.event_count} ops events · {session.tool_count} tool calls
 									</p>
 									<div className="mt-3 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
-										<span>{session.message_count ?? session.checkpoint_count ?? 0} events</span>
-										<span>{session.tool_calls ?? 0} tools</span>
-										<span>
-											{formatRelative(session.last_message_at ?? session.last_checkpoint)}
-										</span>
+										<span>{session.checkpoint_count} checkpoints</span>
+										<span>{session.tool_count} tools</span>
+										<span>{formatRelative(session.last_checkpoint)}</span>
 									</div>
 								</div>
 							);
@@ -187,7 +243,15 @@ export function OpsRoomTab() {
 							{toolEvents.slice(0, 8).map((event) => {
 								const tool = event.tool_name ? toolByName.get(event.tool_name) : undefined;
 								return (
-									<div key={event.id} className="rounded border border-border/50 p-3">
+									<button
+										key={event.id}
+										type="button"
+										onClick={() => setSelectedEventId(event.id)}
+										className={cn(
+											"w-full rounded border border-border/50 p-3 text-left transition hover:border-primary/40",
+											selectedEvent?.id === event.id && "border-primary/60 bg-primary/5",
+										)}
+									>
 										<div className="flex items-center justify-between gap-2">
 											<p className="truncate font-mono text-xs">{event.tool_name}</p>
 											<Badge
@@ -204,18 +268,54 @@ export function OpsRoomTab() {
 												) : (
 													<AlertTriangle className="h-3 w-3 text-rose-400" />
 												)}
-												{event.action}
+												{event.status}
 											</span>
 											<span className="flex items-center gap-1">
 												<Clock className="h-3 w-3" />
 												{formatRelative(event.timestamp)}
 											</span>
 										</div>
-									</div>
+									</button>
 								);
 							})}
 						</CardContent>
 					</Card>
+
+					{selectedEvent ? (
+						<Card>
+							<CardHeader className="pb-3">
+								<CardTitle className="flex items-center gap-1.5 text-sm">
+									<Wrench className="h-3.5 w-3.5" />
+									Tool Drilldown
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-3 text-xs">
+								<div className="flex flex-wrap gap-2">
+									<Badge variant="outline">{selectedEvent.tool_name ?? selectedEvent.action}</Badge>
+									<Badge variant="outline">{selectedEvent.risk}</Badge>
+									<Badge variant="outline">{selectedEvent.status}</Badge>
+								</div>
+								<div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+									<span>audit {selectedEvent.audit_ref || "n/a"}</span>
+									<span>approval {selectedEvent.approval_ref || "n/a"}</span>
+									<span>{selectedEvent.agent_role || "unknown role"}</span>
+									<span>{selectedEvent.duration_ms ?? 0}ms</span>
+								</div>
+								{selectedEvent.error ? (
+									<p className="rounded border border-rose-500/30 bg-rose-500/5 p-2 text-rose-300">
+										{selectedEvent.error}
+									</p>
+								) : null}
+								<pre className="max-h-44 overflow-auto rounded border border-border/60 bg-muted/20 p-2 text-[10px] leading-relaxed">
+									{compactJson({
+										input: selectedEvent.input,
+										output: selectedEvent.output,
+										metadata: selectedEvent.metadata,
+									})}
+								</pre>
+							</CardContent>
+						</Card>
+					) : null}
 
 					<Card>
 						<CardHeader className="pb-3">

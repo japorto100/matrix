@@ -21,6 +21,7 @@ from agent.control.kg_crud import router as kg_router
 from agent.control.mcp import router as mcp_router
 from agent.control.memory import router as memory_router
 from agent.control.models import router as models_router
+from agent.control.ops import router as ops_router
 from agent.control.overview import router as overview_router
 from agent.control.permissions import router as permissions_router
 from agent.control.reports import router as reports_router
@@ -61,6 +62,7 @@ router.include_router(context_router)
 router.include_router(sessions_router)
 router.include_router(mcp_router)
 router.include_router(a2a_router)
+router.include_router(ops_router)
 
 # Slice 7: Two-Tier User Mode adds (overview, security, api/models)
 router.include_router(overview_router)

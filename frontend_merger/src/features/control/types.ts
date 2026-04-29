@@ -193,7 +193,7 @@ export interface ReportCitation {
 }
 
 export interface ReportOutputFile {
-	kind: "source" | "html" | "pdf" | "slides" | "text" | "manifest";
+	kind: "source" | "html" | "pdf" | "slides" | "text" | "manifest" | "data";
 	path: string;
 	mime_type?: string;
 	size_bytes?: number;
@@ -266,6 +266,60 @@ export interface AuditEvent {
 	success: boolean;
 	error?: string;
 	metadata?: Record<string, unknown>;
+}
+
+export type AgentOpsEventStatus = "active" | "waiting" | "blocked" | "failed" | "needs_approval";
+export type AgentOpsEventType = "trace" | "tool_call" | "approval" | "memory" | "rag" | "kg";
+
+export interface AgentOpsEvent {
+	id: string;
+	source: "audit" | "trace" | "meta_harness";
+	event_type: AgentOpsEventType;
+	status: AgentOpsEventStatus;
+	timestamp: string;
+	thread_id?: string;
+	user_id?: string;
+	agent_role?: string;
+	tool_name?: string;
+	action: string;
+	success: boolean;
+	risk: "low" | "medium" | "high" | "critical" | "unrated";
+	approval_ref?: string;
+	audit_ref?: string;
+	duration_ms?: number;
+	error?: string;
+	input?: Record<string, unknown>;
+	output?: Record<string, unknown>;
+	metadata?: Record<string, unknown>;
+}
+
+export interface AgentOpsSession {
+	thread_id: string;
+	status: AgentOpsEventStatus | "replay";
+	agent_role?: string;
+	last_checkpoint?: string;
+	checkpoint_count: number;
+	event_count: number;
+	tool_count: number;
+}
+
+export interface AgentOpsReadModel {
+	items: AgentOpsEvent[];
+	sessions: AgentOpsSession[];
+	blockers: AgentOpsEvent[];
+	approvals: AgentOpsEvent[];
+	filters: Record<string, string>;
+	summary: {
+		total_events: number;
+		sessions: number;
+		tool_events: number;
+		blockers: number;
+		approvals: number;
+		generated_at: string;
+	};
+	limit: number;
+	offset: number;
+	contract: "agent-ops-event/v1";
 }
 
 // Sessions = LangGraph thread checkpoints (exec-10)

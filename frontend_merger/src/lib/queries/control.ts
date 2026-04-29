@@ -11,6 +11,7 @@
 
 import type {
 	A2ADelegation,
+	AgentOpsReadModel,
 	AgentRole,
 	AuditEvent,
 	ContextInspectorResponse,
@@ -160,6 +161,21 @@ export const toolsQueries = {
 		description?: string;
 		category?: string;
 	}): Promise<{ status: string; tool_id: string }> => apiPost("/api/control/tools/import", input),
+};
+
+// ─── Agent Ops Room ───────────────────────────────────────────────────────
+
+export const opsKeys = {
+	all: ["control", "ops"] as const,
+	events: (filters: Record<string, string>) => ["control", "ops", "events", filters] as const,
+};
+
+export const opsQueries = {
+	events: async (filters: Record<string, string> = {}): Promise<AgentOpsReadModel> => {
+		const params = new URLSearchParams(filters);
+		const qs = params.toString();
+		return apiGet(`/api/control/ops/events${qs ? `?${qs}` : ""}`);
+	},
 };
 
 // ─── Sandbox ───────────────────────────────────────────────────────────────

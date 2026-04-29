@@ -32,6 +32,8 @@ import {
 	memoryQueries,
 	modelsKeys,
 	modelsQueries,
+	opsKeys,
+	opsQueries,
 	overviewKeys,
 	overviewQueries,
 	permissionsKeys,
@@ -230,6 +232,16 @@ export function useAddToolFromUrl() {
 			qc.invalidateQueries({ queryKey: toolsKeys.all });
 			qc.invalidateQueries({ queryKey: ["control", "audit"] });
 		},
+	});
+}
+
+// ─── Agent Ops Room ───────────────────────────────────────────────────────
+export function useOpsEvents(filters: Record<string, string> = {}) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: opsKeys.events(filters),
+		queryFn: () => opsQueries.events(filters),
+		refetchInterval: 5_000,
 	});
 }
 

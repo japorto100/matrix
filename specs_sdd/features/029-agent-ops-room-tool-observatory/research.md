@@ -46,3 +46,18 @@ No provider-specific runtime is implied.
 Control data: sessions, normal tool catalog metadata and audit events. This is
 deliberately not a new event store. It proves the frontend shape and leaves the
 real read model, live stream and Meta-Harness replay endpoints as backend work.
+
+## 2026-04-29 Read Model Follow-Up
+
+The ops room now has a backend event contract instead of only frontend-derived
+state. `agent-ops-event/v1` is built from existing audit/session data and
+classifies events into trace, tool call, approval, memory, RAG and KG markers.
+Sensitive fields are recursively redacted before JSON reaches the frontend.
+
+The same contract powers `/api/v1/control/ops/events` and the SSE
+`/api/v1/control/ops/stream` endpoint, so live mode and replay mode do not fork
+UI semantics. The frontend now consumes that read model, exposes status/risk/tool
+filters and shows a tool-call drilldown with audit and approval references.
+
+Meta-Harness replay remains open because it needs a run-id adapter over Feature
+016 artifacts, but it should emit the same `AgentOpsEvent` shape.

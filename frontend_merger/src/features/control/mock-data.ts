@@ -3,6 +3,7 @@
 
 import type {
 	A2ADelegation,
+	AgentOpsReadModel,
 	AgentRole,
 	AuditEvent,
 	ContextInspectorResponse,
@@ -1066,6 +1067,68 @@ export const mockSessions: Session[] = [
 			"Fed pivot signals strengthening — 2y yield down 25bp, dollar weakening...",
 	},
 ];
+
+export const mockOpsReadModel: AgentOpsReadModel = {
+	items: mockAuditEvents
+		.filter((event) => event.tool_name)
+		.map((event) => {
+			const tool = mockTools.find((item) => item.name === event.tool_name);
+			return {
+				id: `audit:${event.id}`,
+				source: "audit",
+				event_type:
+					event.action.toLowerCase().includes("memory") || event.tool_name?.includes("memory")
+						? "memory"
+						: "tool_call",
+				status: event.success ? "active" : "blocked",
+				timestamp: event.timestamp,
+				thread_id: event.thread_id,
+				user_id: event.user_id,
+				agent_role: event.agent_role,
+				tool_name: event.tool_name,
+				action: event.action,
+				success: event.success,
+				risk: tool?.risk ?? "unrated",
+				audit_ref: String(event.id),
+				duration_ms: event.duration_ms,
+				error: event.error,
+				input: event.input,
+				output: event.output,
+				metadata: event.metadata,
+			};
+		}),
+	sessions: mockSessions.map((session) => {
+		const events = mockAuditEvents.filter((event) => event.thread_id === session.thread_id);
+		return {
+			thread_id: session.thread_id,
+			status: events.some((event) => !event.success)
+				? "blocked"
+				: session.is_active
+					? "active"
+					: "replay",
+			agent_role: session.role,
+			checkpoint_count: session.checkpoint_count ?? session.message_count ?? 0,
+			event_count: events.length,
+			tool_count: events.filter((event) => event.tool_name).length,
+			last_checkpoint: session.last_checkpoint ?? session.last_message_at,
+		};
+	}),
+	blockers: [],
+	approvals: [],
+	filters: {},
+	summary: {
+		total_events: mockAuditEvents.filter((event) => event.tool_name).length,
+		sessions: mockSessions.length,
+		tool_events: mockAuditEvents.filter((event) => event.tool_name).length,
+		blockers: mockAuditEvents.filter((event) => !event.success).length,
+		approvals: 0,
+		generated_at: "2026-04-29T12:00:00Z",
+	},
+	limit: 100,
+	offset: 0,
+	contract: "agent-ops-event/v1",
+};
+mockOpsReadModel.blockers = mockOpsReadModel.items.filter((event) => event.status === "blocked");
 
 // ─── MCP Servers ───────────────────────────────────────────────────────────
 
