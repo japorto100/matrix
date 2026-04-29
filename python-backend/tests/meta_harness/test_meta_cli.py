@@ -232,6 +232,27 @@ async def test_cli_mcp_catalog_policy_writes_artifacts(tmp_path, monkeypatch):
     assert saved["passed_count"] == 3
 
 
+@pytest.mark.asyncio
+async def test_cli_matrix_widget_policy_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["matrix-widget-policy", "--run-id", "run-widget", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 3
+    scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
+    assert "matrix-widget-approved-state-event" in scenario_ids
+    assert "matrix-widget-unsafe-url-blocked" in scenario_ids
+    assert "matrix-widget-mcp-resource-policy" in scenario_ids
+    artifact = tmp_path / "runs" / "run-widget" / "matrix_widget_policy.json"
+    assert artifact.exists()
+    saved = json.loads(artifact.read_text(encoding="utf-8"))
+    assert saved["passed_count"] == 3
+
+
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():
     from meta_harness.retrieval_benchmark import _candidate_verdicts
 

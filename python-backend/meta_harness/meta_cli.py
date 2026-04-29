@@ -101,6 +101,13 @@ def build_parser() -> argparse.ArgumentParser:
     mcp_policy.add_argument("--run-id", default="")
     mcp_policy.add_argument("--data-dir", type=Path, default=None)
 
+    widget_policy = sub.add_parser(
+        "matrix-widget-policy",
+        help="Run provider-free Feature 030 Matrix widget policy scenarios",
+    )
+    widget_policy.add_argument("--run-id", default="")
+    widget_policy.add_argument("--data-dir", type=Path, default=None)
+
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
         help="Run Feature 021 PDF extraction against Markdown ground truth",
@@ -292,6 +299,15 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_mcp_catalog_policy_scenarios(**kwargs)
+    if args.command == "matrix-widget-policy":
+        from meta_harness.matrix_widget_policy import (
+            run_matrix_widget_policy_scenarios,
+        )
+
+        kwargs = {"run_id": args.run_id or "run-matrix-widget-policy"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_matrix_widget_policy_scenarios(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

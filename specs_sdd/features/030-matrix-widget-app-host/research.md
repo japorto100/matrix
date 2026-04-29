@@ -28,6 +28,24 @@ host/client decides what can render.
   code blocks are safe common denominator; interactive widgets need fallback.
 - MCP Apps-style resources and Matrix widgets are conceptually adjacent, but
   Matrix must gate them through local policy and client compatibility.
+- SOTA web check 2026-04-29:
+  - `matrix-widget-api` latest visible npm release is 1.13.1 and its readme
+    still warns widgets are not yet in the Matrix spec, so Matrix widget
+    behavior must be treated as client/toolkit-specific rather than universal.
+  - Matrix.org TWIM 2026-01-09 confirms active Matrix Widget Toolkit work,
+    including custom CSP `frame-src` support in
+    `@matrix-widget-toolkit/widget-server` 1.2.0. This directly supports the
+    local host policy choice to model sandbox/CSP and frame origins explicitly.
+  - `matrix-js-sdk` raw changelog shows recent widget-adjacent changes in the
+    40.x line, including `RoomWidgetClient` sticky event support. The
+    implementation should keep room-state/sticky-event semantics separate from
+    plain chat-message rendering.
+- Local implementation 2026-04-29:
+  - `agent.matrix_widgets.policy` defines provider-free proposal, approval,
+    allowlist, power-level, lifecycle revoke and fallback contracts.
+  - `meta_harness matrix-widget-policy` writes deterministic artifacts for
+    approved state-event draft, unsafe URL blocking and Feature 024 MCP resource
+    handoff denial.
 
 ## Design Consequence
 

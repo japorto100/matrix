@@ -11,6 +11,12 @@ feature_id: 030
 
 - `Z_matrix_widgets_formulars_and so on.md`
 - Matrix widget/event specs and client docs, to verify during implementation.
+- `matrix-widget-api` npm/package docs:
+  `https://www.npmjs.com/package/matrix-widget-api`
+- Matrix.org TWIM 2026-01-09 Widget Toolkit/CSP note:
+  `https://matrix.org/blog/2026/01/09/this-week-in-matrix-2026-01-09/`
+- `matrix-js-sdk` changelog:
+  `https://raw.githubusercontent.com/matrix-org/matrix-js-sdk/develop/CHANGELOG.md`
 - Feature 005 Matrix chat core
   `specs_sdd/features/005-matrix-chat-core/`
 - Feature 008 agentic UI / A2UI / MCP

@@ -22,4 +22,9 @@ feature_id: 030
 - LV011 Test Element Web/Matrix Web rendering.
 - LV012 Test Element X behavior if local/mobile device is available.
 - LV013 Test FluffyChat behavior if local/mobile device is available.
-- LV014 Run Meta-Harness widget proposal scenario.
+- [x] LV014 [done-static-live-smoke] Run Meta-Harness widget proposal scenario.
+  - 2026-04-29: provider-free `matrix-widget-policy` live smoke passed 3/3
+    scenarios and wrote `matrix_widget_policy.json`.
+  - 2026-04-29 live-smoke:
+    `run-matrix-widget-policy-20260429-rerun` passed in
+    `/tmp/matrix-meta-harness-widget-policy-rerun`.

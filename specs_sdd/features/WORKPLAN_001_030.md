@@ -77,6 +77,9 @@ and live-verify probes. This file defines execution order.
      approval/risk/denial/visibility state.
    - 2026-04-29: Meta-Harness `mcp-catalog-policy` lane writes provider-free
      allowed/poisoned/drift artifacts for Feature 024.
+   - 2026-04-29: Matrix widget host policy now has provider-free proposal,
+     approval, origin/resource, sandbox/CSP, power-level, revoke and fallback
+     contracts plus a `matrix-widget-policy` Meta-Harness lane.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction
