@@ -119,6 +119,8 @@ def _tool_group(name: str, description: str) -> str:
         return "memory"
     if "semantic" in text or "metric" in text or "provenance" in text:
         return "semantic"
+    if "report" in text or "citation" in text or "renderer" in text:
+        return "report"
     if "sandbox" in text or "browser" in text or "file" in text:
         return "code_execution"
     if "schedule" in text or "task" in text or "cron" in text:

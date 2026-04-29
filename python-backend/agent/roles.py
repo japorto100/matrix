@@ -79,14 +79,22 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "save_memory",
         "load_memory",
         "semantic_lookup",
+        "report_validate",
         "sandbox_execute",
     },
-    TradingRole.SENTIMENT: {"get_chart_state", "save_memory", "load_memory", "semantic_lookup"},
+    TradingRole.SENTIMENT: {
+        "get_chart_state",
+        "save_memory",
+        "load_memory",
+        "semantic_lookup",
+        "report_validate",
+    },
     TradingRole.TECHNICAL: {
         "get_chart_state",
         "save_memory",
         "load_memory",
         "semantic_lookup",
+        "report_validate",
         "sandbox_execute",
     },
     TradingRole.RESEARCHER: {
@@ -95,6 +103,8 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "save_memory",
         "load_memory",
         "semantic_lookup",
+        "report_validate",
+        "report_build",
         "sandbox_execute",
         "sandbox_browser",
     },
@@ -105,12 +115,15 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "save_memory",
         "load_memory",
         "semantic_lookup",
+        "report_validate",
     },
     TradingRole.RISK_MANAGER: {
         "get_portfolio_summary",
         "save_memory",
         "load_memory",
         "semantic_lookup",
+        "report_validate",
+        "report_build",
     },
 }
 

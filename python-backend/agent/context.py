@@ -85,6 +85,8 @@ ADVISORY_ENVELOPE = CapabilityEnvelope(
             "memory_search",
             "memory_add",
             "semantic_lookup",
+            "report_validate",
+            "report_build",
             "sandbox_execute",
             "sandbox_browser",
         }

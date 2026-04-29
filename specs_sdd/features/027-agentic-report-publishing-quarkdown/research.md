@@ -66,6 +66,15 @@ index over existing `manifest.json` artifacts. A richer persisted report table
 is still optional future work once artifact retention and cleanup policy are
 settled.
 
+## 2026-04-29 Agent Tool Follow-Up
+
+`report_validate` and `report_build` are now normal ToolRegistry tools.
+`report_validate` is read-only and checks source/manifest/citation consistency.
+`report_build` is a bounded artifact writer under the configured report root
+and forces `markdown-fallback` even when the requested renderer is `quarkdown`.
+That keeps renderer promotion explicit while giving agents a safe contract for
+source-grounded reports.
+
 ## Checked Sources
 
 - Matrix root `Z_Tool_very interessting Quarkdown.md`.

@@ -53,6 +53,7 @@ class ToolRegistry:
         from agent.tools.memory_hindsight import MemoryAddTool, MemorySearchTool
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
         from agent.tools.portfolio import GetPortfolioSummaryTool
+        from agent.tools.report_artifacts import ReportBuildTool, ReportValidateTool
         from agent.tools.sandbox_browser_tool import SandboxBrowserTool
         from agent.tools.sandbox_tool import SandboxExecuteTool
         from agent.tools.scheduler_tools import (
@@ -88,6 +89,9 @@ class ToolRegistry:
         registry.register(FileAnalyzeTool())
         # Semantic Layer (Feature 025) — read-only metric/term contract lookup
         registry.register(SemanticLookupTool())
+        # Report Artifacts (Feature 027) — source-grounded report validation/build
+        registry.register(ReportValidateTool())
+        registry.register(ReportBuildTool())
         # A2UI surface rendering (Ansatz Y — virtual tool emitting widget envelope)
         registry.register(RenderA2uiSurfaceTool())
         # Scheduler Tools (exec-scheduler Lane C — 7 tools, LLM-native NL)

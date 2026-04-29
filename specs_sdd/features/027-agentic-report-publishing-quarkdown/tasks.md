@@ -32,9 +32,16 @@ feature_id: 027
 
 ## Agent Integration
 
-- T020 Add report-generation tool contract.
-- T021 Add report build tool contract.
-- T022 Add report validation tool contract.
+- [x] T020 [done-static] Add report-generation tool contract.
+  - 2026-04-29: `ReportArtifactInput` defines the provider-agnostic report
+    source/manifest/citation payload agents must produce before build.
+- [x] T021 [done-static] Add report build tool contract.
+  - 2026-04-29: `report_build` writes deterministic artifacts under
+    `MATRIX_REPORT_ARTIFACT_DIR`/`data/reports`, rejects path traversal ids and
+    forces `markdown-fallback` until Quarkdown is promoted.
+- [x] T022 [done-static] Add report validation tool contract.
+  - 2026-04-29: `report_validate` checks manifest metadata, citation usage and
+    checksum without writing files.
 - T023 Add agent prompt constraints for source-grounded reports.
 - T024 Add Meta-Harness report scenario.
 - T025 Add Matrix chat handoff: link/attachment plus provenance summary.
@@ -64,3 +71,5 @@ feature_id: 027
 - [x] T037 [done-static] Frontend typecheck/lint for `/control/reports`.
 - [x] T038 [done-static] Unit-test report artifact index over generated and
   invalid manifests.
+- [x] T039 [done-static] Unit-test report validation/build tools and registry
+  exposure.
