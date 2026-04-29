@@ -21,6 +21,7 @@ import type {
 	ModelRouting,
 	OverviewSnapshot,
 	PermissionCell,
+	ReportArtifact,
 	SandboxRun,
 	ScheduledTask,
 	ScheduledTaskStatus,
@@ -469,6 +470,18 @@ export const semanticQueries = {
 				tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : ""
 			}`,
 		),
+};
+
+// ─── Report Artifacts ─────────────────────────────────────────────────────
+
+export const reportKeys = {
+	all: ["control", "reports"] as const,
+	list: () => ["control", "reports", "list"] as const,
+};
+
+export const reportQueries = {
+	list: async (): Promise<{ items: ReportArtifact[]; total: number }> =>
+		apiGet("/api/control/reports"),
 };
 
 // ─── A2A ───────────────────────────────────────────────────────────────────

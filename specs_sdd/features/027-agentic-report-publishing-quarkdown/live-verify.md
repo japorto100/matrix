@@ -18,6 +18,9 @@ feature_id: 027
 - LV007 Build generated report and inspect artifacts.
 - LV008 Publish safe Matrix link/attachment to a dev room.
 - LV009 Open report artifact from Control UI.
+- LV009a Open `/control/reports` and verify manifest path, renderer, checksum,
+  outputs, citations, validation failures and Matrix publication status render
+  without executing a renderer.
 - LV010 Run Meta-Harness report-grounding scenario.
 - LV011 Verify renderer can be disabled and fallback path still returns
   structured markdown.

@@ -36,6 +36,8 @@ import {
 	overviewQueries,
 	permissionsKeys,
 	permissionsQueries,
+	reportKeys,
+	reportQueries,
 	sandboxKeys,
 	sandboxQueries,
 	schedulerKeys,
@@ -499,6 +501,15 @@ export function useSemanticMetricPlan(metricId: string, tenantId = "") {
 		enabled: metricId.length > 0,
 		queryKey: semanticKeys.metricPlan(metricId, tenantId),
 		queryFn: () => semanticQueries.metricPlan(metricId, tenantId),
+	});
+}
+
+// ─── Report Artifacts ─────────────────────────────────────────────────────
+export function useReportArtifacts() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: reportKeys.list(),
+		queryFn: () => reportQueries.list(),
 	});
 }
 

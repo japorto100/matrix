@@ -38,7 +38,11 @@ feature_id: 027
 - T023 Add agent prompt constraints for source-grounded reports.
 - T024 Add Meta-Harness report scenario.
 - T025 Add Matrix chat handoff: link/attachment plus provenance summary.
-- T026 Add Control UI report artifact list.
+- [x] T026 [done-static] Add Control UI report artifact list.
+  - 2026-04-29: `/control/reports` provides the frontend artifact index for
+    report manifests, renderer/version, checksum, output files, citations,
+    validation failures and Matrix publication readiness. It remains read-only
+    and uses fallback fixtures until persisted report artifact listing exists.
 
 ## Verification
 
@@ -53,3 +57,4 @@ feature_id: 027
     whether report manifest/output/renderer metadata survives as cited
     retrieval evidence. Full report-generation Meta-Harness scenario remains
     open.
+- [x] T037 [done-static] Frontend typecheck/lint for `/control/reports`.

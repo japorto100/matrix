@@ -55,6 +55,14 @@ reference citation.
 This gives Feature 027 a static grounding gate before Quarkdown or any other
 renderer is promoted in live Matrix chat.
 
+## 2026-04-29 Control UI Follow-Up
+
+`/control/reports` now implements the frontend artifact index for the same
+provider-agnostic contract: manifest path, renderer/version, checksum, output
+files, citations/source refs, validation failures and safe Matrix publication
+readiness. It intentionally does not start Quarkdown or any renderer from the
+browser. A persisted backend report index is still needed for live artifacts.
+
 ## Checked Sources
 
 - Matrix root `Z_Tool_very interessting Quarkdown.md`.

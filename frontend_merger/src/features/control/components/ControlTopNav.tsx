@@ -13,6 +13,7 @@ import {
 	GitBranch,
 	LayoutDashboard,
 	Network,
+	Newspaper,
 	Server,
 	Settings2,
 	Shield,
@@ -106,6 +107,13 @@ const TABS: SubTab[] = [
 		label: "Semantic",
 		icon: <GitBranch className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/semantic"),
+		section: "user",
+	},
+	{
+		href: "/control/reports",
+		label: "Reports",
+		icon: <Newspaper className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/reports"),
 		section: "user",
 	},
 	{

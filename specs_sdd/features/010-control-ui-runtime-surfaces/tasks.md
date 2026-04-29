@@ -137,7 +137,13 @@ migrated_from:
     active/waiting/blocked/replay lanes, tool risk badges, blockers, audit link
     and Matrix handoff link. Live stream and Meta-Harness replay endpoints stay
     Feature 029 backend work.
-- T097 Add report artifact list from Feature 027 with source/manifest links.
+- [x] T097 [done-static] Add report artifact list from Feature 027 with
+  source/manifest links.
+  - 2026-04-29: `/control/reports` renders a read-only report artifact index
+    with manifest path, renderer/version, checksum, outputs, citations,
+    validation failures and Matrix publication readiness. It uses the
+    provider-agnostic Feature 027 contract and a frontend fallback until a
+    persisted report artifact backend index exists.
 
 ## Verify Gates
 

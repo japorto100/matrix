@@ -12,6 +12,7 @@ import type {
 	ModelRouting,
 	OverviewSnapshot,
 	PermissionCell,
+	ReportArtifact,
 	SandboxRun,
 	SecurityPosture,
 	SemanticCatalogResponse,
@@ -571,6 +572,86 @@ export const mockSemanticCatalog: SemanticCatalogResponse = {
 		alias_collisions: {},
 	},
 };
+
+export const mockReportArtifacts: ReportArtifact[] = [
+	{
+		report_id: "report-rag-benchmark-summary",
+		title: "Matrix RAG Benchmark Summary",
+		owner: "matrix",
+		status: "validated",
+		renderer: "markdown-fallback",
+		renderer_version: "builtin",
+		generated_at: "2026-04-29T18:20:00Z",
+		checksum: "sha256:report-rag-summary-citation",
+		manifest_path: "reports/rag-benchmark-summary/manifest.json",
+		input_sources: ["artifact-report-rag-benchmark-summary", "feature-022", "feature-019"],
+		citations: [
+			{
+				citation_id: "chunk-report-rag-summary-citation",
+				source_id: "artifact-report-rag-benchmark-summary",
+				title: "RAG benchmark summary citation",
+				uri: "report://matrix/rag-benchmark-summary#citation=chunk-report-rag-summary-citation",
+				source_type: "report",
+				excerpt:
+					"Report manifest citation carries renderer, output path and source artifact metadata.",
+			},
+		],
+		output_files: [
+			{
+				kind: "manifest",
+				path: "reports/rag-benchmark-summary/manifest.json",
+				mime_type: "application/json",
+			},
+			{
+				kind: "html",
+				path: "reports/rag-benchmark-summary/report.html",
+				mime_type: "text/html",
+			},
+			{
+				kind: "source",
+				path: "reports/rag-benchmark-summary/source.md",
+				mime_type: "text/markdown",
+			},
+		],
+		validation: { passed: true, failures: [] },
+		matrix_publication: {
+			status: "ready",
+			link: "matrix://reports/rag-benchmark-summary",
+		},
+	},
+	{
+		report_id: "report-risk-brief-fixture",
+		title: "Risk Brief Fixture",
+		owner: "risk_manager",
+		status: "failed",
+		renderer: "quarkdown",
+		renderer_version: "experimental",
+		generated_at: "2026-04-29T17:10:00Z",
+		checksum: "",
+		manifest_path: "reports/risk-brief-fixture/manifest.json",
+		input_sources: ["feature-027-fixture", "feature-017"],
+		citations: [
+			{
+				citation_id: "S1",
+				source_id: "feature-017",
+				title: "KG claim provenance fixture",
+				source_type: "kg_claim",
+			},
+		],
+		output_files: [
+			{
+				kind: "manifest",
+				path: "reports/risk-brief-fixture/manifest.json",
+				mime_type: "application/json",
+			},
+		],
+		validation: {
+			passed: false,
+			failures: ["citation-not-used:S1", "renderer-fixture-not-promoted"],
+		},
+		matrix_publication: { status: "blocked" },
+	},
+];
 
 // ─── Slice 6: Service Status ───────────────────────────────────────────────
 

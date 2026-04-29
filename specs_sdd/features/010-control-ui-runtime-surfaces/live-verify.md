@@ -23,6 +23,8 @@ migrated_from:
 - `/control/ops?mode=dev` opens from Developer Mode and shows session board,
   tool timeline, blockers, audit link and Matrix handoff link.
 - Report artifact list opens one generated report manifest from Feature 027.
+- `/control/reports` renders report manifest, output, citation and Matrix
+  publication status without invoking a renderer.
 
 ## Prerequisites
 

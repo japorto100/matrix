@@ -18,6 +18,7 @@ import { McpTab } from "./components/McpTab";
 import { OpsRoomTab } from "./components/OpsRoomTab";
 import { OverviewTab } from "./components/OverviewTab";
 import { PermissionsTab } from "./components/PermissionsTab";
+import { ReportsTab } from "./components/ReportsTab";
 import { SandboxTab } from "./components/SandboxTab";
 import { SecurityTab } from "./components/SecurityTab";
 import { SemanticTab } from "./components/SemanticTab";
@@ -40,6 +41,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/tasks")) return <TasksTab />;
 		if (pathname.startsWith("/control/context")) return <ContextTab />;
 		if (pathname.startsWith("/control/semantic")) return <SemanticTab />;
+		if (pathname.startsWith("/control/reports")) return <ReportsTab />;
 		if (pathname.startsWith("/control/security")) return <SecurityTab />;
 
 		// ─── Developer Mode Tabs ────────────────────────────────────────────

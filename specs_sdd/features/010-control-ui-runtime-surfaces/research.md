@@ -106,7 +106,9 @@ The new Z_ material expands Control UI scope, but not as a monolith:
   surfaces; live event streaming and Meta-Harness replay remain Feature 029
   backend tasks.
 - `Z_Tool_very interessting Quarkdown.md` supports report artifact inspection
-  delegated to Feature 027.
+  delegated to Feature 027. 2026-04-29 static UI follow-up: `/control/reports`
+  now exposes the report artifact index shape with manifest, renderer,
+  checksum, outputs, citations, validation and Matrix-publication readiness.
 
 Control UI should expose effective state from owning features. It should not
 become the owner of MCP policy, semantic truth, report rendering or agent

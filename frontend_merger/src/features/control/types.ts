@@ -180,6 +180,51 @@ export interface SemanticMetricPlanResponse {
 	freshness_sla?: string;
 }
 
+export type ReportArtifactStatus = "generated" | "validated" | "failed" | "published";
+export type ReportRenderer = "quarkdown" | "markdown-fallback";
+
+export interface ReportCitation {
+	citation_id: string;
+	source_id: string;
+	title: string;
+	uri?: string;
+	source_type: string;
+	excerpt?: string;
+}
+
+export interface ReportOutputFile {
+	kind: "source" | "html" | "pdf" | "slides" | "text" | "manifest";
+	path: string;
+	mime_type?: string;
+	size_bytes?: number;
+	checksum?: string;
+}
+
+export interface ReportArtifact {
+	report_id: string;
+	title: string;
+	owner: string;
+	status: ReportArtifactStatus;
+	renderer: ReportRenderer;
+	renderer_version: string;
+	generated_at: string;
+	checksum: string;
+	manifest_path: string;
+	input_sources: string[];
+	citations: ReportCitation[];
+	output_files: ReportOutputFile[];
+	validation: {
+		passed: boolean;
+		failures: string[];
+	};
+	matrix_publication?: {
+		room_id?: string;
+		event_id?: string;
+		link?: string;
+		status: "not_published" | "ready" | "published" | "blocked";
+	};
+}
+
 // ─── Slice 6: System Observability ─────────────────────────────────────────
 
 export type ServiceHealth = "healthy" | "degraded" | "unhealthy" | "unknown";
