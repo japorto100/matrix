@@ -9,6 +9,14 @@ feature_id: 018
 
 # Gates
 
+## 2026-04-29 Feature 024-029 Schema Follow-Up
+
+- Persistent MCP descriptor snapshots from Feature 024 require Alembic
+  governance.
+- Semantic term/metric tables from Feature 025 require generated schema docs.
+- Report manifests, visual evidence and ops read models require migration
+  ownership before production persistence.
+
 - Alembic remains the authoritative migration path.
 - No new table/column lands without an Alembic migration.
 - Current schema view is updated or regenerated with every schema migration.

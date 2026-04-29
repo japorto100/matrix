@@ -11,6 +11,14 @@ migrated_from:
 
 # Live Verify
 
+## 2026-04-29 Feature 024-029 Follow-Up
+
+- MCP tab shows Feature 024 effective policy/risk state.
+- Semantic catalog inspector shows one metric, one KG-linked term and one
+  ambiguity/conflict.
+- Ops room shows one live agent session and one Meta-Harness replay.
+- Report artifact list opens one generated report manifest from Feature 027.
+
 ## Prerequisites
 
 - Frontend shell running.
@@ -120,4 +128,3 @@ migrated_from:
 ## Result
 
 pending
-

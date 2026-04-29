@@ -9,6 +9,12 @@ feature_id: 012
 
 # Live Verify
 
+## 2026-04-29 Visual/Semantic Follow-Up
+
+- Verify visual memory recall from Feature 028 includes capture source and age.
+- Verify browser-local private prefilter from Feature 026 can avoid a backend
+  call for a local-only query.
+
 ## Personal Memory
 
 - Start Python backend with memory dependencies.

@@ -9,6 +9,13 @@ feature_id: 012
 
 # Gates
 
+## 2026-04-29 Visual/Semantic Follow-Up
+
+- Visual evidence from Feature 028 remains source-linked and confidence-gated
+  before memory injection.
+- User semantic corrections become Feature 025 proposals, not silent global
+  truth mutations.
+
 ## G1 Personal Memory / Fusion
 
 - [x] `memory_fusion` unit tests pass.

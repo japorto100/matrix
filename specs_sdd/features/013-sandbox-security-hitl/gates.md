@@ -9,6 +9,13 @@ feature_id: 013
 
 # Gates
 
+## 2026-04-29 MCP/Widget/Report Follow-Up
+
+- MCP STDIO server configuration is allowlisted and never prompt/user supplied.
+- Remote MCP transport validates origin/auth according to Feature 024 policy.
+- Matrix widget/app hosting uses Feature 030 sandbox/origin policy.
+- Report rendering from Feature 027 has an explicit execution policy.
+
 ## G1 OpenSandbox Runtime
 
 - [x] Compose/podman profile can start `opensandbox-server`/`opensandbox-api-gateway`.

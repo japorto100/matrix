@@ -126,3 +126,16 @@ Default:
 The main false-positive risk is unit tests passing while the live LLM path never
 emits valid A2UI packets. Live verify must include one real stream that reaches
 the browser renderer and one malformed stream that is rejected safely.
+
+## 2026-04-29 Z_ Follow-Up
+
+`Z_Additional_For_Tool_Stuff.md` and `Z_matrix_widgets_formulars_and so on.md`
+confirm the split:
+
+- MCP gateway/catalog/policy moves to Feature 024.
+- Matrix room-state widget/app hosting moves to Feature 030.
+- Feature 008 remains provider-agnostic local A2UI/generative UI with safe
+  fallback rendering.
+
+Provider-specific app-resource examples are useful as protocol pressure, but
+they are not Matrix's runtime contract.

@@ -9,6 +9,14 @@ feature_id: 021
 
 # Gates
 
+## 2026-04-29 Visual/Report/Semantic Follow-Up
+
+- Layout extraction preserves source artifact, page/block and coordinate refs
+  for Feature 028.
+- Report generation from Feature 027 references ingestion artifacts instead of
+  copying unsourced text.
+- Semantic concept proposals for Feature 025 remain pending until reviewed.
+
 - Artifact registry writes must be idempotent for the same content hash.
   - 2026-04-27: local source artifact upsert uses stable
     `uuid5(file://resolved_path)` and can write a minimal artifact even when

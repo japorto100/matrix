@@ -112,6 +112,12 @@ migrated_from:
 - T091 Decide Graphiti/Cognee backend scope with Feature 012.
 - T092 Decide Computer Use / Artifacts scope with Features 008 and 013.
 - T093 Decide Personal KB / World Model surfaces with Feature 012.
+- T094 Add effective MCP catalog/risk/policy surface from Feature 024.
+- T095 Add semantic catalog and metric/claim definition inspector from Feature
+  025.
+- T096 Add agent ops-room entrypoint from Feature 029: live sessions, tool
+  state, approvals and replay.
+- T097 Add report artifact list from Feature 027 with source/manifest links.
 
 ## Verify Gates
 

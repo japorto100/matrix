@@ -9,6 +9,15 @@ feature_id: 016
 
 # Gate Ledger
 
+## 2026-04-29 Feature 024-030 Domain Gates
+
+- Feature 024 scenarios block poisoned MCP descriptors before model exposure.
+- Feature 025 scenarios require semantic lookup before metric answers.
+- Feature 027 scenarios score report citations and unsupported claims.
+- Feature 028 scenarios separate visual evidence from hallucinated screen state.
+- Feature 029 replay gates derive ops events from artifacts/traces.
+- Feature 030 widget gates prove approval/denial/fallback behavior.
+
 ## Stack Gates
 
 - PostgreSQL is reachable and migrations needed by agent audit/session/component

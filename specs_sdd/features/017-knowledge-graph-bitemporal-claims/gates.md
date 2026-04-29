@@ -9,6 +9,15 @@ feature_id: 017
 
 # Gates
 
+## 2026-04-29 Semantic/Visual Follow-Up
+
+- KG claim types can link to Feature 025 semantic terms without losing
+  bitemporal claim status.
+- Visual evidence from Feature 028 can create claim proposals only, not
+  automatic truth.
+- Browser-local entity/linking hints from Feature 026 are advisory and require
+  server-side evidence before promotion.
+
 ## Schema Gates
 
 - KG claims carry valid-time and system-time metadata.

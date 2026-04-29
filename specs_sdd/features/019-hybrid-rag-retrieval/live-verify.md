@@ -9,6 +9,14 @@ feature_id: 019
 
 # Live Verify
 
+## 2026-04-29 Browser/Semantic/Visual Follow-Up
+
+- Compare Feature 026 browser-local retrieval with backend retrieval on one
+  canary set.
+- Verify Feature 025 semantic filters affect retrieval deterministically.
+- Verify Feature 028 visual-layout blocks appear with coordinate refs in
+  retrieved context.
+
 ## Static Verify
 
 - `python-backend/.venv/bin/python -m pytest ingestion/tests/test_embedders.py kg_pipeline/tests/test_heuristic.py -q`

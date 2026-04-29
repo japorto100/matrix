@@ -95,6 +95,12 @@ migrated_from:
 - [x] T077 Static-harden Matrix widget rendering as a link-card bridge, not an
   iframe host. Full Matrix Widget API support remains a future sandboxed host
   decision.
+- T078 Route external MCP discovery, descriptor risk, token passthrough and
+  catalog filtering to Feature 024 instead of keeping policy inside A2UI.
+- T079 Route Matrix room-state/app hosting to Feature 030; Feature 008 keeps
+  local A2UI packets and safe fallbacks.
+- T080 Add provider-agnostic MCP Apps compatibility adapter notes: learn from
+  current app/resource patterns without tying Matrix UI to one LLM provider.
 
 ## Verify Gates
 

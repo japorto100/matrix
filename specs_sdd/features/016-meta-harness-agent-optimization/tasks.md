@@ -308,6 +308,16 @@ feature_id: 016
   public skills and newly authored Matrix skills under the same trace gates.
 - [x] T114 Define a global-KG scenario set where nonicdb/NornicDB context is
   expected only for world/domain facts, not personal agent memory.
+- T115 Add Feature 024 MCP catalog policy scenarios: allowed tool, poisoned
+  descriptor, descriptor mutation and token passthrough denial.
+- T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
+  metric and KG/RAG-linked term.
+- T117 Add Feature 027 report-publishing scenario with citation/manifest
+  scoring.
+- T118 Add Feature 028 visual-memory scenario with visible/hidden/stale cases.
+- T119 Add Feature 029 ops-room replay gate using existing run artifacts.
+- T120 Add Feature 030 widget proposal scenario with approval, denial and
+  fallback rendering.
 
 ## Verify Gates
 

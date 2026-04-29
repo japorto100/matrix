@@ -181,3 +181,7 @@ feature_id: 022
     to expose `projection_target=nornicdb`, projection event id, source
     artifact id, chunk id/hash, citation ref and the expected compact KG path.
     This is a static adapter/canary gate; live NornicDB execution remains T043.
+- T049 Add Feature 026 browser-local retrieval benchmark lane.
+- T050 Add Feature 025 semantic-term benchmark cases.
+- T051 Add Feature 028 visual-layout evidence benchmark cases.
+- T052 Add Feature 027 report-grounding benchmark cases.

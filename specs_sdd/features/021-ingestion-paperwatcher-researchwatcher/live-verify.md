@@ -9,6 +9,12 @@ feature_id: 021
 
 # Live Verify
 
+## 2026-04-29 Visual/Report/Semantic Follow-Up
+
+- Extract one layout-heavy source and verify page/block coordinate metadata.
+- Generate one report-source handoff manifest for Feature 027.
+- Emit one semantic concept proposal for Feature 025 and verify pending state.
+
 - LV001 [done-partial] Start Postgres and Python backend.
   - 2026-04-27: Postgres on `:5433` available; no Go/frontend needed for the
     local CLI path.

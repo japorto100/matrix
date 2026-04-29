@@ -79,3 +79,12 @@ Implications:
 relational questions where explicit structure should pay for its offline cost.
 - Feature 022 benchmark canaries should include both answer-quality and
 efficiency/stability metrics, matching RAGSearch's focus beyond final accuracy.
+
+## 2026-04-29 Z_ Follow-Up
+
+`Z_Browser_RAG_WebGPU_CPU_Models.md` adds browser-local retrieval as a candidate
+lane, not as a backend replacement. Feature 026 owns the runtime; Feature 019
+owns answer-time assembly and comparison to backend retrieval.
+
+`Z_Semantik_layer and so on.md` means retrieval should accept semantic
+term/metric filters from Feature 025 rather than relying only on raw user text.

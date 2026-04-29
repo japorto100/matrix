@@ -9,6 +9,13 @@ feature_id: 017
 
 # Live Verify
 
+## 2026-04-29 Semantic/Visual Follow-Up
+
+- Verify a KG claim type links to a Feature 025 semantic term.
+- Verify a visual evidence block from Feature 028 produces a pending claim
+  proposal with source refs.
+- Verify browser-local hints from Feature 026 do not auto-promote KG claims.
+
 ## Static Verify
 
 - `python-backend/.venv/bin/python -m pytest kg_pipeline/tests/test_heuristic.py -q`

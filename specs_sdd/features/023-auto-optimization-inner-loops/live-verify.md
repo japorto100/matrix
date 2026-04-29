@@ -9,6 +9,13 @@ feature_id: 023
 
 # Live Verify
 
+## 2026-04-29 Expanded Candidate Spaces
+
+- Verify Feature 024 tool-policy candidate refuses to relax a deny gate.
+- Verify Feature 025 semantic candidate cannot alter gold definitions.
+- Verify Feature 026 browser-RAG candidate records model/runtime metadata.
+- Verify Feature 028 visual-memory candidate records confidence/source refs.
+
 - LV001 [done] Run deterministic RAG optimization smoke over Feature 022 canaries.
   - 2026-04-27:
     `uv run python -m meta_harness.meta_cli inner-loop --kind rag --run-id run-inner-loop-rag-smoke --data-dir ../data/meta_harness`

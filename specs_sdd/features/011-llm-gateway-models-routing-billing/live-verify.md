@@ -9,6 +9,13 @@ feature_id: 011
 
 # Live Verify
 
+## 2026-04-29 Provider-Agnostic Follow-Up
+
+- Re-run provider smoke with `llm-mock` disabled and a real configured provider
+  path.
+- Verify embedding and chat provider paths can be swapped through config without
+  changing agent prompts.
+
 ## Gateway
 
 - Start LiteLLM.

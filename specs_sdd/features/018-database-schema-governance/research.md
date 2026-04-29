@@ -33,3 +33,11 @@ Accepted implementation:
 - generated Markdown inventory for live DB checks;
 - reviewed `docs/database/current-schema.md` for stable SDD orientation;
 - ADR 0007 binds the migration checklist.
+
+## 2026-04-29 Feature 024-029 Schema Follow-Up
+
+The new feature set likely introduces persisted descriptors, semantic
+definitions, report manifests, visual evidence and ops read models. Feature 018
+should keep the rule: Alembic remains authoritative, generated docs are
+inspection artifacts, and no feature owns a shadow schema outside migration
+governance.

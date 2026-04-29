@@ -66,3 +66,7 @@ feature_id: 008
   MCP tool is enabled for normal users.
 - [ ] A Matrix Widget API host is live-verified before embedding room widgets
   inside the Matrix chat route.
+- External MCP tools/resources are not exposed through A2UI until Feature 024
+  catalog policy accepts them.
+- Matrix widget/app hosting is delegated to Feature 030; A2UI stays a local
+  renderer with text/tool fallback.

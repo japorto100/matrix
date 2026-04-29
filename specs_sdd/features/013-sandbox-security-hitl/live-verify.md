@@ -9,6 +9,12 @@ feature_id: 013
 
 # Live Verify
 
+## 2026-04-29 MCP/Widget/Report Follow-Up
+
+- Verify a malicious MCP STDIO config mutation is rejected before process spawn.
+- Verify a blocked MCP resource/widget is not hosted by Feature 030.
+- Verify report renderer rejects or disables arbitrary local execution.
+
 ## Source Checks
 
 - `exec-12` Phase 1/2 implemented items are either verified here or marked

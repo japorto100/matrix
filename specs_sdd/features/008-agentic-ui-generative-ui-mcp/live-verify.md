@@ -9,6 +9,13 @@ feature_id: 008
 
 # Live Verify
 
+## 2026-04-29 Feature 024/030 Follow-Up
+
+- Verify A2UI can render a fallback when an MCP resource is blocked by Feature
+  024 policy.
+- Verify Matrix widget/app payloads are handed to Feature 030 proposal flow
+  instead of being executed inline.
+
 ## A2UI / CopilotKit
 
 - Enable required env flags.

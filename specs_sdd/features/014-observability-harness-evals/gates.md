@@ -9,6 +9,13 @@ feature_id: 014
 
 # Gate Ledger
 
+## 2026-04-29 Feature 024-030 Trace Follow-Up
+
+- MCP policy decisions include descriptor hash and policy verdict.
+- Semantic answers include lookup and definition-version traces.
+- Ops-room events can be derived from trace/audit data without hidden state.
+- Widget proposal/approval/revoke events are traceable.
+
 ## OTel / OpenObserve
 
 - OpenObserve starts on configured ports.

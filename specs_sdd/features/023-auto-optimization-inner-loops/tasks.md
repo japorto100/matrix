@@ -121,3 +121,11 @@ feature_id: 023
     `canary_patch` in mutable candidate sections, and requires
     `frozen_evaluator.goldens_mutable == False`. Inner-loop smoke
     `run-inner-rag-splits-20260427` passed this gate.
+- T047 Add Feature 026 browser-RAG candidate search spaces: lexical/dense/RRF,
+  model metadata and fallback policy.
+- T048 Add Feature 025 semantic-layer candidate search spaces: ambiguity
+  thresholds, term filters and correction routing.
+- T049 Add Feature 028 visual-memory candidate search spaces: OCR confidence,
+  decay policy and injection threshold.
+- T050 Add Feature 024 tool-policy candidate search spaces without allowing
+  loops to relax security gates.

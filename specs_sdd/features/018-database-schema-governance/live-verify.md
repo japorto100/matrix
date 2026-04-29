@@ -9,6 +9,12 @@ feature_id: 018
 
 # Live Verify
 
+## 2026-04-29 Feature 024-029 Schema Follow-Up
+
+- Regenerate schema docs after adding any Feature 024-029 persistent tables.
+- Verify schema inventory lists semantic, visual/report and ops tables if
+  implemented.
+
 - Start Matrix Postgres.
 - Run `alembic upgrade head`.
 - Generate schema inventory.

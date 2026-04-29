@@ -9,6 +9,14 @@ feature_id: 023
 
 # Gates
 
+## 2026-04-29 Expanded Candidate Spaces
+
+- Tool-policy candidates from Feature 024 cannot weaken security gates.
+- Semantic-layer candidates from Feature 025 cannot mutate definitions during a
+  run.
+- Browser-RAG candidates from Feature 026 record runtime/model metadata.
+- Visual-memory candidates from Feature 028 record source refs and confidence.
+
 - G001 [partial-pass] Search spaces are explicit and bounded for the first
   deterministic RAG retrieval-mode sweep; parser/memory/tool search spaces
   remain open.

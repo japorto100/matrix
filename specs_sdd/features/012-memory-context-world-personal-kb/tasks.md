@@ -193,6 +193,12 @@ migrated_from:
 - [x] T085 Define annotations/highlights/labels/pins schema.
 - [x] T086 Define KB retrieval policy for context layer.
 - [x] T087 Coordinate Inbox/Library/Document/Note surfaces with Feature 010.
+- T088 Add visual memory handoff to Feature 028: screenshot/document evidence
+  can create sourced summaries, not unsourced memories.
+- T089 Add semantic-layer handoff to Feature 025 so personal corrections do not
+  silently mutate global metric/term definitions.
+- T090 Add browser-local retrieval handoff to Feature 026 for private/local
+  prefiltering before backend memory/RAG calls.
 
 ## Verify Gates
 

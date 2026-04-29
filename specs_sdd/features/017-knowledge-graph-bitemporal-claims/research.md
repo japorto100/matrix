@@ -140,3 +140,13 @@ Matrix adoption:
 
 Feature 019 now owns the answer-time RAG implementation and GraphRAG candidate
 benchmarking. Feature 017 remains responsible for the KG claim/path source.
+
+## 2026-04-29 Z_ Follow-Up
+
+`Z_Semantik_layer and so on.md` strengthens the need for semantic term links
+between business concepts and KG claim types. Feature 025 owns the semantic
+API, while Feature 017 keeps claim validity, status and provenance.
+
+`Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md` adds visual evidence as a future
+claim-proposal source through Feature 028. Visual extraction must not promote
+claims without evidence review and bitemporal status.

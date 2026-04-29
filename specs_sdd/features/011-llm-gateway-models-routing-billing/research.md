@@ -66,3 +66,14 @@ Keep as research/backlog until needed:
 
 The next useful implementation is L1 mode labeling, not a classifier. Real
 matrix usage data should decide whether routing complexity is worth it.
+
+## 2026-04-29 Provider-Agnostic Follow-Up
+
+The new Feature 024/026/027/030 work uses vendor examples only as evidence of
+emerging patterns. Feature 011 must keep the gateway model/provider layer
+agnostic:
+
+- no provider-named prompts in core agent logic;
+- capability metadata is explicit data;
+- deterministic mocks stay in tests, not live verification;
+- remote live verify uses whichever configured provider is available.

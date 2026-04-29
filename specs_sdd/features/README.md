@@ -3,7 +3,7 @@ title: Feature Index
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-29
 ---
 
 # Feature Index
@@ -36,8 +36,15 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 021 | `021-ingestion-paperwatcher-researchwatcher` | planned | Source ingestion, Paperwatcher/Researchwatcher adoption, artifact registry, citations and KG proposal handoff |
 | 022 | `022-rag-kg-benchmark-lab` | planned | Evidence lane for vector, fused KG, LightRAG/HippoRAG-style candidates, matched budgets and Meta-Harness promotion decisions |
 | 023 | `023-auto-optimization-inner-loops` | planned | AutoRAG/autoresearch-style inner loops for RAG, extraction, memory/context and tool-policy candidates feeding Meta-Harness |
+| 024 | `024-mcp-gateway-tool-catalog-policy` | planned | Provider-agnostic MCP gateway/catalog/policy layer with descriptor risk, approval, token and resource gates |
+| 025 | `025-semantic-layer-metrics-claims` | planned | Metrics-as-code, glossary, semantic API and KG/RAG claim mapping so agents share authoritative definitions |
+| 026 | `026-browser-rag-webgpu-local-first` | planned | Browser-local embeddings/search/reranking with WebGPU/WASM/server fallback and measured parity against backend RAG |
+| 027 | `027-agentic-report-publishing-quarkdown` | planned | Reproducible report/slides/PDF artifact pipeline from source-grounded agent outputs |
+| 028 | `028-visual-memory-layout-extraction` | planned | Screenshot/document visual evidence, OCR/layout memory and optical-compression experiments behind gates |
+| 029 | `029-agent-ops-room-tool-observatory` | planned | Agent/tool/session ops-room surface and replay read-model over traces and Meta-Harness artifacts |
+| 030 | `030-matrix-widget-app-host` | planned | Approved Matrix widget/app host with client fallback, sandbox/origin policy and MCP resource handoff |
 
-See `REVIEW_001_023_2026-04-27.md` for the current done/live/research/open
+See `REVIEW_001_023_2026-04-27.md` for the previous done/live/research/open
 classification. Do not read `implementation_done` in older feature frontmatter
 as final closeout unless the corresponding `live-verify.md` has evidence or an
 explicit out-of-scope decision.
@@ -68,8 +75,9 @@ Optional kommen beim eigentlichen Content-Import dazu:
 - `contracts/`
 - `evidence/`
 
-Cross-feature execution is tracked in `WORKPLAN_001_022.md` and will be
-renamed after Feature 023 consolidation.
+Cross-feature execution is tracked in `WORKPLAN_001_022.md` for the older
+baseline and should be superseded by a 001-030 workplan once Features 024-030
+enter implementation.
 
 ## Live-Verify-Schwerpunkte
 
@@ -98,3 +106,17 @@ Die umfangreichsten Live-Verify-Listen liegen hier:
   evidence for graph retrieval candidates
 - Feature 023: bounded inner-loop optimization over RAG, extraction,
   memory/context and tool-policy candidates that emits Meta-Harness artifacts
+- Feature 024: MCP gateway/catalog policy, descriptor risk, token passthrough,
+  approval fail-closed behavior and resource/widget handoff
+- Feature 025: semantic metric/term catalog, permissioned query behavior,
+  ambiguity handling, KG/RAG term links and correction proposals
+- Feature 026: browser-local RAG worker runtime, WebGPU/WASM/server fallback,
+  model/index metadata and backend parity benchmarks
+- Feature 027: Quarkdown/fallback report artifact builds, manifest/citation
+  validation and Matrix-safe publication
+- Feature 028: visual evidence capture, OCR/layout extraction, visual memory
+  source refs and optical-compression research gates
+- Feature 029: ops-room live/replay timeline, agent/tool/approval status and
+  Meta-Harness run replay
+- Feature 030: Matrix widget proposal/approval, room-state mutation, fallback
+  rendering and client compatibility checks

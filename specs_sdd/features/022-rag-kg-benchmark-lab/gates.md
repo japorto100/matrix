@@ -9,6 +9,14 @@ feature_id: 022
 
 # Gates
 
+## 2026-04-29 Expanded Candidate Gates
+
+- Browser-local retrieval from Feature 026 is evaluated under matched canaries.
+- Semantic-term retrieval from Feature 025 is evaluated against ambiguity and
+  provenance cases.
+- Visual-layout evidence from Feature 028 is evaluated for citation accuracy.
+- Report-grounding from Feature 027 is evaluated for unsupported-claim rate.
+
 - Every candidate uses the same corpus, question set, retrieval budget and
   context budget.
   - 2026-04-27: initial `compare_candidates()` runner enforces shared canary

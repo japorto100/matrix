@@ -43,3 +43,15 @@ goldens rather than generic document QA.
 
 AutoRAG-style optimization belongs in Feature 023. Feature 022 consumes its
 candidate artifacts and judges them under matched budgets and holdout sets.
+
+## 2026-04-29 Z_ Follow-Up
+
+The benchmark lab now needs new candidate dimensions:
+
+- browser-local retrieval from Feature 026;
+- semantic filters/terms from Feature 025;
+- visual-layout evidence from Feature 028;
+- report-grounding outputs from Feature 027.
+
+Keep the same rule: every candidate is compared against strong dense/hybrid
+baselines under matched budgets before promotion.

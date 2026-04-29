@@ -117,3 +117,7 @@ feature_id: 019
   to justify LightRAG/HippoRAG-style candidates.
 - T048 Verify graph retrieval does not degrade simple document-grounded QA
   when parser/chunking quality is held constant.
+- T049 Add Feature 026 browser-local retrieval as a measured candidate lane.
+- T050 Add Feature 025 semantic filters/terms to retrieval query planning.
+- T051 Add Feature 028 visual-layout blocks as retrievable evidence with source
+  coordinates.

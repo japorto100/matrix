@@ -9,6 +9,15 @@ feature_id: 010
 
 # Gates
 
+## 2026-04-29 Feature 024-029 Follow-Up
+
+- MCP tab shows effective filtered catalog and risk state from Feature 024, not
+  raw untrusted descriptors only.
+- Semantic tab or inspector shows metric/term owner, version, provenance and
+  conflict status from Feature 025.
+- Ops room shows live/replayed agent status from Feature 029 before optional
+  spatial/3D experiments.
+
 ## G1 Shell / Routing
 
 - [x] `/control/[[...tab]]` route exists in `frontend_merger`.

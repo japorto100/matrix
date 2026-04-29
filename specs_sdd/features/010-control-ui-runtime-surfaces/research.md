@@ -77,3 +77,20 @@ Skipped:
 
 This research stays in Feature 010 only where it affects UI/integration. Backend
 retrieval/KG semantics move to Feature 012 when implemented.
+
+## 2026-04-29 Z_ Follow-Up
+
+The new Z_ material expands Control UI scope, but not as a monolith:
+
+- `Z_Additional_For_Tool_Stuff.md` requires an MCP gateway/catalog view
+  delegated to Feature 024.
+- `Z_Semantik_layer and so on.md` requires semantic/metric definition
+  inspection delegated to Feature 025.
+- `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface
+  delegated to Feature 029.
+- `Z_Tool_very interessting Quarkdown.md` supports report artifact inspection
+  delegated to Feature 027.
+
+Control UI should expose effective state from owning features. It should not
+become the owner of MCP policy, semantic truth, report rendering or agent
+runtime logic.

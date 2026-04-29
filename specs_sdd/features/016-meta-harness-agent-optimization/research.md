@@ -195,3 +195,24 @@ Meta-Harness should therefore operate on stable backend domains first:
 
 It should not be used to claim UI completion unless the trace contains the
 actual frontend/API path being verified.
+
+## 2026-04-29 Feature 024-030 Domains
+
+The Z_ pass adds new Meta-Harness domains:
+
+- Feature 024: MCP catalog policy and tool-poisoning resistance from
+  `Z_Additional_For_Tool_Stuff.md`.
+- Feature 025: semantic metric/claim correctness from
+  `Z_Semantik_layer and so on.md`.
+- Feature 027: report artifact grounding from
+  `Z_Tool_very interessting Quarkdown.md`.
+- Feature 028: visual memory provenance from
+  `Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md`.
+- Feature 029: ops-room replay and status compression from
+  `Z_Hermes_Desktop_claw3d.md`.
+- Feature 030: Matrix widget proposal/fallback behavior from
+  `Z_matrix_widgets_formulars_and so on.md`.
+
+All scenarios must remain provider-agnostic. The harness can call whatever
+configured provider is available, but the gates judge behavior, traces and
+artifacts, not vendor-specific response style.

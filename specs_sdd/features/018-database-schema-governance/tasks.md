@@ -68,3 +68,9 @@ feature_id: 018
   `agent.evals` exists in live Postgres after upgrade.
   - 2026-04-27: `alembic current` reports `033_agent_evals (head)`;
     regenerated `docs/database/current-schema.md` includes `agent.evals`.
+- T044 Add schema governance for Feature 024 MCP descriptor snapshots if they
+  become persistent.
+- T045 Add schema governance for Feature 025 semantic terms/metrics.
+- T046 Add schema governance for Feature 027 report manifests and Feature 028
+  visual evidence if stored in Postgres.
+- T047 Add schema governance for Feature 029 ops read models if materialized.

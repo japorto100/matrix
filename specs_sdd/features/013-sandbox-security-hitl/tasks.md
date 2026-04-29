@@ -129,6 +129,12 @@ migrated_from:
 - T072 Verify Permissions tab shows real consent/RBAC policy where available.
 - T073 Verify audit/raw-access UI requires admin role and reason if raw span
   access is exposed.
+- T074 Add MCP STDIO config hardening with Feature 024: users/prompts cannot
+  control command, args, env, cwd or package name.
+- T075 Add Streamable HTTP MCP origin/auth checks with Feature 024.
+- T076 Add Matrix widget/app host sandbox/CSP checks with Feature 030.
+- T077 Add report renderer execution policy with Feature 027: generated docs
+  cannot execute arbitrary local code by default.
 
 ## Verify Gates
 

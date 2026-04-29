@@ -9,6 +9,13 @@ feature_id: 011
 
 # Gates
 
+## 2026-04-29 Provider-Agnostic Follow-Up
+
+- Regular live lanes use a real configured provider path; `llm-mock` is limited
+  to deterministic tests.
+- Provider capability detection is data-driven and does not hardcode a single
+  vendor contract into agent prompts.
+
 ## G1 Gateway / Provider
 
 - [x] LiteLLM starts on port 4000.

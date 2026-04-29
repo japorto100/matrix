@@ -91,3 +91,12 @@ migrated_from:
 - [x] One harness/eval score is generated in static tests.
 - [x] One harness/eval result is persisted in `agent.evals`.
 - [x] Evidence is stored or linked under feature evidence.
+
+## 2026-04-29 Feature 024-030 Trace Follow-Up
+
+- T062 Add MCP catalog policy trace fields from Feature 024: descriptor hash,
+  risk, policy verdict and call/denial.
+- T063 Add semantic lookup trace fields from Feature 025: term id, metric id,
+  definition version and ambiguity status.
+- T064 Add ops-room read-model export for Feature 029.
+- T065 Add widget proposal/audit trace fields from Feature 030.

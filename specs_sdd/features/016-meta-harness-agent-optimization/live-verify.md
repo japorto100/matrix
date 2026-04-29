@@ -9,6 +9,15 @@ feature_id: 016
 
 # Live Verify
 
+## 2026-04-29 Feature 024-030 Follow-Up
+
+- Run MCP catalog policy scenario from Feature 024 with real provider path when
+  configured and deterministic fixture server.
+- Run semantic-layer scenario from Feature 025 without provider-specific prompt
+  assumptions.
+- Run report/visual/widget scenarios only after their contracts exist.
+- Run ops-room replay gate from Feature 029 over an existing Meta-Harness run.
+
 ## MV-00 Memory Lifecycle Unit Verify
 
 Status: pass on 2026-04-26.

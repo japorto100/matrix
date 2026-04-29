@@ -9,6 +9,13 @@ feature_id: 022
 
 # Live Verify
 
+## 2026-04-29 Expanded Candidate Gates
+
+- Run one browser-local retrieval benchmark lane from Feature 026.
+- Run one semantic-term canary from Feature 025.
+- Run one visual-layout evidence canary from Feature 028.
+- Run one report-grounding canary from Feature 027.
+
 - LV001 Start Postgres and Python backend.
 - LV002 Seed canary documents and KG claims.
 - LV003 [done-initial] Run vector-only, KG-only and fused Matrix retrieval.

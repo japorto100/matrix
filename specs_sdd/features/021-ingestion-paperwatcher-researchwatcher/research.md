@@ -62,3 +62,14 @@ Date discipline:
 For financial/trading sources, prefer structured formats when available:
 XBRL/CSV/API payloads should not be degraded through PDF parsing unless the PDF
 is the only source.
+
+## 2026-04-29 Z_ Follow-Up
+
+`Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md` reinforces that layout and visual
+coordinates are evidence, not decoration. Feature 021 should preserve source
+artifact, page, block and coordinate metadata so Feature 028 visual memory and
+Feature 019 retrieval can cite exact regions.
+
+`Z_Tool_very interessting Quarkdown.md` adds a report-publishing consumer:
+Feature 027 should reference ingestion artifacts instead of copying unverifiable
+text into generated reports.

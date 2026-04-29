@@ -198,3 +198,9 @@ feature_id: 021
 - B002 [done] Dedup audit metadata wrote Postgres UUID objects directly and
   could fail JSON serialization. Document and note pipelines now stringify
   `existing_job_id`.
+- T043 Add visual-layout extraction handoff to Feature 028 for screenshots,
+  page images and coordinate-preserving blocks.
+- T044 Add report-source artifact handoff to Feature 027 so generated reports
+  can cite ingestion artifacts directly.
+- T045 Add semantic concept extraction handoff to Feature 025 for glossary/term
+  proposals.

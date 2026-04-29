@@ -180,3 +180,9 @@ feature_id: 017
     caller explicitly opts into persistence.
 - T054 [done-static] Add KG-pipeline `/propose` endpoint that returns
   Feature-017 claim proposals and only persists when explicitly requested.
+- T055 Add Feature 025 semantic-term links for KG claim types and entity
+  classes.
+- T056 Add Feature 028 visual evidence refs as claim proposal sources, never
+  automatic promotions.
+- T057 Add Feature 026 browser-local entity/linking candidates as proposal
+  hints only.

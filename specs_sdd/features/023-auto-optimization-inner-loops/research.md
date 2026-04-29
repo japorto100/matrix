@@ -95,3 +95,16 @@ recall provider blend + query gate + injection order + compaction threshold
 ```
 
 Do not use AutoRAG to directly edit product code.
+
+## 2026-04-29 Z_ Follow-Up
+
+The new features expand candidate spaces, but they stay bounded:
+
+- Feature 024 tool policy can tune selection/compaction, not weaken security.
+- Feature 025 semantic lookup can tune ambiguity thresholds and correction
+  routing.
+- Feature 026 browser-RAG can tune retrieval/runtime fallback choices.
+- Feature 028 visual memory can tune confidence/decay/injection thresholds.
+
+All candidates must still emit artifacts for Feature 016 Meta-Harness before
+promotion.

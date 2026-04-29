@@ -197,3 +197,13 @@ Avoid:
 - Bayesian/uncertainty-aware retrieval.
 - MemoryArena-style active decision-making evals.
 - multimodal memory once voice/chart artifacts enter memory.
+# 2026-04-29 Z_ Follow-Up
+
+`Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md` adds a useful split for memory:
+
+- practical visual evidence memory belongs in Feature 028 and can feed Feature
+  012 only with consent, source refs and confidence;
+- optical context compression is research-only until Meta-Harness proves recall
+  and safety;
+- personal corrections to metric/term meaning route to Feature 025 proposals
+  instead of silently changing global truth.

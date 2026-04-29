@@ -9,6 +9,14 @@ feature_id: 019
 
 # Gates
 
+## 2026-04-29 Browser/Semantic/Visual Follow-Up
+
+- Browser-local retrieval from Feature 026 is benchmarked against backend
+  retrieval before promotion.
+- Semantic filters from Feature 025 preserve source/provenance.
+- Visual-layout evidence from Feature 028 carries coordinates/source refs in
+  answer context.
+
 - Remote embeddings are configurable without hardcoding one provider.
 - Local embedding downloads are disabled by default and cache to HDD when
   enabled.

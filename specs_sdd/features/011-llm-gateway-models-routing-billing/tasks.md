@@ -103,6 +103,12 @@ migrated_from:
 - T071 Implement L2 adaptive reward feedback only after L1 proves useful.
 - [x] T072 Keep L3 classifier deferred until corpus and L2 plateau justify it.
 - [x] T073 Keep L4 full A2FM training out of current scope.
+- T074 Remove `llm-mock` from regular live verify lanes; keep deterministic
+  fake providers only for unit/contract tests.
+- T075 Add provider-agnostic live smoke matrix: at least one configured remote
+  chat provider, one embedding provider and one failure/fallback case.
+- T076 Record provider capabilities as data: tools, streaming, reasoning
+  metadata, embeddings, max output and cost, without provider-specific prompts.
 
 ## Verify Gates
 

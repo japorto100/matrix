@@ -9,6 +9,13 @@ feature_id: 014
 
 # Live Verify
 
+## 2026-04-29 Feature 024-030 Trace Follow-Up
+
+- Verify MCP policy denial appears in trace/audit with descriptor hash.
+- Verify semantic lookup appears before a metric answer.
+- Verify ops-room replay can be built from a Meta-Harness run artifact.
+- Verify widget proposal approval/denial is visible in audit search.
+
 ## Tracing
 
 - Start runtime with tracing env.
