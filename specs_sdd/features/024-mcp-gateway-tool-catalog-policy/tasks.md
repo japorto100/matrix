@@ -98,9 +98,15 @@ feature_id: 024
     matrix tool name, provenance/server label, approval level, risk flags,
     denial reasons and visible/blocked state.
 - T031 Add Control UI descriptor diff view.
-- T032 Add Meta-Harness scenario for benign external tool exposure.
-- T033 Add Meta-Harness scenario for tool poisoning in descriptor text.
-- T034 Add Meta-Harness scenario for changed descriptor after initial approval.
+- [x] T032 [done-static] Add Meta-Harness scenario for benign external tool exposure.
+  - 2026-04-29: `mcp-catalog-policy` artifacts include
+    `mcp-benign-fixture-visible`.
+- [x] T033 [done-static] Add Meta-Harness scenario for tool poisoning in descriptor text.
+  - 2026-04-29: `mcp-catalog-policy` artifacts include
+    `mcp-poisoned-descriptor-blocked`.
+- [x] T034 [done-static] Add Meta-Harness scenario for changed descriptor after initial approval.
+  - 2026-04-29: `mcp-catalog-policy` artifacts include
+    `mcp-descriptor-drift-reapproval`.
 - T035 Add audit queries for catalog changes and call denials.
 - T036 Link Matrix widget/resource output handoff to Feature 030.
 
@@ -113,4 +119,8 @@ feature_id: 024
 - [x] T044 Unit-test descriptor diff risk escalation.
 - T045 Integration-test fixture MCP server through gateway.
 - T046 Live-verify Control UI reads the effective catalog.
-- T047 Live-verify Meta-Harness blocks poisoned descriptors.
+- [x] T047 [done-static-live-smoke] Live-verify Meta-Harness blocks poisoned descriptors.
+  - 2026-04-29: provider-free CLI smoke `mcp-catalog-policy` writes artifacts
+    for allowed, poisoned and drift scenarios; no external MCP server required.
+  - 2026-04-29 live-smoke: `run-mcp-catalog-policy-20260429` passed 3/3
+    scenarios in `/tmp/matrix-meta-harness-mcp-policy`.

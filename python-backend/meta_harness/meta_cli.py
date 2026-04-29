@@ -94,6 +94,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Allow llm-mock/mock provider lanes for unit or contract tests",
     )
 
+    mcp_policy = sub.add_parser(
+        "mcp-catalog-policy",
+        help="Run provider-free Feature 024 MCP catalog policy scenarios",
+    )
+    mcp_policy.add_argument("--run-id", default="")
+    mcp_policy.add_argument("--data-dir", type=Path, default=None)
+
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
         help="Run Feature 021 PDF extraction against Markdown ground truth",
@@ -278,6 +285,13 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_provider_smoke(**kwargs)
+    if args.command == "mcp-catalog-policy":
+        from meta_harness.mcp_catalog_policy import run_mcp_catalog_policy_scenarios
+
+        kwargs = {"run_id": args.run_id or "run-mcp-catalog-policy"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_mcp_catalog_policy_scenarios(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

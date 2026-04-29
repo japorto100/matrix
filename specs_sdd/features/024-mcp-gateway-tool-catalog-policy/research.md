@@ -73,6 +73,10 @@ explicit credential scopes, approval gates and audit evidence.
   catalog endpoint and displays approval level, risk flags, denial reasons,
   provenance/server label and visible/blocked state. This keeps Control aligned
   with policy-filtered state instead of raw descriptors.
+- 2026-04-29 Meta-Harness follow-up: `mcp-catalog-policy` is a provider-free,
+  external-server-free scenario lane covering benign fixture exposure, poisoned
+  descriptor blocking and descriptor drift/reapproval. It gives Feature 024 a
+  repeatable artifact before live external MCP promotion.
 
 ## Design Consequence
 

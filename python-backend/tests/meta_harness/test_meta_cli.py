@@ -211,6 +211,27 @@ async def test_cli_provider_smoke_chat_call_uses_configured_client(
     assert result["chat"]["response_chars"] == 2
 
 
+@pytest.mark.asyncio
+async def test_cli_mcp_catalog_policy_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["mcp-catalog-policy", "--run-id", "run-mcp", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 3
+    scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
+    assert "mcp-benign-fixture-visible" in scenario_ids
+    assert "mcp-poisoned-descriptor-blocked" in scenario_ids
+    assert "mcp-descriptor-drift-reapproval" in scenario_ids
+    artifact = tmp_path / "runs" / "run-mcp" / "mcp_catalog_policy.json"
+    assert artifact.exists()
+    saved = json.loads(artifact.read_text(encoding="utf-8"))
+    assert saved["passed_count"] == 3
+
+
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():
     from meta_harness.retrieval_benchmark import _candidate_verdicts
 
