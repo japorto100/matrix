@@ -201,6 +201,13 @@ export interface McpCatalogEntry {
 	};
 	visible: boolean;
 	denial_reasons: string[];
+	descriptor_diff?: {
+		changed: boolean;
+		changed_fields: string[];
+		added_risk_flags: string[];
+		risk_escalated: boolean;
+		requires_reapproval: boolean;
+	};
 	provenance?: {
 		server_id: string;
 		server_label: string;

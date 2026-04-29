@@ -97,7 +97,9 @@ feature_id: 024
   - 2026-04-29: `McpTab` reads `/api/control/mcp/catalog` and displays
     matrix tool name, provenance/server label, approval level, risk flags,
     denial reasons and visible/blocked state.
-- T031 Add Control UI descriptor diff view.
+- [x] T031 [done-static] Add Control UI descriptor diff view.
+  - 2026-04-29: Control catalog payloads include `descriptor_diff`; `McpTab`
+    renders hash, drift/no-drift, changed fields and reapproval state.
 - [x] T032 [done-static] Add Meta-Harness scenario for benign external tool exposure.
   - 2026-04-29: `mcp-catalog-policy` artifacts include
     `mcp-benign-fixture-visible`.
@@ -107,8 +109,12 @@ feature_id: 024
 - [x] T034 [done-static] Add Meta-Harness scenario for changed descriptor after initial approval.
   - 2026-04-29: `mcp-catalog-policy` artifacts include
     `mcp-descriptor-drift-reapproval`.
-- T035 Add audit queries for catalog changes and call denials.
-- T036 Link Matrix widget/resource output handoff to Feature 030.
+- [x] T035 [done-static] Add audit queries for catalog changes and call denials.
+  - 2026-04-29: `/control/audit/mcp-policy` filters MCP catalog changes,
+    descriptor drift, tool denials, resource denials and session grants.
+- [x] T036 [done-static] Link Matrix widget/resource output handoff to Feature 030.
+  - 2026-04-29: Feature 030 `agent.matrix_widgets.policy` calls Feature 024
+    resource policy for MCP resource handoff before widget hosting.
 
 ## Verification
 

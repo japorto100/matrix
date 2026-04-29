@@ -14,11 +14,27 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
-from agent.mcp_gateway.policy import McpServerConfig, build_effective_catalog
+from agent.mcp_gateway.policy import (
+    McpCatalogEntry,
+    McpServerConfig,
+    build_effective_catalog,
+    diff_descriptor_snapshots,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["control", "mcp"])
+
+
+def _catalog_entry_payload(entry: McpCatalogEntry) -> dict[str, Any]:
+    """Return Control UI payload with descriptor drift metadata."""
+
+    payload = entry.as_dict()
+    payload["descriptor_diff"] = diff_descriptor_snapshots(
+        entry.snapshot,
+        entry.snapshot,
+    )
+    return payload
 
 
 def _internal_matrix_mcp() -> dict[str, Any]:
@@ -91,7 +107,7 @@ async def list_mcp_catalog() -> dict[str, Any]:
         tenant_id="matrix-local",
         user_id="control-ui",
     )
-    items = [entry.as_dict() for entry in catalog]
+    items = [_catalog_entry_payload(entry) for entry in catalog]
     return {"items": items, "total": len(items), "secrets_redacted": True}
 
 

@@ -398,6 +398,21 @@ export const auditQueries = {
 		const qs = params.toString();
 		return apiGet(`/api/control/audit${qs ? `?${qs}` : ""}`);
 	},
+	mcpPolicy: async (
+		filters: Partial<{
+			user_id: string;
+			success: boolean;
+			limit: number;
+			offset: number;
+		}> = {},
+	): Promise<{ items: AuditEvent[]; total: number; actions: string[] }> => {
+		const params = new URLSearchParams();
+		for (const [k, v] of Object.entries(filters)) {
+			if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+		}
+		const qs = params.toString();
+		return apiGet(`/api/control/audit/mcp-policy${qs ? `?${qs}` : ""}`);
+	},
 };
 
 // ─── Sessions ──────────────────────────────────────────────────────────────

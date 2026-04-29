@@ -77,6 +77,13 @@ explicit credential scopes, approval gates and audit evidence.
   external-server-free scenario lane covering benign fixture exposure, poisoned
   descriptor blocking and descriptor drift/reapproval. It gives Feature 024 a
   repeatable artifact before live external MCP promotion.
+- 2026-04-29 audit/diff follow-up: Control catalog payloads now carry a
+  `descriptor_diff` object for drift/reapproval rendering, and
+  `/control/audit/mcp-policy` gives operators a focused query for catalog
+  changes, descriptor drift, tool/resource denials and MCP session grants.
+- 2026-04-29 widget handoff follow-up: Feature 030 consumes
+  `evaluate_resource_fetch_policy()` before any MCP resource can become a
+  Matrix widget/app proposal.
 
 ## Design Consequence
 

@@ -123,6 +123,7 @@ export function McpTab() {
 							<th className="py-2 px-3 font-semibold">Tool</th>
 							<th className="py-2 px-3 font-semibold w-28">Approval</th>
 							<th className="py-2 px-3 font-semibold">Risk / Denial</th>
+							<th className="py-2 px-3 font-semibold w-44">Descriptor</th>
 							<th className="py-2 px-3 font-semibold w-28">Visible</th>
 						</tr>
 					</thead>
@@ -159,6 +160,39 @@ export function McpTab() {
 									</div>
 								</td>
 								<td className="py-2 px-3">
+									<div className="flex flex-col gap-1">
+										<code className="text-[10px] text-muted-foreground">
+											{entry.tool.descriptor_hash.slice(0, 10)}
+										</code>
+										<div className="flex flex-wrap gap-1">
+											<Badge
+												variant="outline"
+												className={cn(
+													"text-[9px] h-4 px-1.5",
+													entry.descriptor_diff?.changed
+														? "border-amber-500/50 text-amber-400"
+														: "border-emerald-500/50 text-emerald-400",
+												)}
+											>
+												{entry.descriptor_diff?.changed ? "changed" : "no drift"}
+											</Badge>
+											{entry.descriptor_diff?.requires_reapproval && (
+												<Badge
+													variant="outline"
+													className="text-[9px] h-4 px-1.5 border-amber-500/50 text-amber-400"
+												>
+													reapprove
+												</Badge>
+											)}
+											{entry.descriptor_diff?.changed_fields.map((field) => (
+												<Badge key={field} variant="secondary" className="text-[9px] h-4 px-1.5">
+													{field}
+												</Badge>
+											))}
+										</div>
+									</div>
+								</td>
+								<td className="py-2 px-3">
 									<Badge
 										variant="outline"
 										className={cn(
@@ -175,7 +209,7 @@ export function McpTab() {
 						))}
 						{catalog.length === 0 && (
 							<tr className="border-t border-border">
-								<td colSpan={4} className="py-6 px-3 text-center text-muted-foreground">
+								<td colSpan={5} className="py-6 px-3 text-center text-muted-foreground">
 									No effective MCP catalog entries
 								</td>
 							</tr>

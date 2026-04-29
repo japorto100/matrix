@@ -371,6 +371,8 @@ async def test_control_mcp_catalog_endpoint_is_metadata_only(monkeypatch):
     assert item["visible"] is True
     assert item["server"]["env_keys"] == []
     assert item["provenance"]["server_id"] == "matrix-internal"
+    assert item["descriptor_diff"]["changed"] is False
+    assert item["descriptor_diff"]["requires_reapproval"] is False
 
 
 async def test_agent_mcp_catalog_endpoint_filters_visible_entries(monkeypatch):

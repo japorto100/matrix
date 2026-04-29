@@ -433,6 +433,16 @@ export function useAuditEvents(filters: Parameters<typeof auditQueries.list>[0] 
 	});
 }
 
+export function useMcpPolicyAuditEvents(
+	filters: Parameters<typeof auditQueries.mcpPolicy>[0] = {},
+) {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: ["control", "audit", "mcp-policy", filters] as const,
+		queryFn: () => auditQueries.mcpPolicy(filters),
+	});
+}
+
 // ─── Sessions ──────────────────────────────────────────────────────────────
 export function useSessions(activeOnly = false) {
 	return useQuery({
