@@ -61,11 +61,19 @@ feature_id: 024
 
 ## Execution
 
-- T020 Add gateway wrapper around MCP calls with timeout, cancellation and
+- [x] T020 [done-static] Add gateway wrapper around MCP calls with timeout, cancellation and
   output-size caps.
-- T021 Convert MCP failures into structured tool messages compatible with the
+  - 2026-04-29: `execute_mcp_tool_call()` applies bounded timeout,
+    structured cancellation conversion and max-output-byte capping before tool
+    content enters the agent context.
+- [x] T021 [done-static] Convert MCP failures into structured tool messages compatible with the
   agent runners.
-- T022 Preserve tool_call_id across approvals, denials and execution errors.
+  - 2026-04-29: timeout, cancellation and remote exceptions serialize as
+    provider-compatible `role=tool` messages with JSON error payloads.
+- [x] T022 [done-static] Preserve tool_call_id across approvals, denials and execution errors.
+  - 2026-04-29: `McpToolCallRequest`, `McpGatewayExecutionResult` and
+    `to_tool_message()` preserve `tool_call_id` and `tool_use_id` across
+    success, timeout, cancellation and exception paths.
 - [x] T023 [done-static] Add resource fetch policy separate from tool execution policy.
   - 2026-04-29: `evaluate_resource_fetch_policy()` evaluates resource URI,
     scheme, domain and resource-prefix denylist independently from tool

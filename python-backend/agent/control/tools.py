@@ -77,31 +77,17 @@ def _builtin_tools() -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     try:
         from agent.tools import registry as tools_registry
+        from agent.tools.catalog import builtin_tool_catalog
 
-        # Try the ToolRegistry class (newer) or fall back to module-level attrs
         if hasattr(tools_registry, "ToolRegistry"):
-            reg = tools_registry.ToolRegistry()
-            if hasattr(reg, "load"):
-                reg.load()
-            if hasattr(reg, "list_tools"):
-                tools = reg.list_tools()
-                for t in tools:
-                    out.append(
-                        {
-                            "id": f"builtin:{t.name}"
-                            if hasattr(t, "name")
-                            else f"builtin:{t}",
-                            "name": t.name if hasattr(t, "name") else str(t),
-                            "type": "builtin",
-                            "description": getattr(t, "description", ""),
-                            "provider": "matrix-builtin",
-                            "input_schema_summary": str(getattr(t, "input_schema", {}))[
-                                :100
-                            ],
-                            "categories": getattr(t, "categories", []),
-                            "enabled": True,
-                        }
-                    )
+            reg = tools_registry.ToolRegistry.load()
+            for entry in builtin_tool_catalog(reg.all()):
+                item = entry.as_dict()
+                item["type"] = entry.source
+                item["provider"] = "matrix-builtin"
+                item["categories"] = [entry.group]
+                item["input_schema_summary"] = entry.input_schema_hash
+                out.append(item)
         return out
     except Exception as e:  # noqa: BLE001
         logger.debug("builtin tools enumeration skipped: %s", e)

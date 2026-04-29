@@ -81,7 +81,10 @@ migrated_from:
 - T061 Verify role edit patch and reset.
 - T062 Verify PermissionsTab cell cycle and reset.
 - T063 Verify SkillsTab toggle state and backend persistence/stub status.
-- T064 Verify ToolsTab registry and import request state.
+- [x] T064 [done-static] Verify ToolsTab registry and import request state.
+  - 2026-04-29: `/control/tools` now exposes builtin ToolRegistry catalog
+    policy metadata: group, risk, approval mode, progressive-disclosure level
+    and schema/description hashes.
 - T065 Verify SandboxTab run list/detail state.
 - T066 Route full skills semantics to Feature 015.
 - T067 Route sandbox execution semantics to Feature 013.
@@ -113,6 +116,8 @@ migrated_from:
 - T092 Decide Computer Use / Artifacts scope with Features 008 and 013.
 - T093 Decide Personal KB / World Model surfaces with Feature 012.
 - T094 Add effective MCP catalog/risk/policy surface from Feature 024.
+- [x] T094a [done-static] Add normal builtin tool catalog/risk/policy metadata
+  from Feature 016/`Z_Additional_For_Tool_Stuff.md`.
 - T095 Add semantic catalog and metric/claim definition inspector from Feature
   025.
 - T096 Add agent ops-room entrypoint from Feature 029: live sessions, tool

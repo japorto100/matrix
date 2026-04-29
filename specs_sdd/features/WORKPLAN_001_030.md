@@ -62,6 +62,10 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: MCP policy now also blocks high-trust tool lookalikes,
      requires user-visible external-tool provenance, exposes an agent-facing
      visible-only catalog and supports expiry/audit-bound session grants.
+   - 2026-04-29: `Z_Additional_For_Tool_Stuff.md` was corrected as broader
+     than MCP. Normal builtin ToolRegistry tools now have catalog metadata for
+     group, risk, approval, hashes and progressive disclosure through Feature
+     016/010, while Feature 024 remains external-MCP-specific.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

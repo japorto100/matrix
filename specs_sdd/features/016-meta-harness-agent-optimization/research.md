@@ -83,6 +83,13 @@ The current evaluator constructs `AgentExecutionContext(..., tools=())`, while
 be removed for eval correctness. A scenario should be able to say whether tools
 are enabled, restricted or expected.
 
+2026-04-29 follow-up from `Z_Additional_For_Tool_Stuff.md`: the Z_ recommendation
+is not MCP-only. It applies to normal `ToolRegistry` tools too: builtin memory,
+sandbox, browser/file analysis, scheduler, canvas/A2UI and market tools need a
+catalog, tool groups, progressive disclosure, risk/approval metadata and output
+compaction gates. Feature 024 remains the MCP-specific external descriptor
+owner; Feature 016 owns harness/eval pressure for normal tools.
+
 ## Memory Findings
 
 Memory is both automatic and explicit:

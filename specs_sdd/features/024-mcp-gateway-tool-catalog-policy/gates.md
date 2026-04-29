@@ -36,5 +36,7 @@ feature_id: 024
 - [x] G005 token passthrough requires explicit named credential scope.
 - [x] G006 non-auto tools fail closed without approval channel or a valid
   session grant.
+- [x] G007 MCP gateway execution caps output bytes before provider-facing tool
+  messages are emitted.
 - [x] G011 Control and agent-facing catalog endpoints expose policy-filtered
   entries, not raw unfiltered descriptors.

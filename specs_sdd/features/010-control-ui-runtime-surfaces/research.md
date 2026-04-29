@@ -82,8 +82,10 @@ retrieval/KG semantics move to Feature 012 when implemented.
 
 The new Z_ material expands Control UI scope, but not as a monolith:
 
-- `Z_Additional_For_Tool_Stuff.md` requires an MCP gateway/catalog view
-  delegated to Feature 024.
+- `Z_Additional_For_Tool_Stuff.md` requires both a normal ToolRegistry
+  catalog/policy view and an MCP gateway/catalog view. Normal builtin tool
+  catalog metadata is owned by Feature 016 and exposed through `/control/tools`;
+  external MCP descriptor/resource policy remains delegated to Feature 024.
 - `Z_Semantik_layer and so on.md` requires semantic/metric definition
   inspection delegated to Feature 025.
 - `Z_Hermes_Desktop_claw3d.md` supports an ops-room/observatory surface

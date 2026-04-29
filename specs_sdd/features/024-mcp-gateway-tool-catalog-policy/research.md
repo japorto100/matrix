@@ -11,9 +11,12 @@ feature_id: 024
 
 ## Local Z Reference
 
-Derived from `Z_Additional_For_Tool_Stuff.md`. The core recommendation is
-"Gateway + Tool-Katalog + Policy + Code-Execution-Schicht" instead of stuffing
-many MCP tools directly into the model prompt.
+Derived from `Z_Additional_For_Tool_Stuff.md`, but only for the external MCP
+portion. The core recommendation is broader than MCP: "Gateway + Tool-Katalog +
+Policy + Code-Execution-Schicht" instead of stuffing many tools directly into
+the model prompt. Feature 024 owns external MCP descriptors/resources. Normal
+`ToolRegistry` tool groups, progressive disclosure and policy metadata are
+tracked in Feature 016 and surfaced by Feature 010.
 
 ## Working Judgement
 
@@ -56,6 +59,11 @@ explicit credential scopes, approval gates and audit evidence.
   untrusted MCP servers. Temporary grants are session-scoped, expiry-bound and
   require audit references, so approval shortcuts cannot silently become
   durable access.
+- 2026-04-29 execution follow-up: MCP execution now has a bounded adapter that
+  preserves `tool_call_id`, converts timeout/cancellation/remote exceptions to
+  structured tool messages and caps output before agent-context entry. This is
+  MCP-specific plumbing; the same output-compaction pressure for normal tools is
+  tracked through Feature 016.
 
 ## Design Consequence
 

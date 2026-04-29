@@ -76,6 +76,13 @@ feature_id: 016
     from real traces instead of inferring from transcript text.
   - 2026-04-27: `TraceExpectations.required_event_metadata_keys` can now gate
     arbitrary event metadata such as `tool_result.tool_calls_total_limit`.
+- [x] T028 [done-static] Add unified builtin tool catalog metadata for normal
+  `ToolRegistry` tools, not only MCP tools.
+  - 2026-04-29: `agent.tools.catalog` classifies builtin tools by group, risk,
+    approval mode, schema/description hash and progressive-disclosure level
+    without changing execution semantics.
+- T029 Add Meta-Harness gates that assert risky normal tools are not exposed as
+  full schemas unless the scenario explicitly allows the tool group.
 
 ## Memory-Aware Evaluation
 
@@ -314,6 +321,9 @@ feature_id: 016
   expected only for world/domain facts, not personal agent memory.
 - T115 Add Feature 024 MCP catalog policy scenarios: allowed tool, poisoned
   descriptor, descriptor mutation and token passthrough denial.
+- T115a Add normal ToolRegistry catalog scenarios from `Z_Additional_For_Tool_Stuff.md`:
+  tool-group filtering, progressive disclosure, risky-tool approval and
+  output-compaction behavior.
 - T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
   metric and KG/RAG-linked term.
 - T117 Add Feature 027 report-publishing scenario with citation/manifest
