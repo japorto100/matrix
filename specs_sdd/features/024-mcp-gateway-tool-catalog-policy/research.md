@@ -49,6 +49,13 @@ explicit credential scopes, approval gates and audit evidence.
   domain or resource URI before exposure, and resource fetches have their own
   scheme/domain/prefix gate. Confirm/destructive/admin tools fail closed when
   no approval channel is available.
+- 2026-04-29 implementation follow-up: external tools now need user-visible
+  provenance before entering the effective catalog. Tools that look like
+  Matrix high-trust names such as memory writes, sandbox execution, scheduler
+  mutations or destructive canvas/chart actions are blocked when served by
+  untrusted MCP servers. Temporary grants are session-scoped, expiry-bound and
+  require audit references, so approval shortcuts cannot silently become
+  durable access.
 
 ## Design Consequence
 

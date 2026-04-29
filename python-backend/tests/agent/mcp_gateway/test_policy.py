@@ -1,16 +1,19 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from agent.mcp_gateway.policy import (
     McpServerConfig,
     build_effective_catalog,
     diff_descriptor_snapshots,
     evaluate_resource_fetch_policy,
+    evaluate_session_grant,
     evaluate_token_passthrough,
     evaluate_tool_invocation_policy,
+    issue_session_grant,
     normalize_tool_name,
     snapshot_descriptor,
+    tool_provenance,
 )
 
 
@@ -101,6 +104,67 @@ def test_effective_catalog_applies_denylist_for_server_tool_domain_and_resource(
     assert "resource-uri-denylisted" in reasons
 
 
+def test_external_tool_requires_user_visible_provenance():
+    server = McpServerConfig(
+        server_id="external",
+        transport="streamable-http",
+        url="https://tools.example/mcp",
+        enabled=True,
+    )
+
+    catalog = build_effective_catalog(
+        server,
+        [{"name": "lookup", "description": "Safe lookup"}],
+    )
+
+    assert catalog[0].visible is False
+    assert "missing-user-visible-provenance" in catalog[0].denial_reasons
+
+
+def test_external_tool_with_visible_provenance_is_exposed():
+    server = McpServerConfig(
+        server_id="external",
+        display_name="Example Tools",
+        transport="streamable-http",
+        url="https://tools.example/mcp",
+        provenance_url="https://tools.example/about",
+        enabled=True,
+    )
+
+    catalog = build_effective_catalog(
+        server,
+        [{"name": "lookup", "description": "Safe lookup"}],
+    )
+    provenance = tool_provenance(server, catalog[0].snapshot)
+
+    assert catalog[0].visible is True
+    assert provenance["server_label"] == "Example Tools"
+    assert provenance["server_domain"] == "tools.example"
+    assert catalog[0].as_dict()["provenance"]["source"] == "https://tools.example/about"
+
+
+def test_external_high_trust_tool_lookalike_is_blocked():
+    server = McpServerConfig(
+        server_id="external",
+        display_name="Example Tools",
+        transport="streamable-http",
+        url="https://tools.example/mcp",
+        provenance_url="https://tools.example/about",
+        enabled=True,
+    )
+
+    catalog = build_effective_catalog(
+        server,
+        [{"name": "memory-add", "description": "Remember facts"}],
+    )
+
+    snapshot = catalog[0].snapshot
+    assert snapshot.enabled is False
+    assert snapshot.approval_level == "blocked"
+    assert "high_trust_lookalike" in snapshot.risk_flags
+    assert "high-trust-tool-lookalike" in catalog[0].denial_reasons
+
+
 def test_token_passthrough_denied_until_named_scope_is_allowed():
     server = McpServerConfig(
         server_id="ext",
@@ -163,6 +227,61 @@ def test_confirm_unavailable_fails_closed_for_non_auto_tools():
         approval_channel_available=True,
         approval_granted=True,
     ) == {"allowed": True, "reason": "approved:destructive"}
+
+
+def test_session_grant_allows_non_auto_tool_until_expiry():
+    server = McpServerConfig(server_id="ext", transport="stdio", enabled=True)
+    snapshot = snapshot_descriptor(
+        server,
+        {"name": "delete_row", "description": "Delete one row"},
+    )
+    now = datetime(2026, 4, 29, 12, 0, tzinfo=UTC)
+    grant = issue_session_grant(
+        snapshot,
+        session_id="s1",
+        granted_by="alice",
+        audit_ref="audit-123",
+        ttl_seconds=60,
+        now=now,
+    )
+
+    assert evaluate_session_grant(
+        snapshot,
+        grant,
+        session_id="s1",
+        now=now + timedelta(seconds=30),
+    ) == {"allowed": True, "reason": "session-grant-valid"}
+    assert evaluate_tool_invocation_policy(
+        snapshot,
+        approval_channel_available=False,
+        session_grant=grant,
+        session_id="s1",
+        now=now + timedelta(seconds=30),
+    ) == {
+        "allowed": True,
+        "reason": "session-grant:destructive",
+        "audit_ref": "audit-123",
+    }
+    assert evaluate_session_grant(
+        snapshot,
+        grant,
+        session_id="s1",
+        now=now + timedelta(seconds=61),
+    ) == {"allowed": False, "reason": "session-grant-expired"}
+    invalid_grant = grant.__class__(
+        session_id=grant.session_id,
+        matrix_name=grant.matrix_name,
+        approval_level=grant.approval_level,
+        expires_at="not-a-date",
+        audit_ref=grant.audit_ref,
+        granted_by=grant.granted_by,
+    )
+    assert evaluate_session_grant(
+        snapshot,
+        invalid_grant,
+        session_id="s1",
+        now=now,
+    ) == {"allowed": False, "reason": "session-grant-invalid-expiry"}
 
 
 def test_resource_fetch_policy_is_separate_from_tool_execution():
@@ -251,3 +370,32 @@ async def test_control_mcp_catalog_endpoint_is_metadata_only(monkeypatch):
     assert item["tool"]["matrix_name"] == "mcp_matrix_internal__memory_search"
     assert item["visible"] is True
     assert item["server"]["env_keys"] == []
+    assert item["provenance"]["server_id"] == "matrix-internal"
+
+
+async def test_agent_mcp_catalog_endpoint_filters_visible_entries(monkeypatch):
+    from agent.control import mcp as control_mcp
+
+    monkeypatch.setattr(
+        control_mcp,
+        "_internal_matrix_mcp",
+        lambda: {
+            "id": "matrix-internal",
+            "name": "Matrix Internal MCP",
+            "url": "http://127.0.0.1:8094/mcp",
+            "transport": "http",
+            "status": "connected",
+            "tools": ["memory_search"],
+            "last_ping": None,
+        },
+    )
+
+    payload = await control_mcp.list_agent_mcp_catalog(
+        tenant_id="tenant-a",
+        user_id="alice",
+        session_id="session-1",
+    )
+
+    assert payload["total"] == 1
+    assert payload["session_id"] == "session-1"
+    assert payload["items"][0]["visible"] is True

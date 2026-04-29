@@ -25,3 +25,16 @@ feature_id: 024
   descriptor change.
 - G011 Control UI shows effective policy, not raw unfiltered descriptor state.
 - G012 Meta-Harness can replay allowed, denied and poisoned-descriptor cases.
+
+## Static Progress
+
+- [x] G002 descriptor snapshots and catalog entries include hashes,
+  timestamps and user-visible provenance metadata.
+- [x] G003 duplicate normalized names and external high-trust lookalikes are
+  blocked in the effective catalog.
+- [x] G004 descriptor text and metadata are scanned before exposure.
+- [x] G005 token passthrough requires explicit named credential scope.
+- [x] G006 non-auto tools fail closed without approval channel or a valid
+  session grant.
+- [x] G011 Control and agent-facing catalog endpoints expose policy-filtered
+  entries, not raw unfiltered descriptors.

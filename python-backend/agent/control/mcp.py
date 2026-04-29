@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from agent.mcp_gateway.policy import McpServerConfig, build_effective_catalog
 
@@ -93,3 +93,44 @@ async def list_mcp_catalog() -> dict[str, Any]:
     )
     items = [entry.as_dict() for entry in catalog]
     return {"items": items, "total": len(items), "secrets_redacted": True}
+
+
+@router.get("/mcp/catalog/agent")
+async def list_agent_mcp_catalog(
+    tenant_id: str = Query(default="matrix-local"),
+    user_id: str = Query(default="agent"),
+    session_id: str = Query(default=""),
+) -> dict[str, Any]:
+    """Agent-facing MCP catalog filtered to visible tools for one session."""
+
+    server = _internal_matrix_mcp()
+    server_config = McpServerConfig(
+        server_id="matrix-internal",
+        display_name="Matrix Internal MCP",
+        transport="streamable-http",
+        url=server["url"],
+        enabled=True,
+    )
+    descriptors = [
+        {
+            "name": tool_name,
+            "description": "Matrix internal MCP tool",
+            "inputSchema": {"type": "object"},
+        }
+        for tool_name in server["tools"]
+    ]
+    catalog = build_effective_catalog(
+        server_config,
+        descriptors,
+        tenant_id=tenant_id,
+        user_id=user_id,
+    )
+    items = [entry.as_dict() for entry in catalog if entry.visible]
+    return {
+        "items": items,
+        "total": len(items),
+        "secrets_redacted": True,
+        "session_id": session_id,
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+    }

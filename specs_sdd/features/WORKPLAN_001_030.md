@@ -59,6 +59,9 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: MCP catalog policy primitives cover descriptor snapshots,
      token passthrough denial, poisoning scan, diff escalation and read-only
      Control catalog.
+   - 2026-04-29: MCP policy now also blocks high-trust tool lookalikes,
+     requires user-visible external-tool provenance, exposes an agent-facing
+     visible-only catalog and supports expiry/audit-bound session grants.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

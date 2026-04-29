@@ -25,7 +25,9 @@ feature_id: 024
 - T006 Persist descriptor snapshots in a migration-owned table or documented
   transient cache decision.
 - [x] T007 [done-static] Expose read-only catalog endpoint for Control UI.
-- T008 Expose agent-facing catalog endpoint filtered by user/session policy.
+- [x] T008 [done-static] Expose agent-facing catalog endpoint filtered by user/session policy.
+  - 2026-04-29: `/control/mcp/catalog/agent` returns only visible catalog
+    entries for a tenant/user/session and keeps secrets redacted.
 
 ## Policy And Consent
 
@@ -41,9 +43,17 @@ feature_id: 024
   credential scope.
 - [x] T013 [done-static] Redact descriptor/env/secrets in traces and Meta-Harness artifacts.
 - [x] T014 [done-static] Add tool-description prompt-injection scan before exposure.
-- T015 Add lookalike/collision checks for high-trust tools.
-- T016 Require user-visible provenance for external tools.
-- T017 Add per-session temporary grants with expiry and audit refs.
+- [x] T015 [done-static] Add lookalike/collision checks for high-trust tools.
+  - 2026-04-29: external tools whose names normalize/compact to protected
+    high-trust tool names are blocked before exposure.
+- [x] T016 [done-static] Require user-visible provenance for external tools.
+  - 2026-04-29: external catalog entries require a display name plus a visible
+    source URL/command; catalog entries include provenance for UI/approval
+    surfaces.
+- [x] T017 [done-static] Add per-session temporary grants with expiry and audit refs.
+  - 2026-04-29: `McpSessionGrant` validates session, tool, approval level,
+    expiry and audit ref before allowing a non-auto invocation without another
+    approval interruption.
 - [x] T018 [done-static] Add denylist support for server, tool name, domain and resource URI.
   - 2026-04-29: effective catalog filtering now emits
     `server-denylisted`, `tool-denylisted`, `domain-denylisted` and

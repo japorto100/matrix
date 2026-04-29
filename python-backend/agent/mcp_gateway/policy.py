@@ -12,7 +12,7 @@ import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -40,18 +40,32 @@ _ADMIN_PATTERNS = (
     re.compile(r"\broot\b", re.I),
     re.compile(r"\bimpersonat(?:e|ion)\b", re.I),
 )
+_DEFAULT_HIGH_TRUST_TOOL_NAMES = (
+    "memory_add",
+    "save_memory",
+    "sandbox_execute",
+    "schedule_cancel",
+    "schedule_run_now",
+    "set_chart_state",
+    "canvas_delete_shape",
+)
+_DEFAULT_TRUSTED_SERVER_IDS = ("matrix-internal",)
 
 
 @dataclass(frozen=True)
 class McpServerConfig:
     server_id: str
     transport: Transport
+    display_name: str = ""
     command: str | None = None
     url: str | None = None
     env: dict[str, str] = field(default_factory=dict)
+    provenance_url: str = ""
     credential_scopes: tuple[str, ...] = ()
     tenant_allowlist: tuple[str, ...] = ()
     user_allowlist: tuple[str, ...] = ()
+    trusted_server_ids: tuple[str, ...] = _DEFAULT_TRUSTED_SERVER_IDS
+    high_trust_tool_names: tuple[str, ...] = _DEFAULT_HIGH_TRUST_TOOL_NAMES
     denylisted_server_ids: tuple[str, ...] = ()
     denylisted_tool_names: tuple[str, ...] = ()
     denylisted_domains: tuple[str, ...] = ()
@@ -96,10 +110,24 @@ class McpCatalogEntry:
             "tool": self.snapshot.as_dict(),
             "visible": self.visible,
             "denial_reasons": list(self.denial_reasons),
+            "provenance": tool_provenance(self.server, self.snapshot),
             "secrets_redacted": True,
         }
         payload["server"]["env_keys"] = sorted(self.server.env)
         return payload
+
+
+@dataclass(frozen=True)
+class McpSessionGrant:
+    session_id: str
+    matrix_name: str
+    approval_level: ApprovalLevel
+    expires_at: str
+    audit_ref: str
+    granted_by: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 def normalize_tool_name(server_id: str, tool_name: str) -> str:
@@ -195,12 +223,16 @@ def build_effective_catalog(
             reasons.append("resource-uri-denylisted")
         if snapshot.matrix_name in duplicate_names:
             reasons.append("tool-name-collision")
+        if "high_trust_lookalike" in snapshot.risk_flags:
+            reasons.append("high-trust-tool-lookalike")
         if "prompt_injection" in snapshot.risk_flags:
             reasons.append("descriptor-prompt-injection")
         if "token_passthrough_requested" in snapshot.risk_flags:
             reasons.append("token-passthrough-denied")
         if "blocked_descriptor" in snapshot.risk_flags:
             reasons.append("descriptor-blocked")
+        if not _has_user_visible_provenance(server):
+            reasons.append("missing-user-visible-provenance")
         catalog.append(
             McpCatalogEntry(
                 server=server,
@@ -210,6 +242,23 @@ def build_effective_catalog(
             )
         )
     return catalog
+
+
+def tool_provenance(
+    server: McpServerConfig,
+    snapshot: McpToolDescriptorSnapshot,
+) -> dict[str, str]:
+    """Return user-visible provenance for catalog and approval surfaces."""
+
+    return {
+        "server_id": server.server_id,
+        "server_label": server.display_name or server.server_id,
+        "server_domain": _domain(server.url),
+        "transport": server.transport,
+        "source": server.provenance_url or server.url or server.command or server.server_id,
+        "tool_name": snapshot.original_name,
+        "matrix_name": snapshot.matrix_name,
+    }
 
 
 def diff_descriptor_snapshots(
@@ -264,6 +313,9 @@ def evaluate_tool_invocation_policy(
     *,
     approval_channel_available: bool,
     approval_granted: bool = False,
+    session_grant: McpSessionGrant | None = None,
+    session_id: str = "",
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Fail closed when non-auto MCP tools cannot receive human approval."""
 
@@ -271,6 +323,19 @@ def evaluate_tool_invocation_policy(
         return {"allowed": False, "reason": "tool-blocked"}
     if snapshot.approval_level == "auto":
         return {"allowed": True, "reason": "auto-approved"}
+    if session_grant is not None:
+        grant = evaluate_session_grant(
+            snapshot,
+            session_grant,
+            session_id=session_id,
+            now=now,
+        )
+        if grant["allowed"]:
+            return {
+                "allowed": True,
+                "reason": f"session-grant:{snapshot.approval_level}",
+                "audit_ref": session_grant.audit_ref,
+            }
     if not approval_channel_available:
         return {"allowed": False, "reason": "approval-channel-unavailable"}
     if not approval_granted:
@@ -279,6 +344,60 @@ def evaluate_tool_invocation_policy(
             "reason": f"approval-required:{snapshot.approval_level}",
         }
     return {"allowed": True, "reason": f"approved:{snapshot.approval_level}"}
+
+
+def issue_session_grant(
+    snapshot: McpToolDescriptorSnapshot,
+    *,
+    session_id: str,
+    granted_by: str,
+    audit_ref: str,
+    ttl_seconds: int = 300,
+    now: datetime | None = None,
+) -> McpSessionGrant:
+    """Create a bounded per-session grant after an external approval event."""
+
+    timestamp = now or datetime.now(UTC)
+    expires_at = timestamp + timedelta(seconds=max(ttl_seconds, 0))
+    return McpSessionGrant(
+        session_id=session_id,
+        matrix_name=snapshot.matrix_name,
+        approval_level=snapshot.approval_level,
+        expires_at=expires_at.isoformat(),
+        audit_ref=audit_ref,
+        granted_by=granted_by,
+    )
+
+
+def evaluate_session_grant(
+    snapshot: McpToolDescriptorSnapshot,
+    grant: McpSessionGrant,
+    *,
+    session_id: str,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Validate a temporary grant against session, tool, level, expiry and audit."""
+
+    if not session_id or grant.session_id != session_id:
+        return {"allowed": False, "reason": "session-grant-session-mismatch"}
+    if grant.matrix_name != snapshot.matrix_name:
+        return {"allowed": False, "reason": "session-grant-tool-mismatch"}
+    if not grant.audit_ref:
+        return {"allowed": False, "reason": "session-grant-missing-audit-ref"}
+    if _approval_rank(grant.approval_level) < _approval_rank(snapshot.approval_level):
+        return {"allowed": False, "reason": "session-grant-level-too-low"}
+    try:
+        expiry = datetime.fromisoformat(grant.expires_at)
+    except ValueError:
+        return {"allowed": False, "reason": "session-grant-invalid-expiry"}
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=UTC)
+    timestamp = now or datetime.now(UTC)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    if expiry <= timestamp:
+        return {"allowed": False, "reason": "session-grant-expired"}
+    return {"allowed": True, "reason": "session-grant-valid"}
 
 
 def evaluate_resource_fetch_policy(
@@ -324,6 +443,13 @@ def _descriptor_risk_flags(
         flags.add("destructive")
     if any(pattern.search(text) for pattern in _ADMIN_PATTERNS):
         flags.add("admin")
+    if _is_high_trust_lookalike(
+        server,
+        descriptor_name=str(descriptor.get("name") or ""),
+        matrix_name=matrix_name,
+    ):
+        flags.add("high_trust_lookalike")
+        flags.add("blocked_descriptor")
     if _security_scheme_names(descriptor) and not server.credential_scopes:
         flags.add("token_passthrough_requested")
     meta = descriptor.get("_meta")
@@ -394,6 +520,36 @@ def _domain(uri: str | None) -> str:
         return ""
     parsed = urlparse(uri)
     return (parsed.hostname or "").lower()
+
+
+def _has_user_visible_provenance(server: McpServerConfig) -> bool:
+    if server.server_id in server.trusted_server_ids:
+        return True
+    return bool(server.display_name and (server.provenance_url or server.url or server.command))
+
+
+def _is_high_trust_lookalike(
+    server: McpServerConfig,
+    *,
+    descriptor_name: str,
+    matrix_name: str,
+) -> bool:
+    if server.server_id in server.trusted_server_ids:
+        return False
+    protected = {_slug(name) for name in server.high_trust_tool_names}
+    protected_compact = {_compact_slug(name) for name in protected}
+    tool_slug = _slug(descriptor_name)
+    matrix_suffix = _slug(matrix_name.rsplit("__", maxsplit=1)[-1])
+    return (
+        tool_slug in protected
+        or matrix_suffix in protected
+        or _compact_slug(tool_slug) in protected_compact
+        or _compact_slug(matrix_suffix) in protected_compact
+    )
+
+
+def _compact_slug(value: str) -> str:
+    return str(value or "").replace("_", "")
 
 
 def _resource_uri_denied(uri: str, denylist: tuple[str, ...]) -> bool:
