@@ -75,9 +75,9 @@ Optional kommen beim eigentlichen Content-Import dazu:
 - `contracts/`
 - `evidence/`
 
-Cross-feature execution is tracked in `WORKPLAN_001_022.md` for the older
-baseline and should be superseded by a 001-030 workplan once Features 024-030
-enter implementation.
+Cross-feature execution for the current stack is tracked in
+`WORKPLAN_001_030.md`. `WORKPLAN_001_022.md` remains historical context for the
+pre-024 backlog.
 
 ## Live-Verify-Schwerpunkte
 

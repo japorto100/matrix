@@ -1,12 +1,16 @@
 ---
 title: Feature Workplan 001-023
-status: active
+status: superseded
 owner: filip
 created: 2026-04-27
 updated: 2026-04-27
 ---
 
 # Feature Workplan 001-023
+
+Superseded by `WORKPLAN_001_030.md` on 2026-04-29. Keep this file only as
+historical context for the pre-024 backlog and Feature 021-023 implementation
+sequence.
 
 This is the operating queue across all SDD features. Feature files remain the
 source of detailed requirements; this file decides what to build, what to

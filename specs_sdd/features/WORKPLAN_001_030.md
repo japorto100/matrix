@@ -1,0 +1,76 @@
+---
+title: Feature Workplan 001-030
+status: active
+owner: filip
+created: 2026-04-29
+updated: 2026-04-29
+---
+
+# Feature Workplan 001-030
+
+This is the operating queue for implementing Matrix SDD Features 001-030. The
+feature directories remain the source of truth for detailed tasks, verify gates
+and live-verify probes. This file defines execution order.
+
+## Execution Rules
+
+- Work backend/static/non-browser gates before browser/client live gates.
+- Use real configured provider paths for live verification; deterministic fake
+  providers are allowed only for unit/contract tests.
+- Keep provider-specific SDK examples as references only. Core contracts remain
+  provider-agnostic.
+- Before dependency-sensitive work, check current releases and changelogs:
+  `matrix-js-sdk`, Tuwunel, AI SDK, MCP packages, Element X and widget APIs.
+- Use GitNexus before code edits and before commits. Re-run
+  `npx gitnexus analyze` after commits/merges or when GitNexus reports stale
+  index state.
+- Do not promote GraphRAG, browser-RAG, visual memory, widget hosting or
+  report publishing without matched verify gates and artifacts.
+
+## Phase Order
+
+| Phase | Features | Goal | First non-browser gates |
+|---|---|---|---|
+| 1 | 001-030 | Spec/backlog integrity | Feature count, task/gate counts, index/readme consistency |
+| 2 | 007, 011, 013, 016, 020 | Agent harness core | provider capability metadata, approval fail-closed, runner parity |
+| 3 | 008, 013, 014, 016, 024 | MCP gateway policy | descriptor snapshots, token denial, poisoned descriptor block |
+| 4 | 012, 017, 018, 025 | Memory/KG/Semantic layer | semantic lookup, KG provenance, correction proposals |
+| 5 | 019, 021, 022, 023, 026, 028 | RAG/Ingestion/Benchmark | source refs, canaries, holdout protection, candidate artifacts |
+| 6 | 027, 028, 014, 016 | Reports and visual memory | citation manifest, layout evidence, visual recall/refusal |
+| 7 | 010, 014, 024, 025, 027, 029 | Control backend surfaces | read models/endpoints before browser walkthrough |
+| 8 | 005, 008, 024, 030 | Matrix widget service semantics | proposal, approval, room-state payload, fallback |
+| 9 | 003, 005, 007, 010, 026, 030 | Browser/client live verify | Playwright/DevTools/Element X/FluffyChat compatibility |
+| 10 | all | Full-stack promotion | Meta-Harness service mode and closeout artifacts |
+
+## Immediate Queue
+
+1. Commit and push this workplan after static validation.
+2. Phase 2: harden provider/live-lane semantics so regular live verify no
+   longer depends on `llm-mock`.
+3. Phase 2: expand runner parity and approval trace gates for
+   `simple`, `langgraph` and `dispatcher`.
+4. Phase 3: implement MCP descriptor fixture and policy tests before any
+   external server is exposed to agents.
+5. Phase 4: add semantic catalog skeleton only after schema ownership is clear.
+
+## Dependency Watchlist
+
+- `matrix-js-sdk`: repo currently uses `^41.2.0`; latest seen 2026-04-29 was
+  `41.4.0`. Check release notes before chat/E2EE/widget work.
+- Tuwunel: repo pins `v1.6.0`; GHCR tags currently show no newer stable tag.
+  Check upstream issues before Matrix live gates.
+- AI SDK: repo uses `ai ^6.0.134`, `@ai-sdk/react ^3.0.136`; latest seen
+  2026-04-29 was `ai 6.0.170`, `@ai-sdk/react 3.0.172`.
+- Matrix widgets: check Matrix Rust SDK widget driver, `matrix-widget-api`,
+  Element X Android/iOS release notes and Element Web behavior before Feature
+  030 live work.
+
+## Completion Policy
+
+A feature is not done until:
+
+- tasks are marked with implementation evidence;
+- verify gates have command/test evidence;
+- live-verify gates are either passed with artifacts or explicitly deferred
+  with owner and blocker;
+- `closeout.md` summarizes accepted behavior, residual risk and next review.
