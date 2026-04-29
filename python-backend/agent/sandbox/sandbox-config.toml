@@ -5,6 +5,8 @@
 host = "0.0.0.0"
 port = 8080
 log_level = "INFO"
+# Public host for endpoint URLs in containerized bridge-mode setups.
+eip = "127.0.0.1"
 
 [runtime]
 type = "docker"
@@ -15,5 +17,6 @@ execd_image = "sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/execd
 # endpoints are reachable from the server. Deny/allow egress must be enforced
 # via networkPolicy/egress sidecar, not Docker's "none" network.
 network_mode = "bridge"
+host_ip = "127.0.0.1"
 drop_capabilities = ["MKNOD", "SYS_ADMIN", "NET_RAW"]
 pids_limit = 512

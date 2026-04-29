@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 023
 ---
 
@@ -55,6 +55,23 @@ AutoRAG-HP formulates RAG hyperparameter tuning as online bandit optimization
 and reports substantial API-call savings versus grid search. This is the
 better long-term direction for Matrix because OpenRouter-free and local
 hardware budgets are tight.
+
+2026-04-29 source check:
+
+- Current
+  [AutoRAG docs](https://marker-inc-korea.github.io/AutoRAG/optimization/optimization.html)
+  still describe node/module/parameter combinations that are evaluated and
+  selected through result summaries. This supports Matrix's candidate-artifact
+  approach, but full combinatorial search remains too expensive for default dev
+  loops.
+- [RAGSearch](https://arxiv.org/abs/2604.09666) (published 2026-04-01)
+  reframes dense RAG vs GraphRAG under agentic multi-round search. Its key
+  practical lesson for Matrix is complementarity: agentic search can narrow the
+  gap for dense RAG, while GraphRAG still helps complex multi-hop cases when
+  offline graph cost is amortized.
+- LinearRAG and GraphRAG-Bench keep graph retrieval in the candidate set, but
+  only as a measured retrieval infrastructure, not as a default product-wide
+  replacement for hybrid vector/KG retrieval.
 
 ## Design Consequence
 

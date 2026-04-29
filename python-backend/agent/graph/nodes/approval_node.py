@@ -30,11 +30,14 @@ async def approval_node(state: AgentGraphState) -> dict[str, Any]:
     thread_id = state.get("thread_id", "")
     agent_class = state.get("agent_class", "advisory")
     user_role = state.get("user_role", "viewer")
+    allow_interrupts = bool(state.get("approval_interrupts", True))
     if not tool_calls:
         return {}
 
     with turn_span("approval_gate", "", 0) as span:
         approved_calls = []
+        denied_calls: list[dict[str, Any]] = []
+        denied_messages: list[dict[str, Any]] = []
         denied_count = 0
         grace_warning_msg = ""
         for tc in tool_calls:
@@ -72,6 +75,13 @@ async def approval_node(state: AgentGraphState) -> dict[str, Any]:
             if decision.level == ConsentLevel.DENY or decision.metadata.get(
                 HARD_DENIED
             ):
+                denied_call = {
+                    **dict(tc),
+                    "denied_reason": decision.reason,
+                    "denied_policy_id": decision.policy_id,
+                }
+                denied_calls.append(denied_call)
+                denied_messages.append(_denied_tool_message(denied_call))
                 await audit_log(
                     action=AuditAction.CONSENT_DECISION,
                     thread_id=thread_id,
@@ -103,6 +113,32 @@ async def approval_node(state: AgentGraphState) -> dict[str, Any]:
                 approved_calls.append(tc)
                 continue
 
+            if not allow_interrupts:
+                denied_call = {
+                    **dict(tc),
+                    "denied_reason": (
+                        "Tool requires interactive consent, but this runner cannot "
+                        "pause and resume approval."
+                    ),
+                    "denied_policy_id": decision.policy_id,
+                }
+                denied_calls.append(denied_call)
+                denied_messages.append(_denied_tool_message(denied_call))
+                await audit_log(
+                    action=AuditAction.CONSENT_DECISION,
+                    thread_id=thread_id,
+                    tool_name=tool_name,
+                    success=False,
+                    metadata={
+                        "decision": "confirm_unavailable",
+                        "reason": decision.reason,
+                        "policy_id": decision.policy_id,
+                    },
+                )
+                denied_count += 1
+                logger.info("Consent unavailable: %s — %s", tool_name, decision.reason)
+                continue
+
             # Level = CONFIRM → interrupt and wait for user
             user_decision = interrupt(
                 {
@@ -129,6 +165,13 @@ async def approval_node(state: AgentGraphState) -> dict[str, Any]:
                 approved_calls.append(tc)
                 logger.info("Consent granted: %s (%s)", tool_name, user_decision)
             else:
+                denied_call = {
+                    **dict(tc),
+                    "denied_reason": "User denied consent",
+                    "denied_policy_id": decision.policy_id,
+                }
+                denied_calls.append(denied_call)
+                denied_messages.append(_denied_tool_message(denied_call))
                 denied_count += 1
                 logger.info("Consent denied: %s (%s)", tool_name, user_decision)
 
@@ -138,13 +181,39 @@ async def approval_node(state: AgentGraphState) -> dict[str, Any]:
         span.set_attribute("approval.denied", denied_count)
 
         result: dict[str, Any] = {"tool_calls": approved_calls}
+        if denied_calls:
+            result["denied_tool_calls"] = denied_calls
+            result["messages"] = denied_messages
         if grace_warning_msg:
-            result["messages"] = [
+            messages = list(result.get("messages", []))
+            messages.append(
                 {
                     "role": "system",
                     "content": f"[SYSTEM WARNING] {grace_warning_msg}. Finish your current task and provide a final response.",
                 }
-            ]
+            )
+            result["messages"] = messages
             logger.warning("Grace warning injected: %s", grace_warning_msg)
 
         return result
+
+
+def _denied_tool_message(tool_call: dict[str, Any]) -> dict[str, Any]:
+    """Build an OpenAI-compatible tool response for a denied tool call."""
+    import json
+
+    tool_call_id = str(tool_call.get("tool_call_id") or tool_call.get("id") or "")
+    reason = str(tool_call.get("denied_reason") or "Tool call denied")
+    policy_id = str(tool_call.get("denied_policy_id") or "")
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "tool_use_id": tool_call_id,
+        "content": json.dumps(
+            {
+                "error": "tool_denied",
+                "reason": reason,
+                "policy_id": policy_id,
+            }
+        ),
+    }

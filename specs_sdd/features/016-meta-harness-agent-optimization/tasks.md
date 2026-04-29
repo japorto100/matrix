@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Tasks
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 016
 ---
 
@@ -235,13 +235,17 @@ feature_id: 016
 - [x] T096j Use Meta-Harness runner-parity smoke after Feature 018 to expose
   and fix LiteLLM container DB routing: container DSN must use `postgres:5432`,
   not host-local `localhost:5433`.
-- [x] T096k Add a Matrix-channel quality gate/fix for Agent SSE error packets/fallback
-  answers. 2026-04-27 bridge live proof delivered `(keine Antwort)` after
-  `bridge.agent_client` logged `Agent error packet`. The root causes were
-  old SSE packet parsing, missing HTTP entry ENV model fallback and missing
-  dev credential fallback. Unit tests plus the Matrix full-path smoke now
-  prove real assistant content reaches Matrix; future Meta-Harness scoring
-  should still fail any reintroduced `(keine Antwort)` path.
+	- [x] T096k Add a Matrix-channel quality gate/fix for Agent SSE error packets/fallback
+	  answers. 2026-04-27 bridge live proof delivered `(keine Antwort)` after
+	  `bridge.agent_client` logged `Agent error packet`. The root causes were
+	  old SSE packet parsing, missing HTTP entry ENV model fallback and missing
+	  dev credential fallback. Unit tests plus the Matrix full-path smoke now
+	  prove real assistant content reaches Matrix; future Meta-Harness scoring
+	  should still fail any reintroduced `(keine Antwort)` path.
+- [x] T096l Add graphless SimpleLoop approval parity before tool execution.
+  SimpleLoop now calls `approval_node` with `approval_interrupts=false`, fails
+  closed for confirm-level tools without interrupt/resume support and avoids
+  duplicate tool messages when `tool_node` already emits protocol output.
 - T097 Add a dedicated latency Pareto candidate for Memory-Fusion first-call
   warmup and remote embedding calls; current pass is correct but still slow.
 - [x] T098 Fix local dev-stack Python service activation so Meta-Harness can

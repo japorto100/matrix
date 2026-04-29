@@ -3,7 +3,7 @@ title: Agentic UI Research And Adoption Notes
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 008
 migrated_from:
   - specs/execution/exec-09-protocols-generative-ui.md
@@ -41,6 +41,39 @@ migrated_from:
 
 ## Open Research
 
+### 2026-04-29 Z-MD / Web SOTA Pass
+
+Sources checked from the fresh `Z_*.md` queue and current web search:
+
+- [MCP 2025-11-25 core spec](https://modelcontextprotocol.io/specification/2025-11-25/basic)
+  and
+  [security best practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices):
+  HTTP auth and external servers require explicit authorization, HTTPS except
+  loopback dev, private-IP blocking and no-credential resource/icon fetches.
+- [MCP Apps / SEP-1865](https://modelcontextprotocol.io/extensions/apps/overview):
+  UI-returning tools are now a real extension, but the secure pattern is
+  sandboxed iframe plus CSP plus postMessage/AppBridge. Matrix should not invent
+  a parallel unsandboxed host.
+- [Matrix Widget API package](https://www.npmjs.com/package/matrix-widget-api)
+  and
+  [Matrix Rust SDK widget driver](https://matrix-org.github.io/matrix-rust-sdk/matrix_sdk/widget/index.html):
+  the active ecosystem is still Element/Web-centered and widget support depends
+  on postMessage/capability mediation.
+- [OpenAI GPT-5.3-Codex model docs](https://developers.openai.com/api/docs/models/gpt-5.3-codex):
+  current Codex-class agents favor long-horizon task loops with explicit skills,
+  live browser verification and controlled memory. Chronicle-style visual memory
+  remains research/input inspiration, not an adoption target without privacy
+  controls and opt-in storage policy.
+
+Matrix decision:
+
+- Keep A2UI as the first-party in-agent UI stream.
+- Treat MCP Apps as feature-flag research for dashboards/forms only, with a text
+  or tool-output fallback and a hardened sandbox host.
+- Treat Matrix widgets as room-state artifacts. In the chat timeline, render a
+  safe link card first; do not inline arbitrary widget iframes until a dedicated
+  Widget API/AppBridge-style host exists.
+
 ### Custom A2UI Catalog
 
 Question: How should ChartWidget and PortfolioCard be wrapped as first-class
@@ -73,6 +106,20 @@ Default:
 - Evaluate behind feature flag.
 - Use for interactive dashboards/forms only when a text/tool fallback exists.
 - Keep sandboxed iframe boundary explicit in UI and security review.
+
+### Matrix Widgets
+
+Question: Should Matrix room widgets become first-class agent UI surfaces?
+
+Default:
+
+- Render `m.widget` / `im.vector.modular.widgets` as safe link cards in Matrix
+  chat.
+- Only preserve `http/https` widget URLs; block active script/data URLs.
+- Do not map Matrix widget state to A2UI automatically. If an agent creates an
+  interactive dashboard, A2UI or MCP Apps must own the host/sandbox contract.
+- Future adoption requires a Widget API v2-compatible host with CSP, postMessage
+  mediation, capability negotiation and Matrix room permission checks.
 
 ## Verification Risk
 

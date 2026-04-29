@@ -106,6 +106,9 @@ class AgentGraphState(TypedDict):
     # User role from Go Gateway (viewer/analyst/trader/admin)
     user_role: str
 
+    # Whether approval_node may use resumable LangGraph interrupts.
+    approval_interrupts: bool
+
     # ADR-001 G4: A/B experiment row id (UUID) when this turn runs under
     # an active dispatcher experiment. Used by the router_node smart-
     # routing decision to mark the routing dimension on the same

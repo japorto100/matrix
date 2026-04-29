@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 013
 ---
 
@@ -53,16 +53,24 @@ Evidence:
   with `network_mode="none"` (`DOCKER::NETWORK_MODE_ENDPOINT_UNAVAILABLE`).
   Denied egress must be verified via OpenSandbox `networkPolicy`/egress sidecar
   in T014.
+- Added bridge-host reachability defaults:
+  `server.eip = "127.0.0.1"` and `[docker].host_ip = "127.0.0.1"` in
+  `python-backend/agent/sandbox/sandbox-config.toml`, following upstream
+  OpenSandbox docs for containerized bridge-mode deployments.
+- Added proxy/endpoint evidence to open questions: re-run `print(2+3)` live probe
+  after gateway restart and compare returned endpoint hosts for `10.89.0.8` versus
+  `127.0.0.1`.
 - Fixed image default: `SANDBOX_CODE_IMAGE` now uses upstream documented
   `sandbox-registry.cn-zhangjiakou.cr.aliyuncs.com/opensandbox/code-interpreter:v1.0.2`.
   First pull completed locally; image size is about 9.65 GB.
 - Added cold-start budget:
   `OPENSANDBOX_REQUEST_TIMEOUT_SEC=180`,
   `OPENSANDBOX_READY_TIMEOUT_SEC=90`.
-- Direct `SandboxManager.execute_code(code="print(2 + 3)")` returned
-  `stdout='5\n'`, `stderr=''`, `exit_code=0`, `error=None`.
-- Direct `SandboxExecuteTool.execute(code="print(7 * 6)")` returned
-  `stdout='42\n'`, `stderr=''`, `exit_code=0`, `error=None`.
+- Direct `SandboxManager.execute_code(code="print(2 + 3)")` reaches OpenSandbox
+  and is now traced end-to-end, but Create still fails on runtime archive-write
+  (`DOCKER::SANDBOX_EXECD_DISTRIBUTION_FAILED` / broken pipe) before code runs.
+- New diagnostics entrypoint for non-UI checks:
+  `python-backend/scripts/opensandbox_cli.py` (`health|openapi|list|get|endpoint|diagnostics|create|delete|smoke`).
 - Focused tests: `tests/agent/sandbox/test_config.py` => `6 passed`.
 - Ruff: `agent/sandbox/config.py`, `agent/sandbox/manager.py` and
   `tests/agent/sandbox/test_config.py` pass.
@@ -104,8 +112,9 @@ Residual risk:
 
 ## Result
 
-partial pass; OpenSandbox code execution is live. Remaining work is browser,
-file upload, egress policy and HITL/consent live verification.
+partial pass; gateway/runtime wiring is live, but execution remains blocked at
+`Create Sandbox` in rootless OpenSandbox/Podman archive setup. Remaining work is
+browser, file upload, egress policy and HITL/consent live verification.
 
 ## 2026-04-27 File Upload Path Probe
 
@@ -136,3 +145,29 @@ Remaining:
 - Re-run live `execute_file` after fixing OpenSandbox rootless Podman/archive
   behavior and/or freeing SSD/container storage.
 - Only then mark T012 file upload and T015 resource/TTL/output caps live.
+
+## 2026-04-29 Consent And Matrix Widget Static Pass
+
+Status: static pass; live HITL session-cache paths remain open.
+
+Evidence:
+
+- `approval_node` now returns denied tool calls plus OpenAI-compatible tool
+  messages for hard-deny/user-deny decisions.
+- `approval_node` has an `approval_interrupts=false` mode so SimpleLoop and other
+  graphless runners fail closed instead of calling LangGraph `interrupt()`.
+- `SimpleLoop` now runs `llm_node -> approval_node -> tool_node`, uses only
+  approved tool calls and does not duplicate tool messages already emitted by
+  `tool_node`.
+- Matrix widget event rendering blocks non-`http/https` widget URLs and renders
+  no iframe in the timeline.
+
+Checks:
+
+- `cd python-backend && uv run pytest tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py -q`
+  => `12 passed`.
+- `cd python-backend && uv run ruff check agent/graph/nodes/approval_node.py agent/runners/simple.py agent/graph/state.py agent/graph/runner.py tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py`
+  => pass.
+- `cd frontend_merger && bunx vitest run src/features/matrix/lib/resolvers.test.ts src/features/matrix/components/message/MessageContent.test.tsx`
+  => `2 passed`, `4 passed`.
+- `cd frontend_merger && bun run typecheck` => pass.

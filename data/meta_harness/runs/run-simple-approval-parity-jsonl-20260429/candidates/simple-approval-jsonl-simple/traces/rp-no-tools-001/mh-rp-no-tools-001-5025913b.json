@@ -1,0 +1,70 @@
+[
+  {
+    "timestamp": "2026-04-29T17:33:39.978372+00:00",
+    "action": "skill_found",
+    "userId": "local",
+    "agentId": "skills",
+    "sessionId": "mh-rp-no-tools-001-5025913b",
+    "threadId": "mh-rp-no-tools-001-5025913b",
+    "success": true,
+    "metadata": {
+      "skill_ids": [],
+      "skill_names": [],
+      "query_preview": "Reply with one short sentence: runner parity smoke.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true
+    }
+  },
+  {
+    "timestamp": "2026-04-29T17:33:40.240532+00:00",
+    "action": "route_decision",
+    "userId": "local",
+    "agentId": "default",
+    "sessionId": "",
+    "threadId": "mh-rp-no-tools-001-5025913b",
+    "success": true,
+    "iteration": 0,
+    "metadata": {
+      "runner": "simple",
+      "decision": "direct_answer",
+      "route_taxonomy": "direct_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 0,
+      "tool_names": [],
+      "routing_reason": "not_evaluated",
+      "routing_used": false,
+      "routing_picked_model": "",
+      "memory_route_requested": false,
+      "retrieval_route_requested": false
+    }
+  },
+  {
+    "timestamp": "2026-04-29T17:33:40.244632+00:00",
+    "action": "llm_response",
+    "userId": "local",
+    "agentId": "default",
+    "sessionId": "",
+    "threadId": "mh-rp-no-tools-001-5025913b",
+    "success": true,
+    "input": "Reply with one short sentence: runner parity smoke.",
+    "output": "runner parity smoke.",
+    "duration_ms": 249.2,
+    "iteration": 0,
+    "metadata": {
+      "model": "mock/local",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 143,
+      "content_cleaned": false
+    }
+  }
+]

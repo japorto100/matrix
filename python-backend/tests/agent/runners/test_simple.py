@@ -10,6 +10,7 @@ These are not full integration tests — they stub llm_node + tool_node
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
@@ -128,6 +129,188 @@ async def test_simple_loop_surfaces_llm_exception(monkeypatch):
                 pass
 
 
+@pytest.mark.asyncio
+async def test_simple_loop_runs_approval_before_tools():
+    """Denied approvals must stop tool execution and feed denial back to the LLM."""
+    from agent.runners import simple
+
+    llm_calls = 0
+    approval_seen = False
+
+    async def _fake_llm_node(state):
+        nonlocal llm_calls
+        llm_calls += 1
+        if llm_calls == 1:
+            return {
+                "messages": [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "call-denied-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "sandbox_execute",
+                                    "arguments": "{\"code\":\"print(1)\"}",
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "tool_calls": [
+                    {
+                        "tool_call_id": "call-denied-1",
+                        "tool_name": "sandbox_execute",
+                        "tool_input": {"code": "print(1)"},
+                    }
+                ],
+            }
+
+        denial_messages = [
+            m
+            for m in state["messages"]
+            if m.get("role") == "tool" and m.get("tool_call_id") == "call-denied-1"
+        ]
+        assert len(denial_messages) == 1
+        assert "tool_denied" in denial_messages[0]["content"]
+        return {
+            "final_response": "Denied.",
+            "messages": [{"role": "assistant", "content": "Denied."}],
+            "tool_calls": [],
+        }
+
+    async def _fake_approval_node(state):
+        nonlocal approval_seen
+        approval_seen = True
+        assert state["approval_interrupts"] is False
+        return {
+            "tool_calls": [],
+            "denied_tool_calls": [
+                {
+                    "tool_call_id": "call-denied-1",
+                    "tool_name": "sandbox_execute",
+                    "tool_input": {"code": "print(1)"},
+                    "denied_reason": "blocked",
+                    "denied_policy_id": "test-policy",
+                }
+            ],
+            "messages": [
+                {
+                    "role": "tool",
+                    "tool_call_id": "call-denied-1",
+                    "content": "{\"error\":\"tool_denied\"}",
+                }
+            ],
+        }
+
+    async def _fake_tool_node(state):
+        pytest.fail("tool_node must not run for denied tool calls")
+
+    chunks = []
+    with _simple_runner_patches(
+        llm_node=_fake_llm_node,
+        approval_node=_fake_approval_node,
+        tool_node=_fake_tool_node,
+    ):
+        async for c in simple.run_simple_agent_loop(
+            _make_ctx(), [{"role": "user", "content": "run code"}], ab_row_id=None,
+        ):
+            chunks.append(c)
+
+    assert approval_seen is True
+    assert llm_calls == 2
+    assert "Denied." in "\n".join(chunks)
+
+
+@pytest.mark.asyncio
+async def test_simple_loop_does_not_duplicate_tool_messages():
+    """tool_node now emits tool messages; SimpleLoop must not append them again."""
+    from agent.runners import simple
+
+    llm_calls = 0
+
+    async def _fake_llm_node(state):
+        nonlocal llm_calls
+        llm_calls += 1
+        if llm_calls == 1:
+            return {
+                "messages": [
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "call-ok-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "memory_search",
+                                    "arguments": "{\"query\":\"alpha\"}",
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "tool_calls": [
+                    {
+                        "tool_call_id": "call-ok-1",
+                        "tool_name": "memory_search",
+                        "tool_input": {"query": "alpha"},
+                    }
+                ],
+            }
+
+        tool_messages = [
+            m
+            for m in state["messages"]
+            if m.get("role") == "tool" and m.get("tool_call_id") == "call-ok-1"
+        ]
+        assert len(tool_messages) == 1
+        return {
+            "final_response": "Done.",
+            "messages": [{"role": "assistant", "content": "Done."}],
+            "tool_calls": [],
+        }
+
+    async def _fake_approval_node(state):
+        return {"tool_calls": state["tool_calls"]}
+
+    async def _fake_tool_node(state):
+        return {
+            "tool_results": [
+                {
+                    "tool_call_id": "call-ok-1",
+                    "tool_name": "memory_search",
+                    "result": "ok",
+                    "error": None,
+                }
+            ],
+            "tool_calls": [],
+            "messages": [
+                {
+                    "role": "tool",
+                    "tool_call_id": "call-ok-1",
+                    "content": "ok",
+                }
+            ],
+        }
+
+    with _simple_runner_patches(
+        llm_node=_fake_llm_node,
+        approval_node=_fake_approval_node,
+        tool_node=_fake_tool_node,
+    ):
+        chunks = [
+            c
+            async for c in simple.run_simple_agent_loop(
+                _make_ctx(), [{"role": "user", "content": "search"}], ab_row_id=None,
+            )
+        ]
+
+    assert llm_calls == 2
+    assert "Done." in "\n".join(chunks)
+
+
 def _make_ctx():
     from agent.context import AgentExecutionContext
     from agent.tools.registry import ToolRegistry
@@ -144,6 +327,52 @@ def _make_ctx():
         agent_class="advisory",
         user_role="viewer",
     )
+
+
+@contextmanager
+def _simple_runner_patches(*, llm_node, approval_node, tool_node):
+    async def _fake_prepare_messages(messages, ctx):
+        return messages
+
+    async def _fake_prepare_system_prompt(ctx, messages):
+        return "stub-system-prompt"
+
+    def _fake_create_session(**kwargs):
+        class _S:
+            session_id = "test-session"
+
+        return _S()
+
+    def _fake_update_session(*args, **kwargs):
+        return None
+
+    def _fake_scan_output_anomalies(text):
+        class _R:
+            clean = True
+            anomalies = []
+
+        return _R()
+
+    class _Limiter:
+        def record_iteration(self, thread_id):
+            return None
+
+    with patch("agent.graph.nodes.llm_node.llm_node", llm_node), patch(
+        "agent.graph.nodes.approval_node.approval_node", approval_node
+    ), patch("agent.graph.nodes.tool_node.tool_node", tool_node), patch(
+        "agent.graph.runner._prepare_messages", _fake_prepare_messages
+    ), patch(
+        "agent.graph.runner._prepare_system_prompt", _fake_prepare_system_prompt
+    ), patch(
+        "agent.sessions.create_session", _fake_create_session
+    ), patch(
+        "agent.sessions.update_session", _fake_update_session
+    ), patch(
+        "agent.middleware.sanitizer.scan_output_anomalies", _fake_scan_output_anomalies
+    ), patch(
+        "agent.consent.rate_limiter.get_rate_limiter", lambda: _Limiter()
+    ):
+        yield
 
 
 def test_append_tool_messages_accepts_dict_tool_calls():

@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Live Verify
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 016
 ---
 
@@ -934,3 +934,42 @@ Boundary:
 - Use pacing/backoff and avoid large autonomous loops on free-tier quota.
 - Use `openrouter/auto` only when paid credits or another funded provider lane
   is available.
+
+## MV-14 SimpleLoop Approval Parity Static Pass
+
+Status: static pass plus local Meta-Harness parity pass on 2026-04-29.
+
+Meta-Harness relevance:
+
+- Earlier runner-parity work proved `simple` must stay behaviorally aligned with
+  LangGraph for tool routing. The new failure mode was consent parity: graphless
+  `simple` could run tool calls without passing through `approval_node`.
+- The implemented fix keeps SimpleLoop graphless but adds the same approval
+  decision boundary before `tool_node`.
+
+Evidence:
+
+- `approval_node` supports `approval_interrupts=false` so graphless runners deny
+  confirm-level tools instead of attempting a LangGraph interrupt.
+- `SimpleLoop` merges `approval_node` state, uses only `approved_tool_calls`, and
+  increments iteration counters even when no tool is executed.
+- `_append_tool_messages` is now only used when `tool_node` did not already
+  return protocol tool messages, preventing duplicate OpenAI tool responses.
+
+Checks:
+
+- `cd python-backend && uv run pytest tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py -q`
+  => `12 passed`.
+- `cd python-backend && uv run ruff check agent/graph/nodes/approval_node.py agent/runners/simple.py agent/graph/state.py agent/graph/runner.py tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py`
+  => pass.
+- DevStack `llm-mock` started on `:8095`.
+- Meta-Harness local parity:
+  `PYTHON_DOTENV_DISABLED=true HINDSIGHT_DB_URL= AUDIT_DB_URL= MEMPALACE_DB_URL= SCHEDULER_DB_URL= DATABASE_URL= AGENT_MEMORY_ENGINE=disabled LITELLM_BASE_URL=http://127.0.0.1:8095 LITELLM_API_KEY=dummy AGENT_DEFAULT_MODEL=mock/local AGENT_MAX_OUTPUT_TOKENS=64 META_HARNESS_TURN_TIMEOUT_S=30 META_HARNESS_ALLOW_ENV_CREDENTIALS=false uv run python -m meta_harness.meta_cli parity ../data/harness/runner_parity/scenarios.json --max-scenarios 1 --model mock/local --run-id run-simple-approval-parity-jsonl-20260429 --candidate-id-prefix simple-approval-jsonl --variants simple,langgraph`
+  => `parity_passed=true`, `all_variants_trace_passed=true`, `mismatches={}`.
+- Artifact dirs:
+  `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-simple/`
+  and
+  `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-langgraph/`.
+- A first attempt without clearing `HINDSIGHT_DB_URL` completed both runners but
+  failed trace gates because the configured Postgres on `:5433` was not running;
+  keep that as trace-store configuration evidence, not as a runner regression.

@@ -3,7 +3,7 @@ title: Sandbox Security HITL Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 013
 ---
 
@@ -13,6 +13,8 @@ feature_id: 013
 
 - [x] Compose/podman profile can start `opensandbox-server`/`opensandbox-api-gateway`.
 - [x] Health check succeeds.
+- [x] Sandbox execution paths now include sandbox_id and diagnostics payload summary in
+  audit/output for sandbox code/browser tools.
 - [ ] Safe Python execution returns stdout/stderr.
 - [ ] File upload sample returns artifact/result. Static staging path is fixed;
   live sandbox creation is currently blocked by OpenSandbox/Podman archive
@@ -24,11 +26,13 @@ feature_id: 013
 
 ## G2 Consent / RBAC / Rate Limit
 
-- [ ] `sandbox_execute` requires confirm-level consent.
-- [ ] `sandbox_browser` requires confirm-level consent.
+- [x] `sandbox_execute` requires confirm-level consent.
+- [x] `sandbox_browser` requires confirm-level consent.
+- [x] Graphless SimpleLoop runs `approval_node` before tool execution and fails
+  closed for confirm-level tools when no interrupt/resume channel is available.
 - [ ] allow once/session and deny once/session paths work.
 - [ ] per-tool limit blocks after configured maximum.
-- [ ] insufficient role is denied before tool execution.
+- [x] insufficient role is denied before tool execution.
 
 ## G3 Prompt Injection / Sanitization
 
@@ -64,6 +68,7 @@ feature_id: 013
 - [ ] URL previews are disabled in active prod config when prod config exists.
 - [x] XSS sanitizer strips script/event/javascript payloads in tests/static
   sanitizer pipeline.
+- [x] Matrix widget events block unsafe URLs and do not render arbitrary iframes.
 - [x] E2EE agent-room trust boundary is documented in Feature 006.
 - [x] `pendingEventOrdering: "detached"` remains configured.
 

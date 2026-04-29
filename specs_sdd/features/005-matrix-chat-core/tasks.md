@@ -3,7 +3,7 @@ title: Matrix Chat Core Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 005
 migrated_from:
   - specs/execution/exec2-04-verify-gates.md
@@ -27,11 +27,17 @@ migrated_from:
 - T009 Verify uploads/media and queue behavior.
 - T010 Verify calls/MatrixRTC if in current scope.
 - T011 Verify advanced options/onboarding where not blocked.
+- [x] T012 Static-harden Matrix widget events (`m.widget` /
+  `im.vector.modular.widgets`): preserve safe `http/https` URLs, block
+  `javascript:`/non-web URLs and render a link card instead of embedding an
+  arbitrary iframe.
 
 ## Verify Gates
 
 - [x] Browser route builds as `/matrix`; browser render smoke deferred.
 - [x] Protocol session works for login/register, room create, send and timeline
   sync through the Matrix Client-Server API.
+- [x] Widget state events resolve safely and do not create inline iframe
+  execution in the chat timeline.
 - E2EE state is tested or blocked with reason.
 - [x] `exec2-04` no longer contains uncategorized gate groups.

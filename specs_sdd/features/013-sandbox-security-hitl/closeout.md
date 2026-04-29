@@ -53,7 +53,10 @@ feature_id: 013
 Pending: OpenSandbox start/execution, Skills-Guard drawer allow/reject/audit,
 Control Security/Sandbox/Permissions tabs and prod URL-preview config check.
 
-Partial live update 2026-04-27: OpenSandbox health on `:8080` passed, but live
+Partial live update 2026-04-27: OpenSandbox health on `:8080` passed, and a new
+OpenSandbox diagnostic CLI (`python-backend/scripts/opensandbox_cli.py`) is available for
+repeatable non-UI checks, but live file execution still fails during sandbox creation
+with Podman/Docker archive `broken pipe`; static file-staging code is fixed and covered.
 file execution failed during sandbox creation with Podman/Docker archive
 `broken pipe`; static file-staging code is fixed and covered.
 

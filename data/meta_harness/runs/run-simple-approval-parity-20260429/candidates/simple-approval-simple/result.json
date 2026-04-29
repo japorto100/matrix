@@ -1,0 +1,72 @@
+{
+  "run_id": "run-simple-approval-parity-20260429",
+  "candidate_id": "simple-approval-simple",
+  "scenario_id": "rp-no-tools-001",
+  "thread_id": "mh-rp-no-tools-001-8a1e0063",
+  "user_id": "anonymous",
+  "category": "runner_parity",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence: runner parity smoke."
+    },
+    {
+      "role": "assistant",
+      "content": "runner parity smoke."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-rp-no-tools-001-8a1e0063\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-8a1e0063\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"delta\": \"runner parity smoke.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-8a1e0063\", \"promptTokens\": 140, \"completionTokens\": 3, \"reasoningTokens\": 0, \"cachedTokens\": 0, \"totalTokens\": 143, \"provider\": \"litellm\", \"model\": \"mock/local\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"runner\": \"simple\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [],
+  "score": {
+    "thread_id": "mh-rp-no-tools-001-8a1e0063",
+    "error": "no events found",
+    "completed": true,
+    "completion_source": "sse_finish",
+    "fitness_score": 0.45,
+    "trace_gates": {
+      "passed": false,
+      "failures": [
+        "missing required action: route_decision",
+        "missing required action: llm_response",
+        "missing required route decision: direct_answer",
+        "missing required delegation decision: none",
+        "missing route spawn depth"
+      ],
+      "warnings": [],
+      "observed_actions": [],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    }
+  },
+  "trace_verdict": {
+    "passed": false,
+    "failures": [
+      "missing required action: route_decision",
+      "missing required action: llm_response",
+      "missing required route decision: direct_answer",
+      "missing required delegation decision: none",
+      "missing route spawn depth"
+    ],
+    "warnings": [],
+    "observed_actions": [],
+    "observed_tools": [],
+    "observed_skills": [],
+    "tool_success_rate": null,
+    "observed_memory_routes": [],
+    "observed_memory_providers": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "simple"
+}

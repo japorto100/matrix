@@ -3,7 +3,7 @@ title: Agentic UI, Generative UI and MCP Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 008
 migrated_from:
   - specs/execution/exec-09-protocols-generative-ui.md
@@ -89,6 +89,12 @@ migrated_from:
 - T074 Verify a safe browser tool roundtrip.
 - [x] T075 Document MCP auth/tool filtering status before enabling external
   servers.
+- [x] T076 Document MCP Apps adoption boundary after 2026 SOTA pass: feature-flag
+  only, sandboxed iframe/AppBridge-style host, CSP/capability review and
+  text/tool fallback.
+- [x] T077 Static-harden Matrix widget rendering as a link-card bridge, not an
+  iframe host. Full Matrix Widget API support remains a future sandboxed host
+  decision.
 
 ## Verify Gates
 
@@ -97,3 +103,4 @@ migrated_from:
 - Live LLM path creates a UI surface via `data-a2ui-*`.
 - Surface survives reload and server reconcile.
 - MCP live connection tested or deferred with reason.
+- Matrix widget events render safely without arbitrary iframe execution.

@@ -3,7 +3,7 @@ title: Agentic UI, Generative UI and MCP Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 008
 ---
 
@@ -49,6 +49,20 @@ feature_id: 008
 - Confirm tool filtering/governance state in UI.
 - Confirm MCP Apps remain feature-flag/evaluation-only unless explicitly
   adopted.
+
+## Matrix Widgets
+
+- Send or inject `m.widget` and `im.vector.modular.widgets` room-state events.
+- Confirm `https://` widget URL renders as an external link card.
+- Confirm `javascript:`, `data:` or malformed URL renders as passive blocked
+  text.
+- Confirm no `<iframe>` is created by the Matrix chat timeline.
+
+Static evidence 2026-04-29:
+
+- `bunx vitest run src/features/matrix/lib/resolvers.test.ts src/features/matrix/components/message/MessageContent.test.tsx`
+  => `2 passed`, `4 passed`.
+- `bun run typecheck` => pass.
 
 ## Result
 

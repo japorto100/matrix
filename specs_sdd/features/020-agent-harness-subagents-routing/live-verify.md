@@ -3,7 +3,7 @@ title: Agent Harness Subagents Routing Live Verify
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 020
 ---
 
@@ -46,3 +46,31 @@ Expected:
 
 - When subagents are not implemented, scenarios requiring delegation fail or
   defer explicitly, not silently hallucinate a delegate.
+
+## LV-03 SimpleLoop Approval Parity
+
+Status: static pass plus Meta-Harness local parity pass on 2026-04-29.
+
+Evidence:
+
+- SimpleLoop now calls `approval_node` before `tool_node` with
+  `approval_interrupts=false`.
+- Confirm-level tools deny with a structured tool message if the runner cannot
+  pause/resume human approval.
+- Existing approved tool paths still execute and avoid duplicate tool messages.
+
+Checks:
+
+- `cd python-backend && uv run pytest tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py -q`
+  => `12 passed`.
+- `cd python-backend && uv run ruff check agent/graph/nodes/approval_node.py agent/runners/simple.py agent/graph/state.py agent/graph/runner.py tests/agent/graph/nodes/test_approval_node.py tests/agent/runners/test_simple.py`
+  => pass.
+- `./scripts/dev-stack.sh --llm-mock` => `llm-mock :8095`.
+- Meta-Harness parity run
+  `run-simple-approval-parity-jsonl-20260429` with variants
+  `simple,langgraph` => `parity_passed=true`,
+  `all_variants_trace_passed=true`, `mismatches={}`.
+- Artifact dirs:
+  `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-simple/`
+  and
+  `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-langgraph/`.

@@ -3,7 +3,7 @@ title: Sandbox, Security and HITL Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 013
 migrated_from:
   - specs/execution/exec-12-sandbox-security.md
@@ -25,6 +25,10 @@ migrated_from:
 
 - [x] T010 Verify compose/podman profile starts `opensandbox-server`.
 - [x] T011 Verify safe Python execution returns stdout/stderr/files.
+- [x] T011a Add sandbox runtime observability payload (`sandbox_id` + `trace_id` + `diagnostics`)
+  for `SandboxResult` and audit trail.
+- [x] T011b Add ansteuerbare OpenSandbox-CLI (`python-backend/scripts/opensandbox_cli.py`)
+  for health/create/list/diagnostics/delete smoke workflows.
 - T012 [partial-static-live-blocked] Verify file upload is copied into sandbox
   and result is returned while original stays outside agent process.
   - 2026-04-27: fixed missing `SandboxManager.execute_file` compatibility path
@@ -47,7 +51,7 @@ migrated_from:
 
 ## Consent / RBAC / Rate Limits
 
-- T020 Verify `sandbox_execute` and `sandbox_browser` require confirm-level
+- [x] T020 Verify `sandbox_execute` and `sandbox_browser` require confirm-level
   consent.
 - T021 Verify session cache paths: allow once, allow session, deny, deny
   session.
@@ -56,8 +60,11 @@ migrated_from:
   - 2026-04-27: tool execution audit now carries budget snapshots for
     per-session tool calls, per-tool calls, tokens and iterations. Static
     coverage proves the telemetry path; live deny/stop behavior remains open.
-- T023 Verify role forwarding (`X-User-Role`, `X-Auth-User`) reaches consent
+- [x] T023 Verify role forwarding (`X-User-Role`, `X-Auth-User`) reaches consent
   checks and blocks insufficient roles.
+- [x] T024 Static-verify graphless SimpleLoop cannot bypass `approval_node`:
+  deny/hard-deny emits OpenAI-compatible tool denial messages, and confirm-level
+  tools fail closed when the runner cannot interrupt/resume approval.
 
 ## Prompt Injection / Sanitization
 
@@ -108,6 +115,8 @@ migrated_from:
   payloads.
 - [x] T063 Verify `pendingEventOrdering: "detached"` remains in Matrix client
   creation.
+- [x] T065 Static-verify Matrix widget events do not embed arbitrary iframes and
+  unsafe widget URLs remain passive text.
 - T064 Security-review Meta-Harness/dev anonymous LLM path together with
   Feature 011: anonymous may be allowed for local eval, but named production
   users must fail closed without valid CredentialPool/user credentials.

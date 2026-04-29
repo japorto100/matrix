@@ -43,6 +43,8 @@ def test_sandbox_result_to_dict_includes_success() -> None:
         "stderr": "",
         "exit_code": 0,
         "files": [],
+        "sandbox_id": "",
+        "diagnostics": {},
         "execution_time_ms": 12.5,
         "error": None,
         "success": True,

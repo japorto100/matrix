@@ -3,7 +3,7 @@ title: Matrix Chat Gate Ledger
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 005
 migrated_from:
   - specs/execution/exec2-04-verify-gates.md
@@ -130,6 +130,9 @@ the operational source of truth once these are classified.
 - D1: polls: create/vote/live results/Element X interop.
 - D2: threads: side panel, reply count, routing, Element X interop.
 - D3: media: images, thumbnails, legacy media off, video/audio, no 401s.
+- D4: widgets: `m.widget` / `im.vector.modular.widgets` state events render as
+  safe external link cards only; unknown or unsafe URLs remain passive text
+  until a sandboxed Matrix Widget API host is implemented.
 
 ## E — WYSIWYG Composer
 

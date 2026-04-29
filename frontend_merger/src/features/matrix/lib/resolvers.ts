@@ -15,6 +15,22 @@ export function isAgentUser(userId: string): boolean {
 	return userId.startsWith(AGENT_PREFIX);
 }
 
+function normalizeWidgetUrl(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	try {
+		const url = new URL(value);
+		if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
+		return url.toString();
+	} catch {
+		return undefined;
+	}
+}
+
+function readString(value: unknown): string | undefined {
+	const trimmed = typeof value === "string" ? value.trim() : "";
+	return trimmed || undefined;
+}
+
 /**
  * Konvertiert einen MatrixEvent in eine ResolvedMessage.
  *
@@ -118,19 +134,23 @@ export function resolveMessage(
 	// F-5: Widget placeholder (m.widget / im.vector.modular.widgets)
 	if (evType === "m.widget" || evType === "im.vector.modular.widgets") {
 		const sender = ev.getSender() ?? "";
-		const widgetName = (content.name as string) ?? (content.type as string) ?? "Widget";
-		const widgetUrl = content.url as string | undefined;
+		const widgetName = readString(content.name) ?? readString(content.type) ?? "Widget";
+		const rawWidgetUrl = content.url;
+		const widgetUrl = normalizeWidgetUrl(rawWidgetUrl);
 		return {
 			eventId: ev.getId() ?? "",
 			sender,
 			senderDisplayName: sender.split(":")[0]?.replace("@", "") ?? sender,
-			body: `[Widget: ${widgetName}]${widgetUrl ? ` — ${widgetUrl}` : ""}`,
+			body: `[Widget: ${widgetName}]${
+				typeof rawWidgetUrl === "string" && !widgetUrl ? " (blocked URL)" : ""
+			}`,
 			timestamp: ev.getTs(),
 			isOwn: sender === myUserId,
 			isBot: isAgentUser(sender),
 			isEdited: false,
 			isRedacted: false,
 			msgType: "m.widget",
+			url: widgetUrl,
 		};
 	}
 

@@ -1,0 +1,155 @@
+[
+  {
+    "run_id": "run-simple-approval-parity-jsonl-20260429",
+    "candidate_id": "simple-approval-jsonl-langgraph",
+    "scenario_id": "rp-no-tools-001",
+    "thread_id": "mh-rp-no-tools-001-e5b822d7",
+    "user_id": "anonymous",
+    "category": "runner_parity",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Reply with one short sentence: runner parity smoke."
+      },
+      {
+        "role": "assistant",
+        "content": "runner parity smoke."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-rp-no-tools-001-e5b822d7\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-e5b822d7\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"delta\": \"runner parity smoke.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-rp-no-tools-001-e5b822d7\", \"promptTokens\": 140, \"completionTokens\": 3, \"reasoningTokens\": 0, \"cachedTokens\": 0, \"totalTokens\": 143, \"provider\": \"litellm\", \"model\": \"mock/local\", \"sourceLayerCounts\": {}, \"degradationFlags\": [\"NO_PERSONAL_MEMORY\", \"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+    ],
+    "trace_events": [
+      {
+        "timestamp": "2026-04-29T17:33:40.488382+00:00",
+        "action": "skill_found",
+        "userId": "local",
+        "agentId": "skills",
+        "sessionId": "mh-rp-no-tools-001-e5b822d7",
+        "threadId": "mh-rp-no-tools-001-e5b822d7",
+        "success": true,
+        "metadata": {
+          "skill_ids": [],
+          "skill_names": [],
+          "query_preview": "Reply with one short sentence: runner parity smoke.",
+          "user_id": "anonymous",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true
+        }
+      },
+      {
+        "timestamp": "2026-04-29T17:33:40.528759+00:00",
+        "action": "route_decision",
+        "userId": "local",
+        "agentId": "default",
+        "sessionId": "",
+        "threadId": "mh-rp-no-tools-001-e5b822d7",
+        "success": true,
+        "iteration": 0,
+        "metadata": {
+          "runner": "langgraph",
+          "decision": "direct_answer",
+          "route_taxonomy": "direct_answer",
+          "delegation_decision": "none",
+          "delegate_kind": null,
+          "spawn_depth": 0,
+          "max_spawn_depth": 0,
+          "allowed_tools": [],
+          "memory_scope": "current_user",
+          "budget": {},
+          "fallback_reason": "subagents_disabled",
+          "tool_calls_count": 0,
+          "tool_names": [],
+          "routing_reason": "not_evaluated",
+          "routing_used": false,
+          "routing_picked_model": "",
+          "memory_route_requested": false,
+          "retrieval_route_requested": false
+        }
+      },
+      {
+        "timestamp": "2026-04-29T17:33:40.528969+00:00",
+        "action": "llm_response",
+        "userId": "local",
+        "agentId": "default",
+        "sessionId": "",
+        "threadId": "mh-rp-no-tools-001-e5b822d7",
+        "success": true,
+        "input": "Reply with one short sentence: runner parity smoke.",
+        "output": "runner parity smoke.",
+        "duration_ms": 3.67,
+        "iteration": 0,
+        "metadata": {
+          "model": "mock/local",
+          "done": true,
+          "tool_calls_count": 0,
+          "token_usage": 143,
+          "content_cleaned": false
+        }
+      }
+    ],
+    "score": {
+      "thread_id": "mh-rp-no-tools-001-e5b822d7",
+      "model": "mock/local",
+      "completed": true,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 1,
+      "turn_efficiency": 1.0,
+      "total_tokens": 143,
+      "token_efficiency": 143,
+      "total_duration_ms": 3.7,
+      "tool_calls": 0,
+      "tool_success_rate": 0.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 0,
+      "memory_retains": 0,
+      "memory_utilization": false,
+      "skills_loaded": [],
+      "skill_events": 1,
+      "cost_estimate_usd": 0.000429,
+      "fitness_score": 0.9999,
+      "trace_gates": {
+        "passed": true,
+        "failures": [],
+        "warnings": [],
+        "observed_actions": [
+          "llm_response",
+          "route_decision",
+          "skill_found"
+        ],
+        "observed_tools": [],
+        "observed_skills": [],
+        "tool_success_rate": null,
+        "observed_memory_routes": [],
+        "observed_memory_providers": []
+      }
+    },
+    "trace_verdict": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "llm_response",
+        "route_decision",
+        "skill_found"
+      ],
+      "observed_tools": [],
+      "observed_skills": [],
+      "tool_success_rate": null,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-langgraph",
+    "runner_variant": "langgraph"
+  }
+]

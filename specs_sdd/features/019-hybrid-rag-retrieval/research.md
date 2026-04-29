@@ -3,7 +3,7 @@ title: Hybrid RAG Retrieval Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 019
 ---
 
@@ -64,3 +64,18 @@ Feature 019 therefore depends on:
 - Feature 021 for parser/chunk/citation quality.
 - Feature 022 for matched retrieval benchmarks.
 - Feature 023 for bounded inner-loop config search.
+
+## 2026-04-29 Agentic RAG / GraphRAG Source Check
+
+[RAGSearch](https://arxiv.org/abs/2604.09666) directly tests the question raised
+in the fresh Z-MDs: whether agentic multi-round search reduces the need for
+explicit graph retrieval. Current reading: do not remove graph retrieval from
+the roadmap, but do not promote GraphRAG as default either.
+
+Implications:
+
+- Dense/hybrid RAG plus agentic re-query remains the default baseline.
+- Graph/KG retrieval is a measured candidate for multi-hop, temporal and
+relational questions where explicit structure should pay for its offline cost.
+- Feature 022 benchmark canaries should include both answer-quality and
+efficiency/stability metrics, matching RAGSearch's focus beyond final accuracy.

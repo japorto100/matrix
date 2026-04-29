@@ -73,6 +73,7 @@ tools:
     severity: high
     reason: "Oeffnet Browser-Automation in Sandbox"
     allow_session_cache: false
+    min_role: analyst
 
   # ── File Operations (future) ─────────────────────────────────────────
   file_write:

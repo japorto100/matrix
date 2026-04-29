@@ -3,7 +3,7 @@ title: Agentic UI, Generative UI and MCP Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 008
 ---
 
@@ -56,3 +56,13 @@ feature_id: 008
 - [x] Chart and portfolio widgets exist as local custom widgets.
 - [x] #93 custom catalog-extension decision is closed.
 - [x] Matrix-chat CopilotKit integration decision is closed.
+
+## G7 UI-Returning External Content
+
+- [x] MCP Apps are documented as feature-flag research and require sandbox/CSP
+  review before live adoption.
+- [x] Matrix widget events render as safe external link cards only.
+- [ ] A sandboxed MCP App host is live-verified before any UI-returning external
+  MCP tool is enabled for normal users.
+- [ ] A Matrix Widget API host is live-verified before embedding room widgets
+  inside the Matrix chat route.

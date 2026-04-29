@@ -3,7 +3,7 @@ title: Matrix Chat Core Live Verify
 status: partial-api-live
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 005
 migrated_from:
   - specs/execution/exec2-04-verify-gates.md
@@ -108,3 +108,22 @@ Not covered in this pass:
 - Browser `/matrix` render.
 - Existing `@alice`/`@bob` dev credential recovery.
 - Edit, reaction, redact, second-client receive, media, calls and E2EE.
+
+## Static Evidence 2026-04-29 — Matrix Widget Surface
+
+Status: pass for resolver/render safety; live room-state/browser interop remains
+open.
+
+Evidence:
+
+- `resolveMessage` now normalizes `m.widget` and `im.vector.modular.widgets`
+  events into `msgType="m.widget"` with `url` set only for `http/https`.
+- `MessageBubble` renders safe widget URLs as external links with
+  `rel="noopener noreferrer"` and does not embed arbitrary iframe content.
+- Unsafe widget URLs such as `javascript:` render as passive text with a blocked
+  marker.
+- Focused frontend checks:
+  `cd frontend_merger && bunx vitest run src/features/matrix/lib/resolvers.test.ts src/features/matrix/components/message/MessageContent.test.tsx`
+  => `2 passed`, `4 passed`.
+- Frontend typecheck:
+  `cd frontend_merger && bun run typecheck` => pass.

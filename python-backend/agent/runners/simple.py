@@ -18,8 +18,9 @@ Zero duplication → zero drift.
 **What this file actually does:**
 1. Prep system-prompt + messages via reused :func:`runner._prepare_system_prompt`
    / :func:`runner._prepare_messages`.
-2. Run a multi-turn loop: ``llm_node(state)`` → if tool_calls → ``tool_node(state)``
-   → repeat until no tool_calls or MAX_ITERATIONS.
+2. Run a multi-turn loop: ``llm_node(state)`` → if tool_calls →
+   ``approval_node(state)`` → approved calls only → ``tool_node(state)`` →
+   repeat until no tool_calls or MAX_ITERATIONS.
 3. Emit the identical SSE packet sequence as :func:`runner._run_graph` so
    the frontend cannot tell which runner served the turn.
 4. Same session-row bookkeeping, same fire-and-forget ``_safe_sync_turn``.
@@ -176,6 +177,7 @@ async def _run_simple(
         "user_id": ctx.user_id,
         "agent_class": getattr(ctx, "agent_class", "advisory"),
         "user_role": getattr(ctx, "user_role", "viewer"),
+        "approval_interrupts": False,
         "runner_variant": "simple",
     }
 
@@ -199,13 +201,30 @@ async def _run_simple(
                 if not tool_calls:
                     break
 
+                from agent.graph.nodes.approval_node import approval_node
+
+                approval_out = await approval_node(
+                    {**state, "approval_interrupts": False}
+                )
+                _merge(state, approval_out)
+
+                approved_tool_calls = state.get("tool_calls") or []
+                if not approved_tool_calls:
+                    _record_iteration(ctx.thread_id)
+                    state["iteration"] = iteration + 1
+                    continue
+
                 # Reuses tool-dispatch pipeline: timeout enforcement,
                 # parallel exec, ToolResult construction.
                 tool_out = await tool_node(state)
                 new_results = tool_out.get("tool_results") or []
                 all_tool_results.extend(new_results)
+                tool_node_emitted_messages = bool(tool_out.get("messages"))
                 _merge(state, tool_out)
-                _append_tool_messages(state, tool_calls, new_results)
+                if not tool_node_emitted_messages:
+                    _append_tool_messages(state, approved_tool_calls, new_results)
+                _record_iteration(ctx.thread_id)
+                state["iteration"] = iteration + 1
 
             final = state.get("final_response", "") or _last_assistant_text(
                 state["messages"]
@@ -392,6 +411,18 @@ def _append_tool_messages(
                 "content": content,
             }
         )
+
+
+def _record_iteration(thread_id: str) -> None:
+    """Best-effort parity with LangGraph's increment node."""
+    if not thread_id:
+        return
+    try:
+        from agent.consent.rate_limiter import get_rate_limiter
+
+        get_rate_limiter().record_iteration(thread_id)
+    except Exception:  # noqa: BLE001
+        logger.debug("SimpleLoop iteration accounting skipped", exc_info=True)
 
 
 def _tool_call_value(tool_call: Any, primary: str, fallback: str) -> Any:

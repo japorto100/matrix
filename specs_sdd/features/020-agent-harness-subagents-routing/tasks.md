@@ -3,7 +3,7 @@ title: Agent Harness Subagents Routing Tasks
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 020
 ---
 
@@ -116,10 +116,15 @@ feature_id: 020
 - T037 Add Hermes-inspired but Matrix-specific loop guards: max tool retries,
   max provider retries, compression retry reset, stale async memory flush guard
   and unsupported-provider-field guard.
+- [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
+  `approval_node`, confirm-level tools fail closed without interrupt/resume, and
+  tool-message emission must not duplicate `tool_node` output.
 
 ## Verification
 
 - T040 [done-static] Static tests for route/delegation policy helpers.
-- T041 Meta-Harness runner parity with local lane for routing mechanics.
+- [x] T041 Meta-Harness runner parity with local lane for routing mechanics.
+  2026-04-29 `llm-mock` run `run-simple-approval-parity-jsonl-20260429`
+  passed `simple` and `langgraph` variants with no mismatches.
 - T042 Live OpenRouter smoke for routing quality.
 - T043 Holdout set before any behavioral promotion.

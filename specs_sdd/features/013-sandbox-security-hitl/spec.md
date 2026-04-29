@@ -15,6 +15,13 @@ adrs:
   - 0004
 ---
 
+> IMPORTANT: The large OpenSandbox Code Interpreter image is archived on HDD to
+> keep the SSD free. Before running OpenSandbox-backed flows, load it with:
+>
+> ```bash
+> podman load -i /mnt/cold-storage/archive/podman-images/opensandbox-code-interpreter-v1.0.2.tar
+> ```
+
 # Sandbox, Security and HITL
 
 ## Current State / Ist

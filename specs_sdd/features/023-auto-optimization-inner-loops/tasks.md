@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Tasks
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 feature_id: 023
 ---
 
@@ -85,6 +85,9 @@ feature_id: 023
   skills, tool subset, output transformation and consent behavior.
 - T032 Define runner candidate dimensions: dispatcher/simple/LangGraph parity,
   timeout, max iterations and max output tokens.
+  - 2026-04-29: add consent/approval parity to runner dimensions:
+    `approval_interrupts`, confirm-unavailable fail-closed behavior and
+    duplicate tool-message prevention are now explicit runner candidate checks.
 - T033 Define KG candidate dimensions: projection backend off/Postgres-only/
   NornicDB, path expansion depth, temporal filter, access/recency decay and
   KG/vector fusion weight.
