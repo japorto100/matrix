@@ -86,6 +86,9 @@ feature_id: 016
   - 2026-04-29: `TraceExpectations` supports `allowed_tool_groups` and
     `max_tool_disclosure_level`; trace gates compare observed normal tools
     against `agent.tools.catalog` metadata.
+  - 2026-04-29: `tool_node` now caps sanitized builtin tool-message content
+    before it enters the next LLM call, while preserving raw `tool_results`
+    artifacts for trace/debug inspection.
 
 ## Memory-Aware Evaluation
 
@@ -330,6 +333,9 @@ feature_id: 016
   - 2026-04-29: static scenario-gate coverage exists for group filtering and
     progressive disclosure; live output-compaction scenarios remain a separate
     tool-output lane.
+  - 2026-04-29: builtin tool-message capping is enforced in `tool_node` before
+    model re-entry; focused unit tests prove idempotent truncation markers and
+    raw artifact preservation.
 - T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
   metric and KG/RAG-linked term.
 - T117 Add Feature 027 report-publishing scenario with citation/manifest

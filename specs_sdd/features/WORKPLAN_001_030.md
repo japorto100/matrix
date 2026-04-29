@@ -83,6 +83,9 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: MCP catalog payloads now include descriptor-diff metadata, the
      Control MCP table renders drift/reapproval state, and audit has a focused
      MCP-policy query for catalog changes and denials.
+   - 2026-04-29: normal builtin ToolRegistry outputs now have an immediate
+     sanitized tool-message cap before LLM re-entry, preserving raw artifacts
+     separately.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

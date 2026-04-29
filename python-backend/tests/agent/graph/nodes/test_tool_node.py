@@ -8,6 +8,8 @@ from agent.consent.rate_limiter import SessionRateLimiter
 from agent.context import AgentExecutionContext
 from agent.graph.nodes import tool_node as tool_node_module
 from agent.graph.nodes.tool_node import (
+    TOOL_LLM_OUTPUT_MAX_CHARS,
+    _cap_tool_llm_content,
     _effective_tool_timeout,
     _execute_single,
     _trading_role_from_state,
@@ -50,6 +52,18 @@ def test_memory_tools_get_extended_timeout_budget():
     assert _effective_tool_timeout("memory_add") == tool_node_module.MEMORY_TOOL_TIMEOUT_SEC
     assert _effective_tool_timeout("memory_search") == tool_node_module.MEMORY_TOOL_TIMEOUT_SEC
     assert _effective_tool_timeout("get_chart_state") == tool_node_module.TOOL_TIMEOUT_SEC
+
+
+def test_cap_tool_llm_content_is_idempotent_and_keeps_marker():
+    content = "x" * (TOOL_LLM_OUTPUT_MAX_CHARS + 100)
+
+    capped = _cap_tool_llm_content("get_portfolio_summary", content)
+    recapped = _cap_tool_llm_content("get_portfolio_summary", capped)
+
+    assert len(capped) < len(content)
+    assert "[tool_output_truncated" in capped
+    assert f"original_chars={len(content)}" in capped
+    assert recapped == capped
 
 
 @pytest.mark.asyncio
@@ -138,6 +152,52 @@ async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
     assert result["messages"][0]["tool_call_id"] == "call_123"
     assert result["messages"][0]["tool_use_id"] == "call_123"
     assert '{"ok": true}' in result["messages"][0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_tool_node_caps_large_sanitized_tool_message(monkeypatch):
+    large_payload = "x" * (TOOL_LLM_OUTPUT_MAX_CHARS + 5000)
+
+    async def fake_execute_single(tc, registry, ctx):
+        return {
+            "tool_call_id": tc["tool_call_id"],
+            "tool_name": tc["tool_name"],
+            "result": {"payload": large_payload},
+            "error": None,
+        }
+
+    class _Limiter:
+        def record_tool_call(self, thread_id: str, tool_name: str) -> None:
+            return None
+
+    monkeypatch.setattr(tool_node_module.ToolRegistry, "load", classmethod(lambda cls: _registry()))
+    monkeypatch.setattr(tool_node_module, "_execute_single", fake_execute_single)
+    monkeypatch.setattr(
+        "agent.consent.rate_limiter.get_rate_limiter",
+        lambda: _Limiter(),
+    )
+
+    result = await tool_node(
+        {
+            "tool_calls": [
+                {
+                    "tool_call_id": "call_large",
+                    "tool_name": "get_portfolio_summary",
+                    "tool_input": {},
+                },
+            ],
+            "current_role": None,
+            "user_id": "alice",
+            "thread_id": "t1",
+            "model": "test-model",
+            "reasoning_effort": None,
+        }
+    )
+
+    message = result["messages"][0]
+    assert "[tool_output_truncated" in message["content"]
+    assert len(message["content"]) < len(large_payload)
+    assert result["tool_results"][0]["result"]["payload"] == large_payload
 
 
 @pytest.mark.asyncio

@@ -38,6 +38,8 @@ SANDBOX_TOOL_TIMEOUT_SEC = float(os.environ.get("SANDBOX_TOOL_TIMEOUT_SEC", "180
 SANDBOX_TOOLS = {"sandbox_execute", "sandbox_browser"}
 MEMORY_TOOL_TIMEOUT_SEC = float(os.environ.get("MEMORY_TOOL_TIMEOUT_SEC", "90"))
 MEMORY_TOOLS = {"memory_add", "memory_search"}
+TOOL_LLM_OUTPUT_MAX_CHARS = int(os.environ.get("AGENT_TOOL_LLM_OUTPUT_MAX_CHARS", "12000"))
+_TOOL_LLM_TRUNCATION_MARKER = "[tool_output_truncated"
 
 
 def _effective_tool_timeout(tool_name: str) -> float:
@@ -130,7 +132,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
                 "role": "tool",
                 "tool_call_id": tc["tool_call_id"],
                 "tool_use_id": tc["tool_call_id"],
-                "content": llm_content,
+                "content": _cap_tool_llm_content(tc["tool_name"], llm_content),
             }
         )
 
@@ -149,6 +151,22 @@ def _trading_role_from_state(state: AgentGraphState) -> TradingRole | None:
         return TradingRole(role)
     except ValueError:
         return None
+
+
+def _cap_tool_llm_content(tool_name: str, content: str) -> str:
+    """Cap sanitized tool content before it enters the next LLM call."""
+
+    if (
+        len(content) <= TOOL_LLM_OUTPUT_MAX_CHARS
+        or _TOOL_LLM_TRUNCATION_MARKER in content
+    ):
+        return content
+    marker = (
+        f"\n{_TOOL_LLM_TRUNCATION_MARKER} "
+        f"tool={tool_name} original_chars={len(content)} "
+        f"max_chars={TOOL_LLM_OUTPUT_MAX_CHARS}]"
+    )
+    return content[:TOOL_LLM_OUTPUT_MAX_CHARS].rstrip() + marker
 
 
 async def _execute_single(

@@ -96,6 +96,11 @@ normal tool catalog metadata through `allowed_tool_groups` and
 tool such as sandbox execution was not exposed or used unless the scenario's
 tool-group contract explicitly allows it.
 
+2026-04-29 output follow-up: normal builtin tool outputs now get a direct
+post-sanitizer cap in `tool_node` before model re-entry. This complements the
+later context-compaction pass: raw `tool_results` stay available for audit and
+debug artifacts, but the next LLM call receives bounded, marked content.
+
 ## Memory Findings
 
 Memory is both automatic and explicit:
