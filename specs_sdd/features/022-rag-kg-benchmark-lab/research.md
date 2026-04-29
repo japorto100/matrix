@@ -3,7 +3,7 @@ title: RAG/KG Benchmark Lab Research
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 022
 ---
 
@@ -72,3 +72,18 @@ specific commercial provider.
 adds a protected dense baseline from the ResearchWatcher extraction fixture.
 It requires hierarchy-aware chunking metadata, parser candidate profile, page
 anchor and table count before graph/fused retrieval can claim an advantage.
+
+## 2026-04-30 Knowledge Contract Update
+
+The benchmark lab now has an additional provider-free lane:
+`meta_harness.knowledge_contract`. It is not a replacement for real retrieval
+benchmarks; it is the cross-feature precondition that says a candidate is even
+eligible for scoring. It checks memory ground-truth refs, KG proposal evidence,
+selected RAG/KG context provenance, semantic ambiguity/permission fail-closed
+behavior and correction proposal review state.
+
+This references `Z_Browser_RAG_WebGPU_CPU_Models.md` and
+`Z_Semantik_layer and so on.md` by keeping browser/semantic additions as
+measured candidate dimensions, not implicit defaults. External LightRAG,
+HippoRAG2 and related adapters still need matched-budget benchmarks before
+promotion.

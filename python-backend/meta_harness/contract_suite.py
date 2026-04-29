@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from meta_harness.knowledge_contract import run_knowledge_contract_scenarios
 from meta_harness.matrix_widget_policy import run_matrix_widget_policy_scenarios
 from meta_harness.mcp_catalog_policy import run_mcp_catalog_policy_scenarios
 from meta_harness.report_grounding import run_report_grounding_scenarios
@@ -30,6 +31,7 @@ def run_contract_suite(
     run_dir.mkdir(parents=True, exist_ok=True)
 
     lanes: tuple[tuple[str, str, SuiteRunner], ...] = (
+        ("012/017/019/022/025", "knowledge_contract", run_knowledge_contract_scenarios),
         ("020", "routing_contract", run_routing_contract_scenarios),
         ("024", "mcp_catalog_policy", run_mcp_catalog_policy_scenarios),
         ("027", "report_grounding", run_report_grounding_scenarios),

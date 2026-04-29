@@ -3,7 +3,7 @@ title: Semantic Layer Metrics Claims Live Verify
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 025
 ---
 
@@ -27,3 +27,8 @@ feature_id: 025
   group `semantic`, with risk/approval metadata and no execution affordance.
 - LV015 Open `/control/semantic`, verify one KG-linked term, one RAG term, one
   tenant-scoped metric plan and raw SQL disabled.
+- LV016 [done-static] Run provider-free knowledge contract for semantic
+  ambiguity, permission, correction proposal and KG/RAG semantic metadata.
+  - 2026-04-30:
+    `uv run python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-static --data-dir /tmp/matrix-knowledge-contract`
+    passed 5/5. Live browser/agent semantic checks remain LV001-LV015.

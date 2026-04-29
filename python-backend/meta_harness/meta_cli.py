@@ -124,10 +124,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     contract_suite = sub.add_parser(
         "contract-suite",
-        help="Run provider-free cross-feature contract lanes for Features 020/024/027/030",
+        help=(
+            "Run provider-free cross-feature contract lanes for "
+            "Features 012/017/019/020/022/024/025/027/030"
+        ),
     )
     contract_suite.add_argument("--run-id", default="")
     contract_suite.add_argument("--data-dir", type=Path, default=None)
+
+    knowledge_contract = sub.add_parser(
+        "knowledge-contract",
+        help="Run provider-free Memory/KG/RAG/Semantic boundary scenarios",
+    )
+    knowledge_contract.add_argument("--run-id", default="")
+    knowledge_contract.add_argument("--data-dir", type=Path, default=None)
 
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
@@ -350,6 +360,13 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_contract_suite(**kwargs)
+    if args.command == "knowledge-contract":
+        from meta_harness.knowledge_contract import run_knowledge_contract_scenarios
+
+        kwargs = {"run_id": args.run_id or "run-knowledge-contract"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_knowledge_contract_scenarios(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

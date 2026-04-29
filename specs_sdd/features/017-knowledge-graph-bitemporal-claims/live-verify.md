@@ -3,7 +3,7 @@ title: Knowledge Graph Live Verify
 status: static_partial
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 017
 ---
 
@@ -15,6 +15,10 @@ feature_id: 017
 - Verify a visual evidence block from Feature 028 produces a pending claim
   proposal with source refs.
 - Verify browser-local hints from Feature 026 do not auto-promote KG claims.
+- Static provider-free prerequisite passed on 2026-04-30:
+  `knowledge-contract` validates KG proposal evidence, semantic term links,
+  selected KG context metadata and personal-memory promotion blocking. Live
+  claim promotion/NornicDB checks remain below.
 
 ## Static Verify
 

@@ -3,7 +3,7 @@ title: Database Schema Governance Tasks
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 018
 ---
 
@@ -70,7 +70,11 @@ feature_id: 018
     regenerated `docs/database/current-schema.md` includes `agent.evals`.
 - T044 Add schema governance for Feature 024 MCP descriptor snapshots if they
   become persistent.
-- T045 Add schema governance for Feature 025 semantic terms/metrics.
+- T045 [done-static] Add schema governance for Feature 025 semantic
+  terms/metrics.
+  - 2026-04-30: current semantic catalog remains code/static artifact owned by
+    Feature 025, so no Alembic migration is required. If semantic terms/metrics
+    become persistent, they must enter this workflow before merge.
 - T046 Add schema governance for Feature 027 report manifests and Feature 028
   visual evidence if stored in Postgres.
 - T047 Add schema governance for Feature 029 ops read models if materialized.

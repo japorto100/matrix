@@ -3,7 +3,7 @@ title: Database Schema Governance Research
 status: accepted
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 018
 ---
 
@@ -41,3 +41,9 @@ definitions, report manifests, visual evidence and ops read models. Feature 018
 should keep the rule: Alembic remains authoritative, generated docs are
 inspection artifacts, and no feature owns a shadow schema outside migration
 governance.
+
+2026-04-30 semantic-layer follow-up: Feature 025 currently stores its catalog
+as code/static provider-free contract data, not Postgres state. Therefore no
+new Alembic migration is needed for the `knowledge-contract` slice. If
+semantic terms, metric definitions or correction proposals become persistent,
+they must enter Feature 018 with owner feature refs and introspection tests.

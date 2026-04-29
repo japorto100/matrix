@@ -19,6 +19,9 @@ feature_id: 016
 - Feature 030 widget gates prove approval/denial/fallback behavior.
 - 2026-04-30: `contract-suite` aggregates the stable provider-free lanes for
   Features 020, 024, 027 and 030 and passed 16/16 scenarios.
+- 2026-04-30: `knowledge-contract` adds a provider-free Memory/KG/RAG/Semantic
+  boundary lane for Features 012/017/019/022/025. The aggregate
+  `contract-suite` now runs 21/21 scenarios across five lanes.
 
 ## Stack Gates
 
@@ -76,6 +79,8 @@ PY
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli propose --sessions 2`
 - CLI provider-free contract suite:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
+- CLI provider-free knowledge contract:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-20260430 --data-dir /tmp/matrix-knowledge-contract`
 
 - Required env depends on runner mode: `AGENT_DEFAULT_MODEL` or request model,
   provider credentials/LiteLLM routing for LLM calls, and `HINDSIGHT_DB_URL` or

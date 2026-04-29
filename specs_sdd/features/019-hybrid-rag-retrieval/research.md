@@ -3,7 +3,7 @@ title: Hybrid RAG Retrieval Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 019
 ---
 
@@ -99,3 +99,21 @@ the deterministic retrieval benchmark as reference-metadata contracts:
 
 This keeps GraphRAG/RAG experiments provider-agnostic and source-grounded: the
 benchmark checks metadata and citations, not any single vendor model behavior.
+
+## 2026-04-30 SOTA/Contract Check
+
+Fresh source check keeps the same architecture:
+
+- LightRAG's public paper/repo still supports evaluating graph+vector retrieval
+  as a practical GraphRAG candidate, not as a universal default.
+- RAGChecker-style evaluation supports claim/citation-level diagnostics instead
+  of answer-only scoring.
+- MetricFlow/Cube-style semantic layers support deterministic, versioned
+  semantic contracts before any generated SQL or unstructured retrieval answer.
+
+Matrix implementation note: `knowledge-contract` connects those findings into
+one static gate. A selected context item is not enough because it ranks well;
+it must keep source artifact, chunk/hash, citation, semantic catalog and KG
+claim metadata. Browser-local retrieval from `Z_Browser_RAG_WebGPU_CPU_Models.md`
+stays a candidate lane, while backend RAG/KG remains the auditable source of
+truth for shared/global context.

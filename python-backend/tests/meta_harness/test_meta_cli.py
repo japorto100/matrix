@@ -311,10 +311,37 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["lane_count"] == 4
-    assert result["scenario_count"] == 16
+    assert result["lane_count"] == 5
+    assert result["scenario_count"] == 21
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
+
+
+@pytest.mark.asyncio
+async def test_cli_knowledge_contract_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["knowledge-contract", "--run-id", "run-knowledge", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 5
+    scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
+    assert "knowledge-memory-ground-truth-preserved" in scenario_ids
+    assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids
+    artifact = tmp_path / "runs" / "run-knowledge" / "knowledge_contract.json"
+    aggregate = (
+        tmp_path
+        / "runs"
+        / "run-knowledge"
+        / "candidates"
+        / "knowledge-contract-static"
+        / "aggregate.json"
+    )
+    assert artifact.exists()
+    assert aggregate.exists()
 
 
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():

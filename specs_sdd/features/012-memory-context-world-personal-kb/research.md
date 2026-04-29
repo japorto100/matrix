@@ -3,7 +3,7 @@ title: Memory Research And Adoption Notes
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 012
 migrated_from:
   - main_docs/root/MEMORY_ARCHITECTURE.md
@@ -155,6 +155,14 @@ complete visible context into the verbatim lane first. Hindsight can then learn
 summaries/reflections asynchronously. If embeddings are slow or remote quota is
 exhausted, rows stay durable with `embedding_status=pending` and are hydrated
 later rather than blocking evidence preservation.
+
+2026-04-30 implementation note: this is now represented in the
+Meta-Harness `knowledge-contract` lane. The static scenario requires
+Memory-Fusion recall/retain events to carry source status, raw evidence refs,
+operation log ids and diff refs before cross-feature context assembly can treat
+derived memory as usable. This references `Z_Semantik_layer and so on.md`
+indirectly through the correction handoff: personal feedback may propose
+semantic changes, but it does not mutate global definitions or KG truth.
 
 ## World Model Research
 

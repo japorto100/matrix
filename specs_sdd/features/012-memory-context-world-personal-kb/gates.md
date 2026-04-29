@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 012
 ---
 
@@ -15,6 +15,9 @@ feature_id: 012
   before memory injection.
 - User semantic corrections become Feature 025 proposals, not silent global
   truth mutations.
+- 2026-04-30: provider-free `knowledge-contract` covers both points as static
+  gates: memory evidence must carry durable raw refs before context injection,
+  and semantic corrections remain review proposals.
 
 ## G1 Personal Memory / Fusion
 
@@ -41,6 +44,9 @@ feature_id: 012
 - [x] Provider-free Meta-Harness memory/context smoke validates Fusion route,
   Hindsight+MemPalace provider metadata and `memory_search` success without
   consuming LLM quota.
+- [x] Provider-free knowledge contract validates Memory-Fusion source status,
+  raw evidence refs, operation log ids and diff refs before cross-feature
+  KG/RAG/Semantic use.
 - [ ] Prompt assembly order is live-verified against the current runner path.
 
 ## G3 Compaction / Metadata

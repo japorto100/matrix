@@ -3,7 +3,7 @@ title: Hybrid RAG Retrieval Tasks
 status: implementation_started
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 019
 ---
 
@@ -130,6 +130,11 @@ feature_id: 019
   - 2026-04-29: `semantic-term-tool-success-001` now proves the retrieval
     benchmark can require semantic catalog version, term ids and metric id on
     selected references. Runtime query-planning integration remains open.
+  - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` adds a
+    cross-feature contract that selected vector/KG context must keep
+    `semantic_catalog_version`, `semantic_term_ids`, source artifact,
+    chunk/hash and citation metadata before answer support. Runtime query
+    planning remains open.
 - T051 [partial-static] Add Feature 028 visual-layout blocks as retrievable evidence with source
   coordinates.
   - 2026-04-29: `visual-layout-source-coordinates-001` now proves selected

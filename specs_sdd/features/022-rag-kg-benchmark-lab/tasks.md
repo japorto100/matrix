@@ -3,7 +3,7 @@ title: RAG/KG Benchmark Lab Tasks
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 022
 ---
 
@@ -112,6 +112,9 @@ feature_id: 022
   - 2026-04-27: retrieval benchmark artifacts now include query, split and
     question class in `scenario_set.json`; real agent/user trace scenarios
     remain open.
+  - 2026-04-30: provider-free `knowledge-contract` adds cross-feature
+    memory/KG/RAG/semantic boundary scenarios and writes Meta-Harness
+    candidate artifacts. Real simulated-user live agent traces remain open.
 - T031 [partial-done] Add Pareto candidates for retrieval mode and embedding dimension.
   - 2026-04-27: retrieval mode candidates include split summaries and
     holdout-pass fields for outer-loop decisions. Embedding-dimension
@@ -198,6 +201,8 @@ feature_id: 022
   - 2026-04-29: `semantic-term-tool-success-001` requires semantic catalog
     version, semantic term ids, metric id, source artifact refs and explicit
     citation of `chunk-semantic-tool-success-rate`.
+  - 2026-04-30: `knowledge-contract` adds semantic ambiguity, permission
+    denial and KG/RAG semantic-context gates to the provider-free suite.
 - T051 [done-static] Add Feature 028 visual-layout evidence benchmark cases.
   - 2026-04-29: `visual-layout-source-coordinates-001` requires page/bbox,
     layout block type, OCR confidence, image checksum and exact citation refs.

@@ -3,7 +3,7 @@ title: RAG/KG Benchmark Lab Live Verify
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 022
 ---
 
@@ -15,6 +15,9 @@ feature_id: 022
 - Run one semantic-term canary from Feature 025.
 - Run one visual-layout evidence canary from Feature 028.
 - Run one report-grounding canary from Feature 027.
+- Static provider-free precondition: `knowledge-contract` passed 5/5 on
+  2026-04-30 and the aggregate `contract-suite` passed 21/21. Browser/live
+  candidate lanes are still not run in this slice.
 
 - LV001 Start Postgres and Python backend.
 - LV002 Seed canary documents and KG claims.

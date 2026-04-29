@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 012
 migrated_from:
   - specs/execution/exec-memory.md
@@ -37,6 +37,9 @@ migrated_from:
   (`agent.mempalace_drawers`).
 - T016 Add or defer DB-level source/status fields.
 - T017 Add or defer Memory Operation Logging and diffs.
+  - 2026-04-30: provider-free `knowledge-contract` now requires memory
+    recall/retain traces to carry `source_status`, `raw_evidence_ref`,
+    `operation_log_id` and `diff_ref` before cross-feature context use.
 - T018 Add or defer MemoryAccessPolicy by agent/consumer.
 - T019 Add or defer PII/deletion path across tiers.
 - T020 Define Hindsight learning-memory boundaries: durable facts,
@@ -136,6 +139,9 @@ migrated_from:
   session text, tool input/output evidence, room/thread/session refs and source
   timestamps must exist before any summary-only Hindsight retain is considered
   successful.
+  - 2026-04-30: `knowledge-memory-ground-truth-preserved` covers the static
+    Meta-Harness contract for durable raw evidence refs. Full live-runner
+    stress remains open.
 - [x] T039r [done-static-live-smoke] Add a hydration-worker design and smoke: pending MemPalace rows are
   picked up, embedded with the configured provider, dimension-checked against
   the active index and marked failed with reason instead of silently skipped.
@@ -143,6 +149,9 @@ migrated_from:
   MemPalace-verbatim-only and Fusion answers for the same task. This is not a
   competition between systems; it determines when exact session evidence must
   constrain derived memory.
+  - 2026-04-30: first static cross-feature check exists in
+    `knowledge-contract`; full shared-corpus Hindsight/MemPalace/Fusion
+    comparison remains open.
 
 ## Runtime Context
 
@@ -197,6 +206,9 @@ migrated_from:
   can create sourced summaries, not unsourced memories.
 - T089 Add semantic-layer handoff to Feature 025 so personal corrections do not
   silently mutate global metric/term definitions.
+  - 2026-04-30: `knowledge-semantic-correction-review-proposal` proves the
+    handoff shape: user feedback creates a reviewed semantic correction
+    proposal, not a silent truth mutation.
 - T090 Add browser-local retrieval handoff to Feature 026 for private/local
   prefiltering before backend memory/RAG calls.
 

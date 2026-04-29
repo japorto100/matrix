@@ -3,7 +3,7 @@ title: Semantic Layer Metrics Claims Tasks
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 025
 ---
 
@@ -53,10 +53,19 @@ feature_id: 025
 - [x] T023 [done-static] Add answer template with definition, value, provenance and freshness.
   - 2026-04-29: matched terms/metrics return an answer template with
     definition/measure, source refs, freshness SLA and `raw_sql_allowed=false`.
-- T024 Add memory feedback path for corrected definitions without silently
-  promoting them.
-- T025 Coordinate semantic terms with Feature 017 claim promotion.
-- T026 Coordinate semantic terms with Feature 019 retrieval filters.
+- T024 [partial-static] Add memory feedback path for corrected definitions
+  without silently promoting them.
+  - 2026-04-30: `knowledge-semantic-correction-review-proposal` proves the
+    proposal/review contract. Runtime feedback wiring remains open.
+- T025 [done-static] Coordinate semantic terms with Feature 017 claim
+  promotion.
+  - 2026-04-30: `knowledge-contract` requires `semantic_term_ids` on KG claim
+    proposals and KG context.
+- T026 [partial-static] Coordinate semantic terms with Feature 019 retrieval
+  filters.
+  - 2026-04-30: selected RAG/KG context now has a static contract for
+    `semantic_catalog_version` and `semantic_term_ids`; runtime query-planning
+    filters remain open in Feature 019.
 
 ## Verification
 
@@ -77,7 +86,12 @@ feature_id: 025
     fallback fixture, renders validation/conflicts, KG/RAG term metadata,
     metric permissions/freshness/source refs and a no-raw-SQL plan panel.
 - T034 Integration-test agent uses semantic lookup before metric answer.
-- T035 Meta-Harness scenario: two similar metrics must not be conflated.
-- T036 Meta-Harness scenario: unstructured document concept must link to a KG
-  claim and RAG citation.
+- [x] T035 [done-static] Meta-Harness scenario: two similar metrics must not be
+  conflated.
+  - 2026-04-30: `knowledge-semantic-ambiguity-permission-fail-closed` checks
+    alias collision/ambiguity and permission fail-closed behavior.
+- [x] T036 [done-static] Meta-Harness scenario: unstructured document concept
+  must link to a KG claim and RAG citation.
+  - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` requires semantic
+    catalog/version/term metadata plus RAG citation and KG claim refs.
 - T037 Live-verify Control UI semantic catalog.

@@ -3,7 +3,7 @@ title: Knowledge Graph Gates
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-30
 feature_id: 017
 ---
 
@@ -17,6 +17,9 @@ feature_id: 017
   automatic truth.
 - Browser-local entity/linking hints from Feature 026 are advisory and require
   server-side evidence before promotion.
+- 2026-04-30: provider-free `knowledge-contract` validates KG proposals and
+  selected KG context items for evidence refs, citation refs, semantic term
+  links and bitemporal metadata before answer-time use.
 
 ## Schema Gates
 
@@ -26,6 +29,8 @@ feature_id: 017
 - Overlapping corrections do not destroy the right-hand remainder of an older
   validity window.
 - Claim rows have provenance refs before promotion.
+- Static Meta-Harness `knowledge-contract` fails proposals that omit evidence,
+  source artifact, chunk/hash, citation or semantic term refs.
 
 ## Retrieval Gates
 
@@ -47,6 +52,8 @@ feature_id: 017
 - Raw memory/tool output is evidence, not a KG claim.
 - Assistant summaries are secondary artifacts unless explicitly grounded.
 - Personal Memory, Personal KB and global/world KG writes stay policy-separated.
+- Personal-memory-derived claim proposals require review and cannot become
+  accepted global KG claims through the static contract.
 - Missing KG support emits a degradation flag instead of silent fallback.
 
 ## Live Gates

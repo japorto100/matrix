@@ -3,7 +3,7 @@ title: RAG/KG Benchmark Lab Gates
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 022
 ---
 
@@ -16,6 +16,9 @@ feature_id: 022
   provenance cases.
 - Visual-layout evidence from Feature 028 is evaluated for citation accuracy.
 - Report-grounding from Feature 027 is evaluated for unsupported-claim rate.
+- 2026-04-30: `knowledge-contract` adds a provider-free benchmark lane for
+  Memory/KG/RAG/Semantic boundary contracts and is included in the aggregate
+  `contract-suite`.
 
 - Every candidate uses the same corpus, question set, retrieval budget and
   context budget.

@@ -338,8 +338,11 @@ feature_id: 016
   - 2026-04-29: builtin tool-message capping is enforced in `tool_node` before
     model re-entry; focused unit tests prove idempotent truncation markers and
     raw artifact preservation.
-- T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
-  metric and KG/RAG-linked term.
+- [x] T116 [done-static] Add Feature 025 semantic-layer scenarios: ambiguous
+  metric, permissioned metric and KG/RAG-linked term.
+  - 2026-04-30: `knowledge-contract` covers semantic ambiguity, missing
+    tenant permission, KG/RAG-linked semantic metadata and correction proposal
+    boundaries without provider calls.
 - [x] T117 [done-static] Add Feature 027 report-publishing scenario with
   citation/manifest scoring.
   - 2026-04-30: `contract-suite` includes the provider-free
@@ -355,6 +358,8 @@ feature_id: 016
   - 2026-04-30:
     `uv run python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
     passed 16/16 scenarios across Features 020, 024, 027 and 030.
+  - 2026-04-30: after adding `knowledge-contract`, the same suite passed
+    21/21 scenarios across Features 012/017/019/020/022/024/025/027/030.
 
 ## Verify Gates
 

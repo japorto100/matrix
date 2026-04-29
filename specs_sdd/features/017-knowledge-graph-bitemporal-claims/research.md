@@ -3,7 +3,7 @@ title: Knowledge Graph Research Notes
 status: draft
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 017
 ---
 
@@ -150,3 +150,18 @@ API, while Feature 017 keeps claim validity, status and provenance.
 `Z_Chatgpt_Chronicles vs DeepseekOCRpaper.md` adds visual evidence as a future
 claim-proposal source through Feature 028. Visual extraction must not promote
 claims without evidence review and bitemporal status.
+
+## 2026-04-30 Source/Contract Check
+
+External source review keeps the conservative stance. LightRAG remains a
+practical GraphRAG baseline, but current benchmark/eval sources do not justify
+making graph retrieval a default for every query class. RAGChecker-style
+claim-level evaluation strengthens the KG rule: proposed and selected claims
+must keep evidence, citation and support metadata that can be checked outside
+the generator.
+
+Matrix implementation note: `meta_harness.knowledge_contract` now encodes this
+as provider-free static gates. KG proposals require evidence refs, source
+artifact/chunk/hash refs, citation refs, semantic term ids and bitemporal
+valid/system-time fields. Personal memory may propose only through review,
+never direct accepted global KG promotion.

@@ -3,7 +3,7 @@ title: Knowledge Graph Tasks
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 017
 ---
 
@@ -67,13 +67,22 @@ feature_id: 017
 
 ## Memory/KG Boundary
 
-- T020 Wire Memory-Fusion as a claim proposal source, not an automatic KG
-  promotion path.
-- T021 Require raw evidence refs before a derived memory fact can become a KG
-  claim.
+- T020 [partial-static] Wire Memory-Fusion as a claim proposal source, not an
+  automatic KG promotion path.
+  - 2026-04-30: `knowledge-personal-memory-kg-promotion-blocked` now fails the
+    static contract when personal memory lacks evidence/citation/bitemporal
+    metadata or review requirement. Runtime write-policy enforcement remains
+    open.
+- T021 [partial-static] Require raw evidence refs before a derived memory fact
+  can become a KG claim.
+  - 2026-04-30: the same provider-free contract requires `evidence_refs`,
+    `source_artifact_id`, `chunk_id`, `chunk_hash` and `citation_ref` on KG
+    proposals.
 - T022 Keep personal memory, Hindsight KG-like memory, MemPalace loci, Personal
   KB and global/world KG namespaces separate in write policy and degradation
   flags.
+  - 2026-04-30: static contract coverage exists for personal memory -> KG
+    promotion blocking; full runtime namespace enforcement remains open.
 - T023 [done-static-live-smoke] Add correction scenarios where old KG claims remain historically
   visible but are not retrieved as current truth.
 
@@ -180,8 +189,10 @@ feature_id: 017
     caller explicitly opts into persistence.
 - T054 [done-static] Add KG-pipeline `/propose` endpoint that returns
   Feature-017 claim proposals and only persists when explicitly requested.
-- T055 Add Feature 025 semantic-term links for KG claim types and entity
-  classes.
+- T055 [done-static] Add Feature 025 semantic-term links for KG claim types and
+  entity classes.
+  - 2026-04-30: `knowledge-contract` requires `semantic_term_ids` on KG claim
+    proposals and selected KG context items.
 - T056 Add Feature 028 visual evidence refs as claim proposal sources, never
   automatic promotions.
 - T057 Add Feature 026 browser-local entity/linking candidates as proposal

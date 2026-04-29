@@ -3,7 +3,7 @@ title: Semantic Layer Metrics Claims Research
 status: draft
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 025
 ---
 
@@ -79,3 +79,21 @@ The provider is irrelevant. The contract is what matters.
 - Cube semantic layer references from current web review.
 - Text-to-SQL semantic equivalence paper:
   `https://arxiv.org/abs/2506.09359`.
+
+## 2026-04-30 Source And Contract Refresh
+
+Fresh source check keeps the local implementation deliberately small:
+
+- dbt MetricFlow supports the definitions-as-code and query-plan shape, but
+  Matrix should not adopt a dbt dependency before the local catalog contract is
+  proven.
+- Cube reinforces the agentic semantic-layer pattern: agents query a governed
+  semantic runtime/API instead of directly inventing warehouse SQL.
+- RAG/KG research reinforces that semantic terms must connect structured
+  metrics, KG claims and unstructured citations without bypassing provenance.
+
+Implementation follow-up: `meta_harness.knowledge_contract` now covers the
+cross-feature semantic cases from `Z_Semantik_layer and so on.md`. It fails
+closed on ambiguous phrases, denies tenant-scoped metrics without tenant
+context, keeps `raw_sql_allowed=false`, requires semantic term links on KG/RAG
+context, and keeps memory/user corrections as reviewed proposals.

@@ -3,7 +3,7 @@ title: Hybrid RAG Retrieval Gates
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 019
 ---
 
@@ -16,6 +16,9 @@ feature_id: 019
 - Semantic filters from Feature 025 preserve source/provenance.
 - Visual-layout evidence from Feature 028 carries coordinates/source refs in
   answer context.
+- 2026-04-30: provider-free `knowledge-contract` validates selected RAG/KG
+  context items for source artifact, chunk/hash, citation and semantic catalog
+  metadata before they can support an answer.
 
 - Remote embeddings are configurable without hardcoding one provider.
 - Local embedding downloads are disabled by default and cache to HDD when

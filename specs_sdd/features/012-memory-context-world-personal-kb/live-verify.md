@@ -3,7 +3,7 @@ title: Memory, Context, World Model and Personal KB Live Verify
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 012
 ---
 
@@ -14,6 +14,10 @@ feature_id: 012
 - Verify visual memory recall from Feature 028 includes capture source and age.
 - Verify browser-local private prefilter from Feature 026 can avoid a backend
   call for a local-only query.
+- Static provider-free prerequisite passed on 2026-04-30:
+  `knowledge-contract` validates raw memory evidence refs and semantic/KG
+  handoff boundaries. Full live Hindsight/MemPalace/Fusion stress remains in
+  the eval section.
 
 ## Personal Memory
 

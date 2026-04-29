@@ -3,7 +3,7 @@ title: Database Schema Governance Gates
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-30
 feature_id: 018
 ---
 
@@ -16,6 +16,9 @@ feature_id: 018
 - Semantic term/metric tables from Feature 025 require generated schema docs.
 - Report manifests, visual evidence and ops read models require migration
   ownership before production persistence.
+- 2026-04-30: current Feature 025 semantic catalog/correction contract is
+  static/code-backed, so no schema migration is required for
+  `knowledge-contract`; persistence would reopen this gate.
 
 - Alembic remains the authoritative migration path.
 - No new table/column lands without an Alembic migration.

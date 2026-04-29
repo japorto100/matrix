@@ -3,7 +3,7 @@ title: Hybrid RAG Retrieval Live Verify
 status: static_partial
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 019
 ---
 
@@ -16,6 +16,9 @@ feature_id: 019
 - Verify Feature 025 semantic filters affect retrieval deterministically.
 - Verify Feature 028 visual-layout blocks appear with coordinate refs in
   retrieved context.
+- Static prerequisite passed on 2026-04-30:
+  `uv run python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-static --data-dir /tmp/matrix-knowledge-contract`
+  passed 5/5 provider-free Memory/KG/RAG/Semantic boundary scenarios.
 
 ## Static Verify
 

@@ -101,6 +101,28 @@ post-sanitizer cap in `tool_node` before model re-entry. This complements the
 later context-compaction pass: raw `tool_results` stay available for audit and
 debug artifacts, but the next LLM call receives bounded, marked content.
 
+## 2026-04-30 Knowledge Contract Follow-Up
+
+The Memory/KG/RAG/Semantic slice should be optimized as one knowledge-layer
+contract, not as disconnected feature checkboxes. The current implementation
+adds `meta_harness.knowledge_contract` and CLI `knowledge-contract` as a
+provider-free lane. It proves five boundary behaviors:
+
+- Memory-Fusion recall/retain traces preserve raw evidence refs, source status,
+  operation logs and diffs before compaction.
+- Personal memory cannot silently promote to global KG without evidence refs,
+  citation refs, valid/system time and semantic term links.
+- Selected RAG/KG context carries source artifact, chunk/hash, citation and
+  semantic catalog metadata before answer support.
+- Semantic ambiguity and missing tenant permission fail closed and keep
+  `raw_sql_allowed=false`.
+- User semantic corrections become review proposals, not silent truth changes.
+
+This maps the local `Z_Semantik_layer and so on.md` direction and the RAG/KG
+papers into a falsifiable harness lane: definitions, evidence and graph claims
+must remain provider-agnostic and auditable before any live/browser/provider
+optimization is allowed to promote them.
+
 ## Memory Findings
 
 Memory is both automatic and explicit:
