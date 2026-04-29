@@ -86,3 +86,10 @@ for the Z-derived consumers:
 
 These are metadata contracts for Matrix ingestion/retrieval. They do not make
 Docling, MinerU, MarkItDown, Quarkdown or any LLM provider mandatory defaults.
+
+2026-04-29 parser-candidate note: Meta-Harness extraction artifacts now expose
+parser profiles and chunker candidate spaces directly. PyMuPDF4LLM is the
+baseline, MarkItDown is an optional lightweight conversion candidate, Docling
+is the layout-rich SOTA candidate, and MinerU is a heavy complex/scanned PDF
+candidate. Promotion still depends on local benchmark evidence and resource
+fit, not on project popularity.

@@ -85,8 +85,12 @@ feature_id: 021
     `embedding_dim`, `embedding_reused_as_evidence_input=true` and
     `kg_persist=false` into `evidence_metadata_by_ref`; it does not copy
     embedding vectors into the graph path.
-- T026 Add parser adapter plan for PyMuPDF4LLM baseline, Docling SOTA candidate
+- T026 [done-static] Add parser adapter plan for PyMuPDF4LLM baseline, Docling SOTA candidate
   and MinerU heavy/complex-PDF candidate.
+  - 2026-04-29: `meta_harness.extraction_benchmark` now publishes parser
+    candidate profiles for PyMuPDF4LLM, MarkItDown, Docling and MinerU with
+    runtime/resource/source-class/promotion-scope metadata. Profiles are
+    provider-agnostic and do not install heavy optional dependencies.
 - T026a [done-static] Add Microsoft MarkItDown as a lightweight parser
   candidate for Office, HTML, simple PDFs and MCP-style conversion workflows;
   keep it behind the same extraction benchmark gates as the other parsers.
@@ -101,7 +105,11 @@ feature_id: 021
   chunking and citation refs.
 - T028 Prefer structured trading/finance inputs such as XBRL/CSV/API over PDF
   extraction when available.
-- T029 Feed parser/chunking configs into Feature 023 inner-loop experiments.
+- T029 [partial-static] Feed parser/chunking configs into Feature 023 inner-loop experiments.
+  - 2026-04-29: PDF extraction benchmark reports now include a
+    `candidate_search_space` with parser profiles, chunker sizes/overlaps,
+    hierarchy-aware chunking and metadata-enrichment handoff requirements.
+    Full multi-candidate sweep remains Feature 023.
 - T029a Maintain a source-date classification in Feature 021/019/023 docs:
   2026 papers and current official docs are decision evidence; older papers are
   method references unless validated by current repo state and local benchmark.
@@ -160,9 +168,13 @@ feature_id: 021
     `_ref/Researchwatcher/layout-module/tests/test_assets/Small-pdf-with-text-formula-table-code-picture.pdf`
     against the sibling `.md`, writes `extraction_benchmark.json`,
     `aggregate.json`, `scores.json` and `verdicts.json`.
-- T037 Promote extraction benchmark failures into parser/chunker candidates:
+- T037 [partial-static] Promote extraction benchmark failures into parser/chunker candidates:
   current PyMuPDF4LLM pass has high text recall but weak structured formula,
   figure and code-fence preservation.
+  - 2026-04-29: extraction artifacts now include parser/chunker candidate
+    search-space metadata so failures can be converted into bounded
+    candidates instead of free-form code edits. Automatic candidate generation
+    from observed failures remains open.
 - T038 Compare PyMuPDF4LLM vs Docling on the ResearchWatcher fixture and at
   least one financial/research PDF.
 - T039 Evaluate MinerU only after resource footprint and install/cache location
@@ -177,6 +189,9 @@ feature_id: 021
     `--extractor <registry-name>` and records `extractor_requested`, so
     MarkItDown/Docling/MinerU can be evaluated against the same ground-truth
     fixture without changing benchmark code.
+  - 2026-04-29: parser profiles now mark MarkItDown as an optional lightweight
+    candidate for Office/HTML/simple-PDF/MCP conversion, separate from
+    PyMuPDF4LLM baseline and remote Docling/MinerU candidates.
 - T041 Add one current trading/finance or macro PDF fixture so parser
   decisions are not based only on generic benchmark PDFs.
 - T042 [done-static-live-smoke] Add a paper/source provenance fixture where the expected answer must

@@ -76,9 +76,12 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: Feature 023 RAG inner-loop candidates now emit bounded
      semantic, visual, report and tool-policy search spaces, with protected
      gates against tool/security relaxation.
-8. [next] Phase 5: implement parser/chunker candidate spaces and extraction
-   benchmark handoff for PyMuPDF4LLM/Docling/MinerU/MarkItDown without browser
-   dependencies.
+   - 2026-04-29: Feature 021/023 extraction artifacts now expose parser
+     profiles and chunker/metadata-enrichment candidate spaces for
+     PyMuPDF4LLM, MarkItDown, Docling and MinerU without installing heavy
+     optional dependencies.
+8. [next] Phase 5: add bounded multi-candidate extraction sweep over available
+   parser adapters, then feed the results into Meta-Harness/Feature 022.
 
 ## Dependency Watchlist
 

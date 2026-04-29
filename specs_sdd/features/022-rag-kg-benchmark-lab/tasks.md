@@ -47,9 +47,13 @@ feature_id: 022
   stable local repo/pipeline worth testing.
 - T016 Use NornicDB/nonicdb as the first graph projection target for Matrix KG
   tests; FalkorDB/Neo4j remain comparison references only.
-- T017 Add parser/chunking candidate dimensions from Feature 021:
+- T017 [partial-static] Add parser/chunking candidate dimensions from Feature 021:
   PyMuPDF4LLM, Docling, MinerU, hierarchy-aware chunking and metadata
   enrichment.
+  - 2026-04-29: Feature 021 extraction benchmark artifacts now expose parser
+    profiles plus chunker/metadata-enrichment candidate spaces for Feature 022
+    to consume. Matched retrieval comparison against those parser-derived
+    corpora remains open.
 - T018 Consume Feature 023 AutoRAG/inner-loop candidate artifacts as benchmark
   candidates.
 - T019 [done-static-live-smoke] Add candidate metadata compatibility checks so

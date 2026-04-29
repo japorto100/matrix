@@ -40,7 +40,7 @@ feature_id: 023
 
 ## RAG/Extraction Inner Loop
 
-- T020 Add search spaces for parser/splitter/chunking:
+- T020 [partial-static] Add search spaces for parser/splitter/chunking:
   PyMuPDF4LLM, Docling, MinerU, recursive/character/hierarchy-aware chunking,
   chunk size, overlap and metadata enrichment.
   - 2026-04-27: parser candidate space now has an optional MarkItDown adapter
@@ -49,6 +49,11 @@ feature_id: 023
   - 2026-04-27: the PDF extraction benchmark accepts an explicit extractor
     registry name, allowing parser candidates to share the same evaluator,
     ground truth and Meta-Harness artifact shape.
+  - 2026-04-29: extraction benchmark reports now include parser profiles for
+    PyMuPDF4LLM, MarkItDown, Docling and MinerU plus chunker size/overlap,
+    hierarchy-aware chunking and metadata-enrichment handoff requirements.
+    The next step is a bounded multi-candidate sweep over installed/available
+    extractors.
 - T021 [partial-done] Add search spaces for retrieval:
   vector-only, KG-only, fused, top-k, RRF weights, citation verifier and
   context-bubble size/diversity policy.

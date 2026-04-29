@@ -29,6 +29,81 @@ DEFAULT_REQUIRED_PHRASES = (
     "Python-Simulation",
     "berechne_hoehe",
 )
+PARSER_CANDIDATE_PROFILES: tuple[dict[str, Any], ...] = (
+    {
+        "extractor": "pymupdf4llm",
+        "status": "baseline",
+        "runtime": "in_process",
+        "resource_class": "light",
+        "source_classes": ["pdf_text", "research_pdf"],
+        "promotion_scope": "fast_text_pdf_baseline",
+        "requires_optional_dependency": False,
+    },
+    {
+        "extractor": "markitdown",
+        "status": "optional_candidate",
+        "runtime": "in_process_optional",
+        "resource_class": "light",
+        "source_classes": ["office", "html", "simple_pdf", "mcp_conversion"],
+        "promotion_scope": "broad_lightweight_conversion",
+        "requires_optional_dependency": True,
+    },
+    {
+        "extractor": "docling",
+        "status": "sota_candidate",
+        "runtime": "remote_layout_worker",
+        "resource_class": "medium",
+        "source_classes": ["pdf_layout", "office", "tables", "figures", "formulas"],
+        "promotion_scope": "hierarchy_layout_rich_documents",
+        "requires_optional_dependency": True,
+    },
+    {
+        "extractor": "mineru",
+        "status": "heavy_candidate",
+        "runtime": "remote_layout_worker",
+        "resource_class": "heavy",
+        "source_classes": ["scanned_pdf", "complex_pdf", "formula_rich_pdf"],
+        "promotion_scope": "complex_pdf_only_after_resource_review",
+        "requires_optional_dependency": True,
+    },
+)
+CHUNKER_CANDIDATE_SPACE: dict[str, Any] = {
+    "chunkers": ["token", "hierarchy-aware"],
+    "chunk_size": [350, 500, 800],
+    "chunk_overlap": [32, 50, 96],
+    "metadata_enrichment": [
+        "source_artifact",
+        "section_hierarchy",
+        "page_anchor",
+        "table_figure_formula_code_blocks",
+        "citation_ref",
+    ],
+    "structured_source_preference": ["xbrl", "csv", "api", "html", "pdf"],
+}
+
+
+def parser_candidate_profiles() -> list[dict[str, Any]]:
+    """Return bounded parser candidates for Feature 023 search artifacts."""
+
+    return [dict(profile) for profile in PARSER_CANDIDATE_PROFILES]
+
+
+def parser_candidate_profile(extractor_name: str) -> dict[str, Any]:
+    """Return the known parser candidate profile or a conservative fallback."""
+
+    normalized = (extractor_name or "").strip().lower()
+    for profile in PARSER_CANDIDATE_PROFILES:
+        if profile["extractor"] == normalized:
+            return dict(profile)
+    return {
+        "extractor": normalized or "unknown",
+        "status": "unknown_candidate",
+        "runtime": "unknown",
+        "resource_class": "unknown",
+        "source_classes": [],
+        "promotion_scope": "blocked_until_profiled",
+        "requires_optional_dependency": True,
+    }
 
 
 async def run_pdf_extraction_benchmark(
@@ -146,6 +221,18 @@ def evaluate_pdf_extraction(
         "benchmark_type": "pdf_extraction_ground_truth",
         "candidate_id": candidate_id,
         "extractor_requested": extractor_name,
+        "parser_candidate_profile": parser_candidate_profile(extractor_name),
+        "candidate_search_space": {
+            "parser_profiles": parser_candidate_profiles(),
+            "chunker": CHUNKER_CANDIDATE_SPACE,
+            "handoff_contract": {
+                "source_artifact_required": True,
+                "citation_ref_required": True,
+                "parser_version_required": True,
+                "chunk_hash_required": True,
+                "layout_metadata_required_for_visual_sources": True,
+            },
+        },
         "pdf_path": str(pdf_path),
         "truth_path": str(truth_path),
         "passed": passed,
@@ -206,6 +293,8 @@ def write_pdf_extraction_artifacts(
                 "pdf_path": report.get("pdf_path"),
                 "truth_path": report.get("truth_path"),
                 "required_phrases": list((report.get("required_phrases") or {}).keys()),
+                "parser_candidate_profile": report.get("parser_candidate_profile"),
+                "candidate_search_space": report.get("candidate_search_space"),
             }
         ]
     }
@@ -280,6 +369,18 @@ def _error_report(
         "benchmark_type": "pdf_extraction_ground_truth",
         "candidate_id": candidate_id,
         "extractor_requested": extractor_name,
+        "parser_candidate_profile": parser_candidate_profile(extractor_name),
+        "candidate_search_space": {
+            "parser_profiles": parser_candidate_profiles(),
+            "chunker": CHUNKER_CANDIDATE_SPACE,
+            "handoff_contract": {
+                "source_artifact_required": True,
+                "citation_ref_required": True,
+                "parser_version_required": True,
+                "chunk_hash_required": True,
+                "layout_metadata_required_for_visual_sources": True,
+            },
+        },
         "pdf_path": str(pdf_path),
         "truth_path": str(truth_path),
         "passed": False,

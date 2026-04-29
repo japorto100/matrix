@@ -123,3 +123,9 @@ cross-feature search spaces when the matching Feature 022 canaries are present:
 
 The protected-input gate was extended so inner loops cannot relax MCP/tool
 security gates while searching for better scores.
+
+Parser/chunker search is now represented in extraction benchmark artifacts:
+parser profiles describe runtime/resource/source-class scope, and chunker
+spaces carry hierarchy-aware chunking, size/overlap and metadata enrichment
+requirements. This keeps heavy parsers such as Docling/MinerU optional until
+their local resource footprint is proven.

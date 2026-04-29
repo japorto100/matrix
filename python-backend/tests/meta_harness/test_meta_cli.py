@@ -474,7 +474,10 @@ async def test_cli_pdf_extraction_benchmark_uses_paths(tmp_path, monkeypatch):
 
 
 def test_pdf_extraction_benchmark_records_requested_extractor(tmp_path):
-    from meta_harness.extraction_benchmark import evaluate_pdf_extraction
+    from meta_harness.extraction_benchmark import (
+        evaluate_pdf_extraction,
+        parser_candidate_profiles,
+    )
 
     pdf = tmp_path / "sample.pdf"
     truth = tmp_path / "sample.md"
@@ -491,7 +494,58 @@ def test_pdf_extraction_benchmark_records_requested_extractor(tmp_path):
     assert report["passed"] is False
     assert report["extractor_requested"] == "missing-extractor"
     assert report["extractor"] == "missing-extractor"
+    assert report["parser_candidate_profile"]["status"] == "unknown_candidate"
+    assert report["candidate_search_space"]["handoff_contract"][
+        "citation_ref_required"
+    ] is True
+    profiles = {
+        profile["extractor"]: profile for profile in parser_candidate_profiles()
+    }
+    assert profiles["pymupdf4llm"]["status"] == "baseline"
+    assert profiles["docling"]["runtime"] == "remote_layout_worker"
+    assert profiles["mineru"]["resource_class"] == "heavy"
     assert "Unknown extractor" in report["failures"][0]
+
+
+def test_pdf_extraction_artifacts_include_parser_and_chunker_search_space(tmp_path):
+    from meta_harness.extraction_benchmark import write_pdf_extraction_artifacts
+
+    report = {
+        "feature_id": "021",
+        "candidate_id": "docling-candidate",
+        "passed": False,
+        "failures": ["not installed"],
+        "token_recall": 0.0,
+        "phrase_coverage": 0.0,
+        "latency_ms": 0.0,
+        "pdf_path": "/tmp/sample.pdf",
+        "truth_path": "/tmp/sample.md",
+        "required_phrases": {"Protokoll": False},
+        "parser_candidate_profile": {
+            "extractor": "docling",
+            "status": "sota_candidate",
+        },
+        "candidate_search_space": {
+            "chunker": {"chunkers": ["token", "hierarchy-aware"]},
+            "handoff_contract": {"source_artifact_required": True},
+        },
+    }
+
+    artifact = write_pdf_extraction_artifacts(
+        report,
+        run_id="run-pdf-search-space",
+        data_dir=tmp_path,
+    )
+    scenario = json.loads(
+        (tmp_path / "runs" / "run-pdf-search-space" / "candidates" / "docling-candidate" / "scenario_set.json").read_text()
+    )
+
+    assert artifact["candidate_id"] == "docling-candidate"
+    assert scenario["scenarios"][0]["parser_candidate_profile"]["extractor"] == "docling"
+    assert scenario["scenarios"][0]["candidate_search_space"]["chunker"]["chunkers"] == [
+        "token",
+        "hierarchy-aware",
+    ]
 
 
 @pytest.mark.asyncio
