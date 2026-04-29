@@ -44,14 +44,31 @@ and live-verify probes. This file defines execution order.
 
 ## Immediate Queue
 
-1. Commit and push this workplan after static validation.
-2. Phase 2: harden provider/live-lane semantics so regular live verify no
+1. [x] Commit and push this workplan after static validation.
+2. [x] Phase 2: harden provider/live-lane semantics so regular live verify no
    longer depends on `llm-mock`.
-3. Phase 2: expand runner parity and approval trace gates for
+   - 2026-04-29: `provider-smoke` blocks deterministic fake lanes unless
+     explicit, records provider capability snapshots and ADR-0009 captures the
+     boundary.
+3. [partial] Phase 2: expand runner parity and approval trace gates for
    `simple`, `langgraph` and `dispatcher`.
-4. Phase 3: implement MCP descriptor fixture and policy tests before any
+   - 2026-04-29: runtime now omits known unsupported `tools` and
+     `reasoning_effort` request fields; broader runner-parity scenarios remain.
+4. [x] Phase 3: implement MCP descriptor fixture and policy tests before any
    external server is exposed to agents.
-5. Phase 4: add semantic catalog skeleton only after schema ownership is clear.
+   - 2026-04-29: MCP catalog policy primitives cover descriptor snapshots,
+     token passthrough denial, poisoning scan, diff escalation and read-only
+     Control catalog.
+5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
+   - 2026-04-29: semantic catalog primitives and Control endpoints cover term
+     and metric schema, ambiguity, permissions, KG/RAG mappings and correction
+     proposal review state.
+6. [x] Phase 6: add report publishing contract before renderer/live promotion.
+   - 2026-04-29: report manifest, citation validation, safe fallback renderer
+     and artifact writer are implemented; Quarkdown remains experimental until
+     local CLI builds pass.
+7. [next] Phase 5: strengthen RAG/Ingestion/Benchmark source-ref and holdout
+   gates using the semantic/report contracts.
 
 ## Dependency Watchlist
 
