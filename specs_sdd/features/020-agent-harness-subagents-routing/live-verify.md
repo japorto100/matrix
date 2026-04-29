@@ -3,7 +3,7 @@ title: Agent Harness Subagents Routing Live Verify
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 020
 ---
 
@@ -38,6 +38,20 @@ Evidence:
   password; this does not invalidate the JSONL/Audit trace gate but full live
   lane still needs DB credential alignment.
 
+## LV-01b Provider-Free Routing Contract
+
+Status: static-live-smoke pass on 2026-04-30.
+
+Evidence:
+
+- Command:
+  `cd python-backend && uv run python -m meta_harness.meta_cli routing-contract --run-id run-routing-contract-20260430 --data-dir /tmp/matrix-meta-harness-routing-contract`
+- Result: `passed=true`, `scenario_count=7`, `passed_count=7`.
+- Covered scenarios: no-tool/no-subagent, retrieval-over-delegation, domain
+  delegate deferred, tool-budget exhaustion failure, provider retry-loop
+  failure, repeated failed tool-call failure and forbidden provider/secret
+  metadata failure.
+
 ## LV-02 Subagent Boundary Smoke
 
 Status: planned.
@@ -46,6 +60,12 @@ Expected:
 
 - When subagents are not implemented, scenarios requiring delegation fail or
   defer explicitly, not silently hallucinate a delegate.
+
+Evidence:
+
+- 2026-04-30 static prep: `routing-domain-delegate-deferred` records
+  `delegation_decision=deferred`, `delegate_kind=domain`,
+  `fallback_reason=subagents_disabled` and `spawn_depth=0`.
 
 ## LV-03 SimpleLoop Approval Parity
 

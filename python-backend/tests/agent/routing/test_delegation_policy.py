@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from agent.routing.delegation_policy import (
+    build_delegation_defer_metadata,
     build_route_decision_metadata,
     route_taxonomy_for_tools,
 )
@@ -36,3 +37,20 @@ def test_route_decision_metadata_disables_delegation_by_default() -> None:
     assert metadata["memory_scope"] == "current_user"
     assert metadata["memory_route_requested"] is True
     assert metadata["retrieval_route_requested"] is True
+
+
+def test_delegation_defer_metadata_never_spawns() -> None:
+    metadata = build_delegation_defer_metadata(
+        runner="dispatcher",
+        delegate_kind="domain",
+        requested_reason="needs_risk_delegate",
+        max_spawn_depth=1,
+    )
+
+    assert metadata["decision"] == "defer"
+    assert metadata["route_taxonomy"] == "subagent_deferred"
+    assert metadata["delegation_decision"] == "deferred"
+    assert metadata["delegate_kind"] == "domain"
+    assert metadata["spawn_depth"] == 0
+    assert metadata["max_spawn_depth"] == 1
+    assert metadata["fallback_reason"] == "subagents_disabled"

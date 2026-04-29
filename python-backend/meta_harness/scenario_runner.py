@@ -126,12 +126,17 @@ class TraceExpectations:
     required_event_metadata_keys: dict[str, tuple[str, ...]] = field(
         default_factory=dict
     )
+    forbidden_event_metadata_keys: dict[str, tuple[str, ...]] = field(
+        default_factory=dict
+    )
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
     allowed_tool_groups: tuple[str, ...] = ()
     max_tool_disclosure_level: int | None = None
     max_spawn_depth: int | None = None
+    max_repeated_tool_failures_per_tool: int | None = None
+    max_provider_retry_events: int | None = None
     expected_memory: bool = False
     min_tool_success_rate: float | None = None
     allow_tool_failures: bool = False
@@ -142,6 +147,10 @@ class TraceExpectations:
         required_event_metadata_keys = {
             str(action): tuple(str(key) for key in keys)
             for action, keys in (raw.get("required_event_metadata_keys") or {}).items()
+        }
+        forbidden_event_metadata_keys = {
+            str(action): tuple(str(key) for key in keys)
+            for action, keys in (raw.get("forbidden_event_metadata_keys") or {}).items()
         }
         return cls(
             required_actions=tuple(str(x) for x in raw.get("required_actions", [])),
@@ -174,6 +183,7 @@ class TraceExpectations:
                 str(x) for x in raw.get("required_memory_metadata_keys", [])
             ),
             required_event_metadata_keys=required_event_metadata_keys,
+            forbidden_event_metadata_keys=forbidden_event_metadata_keys,
             required_route_decisions=tuple(
                 str(x) for x in raw.get("required_route_decisions", [])
             ),
@@ -188,6 +198,10 @@ class TraceExpectations:
             ),
             max_tool_disclosure_level=raw.get("max_tool_disclosure_level"),
             max_spawn_depth=raw.get("max_spawn_depth"),
+            max_repeated_tool_failures_per_tool=raw.get(
+                "max_repeated_tool_failures_per_tool"
+            ),
+            max_provider_retry_events=raw.get("max_provider_retry_events"),
             expected_memory=bool(raw.get("expected_memory", False)),
             min_tool_success_rate=raw.get("min_tool_success_rate"),
             allow_tool_failures=bool(raw.get("allow_tool_failures", False)),
@@ -599,6 +613,14 @@ def evaluate_trace_gates(
                 failures.append(
                     f"missing required metadata key for {action}: {key}"
                 )
+    for action, keys in expectations.forbidden_event_metadata_keys.items():
+        matching_events = [event for event in events if _event_action(event) == action]
+        for key in keys:
+            if any(
+                _metadata_contains_key(_event_metadata(event), key)
+                for event in matching_events
+            ):
+                failures.append(f"forbidden metadata key for {action}: {key}")
     for decision in expectations.required_route_decisions:
         if decision not in route_decisions:
             failures.append(f"missing required route decision: {decision}")
@@ -617,9 +639,36 @@ def evaluate_trace_gates(
                 f"{observed_max_spawn_depth} > {expectations.max_spawn_depth}"
             )
 
+    if expectations.max_provider_retry_events is not None:
+        retry_events = [
+            event
+            for event in events
+            if _event_action(event) in {"provider_retry", "llm_retry"}
+            or bool(_event_metadata(event).get("provider_retry"))
+        ]
+        if len(retry_events) > expectations.max_provider_retry_events:
+            failures.append(
+                "provider retry events above threshold: "
+                f"{len(retry_events)} > {expectations.max_provider_retry_events}"
+            )
+
     tool_results = [event for event in events if _event_action(event) == "tool_result"]
     tool_success_rate: float | None = None
     if tool_results:
+        if expectations.max_repeated_tool_failures_per_tool is not None:
+            failed_counts: dict[str, int] = {}
+            for event in tool_results:
+                if event.get("success") is not False:
+                    continue
+                tool_name = _event_tool(event) or "<unknown>"
+                failed_counts[tool_name] = failed_counts.get(tool_name, 0) + 1
+            for tool_name, count in sorted(failed_counts.items()):
+                if count > expectations.max_repeated_tool_failures_per_tool:
+                    failures.append(
+                        "repeated tool failures above threshold: "
+                        f"{tool_name} count={count} > "
+                        f"{expectations.max_repeated_tool_failures_per_tool}"
+                    )
         successes = sum(1 for event in tool_results if event.get("success") is True)
         tool_success_rate = round(successes / len(tool_results), 3)
         if not expectations.allow_tool_failures:

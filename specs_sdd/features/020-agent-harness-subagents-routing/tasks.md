@@ -3,7 +3,7 @@ title: Agent Harness Subagents Routing Tasks
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 020
 ---
 
@@ -58,24 +58,42 @@ feature_id: 020
 
 ## Meta-Harness Gates
 
-- T020 Add routing scenarios where the correct behavior is no tool and no
-  subagent.
-- T021 Add routing scenarios where retrieval should beat subagent delegation.
-- T022 Add routing scenarios where a domain delegate would be justified, but is
-  currently expected to defer because subagents are not implemented.
-- T023 Add failure scenarios for tool budget exhaustion, retry loops and
-  provider errors.
+- [x] T020 [done-static] Add routing scenarios where the correct behavior is no
+  tool and no subagent.
+  - 2026-04-30: provider-free `routing-contract` Meta-Harness lane includes
+    `routing-no-tool-no-subagent` with `direct_answer`, `delegation_decision=none`
+    and `spawn_depth=0`.
+- [x] T021 [done-static] Add routing scenarios where retrieval should beat
+  subagent delegation.
+  - 2026-04-30: `routing-retrieval-beats-delegation` asserts
+    `route_taxonomy=retrieval_answer`, no delegation and explicit budget
+    metadata.
+- [x] T022 [done-static] Add routing scenarios where a domain delegate would be
+  justified, but is currently expected to defer because subagents are not
+  implemented.
+  - 2026-04-30: `build_delegation_defer_metadata()` and
+    `routing-domain-delegate-deferred` record `delegation_decision=deferred`,
+    `delegate_kind=domain`, `fallback_reason=subagents_disabled` and
+    `spawn_depth=0`.
+- [x] T023 [done-static] Add failure scenarios for tool budget exhaustion,
+  retry loops and provider errors.
+  - 2026-04-30: `routing-tool-budget-exhaustion-fails` and
+    `routing-provider-retry-loop-fails` assert deterministic gate failures
+    without provider calls.
 - T024 [done-static-live-smoke] Add trace assertions for runner variant, route
   decision and delegation decision.
   - 2026-04-27: `TraceExpectations` supports
     `required_route_decisions`, `required_runner_variants`,
     `required_delegation_decisions` and `max_spawn_depth`; runner-parity
     smoke requires `direct_answer`, `none` delegation and `spawn_depth=0`.
-- T025 Add safety gates for reasoning leakage, resolved-secret persistence and
-  provider-specific unsupported fields.
+- [x] T025 [done-static] Add safety gates for reasoning leakage,
+  resolved-secret persistence and provider-specific unsupported fields.
   - 2026-04-29: runtime now omits `tools` and `reasoning_effort` only when
     LiteLLM-derived metadata explicitly marks the model as incompatible; unknown
     custom/provider models retain previous behavior.
+  - 2026-04-30: `TraceExpectations.forbidden_event_metadata_keys` gates
+    provider-specific metadata and resolved secrets in trace artifacts;
+    `routing-forbidden-provider-secret-metadata-fails` proves the failure path.
 - T026 Add compression/thrashing gates: no infinite compression loop, retry
   counters reset after compression, no context poisoning.
 - T027 Add hook-policy gates: pre-tool veto, transformed tool result and shell
@@ -99,7 +117,11 @@ feature_id: 020
   - 2026-04-27: Meta-Harness trace gates can require those metadata keys via
     `required_event_metadata_keys`, so budget telemetry is enforceable in
     runner/delegation scenarios.
-- T032 Add loop guard scenarios for repeated failed tool calls.
+- [x] T032 [done-static] Add loop guard scenarios for repeated failed tool
+  calls.
+  - 2026-04-30: `TraceExpectations.max_repeated_tool_failures_per_tool` and
+    `routing-repeated-failed-tool-calls-fails` make repeated tool failures an
+    explicit gate failure.
 - T033 Add a future subagent API stub only after gates and contracts are clear.
 - T034 Add transport abstraction candidate after Feature 011 review; avoid
   moving provider logic until Meta-Harness covers OpenRouter, mock, embeddings
@@ -129,6 +151,9 @@ feature_id: 020
   - 2026-04-29: unsupported-provider-field guard implemented for known model
     capability metadata in `llm_node`; broader retry/thrashing guards remain
     open.
+  - 2026-04-30: static Meta-Harness gates now cover repeated tool failures,
+    provider retry loops and forbidden provider/secret metadata. Compression
+    reset and stale async memory flush guards remain open under Feature 012/016.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.
@@ -141,3 +166,8 @@ feature_id: 020
   passed `simple` and `langgraph` variants with no mismatches.
 - T042 Live OpenRouter smoke for routing quality.
 - T043 Holdout set before any behavioral promotion.
+- [x] T044 [done-static-live-smoke] Run provider-free routing contract
+  Meta-Harness lane.
+  - 2026-04-30:
+    `uv run python -m meta_harness.meta_cli routing-contract --run-id run-routing-contract-20260430 --data-dir /tmp/matrix-meta-harness-routing-contract`
+    passed 7/7 scenarios and wrote `routing_contract.json`.

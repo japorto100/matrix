@@ -283,6 +283,24 @@ async def test_cli_report_grounding_writes_artifacts(tmp_path, monkeypatch):
     assert saved["passed_count"] == 3
 
 
+@pytest.mark.asyncio
+async def test_cli_routing_contract_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["routing-contract", "--run-id", "run-routing", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 7
+    scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
+    assert "routing-no-tool-no-subagent" in scenario_ids
+    assert "routing-domain-delegate-deferred" in scenario_ids
+    artifact = tmp_path / "runs" / "run-routing" / "routing_contract.json"
+    assert artifact.exists()
+
+
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():
     from meta_harness.retrieval_benchmark import _candidate_verdicts
 

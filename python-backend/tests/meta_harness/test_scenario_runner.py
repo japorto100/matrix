@@ -231,6 +231,73 @@ def test_trace_gates_fail_for_missing_event_metadata_key(monkeypatch):
     )
 
 
+def test_trace_gates_fail_for_forbidden_event_metadata_key(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "route_decision",
+            "success": True,
+            "metadata": {
+                "provider_specific": {"reasoning_effort": "high"},
+                "resolved_secret": "sk-test",
+            },
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            forbidden_event_metadata_keys={
+                "route_decision": (
+                    "provider_specific.reasoning_effort",
+                    "resolved_secret",
+                )
+            }
+        ),
+    )
+
+    assert verdict.passed is False
+    assert (
+        "forbidden metadata key for route_decision: provider_specific.reasoning_effort"
+        in verdict.failures
+    )
+    assert "forbidden metadata key for route_decision: resolved_secret" in verdict.failures
+
+
+def test_trace_gates_fail_for_provider_retry_loop(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {"action": "provider_retry", "success": False, "metadata": {"provider_retry": True}},
+        {"action": "provider_retry", "success": False, "metadata": {"provider_retry": True}},
+        {"action": "provider_retry", "success": False, "metadata": {"provider_retry": True}},
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(max_provider_retry_events=2),
+    )
+
+    assert verdict.passed is False
+    assert "provider retry events above threshold: 3 > 2" in verdict.failures
+
+
+def test_trace_gates_fail_for_repeated_tool_failures(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: {"kg_search"})
+    events = [
+        {"action": "tool_result", "toolName": "kg_search", "success": False},
+        {"action": "tool_result", "toolName": "kg_search", "success": False},
+        {"action": "tool_result", "toolName": "kg_search", "success": False},
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(max_repeated_tool_failures_per_tool=2),
+    )
+
+    assert verdict.passed is False
+    assert "repeated tool failures above threshold: kg_search count=3 > 2" in verdict.failures
+
+
 def test_trace_gates_fail_on_observed_tool_errors_by_default(monkeypatch):
     monkeypatch.setattr(
         scenario_runner,

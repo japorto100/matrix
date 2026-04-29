@@ -3,7 +3,7 @@ title: Agent Harness Subagents Routing Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 020
 ---
 
@@ -95,6 +95,27 @@ and only omits `tools` or `reasoning_effort` when LiteLLM-derived metadata
 explicitly says the model does not support that field. This gives Feature 020
 an unsupported-provider-field guard without forcing a full transport
 abstraction through the agent runtime yet.
+
+## 2026-04-30 Routing Contract Harness
+
+The next useful hardening slice is provider-free and behavior-neutral:
+`meta_harness routing-contract` evaluates route/delegation metadata and failure
+gate behavior without invoking a model.
+
+Findings:
+
+- No-tool/no-subagent remains `direct_answer` with `delegation_decision=none`
+  and `spawn_depth=0`.
+- Retrieval should win before delegation. The contract explicitly checks
+  `route_taxonomy=retrieval_answer` and keeps delegation disabled.
+- Domain delegates can be represented without execution by
+  `build_delegation_defer_metadata()`: `delegation_decision=deferred`,
+  `delegate_kind=domain`, `fallback_reason=subagents_disabled`.
+- Tool-budget exhaustion, provider retry loops and repeated failed tool calls
+  are better expressed as trace gate failures before adding retry behavior.
+- Reasoning/provider-specific fields and resolved secrets must be forbidden in
+  trace metadata. This stays provider-agnostic: the gate checks metadata shape,
+  not a vendor SDK name.
 
 ## Sources To Read
 

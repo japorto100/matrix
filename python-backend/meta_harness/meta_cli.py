@@ -115,6 +115,13 @@ def build_parser() -> argparse.ArgumentParser:
     report_grounding.add_argument("--run-id", default="")
     report_grounding.add_argument("--data-dir", type=Path, default=None)
 
+    routing_contract = sub.add_parser(
+        "routing-contract",
+        help="Run provider-free Feature 020 route/delegation/loop-guard scenarios",
+    )
+    routing_contract.add_argument("--run-id", default="")
+    routing_contract.add_argument("--data-dir", type=Path, default=None)
+
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
         help="Run Feature 021 PDF extraction against Markdown ground truth",
@@ -322,6 +329,13 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_report_grounding_scenarios(**kwargs)
+    if args.command == "routing-contract":
+        from meta_harness.routing_contract import run_routing_contract_scenarios
+
+        kwargs = {"run_id": args.run_id or "run-routing-contract"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_routing_contract_scenarios(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

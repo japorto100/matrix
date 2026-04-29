@@ -69,3 +69,39 @@ def build_route_decision_metadata(
         "memory_route_requested": bool(set(names) & MEMORY_TOOL_NAMES),
         "retrieval_route_requested": bool(set(names) & RETRIEVAL_TOOL_NAMES),
     }
+
+
+def build_delegation_defer_metadata(
+    *,
+    runner: str,
+    delegate_kind: str,
+    requested_reason: str,
+    tool_names: Iterable[str] = (),
+    max_spawn_depth: int = 0,
+    memory_scope: str = "current_user",
+    budget: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Describe a justified delegate candidate that must still defer today."""
+
+    metadata = build_route_decision_metadata(
+        runner=runner,
+        tool_names=tool_names,
+        routing_reason=requested_reason,
+        routing_used=False,
+        routing_picked_model="",
+        max_spawn_depth=max_spawn_depth,
+        memory_scope=memory_scope,
+        budget=budget,
+    )
+    metadata.update(
+        {
+            "decision": "defer",
+            "route_taxonomy": "subagent_deferred",
+            "delegation_decision": "deferred",
+            "delegate_kind": str(delegate_kind or "domain"),
+            "fallback_reason": "subagents_disabled",
+            "delegation_reason": str(requested_reason or "domain_delegate_candidate"),
+            "spawn_depth": 0,
+        }
+    )
+    return metadata
