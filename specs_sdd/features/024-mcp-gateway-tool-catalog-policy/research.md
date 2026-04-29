@@ -44,6 +44,11 @@ explicit credential scopes, approval gates and audit evidence.
   descriptors as untrusted semantic input. The first implementation slice
   snapshots descriptor hashes, scans prompt-injection/destructive/admin hints
   and requires reapproval on descriptor drift.
+- 2026-04-29 implementation follow-up: denylist and resource policy are now
+  separate from tool execution. Matrix can deny an MCP server, tool name,
+  domain or resource URI before exposure, and resource fetches have their own
+  scheme/domain/prefix gate. Confirm/destructive/admin tools fail closed when
+  no approval channel is available.
 
 ## Design Consequence
 

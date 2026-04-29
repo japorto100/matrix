@@ -6,7 +6,9 @@ from agent.mcp_gateway.policy import (
     McpServerConfig,
     build_effective_catalog,
     diff_descriptor_snapshots,
+    evaluate_resource_fetch_policy,
     evaluate_token_passthrough,
+    evaluate_tool_invocation_policy,
     normalize_tool_name,
     snapshot_descriptor,
 )
@@ -69,6 +71,36 @@ def test_effective_catalog_filters_tenant_user_collision_and_poisoning():
     assert "descriptor-prompt-injection" in reasons
 
 
+def test_effective_catalog_applies_denylist_for_server_tool_domain_and_resource():
+    server = McpServerConfig(
+        server_id="blocked-ext",
+        transport="streamable-http",
+        url="https://evil.example/mcp",
+        enabled=True,
+        denylisted_server_ids=("blocked-ext",),
+        denylisted_tool_names=("mcp_blocked_ext__search", "direct_name"),
+        denylisted_domains=("evil.example",),
+        denylisted_resource_uris=("https://evil.example/widgets",),
+    )
+    descriptors = [
+        {
+            "name": "search",
+            "description": "Safe search",
+            "_meta": {"openai/outputTemplate": "https://evil.example/widgets/card"},
+        },
+        {"name": "direct_name", "description": "Also blocked"},
+    ]
+
+    catalog = build_effective_catalog(server, descriptors)
+    reasons = {reason for entry in catalog for reason in entry.denial_reasons}
+
+    assert all(not entry.visible for entry in catalog)
+    assert "server-denylisted" in reasons
+    assert "tool-denylisted" in reasons
+    assert "domain-denylisted" in reasons
+    assert "resource-uri-denylisted" in reasons
+
+
 def test_token_passthrough_denied_until_named_scope_is_allowed():
     server = McpServerConfig(
         server_id="ext",
@@ -100,6 +132,71 @@ def test_token_passthrough_denied_until_named_scope_is_allowed():
         allowed_server,
         requested_scope="market-data-read",
     ) == {"allowed": True, "reason": "credential-scope-allowed"}
+
+
+def test_confirm_unavailable_fails_closed_for_non_auto_tools():
+    server = McpServerConfig(server_id="ext", transport="stdio", enabled=True)
+    confirm_snapshot = snapshot_descriptor(
+        server,
+        {
+            "name": "widget",
+            "description": "Render widget",
+            "_meta": {"widget_url": "https://safe.example/widget"},
+        },
+    )
+    destructive_snapshot = snapshot_descriptor(
+        server,
+        {"name": "delete_row", "description": "Delete one row"},
+    )
+
+    assert confirm_snapshot.approval_level == "confirm"
+    assert evaluate_tool_invocation_policy(
+        confirm_snapshot,
+        approval_channel_available=False,
+    ) == {"allowed": False, "reason": "approval-channel-unavailable"}
+    assert evaluate_tool_invocation_policy(
+        destructive_snapshot,
+        approval_channel_available=True,
+    ) == {"allowed": False, "reason": "approval-required:destructive"}
+    assert evaluate_tool_invocation_policy(
+        destructive_snapshot,
+        approval_channel_available=True,
+        approval_granted=True,
+    ) == {"allowed": True, "reason": "approved:destructive"}
+
+
+def test_resource_fetch_policy_is_separate_from_tool_execution():
+    server = McpServerConfig(
+        server_id="ext",
+        transport="streamable-http",
+        enabled=True,
+        denylisted_domains=("blocked.example",),
+        denylisted_resource_uris=("https://safe.example/private",),
+    )
+
+    assert evaluate_resource_fetch_policy(server, resource_uri="") == {
+        "allowed": False,
+        "reason": "missing-resource-uri",
+    }
+    assert evaluate_resource_fetch_policy(
+        server,
+        resource_uri="file:///etc/passwd",
+    ) == {"allowed": False, "reason": "file-resource-fetch-denied"}
+    assert evaluate_resource_fetch_policy(
+        server,
+        resource_uri="https://blocked.example/resource",
+    ) == {"allowed": False, "reason": "domain-denylisted"}
+    assert evaluate_resource_fetch_policy(
+        server,
+        resource_uri="https://safe.example/private/report",
+    ) == {"allowed": False, "reason": "resource-uri-denylisted"}
+    allowed = evaluate_resource_fetch_policy(
+        server,
+        resource_uri="https://safe.example/public/report",
+        purpose="widget-preview",
+    )
+    assert allowed["allowed"] is True
+    assert allowed["purpose"] == "widget-preview"
 
 
 def test_descriptor_diff_escalates_on_schema_security_and_risk_change():
