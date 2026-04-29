@@ -69,42 +69,6 @@ function WidgetContent({ message }: { message: ResolvedMessage }) {
 	const status = widget?.status ?? (message.url ? "unsupported" : "blocked");
 	const reason = widget?.blockedReason ?? widget?.fallbackText;
 
-	if (widget?.isIframeAllowed && widget.url) {
-		return (
-			<div className="w-[min(560px,calc(100vw-7rem))] overflow-hidden rounded-lg border border-border/70 bg-background/70">
-				<div className="flex items-center gap-2 border-b border-border/60 px-2.5 py-2 text-xs">
-					<LayoutGrid className="h-4 w-4 shrink-0 text-primary" />
-					<span className="min-w-0 flex-1 truncate font-medium">{title}</span>
-					<span
-						className={cn(
-							"inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
-							WIDGET_STATUS_CLASS.approved,
-						)}
-					>
-						<WidgetStatusIcon status="approved" />
-						{WIDGET_STATUS_LABEL.approved}
-					</span>
-					<a
-						href={widget.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						title="Widget in neuem Tab öffnen"
-						className="text-muted-foreground transition-colors hover:text-foreground"
-					>
-						<ExternalLink className="h-3.5 w-3.5" />
-					</a>
-				</div>
-				<iframe
-					src={widget.url}
-					title={title}
-					sandbox="allow-scripts allow-forms allow-popups"
-					referrerPolicy="no-referrer"
-					className="block h-[320px] w-full bg-background"
-				/>
-			</div>
-		);
-	}
-
 	return (
 		<div
 			className={cn(

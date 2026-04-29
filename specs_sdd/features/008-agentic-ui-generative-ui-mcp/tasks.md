@@ -101,6 +101,11 @@ migrated_from:
   local A2UI packets and safe fallbacks.
 - T080 Add provider-agnostic MCP Apps compatibility adapter notes: learn from
   current app/resource patterns without tying Matrix UI to one LLM provider.
+- [x] T081 [done-static] Capture ADR-0010 boundary between Matrix event
+  fallbacks and Agent Chat rich surfaces.
+  - 2026-04-29: ADR-0010 keeps mobile Matrix clients on event/link/code/media
+    fallbacks and routes MCP Apps, code widgets, tool dashboards and approval
+    forms to Agent Chat UI / A2UI surfaces.
 
 ## Verify Gates
 

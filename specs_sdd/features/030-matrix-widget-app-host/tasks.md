@@ -65,8 +65,9 @@ feature_id: 030
     `im.vector.modular.widgets` with approved/pending/blocked/denied/revoked/
     expired/fallback status, origin and block reason.
 - [x] T023 [done-static] Add error/fallback display for clients without widget support.
-  - 2026-04-29: timeline widget cards distinguish approved sandbox iframe
-    rendering from fallback-only, blocked, revoked and expired states.
+  - 2026-04-29: timeline widget cards distinguish approved fallback,
+    fallback-only, blocked, revoked and expired states without embedding iframe
+    apps in the Matrix timeline by default.
 - T024 Add report-artifact link integration from Feature 027.
 - T025 Add A2UI handoff compatibility notes from Feature 008.
 
@@ -88,3 +89,7 @@ feature_id: 030
     and direct `matrix-widget-api` 1.17.0; widget parsing now uses
     `WidgetParser.parseRoomWidget()` before applying Matrix-local policy
     rendering state.
+- [x] T038 [done-static] Capture ADR-0010 Matrix event primitive boundary.
+  - 2026-04-29: ADR-0010 records that Matrix mobile compatibility is
+    event/fallback-first; rich MCP Apps, code widgets and A2UI surfaces belong
+    to Agent Chat UI, not Matrix timeline defaults.

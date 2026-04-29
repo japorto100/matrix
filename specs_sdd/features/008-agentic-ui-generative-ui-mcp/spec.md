@@ -3,7 +3,7 @@ title: Agentic UI, Generative UI and MCP
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-29
 feature_id: 008
 migrated_from:
   - specs/execution/exec-09-protocols-generative-ui.md
@@ -11,7 +11,8 @@ migrated_from:
   - docs/superpowers/specs/2026-04-21-ag-stack-mapping-design.md
   - docs/superpowers/plans/2026-04-21-ag-stack-frontend-merger-plan-v2.md
   - Copilotkit_additional.md
-adrs: []
+adrs:
+  - specs_sdd/adr/0010-matrix-events-as-mobile-widget-primitive.md
 ---
 
 # Agentic UI, Generative UI and MCP
@@ -63,6 +64,10 @@ opening `exec-09`, `exec-20` or Superpowers Plan v2.
 - MCP Apps are evaluation-only and must not replace text/tool fallbacks.
 - Server-backed surface persistence still needs live verification; static tests
   cover packet/widget-data behavior, not Postgres reconciliation.
+- ADR-0010 assigns rich MCP Apps, code widgets, tool dashboards and approval
+  forms to Agent Chat UI / generative UI surfaces. Matrix rooms receive
+  mobile-compatible event fallbacks and optional widget metadata, not required
+  iframe apps.
 
 Decision cleanup on 2026-04-25 closes the local architecture questions in
 `decisions.md`: local custom widgets plus fallback are accepted for now, Matrix

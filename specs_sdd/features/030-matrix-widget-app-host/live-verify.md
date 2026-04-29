@@ -29,7 +29,7 @@ feature_id: 030
     `run-matrix-widget-policy-20260429-rerun` passed in
     `/tmp/matrix-meta-harness-widget-policy-rerun`.
 - LV015 Open own Matrix webclient and verify an approved policy widget renders
-  as a sandboxed iframe only when audit/approval metadata is present.
+  as a passive mobile-compatible status/link card, not an iframe.
 - LV016 Open own Matrix webclient and verify the same safe widget URL without
   approval metadata remains fallback-only and never embeds an iframe.
 - LV017 Open room info in own Matrix webclient and verify active room-state

@@ -3,7 +3,7 @@ title: ADR Index
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-29
 ---
 
 # ADR Index
@@ -24,6 +24,7 @@ session findings do not become ADRs automatically.
 | 0007 | `specs_sdd/adr/0007-alembic-current-schema-governance.md` | Alembic current-schema registry and drift gates | 018, 012, 017, 019 |
 | 0008 | `specs_sdd/adr/0008-meta-harness-budget-stable-llm-lane.md` | Meta-Harness budget-stable LLM lane | 016, 012 |
 | 0009 | `specs_sdd/adr/0009-provider-agnostic-harness-live-lane.md` | Provider-agnostic harness live lane | 011, 016, 020 |
+| 0010 | `specs_sdd/adr/0010-matrix-events-as-mobile-widget-primitive.md` | Matrix events as mobile widget primitive | 005, 008, 024, 030 |
 
 ## ADR Rule
 

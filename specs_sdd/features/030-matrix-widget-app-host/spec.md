@@ -37,10 +37,18 @@ Feature 030 owns a safe Matrix widget/app host:
 
 Feature 030 owns Matrix widget/app hosting and compatibility policy.
 
+ADR-0010 is the current scoping constraint: Matrix events are the mobile widget
+primitive, and the Matrix webclient must not require richer behavior than
+Element X / FluffyChat can safely understand. Rich MCP Apps, code widgets and
+A2UI surfaces belong to the Agent Chat UI rather than the Matrix timeline.
+
 ## Closeout Criteria
 
-- Agent-created widget proposals require explicit approval.
+- Agent-created widget proposals require explicit approval before room-state
+  widget metadata is emitted.
 - Unsafe widget URLs never execute.
+- Approved widget metadata renders as passive fallback/status cards in Matrix
+  by default; iframe/rich app hosting is not the mobile-compatible baseline.
 - Compatible clients get room-state/widget behavior; unsupported clients get
   stable markdown/link fallback.
 - Sandboxed app host has allowlist, CSP/origin policy and audit events.

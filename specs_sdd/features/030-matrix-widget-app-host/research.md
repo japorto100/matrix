@@ -66,8 +66,11 @@ The safe pipeline is:
 
 ```text
 agent proposes widget/app -> policy + room permission + user approval
-  -> room-state widget or hosted app link -> fallback markdown/link
+  -> Matrix event summary + optional room-state widget metadata
+  -> fallback markdown/link/card in Matrix clients
 ```
 
-Feature 005's current link-card behavior stays the baseline until this feature
-proves a sandboxed app host.
+ADR-0010 scopes Matrix rooms to mobile-compatible primitives. Feature 005's
+message/link/card behavior stays the baseline. Rich MCP Apps, code widgets,
+tool dashboards and A2UI surfaces move through Agent Chat UI rather than Matrix
+timeline iframe hosting.

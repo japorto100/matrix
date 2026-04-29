@@ -1,7 +1,9 @@
 import type { ResolvedMessage } from "@matrix/lib/types";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { MessageBubble } from "./MessageContent";
+
+afterEach(cleanup);
 
 function resolvedWidget(overrides: Partial<ResolvedMessage> = {}): ResolvedMessage {
 	return {
@@ -32,7 +34,7 @@ describe("MessageBubble widget rendering", () => {
 		expect(screen.getByText("fallback")).toBeTruthy();
 	});
 
-	it("embeds approved policy widgets in a sandboxed iframe", () => {
+	it("renders approved policy widgets as passive mobile-compatible cards", () => {
 		const { container } = render(
 			<MessageBubble
 				message={resolvedWidget({
@@ -52,11 +54,9 @@ describe("MessageBubble widget rendering", () => {
 			/>,
 		);
 
-		const iframe = container.querySelector("iframe");
-		expect(iframe?.getAttribute("src")).toBe("about:blank");
-		expect(iframe?.getAttribute("sandbox")).toContain("allow-scripts");
-		expect(iframe?.getAttribute("referrerpolicy")).toBe("no-referrer");
 		expect(screen.getByText("approved")).toBeTruthy();
+		expect(screen.getByRole("link", { name: /Widget in neuem Tab öffnen/ })).toBeTruthy();
+		expect(container.querySelector("iframe")).toBeNull();
 	});
 
 	it("renders blocked widget URLs as passive text", () => {
