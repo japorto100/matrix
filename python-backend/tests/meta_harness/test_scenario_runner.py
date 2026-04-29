@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from types import SimpleNamespace
 
 import pytest
 
@@ -94,6 +95,62 @@ def test_trace_gates_do_not_count_consent_request_as_tool_success(monkeypatch):
     assert verdict.passed is False
     assert "missing required tool: sandbox_execute" in verdict.failures
     assert "missing tool_result events for tool success rate threshold" in verdict.failures
+
+
+def test_trace_gates_check_allowed_tool_groups_and_disclosure(monkeypatch):
+    monkeypatch.setattr(
+        scenario_runner,
+        "_registered_tool_names",
+        lambda: {"memory_search", "sandbox_execute"},
+    )
+    monkeypatch.setattr(
+        scenario_runner,
+        "_registered_tool_catalog",
+        lambda: {
+            "memory_search": SimpleNamespace(
+                group="memory",
+                progressive_disclosure_level=2,
+            ),
+            "sandbox_execute": SimpleNamespace(
+                group="code_execution",
+                progressive_disclosure_level=3,
+            ),
+        },
+    )
+    events = [
+        {"action": "tool_result", "toolName": "memory_search", "success": True},
+        {"action": "tool_result", "toolName": "sandbox_execute", "success": True},
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            allowed_tool_groups=("memory",),
+            max_tool_disclosure_level=2,
+        ),
+    )
+
+    assert verdict.passed is False
+    assert (
+        "tool group not allowed: sandbox_execute group=code_execution"
+        in verdict.failures
+    )
+    assert (
+        "tool disclosure level above threshold: sandbox_execute level=3 > 2"
+        in verdict.failures
+    )
+
+
+def test_trace_expectations_parse_tool_catalog_gates():
+    expectations = scenario_runner.TraceExpectations.from_mapping(
+        {
+            "allowed_tool_groups": ["memory", "market"],
+            "max_tool_disclosure_level": 2,
+        }
+    )
+
+    assert expectations.allowed_tool_groups == ("memory", "market")
+    assert expectations.max_tool_disclosure_level == 2
 
 
 def test_trace_gates_check_route_decision_metadata(monkeypatch):

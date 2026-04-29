@@ -66,6 +66,9 @@ and live-verify probes. This file defines execution order.
      than MCP. Normal builtin ToolRegistry tools now have catalog metadata for
      group, risk, approval, hashes and progressive disclosure through Feature
      016/010, while Feature 024 remains external-MCP-specific.
+   - 2026-04-29: Meta-Harness trace gates can assert allowed builtin tool
+     groups and maximum progressive-disclosure level for observed normal tool
+     calls.
 5. [x] Phase 4: add semantic catalog skeleton only after schema ownership is clear.
    - 2026-04-29: semantic catalog primitives and Control endpoints cover term
      and metric schema, ambiguity, permissions, KG/RAG mappings and correction

@@ -90,6 +90,12 @@ catalog, tool groups, progressive disclosure, risk/approval metadata and output
 compaction gates. Feature 024 remains the MCP-specific external descriptor
 owner; Feature 016 owns harness/eval pressure for normal tools.
 
+2026-04-29 implementation follow-up: Meta-Harness trace gates now understand
+normal tool catalog metadata through `allowed_tool_groups` and
+`max_tool_disclosure_level`. This lets scenario files assert that a risky normal
+tool such as sandbox execution was not exposed or used unless the scenario's
+tool-group contract explicitly allows it.
+
 ## Memory Findings
 
 Memory is both automatic and explicit:

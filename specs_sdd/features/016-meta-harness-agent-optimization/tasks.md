@@ -81,8 +81,11 @@ feature_id: 016
   - 2026-04-29: `agent.tools.catalog` classifies builtin tools by group, risk,
     approval mode, schema/description hash and progressive-disclosure level
     without changing execution semantics.
-- T029 Add Meta-Harness gates that assert risky normal tools are not exposed as
+- [x] T029 [done-static] Add Meta-Harness gates that assert risky normal tools are not exposed as
   full schemas unless the scenario explicitly allows the tool group.
+  - 2026-04-29: `TraceExpectations` supports `allowed_tool_groups` and
+    `max_tool_disclosure_level`; trace gates compare observed normal tools
+    against `agent.tools.catalog` metadata.
 
 ## Memory-Aware Evaluation
 
@@ -321,9 +324,12 @@ feature_id: 016
   expected only for world/domain facts, not personal agent memory.
 - T115 Add Feature 024 MCP catalog policy scenarios: allowed tool, poisoned
   descriptor, descriptor mutation and token passthrough denial.
-- T115a Add normal ToolRegistry catalog scenarios from `Z_Additional_For_Tool_Stuff.md`:
+- [x] T115a [done-static] Add normal ToolRegistry catalog scenarios from `Z_Additional_For_Tool_Stuff.md`:
   tool-group filtering, progressive disclosure, risky-tool approval and
   output-compaction behavior.
+  - 2026-04-29: static scenario-gate coverage exists for group filtering and
+    progressive disclosure; live output-compaction scenarios remain a separate
+    tool-output lane.
 - T116 Add Feature 025 semantic-layer scenarios: ambiguous metric, permissioned
   metric and KG/RAG-linked term.
 - T117 Add Feature 027 report-publishing scenario with citation/manifest

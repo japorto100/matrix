@@ -129,6 +129,8 @@ class TraceExpectations:
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
+    allowed_tool_groups: tuple[str, ...] = ()
+    max_tool_disclosure_level: int | None = None
     max_spawn_depth: int | None = None
     expected_memory: bool = False
     min_tool_success_rate: float | None = None
@@ -181,6 +183,10 @@ class TraceExpectations:
             required_delegation_decisions=tuple(
                 str(x) for x in raw.get("required_delegation_decisions", [])
             ),
+            allowed_tool_groups=tuple(
+                str(x) for x in raw.get("allowed_tool_groups", [])
+            ),
+            max_tool_disclosure_level=raw.get("max_tool_disclosure_level"),
             max_spawn_depth=raw.get("max_spawn_depth"),
             expected_memory=bool(raw.get("expected_memory", False)),
             min_tool_success_rate=raw.get("min_tool_success_rate"),
@@ -350,6 +356,16 @@ def _registered_tool_names() -> set[str]:
         return set()
 
 
+def _registered_tool_catalog() -> dict[str, Any]:
+    try:
+        from agent.tools.catalog import builtin_tool_catalog
+        from agent.tools.registry import ToolRegistry
+
+        return {entry.name: entry for entry in builtin_tool_catalog(ToolRegistry.load().all())}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def _observed_skill_ids(events: list[dict[str, Any]]) -> set[str]:
     skills: set[str] = set()
     for event in events:
@@ -485,6 +501,7 @@ def evaluate_trace_gates(
         observed_max_spawn_depth,
     ) = _observed_route_metadata(events)
     registered_tools = _registered_tool_names()
+    registered_tool_catalog = _registered_tool_catalog()
 
     failures: list[str] = []
     warnings: list[str] = []
@@ -509,6 +526,23 @@ def evaluate_trace_gates(
     for tool in expectations.forbidden_tools:
         if tool in tool_set:
             failures.append(f"forbidden tool observed: {tool}")
+    if expectations.allowed_tool_groups:
+        allowed_groups = set(expectations.allowed_tool_groups)
+        for tool in sorted(tool_set):
+            entry = registered_tool_catalog.get(tool)
+            if entry is not None and entry.group not in allowed_groups:
+                failures.append(
+                    f"tool group not allowed: {tool} group={entry.group}"
+                )
+    if expectations.max_tool_disclosure_level is not None:
+        max_level = expectations.max_tool_disclosure_level
+        for tool in sorted(tool_set):
+            entry = registered_tool_catalog.get(tool)
+            if entry is not None and entry.progressive_disclosure_level > max_level:
+                failures.append(
+                    "tool disclosure level above threshold: "
+                    f"{tool} level={entry.progressive_disclosure_level} > {max_level}"
+                )
 
     for skill in expectations.required_skills:
         # Accept either "tier:name" or bare skill name in audit metadata.
