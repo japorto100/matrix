@@ -76,6 +76,24 @@ def build_parser() -> argparse.ArgumentParser:
     rag_benchmark.add_argument("--token-budget", type=int, default=1600)
     rag_benchmark.add_argument("--max-hits", type=int, default=8)
 
+    provider_smoke = sub.add_parser(
+        "provider-smoke",
+        help="Gate configured provider metadata and optionally run one chat call",
+    )
+    provider_smoke.add_argument("--run-id", default="")
+    provider_smoke.add_argument("--data-dir", type=Path, default=None)
+    provider_smoke.add_argument("--model", default="")
+    provider_smoke.add_argument(
+        "--chat-call",
+        action="store_true",
+        help="Send one minimal chat completion through the configured gateway",
+    )
+    provider_smoke.add_argument(
+        "--allow-deterministic-fake",
+        action="store_true",
+        help="Allow llm-mock/mock provider lanes for unit or contract tests",
+    )
+
     pdf_benchmark = sub.add_parser(
         "pdf-extraction-benchmark",
         help="Run Feature 021 PDF extraction against Markdown ground truth",
@@ -156,7 +174,9 @@ def build_parser() -> argparse.ArgumentParser:
     decide = sub.add_parser("decide", help="Record keep/discard/defer decision")
     decide.add_argument("--run-id", required=True)
     decide.add_argument("--candidate-id", required=True)
-    decide.add_argument("--decision", choices=("keep", "discard", "defer"), required=True)
+    decide.add_argument(
+        "--decision", choices=("keep", "discard", "defer"), required=True
+    )
     decide.add_argument("--rationale", required=True)
     decide.add_argument("--metrics-json", default="{}")
     decide.add_argument("--follow-up", default="")
@@ -227,6 +247,18 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return await run_retrieval_benchmark(**kwargs)
+    if args.command == "provider-smoke":
+        from meta_harness.provider_smoke import run_provider_smoke
+
+        kwargs = {
+            "run_id": args.run_id or None,
+            "model": args.model or None,
+            "chat_call": args.chat_call,
+            "allow_deterministic_fake": args.allow_deterministic_fake,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_provider_smoke(**kwargs)
     if args.command == "pdf-extraction-benchmark":
         from meta_harness.extraction_benchmark import (
             DEFAULT_PDF_PATH,

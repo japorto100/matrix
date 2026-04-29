@@ -49,8 +49,12 @@ feature_id: 020
   artifact namespaces, memory write policy, KG proposal policy and tool budget.
 - T017 [done-static] Define mid-run steering semantics as a future controlled operator/HITL
   capability, not as an unlogged prompt mutation.
-- T018 Define provider transport boundary for Matrix: OpenAI-compatible,
+- [x] T018 [done-static] Define provider transport boundary for Matrix: OpenAI-compatible,
   Responses-style, OpenRouter/LiteLLM, embeddings and rerankers.
+  - 2026-04-29: ADR-0009 fixes the current boundary for this phase:
+    provider-specific SDKs remain references; runtime/harness gates use
+    provider-agnostic LiteLLM-compatible metadata and explicit fake-provider
+    opt-in.
 
 ## Meta-Harness Gates
 
@@ -97,6 +101,9 @@ feature_id: 020
 - T034 Add transport abstraction candidate after Feature 011 review; avoid
   moving provider logic until Meta-Harness covers OpenRouter, mock, embeddings
   and local fallback paths.
+  - 2026-04-29: first coverage slice added via `provider-smoke`; full transport
+    abstraction remains deferred because GitNexus marks the shared client path
+    as CRITICAL impact.
 - T035 [done-static] Add route-decision event schema before implementing domain delegates:
   `route_decision`, `delegation_decision`, `spawn_depth`, `delegate_kind`,
   `allowed_tools`, `memory_scope`, `budget`, `fallback_reason`.

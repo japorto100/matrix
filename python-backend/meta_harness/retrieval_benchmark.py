@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent.llm.provider_capabilities import configured_provider_snapshot
 from meta_harness.config import capture_current_config
 from meta_harness.decisions import record_candidate_decision
 from meta_harness.proposer import META_HARNESS_DATA_DIR
@@ -225,11 +226,7 @@ def _graph_retrieval_decision(candidate: dict[str, Any]) -> dict[str, Any] | Non
     candidate_id = str(candidate.get("candidate_id") or "")
     pass_rate = _as_float(candidate.get("pass_rate"))
     holdout_pass_rate = candidate.get("holdout_pass_rate")
-    holdout = (
-        None
-        if holdout_pass_rate in (None, "")
-        else _as_float(holdout_pass_rate)
-    )
+    holdout = None if holdout_pass_rate in (None, "") else _as_float(holdout_pass_rate)
     failures = [
         str(failure)
         for result in candidate.get("results", [])
@@ -286,9 +283,7 @@ def _metadata_compatibility(candidate: dict[str, Any]) -> dict[str, Any]:
     metadata = candidate.get("metadata") if isinstance(candidate, dict) else {}
     metadata = metadata if isinstance(metadata, dict) else {}
     missing = [
-        key
-        for key in REQUIRED_CANDIDATE_METADATA
-        if metadata.get(key) in (None, "")
+        key for key in REQUIRED_CANDIDATE_METADATA if metadata.get(key) in (None, "")
     ]
     failures = [f"missing-candidate-metadata:{key}" for key in missing]
     return {
@@ -310,37 +305,48 @@ def _env_first(*names: str, default: str = "") -> str:
 def _provider_config(report: dict[str, Any]) -> dict[str, Any]:
     """Capture non-secret model/provider/budget config for benchmark replay."""
 
+    provider_snapshot = configured_provider_snapshot()
     candidate_dimensions = sorted(
         {
             str(candidate.get("metadata", {}).get("embedding_dimension"))
             for candidate in report.get("candidates", [])
             if isinstance(candidate, dict)
             and isinstance(candidate.get("metadata"), dict)
-            and candidate.get("metadata", {}).get("embedding_dimension") not in (None, "")
+            and candidate.get("metadata", {}).get("embedding_dimension")
+            not in (None, "")
         }
     )
-    return {
-        "llm_provider": _env_first("AGENT_LLM_PROVIDER", default="litellm"),
-        "agent_model": _env_first("AGENT_DEFAULT_MODEL", "AGENT_DEFAULT_UTILITY_MODEL"),
-        "litellm_base_url": os.environ.get("LITELLM_BASE_URL", ""),
-        "agent_max_output_tokens": os.environ.get("AGENT_MAX_OUTPUT_TOKENS", ""),
-        "embedding_provider": _env_first(
-            "EMBEDDER_PROVIDER",
-            "MEMORY_EMBEDDING_PROVIDER",
-        ),
-        "embedding_model": _env_first("EMBEDDER_MODEL", "MEMORY_EMBEDDING_MODEL"),
-        "embedding_dimension": _env_first(
-            "EMBEDDER_DIMENSION",
-            "EMBEDDING_DIMENSION",
-            "MEMORY_EMBEDDING_DIMENSION",
-            default=",".join(candidate_dimensions),
-        ),
-        "k": report.get("k"),
-        "token_budget": report.get("token_budget"),
-        "max_hits": report.get("max_hits"),
-        "openrouter_api_key_present": bool(os.environ.get("OPENROUTER_API_KEY")),
-        "secrets_redacted": True,
-    }
+    provider_snapshot["embedding_provider"] = provider_snapshot[
+        "embedding_provider"
+    ] or _env_first(
+        "EMBEDDER_PROVIDER",
+        "MEMORY_EMBEDDING_PROVIDER",
+    )
+    provider_snapshot["embedding_model"] = provider_snapshot[
+        "embedding_model"
+    ] or _env_first("EMBEDDER_MODEL", "MEMORY_EMBEDDING_MODEL")
+    embedding_dimension = provider_snapshot["embedding_dimension"] or _env_first(
+        "EMBEDDER_DIMENSION",
+        "EMBEDDING_DIMENSION",
+        "MEMORY_EMBEDDING_DIMENSION",
+        default=",".join(candidate_dimensions),
+    )
+    provider_snapshot.update(
+        {
+            "embedding_dimension": embedding_dimension,
+            "k": report.get("k"),
+            "token_budget": report.get("token_budget"),
+            "max_hits": report.get("max_hits"),
+            "provider_capabilities": provider_snapshot["capabilities"],
+            "chat_api_key_present": provider_snapshot["chat_api_key_present"],
+            "embedding_api_key_present": provider_snapshot["embedding_api_key_present"],
+            # Legacy compatibility for existing tests/artifacts. New code should use
+            # chat_api_key_present/embedding_api_key_present above.
+            "openrouter_api_key_present": bool(os.environ.get("OPENROUTER_API_KEY")),
+            "secrets_redacted": True,
+        }
+    )
+    return provider_snapshot
 
 
 def _scenario_set(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -386,7 +392,9 @@ def _source_snapshot() -> dict[str, Any]:
 
 
 def _write_json(path: Path, data: Any) -> None:
-    path.write_text(json.dumps(data, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    path.write_text(
+        json.dumps(data, indent=2, sort_keys=True, default=str), encoding="utf-8"
+    )
 
 
 def _as_float(value: Any, default: float = 0.0) -> float:

@@ -23,6 +23,7 @@ session findings do not become ADRs automatically.
 | 0006 | `specs_sdd/adr/0006-mempalace-postgres-pgvector.md` | MemPalace Postgres/pgvector runtime | 012, 011 |
 | 0007 | `specs_sdd/adr/0007-alembic-current-schema-governance.md` | Alembic current-schema registry and drift gates | 018, 012, 017, 019 |
 | 0008 | `specs_sdd/adr/0008-meta-harness-budget-stable-llm-lane.md` | Meta-Harness budget-stable LLM lane | 016, 012 |
+| 0009 | `specs_sdd/adr/0009-provider-agnostic-harness-live-lane.md` | Provider-agnostic harness live lane | 011, 016, 020 |
 
 ## ADR Rule
 

@@ -138,6 +138,16 @@ Recommended first slice:
 1. Define scenario schema.
 2. Implement Python-only runner over 3 scenarios: simple no-tool, memory
    remember/recall, one harmless tool.
+
+## 2026-04-29 Provider Lane Hardening
+
+The fresh `Z_` docs pushed the harness work toward provider-agnostic live
+verification instead of an OpenRouter-only lane. The implemented slice follows
+ADR-0009: keep `llm-mock` as a deterministic contract lane, add
+`provider-smoke` for configured-provider metadata and optional chat completion,
+and write provider capability snapshots into Meta-Harness run artifacts. This
+keeps Meta-Harness useful for static/non-browser gates before browser live
+verification starts.
 3. Write artifact directory.
 4. Add deterministic trace gates.
 5. Add CLI JSON output.

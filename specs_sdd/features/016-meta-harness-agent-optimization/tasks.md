@@ -266,6 +266,10 @@ feature_id: 016
   a local Python process, and runner-parity can point `LITELLM_BASE_URL` at it
   for deterministic harness plumbing checks. OpenRouter/free models remain
   explicit live-provider probes.
+- [x] T097f [done-static] Add a provider-agnostic smoke gate so regular
+  live-provider lanes cannot silently use `llm-mock`. `provider-smoke` records
+  non-secret model/provider/embedding capability metadata and only permits
+  deterministic fake lanes with an explicit opt-in. See ADR-0009.
 - [x] T097e [done-static] Record Meta-Harness trace-source provenance in
   config snapshots and run manifests. Full live outer-loop runs expect
   Postgres-backed `agent.audit_events` through `AUDIT_DB_URL` or

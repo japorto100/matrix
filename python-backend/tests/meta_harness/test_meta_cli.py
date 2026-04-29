@@ -114,6 +114,103 @@ async def test_cli_rag_benchmark_writes_artifacts(tmp_path, monkeypatch):
     assert "matrix-fused-vector-kg" in decisions_log
 
 
+@pytest.mark.asyncio
+async def test_cli_provider_smoke_blocks_mock_without_opt_in(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "mock/provider")
+    monkeypatch.setenv("LITELLM_BASE_URL", "http://127.0.0.1:8095")
+    args = meta_cli.build_parser().parse_args(
+        ["provider-smoke", "--run-id", "run-provider", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["blocked"] is True
+    assert result["passed"] is False
+    assert (
+        "deterministic-fake-provider-not-allowed" in result["provider_gate"]["failures"]
+    )
+    assert (tmp_path / "runs" / "run-provider" / "provider_smoke.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_cli_provider_smoke_records_metadata_without_chat_call(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "openrouter/test-model")
+    monkeypatch.setenv("AGENT_MAX_OUTPUT_TOKENS", "1024")
+    monkeypatch.setenv("EMBEDDER_PROVIDER", "openrouter-compatible")
+    monkeypatch.setenv("EMBEDDER_MODEL", "embedding-test")
+    monkeypatch.setenv("EMBEDDER_DIMENSION", "1536")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-redacted")
+    args = meta_cli.build_parser().parse_args(
+        ["provider-smoke", "--run-id", "run-provider", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["blocked"] is False
+    assert result["chat_checked"] is False
+    assert result["provider_snapshot"]["agent_model"] == "openrouter/test-model"
+    assert result["provider_snapshot"]["chat_api_key_present"] is True
+    assert result["provider_snapshot"]["embedding_dimension"] == "1536"
+    assert "sk-redacted" not in json.dumps(result)
+
+
+@pytest.mark.asyncio
+async def test_cli_provider_smoke_chat_call_uses_configured_client(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "openrouter/test-model")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-redacted")
+
+    class _Message:
+        content = "ok"
+
+    class _Choice:
+        message = _Message()
+
+    class _Response:
+        choices = [_Choice()]
+        model = "openrouter/test-model"
+
+    class _Completions:
+        async def create(self, **kwargs):
+            assert kwargs["model"] == "openrouter/test-model"
+            assert kwargs["max_tokens"] == 16
+            return _Response()
+
+    class _Chat:
+        completions = _Completions()
+
+    class _Client:
+        chat = _Chat()
+
+    monkeypatch.setattr(
+        "meta_harness.provider_smoke.get_litellm_client",
+        lambda: _Client(),
+    )
+    args = meta_cli.build_parser().parse_args(
+        [
+            "provider-smoke",
+            "--run-id",
+            "run-provider-chat",
+            "--data-dir",
+            str(tmp_path),
+            "--chat-call",
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["chat_checked"] is True
+    assert result["chat"]["response_chars"] == 2
+
+
 def test_rag_benchmark_verdict_fails_missing_candidate_metadata():
     from meta_harness.retrieval_benchmark import _candidate_verdicts
 
@@ -211,7 +308,9 @@ def test_inner_loop_protects_goldens_and_holdout_inputs():
     assert gate["passed"] is False
     assert "protected-input:inner-bad:parameters.holdout_score" in gate["failures"]
     assert validation["passed"] is False
-    assert "protected-input:inner-bad:parameters.holdout_score" in validation["failures"]
+    assert (
+        "protected-input:inner-bad:parameters.holdout_score" in validation["failures"]
+    )
 
 
 @pytest.mark.asyncio

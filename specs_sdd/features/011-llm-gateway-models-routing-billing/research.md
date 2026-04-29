@@ -77,3 +77,12 @@ agnostic:
 - capability metadata is explicit data;
 - deterministic mocks stay in tests, not live verification;
 - remote live verify uses whichever configured provider is available.
+
+## 2026-04-29 Implementation Note
+
+ADR-0009 records the first code slice from the fresh `Z_` docs and link review:
+keep the shared LiteLLM client stable, add a provider-agnostic capability
+snapshot, and make the Meta-Harness `provider-smoke` gate fail closed for mock
+providers unless explicitly allowed. This implements the non-browser part of
+Feature 011 T074/T076 while leaving the full live smoke matrix T075 open until
+the configured remote provider and embedding provider are exercised.
