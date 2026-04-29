@@ -226,6 +226,8 @@ def plan_metric_query(
             "allowed": False,
             "reason": permission["reason"],
             "metric": metric.as_dict(),
+            "sql": None,
+            "raw_sql_allowed": False,
         }
     return {
         "allowed": True,

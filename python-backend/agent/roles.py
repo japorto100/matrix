@@ -78,13 +78,15 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "get_chart_state",
         "save_memory",
         "load_memory",
+        "semantic_lookup",
         "sandbox_execute",
     },
-    TradingRole.SENTIMENT: {"get_chart_state", "save_memory", "load_memory"},
+    TradingRole.SENTIMENT: {"get_chart_state", "save_memory", "load_memory", "semantic_lookup"},
     TradingRole.TECHNICAL: {
         "get_chart_state",
         "save_memory",
         "load_memory",
+        "semantic_lookup",
         "sandbox_execute",
     },
     TradingRole.RESEARCHER: {
@@ -92,6 +94,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "get_portfolio_summary",
         "save_memory",
         "load_memory",
+        "semantic_lookup",
         "sandbox_execute",
         "sandbox_browser",
     },
@@ -101,8 +104,14 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "get_portfolio_summary",
         "save_memory",
         "load_memory",
+        "semantic_lookup",
     },
-    TradingRole.RISK_MANAGER: {"get_portfolio_summary", "save_memory", "load_memory"},
+    TradingRole.RISK_MANAGER: {
+        "get_portfolio_summary",
+        "save_memory",
+        "load_memory",
+        "semantic_lookup",
+    },
 }
 
 # Memory Sharing Permissions pro Rolle (exec-11 Phase 3.3)

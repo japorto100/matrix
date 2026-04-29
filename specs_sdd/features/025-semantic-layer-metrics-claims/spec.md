@@ -20,6 +20,11 @@ Agents can therefore answer with plausible but inconsistent definitions:
 `revenue`, `risk`, `exposure`, `PnL`, `claim`, `evidence` or `confidence` can
 mean different things depending on which tool or prompt was active.
 
+Static implementation follow-up on 2026-04-29 adds `semantic_lookup` as a
+read-only agent tool. It resolves Matrix-owned semantic terms and metrics,
+returns permission-filtered metric contracts, fails closed for ambiguous or
+unknown phrases and keeps `raw_sql_allowed=false`.
+
 ## Target State / Soll
 
 Feature 025 creates a provider-agnostic semantic layer:
@@ -54,3 +59,5 @@ Feature 025 owns the semantic meaning and API contract that agents use.
 - Row/user permissions affect semantic query results.
 - Metric values expose provenance and freshness.
 - Rejected/corrected definitions enter an auditable proposal workflow.
+- Agent tool output includes refusal guidance when no authoritative definition
+  exists, rather than letting the model invent a metric.

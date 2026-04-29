@@ -38,6 +38,15 @@ tables, KG claims, RAG documents and operational metrics.
 - Text-to-SQL research still highlights ambiguity and semantic-equivalence
   issues. The first Matrix slice therefore returns a semantic contract and
   `raw_sql_allowed=false` instead of generating ad-hoc SQL.
+- 2026-04-29 implementation follow-up: `semantic_lookup` is now a first-class
+  read-only agent tool. It resolves terms/metrics from the local catalog,
+  returns fail-closed refusal guidance for unknown/ambiguous phrases, includes
+  permission-filtered metric contracts and never permits raw SQL. This is the
+  agent-facing counterpart to the Control semantic API.
+- 2026-04-29 routing follow-up: semantic lookup is classified as a retrieval
+  route alongside memory/KG/RAG lookup. Metric-sensitive questions should be
+  treated as "retrieve authoritative meaning first", not as generic tool-use or
+  model-only answers.
 
 ## Design Consequence
 

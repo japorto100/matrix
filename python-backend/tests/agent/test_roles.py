@@ -22,6 +22,7 @@ def test_trading_roles_have_complete_runtime_contracts():
         assert TRADING_ROLE_TOOLS[role]
         assert "save_memory" in TRADING_ROLE_TOOLS[role] or role is TradingRole.RISK_MANAGER
         assert "load_memory" in TRADING_ROLE_TOOLS[role]
+        assert "semantic_lookup" in TRADING_ROLE_TOOLS[role]
         assert "memory_write" in TRADING_ROLE_MEMORY[role]
         assert "memory_recall_tags" in TRADING_ROLE_MEMORY[role]
 

@@ -39,10 +39,20 @@ feature_id: 025
 
 ## Agent Integration
 
-- T020 Add semantic lookup tool visible to agent runners.
-- T021 Add prompt/router rule for metric-sensitive user questions.
-- T022 Add refusal path when no authoritative definition exists.
-- T023 Add answer template with definition, value, provenance and freshness.
+- [x] T020 [done-static] Add semantic lookup tool visible to agent runners.
+  - 2026-04-29: `SemanticLookupTool` is registered in `ToolRegistry.load()`
+    as `semantic_lookup` and included in advisory/trading role allowlists.
+- [x] T021 [done-static] Add prompt/router rule for metric-sensitive user questions.
+  - 2026-04-29: `semantic_lookup` is classified as a retrieval route in
+    `agent.routing.delegation_policy`, so route-decision telemetry treats it
+    like memory/KG/RAG lookup instead of generic tool use.
+- [x] T022 [done-static] Add refusal path when no authoritative definition exists.
+  - 2026-04-29: unknown phrases return `status=not_found`,
+    `refusal_reason=no-authoritative-definition` and explicit no-invention
+    guidance; ambiguous phrases fail closed.
+- [x] T023 [done-static] Add answer template with definition, value, provenance and freshness.
+  - 2026-04-29: matched terms/metrics return an answer template with
+    definition/measure, source refs, freshness SLA and `raw_sql_allowed=false`.
 - T024 Add memory feedback path for corrected definitions without silently
   promoting them.
 - T025 Coordinate semantic terms with Feature 017 claim promotion.
@@ -54,6 +64,8 @@ feature_id: 025
 - [x] T031 Unit-test alias collision and ambiguity handling.
 - [x] T032 Unit-test permission filtering.
 - [x] T033 Unit-test correction proposal workflow.
+- [x] T033a [done-static] Unit-test `semantic_lookup` tool registration,
+  permission-fail-closed behavior, refusal guidance and compact model output.
 - T034 Integration-test agent uses semantic lookup before metric answer.
 - T035 Meta-Harness scenario: two similar metrics must not be conflated.
 - T036 Meta-Harness scenario: unstructured document concept must link to a KG

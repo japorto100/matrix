@@ -13,6 +13,7 @@ def test_route_taxonomy_keeps_no_tool_turn_direct() -> None:
 def test_route_taxonomy_marks_retrieval_before_future_delegation() -> None:
     assert route_taxonomy_for_tools(["memory_search"]) == "retrieval_answer"
     assert route_taxonomy_for_tools(["kg_search"]) == "retrieval_answer"
+    assert route_taxonomy_for_tools(["semantic_lookup"]) == "retrieval_answer"
 
 
 def test_route_decision_metadata_disables_delegation_by_default() -> None:

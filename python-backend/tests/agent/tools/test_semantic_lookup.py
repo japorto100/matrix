@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+import pytest
+
+from agent.context import AgentExecutionContext
+from agent.tools.registry import ToolRegistry
+from agent.tools.semantic_lookup import SemanticLookupTool
+
+
+def _ctx(*, tenant_id: str = "", role: str = "analyst") -> AgentExecutionContext:
+    return AgentExecutionContext(
+        user_id="alice",
+        thread_id="thread-semantic",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+        user_role=role,
+        market_snapshot={"tenant_id": tenant_id} if tenant_id else None,
+    )
+
+
+def test_semantic_lookup_registered_for_agent_runners():
+    registry = ToolRegistry.load()
+
+    tool = registry.lookup("semantic_lookup")
+
+    assert isinstance(tool, SemanticLookupTool)
+    assert tool.definition()["input_schema"]["properties"]["phrase"]
+
+
+@pytest.mark.asyncio
+async def test_semantic_lookup_metric_returns_contract_with_tenant_scope():
+    tool = SemanticLookupTool()
+
+    result = await tool.execute(
+        {"phrase": "tool success rate", "tenant_id": "tenant-a"},
+        _ctx(),
+    )
+
+    assert result["status"] == "matched_metric"
+    assert result["authoritative"] is True
+    assert result["raw_sql_allowed"] is False
+    assert result["metric_plan"]["allowed"] is True
+    assert result["metric_plan"]["semantic_contract"]["source_table"] == "agent.audit_events"
+    assert result["answer_template"]["freshness"] == "15m"
+
+
+@pytest.mark.asyncio
+async def test_semantic_lookup_metric_fails_closed_without_scope():
+    tool = SemanticLookupTool()
+
+    result = await tool.execute({"phrase": "tool success rate"}, _ctx())
+
+    assert result["status"] == "metric_permission_denied"
+    assert result["authoritative"] is False
+    assert result["refusal_reason"] == "missing-tenant-context"
+    assert result["metric_plan"]["raw_sql_allowed"] is False
+
+
+@pytest.mark.asyncio
+async def test_semantic_lookup_unknown_phrase_returns_refusal_guidance():
+    tool = SemanticLookupTool()
+
+    result = await tool.execute({"phrase": "made up pnl velocity"}, _ctx())
+
+    assert result["status"] == "not_found"
+    assert result["authoritative"] is False
+    assert result["refusal_reason"] == "no-authoritative-definition"
+    assert "should not invent" in result["answer_template"]
+
+
+@pytest.mark.asyncio
+async def test_semantic_lookup_model_output_is_compact():
+    tool = SemanticLookupTool()
+    result = await tool.execute(
+        {"phrase": "tool success rate", "tenant_id": "tenant-a"},
+        _ctx(),
+    )
+
+    model_output = tool.to_model_output(result)
+
+    assert model_output["status"] == "matched_metric"
+    assert model_output["metric_plan"]["semantic_contract"]["source_refs"] == [
+        "feature-014",
+        "feature-016",
+    ]
+    assert "matches" not in model_output

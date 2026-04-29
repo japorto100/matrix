@@ -21,3 +21,5 @@ feature_id: 025
 - LV010 Run Meta-Harness semantic-layer scenario with train/holdout prompts.
 - LV011 Verify traces show semantic lookup before answer generation.
 - LV012 Verify no provider-specific prompt or model dependency is required.
+- LV013 Verify `semantic_lookup` appears in the agent-visible tool list for
+  advisory/trading roles and is tagged as retrieval in route telemetry.

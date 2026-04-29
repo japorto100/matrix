@@ -65,6 +65,7 @@ class ToolRegistry:
             ScheduleRunNowTool,
             ScheduleTaskTool,
         )
+        from agent.tools.semantic_lookup import SemanticLookupTool
 
         registry = cls()
         registry.register(GetChartStateTool())
@@ -85,6 +86,8 @@ class ToolRegistry:
         registry.register(SandboxExecuteTool())
         registry.register(SandboxBrowserTool())
         registry.register(FileAnalyzeTool())
+        # Semantic Layer (Feature 025) — read-only metric/term contract lookup
+        registry.register(SemanticLookupTool())
         # A2UI surface rendering (Ansatz Y — virtual tool emitting widget envelope)
         registry.register(RenderA2uiSurfaceTool())
         # Scheduler Tools (exec-scheduler Lane C — 7 tools, LLM-native NL)

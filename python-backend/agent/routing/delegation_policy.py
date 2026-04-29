@@ -11,7 +11,9 @@ from collections.abc import Iterable
 from typing import Any
 
 MEMORY_TOOL_NAMES = frozenset({"memory_search", "memory_add", "save_memory", "load_memory"})
-RETRIEVAL_TOOL_NAMES = frozenset({"memory_search", "kg_search", "retrieve_context"})
+RETRIEVAL_TOOL_NAMES = frozenset(
+    {"memory_search", "kg_search", "retrieve_context", "semantic_lookup"}
+)
 
 
 def _clean_tool_names(tool_names: Iterable[str]) -> list[str]:

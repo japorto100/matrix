@@ -117,6 +117,8 @@ def _tool_group(name: str, description: str) -> str:
     text = f"{name} {description}".lower()
     if "memory" in text or "remember" in text:
         return "memory"
+    if "semantic" in text or "metric" in text or "provenance" in text:
+        return "semantic"
     if "sandbox" in text or "browser" in text or "file" in text:
         return "code_execution"
     if "schedule" in text or "task" in text or "cron" in text:
