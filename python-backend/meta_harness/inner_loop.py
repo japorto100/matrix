@@ -49,6 +49,11 @@ PROTECTED_INPUT_KEYS = (
     "holdout_score",
     "evaluator_patch",
     "canary_patch",
+    "security_relaxations",
+    "tool_policy_relaxations",
+    "allow_unsafe_tools",
+    "disable_tool_policy",
+    "prompt_injection_allowlist_patch",
 )
 
 
@@ -360,6 +365,8 @@ def _candidate_from_retrieval_result(
         if decision == "promote_outer_loop"
         else "Needs more canary coverage before outer-loop promotion."
     )
+    question_classes = _question_classes(result)
+    canary_tags = _canary_tags(result)
     return InnerLoopCandidate(
         candidate_id=f"inner-{candidate_id}",
         feature_owner="019-hybrid-rag-retrieval",
@@ -379,6 +386,18 @@ def _candidate_from_retrieval_result(
                 "token_budget": int(token_budget),
                 "diversity_gate": "enabled",
             },
+            "candidate_search_spaces": _candidate_search_spaces(
+                result,
+                top_k=int(k),
+                token_budget=int(token_budget),
+                max_hits=int(max_hits),
+            ),
+            "security_invariants": {
+                "protected_input_keys": list(PROTECTED_INPUT_KEYS),
+                "tool_policy_can_only_tighten": True,
+                "prompt_injection_scan_required": True,
+                "human_confirm_policy_relaxation_required": True,
+            },
         },
         frozen_inputs={
             "source_run_id": source_run_id,
@@ -386,6 +405,8 @@ def _candidate_from_retrieval_result(
             "split_summary": result.get("split_summary") or {},
             "holdout_pass_rate": result.get("holdout_pass_rate"),
             "metadata": result.get("metadata") or {},
+            "question_classes": question_classes,
+            "canary_tags": canary_tags,
         },
         budget={
             "provider_calls": 0,
@@ -404,6 +425,93 @@ def _candidate_from_retrieval_result(
         decision=decision,
         decision_reason=reason,
     )
+
+
+def _question_classes(result: dict[str, Any]) -> list[str]:
+    classes = {
+        str(item.get("question_class"))
+        for item in result.get("results", [])
+        if isinstance(item, dict) and item.get("question_class")
+    }
+    return sorted(classes)
+
+
+def _canary_tags(result: dict[str, Any]) -> list[str]:
+    tags: set[str] = set()
+    for item in result.get("results", []):
+        if not isinstance(item, dict):
+            continue
+        raw_tags = item.get("tags")
+        if isinstance(raw_tags, list | tuple):
+            tags.update(str(tag) for tag in raw_tags if str(tag))
+    return sorted(tags)
+
+
+def _candidate_search_spaces(
+    result: dict[str, Any],
+    *,
+    top_k: int,
+    token_budget: int,
+    max_hits: int,
+) -> dict[str, Any]:
+    """Return bounded cross-feature knobs represented by this candidate."""
+
+    question_classes = set(_question_classes(result))
+    tags = set(_canary_tags(result))
+    spaces: dict[str, Any] = {
+        "retrieval": {
+            "modes": [str(result.get("mode") or "auto")],
+            "top_k": [top_k],
+            "token_budget": [token_budget],
+            "max_hits": [max_hits],
+            "fusion": (
+                ["rrf"]
+                if bool(result.get("include_vector")) and bool(result.get("include_kg"))
+                else ["single"]
+            ),
+            "citation_verifier": ["required"],
+        },
+        "tool_policy": {
+            "selection_policy": ["current_catalog_only"],
+            "descriptor_risk_gate": ["same_or_stricter"],
+            "token_passthrough": ["deny"],
+            "prompt_injection_scan": ["required"],
+            "confirm_unavailable": ["fail_closed"],
+        },
+    }
+    if "semantic_term_grounded" in question_classes or "semantic-layer" in tags:
+        spaces["semantic_layer"] = {
+            "term_filter_modes": ["exact_term_id", "approved_alias_expansion"],
+            "ambiguity_thresholds": [0.72, 0.82, 0.9],
+            "correction_routing": ["review_required"],
+            "gold_catalog_mutable": False,
+        }
+    if "visual_layout_grounded" in question_classes or "visual-layout" in tags:
+        spaces["visual_memory"] = {
+            "min_ocr_confidence": [0.75, 0.9],
+            "coordinate_policy": ["require_page_bbox"],
+            "injection_threshold": [0.6, 0.8],
+            "stale_evidence_policy": ["age_and_source_required"],
+        }
+    if "report_grounding" in question_classes or "report-grounding" in tags:
+        spaces["report_grounding"] = {
+            "renderer_candidates": ["markdown-fallback", "quarkdown-experimental"],
+            "citation_policy": ["manifest_required"],
+            "artifact_handoff": ["link_or_attachment"],
+            "inline_rendering": ["feature_030_only"],
+        }
+    if "source-grounding" in tags:
+        spaces["source_grounding"] = {
+            "required_reference_metadata": [
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+            ],
+            "metadata_enrichment": ["required"],
+            "citation_markers": ["required_when_answer_generated"],
+        }
+    return spaces
 
 
 def _candidate_aggregate(run_id: str, candidate: InnerLoopCandidate) -> dict[str, Any]:

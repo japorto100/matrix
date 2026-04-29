@@ -123,9 +123,23 @@ feature_id: 023
     `run-inner-rag-splits-20260427` passed this gate.
 - T047 Add Feature 026 browser-RAG candidate search spaces: lexical/dense/RRF,
   model metadata and fallback policy.
-- T048 Add Feature 025 semantic-layer candidate search spaces: ambiguity
+- T048 [done-static] Add Feature 025 semantic-layer candidate search spaces: ambiguity
   thresholds, term filters and correction routing.
-- T049 Add Feature 028 visual-memory candidate search spaces: OCR confidence,
+  - 2026-04-29: RAG inner-loop candidates now emit bounded
+    `semantic_layer` search spaces when semantic canaries are present:
+    exact term id, approved alias expansion, ambiguity thresholds and
+    review-required correction routing. Gold catalog mutation remains frozen.
+- T049 [partial-static] Add Feature 028 visual-memory candidate search spaces: OCR confidence,
   decay policy and injection threshold.
-- T050 Add Feature 024 tool-policy candidate search spaces without allowing
+  - 2026-04-29: RAG inner-loop candidates now emit `visual_memory`
+    search spaces when visual-layout canaries are present: OCR confidence,
+    page/bbox policy, injection thresholds and stale-evidence provenance
+    policy. Full visual-memory runtime candidates remain Feature 028.
+- T050 [done-static] Add Feature 024 tool-policy candidate search spaces without allowing
   loops to relax security gates.
+  - 2026-04-29: every RAG inner-loop candidate now carries a `tool_policy`
+    space limited to current catalog, same-or-stricter descriptor risk,
+    token-passthrough denial, required prompt-injection scan and fail-closed
+    confirm-unavailable behavior. Protected input gating now blocks
+    `disable_tool_policy`, `tool_policy_relaxations`, `allow_unsafe_tools`,
+    `security_relaxations` and prompt-injection allowlist patches.

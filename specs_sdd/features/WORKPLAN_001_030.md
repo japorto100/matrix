@@ -73,8 +73,12 @@ and live-verify probes. This file defines execution order.
      and report-grounding metadata/citation contracts. Remaining Phase 5 work:
      real parser/chunker candidates, browser-local retrieval lane, live
      pgvector/NornicDB/provider benchmarks and inner-loop search spaces.
-8. [next] Phase 5: implement parser/chunker and retrieval candidate spaces
-   that consume the new cross-feature canaries without browser dependencies.
+   - 2026-04-29: Feature 023 RAG inner-loop candidates now emit bounded
+     semantic, visual, report and tool-policy search spaces, with protected
+     gates against tool/security relaxation.
+8. [next] Phase 5: implement parser/chunker candidate spaces and extraction
+   benchmark handoff for PyMuPDF4LLM/Docling/MinerU/MarkItDown without browser
+   dependencies.
 
 ## Dependency Watchlist
 

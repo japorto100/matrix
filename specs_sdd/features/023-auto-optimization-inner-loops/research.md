@@ -108,3 +108,18 @@ The new features expand candidate spaces, but they stay bounded:
 
 All candidates must still emit artifacts for Feature 016 Meta-Harness before
 promotion.
+
+2026-04-29 implementation note: inner-loop RAG candidates now carry bounded
+cross-feature search spaces when the matching Feature 022 canaries are present:
+
+- semantic layer: exact term id, approved alias expansion, ambiguity thresholds
+  and review-required correction routing.
+- visual memory: OCR confidence thresholds, required page/bbox coordinates,
+  injection thresholds and stale-evidence provenance.
+- report grounding: fallback vs experimental Quarkdown renderer as artifact
+  metadata only, manifest-required citations and Feature 030-only inline
+  rendering.
+- tool policy: same-or-stricter catalog/risk policy only.
+
+The protected-input gate was extended so inner loops cannot relax MCP/tool
+security gates while searching for better scores.
