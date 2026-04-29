@@ -155,12 +155,16 @@ feature_id: 022
   ready.
 - T044 Compare at least vector-only vs fused Matrix RAG before enabling KG
   retrieval by default for any query class.
-- T045 Compare graph/fused retrieval against a strong hierarchy-aware RAG
+- T045 [partial-static] Compare graph/fused retrieval against a strong hierarchy-aware RAG
   baseline, not only against naive chunks.
+  - 2026-04-29: `holdout-hierarchy-aware-parser-001` is now part of the
+    protected holdout set. It requires parser profile, hierarchy-aware chunker,
+    section hierarchy, page anchor, table count and citation metadata. Full
+    parser-derived corpus comparison from real extraction outputs remains open.
 - T046 [done-static-live-smoke] Add holdout canaries where GraphRAG is expected to fail or overreach.
   - 2026-04-27: `holdout-simple-doc-001` proves KG/fused retrieval must not
     use a high-scoring irrelevant graph claim for plain document QA.
-- T047 [partial-done] Add "strong dense baseline" canaries from Feature 021 so graph methods
+- T047 [done-static] Add "strong dense baseline" canaries from Feature 021 so graph methods
   are not rewarded for beating only weak naive chunking.
   - 2026-04-27: the holdout simple-document canary acts as a first dense
     baseline; hierarchy-aware/parser-derived canaries from Feature 021 are
@@ -175,6 +179,10 @@ feature_id: 022
     `source_uri`, `source_kind=url`, `fetch_method=http`, citation refs and
     parser/chunker metadata. This keeps URL ingestion from drifting below the
     local-file provenance standard.
+  - 2026-04-29: `holdout-hierarchy-aware-parser-001` adds the first
+    parser-derived strong dense baseline from the ResearchWatcher fixture. It
+    keeps KG out of plain parser-grounded QA and requires hierarchy/page/table
+    metadata from Feature 021.
 - T048 [done-static] Add NornicDB/nonicdb projection canaries for temporal,
   relational and multi-hop KG queries once Feature 017 projection replay exists.
   - 2026-04-27: Feature 017 now has a static projection-event replay snapshot

@@ -67,3 +67,8 @@ These cases intentionally use the same provider-agnostic canary machinery as
 the existing vector/KG/fused comparisons. A candidate passes by preserving
 source/citation metadata and citing the selected reference, not by calling a
 specific commercial provider.
+
+2026-04-29 parser-derived holdout note: `holdout-hierarchy-aware-parser-001`
+adds a protected dense baseline from the ResearchWatcher extraction fixture.
+It requires hierarchy-aware chunking metadata, parser candidate profile, page
+anchor and table count before graph/fused retrieval can claim an advantage.

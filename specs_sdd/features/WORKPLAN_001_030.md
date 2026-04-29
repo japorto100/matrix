@@ -83,8 +83,12 @@ and live-verify probes. This file defines execution order.
    - 2026-04-29: `pdf-extraction-sweep` now writes one Meta-Harness candidate
      directory per available/requested parser profile and records skipped
      optional extractors.
-8. [next] Phase 5: run the available parser sweep and use its artifacts to
-   tighten Feature 022 parser-derived retrieval canaries.
+   - 2026-04-29: Feature 022 now has
+     `holdout-hierarchy-aware-parser-001`, a parser-derived dense baseline
+     requiring hierarchy/page/table/citation metadata before graph promotion.
+8. [next] Phase 5: connect extraction sweep artifacts to retrieval canary
+   generation or move to the next non-browser agent surface if the artifact
+   contract is sufficient for now.
 
 ## Dependency Watchlist
 

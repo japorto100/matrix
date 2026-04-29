@@ -648,6 +648,77 @@ SIMPLE_DOC_HOLDOUT_CANARY = RetrievalCanary(
     tags=("holdout", "dense-baseline", "graph-danger"),
 )
 
+HIERARCHY_AWARE_DENSE_HOLDOUT_CANARY = RetrievalCanary(
+    id="holdout-hierarchy-aware-parser-001",
+    query="Which parser-derived section explains the fall-height formula?",
+    mode="text",
+    split="holdout",
+    question_class="parser_hierarchy_grounded",
+    expectation=CanaryExpectation(
+        intent="text",
+        required_sources=("vector",),
+        forbidden_sources=("kg",),
+        required_reference_ids=("chunk-researchwatcher-fall-height-formula",),
+        required_reference_metadata={
+            "chunk-researchwatcher-fall-height-formula": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "parser_name",
+                "parser_candidate_profile",
+                "chunker_name",
+                "section_hierarchy",
+                "page_number",
+                "table_count",
+            )
+        },
+        required_cited_reference_ids=("chunk-researchwatcher-fall-height-formula",),
+        generated_answer=(
+            "The parser-derived Theoretische Grundlagen section explains the "
+            "fall-height formula [chunk-researchwatcher-fall-height-formula]."
+        ),
+        require_citations=True,
+    ),
+    vector_hits=(
+        {
+            "id": "chunk-researchwatcher-fall-height-formula",
+            "text": (
+                "In the ResearchWatcher PDF fixture, the Theoretische "
+                "Grundlagen section explains h(t) as the fall-height formula "
+                "for free fall."
+            ),
+            "score": 0.92,
+            "source_uri": "doc://researchwatcher/small-pdf-ground-truth",
+            "metadata": {
+                "source_artifact_id": "artifact-researchwatcher-small-pdf",
+                "source_uri": "doc://researchwatcher/small-pdf-ground-truth",
+                "chunk_id": "chunk-researchwatcher-fall-height-formula",
+                "chunk_hash": "sha256:researchwatcher-fall-height-formula",
+                "citation_ref": (
+                    "doc://researchwatcher/small-pdf-ground-truth"
+                    "#page=1&section=Theoretische-Grundlagen"
+                ),
+                "parser_name": "pymupdf4llm",
+                "parser_candidate_profile": "baseline",
+                "chunker_name": "hierarchy-aware",
+                "section": "Theoretische Grundlagen",
+                "section_hierarchy": ["Protokoll", "Theoretische Grundlagen"],
+                "page_number": 1,
+                "table_count": 1,
+            },
+        },
+    ),
+    kg_hits=(
+        {
+            "claim_id": "claim-unrelated-parser-kg",
+            "content": "An unrelated KG claim about lab equipment ownership.",
+            "score": 0.99,
+        },
+    ),
+    tags=("holdout", "dense-baseline", "parser-derived", "hierarchy-aware"),
+)
+
 MULTIHOP_KG_HOLDOUT_CANARY = RetrievalCanary(
     id="holdout-red-sea-diesel-001",
     query="Which route links Red Sea shipping risk to European diesel cracks today?",
@@ -698,7 +769,11 @@ DEFAULT_SEARCH_CANARIES = (
     VISUAL_LAYOUT_CANARY,
     REPORT_GROUNDING_CANARY,
 )
-DEFAULT_HOLDOUT_CANARIES = (SIMPLE_DOC_HOLDOUT_CANARY, MULTIHOP_KG_HOLDOUT_CANARY)
+DEFAULT_HOLDOUT_CANARIES = (
+    SIMPLE_DOC_HOLDOUT_CANARY,
+    HIERARCHY_AWARE_DENSE_HOLDOUT_CANARY,
+    MULTIHOP_KG_HOLDOUT_CANARY,
+)
 DEFAULT_CANARIES = (*DEFAULT_SEARCH_CANARIES, *DEFAULT_HOLDOUT_CANARIES)
 
 

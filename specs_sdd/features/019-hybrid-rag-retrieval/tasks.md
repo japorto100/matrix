@@ -77,6 +77,10 @@ feature_id: 019
   - 2026-04-27: KG proposal emission now consumes the same chunk evidence
     metadata and records embedding dimension/reuse flags, preserving a single
     source-grounded ingestion contract before vector/KG fusion experiments.
+  - 2026-04-29: `holdout-hierarchy-aware-parser-001` now requires
+    parser-candidate profile, hierarchy-aware chunker, section hierarchy,
+    page anchor, table count and citation metadata on a dense/vector holdout
+    reference.
 - T037 Add source-grounding baseline order for implementation: strong
   parser/chunker/citation pipeline first, Matrix vector baseline second,
   Matrix fused vector+KG third, external LightRAG/HippoRAG adapters fourth.
@@ -115,8 +119,12 @@ feature_id: 019
   enabled.
 - T047 Verify multi-hop/world-model queries have enough expected path evidence
   to justify LightRAG/HippoRAG-style candidates.
-- T048 Verify graph retrieval does not degrade simple document-grounded QA
+- T048 [done-static] Verify graph retrieval does not degrade simple document-grounded QA
   when parser/chunking quality is held constant.
+  - 2026-04-29: holdout canaries now include both `holdout-simple-doc-001`
+    and `holdout-hierarchy-aware-parser-001`; both force text/vector mode and
+    forbid KG sources, so KG/fused promotion is measured against a stronger
+    dense/parser-derived baseline.
 - T049 Add Feature 026 browser-local retrieval as a measured candidate lane.
 - T050 [partial-static] Add Feature 025 semantic filters/terms to retrieval query planning.
   - 2026-04-29: `semantic-term-tool-success-001` now proves the retrieval
