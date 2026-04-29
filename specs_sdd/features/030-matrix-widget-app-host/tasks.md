@@ -3,7 +3,7 @@ title: Matrix Widget App Host Tasks
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 030
 ---
 
@@ -59,7 +59,12 @@ feature_id: 030
   - 2026-04-29: Matrix chat now parses widget state/message events through
     `matrix-widget-api` `WidgetParser`; unapproved widgets remain fallback
     link/status cards and unsafe URLs remain passive blocked text.
-- T021 Add widget proposal approval UI.
+- [x] T021 [done-static] Add widget proposal approval UI.
+  - 2026-04-30: `/control/widgets` renders a Matrix widget approval surface
+    backed by `/api/control/widgets/proposals`, including pending/approved/
+    blocked counts, policy denial reasons, audit refs, report-artifact metadata
+    and approve/deny intent buttons. Actual Matrix room-state mutation remains
+    live-gated.
 - [x] T022 [done-static] Add widget status display in room details.
   - 2026-04-29: `RoomInfoPanel` lists room-state widgets from `m.widget` and
     `im.vector.modular.widgets` with approved/pending/blocked/denied/revoked/
@@ -72,7 +77,10 @@ feature_id: 030
   - 2026-04-29: report widget proposals carry manifest id/path, output path
     and renderer into state-event data; the Matrix webclient preserves and
     renders those fields as passive link-card metadata.
-- T025 Add A2UI handoff compatibility notes from Feature 008.
+- [x] T025 [done-static] Add A2UI handoff compatibility notes from Feature 008.
+  - 2026-04-30: research now records that Matrix widgets stay event/fallback
+    first, while MCP Apps, code widgets, approval forms, tool dashboards and
+    dynamic A2UI surfaces remain Agent Chat UI / Feature 008 scope.
 
 ## Verification
 

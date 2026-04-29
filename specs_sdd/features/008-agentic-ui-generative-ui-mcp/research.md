@@ -140,6 +140,20 @@ confirm the split:
 Provider-specific app-resource examples are useful as protocol pressure, but
 they are not Matrix's runtime contract.
 
+## 2026-04-30 Matrix Widget Boundary Update
+
+Feature 030 now owns Matrix widget proposal approval and Matrix-client fallback
+behavior. Feature 008 should not route A2UI packets through Matrix widgets by
+default. The handoff rule is:
+
+- Agent Chat UI receives dynamic A2UI surfaces, MCP Apps, code widgets, tool
+  dashboards and approval forms.
+- Matrix rooms receive mobile-safe summaries, links, files/media and optional
+  policy-approved widget metadata.
+- Report/artifact handoff can bridge both worlds: A2UI may render the rich
+  local view, while Feature 030 emits a passive Matrix link-card/proposal with
+  manifest/output/renderer metadata.
+
 ## 2026-04-29 AI SDK Package Follow-Up
 
 Primary package metadata and the installed AI SDK changelog were checked before

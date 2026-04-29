@@ -225,6 +225,52 @@ export interface ReportArtifact {
 	};
 }
 
+export type MatrixWidgetApprovalStatus = "pending" | "approved" | "blocked" | "denied" | "revoked";
+
+export interface MatrixWidgetApprovalItem {
+	proposal_id: string;
+	report_id?: string;
+	title: string;
+	room_id: string;
+	requester_user_id: string;
+	url?: string;
+	resource_uri?: string;
+	status: MatrixWidgetApprovalStatus;
+	approval_required: boolean;
+	can_approve: boolean;
+	can_deny: boolean;
+	denial_reasons: string[];
+	fallback_markdown: string;
+	permissions: string[];
+	audit_refs: string[];
+	report_artifact?: {
+		manifest_id?: string;
+		output_path?: string;
+		renderer?: string;
+	};
+	matrix_publication?: {
+		room_id?: string;
+		event_id?: string;
+		link?: string;
+		status?: string;
+	};
+	validation?: {
+		passed?: boolean;
+		failures?: string[];
+	};
+}
+
+export interface MatrixWidgetApprovalResponse {
+	items: MatrixWidgetApprovalItem[];
+	total: number;
+	summary: {
+		pending: number;
+		approved: number;
+		blocked: number;
+	};
+	contract: "matrix-widget-approval/v1";
+}
+
 // ─── Slice 6: System Observability ─────────────────────────────────────────
 
 export type ServiceHealth = "healthy" | "degraded" | "unhealthy" | "unknown";

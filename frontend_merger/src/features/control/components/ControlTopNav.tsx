@@ -14,6 +14,7 @@ import {
 	LayoutDashboard,
 	Network,
 	Newspaper,
+	PanelsTopLeft,
 	Server,
 	Settings2,
 	Shield,
@@ -114,6 +115,13 @@ const TABS: SubTab[] = [
 		label: "Reports",
 		icon: <Newspaper className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/reports"),
+		section: "user",
+	},
+	{
+		href: "/control/widgets",
+		label: "Widgets",
+		icon: <PanelsTopLeft className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/widgets"),
 		section: "user",
 	},
 	{

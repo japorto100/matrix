@@ -17,6 +17,7 @@ import type {
 	ContextInspectorResponse,
 	EnvVar,
 	LlmProvider,
+	MatrixWidgetApprovalResponse,
 	McpCatalogEntry,
 	McpServer,
 	ModelRouting,
@@ -498,6 +499,18 @@ export const reportKeys = {
 export const reportQueries = {
 	list: async (): Promise<{ items: ReportArtifact[]; total: number }> =>
 		apiGet("/api/control/reports"),
+};
+
+// ─── Matrix Widgets ───────────────────────────────────────────────────────
+
+export const widgetKeys = {
+	all: ["control", "widgets"] as const,
+	proposals: () => ["control", "widgets", "proposals"] as const,
+};
+
+export const widgetQueries = {
+	proposals: async (): Promise<MatrixWidgetApprovalResponse> =>
+		apiGet("/api/control/widgets/proposals"),
 };
 
 // ─── A2A ───────────────────────────────────────────────────────────────────

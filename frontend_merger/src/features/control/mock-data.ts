@@ -9,6 +9,7 @@ import type {
 	ContextInspectorResponse,
 	EnvVar,
 	LlmProvider,
+	MatrixWidgetApprovalItem,
 	McpServer,
 	ModelRouting,
 	OverviewSnapshot,
@@ -1129,6 +1130,68 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 	contract: "agent-ops-event/v1",
 };
 mockOpsReadModel.blockers = mockOpsReadModel.items.filter((event) => event.status === "blocked");
+
+export const mockWidgetProposals: MatrixWidgetApprovalItem[] = [
+	{
+		proposal_id: "report-widget-risk-brief",
+		report_id: "risk-brief",
+		title: "Risk Brief",
+		room_id: "!risk:example.test",
+		requester_user_id: "@agent:example.test",
+		url: "https://widgets.example/reports/risk-brief",
+		resource_uri: "report://matrix/risk-brief",
+		status: "pending",
+		approval_required: true,
+		can_approve: true,
+		can_deny: true,
+		denial_reasons: [],
+		fallback_markdown: "[Risk Brief](https://widgets.example/reports/risk-brief) - report artifact",
+		permissions: ["read_room"],
+		audit_refs: ["audit-report-build"],
+		report_artifact: {
+			manifest_id: "risk-brief/manifest.json",
+			output_path: "risk-brief/report.html",
+			renderer: "markdown-fallback",
+		},
+		matrix_publication: {
+			room_id: "!risk:example.test",
+			status: "ready",
+		},
+		validation: {
+			passed: true,
+			failures: [],
+		},
+	},
+	{
+		proposal_id: "report-widget-blocked-origin",
+		report_id: "blocked-origin",
+		title: "Blocked Origin",
+		room_id: "!risk:example.test",
+		requester_user_id: "@agent:example.test",
+		url: "https://blocked.example/reports/blocked-origin",
+		resource_uri: "report://matrix/blocked-origin",
+		status: "blocked",
+		approval_required: false,
+		can_approve: false,
+		can_deny: false,
+		denial_reasons: ["widget-origin-not-allowed"],
+		fallback_markdown: "Blocked Origin (blocked widget URL)",
+		permissions: ["read_room"],
+		audit_refs: ["audit-report-build"],
+		report_artifact: {
+			manifest_id: "blocked-origin/manifest.json",
+			output_path: "blocked-origin/report.html",
+			renderer: "markdown-fallback",
+		},
+		matrix_publication: {
+			status: "blocked",
+		},
+		validation: {
+			passed: true,
+			failures: [],
+		},
+	},
+];
 
 // ─── MCP Servers ───────────────────────────────────────────────────────────
 

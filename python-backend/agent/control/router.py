@@ -33,6 +33,7 @@ from agent.control.skills import router as skills_router
 from agent.control.system import router as system_router
 from agent.control.tools import router as tools_router
 from agent.control.user_llm import router as user_llm_router
+from agent.control.widgets import router as widgets_router
 
 router = APIRouter(prefix="/api/v1/control", tags=["control"])
 
@@ -70,6 +71,7 @@ router.include_router(security_router)
 router.include_router(models_router)
 router.include_router(semantic_router)
 router.include_router(reports_router)
+router.include_router(widgets_router)
 
 # exec-16: Per-user LLM settings (API keys, default model, per-role routing)
 router.include_router(user_llm_router)

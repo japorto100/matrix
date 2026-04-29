@@ -3,7 +3,7 @@ title: Matrix Widget App Host Live Verify
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 030
 ---
 
@@ -12,6 +12,9 @@ feature_id: 030
 - LV001 Send safe widget state event in dev room and verify fallback link-card.
 - LV002 Send unsafe widget URL and verify passive blocked text.
 - LV003 Agent proposes a widget and approval UI appears.
+  - 2026-04-30 static prep: `/control/widgets` and
+    `/api/control/widgets/proposals` exist for the approval surface. Browser/
+    Matrix live run is still pending by instruction.
 - LV004 Deny proposal and verify no state event is written.
 - LV005 Approve proposal and verify state event is written once.
 - LV006 Verify room power-level failure is surfaced cleanly.

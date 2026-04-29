@@ -3,14 +3,17 @@ title: Matrix Widget App Host Gates
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 030
 ---
 
 # Gates
 
 - G001 Widgets are never executed from arbitrary message bodies.
-- G002 Agent-created room-state widget events require approval.
+- [x] G002 Agent-created room-state widget events require approval.
+  - 2026-04-30: backend proposal read model exposes only policy-evaluated
+    approval candidates, and Control UI separates approve/deny intent from
+    actual room-state mutation.
 - G003 Unsafe URL schemes remain passive text.
 - G004 Hosted apps use allowlisted origins/resources.
 - [x] G005 Unsupported clients receive stable markdown/link fallback.

@@ -3,7 +3,7 @@ title: Matrix Widget App Host Research
 status: draft
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 030
 ---
 
@@ -63,6 +63,27 @@ host/client decides what can render.
     backend state-event drafts carry report manifest id/path, output path and
     renderer metadata; the webclient displays those fields as passive card
     metadata, not as executable report content.
+  - Control UI now has a provider-agnostic widget approval read model:
+    `/api/control/widgets/proposals` derives policy-evaluated proposal items
+    from report artifacts and `/control/widgets` renders pending/approved/
+    blocked state, denial reasons, audit refs and report metadata. It does not
+    write Matrix room state; approve/deny mutation remains a live-gated bridge
+    step.
+
+## A2UI Handoff Compatibility Notes 2026-04-30
+
+Feature 008 remains the rich agent UI boundary. Matrix widgets should not
+become a hidden second A2UI runtime:
+
+- A2UI packets and local/custom widgets render in Agent Chat UI surfaces.
+- MCP Apps, tool dashboards, approval forms and code widgets stay in Agent
+  Chat UI / Feature 008 unless explicitly converted into mobile-safe Matrix
+  event summaries.
+- Matrix room output must always be representable as text/link/media/file/event
+  fallback first. Optional `m.widget` metadata may point to the same artifact
+  but must pass Feature 030 approval and Feature 024 resource policy.
+- Provider-specific UI SDK patterns may inform renderer ergonomics, but the
+  Matrix contract remains provider-agnostic and client-compatibility driven.
 
 ## Design Consequence
 

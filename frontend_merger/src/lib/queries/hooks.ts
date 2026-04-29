@@ -58,6 +58,8 @@ import {
 	toolsQueries,
 	userLlmKeys,
 	userLlmQueries,
+	widgetKeys,
+	widgetQueries,
 } from "./control";
 
 // Default UseQuery options — short stale, graceful retry.
@@ -522,6 +524,15 @@ export function useReportArtifacts() {
 		...DEFAULTS,
 		queryKey: reportKeys.list(),
 		queryFn: () => reportQueries.list(),
+	});
+}
+
+// ─── Matrix Widgets ───────────────────────────────────────────────────────
+export function useWidgetProposals() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: widgetKeys.proposals(),
+		queryFn: () => widgetQueries.proposals(),
 	});
 }
 
