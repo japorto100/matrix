@@ -106,10 +106,23 @@ migrated_from:
   - 2026-04-29: ADR-0010 keeps mobile Matrix clients on event/link/code/media
     fallbacks and routes MCP Apps, code widgets, tool dashboards and approval
     forms to Agent Chat UI / A2UI surfaces.
+- [x] T082 [done-static] Update frontend AI SDK packages to current stable v6
+  patch line and verify Agent Chat type compatibility.
+  - 2026-04-29: `ai` updated to 6.0.170, `@ai-sdk/react` to 3.0.172 and
+    `@ai-sdk/devtools` to 0.0.16; unused installed assistant-ui AI SDK
+    adapters were also patched to `@assistant-ui/react` 0.12.27 and
+    `@assistant-ui/react-ai-sdk` 1.3.21. `tsc --noEmit` and targeted Agent
+    Chat tests pass.
+- [x] T083 [done-static] Render AI SDK v6 static `tool-*` parts as well as
+  dynamic tool parts in Agent Chat.
+  - 2026-04-29: `AgentChatMessage` now uses SDK helpers `isToolUIPart()` and
+    `getToolName()`, so provider/gateway static tool streams do not disappear
+    from the timeline.
 
 ## Verify Gates
 
 - [x] Malformed A2UI tree rejected.
+- [x] Agent Chat renders AI SDK v6 static and dynamic tool UI parts.
 - Valid A2UI tree renders in browser.
 - Live LLM path creates a UI surface via `data-a2ui-*`.
 - Surface survives reload and server reconcile.

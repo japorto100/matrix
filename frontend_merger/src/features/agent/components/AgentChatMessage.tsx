@@ -13,7 +13,7 @@
 // AC103: Token usage badge in message footer
 // AC104: Cost-per-token estimate badge
 
-import { isReasoningUIPart, type TextUIPart, type UIMessage } from "ai";
+import { getToolName, isReasoningUIPart, isToolUIPart, type TextUIPart, type UIMessage } from "ai";
 import { Pencil, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
 import { motion } from "motion/react";
 import { memo, useState } from "react";
@@ -158,8 +158,8 @@ function AgentChatMessageInner({
 							return <ReasoningBlock key={key} text={part.text} />;
 						}
 
-						// AC85: Dynamic tool calls
-						if (part.type === "dynamic-tool") {
+						// AC85: AI SDK v6 tool calls, both static `tool-*` and dynamic tools.
+						if (isToolUIPart(part)) {
 							const outputValue =
 								part.state === "output-available"
 									? part.output
@@ -169,7 +169,7 @@ function AgentChatMessageInner({
 							return (
 								<AgentChatToolBlock
 									key={key}
-									toolName={part.toolName}
+									toolName={getToolName(part)}
 									toolCallId={part.toolCallId}
 									state={part.state}
 									input={part.input}

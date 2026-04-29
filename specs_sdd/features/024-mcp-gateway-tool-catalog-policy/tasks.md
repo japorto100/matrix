@@ -119,6 +119,11 @@ feature_id: 024
 - [x] T036 [done-static] Link Matrix widget/resource output handoff to Feature 030.
   - 2026-04-29: Feature 030 `agent.matrix_widgets.policy` calls Feature 024
     resource policy for MCP resource handoff before widget hosting.
+- [x] T037 [done-static] Add Control UI MCP policy summary and focused audit
+  rail.
+  - 2026-04-29: `McpTab` now shows effective visible/blocked counts, approval
+    required count, descriptor drift count, secret-redaction status, per-tool
+    last-seen timestamp and recent `/control/audit/mcp-policy` events.
 
 ## Verification
 
@@ -131,6 +136,7 @@ feature_id: 024
   - 2026-04-29: `test_fixture_mcp_catalog_tool_executes_through_gateway`
     builds the fixture catalog, selects a visible descriptor and executes it
     through `execute_mcp_tool_call()` with preserved `tool_call_id`.
+- [x] T045a [done-static] Typecheck Control UI MCP summary/audit rendering.
 - T046 Live-verify Control UI reads the effective catalog.
 - [x] T047 [done-static-live-smoke] Live-verify Meta-Harness blocks poisoned descriptors.
   - 2026-04-29: provider-free CLI smoke `mcp-catalog-policy` writes artifacts

@@ -3,11 +3,20 @@
 // McpTab — MCP server registry (exec-09)
 // Slice 6.6 (NEU coverage gap): MCP Server Browser
 
-import { CheckCircle2, Network, Plug, RefreshCw, XCircle } from "lucide-react";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	Clock,
+	Network,
+	Plug,
+	RefreshCw,
+	ShieldCheck,
+	XCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMcpCatalog, useMcpServers } from "@/lib/queries/hooks";
+import { useMcpCatalog, useMcpPolicyAuditEvents, useMcpServers } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockMcpServers } from "../mock-data";
 import type { McpServer } from "../types";
@@ -18,16 +27,31 @@ const STATUS_COLOR: Record<McpServer["status"], string> = {
 	error: "border-rose-500/30 bg-rose-950/10",
 };
 
+function formatTimestamp(value?: string): string {
+	if (!value) return "never";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toLocaleString();
+}
+
 export function McpTab() {
 	// Slice 7 Phase H: real backend with mock fallback
 	const query = useMcpServers();
 	const catalogQuery = useMcpCatalog();
+	const auditQuery = useMcpPolicyAuditEvents({ limit: 5 });
 	const servers = (query.data?.items as McpServer[] | undefined) ?? mockMcpServers;
 	const catalog = catalogQuery.data?.items ?? [];
+	const recentAudit = auditQuery.data?.items ?? [];
 	const connected = servers.filter((s) => s.status === "connected").length;
 	const totalTools = servers.reduce((sum, s) => sum + s.tools.length, 0);
 	const visibleTools = catalog.filter((entry) => entry.visible).length;
 	const blockedTools = catalog.filter((entry) => !entry.visible).length;
+	const driftedTools = catalog.filter((entry) => entry.descriptor_diff?.changed).length;
+	const approvalTools = catalog.filter(
+		(entry) => entry.tool.approval_level !== "auto" && entry.tool.approval_level !== "blocked",
+	).length;
+	const redacted =
+		catalogQuery.data?.secrets_redacted ?? catalog.some((entry) => entry.secrets_redacted);
 
 	return (
 		<div className="px-6 py-4 space-y-4">
@@ -44,6 +68,57 @@ export function McpTab() {
 					Reconnect All
 				</Button>
 			</header>
+
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+				<Card>
+					<CardContent className="flex items-center justify-between p-3">
+						<div>
+							<div className="text-[10px] font-semibold uppercase text-muted-foreground">
+								Effective catalog
+							</div>
+							<div className="text-xl font-semibold">{visibleTools}</div>
+							<div className="text-[10px] text-muted-foreground">{blockedTools} blocked</div>
+						</div>
+						<ShieldCheck className="h-4 w-4 text-emerald-500" />
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="flex items-center justify-between p-3">
+						<div>
+							<div className="text-[10px] font-semibold uppercase text-muted-foreground">
+								Approval required
+							</div>
+							<div className="text-xl font-semibold">{approvalTools}</div>
+							<div className="text-[10px] text-muted-foreground">confirm/destructive/admin</div>
+						</div>
+						<AlertTriangle className="h-4 w-4 text-amber-500" />
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="flex items-center justify-between p-3">
+						<div>
+							<div className="text-[10px] font-semibold uppercase text-muted-foreground">
+								Descriptor drift
+							</div>
+							<div className="text-xl font-semibold">{driftedTools}</div>
+							<div className="text-[10px] text-muted-foreground">requires review when flagged</div>
+						</div>
+						<RefreshCw className="h-4 w-4 text-sky-500" />
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="flex items-center justify-between p-3">
+						<div>
+							<div className="text-[10px] font-semibold uppercase text-muted-foreground">
+								Secret handling
+							</div>
+							<div className="text-xl font-semibold">{redacted ? "redacted" : "n/a"}</div>
+							<div className="text-[10px] text-muted-foreground">catalog payload</div>
+						</div>
+						<Network className="h-4 w-4 text-muted-foreground" />
+					</CardContent>
+				</Card>
+			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 				{servers.map((server) => (
@@ -116,14 +191,15 @@ export function McpTab() {
 				))}
 			</div>
 
-			<div className="rounded-lg border border-border overflow-hidden">
-				<table className="w-full text-xs">
+			<div className="overflow-x-auto rounded-lg border border-border">
+				<table className="w-full min-w-[760px] text-xs">
 					<thead className="bg-card/40">
 						<tr className="text-left">
 							<th className="py-2 px-3 font-semibold">Tool</th>
 							<th className="py-2 px-3 font-semibold w-28">Approval</th>
 							<th className="py-2 px-3 font-semibold">Risk / Denial</th>
 							<th className="py-2 px-3 font-semibold w-44">Descriptor</th>
+							<th className="py-2 px-3 font-semibold w-36">Last Seen</th>
 							<th className="py-2 px-3 font-semibold w-28">Visible</th>
 						</tr>
 					</thead>
@@ -193,6 +269,12 @@ export function McpTab() {
 									</div>
 								</td>
 								<td className="py-2 px-3">
+									<div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+										<Clock className="h-3 w-3" />
+										<span>{formatTimestamp(entry.tool.last_seen)}</span>
+									</div>
+								</td>
+								<td className="py-2 px-3">
 									<Badge
 										variant="outline"
 										className={cn(
@@ -209,13 +291,50 @@ export function McpTab() {
 						))}
 						{catalog.length === 0 && (
 							<tr className="border-t border-border">
-								<td colSpan={5} className="py-6 px-3 text-center text-muted-foreground">
+								<td colSpan={6} className="py-6 px-3 text-center text-muted-foreground">
 									No effective MCP catalog entries
 								</td>
 							</tr>
 						)}
 					</tbody>
 				</table>
+			</div>
+
+			<div className="rounded-lg border border-border">
+				<div className="border-b border-border px-3 py-2 text-xs font-semibold">
+					Recent MCP policy audit
+				</div>
+				<div className="divide-y divide-border">
+					{recentAudit.map((event) => (
+						<div key={event.id} className="grid grid-cols-[9rem_1fr_5rem] gap-3 px-3 py-2 text-xs">
+							<div className="text-[10px] text-muted-foreground">
+								{formatTimestamp(event.timestamp)}
+							</div>
+							<div className="min-w-0">
+								<div className="truncate font-mono text-[11px]">{event.action}</div>
+								<div className="truncate text-[10px] text-muted-foreground">
+									{event.tool_name ?? event.thread_id ?? "policy"}
+								</div>
+							</div>
+							<Badge
+								variant="outline"
+								className={cn(
+									"h-4 justify-center px-1.5 text-[9px]",
+									event.success
+										? "border-emerald-500/50 text-emerald-400"
+										: "border-rose-500/50 text-rose-400",
+								)}
+							>
+								{event.success ? "ok" : "denied"}
+							</Badge>
+						</div>
+					))}
+					{recentAudit.length === 0 && (
+						<div className="px-3 py-4 text-center text-muted-foreground text-xs">
+							No MCP policy audit events
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);

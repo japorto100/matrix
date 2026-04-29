@@ -49,6 +49,14 @@ policy-gated independently from the tool call that produced it.
 
 Feature 024 owns the gateway/catalog decision layer shared by those features.
 
+## 2026-04-29 Static Follow-Up
+
+The Control UI MCP tab now shows the effective policy posture directly:
+visible/blocked catalog counts, approval-required count, descriptor drift count,
+secret-redaction state, per-tool last-seen timestamps and a focused MCP policy
+audit rail. This is still static/backend-smoke verified; browser live
+verification remains in LV/T046.
+
 ## Closeout Criteria
 
 - MCP server config is explicit and disabled-by-default for external endpoints.

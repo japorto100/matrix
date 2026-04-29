@@ -32,6 +32,11 @@ frontend widget-data tests, CopilotKit env-gated global actions/readables and
 Python `A2uiEmitter` tests. `render_a2ui_surface` remains available as a
 fallback while native `data-a2ui-*` packets are the target path.
 
+AI SDK package verification on 2026-04-29 updates Agent Chat to the current
+stable SDK-6 patch line (`ai` 6.0.170, `@ai-sdk/react` 3.0.172,
+`@ai-sdk/devtools` 0.0.16). The frontend now uses SDK tool-part helpers so both
+static `tool-*` and `dynamic-tool` stream parts render in the timeline.
+
 ## Target State / Soll
 
 The agent can emit safe structured UI surfaces into chat and canvas, while MCP
@@ -62,6 +67,9 @@ opening `exec-09`, `exec-20` or Superpowers Plan v2.
 - Browser/WebMCP roundtrip still needs live verification where it is meant to be
   active.
 - MCP Apps are evaluation-only and must not replace text/tool fallbacks.
+- SDK server-side validation helpers such as `safeValidateUIMessages()` and
+  browser history helpers such as `pruneMessages()` are not yet wired into our
+  BFF/harness path.
 - Server-backed surface persistence still needs live verification; static tests
   cover packet/widget-data behavior, not Postgres reconciliation.
 - ADR-0010 assigns rich MCP Apps, code widgets, tool dashboards and approval
@@ -83,6 +91,8 @@ external MCP enablement requires auth/tool filtering first.
 - [x] Python emitter can serialize protocol packets to SSE frames.
 - [x] #93/#94/#95 and MCP external-enablement decisions are documented in
   `decisions.md`.
+- [x] Agent Chat renders AI SDK v6 static and dynamic tool parts after the
+  package update.
 
 ## Live Verify
 

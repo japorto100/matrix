@@ -139,3 +139,35 @@ confirm the split:
 
 Provider-specific app-resource examples are useful as protocol pressure, but
 they are not Matrix's runtime contract.
+
+## 2026-04-29 AI SDK Package Follow-Up
+
+Primary package metadata and the installed AI SDK changelog were checked before
+frontend changes:
+
+- `ai` latest stable is `6.0.170`; repo was on `^6.0.134`.
+- `@ai-sdk/react` latest stable is `3.0.172`; repo was on `^3.0.136`.
+- `@ai-sdk/devtools` latest stable is `0.0.16`; repo was on `^0.0.15`.
+- Installed but currently unused assistant-ui adapters were also stale:
+  `@assistant-ui/react` latest stable is `0.12.27` and
+  `@assistant-ui/react-ai-sdk` latest stable is `1.3.21`.
+- AI SDK 6 exposes stable agent/tool primitives such as `ToolLoopAgent`,
+  `ToolUIPart`, `DynamicToolUIPart`, `isToolUIPart()`, `getToolName()`,
+  `safeValidateUIMessages()`, `validateUIMessages()`, `pruneMessages()`,
+  `createAgentUIStreamResponse()` and MCP approval-related errors/helpers.
+
+Adoption judgement for Matrix:
+
+- Adopt the v6 patch updates immediately; they include fixes around
+  provider-executed tools, approval responses, malformed UI stream errors and
+  CORS behavior.
+- Use SDK type guards in the frontend. Agent Chat must render both static
+  `tool-*` parts and `dynamic-tool` parts, because gateway/provider streams can
+  legally produce either.
+- Keep Matrix's Python/Go harness as the canonical runtime loop for now. Do not
+  replace it with `ToolLoopAgent`; instead, use the SDK's stream/message
+  contracts where they reduce frontend drift.
+- Future hardening candidates: server-side `safeValidateUIMessages()` before
+  replay/resume, SDK `pruneMessages()` for browser-side history compaction,
+  DevTools gated by local dev config, and eventual comparison of our approval
+  continuation path against SDK approval helpers.

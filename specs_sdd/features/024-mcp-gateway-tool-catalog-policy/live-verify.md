@@ -15,6 +15,9 @@ feature_id: 024
   discovery.
 - LV003 Open Control UI MCP tab and verify descriptor provenance and risk
   status render.
+- LV003a Verify Control UI MCP summary cards match the effective catalog:
+  visible/blocked count, approval-required count, descriptor drift count,
+  secret-redaction state and per-tool last-seen timestamp.
 - LV004 Ask the agent to use an auto-approved fixture tool and verify the tool
   call succeeds with a preserved tool_call_id.
 - LV005 Ask the agent to use a confirm-level fixture tool without approval UI
@@ -34,5 +37,7 @@ feature_id: 024
   denied and poisoned cases are artifacted.
 - LV013 Verify audit search shows discovery, denial, approval and execution
   events.
+- LV013a Verify the MCP tab focused audit rail shows recent
+  `/control/audit/mcp-policy` events and success/denial status.
 - LV014 Verify shutdown/restart preserves or intentionally rebuilds descriptor
   snapshots according to the chosen persistence decision.
