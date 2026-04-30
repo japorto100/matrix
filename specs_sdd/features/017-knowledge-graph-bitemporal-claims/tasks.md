@@ -129,6 +129,11 @@ feature_id: 017
     claim ids, compact paths, evidence ids and citation refs survive the
     replay contract in memory and, when a DB URL is present, through Postgres.
     Actual delete/recreate of a live NornicDB projection is still open.
+  - 2026-04-30: replay snapshots now include `rebuildable`,
+    `rebuild_failures`, source artifact ids, chunk ids, chunk hashes,
+    evidence refs and a stable `replay_checksum`. Incomplete evidence refs are
+    flagged instead of silently producing a projection that cannot be rebuilt
+    from Postgres source artifacts.
 - T031 Define Control UI KG claim detail contract.
 - T032 Define promotion/demotion review queue behavior.
 - T033 Coordinate `/memory/kg` and provenance graph surfaces with Feature 010.
@@ -184,6 +189,10 @@ feature_id: 017
     `evidence_refs` alongside `evidence_ids`, so the outbox payload can carry
     source URI, chunk/citation metadata and content hashes into rebuildable
     graph projections without rereading raw documents first.
+  - 2026-04-30: `_projection_replay_snapshot()` now validates that replay
+    payloads carry source artifact, chunk id/hash and citation/source refs, and
+    exposes those fields plus a stable checksum for Meta-Harness/Feature 022
+    comparisons.
 - T049b Benchmark NornicDB/nonicdb path retrieval against Postgres-only KG
   candidate search and fused RAG on the same Feature 022 canaries; promote only
   for query classes where it improves path completeness, stability or latency.

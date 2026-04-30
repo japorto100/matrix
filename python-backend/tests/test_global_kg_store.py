@@ -189,7 +189,43 @@ def test_in_memory_global_kg_projection_replay_snapshot_preserves_provenance() -
     assert snapshot["citation_refs"] == [
         "https://arxiv.org/pdf/2604.09666#chunk=chunk-1"
     ]
+    assert snapshot["source_artifact_ids"] == ["artifact-arxiv-2604-09666-url"]
+    assert snapshot["chunk_ids"] == ["chunk-arxiv-2604-09666-url"]
+    assert snapshot["chunk_hashes"] == ["hash-1"]
+    assert snapshot["rebuildable"] is True
+    assert snapshot["rebuild_failures"] == []
+    assert snapshot["replay_checksum"].startswith("kgproj_")
     assert snapshot["claims"][0]["evidence_ids"] == [proposal.evidence[0].evidence_id]
+    assert snapshot["claims"][0]["evidence_refs"][0]["metadata"]["parser_name"] == (
+        "markitdown"
+    )
+
+
+def test_projection_replay_snapshot_flags_incomplete_evidence_refs() -> None:
+    store = InMemoryGlobalKGStore()
+    claim_id = store.propose_claim(
+        ClaimProposal(
+            subject=EntityRef.from_name("EU", entity_type="institution"),
+            predicate="SANCTIONS",
+            object_entity=EntityRef.from_name("Russian oil", entity_type="commodity"),
+            valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+            confidence=0.5,
+            evidence=(
+                EvidenceRef(
+                    source_layer="world_evidence",
+                    source_ref="source-without-chunk-metadata",
+                    source_uri="doc://sanctions",
+                ),
+            ),
+            metadata={"semantic_term_ids": ["kg_claim"]},
+        )
+    )
+
+    snapshot = store.projection_replay_snapshot(limit=10)
+
+    assert snapshot["claim_ids"] == [claim_id]
+    assert snapshot["rebuildable"] is False
+    assert snapshot["rebuild_failures"] == [f"incomplete-evidence-ref:{claim_id}"]
 
 
 def test_create_global_kg_store_mock(monkeypatch) -> None:

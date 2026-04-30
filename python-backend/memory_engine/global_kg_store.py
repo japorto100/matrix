@@ -9,7 +9,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from memory_engine.global_kg import ClaimProposal, decay_score
+from memory_engine.global_kg import ClaimProposal, decay_score, stable_hash
 
 
 class GlobalKGStore(Protocol):
@@ -618,11 +618,20 @@ def _projection_replay_snapshot(
     entities: dict[str, dict[str, Any]] = {}
     paths: list[list[str]] = []
     citation_refs: set[str] = set()
+    source_artifact_ids: set[str] = set()
+    chunk_ids: set[str] = set()
+    chunk_hashes: set[str] = set()
+    rebuild_failures: list[str] = []
     for event in events:
         payload = event.get("payload") or {}
         claim_id = str(payload.get("claim_id") or event.get("claim_id") or "")
         if not claim_id:
             continue
+        evidence_refs = [
+            evidence
+            for evidence in (payload.get("evidence_refs") or [])
+            if isinstance(evidence, dict)
+        ]
         claims[claim_id] = {
             "claim_id": claim_id,
             "operation": event.get("operation"),
@@ -631,8 +640,11 @@ def _projection_replay_snapshot(
             "valid_from": payload.get("valid_from"),
             "valid_to": payload.get("valid_to"),
             "evidence_ids": list(payload.get("evidence_ids") or []),
+            "evidence_refs": evidence_refs,
             "metadata": payload.get("metadata") or {},
         }
+        if not evidence_refs:
+            rebuild_failures.append(f"missing-evidence-refs:{claim_id}")
         subject = payload.get("subject") or {}
         obj = payload.get("object") or {}
         for node in (subject, obj):
@@ -653,9 +665,7 @@ def _projection_replay_snapshot(
                 value = evidence.get("citation_ref") or evidence.get("source_uri")
                 if value:
                     citation_refs.add(str(value))
-        for evidence in payload.get("evidence_refs", []) or []:
-            if not isinstance(evidence, dict):
-                continue
+        for evidence in evidence_refs:
             evidence_metadata = evidence.get("metadata") or {}
             value = (
                 evidence_metadata.get("citation_ref")
@@ -664,7 +674,34 @@ def _projection_replay_snapshot(
             )
             if value:
                 citation_refs.add(str(value))
+            for key, target in (
+                ("source_artifact_id", source_artifact_ids),
+                ("chunk_id", chunk_ids),
+                ("chunk_hash", chunk_hashes),
+            ):
+                item = evidence_metadata.get(key) or (
+                    evidence.get("content_hash") if key == "chunk_hash" else None
+                )
+                if item:
+                    target.add(str(item))
+            if not (
+                evidence_metadata.get("source_artifact_id")
+                and evidence_metadata.get("chunk_id")
+                and (evidence_metadata.get("chunk_hash") or evidence.get("content_hash"))
+                and value
+            ):
+                rebuild_failures.append(f"incomplete-evidence-ref:{claim_id}")
 
+    replay_basis = {
+        "projection_target": projection_target,
+        "claim_ids": sorted(claims),
+        "entity_ids": sorted(entities),
+        "paths": sorted(paths),
+        "citation_refs": sorted(citation_refs),
+        "source_artifact_ids": sorted(source_artifact_ids),
+        "chunk_ids": sorted(chunk_ids),
+        "chunk_hashes": sorted(chunk_hashes),
+    }
     return {
         "projection_target": projection_target,
         "event_count": len(events),
@@ -672,6 +709,12 @@ def _projection_replay_snapshot(
         "entity_ids": sorted(entities),
         "paths": sorted(paths),
         "citation_refs": sorted(citation_refs),
+        "source_artifact_ids": sorted(source_artifact_ids),
+        "chunk_ids": sorted(chunk_ids),
+        "chunk_hashes": sorted(chunk_hashes),
+        "rebuildable": not rebuild_failures,
+        "rebuild_failures": sorted(set(rebuild_failures)),
+        "replay_checksum": f"kgproj_{stable_hash(replay_basis)}",
         "claims": [claims[key] for key in sorted(claims)],
         "entities": [entities[key] for key in sorted(entities)],
     }

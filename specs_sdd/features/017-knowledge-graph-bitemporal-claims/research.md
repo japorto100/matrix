@@ -191,3 +191,11 @@ as metadata, not inline whole graph payloads.
 events into scoped retrieval audit rows. The persisted form is still ids/counts
 only, preserving Feature 017's source/evidence boundary and avoiding audit-log
 promotion of claim text into a second KG source.
+
+2026-04-30 projection replay update: the NornicDB/nonicdb outbox remains a
+projection target, not a source of truth. Replay snapshots now expose the exact
+Postgres-owned evidence surface needed to rebuild that projection: source
+artifact ids, chunk ids, chunk hashes, citation/source refs, evidence refs and
+a stable replay checksum. Missing source/chunk/hash/citation metadata sets
+`rebuildable=false`, so Meta-Harness and Feature 022 can reject graph candidates
+that only work because a secondary graph database already exists.

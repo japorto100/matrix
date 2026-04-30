@@ -46,6 +46,12 @@ feature_id: 017
   insertion.
 - A selected claim can be expanded through the KG store API into a compact path
   and source refs before the generator sees it.
+- [x] Projection replay snapshots expose whether the projection is rebuildable
+  from Postgres-owned source artifacts.
+  - 2026-04-30: snapshots now include source artifact ids, chunk ids, chunk
+    hashes, evidence refs, citation refs, `rebuildable`, rebuild failures and a
+    stable replay checksum. Missing source/chunk/hash/citation evidence fails
+    the static replay contract.
 - [x] Selected KG claims emit runtime event metadata without source text.
   - 2026-04-30: fused retrieval emits `kg.retrieval.selected_claims` with
     selected claim ids and KG access counts after context-bubble selection.
