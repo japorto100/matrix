@@ -22,6 +22,7 @@ Split rationale (exec-context §6.3):
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -68,6 +69,20 @@ def estimate_tokens(messages: list[dict[str, Any]]) -> int:
 _TRUNCATION_MARKER = "[... truncated, full result was "
 
 
+def _tool_result_ref(msg: dict[str, Any], *, content_hash: str) -> str:
+    for key in ("tool_call_id", "id", "call_id", "toolUseId", "tool_use_id"):
+        value = str(msg.get(key) or "").strip()
+        if value:
+            return f"tool:{value}"
+    metadata = msg.get("metadata")
+    if isinstance(metadata, dict):
+        for key in ("source_ref", "raw_evidence_ref", "artifact_id"):
+            value = str(metadata.get(key) or "").strip()
+            if value:
+                return value
+    return f"tool-result:sha256:{content_hash[:16]}"
+
+
 def offload_large_tool_results(
     messages: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -87,11 +102,25 @@ def offload_large_tool_results(
                 and len(content) > TOOL_RESULT_MAX_CHARS
                 and _TRUNCATION_MARKER not in content
             ):
+                content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+                offload_ref = _tool_result_ref(msg, content_hash=content_hash)
                 truncated = (
                     content[:TOOL_RESULT_MAX_CHARS]
-                    + f"\n{_TRUNCATION_MARKER}{len(content)}chars]"
+                    + f"\n{_TRUNCATION_MARKER}{len(content)}chars, sha256:{content_hash[:12]}]"
                 )
-                result.append({**msg, "content": truncated})
+                metadata = dict(msg.get("metadata") or {})
+                compaction_metadata = dict(metadata.get("compaction") or {})
+                compaction_metadata.update(
+                    {
+                        "truncated": True,
+                        "offload_ref": offload_ref,
+                        "full_content_chars": len(content),
+                        "content_sha256": content_hash,
+                        "preview_chars": TOOL_RESULT_MAX_CHARS,
+                    }
+                )
+                metadata["compaction"] = compaction_metadata
+                result.append({**msg, "content": truncated, "metadata": metadata})
                 continue
         result.append(msg)
     return result

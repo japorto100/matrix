@@ -66,6 +66,7 @@ def run_knowledge_contract_scenarios(
 
     scenarios = [
         _memory_ground_truth_preserved(),
+        _compaction_tool_output_provenance_contract(),
         _memory_to_kg_promotion_blocked_without_evidence(),
         _rag_kg_semantic_context_grounded(),
         _semantic_ambiguity_and_permission_fail_closed(),
@@ -280,6 +281,47 @@ def _memory_to_kg_promotion_blocked_without_evidence() -> dict[str, Any]:
         passed=not failures and validation["passed"] is False,
         failures=failures,
         details={"validation": validation, "blocked": validation["passed"] is False},
+    )
+
+
+def _compaction_tool_output_provenance_contract() -> dict[str, Any]:
+    from agent.middleware import compaction
+
+    content = "tool-output-evidence " * 400
+    compacted = compaction.compact(
+        [
+            {
+                "role": "tool",
+                "tool_call_id": "call-kg-rag-1",
+                "content": content,
+                "metadata": {"source_ref": "audit:tool-output-1"},
+            }
+        ]
+    )[0]
+    metadata = (compacted.get("metadata") or {}).get("compaction") or {}
+    failures: list[str] = []
+    if len(str(compacted.get("content") or "")) >= len(content):
+        failures.append("tool-output-not-compacted")
+    for key in (
+        "truncated",
+        "offload_ref",
+        "full_content_chars",
+        "content_sha256",
+        "preview_chars",
+    ):
+        if metadata.get(key) in (None, "", [], ()):
+            failures.append(f"missing-compaction-metadata:{key}")
+    if metadata.get("truncated") is not True:
+        failures.append("compaction-metadata-not-truncated")
+    if metadata.get("offload_ref") != "tool:call-kg-rag-1":
+        failures.append("compaction-offload-ref-not-tool-call")
+    if metadata.get("full_content_chars") != len(content):
+        failures.append("compaction-full-size-not-preserved")
+    return _scenario_result(
+        scenario_id="knowledge-compaction-tool-output-provenance",
+        passed=not failures,
+        failures=failures,
+        details={"compaction_metadata": metadata},
     )
 
 

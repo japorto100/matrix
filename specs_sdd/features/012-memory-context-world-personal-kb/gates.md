@@ -61,6 +61,12 @@ feature_id: 012
 
 - [x] Compaction middleware tests pass.
 - [x] Message metadata carries source-layer/degradation fields in runner code.
+- [x] Tool-output compaction preserves provenance metadata while truncating LLM
+  prompt content.
+  - 2026-04-30: large tool messages get `metadata.compaction` with
+    `offload_ref`, full char count, content hash and preview size; the
+    provider-free knowledge contract covers this as
+    `knowledge-compaction-tool-output-provenance`.
 - [ ] 80/85/95 percent thresholds are live-verified with a real long thread.
 - [ ] Evidence/provenance preservation after compression is live-verified.
 

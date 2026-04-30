@@ -18,11 +18,36 @@ def test_compact_is_idempotent():
 
 def test_compact_truncates_large_tool_results():
     big = "x" * (compaction.TOOL_RESULT_MAX_CHARS + 1000)
-    messages = [{"role": "tool", "content": big}]
+    messages = [{"role": "tool", "tool_call_id": "call-1", "content": big}]
     result = compaction.compact(messages)
     out = result[0]["content"]
     assert len(out) < len(big)
     assert "truncated" in out
+    metadata = result[0]["metadata"]["compaction"]
+    assert metadata["truncated"] is True
+    assert metadata["offload_ref"] == "tool:call-1"
+    assert metadata["full_content_chars"] == len(big)
+    assert metadata["content_sha256"]
+    assert metadata["preview_chars"] == compaction.TOOL_RESULT_MAX_CHARS
+
+
+def test_compact_preserves_existing_metadata_when_truncating():
+    big = "y" * (compaction.TOOL_RESULT_MAX_CHARS + 1000)
+    messages = [
+        {
+            "role": "tool",
+            "content": big,
+            "metadata": {
+                "source_ref": "audit:tool-output-1",
+                "existing": "kept",
+            },
+        }
+    ]
+    result = compaction.compact(messages)
+
+    metadata = result[0]["metadata"]
+    assert metadata["existing"] == "kept"
+    assert metadata["compaction"]["offload_ref"] == "audit:tool-output-1"
 
 
 def test_compact_preserves_small_tool_results():

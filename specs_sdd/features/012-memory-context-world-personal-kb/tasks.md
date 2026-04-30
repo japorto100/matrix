@@ -146,6 +146,10 @@ migrated_from:
   - 2026-04-30: `knowledge-memory-ground-truth-preserved` covers the static
     Meta-Harness contract for durable raw evidence refs. Full live-runner
     stress remains open.
+  - 2026-04-30: `knowledge-compaction-tool-output-provenance` and
+    `agent.middleware.compaction` now preserve tool-output offload refs, full
+    size and content hash when large tool messages are truncated for prompt
+    compaction.
 - [x] T039r [done-static-live-smoke] Add a hydration-worker design and smoke: pending MemPalace rows are
   picked up, embedded with the configured provider, dimension-checked against
   the active index and marked failed with reason instead of silently skipped.

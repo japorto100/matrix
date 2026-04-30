@@ -178,8 +178,16 @@ context overflow now trigger a bounded compression recovery in both runners.
 The harness compresses the active messages, restarts the retry from iteration
 zero for that compressed context and surfaces
 `context_overflow_compress_retry`. The guard is deliberately one-shot; repeated
-provider failures still exit through the normal ErrorPacket path instead of
+overflow remains a surfaced failure rather than an infinite retry loop.
+Provider failures still exit through the normal ErrorPacket path instead of
 looping.
+
+2026-04-30 compaction-provenance update: mechanical tool-output compaction now
+preserves provider-neutral provenance metadata before prompt truncation. Large
+tool messages keep a redacted `metadata.compaction` envelope with offload ref,
+full content size, SHA-256 hash and preview length. This follows the
+ground-truth preservation rule above: the LLM sees a compact preview, while
+audit/memory/ops code can still verify which full tool artifact was shortened.
 
 2026-04-30 source-discovery handoff: Personal KB/RAG can now expose candidate
 sources before loading full content. Feature 019 returns metadata-only source
