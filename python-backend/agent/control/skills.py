@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from agent.control.request_scope import RequestScope, resolve_scope
 from agent.skills.db_state import load_skill_toggle_overrides
 from agent.skills.loader import load_skills
+from agent.skills.usage_state import record_view, set_pinned, skill_usage_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,10 @@ def _load_enabled_overrides(user_id: str = "local") -> dict[str, bool]:
 
 
 def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
+    skill_id = f"{skill.tier}:{skill.name}"
+    usage = skill_usage_snapshot(skill_id)
     return {
-        "id": f"{skill.tier}:{skill.name}",
+        "id": skill_id,
         "name": skill.name,
         "description": skill.description,
         "tier": skill.tier,
@@ -50,6 +53,14 @@ def _skill_to_dict(skill: Any, idx: int) -> dict[str, Any]:
         "db_id": getattr(skill, "db_id", None),
         "path": str(skill.path),
         "body_preview": skill.content[:400] if skill.content else "",
+        "usage": {
+            "use_count": int(usage.get("use_count") or 0),
+            "view_count": int(usage.get("view_count") or 0),
+            "last_used_at": usage.get("last_used_at"),
+            "last_viewed_at": usage.get("last_viewed_at"),
+        },
+        "pinned": bool(usage.get("pinned")),
+        "lifecycle_state": usage.get("state", "active"),
         "source": (
             "db"
             if getattr(skill, "db_id", None)
@@ -98,6 +109,7 @@ async def get_skill(skill_id: str, user_id: str = "local") -> dict[str, Any]:
     for s in skills:
         sid = f"{s.tier}:{s.name}"
         if sid == skill_id:
+            record_view(sid)
             d = _skill_to_dict(s, 0)
             overrides = _load_enabled_overrides(user_id)
             if sid in overrides:
@@ -109,6 +121,10 @@ async def get_skill(skill_id: str, user_id: str = "local") -> dict[str, Any]:
 
 class PatchSkillRequest(BaseModel):
     enabled: bool
+
+
+class PinSkillRequest(BaseModel):
+    pinned: bool
 
 
 class ImportSkillRequest(BaseModel):
@@ -205,6 +221,60 @@ async def patch_skill(
         "enabled": req.enabled,
         "updated_by": scope.actor,
         "updated_at": now.isoformat(),
+    }
+
+
+@router.patch("/skills/{skill_id}/pin")
+async def pin_skill(
+    skill_id: str,
+    req: PinSkillRequest,
+    request: Request,
+    scope: RequestScope = Depends(resolve_scope),
+) -> dict[str, Any]:
+    """Pin/unpin a skill so imports and archives cannot silently overwrite it."""
+    try:
+        skills = load_skills(user_id=scope.user_id, team_id=scope.team_id)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"load_skills: {e}") from e
+
+    if skill_id not in {f"{s.tier}:{s.name}" for s in skills}:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    usage = set_pinned(skill_id, req.pinned)
+    now = datetime.now(UTC)
+    try:
+        with psycopg.connect(_db_url(), autocommit=True) as conn:
+            conn.execute(
+                """
+                INSERT INTO agent.audit_events
+                    (timestamp, action, user_id, success, metadata)
+                VALUES (%s, %s, %s, %s, %s::jsonb)
+                """,
+                (
+                    now,
+                    "SKILL_PIN",
+                    scope.user_id,
+                    True,
+                    json.dumps(
+                        {
+                            "skill_id": skill_id,
+                            "pinned": req.pinned,
+                            "updated_by": scope.actor,
+                            "team_id": scope.team_id,
+                            "tenant_id": scope.tenant_id,
+                        }
+                    ),
+                ),
+            )
+    except Exception:  # noqa: BLE001
+        logger.exception("skill pin audit write failed — continuing")
+
+    return {
+        "status": "updated",
+        "skill_id": skill_id,
+        "pinned": bool(usage.get("pinned")),
+        "updated_by": scope.actor,
+        "updated_at": usage.get("updated_at"),
     }
 
 

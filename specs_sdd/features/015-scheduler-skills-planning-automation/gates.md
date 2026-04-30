@@ -3,7 +3,7 @@ title: Scheduler Skills Planning Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 015
 migrated_from:
   - specs/execution/exec-scheduler.md
@@ -67,6 +67,20 @@ Static gates additionally verified on 2026-04-25:
   row mapping shape.
 - Prompt Scanner and Skills-Guard tests pass.
 
+Static gates additionally verified on 2026-04-30:
+
+- `agent.skills.usage_state` records provider-agnostic prompt usage, view count
+  and pin state for filesystem skills.
+- `format_skills_for_prompt_async` records prompt usage for actually rendered
+  skills while preserving DB-backed `agent.agent_skills.usage_count`.
+- `.skill` archive installs refuse pinned-skill overwrites and preserve the
+  existing skill directory.
+- Control skills read model exposes `usage`, `pinned` and `lifecycle_state`.
+- Skill package parsing preserves small `.py`, `.go`, `.rs`, `.ts` and other
+  text/code assets from arbitrary subfolders in the existing JSONB asset shape.
+- Archive install security scan includes nonstandard code asset paths and
+  blocks dangerous payloads before filesystem installation.
+
 Remaining gates:
 
 - live DB seed/source-mode roundtrip.
@@ -78,6 +92,7 @@ Remaining gates:
 - empirical threshold tuning.
 - Hindsight outcome feedback.
 - promotion pipeline.
+- live Control UI pin/unpin and GitHub import overwrite refusal.
 
 ## PDDL
 

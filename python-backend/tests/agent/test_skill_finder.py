@@ -6,6 +6,7 @@ Run lokal: AGENT_SKILL_FINDER_DENSE=0 pytest tests/agent/test_skill_finder.py -q
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -112,6 +113,7 @@ def test_bm25_only_does_not_pad_zero_overlap_skills(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(tmp_path / "usage.json"))
     skills = [
         Skill(
             name="memory-usage",
@@ -151,6 +153,7 @@ def test_memory_intent_prefers_memory_skill_without_plan_or_risk(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(tmp_path / "usage.json"))
     skills = [
         Skill(
             name="memory-usage",
@@ -226,6 +229,7 @@ async def test_general_skill_still_loads_when_query_matches(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(tmp_path / "usage.json"))
     skills = [
         Skill(
             name="memory-usage",
@@ -244,3 +248,32 @@ async def test_general_skill_still_loads_when_query_matches(
     )
 
     assert "memory-usage" in prompt
+
+
+@pytest.mark.asyncio
+async def test_prompt_render_records_filesystem_skill_usage(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    usage_path = tmp_path / "usage.json"
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(usage_path))
+    skill = Skill(
+        name="market-research",
+        description="Market sentiment and equity research",
+        category="research",
+        content="AAPL sentiment catalyst analyst positioning",
+        path=tmp_path / "market",
+    )
+
+    prompt = await format_skills_for_prompt_async(
+        skills=[skill],
+        query="current market sentiment for AAPL",
+        user_id="anonymous",
+        skills_base=tmp_path,
+    )
+
+    assert "market-research" in prompt
+    state = json.loads(usage_path.read_text(encoding="utf-8"))
+    assert state["skills"]["global:market-research"]["use_count"] == 1
+    assert state["skills"]["global:market-research"]["state"] == "active"

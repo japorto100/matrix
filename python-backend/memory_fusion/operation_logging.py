@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
+from memory_fusion.evidence_trace import ensure_memory_trace_metadata
 
 
 @dataclass(frozen=True)
@@ -58,15 +59,21 @@ async def log_memory_operation(
     query: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> None:
-    payload = {
-        "bank_id": bank_id,
-        "route": route,
-        "consumer": operation_context.consumer,
-        "user_id": operation_context.user_id,
-        "actor_role": operation_context.actor_role,
-        "item_count": int(item_count),
-        **dict(metadata or {}),
-    }
+    action_name = str(getattr(action, "value", action)).replace("memory_", "")
+    payload = ensure_memory_trace_metadata(
+        {
+            "bank_id": bank_id,
+            "route": route,
+            "consumer": operation_context.consumer,
+            "user_id": operation_context.user_id,
+            "actor_role": operation_context.actor_role,
+            "item_count": int(item_count),
+            **dict(metadata or {}),
+        },
+        bank_id=bank_id,
+        route=route,
+        action=action_name,
+    )
     if query:
         payload["query"] = query[:300]
     await audit_log(

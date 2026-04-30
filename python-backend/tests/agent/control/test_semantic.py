@@ -32,3 +32,39 @@ async def test_semantic_metric_plan_endpoint_respects_tenant_scope():
     assert denied["allowed"] is False
     assert allowed["allowed"] is True
     assert allowed["raw_sql_allowed"] is False
+
+
+async def test_semantic_correction_endpoint_creates_review_proposal():
+    from agent.control import semantic
+
+    semantic._CORRECTION_PROPOSALS.clear()
+
+    proposed = await semantic.semantic_correction_propose(
+        semantic.SemanticCorrectionRequest(
+            target_type="metric",
+            target_id="retrieval_pass_rate",
+            proposed_by="alice",
+            rationale="Clarify benchmark split semantics.",
+            patch={"description": "Use holdout split only."},
+        )
+    )
+
+    proposal_id = proposed["proposal"]["proposal_id"]
+    assert proposed["catalog_mutated"] is False
+    assert proposed["review_required"] is True
+    assert proposed["proposal"]["status"] == "proposed"
+
+    listed = await semantic.semantic_correction_list(status="proposed")
+    assert [item["proposal_id"] for item in listed["proposals"]] == [proposal_id]
+
+    reviewed = await semantic.semantic_correction_review(
+        proposal_id,
+        semantic.SemanticCorrectionReviewRequest(
+            decision="accepted",
+            reviewed_by="semantic-reviewer",
+        ),
+    )
+
+    assert reviewed["catalog_mutated"] is False
+    assert reviewed["review_recorded"] is True
+    assert reviewed["proposal"]["status"] == "accepted"

@@ -24,6 +24,39 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 SKILLS_BASE = Path(__file__).parent
+MAX_ASSET_FILE_BYTES = 64 * 1024
+MAX_ASSET_TOTAL_BYTES = 256 * 1024
+IGNORED_ASSET_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".venv",
+}
+TEXT_ASSET_SUFFIXES = {
+    ".bash",
+    ".css",
+    ".csv",
+    ".go",
+    ".html",
+    ".js",
+    ".json",
+    ".jsx",
+    ".md",
+    ".py",
+    ".rs",
+    ".sh",
+    ".sql",
+    ".toml",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml",
+}
 
 
 @dataclass
@@ -73,22 +106,7 @@ def parse_skill_file(
 
     content = raw[fm_match.end() :]
 
-    # Scan for asset subdirectories (scripts/, examples/, templates/)
-    assets: dict = {}
-    skill_dir = skill_file.parent
-    for subdir_name in ("scripts", "examples", "templates"):
-        subdir = skill_dir / subdir_name
-        if not subdir.is_dir():
-            continue
-        files: dict[str, str] = {}
-        for f in sorted(subdir.iterdir()):
-            if f.is_file() and f.stat().st_size < 10_240:  # <10KB text files only
-                try:
-                    files[f.name] = f.read_text(encoding="utf-8")
-                except Exception:  # noqa: BLE001
-                    pass
-        if files:
-            assets[subdir_name] = files
+    assets = _scan_skill_assets(skill_file.parent)
 
     skill_type_raw = metadata.get("skill_type", "task_specific")
     skill_type = skill_type_raw if skill_type_raw in ("general", "task_specific") else "task_specific"
@@ -106,6 +124,43 @@ def parse_skill_file(
         api_version=metadata.get("api_version"),
         assets=assets,
     )
+
+
+def _scan_skill_assets(skill_dir: Path) -> dict[str, dict[str, str]]:
+    """Collect small text assets from a skill package for JSONB/scanning.
+
+    Assets keep the historical ``{top_dir: {relative_path: content}}`` shape.
+    We now scan all non-hidden text-code assets, not just scripts/examples/
+    templates, so uploaded skill packages cannot hide unscanned code in
+    arbitrary subdirectories.
+    """
+    assets: dict[str, dict[str, str]] = {}
+    total_bytes = 0
+    for path in sorted(skill_dir.rglob("*")):
+        if not path.is_file() or path.name == "SKILL.md":
+            continue
+        rel = path.relative_to(skill_dir)
+        if any(part.startswith(".") or part in IGNORED_ASSET_DIRS for part in rel.parts):
+            continue
+        if path.suffix.lower() not in TEXT_ASSET_SUFFIXES:
+            continue
+        try:
+            size = path.stat().st_size
+        except OSError:
+            continue
+        if size > MAX_ASSET_FILE_BYTES or total_bytes + size > MAX_ASSET_TOTAL_BYTES:
+            continue
+        try:
+            body = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        except Exception:  # noqa: BLE001
+            continue
+        top = rel.parts[0] if len(rel.parts) > 1 else "_root"
+        inner = str(Path(*rel.parts[1:])) if len(rel.parts) > 1 else rel.name
+        assets.setdefault(top, {})[inner] = body
+        total_bytes += size
+    return assets
 
 
 def _scan_tier(
@@ -287,7 +342,7 @@ async def format_skills_for_prompt_async(
       - SKILL_REFINED — when refiner ran (per_skill or compose mode)
       - SKILL_USED   — when skills are actually rendered into the prompt
     Also increments `agent.agent_skills.usage_count` for each DB-backed
-    skill that ends up in the prompt.
+    skill and records filesystem skill usage in the lifecycle sidecar.
     """
     if skills is None:
         skills = load_skills(
@@ -393,7 +448,7 @@ async def format_skills_for_prompt_async(
                     else None,
                 },
             )
-            _bump_usage(pre_refine if refine_fired else skills)
+            _bump_usage(pre_refine if refine_fired else skills, skills_base=skills_base)
 
     return format_skills_for_prompt(skills)
 
@@ -442,8 +497,15 @@ async def _audit_skill(
         logger.debug("_audit_skill swallowed: %s", e)
 
 
-def _bump_usage(skills: list[Skill]) -> None:
-    """Increment agent.agent_skills.usage_count for DB-backed skills."""
+def _bump_usage(skills: list[Skill], *, skills_base: Path | None = None) -> None:
+    """Record prompt usage for DB-backed and filesystem skills."""
+    try:
+        from agent.skills.usage_state import record_prompt_usage
+
+        record_prompt_usage(skills, skills_base=skills_base or SKILLS_BASE)
+    except Exception as e:  # noqa: BLE001
+        logger.debug("_bump_usage sidecar swallowed: %s", e)
+
     try:
         from agent.skills.store_db import increment_usage_counts
 

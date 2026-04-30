@@ -3,7 +3,7 @@ title: Multi-Agent and A2A Orchestration Tasks
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 009
 migrated_from:
   - specs/execution/exec-10-multi-agent.md
@@ -69,6 +69,14 @@ migrated_from:
   and tool allowlist.
 - T045 Decide subagent visibility: invisible LangGraph nodes, Matrix
   identities or hybrid.
+- [partial-static] T046 Add Matrix mention/thread/free-response routing gates from Hermes Matrix
+  fixes: group messages require explicit mention/reply unless room is
+  allowlisted, DMs route to default/target agent, and thread roots are
+  preserved in delegated replies.
+  - 2026-04-30: Python bridge now preserves Matrix event/thread metadata into
+    Agent Chat context and fails closed on thread replies without a root. Go
+    group-room allowlist/live Matrix behavior and delegated reply handoff
+    remain open.
 
 ## Control UI / Observability
 

@@ -13,6 +13,7 @@ from memory_fusion.access_policy import (
     get_memory_access_policy,
 )
 from memory_fusion.decay import derive_decay_metadata
+from memory_fusion.evidence_trace import ensure_memory_trace_metadata
 from memory_fusion.mempalace.query_sanitizer import sanitize_query
 from memory_fusion.operation_logging import (
     extract_operation_context,
@@ -288,7 +289,7 @@ class FusionMemoryEngine:
     def _fact_metadata(self, metadata: dict[str, Any], *, route: str, fact_type: str | None = None) -> dict[str, Any]:
         enriched = enrich_metadata_with_semantics(derive_decay_metadata(metadata), fact_type=fact_type)
         enriched["fusion_route"] = route
-        return enriched
+        return ensure_memory_trace_metadata(enriched, route=route, action="recall")
 
     def _should_surface_item(self, item: dict[str, Any], *, consumer: str = "llm_agent") -> bool:
         metadata = dict(item.get("metadata") or item.get("document_metadata") or {})
@@ -959,6 +960,10 @@ class FusionMemoryEngine:
                     "promotion_status": str(metadata.get("promotion_status") or ""),
                     "source_confidence": str(metadata.get("source_confidence") or ""),
                     "actor_role": str(metadata.get("actor_role") or ""),
+                    "source_status": str(metadata.get("source_status") or ""),
+                    "raw_evidence_ref": str(metadata.get("raw_evidence_ref") or metadata.get("source_ref") or ""),
+                    "operation_log_id": str(metadata.get("operation_log_id") or ""),
+                    "diff_ref": str(metadata.get("diff_ref") or ""),
                 }
                 results.append(
                     MemoryFact(

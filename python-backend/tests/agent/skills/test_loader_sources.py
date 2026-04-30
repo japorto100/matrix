@@ -55,6 +55,25 @@ def test_parse_skill_file_preserves_api_version_type_and_assets(tmp_path: Path):
     assert skill.assets == {"scripts": {"tool.sh": "echo ok\n"}}
 
 
+def test_parse_skill_file_preserves_nonstandard_text_code_assets(tmp_path: Path):
+    skill_file = _write_skill(tmp_path, "global/codepack", name="codepack")
+    skill_dir = skill_file.parent
+    (skill_dir / "src").mkdir()
+    (skill_dir / "src" / "main.py").write_text("print('ok')\n", encoding="utf-8")
+    (skill_dir / "crates").mkdir()
+    (skill_dir / "crates" / "lib.rs").write_text("pub fn run() {}\n", encoding="utf-8")
+    (skill_dir / "go").mkdir()
+    (skill_dir / "go" / "tool.go").write_text("package main\n", encoding="utf-8")
+
+    skill = parse_skill_file(skill_file)
+
+    assert skill is not None
+    assert skill.assets["scripts"]["tool.sh"] == "echo ok\n"
+    assert skill.assets["src"]["main.py"] == "print('ok')\n"
+    assert skill.assets["crates"]["lib.rs"] == "pub fn run() {}\n"
+    assert skill.assets["go"]["tool.go"] == "package main\n"
+
+
 def test_load_skills_filesystem_merges_global_team_personal_overrides(
     monkeypatch,
     tmp_path: Path,

@@ -3,7 +3,7 @@ title: MCP Gateway Tool Catalog Policy Research
 status: draft
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 024
 ---
 
@@ -98,6 +98,16 @@ explicit credential scopes, approval gates and audit evidence.
   the same effective-catalog policy and bounded `execute_mcp_tool_call()` path
   used for real MCP calls, proving catalog-to-gateway wiring without an
   external server.
+- 2026-04-30 normal-tool discovery follow-up: `Z_Additional_For_Tool_Stuff.md`
+  is broader than external MCP. The same progressive-disclosure pattern now
+  exists for builtin tools: `search_tool_catalog()` uses regex/token extraction
+  and BM25-style TF/IDF scoring over short policy-visible summaries. It returns
+  names, groups, summaries, risk and approval metadata, not full schemas.
+  `/control/tools/search` exposes the primitive for Control and future
+  agent-facing discovery. MCP descriptor search now reuses the same pattern
+  after effective-catalog filtering via `search_effective_catalog()` and
+  `/control/mcp/catalog/agent/search`, returning provenance/risk/approval
+  summaries without schemas.
 
 ## Design Consequence
 

@@ -122,7 +122,12 @@ feature_id: 020
   - 2026-04-30: `TraceExpectations.max_repeated_tool_failures_per_tool` and
     `routing-repeated-failed-tool-calls-fails` make repeated tool failures an
     explicit gate failure.
-- T033 Add a future subagent API stub only after gates and contracts are clear.
+- [x] T033 Add a future subagent API stub only after gates and contracts are clear.
+  - 2026-04-30: runtime remains fail-closed by default:
+    `agent.graph.nodes.a2a_node` refuses remote A2A delegation unless
+    `AGENT_A2A_MAX_SPAWN_DEPTH` explicitly permits the next depth. When enabled,
+    the child receives a fresh bounded context containing role, parent thread,
+    spawn depth and explicit-context-only memory scope.
 - T034 Add transport abstraction candidate after Feature 011 review; avoid
   moving provider logic until Meta-Harness covers OpenRouter, mock, embeddings
   and local fallback paths.
@@ -161,6 +166,8 @@ feature_id: 020
 ## Verification
 
 - T040 [done-static] Static tests for route/delegation policy helpers.
+  - 2026-04-30: added A2A node tests for default fail-closed spawn depth and
+    fresh bounded child context when single-hop delegation is enabled.
 - [x] T041 Meta-Harness runner parity with local lane for routing mechanics.
   2026-04-29 `llm-mock` run `run-simple-approval-parity-jsonl-20260429`
   passed `simple` and `langgraph` variants with no mismatches.

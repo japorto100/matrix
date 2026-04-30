@@ -54,6 +54,9 @@ feature_id: 017
 - Personal Memory, Personal KB and global/world KG writes stay policy-separated.
 - Personal-memory-derived claim proposals require review and cannot become
   accepted global KG claims through the static contract.
+- Runtime KG store rejects direct promoted global claims from personal memory
+  evidence layers and requires promoted claims to carry semantic terms plus
+  citation/source/hash evidence.
 - Missing KG support emits a degradation flag instead of silent fallback.
 
 ## Live Gates

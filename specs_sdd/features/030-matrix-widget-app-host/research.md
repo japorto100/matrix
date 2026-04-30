@@ -99,3 +99,20 @@ ADR-0010 scopes Matrix rooms to mobile-compatible primitives. Feature 005's
 message/link/card behavior stays the baseline. Rich MCP Apps, code widgets,
 tool dashboards and A2UI surfaces move through Agent Chat UI rather than Matrix
 timeline iframe hosting.
+
+## Hermes Matrix Adapter Follow-Up 2026-04-30
+
+The fresh `_ref/hermes-agent` Matrix adapter changes are directly relevant as
+bug-class signals for widget handoff, even though Hermes is CLI-first:
+
+- widget/report approvals must bind to the originating room event/thread, not
+  any later reaction.
+- reconnect/session replay must not re-open stale widget approvals.
+- group-room free-response rules matter because widget proposals should not be
+  emitted from every observed room event.
+- echo/pairing-loop suppression is required before any optional room-state
+  widget write is live-gated.
+
+Feature 030 therefore depends on Feature 006 transport/session hygiene before
+live Matrix widget approval writes. Until then, the webclient/control surfaces
+may parse and display proposals, but Matrix room-state mutation remains gated.

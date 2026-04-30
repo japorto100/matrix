@@ -3,7 +3,7 @@ title: Multi-Agent A2A Orchestration Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 009
 ---
 
@@ -58,6 +58,11 @@ feature_id: 009
 - [x] Username sanitization utility exists before external registration use.
 - [x] Per-user default model lookup is static-tested.
 - [ ] Per-user agent routing/settings are visible.
+- [ ] Group-room free-response behavior is allowlist-gated and does not create
+  echo loops.
+- [partial] Thread-root metadata survives Matrix mention/default-agent routing
+  and any future delegate handoff. Python bridge preserves thread roots and
+  rejects malformed thread replies; delegate handoff remains open.
 
 ## G6 Paper-Derived Learning
 

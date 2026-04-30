@@ -88,3 +88,25 @@ async def test_agent_client_keeps_legacy_text_delta() -> None:
     )
 
     assert text == "legacy"
+
+
+@pytest.mark.asyncio
+async def test_agent_client_includes_matrix_event_metadata_in_context() -> None:
+    client, fake_http = _client(['data: {"type":"finish"}'])
+
+    await client.send_message(
+        message="hi",
+        room_id="!room:matrix.local",
+        sender="@alice:matrix.local",
+        thread_id="$root",
+        matrix_event_id="$event",
+        target_agent="research",
+        is_thread_reply=True,
+    )
+
+    payload = fake_http.kwargs["json"]
+    assert payload["threadId"] == "$root"
+    assert payload["context"] == (
+        "matrix_room:!room:matrix.local sender:@alice:matrix.local "
+        "event_id:$event target_agent:research is_thread_reply:true"
+    )

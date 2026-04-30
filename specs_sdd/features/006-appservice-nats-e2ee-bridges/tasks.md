@@ -3,7 +3,7 @@ title: Appservice, NATS, E2EE and Bridges Tasks
 status: unencrypted_live_verified_e2ee_open
 owner: filip
 created: 2026-04-25
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 006
 migrated_from:
   - specs/execution/exec-05-nats-e2ee-pipeline.md
@@ -30,6 +30,13 @@ appservice were running. It does not close Feature 006 because Tuwunel,
 appservice registration, real Matrix room delivery and E2EE were not part of
 that pass.
 
+2026-04-30 Hermes Matrix follow-up: the fresh Hermes Agent Matrix adapter
+changelog is directly relevant as a bug-class checklist, not as an architecture
+copy. Feature 006 should add gates for echo/pairing loops, mention/thread
+rules, reaction-bound approvals, reconnect/session hygiene and
+cross-signing/bootstrap behavior in the Go appservice -> NATS -> Python bridge
+path.
+
 - [x] T010 Run Go build/tests with `goolm`/E2EE tags where applicable
   (`go test -tags goolm ./...`).
 - [x] T011 [done-live] Verify appservice registration handshake with homeserver.
@@ -47,6 +54,14 @@ that pass.
 - [x] T017 Add/static-test Python reply thread metadata propagation from
   inbound `thread_id` to reply `thread_root_id`.
 - [x] T018 Static-lint Python bridge/agent/voice code with ruff.
+- [partial-static] T019 Add Matrix transport/session hygiene smoke from Hermes bug classes:
+  block hall-of-mirrors echo/pairing loops, preserve mention/thread routing,
+  bind approval reactions to session identity and prove reconnect does not
+  duplicate in-flight replies.
+  - 2026-04-30: Python bridge now statically tests self/agent-sender echo
+    ignore, event-id replay dedupe, malformed thread reply fail-closed and
+    Matrix event metadata propagation into the Agent Chat context. Reaction-
+    bound approvals and live reconnect remain open.
 
 ## E2EE
 
@@ -58,6 +73,8 @@ that pass.
 - T022 Verify Go decrypts `m.room.encrypted` event.
 - T023 Verify Go encrypts response in E2EE room.
 - T024 Verify Cross-Signing seeds/device signature exist after bot startup.
+- T024a Verify X-sign/bootstrap failure is surfaced as an explicit blocker
+  rather than silently downgrading encrypted delivery.
 - T025 Verify Key Backup restart: old messages still readable when deletion
   disabled.
 - T026 Verify `NEXT_PUBLIC_E2EE_BLACKLIST_UNVERIFIED` dev/prod semantics are

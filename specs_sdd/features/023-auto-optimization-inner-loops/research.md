@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 023
 ---
 
@@ -134,3 +134,24 @@ their local resource footprint is proven.
 runs available extractor profiles by default and can include unavailable
 profiles as explicit failure artifacts, which is useful for planning without
 silently pulling heavy packages onto the 8GB development machine.
+
+## 2026-04-30 Skill Lifecycle Candidate Constraint
+
+Derived from the fresh `_ref/hermes-agent` skill-curator/pinned-skill updates
+and Feature 015 runtime implementation.
+
+Inner loops may optimize skill retrieval, trigger thresholds, selected-skill
+budgets and promotion/archive recommendations, but they must preserve these
+runtime invariants:
+
+- pinned skills are immutable to automated imports, archive installs and future
+  skill-evolution writers.
+- prompt usage and view counts are evidence inputs, not direct success labels.
+- candidates emit Meta-Harness artifacts for outer-loop promotion; they do not
+  patch skill files, DB rows or sidecar state directly.
+- provider-specific assumptions are excluded; OpenRouter/provider calls remain
+  optional and capped by the existing live-provider gates.
+
+This connects Feature 023 to `Z_Additional_For_Tool_Stuff.md` and Feature 016:
+tool/skill optimization is useful only when it cannot relax security, provenance
+or pinned-lifecycle constraints.

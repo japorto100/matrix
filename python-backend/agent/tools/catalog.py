@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass
+from math import log
 from typing import Any, Literal
 
 from agent.tools.base import TradingTool
@@ -113,6 +114,82 @@ def visible_tool_summaries(
     return visible
 
 
+def search_tool_catalog(
+    entries: list[ToolCatalogEntry],
+    query: str,
+    *,
+    limit: int = 5,
+    allowed_groups: set[str] | None = None,
+    allowed_tools: set[str] | None = None,
+    max_level: int = 2,
+) -> list[dict[str, Any]]:
+    """Search visible tools without exposing full schemas to the model."""
+
+    q_tokens = _search_tokens(query)
+    candidates = [
+        entry
+        for entry in entries
+        if entry.enabled
+        and entry.progressive_disclosure_level <= max_level
+        and (allowed_groups is None or entry.group in allowed_groups)
+        and (allowed_tools is None or entry.name in allowed_tools)
+    ]
+    if not candidates:
+        return []
+    if not q_tokens:
+        return [
+            _search_result(entry, score=0.0, matched_terms=())
+            for entry in candidates[: max(0, limit)]
+        ]
+
+    docs = {
+        entry.name: _search_tokens(
+            " ".join(
+                (
+                    entry.name,
+                    entry.group,
+                    entry.summary,
+                    entry.risk,
+                    entry.approval,
+                    " ".join(entry.policy_reasons),
+                )
+            )
+        )
+        for entry in candidates
+    }
+    document_count = len(docs)
+    doc_freq: dict[str, int] = {}
+    for tokens in docs.values():
+        for token in set(tokens):
+            doc_freq[token] = doc_freq.get(token, 0) + 1
+
+    ranked: list[tuple[float, ToolCatalogEntry, tuple[str, ...]]] = []
+    for entry in candidates:
+        tokens = docs[entry.name]
+        if not tokens:
+            continue
+        matched = tuple(sorted(set(q_tokens) & set(tokens)))
+        if not matched:
+            continue
+        score = 0.0
+        length_norm = 1 + (len(tokens) / 20)
+        for term in q_tokens:
+            tf = tokens.count(term)
+            if not tf:
+                continue
+            idf = log((document_count + 1) / (doc_freq.get(term, 0) + 0.5)) + 1
+            score += (tf / length_norm) * idf
+        if entry.name.lower() in query.lower():
+            score += 2.0
+        ranked.append((score, entry, matched))
+
+    ranked.sort(key=lambda item: (-item[0], item[1].progressive_disclosure_level, item[1].name))
+    return [
+        _search_result(entry, score=score, matched_terms=matched)
+        for score, entry, matched in ranked[: max(0, limit)]
+    ]
+
+
 def _tool_group(name: str, description: str) -> str:
     text = f"{name} {description}".lower()
     if "memory" in text or "remember" in text:
@@ -180,6 +257,37 @@ def _tool_summary(description: str) -> str:
     if len(text) <= 180:
         return text
     return text[:177].rstrip() + "..."
+
+
+def _search_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for raw in re.findall(r"[a-z0-9_]{2,}", str(text).lower()):
+        tokens.append(raw)
+        if "_" in raw:
+            tokens.extend(part for part in raw.split("_") if len(part) >= 2)
+    return [
+        token
+        for token in tokens
+        if token not in {"the", "and", "for", "with", "tool", "tools", "use"}
+    ]
+
+
+def _search_result(
+    entry: ToolCatalogEntry,
+    *,
+    score: float,
+    matched_terms: tuple[str, ...],
+) -> dict[str, Any]:
+    return {
+        "name": entry.name,
+        "group": entry.group,
+        "summary": entry.summary,
+        "risk": entry.risk,
+        "approval": entry.approval,
+        "progressive_disclosure_level": entry.progressive_disclosure_level,
+        "score": round(score, 4),
+        "matched_terms": list(matched_terms),
+    }
 
 
 def _stable_hash(value: Any) -> str:

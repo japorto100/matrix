@@ -19,6 +19,7 @@ from agent.mcp_gateway.policy import (
     McpServerConfig,
     build_effective_catalog,
     diff_descriptor_snapshots,
+    search_effective_catalog,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,6 +143,50 @@ async def list_agent_mcp_catalog(
         user_id=user_id,
     )
     items = [entry.as_dict() for entry in catalog if entry.visible]
+    return {
+        "items": items,
+        "total": len(items),
+        "secrets_redacted": True,
+        "session_id": session_id,
+        "tenant_id": tenant_id,
+        "user_id": user_id,
+    }
+
+
+@router.get("/mcp/catalog/agent/search")
+async def search_agent_mcp_catalog(
+    q: str = Query(default=""),
+    limit: int = Query(default=5, ge=1, le=20),
+    tenant_id: str = Query(default="matrix-local"),
+    user_id: str = Query(default="agent"),
+    session_id: str = Query(default=""),
+) -> dict[str, Any]:
+    """Search visible MCP catalog summaries for progressive disclosure."""
+
+    server = _internal_matrix_mcp()
+    server_config = McpServerConfig(
+        server_id="matrix-internal",
+        display_name="Matrix Internal MCP",
+        transport="streamable-http",
+        url=server["url"],
+        enabled=True,
+    )
+    descriptors = [
+        {
+            "name": tool_name,
+            "description": "Matrix internal MCP tool",
+            "inputSchema": {"type": "object"},
+        }
+        for tool_name in server["tools"]
+    ]
+    catalog = build_effective_catalog(
+        server_config,
+        descriptors,
+        tenant_id=tenant_id,
+        user_id=user_id,
+    )
+    search_limit = int(limit) if isinstance(limit, int) else 5
+    items = search_effective_catalog(catalog, q, limit=search_limit)
     return {
         "items": items,
         "total": len(items),

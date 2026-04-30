@@ -3,7 +3,7 @@ title: MCP Gateway Tool Catalog Policy Tasks
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 024
 ---
 
@@ -32,6 +32,17 @@ feature_id: 024
 - [x] T008 [done-static] Expose agent-facing catalog endpoint filtered by user/session policy.
   - 2026-04-29: `/control/mcp/catalog/agent` returns only visible catalog
     entries for a tenant/user/session and keeps secrets redacted.
+- [x] T009 [done-static] Add normal builtin tool search / progressive disclosure
+  primitive from `Z_Additional_For_Tool_Stuff.md`.
+  - 2026-04-30: `agent.tools.catalog.search_tool_catalog()` searches
+    policy-visible builtin tool summaries without exposing full input schemas,
+    and `/control/tools/search` exposes it for Control/agent-facing follow-up.
+- [x] T009a [done-static] Add MCP effective-catalog search with the same
+  regex/token + BM25-style progressive disclosure, but only after policy
+  filtering.
+  - 2026-04-30: `search_effective_catalog()` searches visible
+    `McpCatalogEntry` summaries and `/control/mcp/catalog/agent/search`
+    returns provenance/risk/approval summaries without exposing schemas.
 
 ## Policy And Consent
 
@@ -137,6 +148,10 @@ feature_id: 024
     builds the fixture catalog, selects a visible descriptor and executes it
     through `execute_mcp_tool_call()` with preserved `tool_call_id`.
 - [x] T045a [done-static] Typecheck Control UI MCP summary/audit rendering.
+- [x] T045b [done-static] Unit-test builtin tool search excludes hidden
+  high-disclosure tools and returns only short summaries.
+- [x] T045c [done-static] Unit-test MCP effective-catalog search excludes
+  blocked descriptors and returns only summary/provenance metadata.
 - T046 Live-verify Control UI reads the effective catalog.
 - [x] T047 [done-static-live-smoke] Live-verify Meta-Harness blocks poisoned descriptors.
   - 2026-04-29: provider-free CLI smoke `mcp-catalog-policy` writes artifacts

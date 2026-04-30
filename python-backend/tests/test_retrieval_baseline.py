@@ -117,6 +117,28 @@ async def test_retrieve_hybrid_from_supplied_candidates() -> None:
     assert result.hits
     assert result.references
     assert "Russian oil" in result.context or "SANCTIONED_BY" in result.context
+    assert result.hits[0]["metadata"]["provenance_status"] == "complete"
+    assert result.references[0]["metadata"]["provenance_status"] == "complete"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_can_fail_closed_on_missing_context_provenance() -> None:
+    result = await retrieve(
+        "What does the source say?",
+        mode="text",
+        require_context_provenance=True,
+        vector_hits=[
+            {
+                "id": "chunk-without-source",
+                "text": "Unattributed context.",
+                "score": 0.9,
+            }
+        ],
+    )
+
+    assert result.degraded is True
+    assert "CONTEXT_PROVENANCE_MISSING" in (result.degraded_reasons or [])
+    assert result.hits and result.hits[0]["metadata"]["provenance_status"] == "missing"
 
 
 @pytest.mark.asyncio

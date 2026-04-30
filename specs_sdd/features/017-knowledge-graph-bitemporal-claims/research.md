@@ -165,3 +165,10 @@ as provider-free static gates. KG proposals require evidence refs, source
 artifact/chunk/hash refs, citation refs, semantic term ids and bitemporal
 valid/system-time fields. Personal memory may propose only through review,
 never direct accepted global KG promotion.
+
+2026-04-30 runtime follow-up: the KG store boundary now enforces the same
+provider-agnostic separation. Proposed claims remain lightweight, but promoted
+claims require evidence refs, citation/source/hash and Feature 025
+`semantic_term_ids`. Any claim sourced from personal memory/Hindsight/MemPalace
+layers is rejected unless it stays in proposed review state. This keeps Hermes-
+style agent memory useful as evidence without letting it become global truth.

@@ -122,11 +122,18 @@ def build_parser() -> argparse.ArgumentParser:
     routing_contract.add_argument("--run-id", default="")
     routing_contract.add_argument("--data-dir", type=Path, default=None)
 
+    domain_contract = sub.add_parser(
+        "domain-contract",
+        help="Run provider-free python-backend Meta-Harness domain scenarios",
+    )
+    domain_contract.add_argument("--run-id", default="")
+    domain_contract.add_argument("--data-dir", type=Path, default=None)
+
     contract_suite = sub.add_parser(
         "contract-suite",
         help=(
             "Run provider-free cross-feature contract lanes for "
-            "Features 012/017/019/020/022/024/025/027/030"
+            "Features 012/015/016/017/019/020/022/023/024/025/027/030"
         ),
     )
     contract_suite.add_argument("--run-id", default="")
@@ -353,6 +360,13 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_routing_contract_scenarios(**kwargs)
+    if args.command == "domain-contract":
+        from meta_harness.domain_contract import run_domain_contract_scenarios
+
+        kwargs = {"run_id": args.run_id or "run-domain-contract"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_domain_contract_scenarios(**kwargs)
     if args.command == "contract-suite":
         from meta_harness.contract_suite import run_contract_suite
 

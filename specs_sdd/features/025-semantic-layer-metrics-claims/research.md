@@ -103,3 +103,10 @@ without binding to a vendor model. Callers can pass a reviewed
 `semantic_filter` or a catalog phrase; retrieval applies term/metric filters
 before fusion and Context Bubble assembly, then reports explicit degradation
 when the semantic filter is ambiguous, unknown or filters out all candidates.
+
+2026-04-30 correction endpoint follow-up: the semantic Control API now exposes
+the same proposal/review pattern as the Meta-Harness contract. This is the
+runtime bridge for `Z_Semantik_layer and so on.md`: user or memory feedback can
+propose a term/metric correction, but even an accepted review returns
+`catalog_mutated=false` until a separate catalog publishing step applies it.
+The implementation stays local and provider-agnostic.

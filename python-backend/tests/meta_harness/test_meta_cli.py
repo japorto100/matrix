@@ -311,10 +311,48 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["lane_count"] == 5
-    assert result["scenario_count"] == 21
+    assert result["lane_count"] == 6
+    assert result["scenario_count"] == 30
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
+
+
+@pytest.mark.asyncio
+async def test_cli_domain_contract_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["domain-contract", "--run-id", "run-domain", "--data-dir", str(tmp_path)]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 9
+    scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
+    assert "domain-hermes-update-signals-mapped" in scenario_ids
+    assert "domain-subagent-role-contract-bounded" in scenario_ids
+    assert "domain-skills-curator-contract-operational" in scenario_ids
+    assert "domain-runtime-docs-only-candidate-rejected" in scenario_ids
+    assert "domain-meta-harness-self-edit-rejected" in scenario_ids
+    artifact = tmp_path / "runs" / "run-domain" / "domain_contract.json"
+    aggregate = (
+        tmp_path
+        / "runs"
+        / "run-domain"
+        / "candidates"
+        / "python-backend-domain-contract-static"
+        / "aggregate.json"
+    )
+    assert artifact.exists()
+    assert aggregate.exists()
+    domains = {domain["domain_id"]: domain for domain in result["domains"]}
+    assert "matrix-transport-session-hygiene" in domains
+    assert domains["matrix-transport-session-hygiene"]["domain_kind"] == "matrix_transport"
+    assert domains["matrix-transport-session-hygiene"]["live_verify_required"] is True
+    assert (
+        "Matrix transport fixes are signal classes, not CLI-agent product code"
+        in domains["matrix-transport-session-hygiene"]["hermes_lessons"]
+    )
 
 
 @pytest.mark.asyncio
@@ -480,6 +518,33 @@ def test_inner_loop_protects_tool_policy_security_relaxations():
         "protected-input:inner-unsafe-tool-policy:frozen_inputs.tool_policy_relaxations"
         in gate["failures"]
     )
+
+
+def test_domain_contract_rejects_candidate_outside_scope():
+    from meta_harness.domain_contract import (
+        DomainCandidate,
+        python_backend_domain_specs,
+        validate_domain_candidate,
+    )
+
+    specs = {spec.domain_id: spec for spec in python_backend_domain_specs()}
+    validation = validate_domain_candidate(
+        DomainCandidate(
+            candidate_id="bad-skill-candidate",
+            domain_id="skills-lifecycle-curator",
+            candidate_kind="skill_lifecycle_candidate",
+            write_scopes=("python-backend/meta_harness/",),
+            changed_files=("python-backend/meta_harness/domain_contract.py",),
+            source_artifacts=("_ref/hermes-agent/agent/curator.py",),
+            metric_targets={"skill_trigger_precision": 0.9},
+            budget={"provider_calls": 0},
+        ).as_dict(),
+        specs,
+    )
+
+    assert validation["passed"] is False
+    assert "candidate-mutates-meta-harness" in validation["failures"]
+    assert "candidate-write-scope-outside-domain" in validation["failures"]
 
 
 @pytest.mark.asyncio

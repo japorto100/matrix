@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from collections import OrderedDict
 
 import nats
 from nats.aio.client import Client as NATSClient
@@ -23,6 +24,7 @@ SUBJECT_INBOUND_ROUTED = "matrix.message.inbound.>"
 SUBJECT_INBOUND_AGENT_PREFIX = "matrix.message.inbound.agent."
 SUBJECT_REPLY = "matrix.message.reply"
 _AGENT_NAME_RE = re.compile(r"[^a-z0-9_-]+")
+MAX_RECENT_EVENT_IDS = 2048
 
 
 def sanitize_agent_name(agent_name: str) -> str:
@@ -45,6 +47,7 @@ class NATSHandler:
         self._allowed_agents = tuple(
             sanitize_agent_name(agent) for agent in config.nats_allowed_agents
         )
+        self._recent_event_ids: OrderedDict[str, None] = OrderedDict()
 
     async def connect(self) -> None:
         url = self._config.nats_url
@@ -95,11 +98,28 @@ class NATSHandler:
         room_id = data.get("room_id", "")
         sender = data.get("sender", "")
         body = data.get("body", "")
+        event_id = data.get("event_id", "")
         thread_id = data.get("thread_id")
         target_agent = data.get("target_agent", "")
+        is_thread_reply = bool(data.get("is_thread_reply", False))
 
         if not self._is_target_allowed(target_agent):
             logger.warning("Rejected unauthorized target_agent: %s", target_agent)
+            return
+
+        if self._is_agent_sender(sender):
+            logger.info("Ignored Matrix echo from agent sender: %s", sender)
+            return
+
+        if event_id and not self._remember_event_id(str(event_id)):
+            logger.info("Ignored replayed Matrix event: %s", event_id)
+            return
+
+        if is_thread_reply and not thread_id:
+            logger.warning(
+                "Rejected malformed Matrix thread reply without thread_id: event=%s",
+                event_id or "(missing)",
+            )
             return
 
         if not body:
@@ -129,6 +149,9 @@ class NATSHandler:
             sender=sender,
             thread_id=thread_id,
             model=model,
+            matrix_event_id=event_id,
+            target_agent=target_agent,
+            is_thread_reply=is_thread_reply,
         )
 
         # Reply-UserID: dynamisch pro target_agent aus dem incoming-payload.
@@ -197,6 +220,30 @@ class NATSHandler:
         if not self._allowed_agents:
             return True
         return sanitize_agent_name(target_agent) in self._allowed_agents
+
+    def _remember_event_id(self, event_id: str) -> bool:
+        """Return False when a reconnect/replay delivers an already seen event."""
+        event_id = event_id.strip()
+        if not event_id:
+            return True
+        if event_id in self._recent_event_ids:
+            self._recent_event_ids.move_to_end(event_id)
+            return False
+        self._recent_event_ids[event_id] = None
+        while len(self._recent_event_ids) > MAX_RECENT_EVENT_IDS:
+            self._recent_event_ids.popitem(last=False)
+        return True
+
+    def _is_agent_sender(self, sender: str) -> bool:
+        """Defense-in-depth echo guard for events already filtered by Go."""
+        if not sender.startswith("@") or ":" not in sender:
+            return False
+        sender_local, sender_server = sender[1:].split(":", 1)
+        default = self._config.agent_user_id
+        default_server = default.split(":", 1)[1] if ":" in default else "matrix.local"
+        default_local = default.split(":", 1)[0].lstrip("@")
+        prefix = default_local.split("-", 1)[0] + "-" if "-" in default_local else "agent-"
+        return sender_server == default_server and sender_local.startswith(prefix)
 
     async def _on_disconnect(self) -> None:
         logger.warning("NATS disconnected")

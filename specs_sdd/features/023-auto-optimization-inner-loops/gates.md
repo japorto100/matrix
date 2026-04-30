@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Gates
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-30
 feature_id: 023
 ---
 
@@ -33,3 +33,7 @@ feature_id: 023
   promotion.
 - G006 [pass-initial] No loop writes product code directly.
 - G007 Failed/crashed candidates remain visible in the experiment log.
+- G008 [pass-static] Skill/tool candidates cannot relax Feature 015 lifecycle
+  constraints: pinned skills remain write-protected, usage sidecar evidence is
+  read-only for optimization, and promotion/archive decisions must pass Feature
+  016 Meta-Harness before product mutation.

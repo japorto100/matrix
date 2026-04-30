@@ -22,6 +22,10 @@ feature_id: 016
 - 2026-04-30: `knowledge-contract` adds a provider-free Memory/KG/RAG/Semantic
   boundary lane for Features 012/017/019/022/025. The aggregate
   `contract-suite` now runs 21/21 scenarios across five lanes.
+- 2026-04-30: `domain-contract` adds a provider-free python-backend
+  Meta-Harness domain lane for Features 015/016/020/023/024 plus Matrix
+  transport/session hygiene. The aggregate `contract-suite` now runs 30/30
+  scenarios across six lanes.
 
 ## Stack Gates
 
@@ -79,6 +83,8 @@ PY
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli propose --sessions 2`
 - CLI provider-free contract suite:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli contract-suite --run-id run-contract-suite-20260430 --data-dir /tmp/matrix-meta-harness-contract-suite`
+- CLI provider-free python-backend domain contract:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli domain-contract --run-id run-domain-contract-20260430 --data-dir /tmp/matrix-domain-contract`
 - CLI provider-free knowledge contract:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-20260430 --data-dir /tmp/matrix-knowledge-contract`
 
@@ -120,6 +126,14 @@ PY
 - Candidate artifacts include runner-variant metadata and source fingerprints
   for `agent/runners/dispatcher.py`, `agent/runners/simple.py` and
   `agent/graph/runner.py`.
+- Python-backend domain artifacts declare fixed evaluator, search split,
+  protected holdout split, allowed write scopes, budget, metrics and source
+  artifacts before candidates can be promoted.
+- Runtime domains reject docs-only candidates and reject candidate changes that
+  mutate `python-backend/meta_harness/` instead of the declared product domain.
+- Matrix transport/session hygiene is directly relevant because Matrix is our
+  product surface; the transfer is from Hermes Matrix bug classes to our
+  bridge/appservice/webclient gates, not from Hermes Gateway architecture.
 
 ## Tool Gates
 

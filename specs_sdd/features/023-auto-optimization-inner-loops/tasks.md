@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Tasks
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 023
 ---
 
@@ -91,6 +91,11 @@ feature_id: 023
   decay settings.
 - T031 Define skill/tool candidate dimensions: trigger threshold, max selected
   skills, tool subset, output transformation and consent behavior.
+  - 2026-04-30: skill/tool candidates must also include lifecycle-safe
+    dimensions from Feature 015: prompt usage deltas, pinned write-fence
+    preservation, archive/import overwrite refusal and Control read-model
+    visibility. Inner loops may suggest pin/archive/promote decisions, but
+    cannot directly overwrite pinned skills or mutate product code.
 - T032 Define runner candidate dimensions: dispatcher/simple/LangGraph parity,
   timeout, max iterations and max output tokens.
   - 2026-04-29: add consent/approval parity to runner dimensions:

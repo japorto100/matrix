@@ -47,6 +47,9 @@ feature_id: 012
 - [x] Provider-free knowledge contract validates Memory-Fusion source status,
   raw evidence refs, operation log ids and diff refs before cross-feature
   KG/RAG/Semantic use.
+- [x] Memory-Fusion runtime stores and surfaces `source_status`,
+  `raw_evidence_ref`, `operation_log_id` and `diff_ref` on retain/recall paths;
+  audit logging carries the same trace keys.
 - [ ] Prompt assembly order is live-verified against the current runner path.
 
 ## G3 Compaction / Metadata

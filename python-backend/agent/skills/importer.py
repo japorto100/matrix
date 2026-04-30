@@ -31,6 +31,7 @@ from typing import Any
 
 from agent.security.skills_guard import scan_skill, should_allow_install
 from agent.skills.loader import SKILLS_BASE, Skill, parse_skill_file
+from agent.skills.usage_state import PinnedSkillWriteError, reject_if_pinned
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,17 @@ def _scan_trust_source_for_tier(target_tier: str) -> str:
     if target_tier == "personal":
         return "agent-created"
     return "community"
+
+
+def _pinned_rejection(skill_name: str, target_tier: str, reason: str) -> dict[str, Any]:
+    return {
+        "name": skill_name,
+        "verdict": "blocked",
+        "trust_level": _scan_trust_source_for_tier(target_tier),
+        "findings": [],
+        "reason": reason,
+        "code": "pinned_skill_write_refused",
+    }
 
 
 # ── 5.3: GitHub / SkillsMP Import ───────────────────────────────────────────
@@ -176,6 +188,19 @@ async def import_from_github(
                 dest_dir = SKILLS_BASE / "personal" / target_owner / skill.name
             else:
                 dest_dir = SKILLS_BASE / "global" / skill.name
+            try:
+                reject_if_pinned(
+                    f"{target_tier}:{skill.name}",
+                    skills_base=SKILLS_BASE,
+                )
+            except PinnedSkillWriteError as e:
+                rejected.append(_pinned_rejection(skill.name, target_tier, str(e)))
+                logger.warning(
+                    "pinned skill blocked import overwrite of '%s' from %s",
+                    skill.name,
+                    repo_url,
+                )
+                continue
             candidates.append((skill, skill_file, dest_dir))
 
         # Any block → reject the whole import (no partial dest_dir on disk).
@@ -362,6 +387,17 @@ def install_from_archive(
             dest_dir = SKILLS_BASE / "personal" / target_owner / skill.name
         else:
             dest_dir = SKILLS_BASE / "global" / skill.name
+
+        try:
+            reject_if_pinned(f"{target_tier}:{skill.name}", skills_base=SKILLS_BASE)
+        except PinnedSkillWriteError as e:
+            logger.warning("pinned skill blocked archive overwrite of '%s'", skill.name)
+            return {
+                "success": False,
+                "skill_name": skill.name,
+                "message": str(e),
+                "code": "pinned_skill_write_refused",
+            }
 
         if dest_dir.exists():
             shutil.rmtree(dest_dir)

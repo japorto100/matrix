@@ -24,3 +24,6 @@ feature_id: 030
   static state-event draft metadata.
 - G010 Live compatibility matrix is updated for Element Web, Element X and
   FluffyChat.
+- G011 Widget proposal/approval cannot bypass Matrix transport/session hygiene:
+  mention/free-response rules, approval identity, E2EE blockers and echo-loop
+  guards still apply.

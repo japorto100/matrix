@@ -24,3 +24,8 @@ feature_id: 020
   - 2026-04-30: domain delegate candidate metadata now records
     `delegation_decision=deferred` and `fallback_reason=subagents_disabled`;
     no production subagent execution is enabled.
+  - 2026-04-30: remote A2A delegation is also runtime fail-closed unless
+    `AGENT_A2A_MAX_SPAWN_DEPTH` explicitly allows the next hop. Static tests
+    prove default depth zero does not instantiate the A2A client.
+- [x] Enabled single-hop A2A uses fresh bounded child context, not inherited
+  conversation/tool/memory state.

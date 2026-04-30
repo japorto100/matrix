@@ -24,3 +24,5 @@ feature_id: 029
 - [x] G007 Optional 3D/spatial view cannot replace the dense 2D control surface.
 - G008 Matrix handoff links respect user/room permissions.
 - G009 Meta-Harness replay shows candidate, gates and verdicts.
+- G010 Matrix transport/session blockers from Feature 006 are visible as
+  first-class ops events, not buried in raw logs.

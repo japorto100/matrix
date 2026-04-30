@@ -23,6 +23,9 @@ feature_id: 030
 - [x] T006 [done-static] Document room-state vs chat-message distinction.
   - 2026-04-29: research now records widget-room-state/client-specific behavior
     and keeps chat fallback separate.
+- T007 Add Matrix transport/session hygiene dependency from Feature 006:
+  widget proposal/approval events must not bypass mention/free-response rules,
+  approval identity, E2EE state or echo-loop guards.
 
 ## Host Policy
 
@@ -90,6 +93,8 @@ feature_id: 030
 - [x] T033 [done-static] Integration-test widget proposal to state event.
 - T034 Playwright-test Matrix web chat fallback.
 - T035 Live-test Element X/FluffyChat compatibility when devices are available.
+- T035a Live-test widget proposal/approval behavior after reconnect/replay so a
+  stale approval cannot create or re-create a room-state widget.
 - [x] T036 [done-static] Meta-Harness scenario: agent proposes widget, user approves, fallback
   remains safe.
   - 2026-04-29: `matrix-widget-policy` covers approved state-event draft,

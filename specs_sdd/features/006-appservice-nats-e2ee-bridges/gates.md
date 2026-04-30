@@ -3,7 +3,7 @@ title: Appservice NATS E2EE Bridges Gates
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 006
 ---
 
@@ -20,6 +20,17 @@ feature_id: 006
 - [x] Go consumes reply and sends Matrix message in unencrypted live rooms.
 - [x] Python bridge/A2UI static tests pass.
 - [x] No legacy Python Matrix sync loop is in the current bridge path.
+- [x] Matrix echo/pairing-loop guard is tested against self-sent or reflected
+  appservice events.
+- [partial] Mention/thread rules are tested for DM, group mention and free-response
+  room cases. Python bridge rejects malformed thread replies without a root and
+  preserves thread metadata; Go group-room free-response allowlist/live cases
+  remain open.
+- [ ] Reaction-based approvals, if enabled, bind to the correct Matrix room,
+  event and agent session.
+- [partial] Reconnect/session replay does not duplicate replies or lose
+  in-flight approval state. Python bridge dedupes repeated `event_id`; live
+  reconnect and approval state replay remain open.
 
 ## G2 E2EE Path
 
@@ -27,6 +38,7 @@ feature_id: 006
 - [ ] Go decrypts encrypted inbound event.
 - [ ] Go encrypts response in E2EE room.
 - [ ] Cross-Signing state is valid.
+- [ ] Cross-signing/bootstrap failure is visible as a blocker with remediation.
 - [ ] Key Backup survives restart.
 - [ ] Client key-sharing behavior is verified or blocker documented.
 

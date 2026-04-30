@@ -36,10 +36,14 @@ migrated_from:
 - [x] T015 Design durable MemPalace/verbatim drawer schema in Postgres/pgvector
   (`agent.mempalace_drawers`).
 - T016 Add or defer DB-level source/status fields.
-- T017 Add or defer Memory Operation Logging and diffs.
+- [x] T017 [done-static] Add Memory Operation Logging and diff/evidence trace
+  correlations.
   - 2026-04-30: provider-free `knowledge-contract` now requires memory
     recall/retain traces to carry `source_status`, `raw_evidence_ref`,
     `operation_log_id` and `diff_ref` before cross-feature context use.
+  - 2026-04-30: `memory_fusion` retain builders now persist provider-free
+    evidence trace fields; recall metadata and audit payloads preserve them so
+    RAG/KG/Semantic context cannot consume untraceable memory by accident.
 - T018 Add or defer MemoryAccessPolicy by agent/consumer.
 - T019 Add or defer PII/deletion path across tiers.
 - T020 Define Hindsight learning-memory boundaries: durable facts,

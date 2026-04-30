@@ -3,7 +3,7 @@ title: Scheduler, Skills, Formal Planning and Automation Tasks
 status: static_verified_live_pending
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 015
 migrated_from:
   - specs/execution/exec-scheduler.md
@@ -64,6 +64,9 @@ migrated_from:
 - [x] T036 Static-test general/task-specific metadata survives parsing.
 - [x] T037 Static-test `api_version` and assets survive file parsing and DB row
   mapping shape.
+- [x] T037a Expand skill package asset parsing beyond
+  `scripts/examples/templates`: small text/code files in arbitrary subfolders
+  are preserved in `assets JSONB` shape and included in import security scans.
 - T038 Live-verify skill DB seed and loader source modes against Postgres.
 - T039 Live-verify `api_version` and assets survive DB roundtrip.
 
@@ -71,6 +74,19 @@ migrated_from:
 
 - T040 Verify audit events for skill_found/refined/used.
 - T041 Verify usage counters on real sessions.
+- [x] T041a Add provider-agnostic filesystem skill lifecycle sidecar so
+  non-DB skills get prompt usage counts, view counts, pin state and active
+  lifecycle metadata.
+  - 2026-04-30: default sidecar path uses XDG state
+    (`$XDG_STATE_HOME/matrix-agent/skills/usage.json` or
+    `~/.local/state/matrix-agent/skills/usage.json`) instead of writing into
+    the source tree.
+- [x] T041b Add pinned-skill write fence so GitHub imports and `.skill`
+  archives cannot silently overwrite curated/pinned runtime skills.
+- [x] T041c Expose skill usage, lifecycle state and pin state through the
+  Control skills read model for frontend/control follow-up.
+- T041d Live-verify pinned skill protection through Control UI and a real
+  import attempt against the dev stack.
 - T042 Run trigger-quality CLI against production-like audit data.
 - T043 Implement or defer Hindsight outcome feedback.
 - T044 Implement or defer skill compliance judge.

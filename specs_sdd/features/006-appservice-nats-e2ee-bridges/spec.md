@@ -83,6 +83,11 @@ streaming; they use HTTP/SSE and LiveKit respectively.
 - Future messaging bridges stay backlog/research until exec-05 A/B are
   live-verified.
 - vodozemac-python / per-agent native E2EE remains research, not active scope.
+- Hermes Agent's fresh Matrix adapter changes are directly relevant as
+  transport bug classes: echo/pairing loops, mention/thread gating,
+  reaction-bound approval, reconnect/session hygiene and cross-signing
+  bootstrap. Matrix should test those behaviors in its own Go appservice/NATS/
+  Python bridge path rather than copying Hermes gateway architecture.
 
 ## Static Verify
 

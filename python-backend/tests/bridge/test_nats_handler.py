@@ -13,9 +13,11 @@ from bridge.nats_handler import (
 class _AgentClient:
     def __init__(self):
         self.calls = 0
+        self.kwargs = {}
 
-    async def send_message(self, **_kwargs):
+    async def send_message(self, **kwargs):
         self.calls += 1
+        self.kwargs = kwargs
         return "reply"
 
 
@@ -163,6 +165,72 @@ async def test_agent_scoped_handler_accepts_allowed_subject_and_target():
 
     assert agent.calls == 1
     assert nc.published[0][1]["agent_user_id"] == "@agent-research:matrix.local"
+    assert agent.kwargs["target_agent"] == "Research"
+
+
+async def test_handler_ignores_agent_sender_echo():
+    agent = _AgentClient()
+    handler = NATSHandler(_config(), agent)
+    nc = _NATS()
+    handler._nc = nc
+
+    await handler._on_inbound(
+        _Msg(
+            {
+                "room_id": "!room:matrix.local",
+                "sender": "@agent-research:matrix.local",
+                "body": "reply echo",
+                "event_id": "$echo",
+                "target_agent": "research",
+            }
+        )
+    )
+
+    assert agent.calls == 0
+    assert nc.published == []
+
+
+async def test_handler_dedupes_replayed_event_id():
+    agent = _AgentClient()
+    handler = NATSHandler(_config(), agent)
+    nc = _NATS()
+    handler._nc = nc
+    payload = {
+        "room_id": "!room:matrix.local",
+        "sender": "@alice:matrix.local",
+        "body": "hello",
+        "event_id": "$event-1",
+        "target_agent": "research",
+    }
+
+    await handler._on_inbound(_Msg(payload))
+    await handler._on_inbound(_Msg(payload))
+
+    assert agent.calls == 1
+    assert len(nc.published) == 1
+
+
+async def test_handler_rejects_thread_reply_without_thread_root():
+    agent = _AgentClient()
+    handler = NATSHandler(_config(), agent)
+    nc = _NATS()
+    handler._nc = nc
+
+    await handler._on_inbound(
+        _Msg(
+            {
+                "room_id": "!room:matrix.local",
+                "sender": "@alice:matrix.local",
+                "body": "thread reply",
+                "event_id": "$thread",
+                "is_thread_reply": True,
+                "target_agent": "research",
+            }
+        )
+    )
+
+    assert agent.calls == 0
+    assert nc.published == []
 
 
 def test_sanitize_agent_name_normalizes_matrix_and_nats_unsafe_input():

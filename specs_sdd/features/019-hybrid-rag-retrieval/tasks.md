@@ -33,6 +33,9 @@ feature_id: 019
 - T013 [done-static-live-smoke] Add Context Bubble builder with structural priors and
   diversity gate.
 - T014 [done-static] Add citation/source refs to assembled context.
+  - 2026-04-30: selected `retrieve(...)` context now exposes
+    `provenance_status` on hits and references, and callers can require
+    fail-closed degradation with `require_context_provenance=True`.
 - T015 [done-static-live-smoke] Add Self-RAG/citation verification pass for generated
   answers.
 - T016 [done-static] Add Matrix `memory_engine.VectorStore` adapter behind the

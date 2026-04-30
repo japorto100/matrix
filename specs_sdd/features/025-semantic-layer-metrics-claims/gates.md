@@ -31,5 +31,7 @@ feature_id: 025
   filters over `semantic_term_ids` and `metric_id`.
 - [x] G008 is covered by
   `knowledge-semantic-correction-review-proposal`.
+- [x] G008 has runtime Control API coverage: corrections create/list/review
+  proposals and return `catalog_mutated=false`.
 - [x] G010 has provider-free static coverage through `knowledge-contract`;
   live agent/Control UI verification remains in `live-verify.md`.

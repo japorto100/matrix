@@ -197,6 +197,12 @@ async def test_retain_batch_adds_route_tags_and_provenance() -> None:
     assert summary_item["metadata"]["actor_role"] == "user"
     assert summary_item["metadata"]["source_confidence"] == "1"
     assert summary_item["metadata"]["attribution_contract"] == "memory_fusion/v1"
+    assert summary_item["metadata"]["source_status"] == "durable"
+    assert summary_item["metadata"]["raw_evidence_ref"] == "session-001.jsonl#0"
+    assert summary_item["metadata"]["operation_log_id"].startswith("memory-op:retain:user_1:summary:session-001.jsonl")
+    assert summary_item["metadata"]["diff_ref"].startswith("memory-diff:user_1:summary:session-001.jsonl")
+    assert verbatim_item["metadata"]["raw_evidence_ref"] == "session-001.jsonl#0"
+    assert verbatim_item["metadata"]["operation_log_id"].startswith("memory-op:retain:user_1:verbatim:session-001.jsonl")
 
 
 @pytest.mark.asyncio
@@ -508,6 +514,10 @@ async def test_recall_async_prefers_verbatim_text_for_evidence_queries() -> None
     assert result.results[0].metadata["memory_layer"] == "personal_raw"
     assert result.results[0].metadata["provenance_ref"] == "session-001.jsonl#0"
     assert result.results[0].metadata["grounding_status"] == "not_applicable"
+    assert result.results[0].metadata["source_status"] == "durable"
+    assert result.results[0].metadata["raw_evidence_ref"] == "session-001.jsonl#0"
+    assert result.results[0].metadata["operation_log_id"].startswith("memory-op:recall:bank:")
+    assert result.results[0].metadata["diff_ref"].startswith("memory-diff:bank:")
 
 
 @pytest.mark.asyncio

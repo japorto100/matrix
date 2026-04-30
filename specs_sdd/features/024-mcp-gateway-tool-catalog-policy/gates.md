@@ -3,7 +3,7 @@ title: MCP Gateway Tool Catalog Policy Gates
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 024
 ---
 
@@ -25,6 +25,8 @@ feature_id: 024
   descriptor change.
 - G011 Control UI shows effective policy, not raw unfiltered descriptor state.
 - G012 Meta-Harness can replay allowed, denied and poisoned-descriptor cases.
+- G013 Tool discovery uses regex/token search plus BM25-style scoring over
+  policy-visible summaries, not full schema stuffing.
 
 ## Static Progress
 
@@ -42,3 +44,7 @@ feature_id: 024
   local MCP policy without invoking model-visible tools.
 - [x] G011 Control and agent-facing catalog endpoints expose policy-filtered
   entries, not raw unfiltered descriptors.
+- [x] G013 builtin tool discovery searches summaries with token/regex
+  BM25-style scoring and keeps high-disclosure schemas out of results.
+- [x] G013 MCP discovery searches only effective-catalog visible entries and
+  returns provenance/risk/approval summaries without full schemas.

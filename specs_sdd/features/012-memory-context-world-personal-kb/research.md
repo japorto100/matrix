@@ -215,3 +215,18 @@ Avoid:
   and safety;
 - personal corrections to metric/term meaning route to Feature 025 proposals
   instead of silently changing global truth.
+
+# 2026-04-30 Runtime Evidence Trace Follow-Up
+
+The `Z_Semantik_layer and so on.md` lesson is now applied to memory_fusion
+before KG/RAG/Semantic handoff: personal memory is evidence-bearing context,
+not global truth. Retain builders derive durable raw refs from explicit
+`raw_evidence_ref`, `source_ref`, `provenance_ref`, audit/idempotency refs or
+source-file/chunk metadata; recall and audit payloads carry the same
+`source_status`, `raw_evidence_ref`, `operation_log_id` and `diff_ref` fields.
+
+This is provider-agnostic and intentionally does not depend on OpenAI,
+Anthropic, Hindsight internals or a specific vector backend. The ids are
+trace/correlation refs for memory operations and diffs; DB-row-level diff
+tables can replace or enrich them later without changing the agent context
+contract.

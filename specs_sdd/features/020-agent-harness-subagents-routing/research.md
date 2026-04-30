@@ -85,6 +85,40 @@ subagent behavior. Without it, Meta-Harness cannot tell whether a future answer
 was improved by routing, retrieval, memory, model choice or accidental prompt
 variance.
 
+## HermesAgent Fresh Pull 2026-04-30
+
+Reference version after fast-forward: `_ref/hermes-agent` `fc7f55f49`.
+
+Additional upstream signals after `v2026.4.23-600-g8ed599dc`:
+
+- Curator became concrete: background skill maintenance tracks use/view/patch
+  counters, pins skills, archives instead of deleting and writes per-run
+  reports. This maps to Feature 015 and the Meta-Harness skill lifecycle
+  domain, not to general agent routing.
+- Skill-write hardening: pinned skills now block `skill_manage` writes. Matrix
+  should treat pinned/user-authored skills as a hard write fence before any
+  self-improvement loop can patch skills.
+- Observability plugin: Langfuse is opt-in/fail-open and truncates fields. This
+  is a useful pattern for Tool/Ops observability: observability must not alter
+  runtime behavior or leak oversized tool payloads.
+- Matrix adapter churn continued. This is directly important for Matrix, even
+  though Hermes' gateway architecture is not copied. Relevant bug classes are
+  echo/pairing loops, mention/thread/free-response room rules,
+  reaction-based approval binding, E2EE bootstrap/cross-signing and
+  reconnect/session hygiene. These become prioritized gates for our Matrix
+  bridge/appservice/webclient path.
+- Provider hardening continued around DeepSeek/Kimi/Anthropic thinking blocks
+  and resolved secrets. Matrix should keep provider-specific reasoning traces
+  out of route metadata, memory, RAG and KG evidence.
+- Vercel sandbox, Google Meet plugin and dashboard/TUI work are reference-only
+  unless a Matrix feature explicitly needs the same pattern. They are not
+  agent harness requirements.
+
+Boundary: Hermes is a CLI/gateway coding agent with broad platform adapters.
+Matrix is a Matrix-native agent system with its own appservice, webclient,
+memory/RAG/KG and Control surfaces. Transfer only the invariants and test
+classes; do not transfer Hermes product behavior 1:1.
+
 ## 2026-04-29 Runtime Guard Slice
 
 The fresh `Z_` docs and ADR-0009 reinforce a provider-agnostic boundary:

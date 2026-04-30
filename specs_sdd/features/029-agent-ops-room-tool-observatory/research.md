@@ -3,7 +3,7 @@ title: Agent Ops Room Tool Observatory Research
 status: draft
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 029
 ---
 
@@ -61,3 +61,18 @@ filters and shows a tool-call drilldown with audit and approval references.
 
 Meta-Harness replay remains open because it needs a run-id adapter over Feature
 016 artifacts, but it should emit the same `AgentOpsEvent` shape.
+
+## 2026-04-30 Matrix Transport Marker Follow-Up
+
+The fresh `_ref/hermes-agent` Matrix adapter updates add concrete event classes
+the ops room should make visible once Feature 006 emits them:
+
+- ignored self/echo events and pairing-loop suppressions.
+- group-room mention/thread/free-response routing decisions.
+- approval reaction binding and stale approval rejection.
+- reconnect/session replay markers.
+- E2EE/cross-signing bootstrap blockers.
+
+This is not a Hermes UI import. It is an observability consequence: the Matrix
+runtime should surface these transport/session decisions through the same
+`AgentOpsEvent` read model used for tool, approval, memory, RAG and KG events.

@@ -31,6 +31,9 @@ feature_id: 029
   - 2026-04-29: backend joins ToolRegistry catalog risk metadata into ops
     events; frontend displays risk in board and drilldown.
 - T007 Define replay contract for historical runs.
+- T008 Add Matrix transport/session hygiene markers from Feature 006:
+  echo-loop blocked, mention-required, free-response-room, approval-reaction,
+  reconnect/replay and x-sign/bootstrap blocker events.
 
 ## UI
 
@@ -52,6 +55,8 @@ feature_id: 029
   - 2026-04-29: backend supports agent/session/tool/risk/status filters;
     frontend exposes status, risk and tool filters.
 - T015 Add Matrix room handoff/action links.
+- T015a Show Matrix transport/session blockers in ops room: echo-loop guard,
+  mention gate, approval reaction wait, reconnect replay and E2EE bootstrap.
 - T016 Evaluate optional spatial/3D room after 2D usability passes.
 
 ## Backend

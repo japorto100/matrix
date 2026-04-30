@@ -42,6 +42,9 @@ class AgentClient:
         sender: str,
         thread_id: str | None = None,
         model: str | None = None,
+        matrix_event_id: str | None = None,
+        target_agent: str | None = None,
+        is_thread_reply: bool = False,
     ) -> str:
         """
         Sendet eine Nachricht an den Agent-Service und gibt die vollständige Antwort zurück.
@@ -56,10 +59,18 @@ class AgentClient:
 
         Wir sammeln alle text_delta Pakete und konkatenieren sie.
         """
+        context_parts = [f"matrix_room:{room_id}", f"sender:{sender}"]
+        if matrix_event_id:
+            context_parts.append(f"event_id:{matrix_event_id}")
+        if target_agent:
+            context_parts.append(f"target_agent:{target_agent}")
+        if is_thread_reply:
+            context_parts.append("is_thread_reply:true")
+
         payload: dict[str, Any] = {
             "message": message,
             "threadId": thread_id or room_id,
-            "context": f"matrix_room:{room_id} sender:{sender}",
+            "context": " ".join(context_parts),
         }
         if model:
             payload["model"] = model

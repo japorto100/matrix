@@ -35,6 +35,14 @@ class ImportToolRequest(BaseModel):
     category: str | None = None
 
 
+class SearchToolsRequest(BaseModel):
+    query: str
+    limit: int = 5
+    groups: list[str] | None = None
+    tools: list[str] | None = None
+    max_level: int = 2
+
+
 def _db_url() -> str:
     return os.environ.get(
         "HINDSIGHT_DB_URL", "postgresql://postgres@localhost:5433/hindsight_dev"
@@ -162,6 +170,29 @@ async def get_tool(tool_id: str) -> dict[str, Any]:
             stats = _tool_stats_24h().get(t["name"], {})
             return {**t, **stats}
     raise HTTPException(status_code=404, detail="Tool not found")
+
+
+@router.post("/tools/search")
+async def search_tools(req: SearchToolsRequest) -> dict[str, Any]:
+    """Search policy-visible builtin tools without exposing full schemas."""
+    try:
+        from agent.tools import registry as tools_registry
+        from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
+
+        reg = tools_registry.ToolRegistry.load()
+        entries = builtin_tool_catalog(reg.all())
+        items = search_tool_catalog(
+            entries,
+            req.query,
+            limit=req.limit,
+            allowed_groups=set(req.groups) if req.groups is not None else None,
+            allowed_tools=set(req.tools) if req.tools is not None else None,
+            max_level=req.max_level,
+        )
+        return {"items": items, "total": len(items)}
+    except Exception as e:  # noqa: BLE001
+        logger.exception("search_tools failed")
+        raise HTTPException(status_code=500, detail=f"search_tools: {e}") from e
 
 
 @router.post("/tools/import")

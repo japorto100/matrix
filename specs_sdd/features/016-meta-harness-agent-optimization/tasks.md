@@ -29,6 +29,21 @@ feature_id: 016
 - T006b Require every candidate artifact to state whether it is a config
   overlay, prompt/policy change, code patch or benchmark-only result; vague
   "agent improved" candidates are invalid.
+- [x] T006d [done-static] Add provider-free python-backend domain contract lane.
+  - 2026-04-30: `meta_harness.domain_contract` declares frozen optimization
+    domains for agent runtime, Matrix transport/session hygiene, subagent
+    roles, skills lifecycle, tool gateway, memory context, ingestion, RAG and
+    KG/semantic provenance. Each domain declares code scope, allowed write
+    scope, frozen evaluator, search/holdout split, budget, metrics, source
+    artifacts and forbidden edits.
+  - Hermes Agent is treated as a reference signal, not a runtime template:
+    `matrix-transport-session-hygiene` captures echo/pairing loops, mention
+    routing, approval reactions, message/session hygiene and E2EE/bootstrap
+    as directly relevant Matrix gate classes while explicitly rejecting 1:1
+    Hermes CLI-agent/gateway architecture transfer.
+- [x] T006e [done-static] Aggregate `domain-contract` into `contract-suite` so
+  Meta-Harness cannot optimize backend agent domains without first proving
+  fixed evaluator/search/holdout/write-scope contracts.
 - T006c Keep proposer and evaluator roles separate: proposer may inspect
   search traces and candidate history, but promotion must run frozen outer-loop
   gates and holdout.

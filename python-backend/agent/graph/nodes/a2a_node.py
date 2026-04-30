@@ -22,6 +22,31 @@ logger = logging.getLogger(__name__)
 REMOTE_AGENTS: dict[str, str] = {}
 
 
+def _max_spawn_depth() -> int:
+    raw = os.environ.get("AGENT_A2A_MAX_SPAWN_DEPTH", "0").strip()
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
+
+
+def _spawn_depth(state: AgentGraphState) -> int:
+    try:
+        return max(0, int(state.get("spawn_depth", 0)))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 0
+
+
+def _delegation_context(*, role: str, state: AgentGraphState, next_depth: int, max_depth: int) -> str:
+    thread_id = str(state.get("thread_id", "") or "")
+    return (
+        "Delegated from Matrix orchestrator; "
+        f"role:{role}; parent_thread_id:{thread_id}; "
+        f"spawn_depth:{next_depth}; max_spawn_depth:{max_depth}; "
+        "memory_scope:explicit_context_only"
+    )
+
+
 def _load_remote_agents() -> dict[str, str]:
     """Laedt Remote-Agent URLs aus Environment."""
     global REMOTE_AGENTS
@@ -50,6 +75,17 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
         logger.debug("No remote agent for role '%s', skipping A2A delegation", role)
         return {}
 
+    current_depth = _spawn_depth(state)
+    max_depth = _max_spawn_depth()
+    if current_depth >= max_depth:
+        logger.info(
+            "A2A delegation disabled by spawn depth: role=%s current=%d max=%d",
+            role,
+            current_depth,
+            max_depth,
+        )
+        return {}
+
     agent_url = remote_agents[role]
     messages = state.get("messages", [])
 
@@ -67,10 +103,16 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
 
     client = A2AClient()
     try:
+        next_depth = current_depth + 1
         task = await client.send_message(
             agent_url=agent_url,
             message=user_msg,
-            context=f"Delegated from orchestrator, role: {role}",
+            context=_delegation_context(
+                role=role,
+                state=state,
+                next_depth=next_depth,
+                max_depth=max_depth,
+            ),
         )
 
         if task.state == "completed" and task.result:

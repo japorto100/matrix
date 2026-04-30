@@ -6,6 +6,7 @@ from agent.tools.base import TradingTool
 from agent.tools.catalog import (
     builtin_tool_catalog,
     catalog_entry_for_tool,
+    search_tool_catalog,
     visible_tool_summaries,
 )
 from agent.tools.registry import ToolRegistry
@@ -84,3 +85,20 @@ def test_visible_tool_summaries_apply_group_tool_and_level_filters():
 
     assert [item["name"] for item in visible] == ["memory_search", "get_portfolio_summary"]
     assert all(set(item) == {"name", "group", "summary", "risk", "approval"} for item in visible)
+
+
+def test_search_tool_catalog_returns_progressively_disclosed_matches():
+    entries = [
+        catalog_entry_for_tool(_CatalogTool("memory_search", "Search memory.")),
+        catalog_entry_for_tool(_CatalogTool("sandbox_execute", "Execute code.")),
+        catalog_entry_for_tool(_CatalogTool("get_portfolio_summary", "Read portfolio.")),
+    ]
+
+    matches = search_tool_catalog(entries, "remember portfolio memory", max_level=2)
+
+    assert [item["name"] for item in matches] == [
+        "memory_search",
+        "get_portfolio_summary",
+    ]
+    assert matches[0]["matched_terms"]
+    assert "input_schema" not in matches[0]

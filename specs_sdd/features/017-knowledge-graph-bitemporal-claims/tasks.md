@@ -67,22 +67,29 @@ feature_id: 017
 
 ## Memory/KG Boundary
 
-- T020 [partial-static] Wire Memory-Fusion as a claim proposal source, not an
+- [x] T020 [done-static] Wire Memory-Fusion as a claim proposal source, not an
   automatic KG promotion path.
   - 2026-04-30: `knowledge-personal-memory-kg-promotion-blocked` now fails the
     static contract when personal memory lacks evidence/citation/bitemporal
-    metadata or review requirement. Runtime write-policy enforcement remains
-    open.
+    metadata or review requirement.
+  - 2026-04-30: `GlobalKGStore` write policy now rejects promoted KG claims
+    sourced from personal memory layers; those sources must enter as proposed
+    review items.
 - T021 [partial-static] Require raw evidence refs before a derived memory fact
   can become a KG claim.
   - 2026-04-30: the same provider-free contract requires `evidence_refs`,
     `source_artifact_id`, `chunk_id`, `chunk_hash` and `citation_ref` on KG
     proposals.
-- T022 Keep personal memory, Hindsight KG-like memory, MemPalace loci, Personal
+  - 2026-04-30: promoted KG claims now require evidence refs, a citation/source
+    URI/hash and Feature 025 `semantic_term_ids` at the store boundary.
+- [x] T022 [done-static] Keep personal memory, Hindsight KG-like memory, MemPalace loci, Personal
   KB and global/world KG namespaces separate in write policy and degradation
   flags.
   - 2026-04-30: static contract coverage exists for personal memory -> KG
-    promotion blocking; full runtime namespace enforcement remains open.
+    promotion blocking.
+  - 2026-04-30: runtime KG store rejects direct promoted global claims from
+    `memory_fusion`, `personal_memory`, `personal_raw`, `personal_derived`,
+    `mempalace` and `hindsight` evidence layers.
 - T023 [done-static-live-smoke] Add correction scenarios where old KG claims remain historically
   visible but are not retrieved as current truth.
 

@@ -3,7 +3,7 @@ title: Scheduler Skills Planning Research
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-25
+updated: 2026-04-30
 feature_id: 015
 migrated_from:
   - specs/execution/exec-skills.md
@@ -36,6 +36,54 @@ Open:
 - skill compliance rate, not just load rate.
 - promotion from repeated successful refinements.
 - SkillRL/EBM/MemRL only after enough sessions and skill pool size.
+
+## Hermes Agent Skill Lifecycle Follow-Up 2026-04-30
+
+Derived from the fresh `_ref/hermes-agent` pull and cross-checked against the
+agent-skills/procedural-memory direction from the SOTA review.
+
+Reusable for Matrix:
+
+- background skill maintenance should be grounded in usage evidence, not just
+  static skill files.
+- pinned or curated skills need an explicit write fence so automated import,
+  archive install or future skill-evolution jobs cannot overwrite them
+  silently.
+- usage metadata must cover filesystem, team and personal skills, not only
+  DB-backed `agent.agent_skills` rows.
+- lifecycle state should be visible in Control because promotion/archive
+  decisions need operator context.
+
+Implemented Matrix-local version:
+
+- provider-agnostic sidecar `agent.skills.usage_state` for prompt usage, view
+  count, pin state and active lifecycle metadata.
+- import/archive pinned-skill overwrite refusal.
+- Control skills read model exposes usage and lifecycle state.
+- package asset parsing now keeps small text/code assets from arbitrary
+  subfolders in the existing `assets JSONB` shape and includes them in the
+  install-time security scan. This fixes the gap where `src/*.py`, `go/*.go`
+  or `crates/*.rs` could remain filesystem-only and under-scanned.
+
+Current storage rule:
+
+- `SKILL.md` body is stored as `agent.agent_skills.content`.
+- structured metadata uses normal columns.
+- small text/code package assets use `agent.agent_skills.assets JSONB`.
+- large/binary assets should become artifact-store references with manifest
+  metadata, not inline JSONB.
+
+Not copied from Hermes:
+
+- CLI-specific curator flow, TUI affordances and coding-agent assumptions.
+- provider-specific telemetry or prompt formats.
+
+Related fresh inputs:
+
+- `Z_Additional_For_Tool_Stuff.md` for normal/tool/MCP boundary pressure.
+- Feature 016 `research.md` domain-contract notes for the rule that Meta-
+  Harness evaluates agent-runtime candidates after the real runtime module is
+  changed.
 
 ## PDDL
 

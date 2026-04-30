@@ -204,6 +204,57 @@ keeps static backend agent contracts visible before browser/live work starts:
 This is intentionally not a substitute for live UI/provider verification. It is
 the frozen, cheap contract lane that should run before larger implementation
 passes and before any future subagent behavior is promoted.
+
+## 2026-04-30 Python-Backend Domain Contract
+
+The Meta-Harness paper plus the official `_ref/meta-harness` onboarding make a
+hard distinction between real optimization and placebo optimization: a candidate
+must change a declared harness surface and then be evaluated by a frozen
+evaluator over a search split and protected holdout. Autoresearch reinforces
+the same discipline with one modifiable target, a fixed time budget, a fixed
+metric and keep/discard/crash logs.
+
+The implemented `meta_harness.domain_contract` turns that into a provider-free
+Matrix backend gate. It declares optimization domains for:
+
+- agent runtime routing.
+- Matrix transport/session hygiene.
+- subagent delegation roles.
+- skills lifecycle/curator.
+- tool gateway/policy.
+- memory/context fusion.
+- source ingestion/parser handoff.
+- hybrid RAG retrieval.
+- KG/semantic provenance.
+
+Every domain carries allowed write scopes, frozen evaluator, search/holdout
+split, budget, metrics, source artifacts and forbidden edits. Runtime domains
+reject docs-only candidates, reject Meta-Harness self-edits and require source
+artifacts plus metric targets.
+
+Hermes Agent is useful here as a reference corpus, not as a product blueprint.
+The fresh `_ref/hermes-agent` update to `fc7f55f49` contributes transfer
+signals:
+
+- Curator/skill usage: agent-created skills need usage sidecars, pinned-skill
+  write fences, archive-not-delete behavior and per-run reports.
+- Delegation: children start with fresh context, leaf delegates cannot clarify,
+  write shared memory or send messages, orchestrator role/depth is opt-in, and
+  interrupts propagate.
+- Tool/plugin lifecycle: pre-tool veto, schema sanitizer, output caps and
+  fail-open observability are good gate patterns, but any mutation hook must be
+  audited before runtime adoption.
+- Provider hardening: resolved secrets and provider-specific reasoning blocks
+  must not leak into traces, memory or KG evidence.
+- Matrix transport fixes: Hermes' Matrix adapter/changelog is directly
+  relevant because our product is Matrix-native. It highlights echo or pairing
+  loops, mention/thread gates, approval reactions, message chunking,
+  reconnect/session hygiene and X-sign/bootstrap as classes of bugs we should
+  test in our Matrix appservice/bridge/webclient path.
+
+Non-transferable: Hermes is a CLI/gateway coding agent. Matrix should not
+adopt its subagent product behavior, platform gateway architecture, TUI overlay
+or plugin hook power 1:1. These references inform contracts and gates only.
 3. Write artifact directory.
 4. Add deterministic trace gates.
 5. Add CLI JSON output.

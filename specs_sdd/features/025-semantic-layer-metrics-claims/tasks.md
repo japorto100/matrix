@@ -33,7 +33,10 @@ feature_id: 025
 - [x] T014 [done-static] Add SQL generation only behind a semantic contract, never raw agent SQL
   by default.
 - [x] T015 [done-static] Add KG/RAG concept lookup for non-SQL semantic terms.
-- T016 Add correction proposal endpoint.
+- [x] T016 [done-static] Add correction proposal endpoint.
+  - 2026-04-30: Control API now exposes semantic correction create/list/review
+    endpoints backed by review proposals; accepted reviews still do not mutate
+    the runtime catalog.
 - [x] T017 [done-static] Add acceptance/rejection workflow for corrections.
 - [x] T018 [done-static] Add export to Control UI and Meta-Harness artifacts.
 
@@ -57,6 +60,9 @@ feature_id: 025
   without silently promoting them.
   - 2026-04-30: `knowledge-semantic-correction-review-proposal` proves the
     proposal/review contract. Runtime feedback wiring remains open.
+  - 2026-04-30: Runtime Control API now preserves the same proposal/review
+    contract for user/agent corrections; memory feedback can call this surface
+    instead of writing semantic truth directly.
 - T025 [done-static] Coordinate semantic terms with Feature 017 claim
   promotion.
   - 2026-04-30: `knowledge-contract` requires `semantic_term_ids` on KG claim
@@ -97,4 +103,4 @@ feature_id: 025
   must link to a KG claim and RAG citation.
   - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` requires semantic
     catalog/version/term metadata plus RAG citation and KG claim refs.
-- T037 Live-verify Control UI semantic catalog.
+- T037 Live-verify Control UI semantic catalog and correction proposal flow.

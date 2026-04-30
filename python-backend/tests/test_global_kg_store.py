@@ -96,6 +96,59 @@ def test_in_memory_global_kg_correction_preserves_history_but_searches_current()
     ]
 
 
+def test_global_kg_rejects_personal_memory_direct_promotion() -> None:
+    store = InMemoryGlobalKGStore()
+    proposal = ClaimProposal(
+        subject=EntityRef.from_name("User preference", entity_type="memory"),
+        predicate="IMPLIES",
+        object_value={"claim": "global truth"},
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        status="promoted",
+        confidence=0.9,
+        evidence=(
+            EvidenceRef(
+                source_layer="personal_memory",
+                source_ref="memory://user/session-1",
+                source_uri="memory://user/session-1",
+            ),
+        ),
+        metadata={"semantic_term_ids": ["kg_claim"]},
+    )
+
+    with pytest.raises(ValueError, match="review proposals"):
+        store.propose_claim(proposal)
+
+
+def test_global_kg_promoted_claim_requires_semantic_terms_and_citation() -> None:
+    store = InMemoryGlobalKGStore()
+    missing_semantic_terms = ClaimProposal(
+        subject=EntityRef.from_name("European Union", entity_type="institution"),
+        predicate="SANCTIONED_BY",
+        object_entity=EntityRef.from_name("Russia", entity_type="country"),
+        valid_from=datetime(2026, 4, 1, tzinfo=UTC),
+        status="promoted",
+        confidence=0.9,
+        evidence=(EvidenceRef(source_layer="world_evidence", source_ref="doc-1", source_uri="doc://1"),),
+    )
+
+    with pytest.raises(ValueError, match="semantic_term_ids"):
+        store.propose_claim(missing_semantic_terms)
+
+    missing_citation = ClaimProposal(
+        subject=missing_semantic_terms.subject,
+        predicate=missing_semantic_terms.predicate,
+        object_entity=missing_semantic_terms.object_entity,
+        valid_from=missing_semantic_terms.valid_from,
+        status="promoted",
+        confidence=0.9,
+        evidence=(EvidenceRef(source_layer="world_evidence", source_ref="doc-2"),),
+        metadata={"semantic_term_ids": ["kg_claim"]},
+    )
+
+    with pytest.raises(ValueError, match="citation/source/hash"):
+        store.propose_claim(missing_citation)
+
+
 def test_in_memory_global_kg_projection_replay_snapshot_preserves_provenance() -> None:
     store = InMemoryGlobalKGStore()
     proposal = ClaimProposal(

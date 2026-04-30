@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from memory_fusion.evidence_trace import ensure_memory_trace_metadata
 from memory_fusion.loci import derive_loci_metadata, loci_tags
 from memory_fusion.semantics import (
     classify_item_semantics,
@@ -36,7 +37,12 @@ def build_summary_item(item: dict[str, Any], *, bank_id: str | None = None) -> d
         _stringify_metadata({**metadata, **semantics.metadata_dict()}),
         bank_id=bank_id,
     )
-    metadata = enrich_metadata_with_semantics({**metadata, **loci}, item=item)
+    metadata = ensure_memory_trace_metadata(
+        enrich_metadata_with_semantics({**metadata, **loci}, item=item),
+        bank_id=bank_id,
+        route="summary",
+        action="retain",
+    )
     return {
         **item,
         "context": f"summary:{loci['source_ref']}" if loci["source_ref"] else str(item.get("context") or "summary"),
@@ -64,7 +70,12 @@ def build_verbatim_item(item: dict[str, Any], *, bank_id: str | None = None) -> 
         _stringify_metadata({**metadata, **semantics.metadata_dict()}),
         bank_id=bank_id,
     )
-    metadata = enrich_metadata_with_semantics({**metadata, **loci}, item=item)
+    metadata = ensure_memory_trace_metadata(
+        enrich_metadata_with_semantics({**metadata, **loci}, item=item),
+        bank_id=bank_id,
+        route="verbatim",
+        action="retain",
+    )
     return {
         **item,
         "tags": loci_tags(

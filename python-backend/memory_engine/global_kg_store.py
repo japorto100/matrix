@@ -52,6 +52,7 @@ class InMemoryGlobalKGStore:
         self._projection_events: list[dict[str, Any]] = []
 
     def propose_claim(self, proposal: ClaimProposal) -> str:
+        _assert_claim_write_policy(proposal)
         self._claims[proposal.claim_id] = proposal
         versions = self._versions.setdefault(proposal.conflict_key, [])
         if all(version.claim_id != proposal.claim_id for version in versions):
@@ -688,6 +689,7 @@ def _periods_overlap(
 
 
 def _insert_claim(cur: Any, proposal: ClaimProposal, *, json_factory: Any) -> None:
+    _assert_claim_write_policy(proposal)
     for entity in [proposal.subject, proposal.object_entity]:
         if entity is None:
             continue
@@ -833,6 +835,43 @@ def _proposal_context(proposal: ClaimProposal) -> dict[str, Any]:
             "freshness_anchor": proposal.valid_from.isoformat(),
         },
     }
+
+
+_PERSONAL_MEMORY_SOURCE_LAYERS = {
+    "memory_fusion",
+    "personal_memory",
+    "personal_raw",
+    "personal_derived",
+    "mempalace",
+    "hindsight",
+}
+
+
+def _assert_claim_write_policy(proposal: ClaimProposal) -> None:
+    """Reject global KG writes that bypass evidence/review boundaries."""
+
+    source_layers = {str(evidence.source_layer or "").lower() for evidence in proposal.evidence}
+    has_personal_memory_source = bool(source_layers & _PERSONAL_MEMORY_SOURCE_LAYERS)
+    if has_personal_memory_source and proposal.status != "proposed":
+        raise ValueError("personal memory KG claims must enter as review proposals")
+
+    if proposal.status != "promoted":
+        return
+
+    if not proposal.evidence:
+        raise ValueError("promoted KG claims require evidence refs")
+    if not proposal.metadata.get("semantic_term_ids"):
+        raise ValueError("promoted KG claims require semantic_term_ids")
+    for evidence in proposal.evidence:
+        if not str(evidence.source_ref or "").strip():
+            raise ValueError("promoted KG claim evidence requires source_ref")
+        has_citation = bool(
+            evidence.source_uri
+            or evidence.content_hash
+            or str((evidence.metadata or {}).get("citation_ref") or "").strip()
+        )
+        if not has_citation:
+            raise ValueError("promoted KG claim evidence requires citation/source/hash")
 
 
 def _row_to_claim_hit(

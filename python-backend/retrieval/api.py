@@ -138,6 +138,36 @@ def _apply_semantic_filter(
     return [hit for hit in hits if _hit_matches_semantic_filter(hit, semantic_filter)]
 
 
+def _has_context_provenance(hit: RetrievalHit) -> bool:
+    metadata = hit.metadata if isinstance(hit.metadata, dict) else {}
+    if hit.source_uri:
+        return True
+    for key in (
+        "source_artifact_id",
+        "citation_ref",
+        "source_ref",
+        "raw_evidence_ref",
+        "document_id",
+        "chunk_id",
+        "claim_id",
+    ):
+        value = metadata.get(key)
+        if isinstance(value, list | tuple | set):
+            if any(str(item or "").strip() for item in value):
+                return True
+            continue
+        if str(value or "").strip():
+            return True
+    source_refs = metadata.get("source_refs")
+    if isinstance(source_refs, list | tuple):
+        return any(isinstance(item, dict) and str(item.get("source_ref") or "").strip() for item in source_refs)
+    return False
+
+
+def _context_provenance_status(hit: RetrievalHit) -> str:
+    return "complete" if _has_context_provenance(hit) else "missing"
+
+
 async def _record_kg_access(
     store: object,
     claim_ids: list[str],
@@ -258,6 +288,11 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
             )
         except Exception:  # noqa: BLE001
             degraded_reasons.append("KG_ACCESS_TELEMETRY_FAILED")
+    provenance_by_hit_id = {hit.id: _context_provenance_status(hit) for hit in bubble.hits}
+    if kwargs.get("require_context_provenance") is True and any(
+        status == "missing" for status in provenance_by_hit_id.values()
+    ):
+        degraded_reasons.append("CONTEXT_PROVENANCE_MISSING")
     answer = kwargs.get("answer") or kwargs.get("generated_answer")
     verification: dict[str, Any] | None = None
     if isinstance(answer, str) and answer.strip():
@@ -297,12 +332,22 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                         if hit.source == "kg" and kg_access_count
                         else {}
                     ),
+                    "provenance_status": provenance_by_hit_id.get(hit.id, "missing"),
                 },
             }
             for hit in bubble.hits
         ],
         intent=plan.mode.value,
-        references=list(bubble.references),
+        references=[
+            {
+                **reference,
+                "metadata": {
+                    **dict(reference.get("metadata") or {}),
+                    "provenance_status": provenance_by_hit_id.get(str(reference.get("id") or ""), "missing"),
+                },
+            }
+            for reference in bubble.references
+        ],
         verification=verification,
         degraded=bool(degraded_reasons),
         degraded_reasons=degraded_reasons,

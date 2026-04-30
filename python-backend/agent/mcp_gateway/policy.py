@@ -13,6 +13,7 @@ import json
 import re
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
+from math import log
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -244,6 +245,79 @@ def build_effective_catalog(
     return catalog
 
 
+def search_effective_catalog(
+    catalog: list[McpCatalogEntry],
+    query: str,
+    *,
+    limit: int = 5,
+    max_approval_level: ApprovalLevel | None = None,
+) -> list[dict[str, Any]]:
+    """Search already-policy-filtered MCP tools without exposing schemas."""
+
+    visible = [entry for entry in catalog if entry.visible]
+    if max_approval_level is not None:
+        max_rank = _approval_rank(max_approval_level)
+        visible = [
+            entry
+            for entry in visible
+            if _approval_rank(entry.snapshot.approval_level) <= max_rank
+        ]
+    q_tokens = _search_tokens(query)
+    if not visible:
+        return []
+    if not q_tokens:
+        return [
+            _catalog_search_result(entry, score=0.0, matched_terms=())
+            for entry in visible[: max(0, limit)]
+        ]
+
+    docs = {
+        entry.snapshot.matrix_name: _search_tokens(
+            " ".join(
+                (
+                    entry.snapshot.original_name,
+                    entry.snapshot.matrix_name,
+                    entry.snapshot.description,
+                    " ".join(entry.snapshot.risk_flags),
+                    entry.snapshot.approval_level,
+                    entry.server.display_name,
+                    entry.server.server_id,
+                )
+            )
+        )
+        for entry in visible
+    }
+    doc_count = len(docs)
+    doc_freq: dict[str, int] = {}
+    for tokens in docs.values():
+        for token in set(tokens):
+            doc_freq[token] = doc_freq.get(token, 0) + 1
+
+    ranked: list[tuple[float, McpCatalogEntry, tuple[str, ...]]] = []
+    for entry in visible:
+        tokens = docs[entry.snapshot.matrix_name]
+        matched = tuple(sorted(set(q_tokens) & set(tokens)))
+        if not matched:
+            continue
+        length_norm = 1 + (len(tokens) / 20)
+        score = 0.0
+        for term in q_tokens:
+            tf = tokens.count(term)
+            if not tf:
+                continue
+            idf = log((doc_count + 1) / (doc_freq.get(term, 0) + 0.5)) + 1
+            score += (tf / length_norm) * idf
+        if entry.snapshot.original_name.lower() in query.lower():
+            score += 2.0
+        ranked.append((score, entry, matched))
+
+    ranked.sort(key=lambda item: (-item[0], item[1].snapshot.matrix_name))
+    return [
+        _catalog_search_result(entry, score=score, matched_terms=matched)
+        for score, entry, matched in ranked[: max(0, limit)]
+    ]
+
+
 def tool_provenance(
     server: McpServerConfig,
     snapshot: McpToolDescriptorSnapshot,
@@ -259,6 +333,55 @@ def tool_provenance(
         "tool_name": snapshot.original_name,
         "matrix_name": snapshot.matrix_name,
     }
+
+
+def _catalog_search_result(
+    entry: McpCatalogEntry,
+    *,
+    score: float,
+    matched_terms: tuple[str, ...],
+) -> dict[str, Any]:
+    return {
+        "name": entry.snapshot.matrix_name,
+        "original_name": entry.snapshot.original_name,
+        "server_id": entry.server.server_id,
+        "summary": _summary(entry.snapshot.description),
+        "approval_level": entry.snapshot.approval_level,
+        "risk_flags": list(entry.snapshot.risk_flags),
+        "provenance": tool_provenance(entry.server, entry.snapshot),
+        "score": round(score, 4),
+        "matched_terms": list(matched_terms),
+    }
+
+
+def _summary(text: str) -> str:
+    value = " ".join(str(text or "").split())
+    if len(value) <= 180:
+        return value
+    return value[:177].rstrip() + "..."
+
+
+def _search_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for raw in re.findall(r"[a-z0-9_]{2,}", str(text).lower()):
+        tokens.append(raw)
+        if "_" in raw:
+            tokens.extend(part for part in raw.split("_") if len(part) >= 2)
+    return [
+        token
+        for token in tokens
+        if token not in {"the", "and", "for", "with", "tool", "tools", "use"}
+    ]
+
+
+def _approval_rank(level: ApprovalLevel) -> int:
+    return {
+        "auto": 0,
+        "confirm": 1,
+        "destructive": 2,
+        "admin": 3,
+        "blocked": 4,
+    }.get(level, 4)
 
 
 def diff_descriptor_snapshots(
