@@ -43,3 +43,8 @@ feature_id: 032
     ordering changes.
   - 2026-04-30: `run-prompt-cache-contract-gate` passed 4/4 without provider
     calls.
+- [x] G009 MCP reload cache invalidation is visible in provider-free harness
+  and read-model replay.
+  - 2026-04-30: `prompt-cache-mcp-reload-impact-replayed` requires
+    `agent-cache-impact/v1`, `cache.invalidated` runtime event and
+    prompt-cache read model `cache_invalidations=1`.

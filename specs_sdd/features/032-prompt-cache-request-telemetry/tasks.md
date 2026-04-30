@@ -71,7 +71,10 @@ feature_id: 032
     stable prompt/tool digests, content-only prompt change reasons, tool schema
     cache-break reasons and unknown usage counters.
   - 2026-04-30: `run-prompt-cache-contract-gate` passed 4/4 scenarios.
-- T022 Add regression scenario where MCP reload invalidates cache and surfaces
-  explicit impact metadata.
+- [x] T022 [done-static] Add regression scenario where MCP reload invalidates
+  cache and surfaces explicit impact metadata.
   - 2026-04-30: static regressions cover MCP reload impact,
     skill catalog digest changes and prompt-cache replay of cache-impact events.
+  - 2026-04-30: `prompt-cache-mcp-reload-impact-replayed` now runs in the
+    provider-free `prompt-cache-contract`; the lane has 5 scenarios and the
+    aggregate contract suite has 46 scenarios.

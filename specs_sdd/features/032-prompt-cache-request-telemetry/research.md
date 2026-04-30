@@ -61,3 +61,9 @@ import now use the same provider-agnostic `agent-cache-impact/v1` envelope. The
 digest material is redacted to hashes and metadata, not raw prompts or raw skill
 content. This keeps the Hermes/OpenClaw cache-stability lesson but makes the
 contract independent of OpenAI/Anthropic-specific cache APIs.
+
+2026-04-30 harness update: the provider-free `prompt-cache-contract` now replays
+an MCP reload cache-impact event through the prompt-cache read model. This
+guards the Hermes-derived requirement that tool catalog changes invalidate or
+rebind cached agent sessions, while keeping the implementation provider-neutral
+and UI-readable.

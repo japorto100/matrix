@@ -27,6 +27,7 @@ def run_prompt_cache_contract_scenarios(
         _stable_prompt_and_tool_order_gate(),
         _prompt_content_change_gate(),
         _tool_schema_change_gate(),
+        _mcp_reload_cache_impact_gate(),
         _usage_unknown_counter_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -193,6 +194,70 @@ def _usage_unknown_counter_gate() -> dict[str, Any]:
         "prompt-cache-usage-unknown-counters",
         failures=failures,
         evidence={"usage": usage},
+    )
+
+
+def _mcp_reload_cache_impact_gate() -> dict[str, Any]:
+    from agent.control.cache_impact import (
+        build_cache_impact,
+        cache_impact_runtime_event,
+        digest_records,
+    )
+    from agent.control.prompt_cache import build_prompt_cache_read_model
+
+    previous_digest = digest_records([{"name": "memory_search", "schema": "v1"}])
+    next_digest = digest_records(
+        [
+            {"name": "memory_search", "schema": "v1"},
+            {"name": "semantic_lookup", "schema": "v1"},
+        ]
+    )
+    impact = build_cache_impact(
+        source="mcp_reload",
+        reason="tool_catalog_changed",
+        previous_digest=previous_digest,
+        next_digest=next_digest,
+        scope={"thread_id": "thread-cache"},
+        details={"tool_count": 2},
+    )
+    runtime_event = cache_impact_runtime_event(
+        impact,
+        session_id="session-cache",
+        thread_id="thread-cache",
+    )
+    read_model = build_prompt_cache_read_model(
+        audit_events=[
+            {
+                "id": "audit-cache-impact-1",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "thread_id": "thread-cache",
+                "metadata": {"runtime_events": [runtime_event]},
+            }
+        ]
+    )
+    failures: list[str] = []
+    if impact.get("action") != "rebind_required":
+        failures.append("cache-impact-not-rebind-required")
+    if runtime_event.get("name") != "cache.invalidated":
+        failures.append("cache-impact-runtime-event-not-invalidated")
+    if read_model["summary"]["cache_invalidations"] != 1:
+        failures.append("prompt-cache-read-model-missing-invalidation")
+    if not read_model["cache_impacts"]:
+        failures.append("prompt-cache-read-model-missing-impact")
+    else:
+        replayed = read_model["cache_impacts"][0]
+        if replayed.get("source") != "mcp_reload":
+            failures.append("prompt-cache-impact-source-not-replayed")
+        if replayed.get("reason") != "tool_catalog_changed":
+            failures.append("prompt-cache-impact-reason-not-replayed")
+    return _scenario(
+        "prompt-cache-mcp-reload-impact-replayed",
+        failures=failures,
+        evidence={
+            "impact": impact,
+            "runtime_event_name": runtime_event.get("name"),
+            "read_model_summary": read_model.get("summary"),
+        },
     )
 
 
