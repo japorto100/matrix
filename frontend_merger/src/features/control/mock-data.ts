@@ -1096,6 +1096,34 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 				input: event.input,
 				output: event.output,
 				metadata: event.metadata,
+				linked_surfaces:
+					event.id === 1042
+						? {
+								prompt_cache: {
+									surface: "prompt_cache",
+									label: "Prompt Cache",
+									href: "/control/context?thread_id=thr_a1b2c3",
+									provider: "openrouter",
+									model: "provider/mock-model",
+									prompt_digest: "mock-prompt-digest",
+									tool_catalog_digest: "mock-tool-digest",
+									cache_read_tokens: 5120,
+									cache_write_tokens: 256,
+									cache_break_reasons: [],
+								},
+								report_artifacts: [
+									{
+										surface: "report_artifact",
+										label: "Report report-rag-benchmark-summary",
+										href: "/control/reports?report_id=report-rag-benchmark-summary",
+										report_id: "report-rag-benchmark-summary",
+										manifest_path: "reports/report-rag-benchmark-summary/manifest.json",
+										output_path: "reports/report-rag-benchmark-summary/report.html",
+										status: "validated",
+									},
+								],
+							}
+						: undefined,
 				runtime_events:
 					event.action.toLowerCase().includes("memory") || event.tool_name?.includes("memory")
 						? [

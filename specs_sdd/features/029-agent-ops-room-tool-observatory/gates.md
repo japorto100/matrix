@@ -44,4 +44,7 @@ feature_id: 029
   unsupported outcomes.
   - 2026-04-30: Subagent run rows return explicit control availability:
     status supported; kill, pause and replay unsupported.
-- [ ] Ops events link to Prompt Cache and Report Artifact surfaces.
+- [partial-static] Ops events link to Prompt Cache and Report Artifact surfaces.
+  - 2026-04-30: selected Ops events render prompt-cache and report-artifact
+    links when telemetry or report refs are present. Prompt-cache link target
+    is `/control/context` until Feature 032 owns a dedicated cache surface.

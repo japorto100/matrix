@@ -93,7 +93,11 @@ feature_id: 027
   created/citation readiness.
 - T041 Add Agent Chat attachment handoff for report manifest, HTML/text/PDF
   outputs and data artifacts.
-- T042 Add Control UI artifact event linkage so report rows point back to the
+- [partial-static] T042 Add Control UI artifact event linkage so report rows point back to the
   originating session/turn/tool call.
+  - 2026-04-30: Ops events now link forward to report rows through
+    `linked_surfaces.report_artifacts` and `/control/reports?report_id=...`.
+    Reverse links from report rows back to the originating event remain future
+    persisted provenance work.
 - T043 Add Meta-Harness downstream gate that fails if report text exists but
   artifact manifests/events are missing.

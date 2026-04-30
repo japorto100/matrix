@@ -199,6 +199,11 @@ def audit_event_to_ops_event(
     status = _derive_status(event)
     tool_name = str(event.get("tool_name") or "")
     blocker_reason = _matrix_blocker_reason(metadata, action)
+    linked_surfaces = _linked_surfaces(
+        event=event,
+        metadata=metadata,
+        runtime_events=runtime_events,
+    )
     return {
         "id": f"audit:{event.get('id')}",
         "source": "audit",
@@ -220,6 +225,7 @@ def audit_event_to_ops_event(
         "output": redact_payload(event.get("output")),
         "metadata": redact_payload(metadata),
         "request_telemetry": redact_payload(metadata.get("request_telemetry") or {}),
+        "linked_surfaces": linked_surfaces,
         "runtime_events": runtime_events,
         "runtime_event_count": len(runtime_events),
         "blocker_reason": blocker_reason,
@@ -448,6 +454,127 @@ def _safe_int(value: Any) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def _as_str_list(value: Any) -> list[str]:
+    if isinstance(value, list | tuple):
+        return [str(item) for item in value if str(item)]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _linked_surfaces(
+    *,
+    event: dict[str, Any],
+    metadata: dict[str, Any],
+    runtime_events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    links: dict[str, Any] = {}
+    telemetry = _as_dict(metadata.get("request_telemetry"))
+    if telemetry:
+        usage = _as_dict(telemetry.get("usage"))
+        links["prompt_cache"] = {
+            "surface": "prompt_cache",
+            "label": "Prompt Cache",
+            "href": _control_href("context", "thread_id", event.get("thread_id")),
+            "provider": str(telemetry.get("provider") or ""),
+            "model": str(telemetry.get("model") or ""),
+            "prompt_digest": str(telemetry.get("prompt_digest") or ""),
+            "prompt_layout_digest": str(telemetry.get("prompt_layout_digest") or ""),
+            "tool_catalog_digest": str(telemetry.get("tool_catalog_digest") or ""),
+            "cache_read_tokens": usage.get("cache_read_tokens"),
+            "cache_write_tokens": usage.get("cache_write_tokens"),
+            "cache_break_reasons": _as_str_list(telemetry.get("cache_break_reasons")),
+        }
+
+    report_links = _report_artifact_links(event, metadata, runtime_events)
+    if report_links:
+        links["report_artifacts"] = report_links
+    return links
+
+
+def _control_href(tab: str, query_key: str, query_value: Any) -> str:
+    value = str(query_value or "").strip()
+    if not value:
+        return f"/control/{tab}"
+    from urllib.parse import quote
+
+    return f"/control/{tab}?{query_key}={quote(value)}"
+
+
+def _report_artifact_links(
+    event: dict[str, Any],
+    metadata: dict[str, Any],
+    runtime_events: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for value in (
+        metadata,
+        event.get("input"),
+        event.get("output"),
+        *[_as_dict(item.get("metadata")) for item in runtime_events],
+    ):
+        candidates.extend(_find_report_artifact_refs(value))
+
+    by_report_id: dict[str, dict[str, Any]] = {}
+    for item in candidates:
+        report_id = str(item.get("report_id") or "").strip()
+        if not report_id:
+            continue
+        existing = by_report_id.setdefault(
+            report_id,
+            {
+                "surface": "report_artifact",
+                "label": f"Report {report_id}",
+                "href": _control_href("reports", "report_id", report_id),
+                "report_id": report_id,
+                "manifest_path": "",
+                "output_path": "",
+                "status": "",
+            },
+        )
+        for key in ("manifest_path", "output_path", "status"):
+            if not existing.get(key) and item.get(key):
+                existing[key] = str(item.get(key) or "")
+    return list(by_report_id.values())[:8]
+
+
+def _find_report_artifact_refs(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, dict):
+        return []
+
+    refs: list[dict[str, Any]] = []
+    report_id = value.get("report_id") or value.get("reportId")
+    if report_id:
+        artifacts = _as_dict(value.get("artifacts"))
+        refs.append(
+            {
+                "report_id": report_id,
+                "manifest_path": (
+                    value.get("manifest_path")
+                    or value.get("manifest")
+                    or artifacts.get("manifest")
+                    or ""
+                ),
+                "output_path": (
+                    value.get("output_path")
+                    or value.get("html")
+                    or artifacts.get("html")
+                    or artifacts.get("text")
+                    or ""
+                ),
+                "status": value.get("status") or value.get("validation_status") or "",
+            }
+        )
+
+    for item in value.values():
+        if isinstance(item, dict):
+            refs.extend(_find_report_artifact_refs(item))
+        elif isinstance(item, list):
+            for nested in item[:20]:
+                refs.extend(_find_report_artifact_refs(nested))
+    return refs
 
 
 def _apply_ops_filters(

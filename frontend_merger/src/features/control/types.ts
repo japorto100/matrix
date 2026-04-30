@@ -367,6 +367,24 @@ export interface AgentRuntimeEvent {
 	metadata?: Record<string, unknown>;
 }
 
+export interface AgentOpsSurfaceLink {
+	surface: "prompt_cache" | "report_artifact" | string;
+	label: string;
+	href: string;
+	provider?: string;
+	model?: string;
+	prompt_digest?: string;
+	prompt_layout_digest?: string;
+	tool_catalog_digest?: string;
+	cache_read_tokens?: number | null;
+	cache_write_tokens?: number | null;
+	cache_break_reasons?: string[];
+	report_id?: string;
+	manifest_path?: string;
+	output_path?: string;
+	status?: string;
+}
+
 export interface AgentSubagentRun {
 	run_id: string;
 	child_task_id?: string;
@@ -405,6 +423,10 @@ export interface AgentOpsEvent {
 	output?: Record<string, unknown>;
 	metadata?: Record<string, unknown>;
 	request_telemetry?: Record<string, unknown>;
+	linked_surfaces?: {
+		prompt_cache?: AgentOpsSurfaceLink;
+		report_artifacts?: AgentOpsSurfaceLink[];
+	};
 	runtime_events?: AgentRuntimeEvent[];
 	runtime_event_count?: number;
 	blocker_reason?: string;

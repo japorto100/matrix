@@ -126,6 +126,8 @@ export function OpsRoomTab() {
 	const toolEvents = events.filter((event) => event.tool_name);
 	const blockedEvents = ops.blockers;
 	const selectedEvent = events.find((event) => event.id === selectedEventId) ?? toolEvents[0];
+	const promptCacheLink = selectedEvent?.linked_surfaces?.prompt_cache;
+	const reportArtifactLinks = selectedEvent?.linked_surfaces?.report_artifacts ?? [];
 	const approvalTools = tools.filter(
 		(tool) => tool.approval === "confirm" || tool.approval === "deny" || tool.risk === "high",
 	);
@@ -465,12 +467,51 @@ export function OpsRoomTab() {
 										{selectedEvent.error}
 									</p>
 								) : null}
+								{promptCacheLink || reportArtifactLinks.length > 0 ? (
+									<div className="rounded border border-border/60 p-2">
+										<p className="mb-2 text-[10px] uppercase text-muted-foreground/70">
+											Linked Surfaces
+										</p>
+										<div className="flex flex-wrap gap-1.5">
+											{promptCacheLink ? (
+												<Link href={promptCacheLink.href}>
+													<Badge
+														variant="outline"
+														className="h-6 gap-1 px-1.5 text-[10px] text-sky-400"
+													>
+														<ExternalLink className="h-3 w-3" />
+														{promptCacheLink.label}
+													</Badge>
+												</Link>
+											) : null}
+											{reportArtifactLinks.map((link) => (
+												<Link key={`${link.href}-${link.report_id ?? link.label}`} href={link.href}>
+													<Badge
+														variant="outline"
+														className="h-6 gap-1 px-1.5 text-[10px] text-emerald-400"
+													>
+														<ExternalLink className="h-3 w-3" />
+														{link.report_id ?? link.label}
+													</Badge>
+												</Link>
+											))}
+										</div>
+										{promptCacheLink ? (
+											<p className="mt-2 truncate font-mono text-[10px] text-muted-foreground">
+												{promptCacheLink.provider || "provider"} ·{" "}
+												{promptCacheLink.model || "model"} · cache read{" "}
+												{promptCacheLink.cache_read_tokens ?? "unknown"}
+											</p>
+										) : null}
+									</div>
+								) : null}
 								<pre className="max-h-44 overflow-auto rounded border border-border/60 bg-muted/20 p-2 text-[10px] leading-relaxed">
 									{compactJson({
 										input: selectedEvent.input,
 										output: selectedEvent.output,
 										metadata: selectedEvent.metadata,
 										request_telemetry: selectedEvent.request_telemetry,
+										linked_surfaces: selectedEvent.linked_surfaces,
 										runtime_events: selectedEvent.runtime_events,
 									})}
 								</pre>

@@ -119,4 +119,10 @@ feature_id: 029
   - 2026-04-30: Subagent Ops read-model marks `status=supported` and
     `kill/pause/replay=unsupported`, so the frontend can display control
     availability without implying durable child-process control.
-- T041 Link ops events to Prompt Cache and Report Artifact surfaces.
+- [partial-static] T041 Link ops events to Prompt Cache and Report Artifact surfaces.
+  - 2026-04-30: Ops events now expose `linked_surfaces.prompt_cache` from
+    provider-agnostic request telemetry and `linked_surfaces.report_artifacts`
+    from `report_id`/manifest/output refs. `/control/ops` renders those links
+    in the selected event drilldown; `/control/reports?report_id=...` opens
+    with that report filtered. A dedicated Prompt Cache tab is still Feature
+    032 follow-up, so prompt-cache links currently land on `/control/context`.

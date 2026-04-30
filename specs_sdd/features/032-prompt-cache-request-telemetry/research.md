@@ -36,3 +36,8 @@ feature_id: 032
 - Volatile content should live below a cache boundary; stable tool/skill/system
   sections should be deterministically ordered.
 
+2026-04-30 implementation note: Ops now converts request telemetry into a
+`linked_surfaces.prompt_cache` ref with provider, model, prompt/layout/tool
+digests, cache read/write counters and cache-break reasons. This is not yet the
+full Prompt Cache dashboard, but it gives every LLM ops event a typed,
+provider-agnostic bridge to the Control cache/debug surface.

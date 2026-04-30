@@ -16,6 +16,7 @@ feature_id: 032
 - G004 Cache-break events include a reason or explicitly say reason unknown.
 - G005 MCP reload and tool descriptor changes mark cache invalidation impact.
 - G006 Skills reload does not mutate the system prompt in the same turn.
-- G007 Control UI shows cache evidence without provider-specific secrets.
+- [partial-static] G007 Control UI shows cache evidence without provider-specific secrets.
+  - 2026-04-30: Ops drilldown shows provider/model/cache counters and digests
+    from redacted request telemetry. Dedicated cache trace table is still open.
 - G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
-

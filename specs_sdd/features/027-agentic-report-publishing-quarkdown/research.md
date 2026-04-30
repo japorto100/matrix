@@ -112,3 +112,8 @@ readiness. Agent Chat should render the artifact list from those events and
 Control UI should read the same manifest-backed index. Model text is allowed to
 mention the report, but the canonical downstream artifact is the manifest and
 its event refs.
+
+2026-04-30 link update: Ops can now link an event to `/control/reports` when
+the event input/output/metadata/runtime-event metadata contains a `report_id`.
+This is the forward navigation half of artifact provenance; reverse event refs
+inside report rows still need persisted source-event metadata.

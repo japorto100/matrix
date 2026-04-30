@@ -147,7 +147,14 @@ def test_llm_request_telemetry_is_ops_event() -> None:
                 "request_telemetry": {
                     "contract": "provider-request-telemetry/v1",
                     "provider": "openrouter",
+                    "model": "provider/model",
                     "prompt_digest": "abc",
+                    "tool_catalog_digest": "tools",
+                    "usage": {
+                        "cache_read_tokens": 12,
+                        "cache_write_tokens": 3,
+                    },
+                    "cache_break_reasons": ["tool_catalog_changed"],
                     "api_key": "secret",
                 }
             },
@@ -157,6 +164,52 @@ def test_llm_request_telemetry_is_ops_event() -> None:
     assert event["event_type"] == "llm"
     assert event["request_telemetry"]["provider"] == "openrouter"
     assert event["request_telemetry"]["api_key"] == "[redacted]"
+    prompt_cache = event["linked_surfaces"]["prompt_cache"]
+    assert prompt_cache["href"] == "/control/context?thread_id=thread-1"
+    assert prompt_cache["provider"] == "openrouter"
+    assert prompt_cache["model"] == "provider/model"
+    assert prompt_cache["cache_read_tokens"] == 12
+    assert prompt_cache["cache_break_reasons"] == ["tool_catalog_changed"]
+
+
+def test_report_artifact_refs_are_linked_from_ops_event() -> None:
+    event = audit_event_to_ops_event(
+        _audit_event(
+            id=8,
+            action="report_build",
+            tool_name="report_build",
+            output={
+                "report_id": "risk-brief",
+                "artifacts": {
+                    "manifest": "/tmp/reports/risk-brief/manifest.json",
+                    "html": "/tmp/reports/risk-brief/report.html",
+                },
+            },
+            metadata={
+                "runtime_events": [
+                    {
+                        "contract": "agent-runtime-event/v1",
+                        "kind": "artifact",
+                        "status": "completed",
+                        "metadata": {"report_id": "risk-brief"},
+                    }
+                ]
+            },
+        )
+    )
+
+    report_links = event["linked_surfaces"]["report_artifacts"]
+    assert report_links == [
+        {
+            "surface": "report_artifact",
+            "label": "Report risk-brief",
+            "href": "/control/reports?report_id=risk-brief",
+            "report_id": "risk-brief",
+            "manifest_path": "/tmp/reports/risk-brief/manifest.json",
+            "output_path": "/tmp/reports/risk-brief/report.html",
+            "status": "",
+        }
+    ]
 
 
 def test_runtime_events_are_redacted_and_summarized() -> None:

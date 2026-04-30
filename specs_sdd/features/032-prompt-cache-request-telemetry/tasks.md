@@ -34,10 +34,13 @@ feature_id: 032
 
 ## UI And Harness
 
-- T020 Add Control UI Prompt Cache surface with current session counters,
+- [partial-static] T020 Add Control UI Prompt Cache surface with current session counters,
   cache-break reasons and recent request traces.
+  - 2026-04-30: Ops events expose prompt-cache link metadata from
+    `provider-request-telemetry/v1` including provider, model, prompt/tool
+    digests, cache read/write counters and cache-break reasons. The link
+    targets `/control/context` until a dedicated cache surface is added.
 - T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
 - T022 Add regression scenario where MCP reload invalidates cache and surfaces
   explicit impact metadata.
-

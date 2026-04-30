@@ -9,6 +9,7 @@ import {
 	Link2,
 	ShieldCheck,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,7 +65,10 @@ function matchesReport(report: ReportArtifact, query: string): boolean {
 }
 
 export function ReportsTab() {
-	const [filter, setFilter] = useState("");
+	const searchParams = useSearchParams();
+	const [filter, setFilter] = useState(
+		() => searchParams.get("report_id") ?? searchParams.get("q") ?? "",
+	);
 	const query = useReportArtifacts();
 	const reports = (query.data?.items as ReportArtifact[] | undefined) ?? mockReportArtifacts;
 	const normalizedFilter = filter.trim().toLowerCase();

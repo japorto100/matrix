@@ -136,3 +136,9 @@ delegate-kind, depth, timestamps, last event and explicit control availability.
 This follows the Z_/Hermes observation that child agents should be observable
 as bounded, isolated runs while parent-side memory curation remains the only
 durable memory write path.
+
+2026-04-30 link follow-up: Ops events now carry first-class
+`linked_surfaces` metadata. Prompt-cache links are derived from
+`provider-request-telemetry/v1`; report links are derived from `report_id`,
+manifest and output refs. This keeps cross-surface navigation based on typed
+refs instead of scraping assistant text.
