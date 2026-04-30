@@ -105,6 +105,8 @@ feature_id: 029
   - 2026-04-30: scoped RAG/KG retrieval calls now audit their runtime events
     as `rag_retrieval`, allowing the same Ops lanes to replay selected context
     and KG claim ids without raw source text.
+  - 2026-04-30: memory recall/retain audit rows now carry matching runtime
+    events for completed recall/retain and retain-timeout states.
 - T040 Add status/kill/pause/replay controls where backend support exists and
   explicit unsupported outcomes elsewhere.
 - T041 Link ops events to Prompt Cache and Report Artifact surfaces.

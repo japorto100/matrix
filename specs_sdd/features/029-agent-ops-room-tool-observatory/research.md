@@ -118,3 +118,8 @@ content.
 `rag_retrieval`. The Ops read model can therefore replay selected context ids,
 selected KG claim ids and degradation reasons from audit metadata, while raw
 query/source text stays outside the event payload.
+
+2026-04-30 memory follow-up: memory recall/retain audit rows now carry their
+runtime envelopes too. That means the Ops Runtime Lanes can explain memory
+selection, retain route/provider and timeout/stale states from audit replay
+without parsing prompt text or assistant output.

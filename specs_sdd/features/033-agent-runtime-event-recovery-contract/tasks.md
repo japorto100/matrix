@@ -26,6 +26,8 @@ feature_id: 033
     LangGraph outputs; A2A subagent events now use the same envelope.
   - 2026-04-30: memory recall/retain nodes emit the same envelope for
     unavailable, blocked, completed, failed and timeout/stale outcomes.
+  - 2026-04-30: successful memory recall/retain and retain-timeout audit rows
+    persist the same runtime envelopes for replay.
   - 2026-04-30: retrieval API emits RAG runtime events for start/completion and
     KG selection events when claims survive context-bubble selection.
   - 2026-04-30: scoped retrieval calls persist the same redacted RAG/KG runtime
@@ -55,6 +57,7 @@ feature_id: 033
   - 2026-04-30: `agent.control.ops` exposes redacted runtime events from audit
     metadata in `agent-ops-event/v1`, and `/control/ops` renders Runtime Lanes
     with kind/status rollups and event drilldown.
-  - 2026-04-30: LLM and scoped RAG/KG producers now write runtime events into
-    audit metadata, giving Ops real replay input beyond frontend stream state.
+  - 2026-04-30: LLM, Memory and scoped RAG/KG producers now write runtime
+    events into audit metadata, giving Ops real replay input beyond frontend
+    stream state.
 - T022 Add Meta-Harness gates for event completeness and redaction.

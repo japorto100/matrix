@@ -100,3 +100,5 @@ feature_id: 012
   - 2026-04-30: memory recall/retain events carry bank/role/route/provider,
     source-layer counts, query-gate reason and timeout/degradation metadata
     without raw memory text or assistant response bodies.
+  - 2026-04-30: scoped memory audit rows now persist the same runtime envelope
+    for Ops replay while keeping raw memory text outside event metadata.

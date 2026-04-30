@@ -317,6 +317,23 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
 
             from agent.audit.logger import AuditAction, audit_log
 
+            runtime_event = _memory_event(
+                status="completed",
+                name="memory.recall.completed",
+                state=state,
+                summary="Memory recall selected context for prompt assembly",
+                metadata={
+                    "bank_id": bank_id,
+                    "role": role,
+                    "facts_recalled": len(new_ids),
+                    "entities": len(result.entities) if result.entities else 0,
+                    "tokens_used": len(memory_text),
+                    "source_layer_counts": source_layer_counts,
+                    "query_gate_action": query_gate.action,
+                    "query_gate_reason": query_gate.reason,
+                    "degradation_flags": degradation_flags,
+                },
+            )
             await audit_log(
                 action=AuditAction.MEMORY_RECALL,
                 thread_id=thread_id,
@@ -328,6 +345,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                     "facts_recalled": len(new_ids),
                     "entities": len(result.entities) if result.entities else 0,
                     "tokens_used": len(memory_text),
+                    "runtime_events": [runtime_event],
                 },
             )
 
@@ -344,27 +362,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 "context_blocks": context_blocks,
                 "source_layer_counts": source_layer_counts,
                 "degradation_flags": degradation_flags,
-                "runtime_events": [
-                    _memory_event(
-                        status="completed",
-                        name="memory.recall.completed",
-                        state=state,
-                        summary="Memory recall selected context for prompt assembly",
-                        metadata={
-                            "bank_id": bank_id,
-                            "role": role,
-                            "facts_recalled": len(new_ids),
-                            "entities": len(result.entities)
-                            if result.entities
-                            else 0,
-                            "tokens_used": len(memory_text),
-                            "source_layer_counts": source_layer_counts,
-                            "query_gate_action": query_gate.action,
-                            "query_gate_reason": query_gate.reason,
-                            "degradation_flags": degradation_flags,
-                        },
-                    )
-                ],
+                "runtime_events": [runtime_event],
                 "query_gate": {
                     "action": query_gate.action,
                     "reason": query_gate.reason,
@@ -482,6 +480,17 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
             timeout_s,
             state.get("thread_id", ""),
         )
+        runtime_event = _memory_event(
+            status="stale",
+            name="memory.retain.timeout",
+            state=state,
+            summary="Memory retain timed out and turn continued",
+            metadata={
+                "role": role,
+                "timeout_s": timeout_s,
+                "source": "memory_retain_node",
+            },
+        )
         try:
             from agent.audit.logger import AuditAction, audit_log
 
@@ -496,24 +505,13 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                     "timeout_s": timeout_s,
                     "source": "memory_retain_node",
                     "error": f"memory retain timed out after {timeout_s:.1f}s",
+                    "runtime_events": [runtime_event],
                 },
             )
         except Exception:  # noqa: BLE001
             logger.debug("Memory retain timeout audit failed", exc_info=True)
         return {
-            "runtime_events": [
-                _memory_event(
-                    status="stale",
-                    name="memory.retain.timeout",
-                    state=state,
-                    summary="Memory retain timed out and turn continued",
-                    metadata={
-                        "role": role,
-                        "timeout_s": timeout_s,
-                        "source": "memory_retain_node",
-                    },
-                )
-            ],
+            "runtime_events": [runtime_event],
             "degradation_flags": ["memory_retain_timeout"],
         }
     except Exception as e:
@@ -636,13 +634,20 @@ async def _retain_conversation_memory(
             "providers": storage_providers,
             "summary_status": summary_status,
         }
+        runtime_event = _memory_event(
+            status="completed",
+            name="memory.retain.completed",
+            state=state,
+            summary="Memory retain completed",
+            metadata=retain_metadata,
+        )
 
         await audit_log(
             action=AuditAction.MEMORY_RETAIN,
             thread_id=thread_id,
             input_data=content[:2000],
             success=True,
-            metadata=retain_metadata,
+            metadata={**retain_metadata, "runtime_events": [runtime_event]},
         )
 
         logger.info(

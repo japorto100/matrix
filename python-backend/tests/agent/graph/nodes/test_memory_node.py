@@ -76,6 +76,7 @@ async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
     assert audit_events
     assert audit_events[0]["success"] is False
     assert "timed out" in audit_events[0]["metadata"]["error"]
+    assert audit_events[0]["metadata"]["runtime_events"][0]["name"] == "memory.retain.timeout"
 
 
 @pytest.mark.asyncio
@@ -132,6 +133,7 @@ async def test_retain_conversation_writes_verbatim_and_queues_summary(monkeypatc
     assert audit_events[0]["metadata"]["route"] == "verbatim"
     assert audit_events[0]["metadata"]["providers"] == "verbatim,summary_async"
     assert audit_events[0]["metadata"]["summary_status"] == "background_queued"
+    assert audit_events[0]["metadata"]["runtime_events"][0]["name"] == "memory.retain.completed"
     assert metadata["route"] == "verbatim"
     assert metadata["summary_status"] == "background_queued"
 

@@ -262,3 +262,13 @@ retain/skip decision metadata.
 This keeps memory Fusion, KG and semantic layers aligned with the current
 evidence-first rule: delegated work can become evidence for a parent decision,
 not hidden truth mutation by a worker process.
+
+## 2026-04-30 Memory Runtime Audit Follow-Up
+
+Memory recall/retain runtime events are now replayable through audit metadata.
+Successful recall, successful retain and retain timeout rows include the same
+redacted Feature 033 envelope that Agent Chat receives from graph state. The
+event payload carries counts, route/provider, role, source-layer and
+degradation metadata; raw recalled memory text and assistant response bodies
+remain in the existing bounded audit input/output fields, not in runtime event
+metadata.

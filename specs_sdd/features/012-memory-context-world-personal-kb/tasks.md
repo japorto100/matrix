@@ -227,6 +227,9 @@ migrated_from:
     Feature-033 runtime events for unavailable, blocked, completed, failed and
     timeout/stale outcomes. Retain timeout audit now stores the error in
     metadata instead of calling `audit_log(error=...)`.
+  - 2026-04-30: successful memory recall/retain and retain-timeout audit rows
+    now also carry the same redacted `agent-runtime-event/v1` envelope for Ops
+    replay, without adding memory text to event metadata.
 - T094 Add Meta-Harness scenario where delegated evidence is summarized by the
   parent before any memory write.
 

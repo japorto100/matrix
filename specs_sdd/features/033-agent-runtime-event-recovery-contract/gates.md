@@ -14,6 +14,8 @@ feature_id: 033
   - 2026-04-30 partial: scoped RAG/KG audit rows preserve thread/session when
     callers provide them. Full run/session identity across every event producer
     remains open.
+  - 2026-04-30 partial: memory audit rows preserve thread id and runtime
+    envelope metadata for recall/retain replay.
 - G002 Runtime events preserve tool_call_id where applicable.
 - [x] G003 Raw secrets, provider reasoning and oversized payloads are redacted
   or capped.
