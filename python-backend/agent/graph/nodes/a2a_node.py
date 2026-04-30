@@ -12,10 +12,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import uuid
 from hashlib import sha256
 from typing import Any
 
 from agent.a2a.client import A2AClient
+from agent.a2a.store import record_delegation_finished, record_delegation_started
 from agent.graph.state import AgentGraphState
 from agent.routing.delegation_policy import build_single_hop_delegation_policy
 from agent.runtime_events import make_runtime_event
@@ -256,6 +258,12 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
 
     logger.info("A2A delegation: role=%s → %s", role, agent_url)
 
+    delegation_id = str(uuid.uuid4())
+    policy = {
+        **policy,
+        "delegation_id": delegation_id,
+        "persistence_target": "agent.a2a_delegations",
+    }
     client = A2AClient()
     runtime_events = [
         _event(
@@ -273,12 +281,23 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             metadata={**policy, "agent_url": agent_url},
         ),
     ]
+    persisted_started = await record_delegation_started(
+        delegation_id=delegation_id,
+        from_role=str(state.get("agent_class", "") or "orchestrator"),
+        to_role=str(role),
+        task=user_msg,
+        thread_id=str(state.get("thread_id", "") or ""),
+        user_id=str(state.get("user_id", "local") or "local"),
+    )
+    for event in runtime_events:
+        event["metadata"]["persisted"] = persisted_started
     try:
         next_depth = current_depth + 1
         task = await asyncio.wait_for(
             client.send_message(
                 agent_url=agent_url,
                 message=user_msg,
+                task_id=delegation_id,
                 context=_delegation_context(
                     role=role,
                     state=state,
@@ -288,14 +307,26 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                 ),
             ),
             timeout=_delegation_timeout_seconds(),
-        )
+            )
 
         if task.state == "completed" and task.result:
             child_session_id = f"a2a-{task.task_id}"
             result_digest = _result_digest(task.result)
+            persisted_finished = await record_delegation_finished(
+                delegation_id=delegation_id,
+                status="completed",
+                result={
+                    "text": task.result,
+                    "result_digest": result_digest,
+                    "child_session_id": child_session_id,
+                    "child_task_id": task.task_id,
+                },
+            )
             handoff_metadata = {
                 "child_session_id": child_session_id,
                 "child_task_id": task.task_id,
+                "delegation_id": delegation_id,
+                "persisted": persisted_finished,
                 "child_memory_write_allowed": False,
                 "parent_curated_memory_handoff": True,
                 "retain_decision": "parent_review_required",
@@ -316,6 +347,7 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                             "child_task_id": task.task_id,
                             "child_session_id": child_session_id,
                             "result_digest": result_digest,
+                            "persisted": persisted_finished,
                         },
                     ),
                     make_runtime_event(
@@ -348,6 +380,15 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
 
         error = task.error or "Unknown A2A error"
         status = "stale" if task.state == "timeout" else "failed"
+        persisted_finished = await record_delegation_finished(
+            delegation_id=delegation_id,
+            status=task.state or status,
+            result={
+                "error": error,
+                "child_task_id": task.task_id,
+                "state": task.state,
+            },
+        )
         logger.warning("A2A delegation failed: %s", error)
         runtime_events.append(
             _event(
@@ -355,7 +396,12 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                 name=f"subagent.delegation.{task.state}",
                 state=state,
                 summary="A2A child request did not complete",
-                metadata={**policy, "child_task_id": task.task_id, "error": error},
+                metadata={
+                    **policy,
+                    "child_task_id": task.task_id,
+                    "error": error,
+                    "persisted": persisted_finished,
+                },
             )
         )
         await _audit_delegation_runtime_events(
@@ -376,6 +422,11 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
         }
     except TimeoutError:
         error = "node_level_timeout"
+        persisted_finished = await record_delegation_finished(
+            delegation_id=delegation_id,
+            status="timeout",
+            result={"error": error, "state": "timeout"},
+        )
         logger.warning("A2A delegation node timed out: role=%s", role)
         runtime_events.append(
             _event(
@@ -383,7 +434,7 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                 name="subagent.delegation.timeout",
                 state=state,
                 summary="A2A child request exceeded node-level timeout",
-                metadata={**policy, "error": error},
+                metadata={**policy, "error": error, "persisted": persisted_finished},
             )
         )
         await _audit_delegation_runtime_events(

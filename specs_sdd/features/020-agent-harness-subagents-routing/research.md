@@ -299,6 +299,16 @@ Feature 019 retrieval API. It emits RAG/KG/artifact runtime events and compact
 downstream file metadata, while durable memory writes remain blocked and
 parent-curated.
 
+2026-04-30 durable A2A delegation update: the Control A2A surface already had
+an `agent.a2a_delegations` table and read API, but runtime delegation only
+produced transient tasks plus audit runtime events. Matrix now persists
+accepted single-hop A2A runs into that table when a DB DSN is configured. The
+delegation id is generated before the child request and reused as child task
+id/thread id, so audit runtime events, parent memory handoff and Control rows
+can correlate without parsing child output. Persistence is intentionally
+fail-open for local/dev/no-DB runs; Meta-Harness still evaluates the audit
+runtime events, while Control gains durable history when Postgres is present.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

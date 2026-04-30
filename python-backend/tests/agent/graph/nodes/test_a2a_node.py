@@ -55,14 +55,26 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
 ) -> None:
     captured: dict = {}
     audit_rows: list[dict] = []
+    started_records: list[dict] = []
+    finished_records: list[dict] = []
 
     async def _audit_log(**kwargs):
         audit_rows.append(kwargs)
+
+    async def _record_started(**kwargs):
+        started_records.append(kwargs)
+        return True
+
+    async def _record_finished(**kwargs):
+        finished_records.append(kwargs)
+        return True
 
     monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
     monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
     monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
     monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
+    monkeypatch.setattr(a2a_node, "record_delegation_started", _record_started)
+    monkeypatch.setattr(a2a_node, "record_delegation_finished", _record_finished)
 
     class FakeClient:
         async def send_message(self, **kwargs):
@@ -80,6 +92,7 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     assert result["final_response"] == "child result"
     assert captured["agent_url"] == "http://agent.local"
     assert captured["message"] == "analyze AAPL"
+    assert captured["task_id"] == started_records[0]["delegation_id"]
     assert captured["context"] == (
         "Delegated from Matrix orchestrator; role:researcher; "
         "parent_thread_id:thread-parent; spawn_depth:1; max_spawn_depth:1; "
@@ -97,6 +110,8 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     ]
     handoff = result["runtime_events"][-1]
     assert handoff["kind"] == "memory"
+    assert handoff["metadata"]["delegation_id"] == started_records[0]["delegation_id"]
+    assert handoff["metadata"]["persisted"] is True
     assert handoff["metadata"]["child_session_id"] == "a2a-task-1"
     assert handoff["metadata"]["child_task_id"] == "task-1"
     assert handoff["metadata"]["child_memory_write_allowed"] is False
@@ -107,14 +122,33 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     assert handoff["metadata"]["result_digest"]
     assert audit_rows[0]["metadata"]["child_task_id"] == "task-1"
     assert audit_rows[0]["metadata"]["runtime_events"][2]["status"] == "completed"
+    assert started_records[0]["from_role"] == "orchestrator"
+    assert started_records[0]["to_role"] == "researcher"
+    assert started_records[0]["task"] == "analyze AAPL"
+    assert finished_records[0]["delegation_id"] == started_records[0]["delegation_id"]
+    assert finished_records[0]["status"] == "completed"
+    assert finished_records[0]["result"]["result_digest"]
 
 
 async def test_a2a_delegate_node_surfaces_timeout_as_stale_runtime_event(
     monkeypatch,
 ) -> None:
+    started_records: list[dict] = []
+    finished_records: list[dict] = []
+
+    async def _record_started(**kwargs):
+        started_records.append(kwargs)
+        return True
+
+    async def _record_finished(**kwargs):
+        finished_records.append(kwargs)
+        return True
+
     monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
     monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
     monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
+    monkeypatch.setattr(a2a_node, "record_delegation_started", _record_started)
+    monkeypatch.setattr(a2a_node, "record_delegation_finished", _record_finished)
 
     class FakeClient:
         async def send_message(self, **_kwargs):
@@ -130,6 +164,9 @@ async def test_a2a_delegate_node_surfaces_timeout_as_stale_runtime_event(
     assert result["degradation_flags"] == ["a2a_delegation_timeout"]
     assert result["runtime_events"][-1]["status"] == "stale"
     assert result["runtime_events"][-1]["metadata"]["child_task_id"] == "task-timeout"
+    assert result["runtime_events"][-1]["metadata"]["persisted"] is True
+    assert started_records
+    assert finished_records[0]["status"] == "timeout"
 
 
 async def test_a2a_delegate_node_wraps_blocking_client_with_node_timeout(
@@ -137,15 +174,27 @@ async def test_a2a_delegate_node_wraps_blocking_client_with_node_timeout(
 ) -> None:
     audit_rows: list[dict] = []
     captured: dict = {}
+    started_records: list[dict] = []
+    finished_records: list[dict] = []
 
     async def _audit_log(**kwargs):
         audit_rows.append(kwargs)
+
+    async def _record_started(**kwargs):
+        started_records.append(kwargs)
+        return True
+
+    async def _record_finished(**kwargs):
+        finished_records.append(kwargs)
+        return True
 
     monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
     monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
     monkeypatch.setenv("AGENT_A2A_DELEGATION_TIMEOUT_SECONDS", "0.01")
     monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
     monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
+    monkeypatch.setattr(a2a_node, "record_delegation_started", _record_started)
+    monkeypatch.setattr(a2a_node, "record_delegation_finished", _record_finished)
 
     class FakeClient:
         async def send_message(self, **_kwargs):
@@ -163,6 +212,9 @@ async def test_a2a_delegate_node_wraps_blocking_client_with_node_timeout(
     assert result["runtime_events"][-1]["name"] == "subagent.delegation.timeout"
     assert result["runtime_events"][-1]["status"] == "stale"
     assert result["runtime_events"][-1]["metadata"]["error"] == "node_level_timeout"
+    assert result["runtime_events"][-1]["metadata"]["persisted"] is True
     assert captured["closed"] is True
     assert audit_rows[0]["success"] is False
     assert audit_rows[0]["metadata"]["error"] == "node_level_timeout"
+    assert started_records
+    assert finished_records[0]["status"] == "timeout"

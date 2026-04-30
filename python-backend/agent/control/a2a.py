@@ -1,10 +1,8 @@
 """Control Surface — A2A Delegations Log (Slice 6 backend).
 
 Queries agent.a2a_delegations (Migration 006) for persistent delegation history.
-Currently A2AClient.send_message() produces ephemeral A2ATask — Phase 2 will
-extend a2a/client.py to INSERT into a2a_delegations automatically.
-
-Phase 1: read-only list endpoint that returns empty if table is empty.
+A2A runtime persists accepted delegations when AUDIT_DB_URL or HINDSIGHT_DB_URL
+is configured; local no-DB runs still return an empty/error-tolerant list.
 """
 
 from __future__ import annotations

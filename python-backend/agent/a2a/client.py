@@ -42,6 +42,7 @@ class A2AClient:
         agent_url: str,
         message: str,
         context: str | None = None,
+        task_id: str | None = None,
     ) -> A2ATask:
         """Sendet eine Nachricht an einen Remote-Agent.
 
@@ -49,11 +50,13 @@ class A2AClient:
             agent_url: Base-URL des Ziel-Agents (z.B. http://localhost:8094)
             message: User-Message
             context: Optionaler Kontext (z.B. vorherige Analyse-Ergebnisse)
+            task_id: Optional stable UUID supplied by the orchestrator so
+                persistent delegation rows and child thread IDs can correlate.
 
         Returns:
             A2ATask mit task_id und initialem State.
         """
-        task_id = str(uuid.uuid4())
+        task_id = task_id or str(uuid.uuid4())
 
         payload: dict[str, Any] = {
             "message": message,

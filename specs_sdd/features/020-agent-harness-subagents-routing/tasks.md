@@ -286,3 +286,13 @@ feature_id: 020
     threads (`a2a-*`) with the Matrix delegation prefix, converts role/depth/
     parent-thread/tool/memory fields into `AgentExecutionContext`, and leaves
     ordinary user `context` text non-authoritative.
+- [x] T051 [done-static] Persist accepted A2A/subagent delegations into the
+  existing `agent.a2a_delegations` table without making persistence a runtime
+  dependency.
+  - 2026-04-30: `agent.a2a.store` records running and terminal delegation rows
+    when `AUDIT_DB_URL` or `HINDSIGHT_DB_URL` is configured; missing DB config
+    returns `persisted=false` and does not block the parent turn.
+  - 2026-04-30: `a2a_delegate_node` pre-generates a stable delegation id,
+    passes it to `A2AClient.send_message()` as child task/thread id, and writes
+    completion/failed/timeout status plus compact result/error payloads for the
+    Control A2A read API.

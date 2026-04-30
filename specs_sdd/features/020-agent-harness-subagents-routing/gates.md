@@ -99,3 +99,9 @@ feature_id: 020
     stale `subagent.delegation.timeout` metadata and closes the client.
   - 2026-04-30: provider-free Meta-Harness now checks forged child-tool policy
     filtering in `routing-subagent-forged-child-tools-filtered`.
+- [x] Accepted child delegations are durable when the DB is configured and
+  fail-open when it is not.
+  - 2026-04-30: `agent.a2a_delegations` receives running and terminal rows with
+    stable delegation/task id, parent thread, user id, target role, status and
+    compact result/error JSON. Unit coverage proves both DB-write and no-DB
+    behavior.

@@ -10,6 +10,7 @@ from agent.a2a.client import A2AClient
 async def test_send_message_collects_ai_sdk_text_delta_field() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/v1/agent/chat"
+        assert request.read()
         return httpx.Response(
             200,
             text=(
@@ -26,11 +27,16 @@ async def test_send_message_collects_ai_sdk_text_delta_field() -> None:
     client._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
     try:
-        task = await client.send_message("http://agent.local", "analyze AAPL")
+        task = await client.send_message(
+            "http://agent.local",
+            "analyze AAPL",
+            task_id="11111111-1111-1111-1111-111111111111",
+        )
     finally:
         await client.close()
 
     assert task.state == "completed"
+    assert task.task_id == "11111111-1111-1111-1111-111111111111"
     assert task.result == "hello world"
 
 
