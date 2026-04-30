@@ -28,6 +28,7 @@ def run_prompt_cache_contract_scenarios(
         _prompt_content_change_gate(),
         _tool_schema_change_gate(),
         _mcp_reload_cache_impact_gate(),
+        _thread_rollup_gate(),
         _usage_unknown_counter_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -258,6 +259,79 @@ def _mcp_reload_cache_impact_gate() -> dict[str, Any]:
             "runtime_event_name": runtime_event.get("name"),
             "read_model_summary": read_model.get("summary"),
         },
+    )
+
+
+def _thread_rollup_gate() -> dict[str, Any]:
+    from agent.control.prompt_cache import build_prompt_cache_read_model
+
+    read_model = build_prompt_cache_read_model(
+        audit_events=[
+            {
+                "id": "audit-cache-thread-1",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "thread_id": "thread-cache",
+                "metadata": {
+                    "request_telemetry": [
+                        {
+                            "provider": "provider-a",
+                            "model": "model-a",
+                            "router": "langgraph",
+                            "thread_id": "thread-cache",
+                            "iteration": 1,
+                            "prompt_digest": "prompt-a",
+                            "prompt_layout_digest": "layout-a",
+                            "tool_catalog_digest": "tools-a",
+                            "cache_break_reasons": ["first_request"],
+                            "usage": {
+                                "prompt_tokens": 100,
+                                "completion_tokens": 20,
+                                "total_tokens": 120,
+                                "cache_read_tokens": 40,
+                                "cache_write_tokens": 10,
+                                "unknown_fields": [],
+                            },
+                        },
+                        {
+                            "provider": "provider-a",
+                            "model": "model-a",
+                            "router": "langgraph",
+                            "thread_id": "thread-cache",
+                            "iteration": 2,
+                            "prompt_digest": "prompt-b",
+                            "prompt_layout_digest": "layout-a",
+                            "tool_catalog_digest": "tools-a",
+                            "cache_break_reasons": ["prompt_content_changed"],
+                            "usage": {
+                                "prompt_tokens": 80,
+                                "completion_tokens": 10,
+                                "total_tokens": 90,
+                                "cache_read_tokens": 55,
+                                "cache_write_tokens": 0,
+                                "unknown_fields": ["reasoning_tokens"],
+                            },
+                        },
+                    ]
+                },
+            }
+        ]
+    )
+    summary = read_model.get("by_thread", {}).get("thread-cache", {})
+    failures: list[str] = []
+    if summary.get("requests") != 2:
+        failures.append("thread-rollup-request-count")
+    if summary.get("cache_read_tokens") != 95:
+        failures.append("thread-rollup-cache-read")
+    if summary.get("cache_write_tokens") != 10:
+        failures.append("thread-rollup-cache-write")
+    if summary.get("cache_breaks") != 2:
+        failures.append("thread-rollup-cache-breaks")
+    if summary.get("providers") != ["provider-a"]:
+        failures.append("thread-rollup-provider-dedupe")
+    return _scenario(
+        "prompt-cache-thread-session-rollup",
+        failures=failures,
+        evidence={"thread_summary": summary},
     )
 
 

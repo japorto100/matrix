@@ -432,7 +432,7 @@ async def test_cli_prompt_cache_contract_writes_artifacts(tmp_path, monkeypatch)
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 5
+    assert result["scenario_count"] == 6
     artifact = tmp_path / "runs" / "run-prompt-cache" / "prompt_cache_contract.json"
     assert artifact.exists()
 
@@ -474,7 +474,7 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
 
     assert result["passed"] is True
     assert result["lane_count"] == 8
-    assert result["scenario_count"] == 50
+    assert result["scenario_count"] == 51
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 

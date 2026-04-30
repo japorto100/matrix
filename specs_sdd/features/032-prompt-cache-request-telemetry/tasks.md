@@ -32,6 +32,11 @@ feature_id: 032
   - 2026-04-30: per-call `request_telemetry` is emitted by `llm_node`, and
     graph state still accumulates prompt/completion/reasoning/cache/total
     counters. A consolidated per-session telemetry summary remains open.
+  - 2026-04-30: the prompt-cache read model now exposes `by_thread` session
+    rollups for requests, cache impacts, invalidations, cache breaks,
+    provider/model sets and prompt/completion/cache token totals. Runtime graph
+    state still owns in-turn counters; replay surfaces now have the durable
+    session summary.
 - [x] T012 [done-static] Add request metadata capture for request id,
   processing time and rate-limit headers when providers expose them.
   - 2026-04-30: LLM runtime telemetry now stores allowlisted response metadata
@@ -65,6 +70,9 @@ feature_id: 032
   - 2026-04-30: `/api/v1/control/prompt-cache` now builds a read model from
     audit request telemetry, and `/control/prompt-cache` renders current
     counters, break reasons, provider/model distribution and recent traces.
+  - 2026-04-30: backend read model now includes `by_thread`, so Control/Ops
+    can link a session to prompt-cache totals without recomputing from raw
+    audit rows.
 - [x] T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
   - 2026-04-30: `prompt-cache-contract` adds provider-free scenarios for
@@ -78,3 +86,9 @@ feature_id: 032
   - 2026-04-30: `prompt-cache-mcp-reload-impact-replayed` now runs in the
     provider-free `prompt-cache-contract`; the lane has 5 scenarios and the
     aggregate contract suite has 46 scenarios.
+- [x] T023 [done-static] Add provider-free session rollup scenario for
+  prompt-cache request telemetry.
+  - 2026-04-30: `prompt-cache-thread-session-rollup` validates two request
+    telemetry items collapse into one thread summary with cache read/write
+    totals, cache-break count and provider de-duplication. The
+    `prompt-cache-contract` lane now has 6 scenarios.

@@ -46,6 +46,10 @@ def test_prompt_cache_read_model_summarizes_usage_and_breaks() -> None:
     assert model["summary"]["total_tokens"] == 120
     assert model["cache_break_reasons"] == {"tool_catalog_changed": 1}
     assert model["by_provider"] == {"openrouter": 1}
+    assert model["by_thread"]["thread-1"]["requests"] == 1
+    assert model["by_thread"]["thread-1"]["cache_read_tokens"] == 40
+    assert model["by_thread"]["thread-1"]["cache_breaks"] == 1
+    assert model["by_thread"]["thread-1"]["providers"] == ["openrouter"]
     item = model["items"][0]
     assert item["links"]["ops_event"] == "/control/ops?session=thread-1"
     assert item["links"]["context"] == "/control/context?thread_id=thread-1"
@@ -109,5 +113,7 @@ def test_prompt_cache_read_model_surfaces_cache_impacts() -> None:
 
     assert model["summary"]["cache_impacts"] == 1
     assert model["summary"]["cache_invalidations"] == 1
+    assert model["by_thread"]["thread-1"]["cache_impacts"] == 1
+    assert model["by_thread"]["thread-1"]["cache_invalidations"] == 1
     assert model["cache_impacts"][0]["source"] == "mcp_reload"
     assert model["cache_impacts"][0]["links"]["ops_event"] == "/control/ops?session=thread-1"

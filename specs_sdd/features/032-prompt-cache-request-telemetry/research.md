@@ -67,3 +67,12 @@ an MCP reload cache-impact event through the prompt-cache read model. This
 guards the Hermes-derived requirement that tool catalog changes invalidate or
 rebind cached agent sessions, while keeping the implementation provider-neutral
 and UI-readable.
+
+2026-04-30 session rollup update: cache observability now has a backend
+session aggregate, not only request rows and UI counters. The prompt-cache read
+model exposes `by_thread` with request count, cache impact count,
+invalidations, cache breaks, prompt/completion/cache token totals, unknown
+cache-field count and provider/model sets. The provider-free
+`prompt-cache-thread-session-rollup` scenario checks this directly from audit
+telemetry, matching the Hermes/OpenClaw lesson that cache stats must be
+session-readable without relying on a CLI/TUI or provider-specific logs.

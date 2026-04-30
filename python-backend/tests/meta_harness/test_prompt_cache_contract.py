@@ -12,15 +12,16 @@ def test_prompt_cache_contract_writes_artifacts(tmp_path):
     )
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 5
+    assert result["scenario_count"] == 6
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "prompt-cache-stable-prompt-tool-order" in scenario_ids
     assert "prompt-cache-content-change-reason" in scenario_ids
     assert "prompt-cache-tool-schema-change-reason" in scenario_ids
     assert "prompt-cache-mcp-reload-impact-replayed" in scenario_ids
+    assert "prompt-cache-thread-session-rollup" in scenario_ids
     assert "prompt-cache-usage-unknown-counters" in scenario_ids
 
     artifact = tmp_path / "runs" / "run-prompt-cache" / "prompt_cache_contract.json"
     assert artifact.exists()
     saved = json.loads(artifact.read_text(encoding="utf-8"))
-    assert saved["passed_count"] == 5
+    assert saved["passed_count"] == 6

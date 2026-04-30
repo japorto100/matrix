@@ -37,6 +37,9 @@ feature_id: 032
     dedicated trace table from the same audit-backed read model.
   - 2026-04-30: prompt-cache read model also replays cache-impact events so the
     surface can join cache invalidation, request telemetry and Ops events.
+  - 2026-04-30: prompt-cache read model now exposes `by_thread` summaries with
+    request counts, cache impact counts, invalidations, cache breaks, token
+    totals and provider/model sets.
 - [x] G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
   - 2026-04-30: `prompt-cache-contract` requires unchanged prompt/layout/tool
     digests for equivalent inputs and no cache-break reasons when only tool
@@ -48,3 +51,7 @@ feature_id: 032
   - 2026-04-30: `prompt-cache-mcp-reload-impact-replayed` requires
     `agent-cache-impact/v1`, `cache.invalidated` runtime event and
     prompt-cache read model `cache_invalidations=1`.
+- [x] G010 Session-level prompt-cache totals are replayable without a browser.
+  - 2026-04-30: `prompt-cache-thread-session-rollup` validates backend
+    `by_thread` rollups for cache read/write totals, cache-break count and
+    provider de-duplication from audit-backed telemetry.
