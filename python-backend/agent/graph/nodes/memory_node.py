@@ -352,6 +352,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                             metadata={
                                 "bank_id": bank_id,
                                 "role": role,
+                                "source": "memory_recall_node",
                                 "facts_recalled": 0,
                                 "entities": len(result.entities)
                                 if result.entities
@@ -392,6 +393,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 metadata={
                     "bank_id": bank_id,
                     "role": role,
+                    "source": "memory_recall_node",
                     "facts_recalled": len(new_ids),
                     "entities": len(result.entities) if result.entities else 0,
                     "tokens_used": len(memory_text),
@@ -410,6 +412,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 metadata={
                     "bank_id": bank_id,
                     "role": role,
+                    "source": "memory_recall_node",
                     "facts_recalled": len(new_ids),
                     "entities": len(result.entities) if result.entities else 0,
                     "tokens_used": len(memory_text),
@@ -722,6 +725,7 @@ async def _retain_conversation_memory(
             "route": storage_route,
             "provider": "fusion",
             "providers": storage_providers,
+            "source": "automatic_memory_retain",
             "summary_status": summary_status,
         }
         runtime_event = _memory_event(

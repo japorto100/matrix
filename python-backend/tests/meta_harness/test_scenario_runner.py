@@ -176,6 +176,12 @@ def test_trace_expectations_parse_runtime_event_gates():
             "forbidden_runtime_event_metadata_keys": {
                 "*": ["raw_prompt", "headers.authorization"]
             },
+            "required_event_metadata_values": {
+                "memory_recall": {"source": "memory_recall_node"}
+            },
+            "forbidden_event_metadata_values": {
+                "*": {"headers.authorization": "Bearer sk-test"}
+            },
             "required_runtime_event_metadata_values": {
                 "llm.prompt_cache_break": {"provider": "litellm"}
             },
@@ -194,6 +200,12 @@ def test_trace_expectations_parse_runtime_event_gates():
     }
     assert expectations.forbidden_runtime_event_metadata_keys == {
         "*": ("raw_prompt", "headers.authorization")
+    }
+    assert expectations.required_event_metadata_values == {
+        "memory_recall": {"source": "memory_recall_node"}
+    }
+    assert expectations.forbidden_event_metadata_values == {
+        "*": {"headers.authorization": "Bearer sk-test"}
     }
     assert expectations.required_runtime_event_metadata_values == {
         "llm.prompt_cache_break": {"provider": "litellm"}
@@ -266,6 +278,68 @@ def test_trace_gates_check_required_event_metadata_keys(monkeypatch):
     )
 
     assert verdict.passed is True
+
+
+def test_trace_gates_check_event_metadata_values(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "memory_recall",
+            "success": True,
+            "metadata": {"source": "memory_recall_node", "route": "fusion"},
+        },
+        {
+            "action": "memory_retain",
+            "success": True,
+            "metadata": {"source": "automatic_memory_retain", "route": "verbatim"},
+        },
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_event_metadata_values={
+                "memory_recall": {"source": "memory_recall_node"},
+                "memory_retain": {"source": "automatic_memory_retain"},
+            },
+            forbidden_event_metadata_values={"*": {"source": "explicit_memory_tool"}},
+        ),
+    )
+
+    assert verdict.passed is True
+
+
+def test_trace_gates_fail_for_event_metadata_values(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "memory_recall",
+            "success": True,
+            "metadata": {"source": "explicit_memory_tool"},
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_event_metadata_values={
+                "memory_recall": {"source": "memory_recall_node"}
+            },
+            forbidden_event_metadata_values={
+                "memory_recall": {"source": "explicit_memory_tool"}
+            },
+        ),
+    )
+
+    assert verdict.passed is False
+    assert (
+        "missing required metadata value for memory_recall: "
+        "source=memory_recall_node"
+    ) in verdict.failures
+    assert (
+        "forbidden metadata value for memory_recall: source=explicit_memory_tool"
+        in verdict.failures
+    )
 
 
 def test_trace_gates_fail_for_missing_event_metadata_key(monkeypatch):
@@ -561,6 +635,30 @@ def test_global_kg_boundary_scenarios_load():
         "memory_add",
         "memory_search",
     )
+
+
+def test_memory_lifecycle_scenarios_gate_memory_sources():
+    repo_root = scenario_runner.Path(__file__).resolve().parents[3]
+    scenarios = scenario_runner.load_scenarios(
+        repo_root / "data/harness/memory_lifecycle/scenarios.json"
+    )
+
+    by_id = {scenario.id: scenario for scenario in scenarios}
+    explicit = by_id["ml-memory-explicit-add-search-001"].expectations
+    assert explicit.required_event_metadata_values == {
+        "memory_retain": {"source": "explicit_memory_tool"},
+        "memory_recall": {"source": "explicit_memory_tool"},
+    }
+
+    automatic = by_id["ml-memory-fusion-route-001"].expectations
+    assert automatic.required_event_metadata_values == {
+        "memory_recall": {"source": "memory_recall_node"},
+        "memory_retain": {"source": "automatic_memory_retain"},
+    }
+
+    correction = by_id["ml-memory-correction-conflict-001"].expectations
+    assert "summary-only" in correction.forbidden_response_terms
+    assert correction.required_event_metadata_values == automatic.required_event_metadata_values
 
 
 def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):

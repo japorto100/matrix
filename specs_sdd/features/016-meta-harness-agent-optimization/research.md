@@ -499,3 +499,13 @@ manifest records the synthetic memory bank/thread, Palace/evidence refs,
 expected providers/terms, evidence digest and replay command. This makes
 memory regressions inspectable as candidate artifacts instead of requiring the
 proposer/evaluator to infer fixtures from trace rows.
+
+2026-04-30 memory source-gate update: the Z_ Memory/KG/RAG notes and
+Feature 012 evidence rule imply that "memory happened" is not enough. The
+trace must identify which path wrote or read memory. `TraceExpectations` now
+supports provider-agnostic audit metadata value gates, and the memory lifecycle
+fixtures require automatic prefetch (`memory_recall_node`), automatic
+post-answer retain (`automatic_memory_retain`) and explicit tool paths
+(`explicit_memory_tool`) to be distinguishable. A new correction scenario
+checks stale-vs-current preference drift before any LLM judge is allowed to
+score the answer.

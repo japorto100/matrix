@@ -76,6 +76,10 @@ migrated_from:
 - T037 Wire public benchmark adapters or document why deferred.
 - T038 Add MemPalace trigger-policy evals: exact-history, conflict,
   audit/source request, high-risk strategy decision and old-session recovery.
+  - 2026-04-30: Feature 016 now includes a static correction/conflict
+    lifecycle scenario that requires the current verbatim-first/source-ref
+    preference and forbids the stale summary-only answer. Full MemPalace
+    backend-specific trigger-policy evals remain open.
 - T039 Add anti-bloat evals proving MemPalace is not injected by default for
   simple current/live-market questions.
 - [x] T039a Review MemPalace upstream documentation and git repo freshness before
@@ -198,6 +202,10 @@ migrated_from:
     operation/diff refs, thread id, session id, room id, layer and context
     tier. Event metadata remains redacted and does not include recalled memory
     text.
+  - 2026-04-30: automatic recall also emits audit/runtime metadata
+    `source=memory_recall_node`, while automatic retain emits
+    `source=automatic_memory_retain`; Meta-Harness can now distinguish these
+    from explicit `memory_add`/`memory_search` tool paths.
 - [x] T050 [done-static-live-smoke] Verify pre-save runs before both normal
   compression and context compaction, with MemPalace archival receiving the
   complete visible context.

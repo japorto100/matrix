@@ -118,11 +118,25 @@ feature_id: 016
 ## Memory-Aware Evaluation
 
 - T030 Add memory fixture setup and cleanup for eval users.
-- T031 Assert automatic memory prefetch on recall scenarios.
-- T032 Assert memory retain on remember/correction scenarios.
-- T033 Assert explicit memory tools when the user asks to store/search memory.
+- [x] T031 [done-static] Assert automatic memory prefetch on recall scenarios.
+  - 2026-04-30: memory lifecycle scenarios now require
+    `memory_recall` audit metadata `source=memory_recall_node`, and
+    `memory_recall_node` emits that source into audit/runtime metadata.
+- [x] T032 [done-static] Assert memory retain on remember/correction scenarios.
+  - 2026-04-30: automatic retain now emits audit/runtime metadata
+    `source=automatic_memory_retain`, and memory lifecycle scenarios gate
+    retain source separately from explicit memory tools.
+- [x] T033 [done-static] Assert explicit memory tools when the user asks to
+  store/search memory.
+  - 2026-04-30: `TraceExpectations.required_event_metadata_values` lets
+    scenarios require `memory_add`/`memory_search` paths to surface
+    `source=explicit_memory_tool` on `memory_retain`/`memory_recall` audit rows.
 - [x] T034 Record Hindsight/MemPalace/Fusion route metadata in trace artifacts.
-- T035 Add conflict/correction scenarios to detect memory drift.
+- [x] T035 [done-static] Add conflict/correction scenarios to detect memory
+  drift.
+  - 2026-04-30: `ml-memory-correction-conflict-001` requires the corrected
+    verbatim-first/source-ref preference and forbids the stale summary-only
+    answer while preserving automatic recall/retain source gates.
 - T036 Add Hindsight diagnostic scenarios that verify summarized preference/fact
   recall, update, deletion and outcome-learning behavior.
 - T037 Add MemPalace diagnostic scenarios that verify verbatim/episodic recall,

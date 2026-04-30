@@ -188,6 +188,12 @@ PY
 - Automatic prefetch path is visible in traces or verdicts.
 - Explicit memory tool use is visible when expected.
 - Retain path is visible after remember/correction turns.
+- 2026-04-30: trace gates can assert exact audit metadata values through
+  `required_event_metadata_values` and `forbidden_event_metadata_values`, so
+  memory lifecycle scenarios distinguish automatic recall
+  (`source=memory_recall_node`), automatic retain
+  (`source=automatic_memory_retain`) and explicit tools
+  (`source=explicit_memory_tool`).
 - Hindsight/MemPalace/Fusion route or provider is captured when available.
 - `pre_save` context stage triggers a memory archive hook without changing the
   prompt messages.

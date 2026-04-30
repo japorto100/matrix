@@ -337,3 +337,18 @@ stable artifacts, not just pass/fail summaries. Each candidate manifest records
 the synthetic user/thread, bank id, route/providers, Palace/evidence refs,
 expected terms, evidence digest and replay command. That lets memory regressions
 be debugged without treating trace rows as the only fixture definition.
+
+## 2026-04-30 Memory Source-Path Gate Follow-Up
+
+Feature 016 now enforces the Feature 012 evidence rule at the audit level:
+recall/retain traces must say which path produced them. Automatic prefetch is
+`memory_recall_node`, automatic post-answer retain is
+`automatic_memory_retain`, and explicit `memory_add`/`memory_search` remains
+`explicit_memory_tool`.
+
+This is provider-agnostic and useful for Hindsight, MemPalace and Fusion
+because route/provider metadata alone cannot tell whether the agent correctly
+used automatic lifecycle hooks or merely called a tool after being prompted.
+The new correction scenario also ties stale-answer detection to source-backed
+memory evidence, which is the first static drift gate before backend-specific
+MemPalace trigger-policy evals.

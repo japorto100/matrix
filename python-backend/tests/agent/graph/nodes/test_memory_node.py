@@ -152,6 +152,7 @@ async def test_memory_recall_node_surfaces_source_session_refs(monkeypatch):
     event = result["runtime_events"][0]
     context_ref = event["metadata"]["context_refs"][0]
     assert event["name"] == "memory.recall.completed"
+    assert event["metadata"]["source"] == "memory_recall_node"
     assert context_ref["source_refs"] == ["session-001.jsonl#0"]
     assert context_ref["raw_evidence_ref"] == "session-001.jsonl#0"
     assert context_ref["thread_id"] == "thread-1"
@@ -248,9 +249,11 @@ async def test_retain_conversation_writes_verbatim_and_queues_summary(monkeypatc
     assert len(queued) == 1
     assert audit_events[0]["metadata"]["route"] == "verbatim"
     assert audit_events[0]["metadata"]["providers"] == "verbatim,summary_async"
+    assert audit_events[0]["metadata"]["source"] == "automatic_memory_retain"
     assert audit_events[0]["metadata"]["summary_status"] == "background_queued"
     assert audit_events[0]["metadata"]["runtime_events"][0]["name"] == "memory.retain.completed"
     assert metadata["route"] == "verbatim"
+    assert metadata["source"] == "automatic_memory_retain"
     assert metadata["summary_status"] == "background_queued"
 
 

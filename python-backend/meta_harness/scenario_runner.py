@@ -129,6 +129,12 @@ class TraceExpectations:
     forbidden_event_metadata_keys: dict[str, tuple[str, ...]] = field(
         default_factory=dict
     )
+    required_event_metadata_values: dict[str, dict[str, str]] = field(
+        default_factory=dict
+    )
+    forbidden_event_metadata_values: dict[str, dict[str, str]] = field(
+        default_factory=dict
+    )
     required_runtime_event_names: tuple[str, ...] = ()
     required_runtime_event_metadata_keys: dict[str, tuple[str, ...]] = field(
         default_factory=dict
@@ -168,6 +174,12 @@ class TraceExpectations:
             str(action): tuple(str(key) for key in keys)
             for action, keys in (raw.get("forbidden_event_metadata_keys") or {}).items()
         }
+        required_event_metadata_values = _metadata_value_expectations(
+            raw.get("required_event_metadata_values") or {}
+        )
+        forbidden_event_metadata_values = _metadata_value_expectations(
+            raw.get("forbidden_event_metadata_values") or {}
+        )
         required_runtime_event_metadata_keys = {
             str(name): tuple(str(key) for key in keys)
             for name, keys in (
@@ -218,6 +230,8 @@ class TraceExpectations:
             ),
             required_event_metadata_keys=required_event_metadata_keys,
             forbidden_event_metadata_keys=forbidden_event_metadata_keys,
+            required_event_metadata_values=required_event_metadata_values,
+            forbidden_event_metadata_values=forbidden_event_metadata_values,
             required_runtime_event_names=tuple(
                 str(x) for x in raw.get("required_runtime_event_names", [])
             ),
@@ -803,6 +817,36 @@ def evaluate_trace_gates(
                 for event in matching_events
             ):
                 failures.append(f"forbidden metadata key for {action}: {key}")
+    for action, values in expectations.required_event_metadata_values.items():
+        matching_events = [event for event in events if _event_action(event) == action]
+        if not matching_events:
+            failures.append(f"missing action for metadata value gate: {action}")
+            continue
+        for key, expected in values.items():
+            if not any(
+                _metadata_value_matches(_metadata_value(_event_metadata(event), key), expected)
+                for event in matching_events
+            ):
+                failures.append(
+                    f"missing required metadata value for {action}: {key}={expected}"
+                )
+    for action, values in expectations.forbidden_event_metadata_values.items():
+        matching_events = (
+            events
+            if action == "*"
+            else [event for event in events if _event_action(event) == action]
+        )
+        for key, forbidden in values.items():
+            if any(
+                _metadata_value_matches(
+                    _metadata_value(_event_metadata(event), key),
+                    forbidden,
+                )
+                for event in matching_events
+            ):
+                failures.append(
+                    f"forbidden metadata value for {action}: {key}={forbidden}"
+                )
     for name in expectations.required_runtime_event_names:
         if name not in runtime_event_names:
             failures.append(f"missing required runtime event: {name}")
