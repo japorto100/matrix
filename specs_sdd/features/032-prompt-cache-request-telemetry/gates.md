@@ -24,6 +24,10 @@ feature_id: 032
   - 2026-04-30: `digest_prompt()` separates content digest from layout digest,
     and `digest_tool_catalog()` sorts tools before hashing descriptor shape.
 - G004 Cache-break events include a reason or explicitly say reason unknown.
+  - 2026-04-30: request telemetry now emits explicit cache-break reasons for
+    model, transport, cache retention, stream strategy, system prompt,
+    prompt layout/content and tool catalog changes. Legacy telemetry without
+    snapshot fields is handled without fabricated break reasons.
 - [x] G005 MCP reload and tool descriptor changes mark cache invalidation impact.
   - 2026-04-30: `agent-cache-impact/v1` carries previous/current digest,
     source, reason and `rebind_required` action for MCP reloads.
@@ -40,12 +44,18 @@ feature_id: 032
   - 2026-04-30: prompt-cache read model now exposes `by_thread` summaries with
     request counts, cache impact counts, invalidations, cache breaks, token
     totals and provider/model sets.
+  - 2026-04-30: read model rows expose transport, cache retention, stream
+    strategy, system digest, tool count and sorted tool names for the Control
+    UI without raw prompt/tool content.
 - [x] G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
   - 2026-04-30: `prompt-cache-contract` requires unchanged prompt/layout/tool
     digests for equivalent inputs and no cache-break reasons when only tool
     ordering changes.
   - 2026-04-30: `run-prompt-cache-contract-gate` passed 4/4 without provider
     calls.
+  - 2026-04-30: `prompt-cache-snapshot-break-dimensions` extends the lane to
+    7 provider-free scenarios, including cache-retention, transport,
+    stream-strategy and system-prompt changes.
 - [x] G009 MCP reload cache invalidation is visible in provider-free harness
   and read-model replay.
   - 2026-04-30: `prompt-cache-mcp-reload-impact-replayed` requires

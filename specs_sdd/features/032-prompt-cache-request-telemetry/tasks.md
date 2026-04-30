@@ -11,13 +11,28 @@ feature_id: 032
 
 ## Research And Spec
 
-- T001 Capture Hermes/OpenClaw/OpenClaude cache and usage transfer notes in
-  `research.md`.
-- T002 Define provider-agnostic request telemetry fields and redaction rules.
-- T003 Define cache snapshot fields: provider, model, transport,
-  cache-retention, system digest, tool digest, tool count and tool names.
-- T004 Define cache-break reasons: model, transport, cache retention, system
-  prompt, tools, MCP reload, skill reload and stream strategy.
+- [x] T001 [done-static] Capture Hermes/OpenClaw/OpenClaude cache and usage
+  transfer notes in `research.md`.
+  - 2026-04-30: research records the local Z_/reference findings and the
+    provider-agnostic transfer shape: normalized usage, explicit unknowns,
+    reload invalidation and no raw prompts/secrets in traces.
+- [x] T002 [done-static] Define provider-agnostic request telemetry fields and
+  redaction rules.
+  - 2026-04-30: `provider-request-telemetry/v1` now carries provider, model,
+    router, transport, cache retention, stream strategy, prompt/layout/system
+    digests, tool digest/name/count, normalized usage and sanitized metadata.
+- [x] T003 [done-static] Define cache snapshot fields: provider, model,
+  transport, cache-retention, system digest, tool digest, tool count and tool
+  names.
+  - 2026-04-30: cache snapshot fields are first-class request telemetry and
+    replay through the prompt-cache read model; raw system prompt and raw tool
+    schemas are represented only by digests.
+- [x] T004 [done-static] Define cache-break reasons: model, transport, cache
+  retention, system prompt, tools, MCP reload, skill reload and stream strategy.
+  - 2026-04-30: request telemetry detects model, transport,
+    cache-retention, stream-strategy, system-prompt, prompt-layout/content and
+    tool-catalog changes. MCP/skill reloads use `agent-cache-impact/v1` with
+    explicit source/reason/action rather than overloading per-request reasons.
 
 ## Backend
 
@@ -37,6 +52,9 @@ feature_id: 032
     provider/model sets and prompt/completion/cache token totals. Runtime graph
     state still owns in-turn counters; replay surfaces now have the durable
     session summary.
+  - 2026-04-30: per-call telemetry now includes cache snapshot fields used by
+    runtime traces and Control read models: transport, cache retention, stream
+    strategy, system digest, tool count and sorted tool names.
 - [x] T012 [done-static] Add request metadata capture for request id,
   processing time and rate-limit headers when providers expose them.
   - 2026-04-30: LLM runtime telemetry now stores allowlisted response metadata
@@ -73,6 +91,9 @@ feature_id: 032
   - 2026-04-30: backend read model now includes `by_thread`, so Control/Ops
     can link a session to prompt-cache totals without recomputing from raw
     audit rows.
+  - 2026-04-30: read model rows now expose cache snapshot fields for the UI:
+    transport, cache-retention, stream strategy, system prompt digest, tool
+    count and sorted tool names.
 - [x] T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
   - 2026-04-30: `prompt-cache-contract` adds provider-free scenarios for
@@ -92,3 +113,9 @@ feature_id: 032
     telemetry items collapse into one thread summary with cache read/write
     totals, cache-break count and provider de-duplication. The
     `prompt-cache-contract` lane now has 6 scenarios.
+- [x] T024 [done-static] Add provider-free cache snapshot break-dimension
+  scenario.
+  - 2026-04-30: `prompt-cache-snapshot-break-dimensions` validates
+    transport/cache-retention/stream-strategy/system-prompt break reasons plus
+    sorted tool snapshot fields. The `prompt-cache-contract` lane now has 7
+    scenarios.

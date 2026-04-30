@@ -69,11 +69,17 @@ class RequestTelemetry:
     provider: str
     model: str
     router: str
+    transport: str
+    cache_retention: str
+    stream_strategy: str
     thread_id: str
     iteration: int
     prompt_digest: str
     prompt_layout_digest: str
+    system_prompt_digest: str
     tool_catalog_digest: str
+    tool_count: int
+    tool_names: tuple[str, ...]
     usage: UsageTelemetry
     cache_break_reasons: tuple[str, ...] = ()
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -97,6 +103,9 @@ def build_request_telemetry(
     usage: Any,
     previous: dict[str, Any] | None = None,
     metadata: dict[str, Any] | None = None,
+    transport: str = "litellm",
+    cache_retention: str = "provider_default",
+    stream_strategy: str = "non_streaming",
 ) -> dict[str, Any]:
     """Build one redacted request telemetry envelope.
 
@@ -106,24 +115,36 @@ def build_request_telemetry(
 
     prompt_digest = digest_prompt(messages, include_text=True)
     layout_digest = digest_prompt(messages, include_text=False)
+    system_digest = digest_system_prompt(messages)
     tool_digest = digest_tool_catalog(tools)
+    tool_names = tuple(sorted(_tool_name(tool) for tool in tools if _tool_name(tool)))
     telemetry = RequestTelemetry(
         provider=provider,
         model=model,
         router=router,
+        transport=str(transport or "unknown"),
+        cache_retention=str(cache_retention or "unknown"),
+        stream_strategy=str(stream_strategy or "unknown"),
         thread_id=thread_id,
         iteration=iteration,
         prompt_digest=prompt_digest,
         prompt_layout_digest=layout_digest,
+        system_prompt_digest=system_digest,
         tool_catalog_digest=tool_digest,
+        tool_count=len(tool_names),
+        tool_names=tool_names,
         usage=normalize_usage(usage),
         cache_break_reasons=tuple(
             detect_cache_break(
                 previous=previous,
                 prompt_digest=prompt_digest,
                 prompt_layout_digest=layout_digest,
+                system_prompt_digest=system_digest,
                 tool_catalog_digest=tool_digest,
                 model=model,
+                transport=str(transport or "unknown"),
+                cache_retention=str(cache_retention or "unknown"),
+                stream_strategy=str(stream_strategy or "unknown"),
             )
         ),
         metadata=_sanitize_metadata(metadata or {}),
@@ -221,19 +242,54 @@ def digest_tool_catalog(tools: list[dict[str, Any]]) -> str:
     return _sha256_json(normalized)
 
 
+def digest_system_prompt(messages: list[dict[str, Any]]) -> str:
+    system_messages = [
+        message for message in messages if str(message.get("role") or "") == "system"
+    ]
+    return digest_prompt(system_messages, include_text=True)
+
+
 def detect_cache_break(
     *,
     previous: dict[str, Any] | None,
     prompt_digest: str,
     prompt_layout_digest: str,
+    system_prompt_digest: str | None = None,
     tool_catalog_digest: str,
     model: str,
+    transport: str | None = None,
+    cache_retention: str | None = None,
+    stream_strategy: str | None = None,
 ) -> list[str]:
     if not previous:
         return ["first_request"]
     reasons: list[str] = []
     if previous.get("model") != model:
         reasons.append("model_changed")
+    if (
+        transport is not None
+        and "transport" in previous
+        and previous.get("transport") != transport
+    ):
+        reasons.append("transport_changed")
+    if (
+        cache_retention is not None
+        and "cache_retention" in previous
+        and previous.get("cache_retention") != cache_retention
+    ):
+        reasons.append("cache_retention_changed")
+    if (
+        stream_strategy is not None
+        and "stream_strategy" in previous
+        and previous.get("stream_strategy") != stream_strategy
+    ):
+        reasons.append("stream_strategy_changed")
+    if (
+        system_prompt_digest is not None
+        and "system_prompt_digest" in previous
+        and previous.get("system_prompt_digest") != system_prompt_digest
+    ):
+        reasons.append("system_prompt_changed")
     if previous.get("prompt_layout_digest") != prompt_layout_digest:
         reasons.append("prompt_layout_changed")
     elif previous.get("prompt_digest") != prompt_digest:
@@ -251,12 +307,26 @@ def telemetry_span_attributes(telemetry: dict[str, Any]) -> dict[str, Any]:
         ),
         "request_telemetry.provider": str(telemetry.get("provider") or ""),
         "request_telemetry.model": str(telemetry.get("model") or ""),
+        "request_telemetry.transport": str(telemetry.get("transport") or ""),
+        "request_telemetry.cache_retention": str(
+            telemetry.get("cache_retention") or ""
+        ),
+        "request_telemetry.stream_strategy": str(
+            telemetry.get("stream_strategy") or ""
+        ),
         "request_telemetry.prompt_digest": str(telemetry.get("prompt_digest") or ""),
         "request_telemetry.prompt_layout_digest": str(
             telemetry.get("prompt_layout_digest") or ""
         ),
+        "request_telemetry.system_prompt_digest": str(
+            telemetry.get("system_prompt_digest") or ""
+        ),
         "request_telemetry.tool_catalog_digest": str(
             telemetry.get("tool_catalog_digest") or ""
+        ),
+        "request_telemetry.tool_count": int(telemetry.get("tool_count") or 0),
+        "request_telemetry.tool_names": ",".join(
+            str(name) for name in telemetry.get("tool_names") or ()
         ),
         "request_telemetry.cache_break_reasons": ",".join(
             str(reason) for reason in telemetry.get("cache_break_reasons") or ()
@@ -438,6 +508,14 @@ def _rate_limit_bucket_metadata(bucket: Any) -> dict[str, Any]:
         "provider": str(getattr(bucket, "provider", "") or ""),
         "provider_key_id": str(getattr(bucket, "provider_key_id", "") or ""),
     }
+
+
+def _tool_name(tool: dict[str, Any]) -> str:
+    function = tool.get("function") if isinstance(tool, dict) else None
+    source = function if isinstance(function, dict) else tool
+    if not isinstance(source, dict):
+        return ""
+    return str(source.get("name") or "")
 
 
 def _shape_only(value: Any) -> Any:

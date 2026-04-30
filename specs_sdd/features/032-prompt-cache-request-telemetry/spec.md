@@ -26,10 +26,30 @@ the data.
 - MCP/tool/skill reload cache impact metadata.
 - Control UI and Meta-Harness gates for cache behavior.
 
+## Request Telemetry Contract
+
+`provider-request-telemetry/v1` is provider-agnostic. It stores hashes and
+normalized counters, not raw prompts, raw tool schemas, provider headers or
+secrets.
+
+Required cache snapshot fields:
+
+- provider, model, router, transport, cache retention and stream strategy
+- prompt digest, prompt layout digest and system prompt digest
+- tool catalog digest, tool count and sorted tool names
+- normalized usage: prompt, input, completion, output, total, reasoning, cache
+  read, cache write and explicit unknown fields
+- sanitized metadata for request id, provider/local duration and rate-limit
+  buckets when providers expose them
+
+Cache-break reasons are explicit for model, transport, cache retention, stream
+strategy, system prompt, prompt layout/content and tool catalog changes.
+MCP/tool/skill reloads use `agent-cache-impact/v1` so reload provenance remains
+separate from a single LLM request.
+
 ## Non-Goals
 
 - A provider-specific product dependency.
 - Estimating unavailable cache counters as fact.
 - Sending provider-only diagnostics into memory, KG claims or user-visible
   artifacts without redaction.
-

@@ -27,6 +27,7 @@ def run_prompt_cache_contract_scenarios(
         _stable_prompt_and_tool_order_gate(),
         _prompt_content_change_gate(),
         _tool_schema_change_gate(),
+        _cache_snapshot_break_dimension_gate(),
         _mcp_reload_cache_impact_gate(),
         _thread_rollup_gate(),
         _usage_unknown_counter_gate(),
@@ -169,6 +170,64 @@ def _tool_schema_change_gate() -> dict[str, Any]:
         "prompt-cache-tool-schema-change-reason",
         failures=failures,
         evidence={"cache_break_reasons": second["cache_break_reasons"]},
+    )
+
+
+def _cache_snapshot_break_dimension_gate() -> dict[str, Any]:
+    first = build_request_telemetry(
+        provider="provider",
+        model="model-a",
+        router="langgraph",
+        transport="litellm_chat_completions",
+        cache_retention="ephemeral_breakpoints",
+        stream_strategy="non_streaming",
+        thread_id="thread-cache",
+        iteration=0,
+        messages=[{"role": "system", "content": "policy"}, {"role": "user", "content": "go"}],
+        tools=[_tool("memory_search"), _tool("semantic_lookup")],
+        usage={"prompt_tokens": 5, "completion_tokens": 2},
+    )
+    second = build_request_telemetry(
+        provider="provider",
+        model="model-a",
+        router="langgraph",
+        transport="responses",
+        cache_retention="provider_default",
+        stream_strategy="sse",
+        thread_id="thread-cache",
+        iteration=1,
+        messages=[{"role": "system", "content": "new policy"}, {"role": "user", "content": "go"}],
+        tools=[_tool("memory_search"), _tool("semantic_lookup")],
+        usage={"prompt_tokens": 5, "completion_tokens": 2},
+        previous=first,
+    )
+    reasons = set(second["cache_break_reasons"])
+    failures: list[str] = []
+    for reason in (
+        "transport_changed",
+        "cache_retention_changed",
+        "stream_strategy_changed",
+        "system_prompt_changed",
+    ):
+        if reason not in reasons:
+            failures.append(f"missing {reason}")
+    if second.get("tool_count") != 2:
+        failures.append("missing tool_count snapshot")
+    if second.get("tool_names") != ("memory_search", "semantic_lookup"):
+        failures.append("tool_names snapshot not sorted")
+    if len(str(second.get("system_prompt_digest") or "")) != 64:
+        failures.append("missing system_prompt_digest")
+    return _scenario(
+        "prompt-cache-snapshot-break-dimensions",
+        failures=failures,
+        evidence={
+            "cache_break_reasons": second["cache_break_reasons"],
+            "transport": second.get("transport"),
+            "cache_retention": second.get("cache_retention"),
+            "stream_strategy": second.get("stream_strategy"),
+            "tool_count": second.get("tool_count"),
+            "tool_names": second.get("tool_names"),
+        },
     )
 
 

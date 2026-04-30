@@ -6,6 +6,7 @@ from agent.llm.request_telemetry import (
     build_request_telemetry,
     detect_cache_break,
     digest_prompt,
+    digest_system_prompt,
     digest_tool_catalog,
     normalize_usage,
     response_metadata,
@@ -33,6 +34,24 @@ def test_tool_digest_uses_schema_shape() -> None:
     ]
 
     assert len(digest_tool_catalog(tools)) == 64
+
+
+def test_system_prompt_digest_tracks_system_only() -> None:
+    first = [
+        {"role": "system", "content": "stable policy"},
+        {"role": "user", "content": "hello"},
+    ]
+    second = [
+        {"role": "system", "content": "stable policy"},
+        {"role": "user", "content": "different"},
+    ]
+    changed_system = [
+        {"role": "system", "content": "new policy"},
+        {"role": "user", "content": "hello"},
+    ]
+
+    assert digest_system_prompt(first) == digest_system_prompt(second)
+    assert digest_system_prompt(first) != digest_system_prompt(changed_system)
 
 
 def test_normalize_usage_preserves_unknown_fields() -> None:
@@ -88,9 +107,43 @@ def test_detect_cache_break_reasons() -> None:
         previous=previous,
         prompt_digest="p2",
         prompt_layout_digest="l1",
+        system_prompt_digest="s1",
         tool_catalog_digest="t2",
         model="m2",
+        transport="litellm",
+        cache_retention="provider_default",
+        stream_strategy="non_streaming",
     ) == ["model_changed", "prompt_content_changed", "tool_catalog_changed"]
+
+
+def test_detect_cache_break_reasons_for_request_snapshot_fields() -> None:
+    previous = {
+        "model": "m1",
+        "transport": "litellm",
+        "cache_retention": "ephemeral_breakpoints",
+        "stream_strategy": "non_streaming",
+        "prompt_digest": "p1",
+        "prompt_layout_digest": "l1",
+        "system_prompt_digest": "s1",
+        "tool_catalog_digest": "t1",
+    }
+
+    assert detect_cache_break(
+        previous=previous,
+        prompt_digest="p1",
+        prompt_layout_digest="l1",
+        system_prompt_digest="s2",
+        tool_catalog_digest="t1",
+        model="m1",
+        transport="responses",
+        cache_retention="provider_default",
+        stream_strategy="sse",
+    ) == [
+        "transport_changed",
+        "cache_retention_changed",
+        "stream_strategy_changed",
+        "system_prompt_changed",
+    ]
 
 
 def test_build_request_telemetry_has_no_raw_prompt() -> None:
@@ -103,11 +156,39 @@ def test_build_request_telemetry_has_no_raw_prompt() -> None:
         messages=[{"role": "user", "content": "private prompt"}],
         tools=[],
         usage={"prompt_tokens": 2, "completion_tokens": 1},
+        transport="litellm_chat_completions",
+        cache_retention="provider_default",
+        stream_strategy="non_streaming",
     )
 
     assert telemetry["contract"] == "provider-request-telemetry/v1"
     assert telemetry["usage"]["total_tokens"] == 3
+    assert telemetry["transport"] == "litellm_chat_completions"
+    assert telemetry["cache_retention"] == "provider_default"
+    assert telemetry["stream_strategy"] == "non_streaming"
+    assert len(telemetry["system_prompt_digest"]) == 64
     assert "private prompt" not in str(telemetry)
+
+
+def test_build_request_telemetry_records_sorted_tool_snapshot() -> None:
+    tools = [
+        {"type": "function", "function": {"name": "semantic_lookup"}},
+        {"type": "function", "function": {"name": "memory_search"}},
+    ]
+
+    telemetry = build_request_telemetry(
+        provider="provider",
+        model="model",
+        router="langgraph",
+        thread_id="t1",
+        iteration=0,
+        messages=[{"role": "system", "content": "policy"}],
+        tools=tools,
+        usage={},
+    )
+
+    assert telemetry["tool_count"] == 2
+    assert telemetry["tool_names"] == ("memory_search", "semantic_lookup")
 
 
 def test_build_request_telemetry_redacts_free_form_metadata() -> None:

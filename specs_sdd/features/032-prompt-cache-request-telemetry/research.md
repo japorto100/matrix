@@ -31,6 +31,10 @@ feature_id: 032
   expose a value.
 - Cache-break evidence needs a snapshot of provider, model, transport,
   cache-retention mode, system-prompt digest and tool digest.
+- The snapshot should be provider-neutral enough to survive transport changes:
+  `transport` names the client/API path, `cache_retention` names the cache
+  policy class, and `stream_strategy` names the wire strategy. Provider-native
+  names can appear only as values, not as required schema branches.
 - Tool schema/MCP changes are real cache invalidation events. They need a
   user-visible impact warning and runtime session rebind/invalidation.
 - Volatile content should live below a cache boundary; stable tool/skill/system
@@ -76,3 +80,13 @@ cache-field count and provider/model sets. The provider-free
 `prompt-cache-thread-session-rollup` scenario checks this directly from audit
 telemetry, matching the Hermes/OpenClaw lesson that cache stats must be
 session-readable without relying on a CLI/TUI or provider-specific logs.
+
+2026-04-30 snapshot implementation update: `provider-request-telemetry/v1`
+now carries the cache snapshot as top-level telemetry fields: provider, model,
+router, transport, cache retention, stream strategy, prompt digest, layout
+digest, system prompt digest, tool catalog digest, tool count and sorted tool
+names. Raw system text and raw tool schema content remain absent. The
+provider-free `prompt-cache-snapshot-break-dimensions` gate verifies transport,
+cache-retention, stream-strategy and system-prompt break reasons, while MCP and
+skill reloads stay represented by `agent-cache-impact/v1` so reload provenance
+does not get confused with one request's prompt diff.

@@ -14,11 +14,17 @@ def _audit_event(**overrides):
                 "provider": "openrouter",
                 "model": "provider/model",
                 "router": "langgraph",
+                "transport": "litellm_chat_completions",
+                "cache_retention": "ephemeral_breakpoints",
+                "stream_strategy": "non_streaming",
                 "thread_id": "thread-1",
                 "iteration": 2,
                 "prompt_digest": "prompt-a",
                 "prompt_layout_digest": "layout-a",
+                "system_prompt_digest": "system-a",
                 "tool_catalog_digest": "tools-a",
+                "tool_count": 2,
+                "tool_names": ["memory_search", "semantic_lookup"],
                 "cache_break_reasons": ["tool_catalog_changed"],
                 "usage": {
                     "prompt_tokens": 100,
@@ -53,6 +59,12 @@ def test_prompt_cache_read_model_summarizes_usage_and_breaks() -> None:
     item = model["items"][0]
     assert item["links"]["ops_event"] == "/control/ops?session=thread-1"
     assert item["links"]["context"] == "/control/context?thread_id=thread-1"
+    assert item["transport"] == "litellm_chat_completions"
+    assert item["cache_retention"] == "ephemeral_breakpoints"
+    assert item["stream_strategy"] == "non_streaming"
+    assert item["system_prompt_digest"] == "system-a"
+    assert item["tool_count"] == 2
+    assert item["tool_names"] == ["memory_search", "semantic_lookup"]
 
 
 def test_prompt_cache_read_model_preserves_unknown_cache_fields() -> None:

@@ -186,8 +186,10 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
 
         # exec-17 / exec-context: Anthropic-style ephemeral cache on last messages (via LiteLLM).
         # Trifft u.a. openrouter/anthropic/claude-* und direkte claude IDs — nicht jedes OR-Modell.
+        cache_retention = "provider_default"
         if _model_may_use_ephemeral_cache(model):
             _apply_anthropic_caching(oai_messages)
+            cache_retention = "ephemeral_breakpoints"
 
         capabilities = model_capabilities(model)
         known_capabilities = bool(capabilities.get("known_to_litellm"))
@@ -404,6 +406,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                     duration_ms=elapsed,
                 ),
             },
+            transport="litellm_chat_completions",
+            cache_retention=cache_retention,
+            stream_strategy="non_streaming",
         )
         cache_break_event = _cache_break_runtime_event(
             request_telemetry=request_telemetry,
