@@ -174,6 +174,10 @@ discovery pattern three runtime uses:
 - Tool candidates via `agent.tools.catalog.search_tool_catalog()` in prompt
   preparation.
 
-Open item: source-discovery candidates still need the same metadata-only
-contract before the agent can ask for candidate sources without pulling full
-documents into the prompt.
+2026-04-30 source-discovery implementation: `retrieve(...)` now accepts
+explicit `source_candidates` and derives candidates from vector/KG/lexical hits.
+The candidate shape is metadata-only: id, source, source URI, score, retrieval
+lane, provenance status and a small allowlist of source/chunk/citation metadata.
+It intentionally excludes hit content and full source bodies. Runtime events
+emit candidate ids/counts only, so Agent Chat/Ops can show source options
+without turning event logs into another document store.

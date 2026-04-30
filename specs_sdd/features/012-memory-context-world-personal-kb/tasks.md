@@ -234,6 +234,11 @@ migrated_from:
     proposal, not a silent truth mutation.
 - T090 Add browser-local retrieval handoff to Feature 026 for private/local
   prefiltering before backend memory/RAG calls.
+- [x] T091 [done-static] Add metadata-only source-discovery handoff for Personal
+  KB/RAG candidates.
+  - 2026-04-30: Feature 019 `retrieve(...)` now returns source candidates with
+    source/chunk/citation metadata but no full content body, giving Personal KB
+    and Agent Chat a safe candidate surface before full retrieval.
 
 ## 2026-04-30 Delegation Memory Additions
 

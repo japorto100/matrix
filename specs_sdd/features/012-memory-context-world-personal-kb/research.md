@@ -181,6 +181,12 @@ zero for that compressed context and surfaces
 provider failures still exit through the normal ErrorPacket path instead of
 looping.
 
+2026-04-30 source-discovery handoff: Personal KB/RAG can now expose candidate
+sources before loading full content. Feature 019 returns metadata-only source
+candidates from explicit KB inputs or retrieved hits. This supports a safer
+"choose/open source" UX and agent planning path while preserving the rule that
+answer support still needs selected, source-backed context.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

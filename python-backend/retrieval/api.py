@@ -30,6 +30,7 @@ class RetrievalResult:
     hits: list[dict] | None = None
     intent: str = ""
     references: list[dict[str, Any]] | None = None
+    source_candidates: list[dict[str, Any]] | None = None
     verification: dict[str, Any] | None = None
     degraded: bool = False
     degraded_reasons: list[str] | None = None
@@ -236,6 +237,93 @@ def _lane_counts(*hit_lists: list[RetrievalHit]) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda item: item[0]))
 
 
+_SOURCE_CANDIDATE_METADATA_KEYS = (
+    "source_artifact_id",
+    "source_ref",
+    "raw_evidence_ref",
+    "document_id",
+    "chunk_id",
+    "chunk_hash",
+    "citation_ref",
+    "section",
+    "chunk_section",
+    "artifact_type",
+    "semantic_catalog_version",
+    "semantic_term_ids",
+    "metric_id",
+)
+
+
+def _source_candidate_from_hit(hit: RetrievalHit) -> dict[str, Any]:
+    metadata = hit.metadata if isinstance(hit.metadata, dict) else {}
+    visible_metadata = {
+        key: metadata[key]
+        for key in _SOURCE_CANDIDATE_METADATA_KEYS
+        if key in metadata and metadata[key] not in (None, "")
+    }
+    return {
+        "id": hit.id,
+        "source": hit.source,
+        "source_uri": hit.source_uri,
+        "score": hit.score,
+        "retrieval_lane": _lane_for_hit(hit),
+        "provenance_status": _context_provenance_status(hit),
+        "metadata": visible_metadata,
+    }
+
+
+def _source_candidate_from_mapping(data: dict[str, Any]) -> dict[str, Any]:
+    metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+    hit = RetrievalHit.from_mapping(data, default_source="source")
+    candidate = _source_candidate_from_hit(
+        RetrievalHit(
+            id=hit.id,
+            content="",
+            source=hit.source,
+            score=hit.score,
+            source_uri=hit.source_uri,
+            metadata={**metadata, **hit.metadata},
+        )
+    )
+    if data.get("title"):
+        candidate["title"] = str(data.get("title"))
+    if data.get("kind"):
+        candidate["kind"] = str(data.get("kind"))
+    return candidate
+
+
+def _source_candidates(
+    *,
+    explicit_candidates: object,
+    hits: list[RetrievalHit],
+    limit: int,
+) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add(candidate: dict[str, Any]) -> None:
+        key = str(candidate.get("id") or candidate.get("source_uri") or "")
+        if not key or key in seen:
+            return
+        seen.add(key)
+        out.append(candidate)
+
+    if isinstance(explicit_candidates, list | tuple):
+        for item in explicit_candidates:
+            if isinstance(item, dict):
+                add(_source_candidate_from_mapping(item))
+            if len(out) >= limit:
+                return out
+
+    for hit in sorted(hits, key=lambda item: item.score, reverse=True):
+        add(_source_candidate_from_hit(hit))
+        if len(out) >= limit:
+            break
+    return out
+
+
 async def _record_kg_access(
     store: object,
     claim_ids: list[str],
@@ -362,6 +450,11 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         *_annotate_hits_with_lane(regex_hits, lane="regex"),
         *_annotate_hits_with_lane(lexical_hits, lane="lexical"),
     ]
+    source_candidates = _source_candidates(
+        explicit_candidates=kwargs.get("source_candidates"),
+        hits=[*vector_hits, *kg_hits, *lexical_hits],
+        limit=max(0, int(kwargs.get("source_candidate_limit", 20))),
+    )
 
     pre_filter_hit_count = len(vector_hits) + len(kg_hits) + len(lexical_hits)
     vector_hits = _apply_semantic_filter(vector_hits, semantic_filter)
@@ -461,6 +554,10 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 "vector_hit_count": len(vector_hits),
                 "kg_hit_count": len(kg_hits),
                 "lexical_hit_count": len(lexical_hits),
+                "source_candidate_count": len(source_candidates),
+                "source_candidate_ids": [
+                    str(candidate.get("id") or "") for candidate in source_candidates
+                ],
                 "lane_counts": _lane_counts(vector_hits, kg_hits, lexical_hits),
                 "selected_lanes": sorted({_lane_for_hit(hit) for hit in bubble.hits}),
                 "selected_context_ids": [hit.id for hit in bubble.hits],
@@ -523,6 +620,7 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
             for hit in bubble.hits
         ],
         intent=plan.mode.value,
+        source_candidates=source_candidates,
         references=[
             {
                 **reference,

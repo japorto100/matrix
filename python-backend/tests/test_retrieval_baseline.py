@@ -228,6 +228,52 @@ async def test_retrieve_preserves_bm25_and_regex_lane_metadata() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_returns_metadata_only_source_candidates() -> None:
+    result = await retrieve(
+        "Find source candidates for a report",
+        mode="text",
+        source_candidates=[
+            {
+                "id": "source-report-1",
+                "title": "Quarterly report",
+                "source": "kb",
+                "source_uri": "doc://quarterly-report",
+                "metadata": {
+                    "source_artifact_id": "artifact-report-1",
+                    "chunk_hash": "sha256:report",
+                },
+                "content": "This full source body must not appear in candidates.",
+            }
+        ],
+        vector_hits=[
+            {
+                "id": "chunk-report-1",
+                "text": "Quarterly report says revenue increased.",
+                "score": 0.9,
+                "source_uri": "doc://quarterly-report",
+                "metadata": {
+                    "source_artifact_id": "artifact-report-1",
+                    "chunk_id": "chunk-report-1",
+                    "citation_ref": "doc://quarterly-report#chunk-report-1",
+                },
+            }
+        ],
+    )
+
+    assert result.source_candidates
+    candidate = result.source_candidates[0]
+    assert candidate["id"] == "source-report-1"
+    assert candidate["title"] == "Quarterly report"
+    assert candidate["source_uri"] == "doc://quarterly-report"
+    assert candidate["metadata"]["source_artifact_id"] == "artifact-report-1"
+    assert "content" not in candidate
+    assert "full source body" not in str(result.source_candidates)
+    completed = result.runtime_events[1]["metadata"]
+    assert completed["source_candidate_count"] >= 1
+    assert "source-report-1" in completed["source_candidate_ids"]
+
+
+@pytest.mark.asyncio
 async def test_retrieve_applies_semantic_filter_to_supplied_candidates() -> None:
     result = await retrieve(
         "What is the agent tool success rate?",
