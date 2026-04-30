@@ -158,6 +158,16 @@ papers into a falsifiable harness lane: definitions, evidence and graph claims
 must remain provider-agnostic and auditable before any live/browser/provider
 optimization is allowed to promote them.
 
+## 2026-04-30 Meta-Harness Credential Boundary
+
+The `anonymous` eval user is a local harness convenience, not a production
+credential bypass. The in-process runner and live FastAPI Meta-Harness hook now
+default process-env provider credentials to development/local/test only. In
+production or staging the env-key path is closed unless
+`META_HARNESS_ALLOW_ENV_CREDENTIALS=true` is explicitly set, and live requests
+still need a Meta-Harness run id plus a key that matches the server env. Normal
+named users continue through `agent.user_credentials`/CredentialPool policy.
+
 ## Memory Findings
 
 Memory is both automatic and explicit:

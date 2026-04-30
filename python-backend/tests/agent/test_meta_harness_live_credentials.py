@@ -56,3 +56,35 @@ def test_meta_harness_api_key_can_be_disabled(monkeypatch):
     )
 
     assert _meta_harness_api_key(req, "openrouter/openrouter/auto") is None
+
+
+def test_meta_harness_api_key_denies_production_env_fallback_by_default(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("HINDSIGHT_DB_URL", "postgresql://example")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
+    monkeypatch.delenv("META_HARNESS_ALLOW_ENV_CREDENTIALS", raising=False)
+    req = AgentChatRequest(
+        message="hi",
+        model="openrouter/openrouter/auto",
+        metaHarnessRunId="run-live",
+        metaHarnessApiKey="test-openrouter-key",
+    )
+
+    assert _meta_harness_api_key(req, "openrouter/openrouter/auto") is None
+
+
+def test_meta_harness_api_key_allows_explicit_production_opt_in(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("HINDSIGHT_DB_URL", "postgresql://example")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
+    monkeypatch.setenv("META_HARNESS_ALLOW_ENV_CREDENTIALS", "true")
+    req = AgentChatRequest(
+        message="hi",
+        model="openrouter/openrouter/auto",
+        metaHarnessRunId="run-live",
+        metaHarnessApiKey="test-openrouter-key",
+    )
+
+    assert _meta_harness_api_key(req, "openrouter/openrouter/auto") == (
+        "test-openrouter-key"
+    )

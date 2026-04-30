@@ -62,9 +62,14 @@ feature_id: 016
   by default unless a run explicitly opts in.
 - T009 Keep autonomous coding-agent product behavior out of scope; bounded
   developer-reviewed harness patches remain allowed as experiments.
-- T009a Security-review Meta-Harness/dev `--user-id anonymous` behavior: prove
+- [x] T009a [done-static] Security-review Meta-Harness/dev `--user-id anonymous` behavior: prove
   it is local-eval scoped and does not bypass production CredentialPool,
   user-key, quota, audit or billing policy for named users.
+  - 2026-04-30: Meta-Harness process-env credentials now default to local/dev/test
+    only. Production/staging service and in-process runs deny env credentials
+    unless `META_HARNESS_ALLOW_ENV_CREDENTIALS=true` is explicitly set, and the
+    live FastAPI path still requires a run id, matching env key and configured
+    trace DB before accepting a `metaHarnessApiKey`.
 
 ## Scenario Runner
 

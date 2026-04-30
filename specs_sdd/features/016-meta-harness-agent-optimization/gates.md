@@ -109,10 +109,11 @@ PY
 - Dev-stack note: if `agent.user_credentials` has no row for the eval user, use
   `--user-id anonymous` for local service runs so LiteLLM proxy routing can use
   its configured provider credentials.
-- Security follow-up: the `anonymous` Meta-Harness/dev path must be audited
-  before closeout. It may exist for local evaluation, but it must not bypass
-  production CredentialPool, user-key, quota, audit or billing policy for named
-  users.
+- [x] Security follow-up: the `anonymous` Meta-Harness/dev credential path is
+  local-eval scoped by default. In production/staging it denies process-env
+  provider keys unless `META_HARNESS_ALLOW_ENV_CREDENTIALS=true` is explicitly
+  set, and the live FastAPI path still requires a run id, matching env key and
+  configured trace DB before accepting `metaHarnessApiKey`.
 - Provider note: this machine currently has OpenRouter credentials, not a direct
   Anthropic key. Use `--model openrouter/openrouter/free` for live probe runs
   unless `agent.user_credentials` or ENV has a matching provider key.

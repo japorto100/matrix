@@ -264,12 +264,15 @@ def _meta_harness_api_key(req: AgentChatRequest, model: str) -> str | None:
     api_key = (req.meta_harness_api_key or "").strip()
     if not run_id or not api_key:
         return None
-    if os.environ.get("META_HARNESS_ALLOW_ENV_CREDENTIALS", "true").strip().lower() in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }:
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    local_default = app_env in {"development", "dev", "local", "test"}
+    raw_allowed = os.environ.get("META_HARNESS_ALLOW_ENV_CREDENTIALS")
+    allowed = (
+        local_default
+        if raw_allowed is None
+        else raw_allowed.strip().lower() in {"1", "true", "yes", "on"}
+    )
+    if not allowed:
         return None
     provider = _provider_from_model(model)
     env_name = f"META_HARNESS_{provider.upper()}_API_KEY"

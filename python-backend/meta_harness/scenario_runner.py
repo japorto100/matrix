@@ -45,6 +45,16 @@ def _env_flag_enabled(name: str, *, default: bool = True) -> bool:
     return raw.strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _meta_harness_env_credentials_allowed() -> bool:
+    """Allow process-env credentials only for local eval unless explicitly enabled."""
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    local_default = app_env in {"development", "dev", "local", "test"}
+    return _env_flag_enabled(
+        "META_HARNESS_ALLOW_ENV_CREDENTIALS",
+        default=local_default,
+    )
+
+
 def _harness_env_api_key(model: str) -> str | None:
     """Resolve a local service credential for in-process Meta-Harness runs.
 
@@ -52,7 +62,7 @@ def _harness_env_api_key(model: str) -> str | None:
     exists only for the Python Meta-Harness CLI so simulated users can keep their
     own memory banks without every harness user needing a DB credential row.
     """
-    if not _env_flag_enabled("META_HARNESS_ALLOW_ENV_CREDENTIALS", default=True):
+    if not _meta_harness_env_credentials_allowed():
         return None
     provider = _provider_label(model)
     env_by_provider = {

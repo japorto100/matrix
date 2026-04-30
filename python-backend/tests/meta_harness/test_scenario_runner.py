@@ -1591,6 +1591,47 @@ async def test_default_agent_runner_can_disable_env_credential(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_default_agent_runner_denies_env_credential_in_production_by_default(
+    monkeypatch,
+):
+    captured = {}
+
+    class _Registry:
+        def all(self):
+            return []
+
+    async def _fake_simple_loop(ctx, messages):
+        captured["api_key"] = ctx.api_key
+        yield sse(TextStartPacket())
+        yield sse(FinishPacket())
+
+    from agent.runners import simple as simple_module
+    from agent.tools import registry as registry_module
+
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-openrouter-key")
+    monkeypatch.delenv("META_HARNESS_ALLOW_ENV_CREDENTIALS", raising=False)
+    monkeypatch.setattr(
+        registry_module.ToolRegistry,
+        "load",
+        classmethod(lambda cls: _Registry()),
+    )
+    monkeypatch.setattr(simple_module, "run_simple_agent_loop", _fake_simple_loop)
+
+    await scenario_runner._default_agent_runner(
+        thread_id="thread-simple",
+        user_id="meta-harness",
+        model="openrouter/openrouter/auto",
+        system_prompt="",
+        messages=[{"role": "user", "content": "hi"}],
+        enable_tools=True,
+        runner_variant="simple",
+    )
+
+    assert captured["api_key"] is None
+
+
+@pytest.mark.asyncio
 async def test_service_agent_runner_sends_meta_harness_env_key(monkeypatch):
     captured = {}
 
