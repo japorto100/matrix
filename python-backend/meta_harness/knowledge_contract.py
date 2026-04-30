@@ -155,6 +155,13 @@ def validate_knowledge_context_item(item: dict[str, Any]) -> dict[str, Any]:
 
 def _memory_ground_truth_preserved() -> dict[str, Any]:
     now = datetime.now(UTC).isoformat()
+    visible_session_text = (
+        "visible session says preserve tool evidence before summary retain"
+    )
+    tool_input_evidence = "memory_search query=verbatim_evidence_before_compaction"
+    tool_output_evidence = (
+        "memory_search output=verbatim evidence before compaction"
+    )
     events = [
         {
             "action": "memory_recall",
@@ -169,6 +176,17 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
                 "raw_evidence_ref": "mempalace:drawer:turn-42",
                 "operation_log_id": "memop-001",
                 "diff_ref": "memory-diff-001",
+                "source_timestamp": now,
+                "captured_at": now,
+                "room_id": "!room:matrix.local",
+                "thread_id": "thread-42",
+                "session_id": "session-42",
+                "tool_call_id": "tool-call-memory-search-42",
+                "tool_input_ref": "audit:tool-input-memory-search-42",
+                "tool_output_ref": "audit:tool-output-memory-search-42",
+                "visible_session_text": visible_session_text,
+                "tool_input_evidence": tool_input_evidence,
+                "tool_output_evidence": tool_output_evidence,
                 "evidence": "verbatim evidence before compaction",
                 "runtime_events": [
                     {
@@ -183,6 +201,11 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
                                     "thread_id": "thread-42",
                                     "session_id": "session-42",
                                     "room_id": "!room:matrix.local",
+                                    "source_timestamp": now,
+                                    "captured_at": now,
+                                    "tool_call_id": "tool-call-memory-search-42",
+                                    "tool_input_ref": "audit:tool-input-memory-search-42",
+                                    "tool_output_ref": "audit:tool-output-memory-search-42",
                                     "source_layer": "personal_raw",
                                     "context_tier": "L0",
                                 }
@@ -205,6 +228,33 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
                 "raw_evidence_ref": "mempalace:drawer:turn-42",
                 "operation_log_id": "memop-002",
                 "diff_ref": "memory-diff-002",
+                "source_timestamp": now,
+            },
+            "createdAt": now,
+        },
+        {
+            "action": "memory_retain",
+            "success": True,
+            "metadata": {
+                "route": "summary",
+                "provider": "hindsight",
+                "bank_id": "project",
+                "source": "automatic_summary_retain",
+                "source_status": "derived_from_durable_raw",
+                "raw_evidence_ref": "mempalace:drawer:turn-42",
+                "operation_log_id": "memop-003",
+                "diff_ref": "memory-diff-003",
+                "source_timestamp": now,
+                "captured_at": now,
+                "room_id": "!room:matrix.local",
+                "thread_id": "thread-42",
+                "session_id": "session-42",
+                "tool_call_id": "tool-call-memory-search-42",
+                "tool_input_ref": "audit:tool-input-memory-search-42",
+                "tool_output_ref": "audit:tool-output-memory-search-42",
+                "visible_session_text": visible_session_text,
+                "tool_input_evidence": tool_input_evidence,
+                "tool_output_evidence": tool_output_evidence,
             },
             "createdAt": now,
         },
@@ -213,18 +263,35 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
         events,
         TraceExpectations(
             required_actions=("memory_recall", "memory_retain"),
-            required_memory_routes=("fusion",),
+            required_memory_routes=("fusion", "summary"),
             required_memory_providers=("hindsight", "mempalace"),
+            required_memory_evidence_terms=(
+                visible_session_text,
+                tool_input_evidence,
+                tool_output_evidence,
+            ),
             required_memory_metadata_keys=(
                 "bank_id",
                 "source_status",
                 "raw_evidence_ref",
                 "operation_log_id",
                 "diff_ref",
+                "source_timestamp",
+                "tool_call_id",
+                "tool_input_ref",
+                "tool_output_ref",
+                "room_id",
+                "thread_id",
+                "session_id",
             ),
+            required_event_metadata_values={
+                "memory_retain": {"source": "automatic_summary_retain"}
+            },
             required_runtime_event_names=("memory.recall.completed",),
             required_runtime_event_metadata_keys={
-                "memory.recall.completed": ("context_refs",)
+                "memory.recall.completed": (
+                    "context_refs",
+                )
             },
             expected_memory=True,
         ),
@@ -246,6 +313,10 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
             "thread_id",
             "session_id",
             "room_id",
+            "source_timestamp",
+            "tool_call_id",
+            "tool_input_ref",
+            "tool_output_ref",
         ):
             if first_ref.get(key) in (None, "", [], ()):
                 failures.append(f"missing-memory-context-ref:{key}")

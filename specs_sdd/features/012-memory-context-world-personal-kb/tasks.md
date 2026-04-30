@@ -159,7 +159,7 @@ migrated_from:
 - [x] T039p [done-static-live-smoke] Add a background hydration worker for MemPalace rows with
   `embedding_status=pending`; pending rows are durable/listable immediately but
   semantic recall intentionally ignores them until embeddings are attached.
-- T039q Add MemMachine-style ground-truth preservation gates: exact visible
+- [x] T039q [done-static] Add MemMachine-style ground-truth preservation gates: exact visible
   session text, tool input/output evidence, room/thread/session refs and source
   timestamps must exist before any summary-only Hindsight retain is considered
   successful.
@@ -170,6 +170,10 @@ migrated_from:
     `agent.middleware.compaction` now preserve tool-output offload refs, full
     size and content hash when large tool messages are truncated for prompt
     compaction.
+  - 2026-04-30: the same provider-free gate now also requires exact visible
+    session text, tool input/output evidence refs, tool call id,
+    room/thread/session refs and source timestamps on Memory-Fusion recall and
+    summary Hindsight retain before the retain is counted as successful.
 - [x] T039r [done-static-live-smoke] Add a hydration-worker design and smoke: pending MemPalace rows are
   picked up, embedded with the configured provider, dimension-checked against
   the active index and marked failed with reason instead of silently skipped.

@@ -210,6 +210,14 @@ derived memory as usable. This references `Z_Semantik_layer and so on.md`
 indirectly through the correction handoff: personal feedback may propose
 semantic changes, but it does not mutate global definitions or KG truth.
 
+2026-04-30 T039q follow-up: the static `knowledge-memory-ground-truth-preserved`
+scenario now models the stricter MemMachine rule from
+`docs/papers/memory/MemMachine-Ground-Truth-Preserving-Memory-System-2604.04853.pdf`.
+A summary-only Hindsight retain is not counted as successful unless the trace
+also exposes the exact visible session text, tool input/output evidence refs,
+tool call id, source timestamp and Matrix room/thread/session refs. This keeps
+summary memory useful without letting it replace durable raw evidence.
+
 2026-04-30 context-injection comparison update: `meta_harness.memory_context_smoke`
 now emits three provider-free candidates for the same task:
 Hindsight-summary-only, MemPalace-verbatim-only and Fusion. This implements the

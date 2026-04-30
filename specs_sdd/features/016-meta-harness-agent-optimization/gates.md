@@ -29,6 +29,10 @@ feature_id: 016
 - 2026-04-30: `skill-lifecycle-contract` adds a provider-free Feature 015 lane
   for skill audit trace shape, lifecycle sidecar shape and reload policy. The
   aggregate `contract-suite` now runs 43/43 scenarios across eight lanes.
+- 2026-04-30: `knowledge-memory-ground-truth-preserved` was tightened for
+  Feature 012 T039q: the provider-free lane now fails unless summary memory
+  retain traces include exact visible session text, tool input/output refs,
+  tool call id, source timestamp and room/thread/session refs.
 
 ## Stack Gates
 

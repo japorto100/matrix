@@ -142,6 +142,9 @@ provider-free lane. It proves five boundary behaviors:
 
 - Memory-Fusion recall/retain traces preserve raw evidence refs, source status,
   operation logs and diffs before compaction.
+- The Feature 012 T039q variant additionally treats summary retain as
+  incomplete unless exact visible session text, tool input/output refs, tool
+  call id, source timestamp and Matrix room/thread/session refs are present.
 - Personal memory cannot silently promote to global KG without evidence refs,
   citation refs, valid/system time and semantic term links.
 - Selected RAG/KG context carries source artifact, chunk/hash, citation and
