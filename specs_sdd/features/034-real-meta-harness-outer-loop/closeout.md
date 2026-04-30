@@ -74,3 +74,17 @@ evaluation, decision logging and Pareto update.
   `run-metaharness-round-2-recent-memory-fixed` passed trace and stream gates;
   the transcript answered with the exact probe phrase. Holdout is still open,
   so this is a kept search-set improvement, not full promotion evidence.
+
+## 2026-05-01 Runtime Preflight Evidence
+
+- `python-backend/meta_harness/runtime_preflight.py` now verifies
+  `AUDIT_DB_URL/HINDSIGHT_DB_URL` before live no-browser Meta-Harness commands.
+- It auto-starts only the isolated local Memory-Eval Postgres target
+  `matrix-memory-eval-postgres` on `localhost/127.0.0.1:55433`.
+- Unknown unreachable DB targets fail-fast, which prevents a wrong `:5433`
+  service from masquerading as candidate failure.
+- Verification:
+  `uv run ruff check meta_harness/runtime_preflight.py meta_harness/meta_cli.py meta_harness/real_outer_loop.py tests/meta_harness/test_runtime_preflight.py tests/meta_harness/test_real_outer_loop.py`
+  and
+  `uv run pytest tests/meta_harness/test_runtime_preflight.py tests/meta_harness/test_real_outer_loop.py -q`
+  passed.

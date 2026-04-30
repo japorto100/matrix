@@ -22,6 +22,20 @@ Feature 023 remains the inner-loop/AutoResearch owner for bounded sweeps such
 as RAG, extraction, memory/context and tool-policy candidates. Feature 034 owns
 the executable outer-loop discipline that uses those artifacts repeatedly.
 
+## Agent Harness Definition
+
+Feature 034 optimizes the Matrix agent harness, not `meta_harness/` itself. In
+this repo, the agent harness is the runtime wrapper around a fixed model:
+entrypoints/runners, prompt/context construction, tools and consent policy,
+memory fusion, RAG/KG/source grounding, skills, delegation/subagents,
+provider/model routing, prompt-cache behavior, trace/audit/SSE replay and
+Matrix session/gateway semantics that affect agent inputs or outputs.
+
+`python-backend/meta_harness/` is the optimizer/evaluator layer over those
+surfaces. Editing it may make the search loop more reliable, but such edits do
+not count as agent-harness improvement unless a frozen run then shows better
+runtime traces or scores for the agent-under-test.
+
 ## Scope
 
 - Paper-aligned Matrix domain contract for iterative runs.

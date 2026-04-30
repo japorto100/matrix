@@ -8,7 +8,11 @@ import json
 import os
 from pathlib import Path
 
-from meta_harness.proposer import ENABLE_EXTERNAL_LLM_ENV
+from meta_harness.proposer import ENABLE_EXTERNAL_LLM_ENV, META_HARNESS_DATA_DIR
+from meta_harness.runtime_preflight import (
+    ensure_runtime_preflight,
+    write_runtime_preflight_artifact,
+)
 from meta_harness.scenario_runner import run_runner_parity_file, run_scenario_file
 
 
@@ -350,7 +354,15 @@ async def _main_async(args: argparse.Namespace) -> dict:
         }
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
-        return await run_scenario_file(args.path, **kwargs)
+        runtime_preflight = ensure_runtime_preflight(command="run")
+        result = await run_scenario_file(args.path, **kwargs)
+        result["runtime_preflight"] = runtime_preflight
+        write_runtime_preflight_artifact(
+            data_dir=kwargs.get("data_dir") or META_HARNESS_DATA_DIR,
+            run_id=result["run_id"],
+            result=runtime_preflight,
+        )
+        return result
     if args.command == "parity":
         variants = tuple(
             value.strip() for value in str(args.variants).split(",") if value.strip()

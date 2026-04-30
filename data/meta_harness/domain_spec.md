@@ -6,6 +6,63 @@ The target domain is the Matrix Python agent harness for trading analysis,
 geopolitical/geomap reasoning, strategy review, research/source-quality work,
 memory behavior and safe tool use.
 
+## Matrix Agent Harness Boundary
+
+For Matrix, "agent harness" means the production wrapper around a fixed model
+that determines what the model can see, do, remember, retrieve and emit during a
+task. It is broader than `python-backend/agent/` as a package, but narrower than
+the whole Matrix product.
+
+The agent harness includes:
+
+- Agent entrypoints and runners: service chat endpoint, dispatcher, LangGraph
+  runner, SimpleLoop runner, stream/SSE adaptation and per-turn execution state.
+- Prompt and context construction: system/developer/user message assembly,
+  context-window policy, compaction, pre-save, source labels, freshness labels
+  and provider/model capability metadata used by the prompt builder.
+- Tool surface and policy: ToolRegistry, MCP/local/browser/file/sandbox tool
+  catalogs, consent/HITL gates, retry/recovery behavior, tool-result sanitation,
+  allowed/forbidden tool decisions and tool-call trace semantics.
+- Memory and context services coordinated by the agent: Hindsight, MemPalace,
+  `memory_fusion`, explicit memory tools, automatic retain/recall, conflict
+  handling, provenance and memory deletion/forget policy.
+- RAG, KG and semantic retrieval when they influence agent context or answers:
+  chunk/source selection, hybrid retrieval, KG claim projection, citation
+  evidence and downstream artifact grounding.
+- Skills and planning policy: skill discovery, BM25/RRF/search-find behavior,
+  skill lifecycle, scheduler/planning handoff and skill usage telemetry.
+- Delegation/subagent harness: route decision, child-agent policy, max depth,
+  child tool isolation, parent-side summary/memory handoff and delegation
+  runtime events.
+- Provider and model routing: LiteLLM/OpenRouter/local model selection,
+  capability metadata, budgets, prompt-cache metadata and fallback/degradation
+  behavior.
+- Observability and replay substrate required to evaluate the harness:
+  audit events, runtime events, spans, SSE chunks, transcripts, scorer inputs,
+  trace gates and candidate artifacts.
+- Matrix/chat transport semantics that affect the Python agent contract:
+  user/session/thread identity, Matrix room/DM policy, gateway queueing,
+  duplicate-reply prevention and downstream artifact events.
+
+The agent harness does not include:
+
+- `python-backend/meta_harness/` itself. That is the optimizer/evaluator over
+  harness candidates, not the runtime being optimized.
+- Frontend rendering details unless they change the backend agent contract or
+  downstream artifact semantics.
+- Matrix homeserver/appservice infrastructure except where room/session/gateway
+  policy changes agent inputs or outputs.
+- Changing model weights or treating model/provider selection as the primary
+  optimization objective.
+- General data ingestion jobs unless their output feeds agent memory, RAG, KG or
+  source-grounding decisions.
+
+Practical write-scope rule: a candidate is an agent-harness candidate when it
+changes runtime behavior in the surfaces above, or changes the scenario/gate
+infrastructure that measures those surfaces. A `meta_harness/` change can
+improve the optimizer, but it is not itself evidence that the agent harness got
+better.
+
 One evaluation unit is a scenario: a single-turn or multi-turn simulated user
 conversation executed against the Matrix Python agent. Each scenario has a
 stable `scenario_id`, `thread_id`, `user_id`, `run_id`, `candidate_id`,

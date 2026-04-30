@@ -58,6 +58,22 @@ feature_id: 034
   is an unofficial implementation. Useful transferable patterns are explicit
   write scopes, run store, outcomes and inspect/compare CLI. It is not the
   authoritative definition of the method.
+- [Anthropic: Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps)
+  reinforces the same practical lesson: harness assumptions should be tested
+  against real traces and simplified or specialized as models improve.
+- [Anthropic: Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+  contributes the operational checklist pattern: progress artifacts, feature
+  lists, dev-server/test self-checks and explicit verification before marking
+  work complete.
+- [Anthropic: Scaling Managed Agents](https://www.anthropic.com/engineering/managed-agents)
+  frames agent systems as session, harness and sandbox interfaces that should
+  be swappable. This supports Matrix's provider-agnostic requirement.
+- [VeRO: An Evaluation Harness for Agents to Optimize Agents](https://arxiv.org/abs/2602.22480)
+  independently supports versioned snapshots, budget-controlled evaluation and
+  structured observations for agent-optimization loops.
+- [Autoresearch analysis](https://kingy.ai/ai/autoresearch-karpathys-minimal-agent-loop-for-autonomous-llm-experimentation/)
+  was used only as secondary context; the transfer is the explicit metric,
+  fixed budget and keep/discard loop, not the ML-training-specific target.
 
 ## Findings
 
@@ -164,6 +180,39 @@ alias, and prefer 4096-8192 output tokens depending on scenario complexity.
 The proposer remains Codex; OpenRouter supplies the agent under test, not the
 Meta-Harness proposer.
 
+## 2026-05-01 Paper Model Strength Finding
+
+The paper does not show that a small model can reliably serve as the
+Meta-Harness proposer. It uses a strong coding-agent proposer: local paper
+Section 3.1 states that the proposer `P` is Claude Code with Opus-4.6, guided
+by a short instruction file and given filesystem access to prior harness source,
+scores and execution traces. The paper also says the base model `M` varies by
+domain and is frozen.
+
+The domain base/evaluation models are separate from the proposer:
+
+- Text classification used `GPT-OSS-120B` as the fixed classifier model.
+- Math retrieval searched on `GPT-OSS-20B` and evaluated the discovered harness
+  on held-out models including `GPT-5.4-nano`, `GPT-5.4-mini`,
+  `Gemini-3.1-Flash-Lite`, `Gemini-3-Flash` and `GPT-OSS-20B`.
+- TerminalBench-2 evaluated discovered coding harnesses on Claude Opus 4.6 and
+  Claude Haiku 4.5.
+
+Implication for Matrix: the proposer should remain a frontier coding agent
+with file/tool access when we expect real code changes. Free/OpenRouter
+`gpt-oss-20b` routes are acceptable for cheap target-agent smoke/search
+rollouts, but not for the proposer role in a serious multi-file backend
+mutation. The paper's own limitation section says broader proposer-model
+studies remain future work, so Matrix should not claim equivalence if we swap
+the proposer for a much weaker model.
+
+The important capability is not only raw IQ; it is the full proposer interface:
+source tree access, raw traces, scores, prior candidate artifacts and enough
+context/output budget to diagnose failure clusters. This matches the arXiv
+abstract's core claim that Meta-Harness uses an agentic proposer with filesystem
+access to source, scores and execution traces, and the ablation that raw traces
+are the key ingredient.
+
 ## 2026-05-01 Round 1 Findings
 
 The first attempted run was valuable but not paper-ready: traces were empty
@@ -190,6 +239,19 @@ The main design implication is important: Meta-Harness should first validate
 its trace substrate before spending model calls. Empty traces, provider alias
 failures and wrong DB routing must fail the round or produce infrastructure
 findings, not be treated as candidate quality.
+
+## 2026-05-01 Runtime Preflight Stabilization
+
+Round 1 and Round 2 showed that the loop needs a hard preflight before it burns
+provider calls. The new rule is narrow and safe: when `AUDIT_DB_URL` or
+`HINDSIGHT_DB_URL` targets local `:55433`, Meta-Harness may auto-start only the
+known `matrix-memory-eval-postgres` service. If another host/port is configured
+and unreachable, the run fails instead of guessing which stack owns the port.
+
+The preflight is recorded in `runtime_preflight.json` under the run directory
+and embedded in `real_outer_loop_summary.json`. This turns DB readiness into an
+explicit artifact: downstream analysis can distinguish candidate failure from
+infrastructure failure.
 
 ## 2026-05-01 Round 2 Recent-Memory Finding
 

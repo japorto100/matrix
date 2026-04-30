@@ -142,6 +142,12 @@ feature_id: 034
     trace/stream gates passed. Existing fitness did not increase, so add an
     answer-level exact-recall metric before relying on this scorer for
     promotion.
+- [x] T066 [done-static] Add runtime preflight for live no-browser rounds so a
+  down or wrong local Postgres is caught before provider calls are spent.
+  - 2026-05-01: `meta_harness.runtime_preflight` checks
+    `AUDIT_DB_URL/HINDSIGHT_DB_URL`, auto-starts only the known local
+    `matrix-memory-eval-postgres` on `:55433`, fails unknown unreachable DB
+    targets, and writes `runtime_preflight.json` plus summary metadata.
 
 ## Documentation
 
@@ -151,3 +157,7 @@ feature_id: 034
 - [x] T072 [done-static] Update Feature 023 docs to cross-link Feature 034 as the outer-loop
   promotion owner.
 - [x] T073 [done-live-no-browser] Add closeout evidence when the first true loop completes.
+- [x] T074 [done-static] Record paper/web model-strength finding: the paper used
+  Claude Code with Opus-4.6 as proposer, while frozen target models varied by
+  domain. Matrix keeps Codex/frontier model as proposer and uses OpenRouter/free
+  routes only for cheap target-agent rollouts.

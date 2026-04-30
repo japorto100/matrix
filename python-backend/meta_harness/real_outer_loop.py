@@ -24,6 +24,10 @@ from meta_harness.outer_loop import (
     write_pending_eval,
 )
 from meta_harness.proposer import META_HARNESS_DATA_DIR
+from meta_harness.runtime_preflight import (
+    ensure_runtime_preflight,
+    write_runtime_preflight_artifact,
+)
 from meta_harness.scenario_runner import run_scenario_file
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -81,6 +85,12 @@ async def run_real_outer_loop(
     scenario_path = scenario_path if scenario_path.is_absolute() else (Path.cwd() / scenario_path)
     run_dir = data_dir / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    runtime_preflight = ensure_runtime_preflight(command="outer-loop")
+    write_runtime_preflight_artifact(
+        data_dir=data_dir,
+        run_id=run_id,
+        result=runtime_preflight,
+    )
     budget = LoopBudget(
         iterations=max(int(iterations), 0),
         max_scenarios=max(int(max_scenarios), 0),
@@ -234,6 +244,7 @@ async def run_real_outer_loop(
             "promotion_authority": "decision ledger plus protected holdout gate",
         },
         "support_lanes_are_not_full_meta_harness": True,
+        "runtime_preflight": runtime_preflight,
         "frozen_evaluator_gate": frozen_gate,
         "holdout_visible_to_proposer": False,
         "final_frontier_size": final_packet.get("frontier_size", 0),

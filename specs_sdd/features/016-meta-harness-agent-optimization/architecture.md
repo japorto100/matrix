@@ -30,6 +30,20 @@ Scenario Set
   -> Promotion Gate
 ```
 
+## Agent Harness Boundary
+
+Feature 016 treats the agent harness as the production model wrapper, not as a
+single Python package. The harness includes runners, prompt/context assembly,
+tool registry and consent policy, memory fusion, RAG/KG grounding, skill
+selection, delegation routing, provider/model routing, prompt-cache telemetry,
+runtime events, audit/SSE replay and Matrix session/gateway semantics that
+affect agent behavior.
+
+`meta_harness/` is outside that runtime boundary. It owns scenarios, trace
+gates, scoring, candidate artifacts, Pareto/frontier state and promotion
+discipline. It can test and improve the agent harness, but it is not the
+agent-under-test.
+
 ## Python-Only Execution Path
 
 The first implementation should avoid frontend and Go by calling the Python

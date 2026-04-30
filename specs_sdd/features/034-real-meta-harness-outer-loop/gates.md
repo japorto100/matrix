@@ -29,6 +29,8 @@ feature_id: 034
   valid when the search set uses deterministic gates only.
 - [ ] G012 Holdout execution requires an explicit guard and produces separate
   promotion evidence.
+- [x] G013 Live no-browser `run`/`outer-loop` commands must preflight the trace
+  DB endpoint and record the result as an artifact before evaluation.
 
 2026-05-01 static gate evidence: `meta_harness.real_outer_loop` implements the
 no-browser iteration path and tests assert proposal/pending-eval/decision/
@@ -52,3 +54,9 @@ searched phrase immediately after `memory_add`. This uncovered a remaining gate
 gap: answer-level exact-recall quality needs a first-class metric because the
 aggregate fitness did not distinguish the improved transcript from the prior
 passing trace.
+
+2026-05-01 runtime preflight gate evidence: `meta_harness.runtime_preflight`
+unit tests cover no-DB warning, local `:55433` auto-start, unknown unreachable
+DB fail-fast and `ensure_runtime_preflight` raising on failures. The real
+outer-loop summary now embeds `runtime_preflight`, and each run gets
+`runtime_preflight.json`.
