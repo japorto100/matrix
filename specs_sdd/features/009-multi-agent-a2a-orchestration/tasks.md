@@ -52,10 +52,19 @@ migrated_from:
 - [x] T030 Verify AgentCard JSON serializes for all six trading cards.
 - [x] T031 Static-test A2A client sends message to local target URL and
   collects AI-SDK `text-delta.delta` response text.
-- T032 Run A2A live delegation smoke via orchestrator and `a2a_node`.
-- T033 Verify result returns to source agent and state/log records both
+- [partial-static] T032 Run A2A live delegation smoke via orchestrator and `a2a_node`.
+  - 2026-04-30: `a2a_delegate_node` static test proves configured target URL
+    is used only when spawn depth permits; live orchestrator smoke remains
+    pending.
+- [partial-static] T033 Verify result returns to source agent and state/log records both
   agents.
-- T034 Verify remote-agent ENV routing or mark remote A2A as deferred.
+  - 2026-04-30: static A2A node test verifies child result becomes
+    `final_response` and lifecycle/runtime events record source-side child
+    status. Durable delegation log remains pending.
+- [x] T034 Verify remote-agent ENV routing or mark remote A2A as deferred.
+  - 2026-04-30: `AGENT_REMOTE_{ROLE}` plus
+    `AGENT_A2A_MAX_SPAWN_DEPTH` controls remote routing; default is
+    fail-closed.
 
 ## Matrix / Per-User Routing
 

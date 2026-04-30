@@ -54,7 +54,7 @@ Evidence:
 
 ## LV-02 Subagent Boundary Smoke
 
-Status: planned.
+Status: static pass; live smoke pending.
 
 Expected:
 
@@ -66,6 +66,12 @@ Evidence:
 - 2026-04-30 static prep: `routing-domain-delegate-deferred` records
   `delegation_decision=deferred`, `delegate_kind=domain`,
   `fallback_reason=subagents_disabled` and `spawn_depth=0`.
+- 2026-04-30 static execution slice: `a2a_delegate_node` blocks by default
+  before creating an A2A client, emits `subagent.delegation.blocked`, and only
+  sends to the configured target when `AGENT_A2A_MAX_SPAWN_DEPTH=1`.
+- 2026-04-30 static checks:
+  `cd python-backend && uv run pytest tests/agent/routing/test_delegation_policy.py tests/agent/graph/nodes/test_a2a_node.py tests/agent/test_a2a_client.py -q`
+  => `12 passed`.
 
 ## LV-03 SimpleLoop Approval Parity
 

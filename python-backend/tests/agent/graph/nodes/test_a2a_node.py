@@ -9,6 +9,12 @@ def _state() -> dict:
         "current_role": "researcher",
         "messages": [{"role": "user", "content": "analyze AAPL"}],
         "thread_id": "thread-parent",
+        "runner_variant": "langgraph",
+        "tool_definitions": [
+            {"name": "semantic_lookup"},
+            {"name": "memory_add"},
+            {"name": "delegate_task"},
+        ],
     }
 
 
@@ -28,7 +34,10 @@ async def test_a2a_delegate_node_fails_closed_when_spawn_depth_default_zero(
 
     result = await a2a_node.a2a_delegate_node(_state())  # type: ignore[arg-type]
 
-    assert result == {}
+    assert result["degradation_flags"] == ["a2a_delegation_spawn_depth_blocked"]
+    assert result["runtime_events"][0]["kind"] == "subagent"
+    assert result["runtime_events"][0]["status"] == "blocked"
+    assert result["runtime_events"][0]["metadata"]["delegation_decision"] == "blocked"
     assert calls["client"] == 0
 
 
@@ -59,6 +68,42 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     assert captured["context"] == (
         "Delegated from Matrix orchestrator; role:researcher; "
         "parent_thread_id:thread-parent; spawn_depth:1; max_spawn_depth:1; "
-        "memory_scope:explicit_context_only"
+        "memory_scope:explicit_context_only; context_mode:isolated; "
+        "allowed_tools:semantic_lookup; memory_write_policy:parent_only; "
+        "approval_mode:non_interactive_auto_deny"
     )
     assert captured["closed"] is True
+    event_names = [event["name"] for event in result["runtime_events"]]
+    assert event_names == [
+        "subagent.delegation.accepted",
+        "subagent.delegation.started",
+        "subagent.delegation.completed",
+        "subagent.parent_memory_handoff",
+    ]
+    handoff = result["runtime_events"][-1]
+    assert handoff["kind"] == "memory"
+    assert handoff["metadata"]["child_memory_write_allowed"] is False
+    assert handoff["metadata"]["result_digest"]
+
+
+async def test_a2a_delegate_node_surfaces_timeout_as_stale_runtime_event(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
+    monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
+    monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
+
+    class FakeClient:
+        async def send_message(self, **_kwargs):
+            return A2ATask(task_id="task-timeout", state="timeout", error="timeout")
+
+        async def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(a2a_node, "A2AClient", FakeClient)
+
+    result = await a2a_node.a2a_delegate_node(_state())  # type: ignore[arg-type]
+
+    assert result["degradation_flags"] == ["a2a_delegation_timeout"]
+    assert result["runtime_events"][-1]["status"] == "stale"
+    assert result["runtime_events"][-1]["metadata"]["child_task_id"] == "task-timeout"

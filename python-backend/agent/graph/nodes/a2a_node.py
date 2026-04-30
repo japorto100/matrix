@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import logging
 import os
+from hashlib import sha256
 from typing import Any
 
 from agent.a2a.client import A2AClient
 from agent.graph.state import AgentGraphState
+from agent.routing.delegation_policy import build_single_hop_delegation_policy
+from agent.runtime_events import make_runtime_event
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +40,72 @@ def _spawn_depth(state: AgentGraphState) -> int:
         return 0
 
 
-def _delegation_context(*, role: str, state: AgentGraphState, next_depth: int, max_depth: int) -> str:
+def _max_concurrent_children() -> int:
+    raw = os.environ.get("AGENT_A2A_MAX_CONCURRENT_CHILDREN", "1").strip()
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 1
+
+
+def _requested_tools(state: AgentGraphState) -> list[str]:
+    definitions = state.get("tool_definitions") or []
+    tools: list[str] = []
+    for item in definitions:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not name and isinstance(item.get("function"), dict):
+            name = item["function"].get("name")
+        if name:
+            tools.append(str(name))
+    return tools
+
+
+def _event(
+    *,
+    status: str,
+    name: str,
+    state: AgentGraphState,
+    summary: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return make_runtime_event(
+        kind="subagent",  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        name=name,
+        summary=summary,
+        thread_id=str(state.get("thread_id", "") or ""),
+        turn=int(state.get("iteration", 0) or 0),
+        metadata=metadata or {},
+    )
+
+
+def _result_digest(value: str | None) -> str:
+    if not value:
+        return ""
+    return sha256(value.encode("utf-8")).hexdigest()
+
+
+def _delegation_context(
+    *,
+    role: str,
+    state: AgentGraphState,
+    next_depth: int,
+    max_depth: int,
+    tool_policy: dict[str, Any],
+) -> str:
     thread_id = str(state.get("thread_id", "") or "")
+    allowed_tools = ",".join(tool_policy.get("allowed_tools") or [])
     return (
         "Delegated from Matrix orchestrator; "
         f"role:{role}; parent_thread_id:{thread_id}; "
         f"spawn_depth:{next_depth}; max_spawn_depth:{max_depth}; "
-        "memory_scope:explicit_context_only"
+        "memory_scope:explicit_context_only; "
+        "context_mode:isolated; "
+        f"allowed_tools:{allowed_tools}; "
+        "memory_write_policy:parent_only; "
+        "approval_mode:non_interactive_auto_deny"
     )
 
 
@@ -77,6 +139,14 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
 
     current_depth = _spawn_depth(state)
     max_depth = _max_spawn_depth()
+    policy = build_single_hop_delegation_policy(
+        runner=str(state.get("runner_variant", "langgraph") or "langgraph"),
+        role=str(role),
+        current_depth=current_depth,
+        max_spawn_depth=max_depth,
+        requested_tools=_requested_tools(state),
+        max_concurrent_children=_max_concurrent_children(),
+    )
     if current_depth >= max_depth:
         logger.info(
             "A2A delegation disabled by spawn depth: role=%s current=%d max=%d",
@@ -84,7 +154,18 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             current_depth,
             max_depth,
         )
-        return {}
+        return {
+            "runtime_events": [
+                _event(
+                    status="blocked",
+                    name="subagent.delegation.blocked",
+                    state=state,
+                    summary="A2A delegation blocked by spawn-depth policy",
+                    metadata=policy,
+                )
+            ],
+            "degradation_flags": ["a2a_delegation_spawn_depth_blocked"],
+        }
 
     agent_url = remote_agents[role]
     messages = state.get("messages", [])
@@ -97,11 +178,38 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             break
 
     if not user_msg:
-        return {}
+        return {
+            "runtime_events": [
+                _event(
+                    status="blocked",
+                    name="subagent.delegation.blocked",
+                    state=state,
+                    summary="A2A delegation blocked because no user message was available",
+                    metadata={**policy, "fallback_reason": "missing_user_message"},
+                )
+            ],
+            "degradation_flags": ["a2a_delegation_missing_user_message"],
+        }
 
     logger.info("A2A delegation: role=%s → %s", role, agent_url)
 
     client = A2AClient()
+    runtime_events = [
+        _event(
+            status="accepted",
+            name="subagent.delegation.accepted",
+            state=state,
+            summary="A2A child delegation accepted by policy",
+            metadata=policy,
+        ),
+        _event(
+            status="started",
+            name="subagent.delegation.started",
+            state=state,
+            summary="A2A child request started",
+            metadata={**policy, "agent_url": agent_url},
+        ),
+    ]
     try:
         next_depth = current_depth + 1
         task = await client.send_message(
@@ -112,24 +220,67 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                 state=state,
                 next_depth=next_depth,
                 max_depth=max_depth,
+                tool_policy=policy["tool_policy"],
             ),
         )
 
         if task.state == "completed" and task.result:
+            runtime_events.extend(
+                [
+                    _event(
+                        status="completed",
+                        name="subagent.delegation.completed",
+                        state=state,
+                        summary="A2A child request completed",
+                        metadata={
+                            **policy,
+                            "child_task_id": task.task_id,
+                            "result_digest": _result_digest(task.result),
+                        },
+                    ),
+                    make_runtime_event(
+                        kind="memory",
+                        status="accepted",
+                        name="subagent.parent_memory_handoff",
+                        summary="Delegation outcome is available for parent-side memory curation",
+                        thread_id=str(state.get("thread_id", "") or ""),
+                        turn=int(state.get("iteration", 0) or 0),
+                        metadata={
+                            "child_task_id": task.task_id,
+                            "child_memory_write_allowed": False,
+                            "parent_curated_memory_handoff": True,
+                            "result_digest": _result_digest(task.result),
+                        },
+                    ),
+                ]
+            )
             return {
                 "messages": [
                     {"role": "assistant", "content": f"[{role} via A2A]: {task.result}"}
                 ],
                 "final_response": task.result,
                 "done": True,
+                "runtime_events": runtime_events,
             }
-        else:
-            error = task.error or "Unknown A2A error"
-            logger.warning("A2A delegation failed: %s", error)
-            return {
-                "messages": [
-                    {"role": "assistant", "content": f"[{role} A2A error]: {error}"}
-                ],
-            }
+
+        error = task.error or "Unknown A2A error"
+        status = "stale" if task.state == "timeout" else "failed"
+        logger.warning("A2A delegation failed: %s", error)
+        runtime_events.append(
+            _event(
+                status=status,
+                name=f"subagent.delegation.{task.state}",
+                state=state,
+                summary="A2A child request did not complete",
+                metadata={**policy, "child_task_id": task.task_id, "error": error},
+            )
+        )
+        return {
+            "messages": [
+                {"role": "assistant", "content": f"[{role} A2A error]: {error}"}
+            ],
+            "runtime_events": runtime_events,
+            "degradation_flags": [f"a2a_delegation_{task.state}"],
+        }
     finally:
         await client.close()

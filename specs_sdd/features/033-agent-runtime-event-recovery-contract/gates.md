@@ -14,9 +14,14 @@ feature_id: 033
 - G002 Runtime events preserve tool_call_id where applicable.
 - G003 Raw secrets, provider reasoning and oversized payloads are redacted or
   capped.
-- G004 Subagent execution is fail-closed unless explicitly enabled.
-- G005 Child runs cannot directly mutate shared memory, KG or schedule state.
-- G006 Stale, timeout, killed and cancelled states are distinguishable.
+- [x] G004 Subagent execution is fail-closed unless explicitly enabled.
+  - 2026-04-30: `a2a_delegate_node` default path blocks before client
+    creation and records `a2a_delegation_spawn_depth_blocked`.
+- [x] G005 Child runs cannot directly mutate shared memory, KG or schedule state.
+  - 2026-04-30: child tool policy blocks memory-write, schedule/send,
+    recursive delegation and code/sandbox execution by default.
+- [partial-static] G006 Stale, timeout, killed and cancelled states are distinguishable.
+  - 2026-04-30: A2A timeout maps to stale runtime event plus
+    `a2a_delegation_timeout`; kill/cancel still need Control operation support.
 - G007 Control operations return explicit supported/unsupported outcomes.
 - G008 Meta-Harness can replay event streams without browser dependencies.
-

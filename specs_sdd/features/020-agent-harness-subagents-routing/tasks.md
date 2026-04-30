@@ -190,12 +190,28 @@ feature_id: 020
 
 ## 2026-04-30 Gated Single-Hop Subagent Additions
 
-- T045 Define provider-agnostic `delegate_task`/subagent execution interface
+- [x] T045 Define provider-agnostic `delegate_task`/subagent execution interface
   using isolated context by default and explicit fork mode only when requested.
-- T046 Implement single-hop gated execution default-off/fail-closed, with
+  - 2026-04-30: `build_single_hop_delegation_policy()` defines the
+    provider-agnostic policy envelope for role, depth, context mode,
+    concurrency cap and child tool policy. Current A2A execution uses isolated
+    explicit-context mode.
+- [x] T046 Implement single-hop gated execution default-off/fail-closed, with
   depth and concurrency policy.
-- T047 Enforce child tool policy: no recursive delegation, no direct shared
+  - 2026-04-30: `a2a_delegate_node` remains default-off via
+    `AGENT_A2A_MAX_SPAWN_DEPTH=0`; static tests prove no client is created in
+    the default path and single-hop routing only starts when depth permits it.
+- [x] T047 Enforce child tool policy: no recursive delegation, no direct shared
   memory writes, no cross-platform send, no interactive approval deadlocks.
-- T048 Emit Feature 033 lifecycle events for accepted, started, tool activity,
+  - 2026-04-30: child policy blocks `delegate_task`, A2A wait/delegate tools,
+    memory writes, scheduler/send-message and code/sandbox execution by
+    default; approval mode is `non_interactive_auto_deny`.
+- [x] T048 Emit Feature 033 lifecycle events for accepted, started, tool activity,
   completed, error, timeout, killed and stale states.
-- T049 Add parent-side memory handoff event for delegation outcomes.
+  - 2026-04-30: A2A node emits `subagent.delegation.accepted`,
+    `started`, `completed`, `failed` and timeout-as-`stale` runtime events.
+    Kill/pause remain future Control operations.
+- [x] T049 Add parent-side memory handoff event for delegation outcomes.
+  - 2026-04-30: completed child results emit
+    `subagent.parent_memory_handoff` as a parent-only memory event with result
+    digest; child memory writes stay disabled.

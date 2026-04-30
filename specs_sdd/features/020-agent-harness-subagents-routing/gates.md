@@ -37,9 +37,20 @@ feature_id: 020
 
 ## 2026-04-30 Added Gates
 
-- [ ] Gated single-hop subagent execution is default-off/fail-closed.
-- [ ] Child contexts are isolated by default; fork mode is explicit.
-- [ ] Child tool policy blocks recursive delegation, direct shared-memory
+- [x] Gated single-hop subagent execution is default-off/fail-closed.
+  - 2026-04-30: default `AGENT_A2A_MAX_SPAWN_DEPTH=0` blocks A2A delegation
+    before client creation and emits a blocked runtime event.
+- [x] Child contexts are isolated by default; fork mode is explicit.
+  - 2026-04-30: delegated A2A context carries role, parent thread id, depth,
+    `memory_scope:explicit_context_only`, `context_mode:isolated` and bounded
+    tool policy.
+- [x] Child tool policy blocks recursive delegation, direct shared-memory
   writes, cross-platform sends and interactive approval deadlocks.
-- [ ] Parent-side memory handoff records delegation outcomes.
-- [ ] Subagent lifecycle emits Feature 033 runtime events.
+  - 2026-04-30: policy filters recursive delegation, memory write,
+    schedule/send and code-exec tools; approval is non-interactive auto-deny.
+- [x] Parent-side memory handoff records delegation outcomes.
+  - 2026-04-30: completed child result emits a parent memory-handoff runtime
+    event with digest and `child_memory_write_allowed=false`.
+- [x] Subagent lifecycle emits Feature 033 runtime events.
+  - 2026-04-30: accepted/started/completed/failed and timeout-as-stale are
+    unit-tested through `a2a_delegate_node`.

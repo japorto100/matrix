@@ -14,6 +14,19 @@ MEMORY_TOOL_NAMES = frozenset({"memory_search", "memory_add", "save_memory", "lo
 RETRIEVAL_TOOL_NAMES = frozenset(
     {"memory_search", "kg_search", "retrieve_context", "semantic_lookup"}
 )
+DEFAULT_CHILD_FORBIDDEN_TOOLS = frozenset(
+    {
+        "delegate_task",
+        "delegate_to_agent",
+        "wait_for_agent",
+        "memory_add",
+        "save_memory",
+        "schedule_task",
+        "send_message",
+        "execute_code",
+        "sandbox_exec",
+    }
+)
 
 
 def _clean_tool_names(tool_names: Iterable[str]) -> list[str]:
@@ -105,3 +118,65 @@ def build_delegation_defer_metadata(
         }
     )
     return metadata
+
+
+def build_child_tool_policy(
+    *,
+    requested_tools: Iterable[str] = (),
+    forbidden_tools: Iterable[str] = DEFAULT_CHILD_FORBIDDEN_TOOLS,
+) -> dict[str, Any]:
+    """Build a fail-closed tool policy for an isolated child agent.
+
+    Matrix subagents may read explicit context and produce a bounded result.
+    They must not recursively delegate, write shared memory, send cross-platform
+    messages, schedule background work, or wait on interactive approvals.
+    """
+
+    requested = _clean_tool_names(requested_tools)
+    forbidden = set(_clean_tool_names(forbidden_tools))
+    blocked = [tool for tool in requested if tool in forbidden]
+    allowed = [tool for tool in requested if tool not in forbidden]
+    return {
+        "allowed_tools": allowed,
+        "blocked_tools": blocked,
+        "forbidden_tools": sorted(forbidden),
+        "memory_write_policy": "parent_only",
+        "kg_write_policy": "proposal_only",
+        "approval_mode": "non_interactive_auto_deny",
+        "recursive_delegation_allowed": False,
+        "cross_platform_send_allowed": False,
+    }
+
+
+def build_single_hop_delegation_policy(
+    *,
+    runner: str,
+    role: str,
+    current_depth: int,
+    max_spawn_depth: int,
+    requested_tools: Iterable[str] = (),
+    max_concurrent_children: int = 1,
+    memory_scope: str = "explicit_context_only",
+    context_mode: str = "isolated",
+) -> dict[str, Any]:
+    """Return the provider-agnostic policy envelope for one child attempt."""
+
+    depth = max(0, int(current_depth))
+    max_depth = max(0, int(max_spawn_depth))
+    next_depth = depth + 1
+    enabled = next_depth <= max_depth
+    tool_policy = build_child_tool_policy(requested_tools=requested_tools)
+    return {
+        "runner": runner or "unknown",
+        "role": str(role or "unknown"),
+        "delegation_decision": "accepted" if enabled else "blocked",
+        "delegate_kind": "domain",
+        "fallback_reason": "" if enabled else "spawn_depth_exceeded",
+        "spawn_depth": depth,
+        "next_spawn_depth": next_depth,
+        "max_spawn_depth": max_depth,
+        "max_concurrent_children": max(1, int(max_concurrent_children)),
+        "memory_scope": memory_scope,
+        "context_mode": context_mode,
+        "tool_policy": tool_policy,
+    }

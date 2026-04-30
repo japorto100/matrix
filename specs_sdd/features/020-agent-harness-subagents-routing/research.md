@@ -169,6 +169,29 @@ This implements the max-tool-retry part of Feature 020. Compression retry
 reset, stale async memory flush and deeper context-poisoning checks remain
 Feature 012/016 follow-ups.
 
+## 2026-04-30 Default-Off Single-Hop Delegation Slice
+
+The Hermes pattern transfers best as policy-first delegation, not as a CLI
+subagent clone. Matrix now has a provider-agnostic child policy envelope and a
+gated A2A node path:
+
+- `max_spawn_depth=0` remains default-off/fail-closed.
+- single-hop enablement is explicit through `AGENT_A2A_MAX_SPAWN_DEPTH`.
+- child context is isolated and explicit-context-only by default.
+- child tools filter recursive delegation, direct memory writes,
+  cross-platform sends, scheduling and code/sandbox execution.
+- child approval behavior is non-interactive auto-deny, matching the Hermes
+  lesson that worker agents must not block on parent/UI stdin.
+- Feature 033 runtime events expose accepted, started, completed, failed and
+  timeout/stale states without raw child output in metadata.
+- completed child output is handed back to the parent for memory curation as a
+  digest-backed `subagent.parent_memory_handoff` event; the child cannot write
+  shared memory directly.
+
+This is still not production-promoted subagent behavior. It is the minimum
+runtime contract that allows Meta-Harness to evaluate single-hop delegation
+without hidden memory/KG pollution or unbounded child tool access.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

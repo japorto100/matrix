@@ -54,3 +54,20 @@ async def test_send_message_keeps_legacy_text_field_fallback() -> None:
 
     assert task.state == "completed"
     assert task.result == "legacy"
+
+
+@pytest.mark.asyncio
+async def test_send_message_reports_timeout_state(monkeypatch) -> None:
+    client = A2AClient()
+
+    async def raise_timeout(*_args, **_kwargs):
+        raise httpx.TimeoutException("slow child")
+
+    monkeypatch.setattr(client._client, "post", raise_timeout)
+    try:
+        task = await client.send_message("http://agent.local", "ping")
+    finally:
+        await client.close()
+
+    assert task.state == "timeout"
+    assert task.error == "timeout"

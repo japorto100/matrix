@@ -39,10 +39,19 @@ feature_id: 009
 
 - [x] AgentCards serialize for the six trading cards.
 - [x] A2A client local HTTP call and SSE text parsing is unit-tested.
-- [ ] Delegation node sends to target.
-- [ ] Target receives bounded task.
-- [ ] Result returns to source.
-- [ ] Logs/traces show both agents.
+- [partial-static] Delegation node sends to target.
+  - 2026-04-30: unit test verifies configured target URL is used only after
+    depth gate permits it; live target smoke remains pending.
+- [x] Target receives bounded task.
+  - 2026-04-30: A2A context carries role, parent thread id, spawn depth,
+    explicit-context-only memory scope and child tool policy.
+- [partial-static] Result returns to source.
+  - 2026-04-30: unit test verifies child result becomes source
+    `final_response`; live orchestrator path remains pending.
+- [partial-static] Logs/traces show both agents.
+  - 2026-04-30: runtime events cover accepted/started/completed/failed/stale
+    states and child task id/digest. Durable `a2a_delegations` logging remains
+    pending.
 
 ## G4a Checkpointing
 

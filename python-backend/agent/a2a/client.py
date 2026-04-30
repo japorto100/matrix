@@ -26,7 +26,7 @@ class A2ATask:
     """Ergebnis einer Agent-to-Agent Delegation."""
 
     task_id: str
-    state: str  # created, running, completed, failed
+    state: str  # created, running, completed, failed, timeout
     result: str | None = None
     error: str | None = None
 
@@ -86,6 +86,9 @@ class A2AClient:
                     task_id=task_id, state="failed", error=f"HTTP {resp.status_code}"
                 )
 
+        except httpx.TimeoutException as e:
+            logger.warning("A2A delegation timed out: %s", e)
+            return A2ATask(task_id=task_id, state="timeout", error="timeout")
         except Exception as e:
             return A2ATask(task_id=task_id, state="failed", error=str(e))
 
