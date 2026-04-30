@@ -80,6 +80,40 @@ async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_memory_retain_node_blocks_child_shared_memory_writes(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("child memory-write block must happen before engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "a2a-child-1",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [{"role": "user", "content": "remember child output"}],
+            "final_response": "done",
+            "agent_class": "advisory",
+            "memory_write_policy": "parent_only",
+            "child_memory_write_allowed": False,
+            "parent_thread_id": "parent-1",
+            "spawn_depth": 1,
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["kind"] == "memory"
+    assert event["status"] == "blocked"
+    assert event["name"] == "memory.retain.blocked"
+    assert event["metadata"]["reason"] == "child_memory_write_disabled"
+    assert event["metadata"]["memory_write_policy"] == "parent_only"
+    assert event["metadata"]["parent_thread_id"] == "parent-1"
+
+
+@pytest.mark.asyncio
 async def test_retain_conversation_writes_verbatim_and_queues_summary(monkeypatch):
     audit_events: list[dict] = []
     retain_calls: list[dict] = []

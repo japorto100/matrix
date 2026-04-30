@@ -52,9 +52,17 @@ feature_id: 033
   - 2026-04-30: A2A execution is blocked unless
     `AGENT_A2A_MAX_SPAWN_DEPTH` permits the next hop; blocked attempts emit a
     structured subagent runtime event.
+  - 2026-04-30: accepted child requests now turn Matrix delegation context into
+    runtime state: role, parent thread, spawn depth, isolated context mode,
+    allowed tools and parent-only memory policy. Ordinary chat context does not
+    become policy unless the request is an `a2a-*` child request with the
+    Matrix delegation prefix.
 - [x] T013 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit a parent-only memory handoff
     event with digest and no raw output payload.
+  - 2026-04-30: child-side durable retain attempts are blocked by the Memory
+    node with a redacted runtime event, so the parent handoff remains the only
+    durable-memory path for delegated outcomes.
 - [partial-static] T014 Add status/kill/pause/replay control intents where backend support
   exists; unsupported controls must return structured unsupported events.
   - 2026-04-30: `/api/v1/control/sessions/{thread_id}/status` returns a

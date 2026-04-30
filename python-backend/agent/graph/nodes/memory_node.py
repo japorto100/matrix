@@ -406,6 +406,28 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
     Quality Gates: Hindsight built-in (coreference, self-containment, temporal).
     Read-only Rollen retainen nicht.
     """
+    memory_write_policy = str(state.get("memory_write_policy") or "default")
+    if (
+        state.get("child_memory_write_allowed") is False
+        or memory_write_policy in {"parent_only", "disabled", "none"}
+    ):
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.retain.blocked",
+                    state=state,
+                    summary="Memory retain skipped because child runs cannot write durable shared memory",
+                    metadata={
+                        "reason": "child_memory_write_disabled",
+                        "memory_write_policy": memory_write_policy,
+                        "parent_thread_id": str(state.get("parent_thread_id") or ""),
+                        "spawn_depth": state.get("spawn_depth", 0),
+                    },
+                )
+            ]
+        }
+
     from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()

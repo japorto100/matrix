@@ -631,6 +631,17 @@ async def _run_graph(
         "routing_used": False,
         "routing_picked_model": "",
         "runner_variant": "langgraph",
+        "delegation_role": getattr(ctx, "delegation_role", ""),
+        "parent_thread_id": getattr(ctx, "parent_thread_id", ""),
+        "spawn_depth": int(getattr(ctx, "spawn_depth", 0) or 0),
+        "max_spawn_depth": int(getattr(ctx, "max_spawn_depth", 0) or 0),
+        "context_mode": getattr(ctx, "context_mode", ""),
+        "memory_scope": getattr(ctx, "memory_scope", "current_user"),
+        "memory_write_policy": getattr(ctx, "memory_write_policy", "default"),
+        "allowed_tool_names": tuple(getattr(ctx, "allowed_tool_names", ()) or ()),
+        "child_memory_write_allowed": bool(
+            getattr(ctx, "child_memory_write_allowed", True)
+        ),
     }
 
     config = {"configurable": {"thread_id": ctx.thread_id}}

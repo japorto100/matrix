@@ -226,6 +226,11 @@ feature_id: 020
   - 2026-04-30: child policy blocks `delegate_task`, A2A wait/delegate tools,
     memory writes, scheduler/send-message and code/sandbox execution by
     default; approval mode is `non_interactive_auto_deny`.
+  - 2026-04-30: A2A child requests now parse Matrix-owned delegation context
+    into runtime policy, filter the actual tool registry to `allowed_tools` and
+    propagate `memory_write_policy=parent_only` into both LangGraph and
+    SimpleLoop state. `memory_retain_node` blocks these child turns before
+    touching the durable Memory engine.
 - [x] T048 Emit Feature 033 lifecycle events for accepted, started, tool activity,
   completed, error, timeout, killed and stale states.
   - 2026-04-30: A2A node emits `subagent.delegation.accepted`,
@@ -238,3 +243,8 @@ feature_id: 020
   - 2026-04-30: completed child results emit
     `subagent.parent_memory_handoff` as a parent-only memory event with result
     digest; child memory writes stay disabled.
+- [x] T050 [done-static] Ensure A2A context is policy, not prompt-only text.
+  - 2026-04-30: `/api/v1/agent/chat` recognizes only Matrix A2A child
+    threads (`a2a-*`) with the Matrix delegation prefix, converts role/depth/
+    parent-thread/tool/memory fields into `AgentExecutionContext`, and leaves
+    ordinary user `context` text non-authoritative.

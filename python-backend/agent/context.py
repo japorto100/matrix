@@ -41,6 +41,16 @@ class AgentExecutionContext:
     # of the turn on the same row via fire-and-forget UPDATE. None when
     # the turn runs outside the experiment ledger (tests, ad-hoc calls).
     ab_row_id: str | None = None
+    # A2A/subagent execution policy. Defaults keep normal agent turns unchanged.
+    delegation_role: str = ""
+    parent_thread_id: str = ""
+    spawn_depth: int = 0
+    max_spawn_depth: int = 0
+    context_mode: str = ""
+    memory_scope: str = "current_user"
+    memory_write_policy: str = "default"
+    allowed_tool_names: tuple[str, ...] = ()
+    child_memory_write_allowed: bool = True
 
     def tool_definitions(self) -> list[dict]:
         """Return Anthropic tool_definition dicts for all registered tools."""

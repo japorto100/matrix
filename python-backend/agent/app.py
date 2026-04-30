@@ -286,6 +286,54 @@ def _provider_from_model(model: str) -> str:
     return provider or "litellm"
 
 
+def _parse_a2a_child_policy(req: AgentChatRequest) -> dict[str, object]:
+    """Parse Matrix-owned A2A child context into runtime policy metadata."""
+
+    thread_id = (req.thread_id or "").strip()
+    context = (req.context or "").strip()
+    if not thread_id.startswith("a2a-") or not context.startswith(
+        "Delegated from Matrix orchestrator;"
+    ):
+        return {}
+
+    values: dict[str, str] = {}
+    for part in context.split(";"):
+        if ":" not in part:
+            continue
+        key, value = part.split(":", 1)
+        key = key.strip().lower()
+        value = value.strip()
+        if key:
+            values[key] = value
+
+    if values.get("memory_write_policy") != "parent_only":
+        return {}
+
+    allowed_tools = tuple(
+        name.strip()
+        for name in values.get("allowed_tools", "").split(",")
+        if name.strip()
+    )
+    return {
+        "delegation_role": values.get("role", ""),
+        "parent_thread_id": values.get("parent_thread_id", ""),
+        "spawn_depth": _safe_int(values.get("spawn_depth"), default=0),
+        "max_spawn_depth": _safe_int(values.get("max_spawn_depth"), default=0),
+        "context_mode": values.get("context_mode", "isolated"),
+        "memory_scope": values.get("memory_scope", "explicit_context_only"),
+        "memory_write_policy": "parent_only",
+        "allowed_tool_names": allowed_tools,
+        "child_memory_write_allowed": False,
+    }
+
+
+def _safe_int(value: object, *, default: int = 0) -> int:
+    try:
+        return max(0, int(str(value or "").strip()))
+    except (TypeError, ValueError):
+        return default
+
+
 class AudioTranscribeRequest(BaseModel):
     """ACR-A1: base64-encoded audio → transcript text."""
 
@@ -846,16 +894,33 @@ async def _stream_agent_loop(
                     allow_session_cache=True,
                 )
 
+    child_policy = _parse_a2a_child_policy(req)
+    tools = tuple(registry.all())
+    allowed_child_tools = child_policy.get("allowed_tool_names")
+    if isinstance(allowed_child_tools, tuple):
+        tools = tuple(tool for tool in tools if getattr(tool, "name", "") in allowed_child_tools)
+
     ctx = AgentExecutionContext(
         user_id=user_id,
         thread_id=thread_id,
         model=model,
         api_key=api_key,
         system_prompt=system_prompt,
-        tools=tuple(registry.all()),
+        tools=tools,
         reasoning_effort=req.reasoning_effort,
         agent_class="advisory",
         user_role=user_role,
+        delegation_role=str(child_policy.get("delegation_role") or ""),
+        parent_thread_id=str(child_policy.get("parent_thread_id") or ""),
+        spawn_depth=int(child_policy.get("spawn_depth") or 0),
+        max_spawn_depth=int(child_policy.get("max_spawn_depth") or 0),
+        context_mode=str(child_policy.get("context_mode") or ""),
+        memory_scope=str(child_policy.get("memory_scope") or "current_user"),
+        memory_write_policy=str(child_policy.get("memory_write_policy") or "default"),
+        allowed_tool_names=tuple(child_policy.get("allowed_tool_names") or ()),
+        child_memory_write_allowed=bool(
+            child_policy.get("child_memory_write_allowed", True)
+        ),
     )
 
     # Build messages — AC56: multimodal content blocks for Anthropic

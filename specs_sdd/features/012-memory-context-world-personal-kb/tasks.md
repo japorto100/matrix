@@ -244,7 +244,12 @@ migrated_from:
 
 - T091 Add parent-side delegation memory curation contract with child session
   id, task id, source refs, confidence/degradation and retain/skip decision.
-- T092 Ensure child/subagent runs cannot write durable shared memory by default.
+- [x] T092 [done-static] Ensure child/subagent runs cannot write durable shared
+  memory by default.
+  - 2026-04-30: A2A child context is now carried as runtime policy, not only as
+    prompt text. Both runners propagate `memory_write_policy=parent_only`, and
+    `memory_retain_node` returns a blocked memory runtime event before any
+    durable Memory engine lookup/write for child runs.
 - [x] T093 Emit runtime events for memory retain/recall/curation decisions that
   Feature 033 and Feature 029 can display.
   - 2026-04-30: `memory_recall_node` and `memory_retain_node` emit

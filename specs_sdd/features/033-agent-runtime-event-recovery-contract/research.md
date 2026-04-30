@@ -62,3 +62,11 @@ endpoint and records checkpoint deletion/session cancellation as a runtime
 event; pause and replay intentionally return unsupported runtime events instead
 of pretending capability exists. This matches the Hermes lesson: operator
 controls must be observable even before every control is durable.
+
+2026-04-30 child-policy update: A2A child context is now runtime state, not
+only prompt text. The app accepts policy only for Matrix-owned `a2a-*` child
+requests with the delegation prefix, filters provider tool definitions to the
+child allowlist and propagates parent-only memory policy into both runners.
+Memory retain then emits a blocked runtime event before durable Memory access.
+This strengthens the subagent event contract because `parent_memory_handoff`
+is now the only write-intended path for delegated outcomes.

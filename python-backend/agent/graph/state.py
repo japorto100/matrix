@@ -133,3 +133,14 @@ class AgentGraphState(TypedDict):
 
     # Observability label for Meta-Harness route-decision traces.
     runner_variant: str
+
+    # A2A/subagent isolation policy propagated from AgentExecutionContext.
+    delegation_role: str
+    parent_thread_id: str
+    spawn_depth: int
+    max_spawn_depth: int
+    context_mode: str
+    memory_scope: str
+    memory_write_policy: str
+    allowed_tool_names: tuple[str, ...]
+    child_memory_write_allowed: bool

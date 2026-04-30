@@ -169,6 +169,25 @@ This implements the max-tool-retry part of Feature 020. Compression retry
 reset, stale async memory flush and deeper context-poisoning checks remain
 Feature 012/016 follow-ups.
 
+## 2026-04-30 A2A Child Policy Enforcement
+
+Hermes' useful invariant is not the CLI-child implementation itself; it is that
+children get a fresh scope, a restricted toolset and no direct shared-memory
+write path. Matrix now enforces that invariant inside the runtime:
+
+- A2A child requests are recognized only when the thread id is `a2a-*` and the
+  context starts with the Matrix delegation prefix.
+- The delegation fields become `AgentExecutionContext` and graph state policy:
+  role, parent thread, spawn depth, isolated context mode, allowed tools and
+  `memory_write_policy=parent_only`.
+- The app filters actual tools to `allowed_tools` before the provider sees tool
+  definitions.
+- `memory_retain_node` blocks parent-only child runs before looking up or
+  writing the durable Memory engine, and emits a memory runtime event instead.
+
+This keeps user-provided chat context non-authoritative while making the
+Matrix-owned A2A context operational rather than placebo prompt text.
+
 2026-04-30 memory flush guard update: the stale async flush part is now a
 runner-level guard rather than a provider change. LangGraph and SimpleLoop both
 schedule automatic post-answer memory retain through a per-thread generation

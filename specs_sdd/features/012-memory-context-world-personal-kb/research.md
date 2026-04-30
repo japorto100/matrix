@@ -187,6 +187,13 @@ candidates from explicit KB inputs or retrieved hits. This supports a safer
 "choose/open source" UX and agent planning path while preserving the rule that
 answer support still needs selected, source-backed context.
 
+2026-04-30 delegation memory enforcement: Feature 020 A2A child requests now
+carry parent-only memory policy through `AgentExecutionContext` and runner
+state. `memory_retain_node` treats that policy as authoritative and returns a
+blocked memory runtime event before any durable Memory engine lookup/write.
+Delegated outcomes must therefore flow through the parent-side curation handoff
+instead of child-side shared memory writes.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,
