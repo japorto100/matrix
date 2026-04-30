@@ -23,6 +23,29 @@ _PROCESSING_MS_HEADER_KEYS = (
     "x-response-time-ms",
     "server-timing",
 )
+_FORBIDDEN_METADATA_KEYS = {
+    "api_key",
+    "apikey",
+    "authorization",
+    "auth_header",
+    "bearer",
+    "headers",
+    "messages",
+    "provider_specific",
+    "raw_messages",
+    "raw_prompt",
+    "raw_reasoning",
+    "raw_secret",
+    "reasoning_block",
+    "reasoning_content",
+    "reasoning_trace",
+    "request_telemetry",
+    "resolved_secret",
+    "secret",
+    "secret_value",
+    "thinking",
+    "thinking_blocks",
+}
 
 
 @dataclass(frozen=True)
@@ -103,7 +126,7 @@ def build_request_telemetry(
                 model=model,
             )
         ),
-        metadata=metadata or {},
+        metadata=_sanitize_metadata(metadata or {}),
     )
     return telemetry.to_dict()
 
@@ -281,6 +304,32 @@ def response_metadata(
     if limits:
         metadata["rate_limits"] = limits
     return metadata
+
+
+def _sanitize_metadata(value: Any) -> Any:
+    """Redact free-form request metadata before it enters traces."""
+
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, item in value.items():
+            if _metadata_key_forbidden(str(key)):
+                continue
+            sanitized[str(key)] = _sanitize_metadata(item)
+        return sanitized
+    if isinstance(value, list):
+        return [_sanitize_metadata(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_sanitize_metadata(item) for item in value)
+    if isinstance(value, str):
+        from agent.security.redact import redact_sensitive_text
+
+        return redact_sensitive_text(value)
+    return value
+
+
+def _metadata_key_forbidden(key: str) -> bool:
+    normalized = key.strip().lower().replace("-", "_")
+    return normalized in _FORBIDDEN_METADATA_KEYS
 
 
 def _normalize_message_for_digest(

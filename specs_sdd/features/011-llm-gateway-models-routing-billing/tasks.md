@@ -141,5 +141,9 @@ migrated_from:
     fabricating zeros.
 - T079 Add transport/model/cache capability metadata for Feature 032 cache
   snapshots.
-- T080 Ensure provider-specific reasoning and resolved credentials are redacted
+- [x] T080 Ensure provider-specific reasoning and resolved credentials are redacted
   from request telemetry.
+  - 2026-04-30: `build_request_telemetry()` now sanitizes free-form metadata
+    before trace emission, dropping raw prompts/messages, provider-specific
+    reasoning/thinking blocks, headers, authorization fields and resolved
+    secrets while retaining safe response metadata such as request id.

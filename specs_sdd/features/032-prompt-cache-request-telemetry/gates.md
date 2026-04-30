@@ -16,6 +16,10 @@ feature_id: 032
     missing counters.
 - G002 Request ids and rate-limit headers are redacted and never written to
   memory/KG as factual user content.
+  - 2026-04-30: free-form request telemetry metadata is recursively sanitized:
+    response request ids remain, but raw prompts/messages, headers,
+    authorization, resolved secrets and provider-specific reasoning/thinking
+    blocks are dropped before trace emission.
 - G003 Stable prompt/tool digests are deterministic across equivalent runs.
   - 2026-04-30: `digest_prompt()` separates content digest from layout digest,
     and `digest_tool_catalog()` sorts tools before hashing descriptor shape.

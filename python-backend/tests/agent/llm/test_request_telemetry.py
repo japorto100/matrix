@@ -110,6 +110,33 @@ def test_build_request_telemetry_has_no_raw_prompt() -> None:
     assert "private prompt" not in str(telemetry)
 
 
+def test_build_request_telemetry_redacts_free_form_metadata() -> None:
+    telemetry = build_request_telemetry(
+        provider="openrouter",
+        model="openrouter/test",
+        router="simple",
+        thread_id="t1",
+        iteration=0,
+        messages=[{"role": "user", "content": "hello"}],
+        tools=[],
+        usage={"prompt_tokens": 2, "completion_tokens": 1},
+        metadata={
+            "response": {"request_id": "req-1"},
+            "api_key": "sk-abc1234567890defghijklmn",
+            "headers": {"authorization": "Bearer secret"},
+            "provider_specific": {"reasoning_effort": "high"},
+            "notes": "token sk-abc1234567890defghijklmn",
+        },
+    )
+
+    assert telemetry["metadata"] == {
+        "response": {"request_id": "req-1"},
+        "notes": "token sk-abc...klmn",
+    }
+    assert "reasoning_effort" not in str(telemetry)
+    assert "authorization" not in str(telemetry).lower()
+
+
 def test_response_metadata_extracts_redacted_request_and_rate_limits() -> None:
     response = SimpleNamespace(
         _hidden_params={
