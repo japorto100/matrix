@@ -145,6 +145,47 @@ async def test_memory_add_tool_emits_memory_retain_audit(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_memory_search_finds_recent_memory_add_before_index_catches_up(monkeypatch):
+    audit_events = []
+
+    async def _audit_log(**kwargs):
+        audit_events.append(kwargs)
+
+    class _Engine:
+        async def retain_batch_async(self, **_kwargs):
+            return [["fact-1"]]
+
+        async def recall_async(self, **_kwargs):
+            return SimpleNamespace(results=[])
+
+    async def _get_memory_engine():
+        return _Engine()
+
+    monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
+    monkeypatch.setattr("memory_fusion.engine.get_memory_engine", _get_memory_engine)
+    monkeypatch.setattr("memory_fusion.engine.get_bank_id", lambda user_id: "user-u1")
+
+    ctx = SimpleNamespace(user_id="u1", thread_id="t1", agent_class="advisory")
+    phrase = "memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+    add_result = await MemoryAddTool().execute(
+        {"content": f"Remember exact phrase: {phrase}", "fact_type": "experience"},
+        ctx,
+    )
+    search_result = await MemorySearchTool().execute(
+        {"query": f"recall {phrase}", "fact_type": "experience"},
+        ctx,
+    )
+
+    assert add_result == {"stored": True, "facts_extracted": 1}
+    assert search_result["count"] == 1
+    assert search_result["results"][0]["source"] == "recent_memory_add"
+    assert phrase in search_result["results"][0]["text"]
+    recall_event = [event for event in audit_events if event["action"] == AuditAction.MEMORY_RECALL][0]
+    assert recall_event["metadata"]["recent_item_count"] == 1
+    assert recall_event["metadata"]["engine_item_count"] == 0
+
+
+@pytest.mark.asyncio
 async def test_memory_add_tool_maps_world_to_experience(monkeypatch):
     calls = []
 

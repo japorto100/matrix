@@ -106,6 +106,62 @@ async def _finish_memory_add_slot(key: tuple[str, str, str, str], result: dict) 
             _MEMORY_ADD_RECENT[key] = (time.monotonic(), dict(result))
 
 
+async def _recent_memory_add_matches(
+    *,
+    thread_id: str,
+    bank_id: str,
+    query: str,
+    fact_type: str,
+) -> list[dict]:
+    window = _memory_add_dedupe_window_seconds()
+    if window <= 0:
+        return []
+    normalized_query = _normalize_memory_add_content(query)
+    if not normalized_query:
+        return []
+
+    now = time.monotonic()
+    matches: list[dict] = []
+    async with _MEMORY_ADD_DEDUPE_LOCK:
+        stale = [
+            recent_key
+            for recent_key, (seen_at, _result) in _MEMORY_ADD_RECENT.items()
+            if now - seen_at > window
+        ]
+        for recent_key in stale:
+            _MEMORY_ADD_RECENT.pop(recent_key, None)
+
+        for (recent_thread, recent_bank, recent_fact_type, normalized_content), (
+            _seen_at,
+            result,
+        ) in _MEMORY_ADD_RECENT.items():
+            if recent_thread != thread_id or recent_bank != bank_id:
+                continue
+            if fact_type and recent_fact_type != fact_type:
+                continue
+            query_terms = {term for term in normalized_query.split() if len(term) >= 8}
+            content_terms = {term for term in normalized_content.split() if len(term) >= 8}
+            has_overlap = bool(query_terms & content_terms)
+            if (
+                normalized_content not in normalized_query
+                and normalized_query not in normalized_content
+                and not has_overlap
+            ):
+                continue
+            content = str(result.get("stored_content") or "").strip()
+            if not content:
+                continue
+            matches.append(
+                {
+                    "text": content,
+                    "type": recent_fact_type,
+                    "entities": [],
+                    "source": "recent_memory_add",
+                }
+            )
+    return matches
+
+
 async def _clear_memory_add_dedupe_for_tests() -> None:
     async with _MEMORY_ADD_DEDUPE_LOCK:
         _MEMORY_ADD_PENDING.clear()
@@ -181,6 +237,22 @@ class MemorySearchTool(TradingTool):
                 max_tokens=2000,
                 request_context=RequestContext(),
             )
+            engine_results = [
+                {"text": f.text, "type": f.fact_type, "entities": f.entities or []}
+                for f in result.results[:10]
+            ]
+            recent_results = await _recent_memory_add_matches(
+                thread_id=str(ctx.thread_id),
+                bank_id=bank_id,
+                query=params.query,
+                fact_type=fact_type,
+            )
+            seen_texts = {_normalize_memory_add_content(item["text"]) for item in engine_results}
+            for item in recent_results:
+                normalized_text = _normalize_memory_add_content(item["text"])
+                if normalized_text and normalized_text not in seen_texts:
+                    engine_results.append(item)
+                    seen_texts.add(normalized_text)
             await audit_log(
                 action=AuditAction.MEMORY_RECALL,
                 thread_id=ctx.thread_id,
@@ -194,18 +266,17 @@ class MemorySearchTool(TradingTool):
                     "query": params.query[:300],
                     "fact_type": fact_type,
                     "original_fact_type": params.fact_type,
-                    "item_count": len(result.results),
+                    "item_count": len(engine_results),
+                    "engine_item_count": len(result.results),
+                    "recent_item_count": len(recent_results),
                     "tool_name": self.name,
                     "source": "explicit_memory_tool",
                 },
             )
 
             return {
-                "results": [
-                    {"text": f.text, "type": f.fact_type, "entities": f.entities or []}
-                    for f in result.results[:10]
-                ],
-                "count": len(result.results),
+                "results": engine_results,
+                "count": len(engine_results),
             }
         except Exception as e:
             await audit_log(
@@ -366,12 +437,17 @@ class MemoryAddTool(TradingTool):
                 },
             )
 
-            result = {
+            slot_result = {
+                "stored": True,
+                "facts_extracted": facts_extracted,
+                "stored_content": params.content,
+                "fact_type": effective_fact_type,
+            }
+            await _finish_memory_add_slot(dedupe_key, slot_result)
+            return {
                 "stored": True,
                 "facts_extracted": facts_extracted,
             }
-            await _finish_memory_add_slot(dedupe_key, result)
-            return result
         except Exception as e:
             if "dedupe_key" in locals():
                 await _finish_memory_add_slot(

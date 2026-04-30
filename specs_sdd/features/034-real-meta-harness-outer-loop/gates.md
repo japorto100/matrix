@@ -44,3 +44,11 @@ verdicts/source snapshots, holdout stayed hidden, the candidate had explicit
 write scope and pending eval, trace/cost/latency metrics were written before
 decision, and the candidate was discarded as dominated. G004 remains partial
 for arbitrary code-patch candidates; G012 remains open.
+
+2026-05-01 bounded runtime candidate gate evidence:
+`run-metaharness-round-2-recent-memory-fixed` passed trace and stream gates
+after the recent-memory fallback. The visible transcript now contains the exact
+searched phrase immediately after `memory_add`. This uncovered a remaining gate
+gap: answer-level exact-recall quality needs a first-class metric because the
+aggregate fitness did not distinguish the improved transcript from the prior
+passing trace.

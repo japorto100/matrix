@@ -191,6 +191,34 @@ its trace substrate before spending model calls. Empty traces, provider alias
 failures and wrong DB routing must fail the round or produce infrastructure
 findings, not be treated as candidate quality.
 
+## 2026-05-01 Round 2 Recent-Memory Finding
+
+Round 1 also exposed a quality issue that the original trace gates did not
+score strongly enough: after `memory_add` succeeded, the immediate
+`memory_search` could still return no durable hit because indexing/summary work
+lags the verbatim write. The trace gate passed because `memory_retain`,
+`memory_recall`, `memory_add`, `memory_search` and route `fusion` were present,
+but the visible assistant answer could still say the exact phrase was not
+found.
+
+The bounded runtime candidate adds a short-lived same-thread/same-bank recent
+write fallback in `agent.tools.memory_hindsight.MemorySearchTool`. It only
+serves explicit recent `memory_add` content inside the existing dedupe window
+and does not bypass durable Memory-Fusion storage; it bridges the immediate
+user-visible recall gap while the durable index catches up.
+
+Verification:
+
+- Unit: `tests/agent/tools/test_memory_hindsight.py` covers immediate
+  `memory_add` -> `memory_search` recall before engine results are available.
+- Live no-browser: `run-metaharness-round-2-recent-memory-fixed` passed
+  `trace_gate_pass_rate=1.0` and `stream_gate_pass_rate=1.0`; transcript answer
+  included the exact phrase
+  `memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction`.
+- Scoring gap: fitness remained `0.8423`, so a future Feature 034/016 task
+  should make answer-level exact-recall assertions first-class, not only trace
+  presence assertions.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature

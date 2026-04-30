@@ -121,6 +121,9 @@ feature_id: 034
   clear causal trace.
 - [x] T063 [done-live-no-browser] Re-run the frozen search evaluator and log keep/discard/defer.
 - [ ] T064 Run holdout only after a candidate passes promotion preflight.
+- [x] T065 [done-live-no-browser] Apply and verify the first bounded runtime
+  candidate from raw trace inspection: immediate recent-memory recall after
+  explicit `memory_add`.
   - 2026-05-01: first `run-metaharness-round-1` exposed empty traces and
     Postgres/Memory-Fusion misrouting to a foreign `:5433` container. A bounded
     runtime fix in `python-backend/memory_fusion/providers.py` preserves
@@ -132,6 +135,13 @@ feature_id: 034
     Then `run-metaharness-round-1-fixed` completed a true propose/evaluate/
     decide loop with baseline fitness `0.8424`, candidate fitness `0.8423`,
     candidate `paper_ready=true`, and decision `discard`. Holdout remains open.
+  - 2026-05-01: `run-metaharness-round-2-recent-memory-fixed` verified a
+    runtime candidate in `agent.tools.memory_hindsight`: explicit
+    `memory_search` can return a same-thread recent `memory_add` before the
+    durable index catches up. Transcript included the exact probe phrase and
+    trace/stream gates passed. Existing fitness did not increase, so add an
+    answer-level exact-recall metric before relying on this scorer for
+    promotion.
 
 ## Documentation
 

@@ -60,3 +60,17 @@ evaluation, decision logging and Pareto update.
   `trace_gate_pass_rate=1.0`, fitness `0.8423`.
   Decision: `discard`, because the candidate was dominated by baseline under
   the frozen search evaluator.
+
+## 2026-05-01 Bounded Runtime Candidate Evidence
+
+- Candidate: recent explicit memory write fallback for immediate
+  `memory_add` -> `memory_search` recall in
+  `python-backend/agent/tools/memory_hindsight.py`.
+- Rationale: durable Memory-Fusion write can succeed while same-turn search
+  still misses due indexing/summary lag. The fallback is scoped to the existing
+  dedupe window, same thread, same bank and matching fact type.
+- Verification:
+  `uv run pytest tests/agent/tools/test_memory_hindsight.py -q` passed.
+  `run-metaharness-round-2-recent-memory-fixed` passed trace and stream gates;
+  the transcript answered with the exact probe phrase. Holdout is still open,
+  so this is a kept search-set improvement, not full promotion evidence.
