@@ -188,6 +188,54 @@ def _context_provenance_status(hit: RetrievalHit) -> str:
     return "complete" if _has_context_provenance(hit) else "missing"
 
 
+def _lane_for_hit(hit: RetrievalHit) -> str:
+    metadata = hit.metadata if isinstance(hit.metadata, dict) else {}
+    lane = str(
+        metadata.get("retrieval_lane")
+        or metadata.get("lane")
+        or metadata.get("lexical_strategy")
+        or hit.source
+        or ""
+    ).strip()
+    return lane or "unknown"
+
+
+def _annotate_hits_with_lane(
+    hits: list[RetrievalHit],
+    *,
+    lane: str,
+) -> list[RetrievalHit]:
+    out: list[RetrievalHit] = []
+    for hit in hits:
+        metadata = {
+            **(hit.metadata if isinstance(hit.metadata, dict) else {}),
+            "retrieval_lane": lane,
+            "lane_score": hit.score,
+        }
+        if lane in {"bm25", "regex", "lexical"}:
+            metadata.setdefault("lexical_strategy", lane)
+        out.append(
+            RetrievalHit(
+                id=hit.id,
+                content=hit.content,
+                source=hit.source,
+                score=hit.score,
+                source_uri=hit.source_uri,
+                metadata=metadata,
+            )
+        )
+    return out
+
+
+def _lane_counts(*hit_lists: list[RetrievalHit]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for hits in hit_lists:
+        for hit in hits:
+            lane = _lane_for_hit(hit)
+            counts[lane] = counts.get(lane, 0) + 1
+    return dict(sorted(counts.items(), key=lambda item: item[0]))
+
+
 async def _record_kg_access(
     store: object,
     claim_ids: list[str],
@@ -267,6 +315,9 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
     ]
     vector_hits = _normalize_hits(kwargs.get("vector_hits"), default_source="vector")
     kg_hits = _normalize_hits(kwargs.get("kg_hits"), default_source="kg")
+    bm25_hits = _normalize_hits(kwargs.get("bm25_hits"), default_source="bm25")
+    regex_hits = _normalize_hits(kwargs.get("regex_hits"), default_source="regex")
+    lexical_hits = _normalize_hits(kwargs.get("lexical_hits"), default_source="lexical")
     if (
         not vector_hits
         and kwargs.get("use_vector_store") is True
@@ -304,9 +355,18 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
     else:
         kg_search_failed = False
 
-    pre_filter_hit_count = len(vector_hits) + len(kg_hits)
+    vector_hits = _annotate_hits_with_lane(vector_hits, lane="vector")
+    kg_hits = _annotate_hits_with_lane(kg_hits, lane="kg")
+    lexical_hits = [
+        *_annotate_hits_with_lane(bm25_hits, lane="bm25"),
+        *_annotate_hits_with_lane(regex_hits, lane="regex"),
+        *_annotate_hits_with_lane(lexical_hits, lane="lexical"),
+    ]
+
+    pre_filter_hit_count = len(vector_hits) + len(kg_hits) + len(lexical_hits)
     vector_hits = _apply_semantic_filter(vector_hits, semantic_filter)
     kg_hits = _apply_semantic_filter(kg_hits, semantic_filter)
+    lexical_hits = _apply_semantic_filter(lexical_hits, semantic_filter)
 
     degraded_reasons: list[str] = []
     if vector_search_failed:
@@ -323,7 +383,7 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         RetrievalMode.hybrid,
         RetrievalMode.temporal,
     )
-    if uses_vector and not vector_hits:
+    if uses_vector and not (vector_hits or lexical_hits):
         degraded_reasons.append("NO_VECTOR_HITS")
     if uses_kg and not kg_hits:
         degraded_reasons.append("NO_KG_HITS")
@@ -336,12 +396,17 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
 
     match plan.mode:
         case RetrievalMode.text:
-            ranked = vector_hits
+            ranked = reciprocal_rank_fusion(
+                (vector_hits, lexical_hits),
+                weights=(1.0, 0.75),
+                limit=int(kwargs.get("limit", 20)),
+            )
         case RetrievalMode.graph:
             ranked = kg_hits
         case RetrievalMode.hybrid | RetrievalMode.temporal:
             ranked = reciprocal_rank_fusion(
-                (vector_hits, kg_hits),
+                (vector_hits, kg_hits, lexical_hits),
+                weights=(1.0, 1.0, 0.75),
                 limit=int(kwargs.get("limit", 20)),
             )
 
@@ -395,6 +460,9 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 "intent": plan.mode.value,
                 "vector_hit_count": len(vector_hits),
                 "kg_hit_count": len(kg_hits),
+                "lexical_hit_count": len(lexical_hits),
+                "lane_counts": _lane_counts(vector_hits, kg_hits, lexical_hits),
+                "selected_lanes": sorted({_lane_for_hit(hit) for hit in bubble.hits}),
                 "selected_context_ids": [hit.id for hit in bubble.hits],
                 "reference_ids": [str(ref.get("id") or "") for ref in bubble.references],
                 "selected_kg_claim_ids": selected_kg_claim_ids,
@@ -447,6 +515,8 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                         if hit.source == "kg" and kg_access_count
                         else {}
                     ),
+                    "retrieval_lane": _lane_for_hit(hit),
+                    "lane_score": hit.metadata.get("lane_score", hit.score),
                     "provenance_status": provenance_by_hit_id.get(hit.id, "missing"),
                 },
             }
@@ -458,6 +528,20 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 **reference,
                 "metadata": {
                     **dict(reference.get("metadata") or {}),
+                    "retrieval_lane": _lane_for_hit(
+                        next(
+                            (
+                                hit
+                                for hit in bubble.hits
+                                if hit.id == str(reference.get("id") or "")
+                            ),
+                            RetrievalHit(
+                                id=str(reference.get("id") or ""),
+                                content="",
+                                source=str(reference.get("source") or ""),
+                            ),
+                        )
+                    ),
                     "provenance_status": provenance_by_hit_id.get(str(reference.get("id") or ""), "missing"),
                 },
             }

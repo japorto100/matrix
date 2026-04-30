@@ -192,6 +192,42 @@ async def test_retrieve_can_fail_closed_on_missing_context_provenance() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_preserves_bm25_and_regex_lane_metadata() -> None:
+    result = await retrieve(
+        "Find tool retry guard evidence",
+        mode="text",
+        bm25_hits=[
+            {
+                "id": "bm25-tool-guard",
+                "text": "Tool retry guard stops repeated tool failures.",
+                "score": 2.4,
+                "source_uri": "doc://agent-runtime",
+                "metadata": {"citation_ref": "doc://agent-runtime#bm25"},
+            }
+        ],
+        regex_hits=[
+            {
+                "id": "regex-tool-guard",
+                "text": "AGENT_MAX_TOOL_FAILURES_PER_TOOL is configured.",
+                "score": 1.8,
+                "source_uri": "doc://agent-config",
+                "metadata": {"citation_ref": "doc://agent-config#regex"},
+            }
+        ],
+    )
+
+    assert result.degraded is False
+    assert result.hits
+    lanes = {hit["metadata"]["retrieval_lane"] for hit in result.hits}
+    assert lanes <= {"bm25", "regex", "fused"}
+    assert {"bm25", "regex"} & lanes
+    completed = result.runtime_events[1]
+    assert completed["metadata"]["lexical_hit_count"] == 2
+    assert completed["metadata"]["lane_counts"] == {"bm25": 1, "regex": 1}
+    assert "Tool retry guard" not in str(completed["metadata"])
+
+
+@pytest.mark.asyncio
 async def test_retrieve_applies_semantic_filter_to_supplied_candidates() -> None:
     result = await retrieve(
         "What is the agent tool success rate?",

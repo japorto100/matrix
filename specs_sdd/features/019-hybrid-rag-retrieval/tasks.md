@@ -152,8 +152,12 @@ feature_id: 019
 
 ## 2026-04-30 Lexical / Runtime Additions
 
-- T052 Add BM25/regex retrieval lane metadata to selected context and
+- [x] T052 [done-static] Add BM25/regex retrieval lane metadata to selected context and
   degradation output.
+  - 2026-04-30: `retrieve(...)` accepts `bm25_hits`, `regex_hits` and
+    `lexical_hits`; selected hits/references preserve `retrieval_lane` and
+    `lane_score`, runtime events expose lane counts and selected lanes, and
+    lexical hits still require provenance for answer support.
 - T053 Reuse Feature 024 progressive-disclosure search primitives for tool,
   skill and source-discovery candidates where applicable.
 - [x] T054 Emit Feature 033 runtime events for retrieval start, selected contexts,

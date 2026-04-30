@@ -145,6 +145,13 @@ This avoids a false split between "normal tools" and MCP tools: both can use
 the same progressive-disclosure search primitive before exposing full schemas
 or source content to an agent.
 
+2026-04-30 runtime implementation: `retrieve(...)` now treats BM25, regex and
+generic lexical candidates as first-class runtime lanes. They can participate
+in text/hybrid/temporal ranking with lower fusion weight than vector/KG, but
+selected context still carries lane metadata and provenance status. Runtime
+events expose counts/ids/lane names only, so lexical debugging does not leak
+source bodies into Ops or Meta-Harness traces.
+
 ## 2026-04-30 Runtime Audit Follow-Up
 
 Retrieval runtime events now have a replay bridge into Ops. When a caller

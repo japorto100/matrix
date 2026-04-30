@@ -39,9 +39,14 @@ feature_id: 019
 
 ## G2 Lexical / Runtime
 
-- BM25/regex/semantic/KG lanes expose lane name, score and degradation reason.
+- [x] BM25/regex/semantic/KG lanes expose lane name, score and degradation reason.
+  - 2026-04-30: runtime retrieval annotates BM25/regex/lexical/vector/KG
+    candidates with `retrieval_lane`, `lane_score`, lane counts and selected
+    lanes without inlining source text into runtime metadata.
 - Lexical hits can improve recall but cannot become answer support without
   source/citation/provenance refs.
+  - 2026-04-30: lexical hits flow through the same
+    `require_context_provenance=True` fail-closed gate as vector/KG hits.
 - [x] Retrieval runtime events preserve selected context ids without inlining large
   source text.
   - 2026-04-30: retrieval result runtime events carry ids/counts/status only;
