@@ -98,5 +98,11 @@ event completeness alongside retrieval quality. A candidate that improves an
 answer metric but loses citation provenance, hides cache misses or fails to
 emit downstream artifact events is not promotable without an explicit waiver.
 
+2026-04-30 implementation update: `knowledge-contract` now makes that
+downstream condition executable for the provider-free suite. It requires
+RAG/KG provenance runtime events and Agent Chat stream artifact filenames for
+source lists and KG paths, so a benchmark candidate cannot pass solely by
+retrieving or answering correctly.
+
 This keeps RAG/KG/semantic experiments comparable across provider, embedding
 and local/offline candidates.

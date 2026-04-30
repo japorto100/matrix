@@ -11,7 +11,11 @@ from memory_fusion.semantic_feedback import (
     proposal_payload,
     propose_semantic_correction_from_memory,
 )
-from meta_harness.scenario_runner import TraceExpectations, evaluate_trace_gates
+from meta_harness.scenario_runner import (
+    TraceExpectations,
+    evaluate_stream_gates,
+    evaluate_trace_gates,
+)
 from semantic_layer.catalog import (
     DEFAULT_SEMANTIC_CATALOG,
     PermissionContext,
@@ -67,6 +71,7 @@ def run_knowledge_contract_scenarios(
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
         _memory_semantic_feedback_requires_review(),
+        _rag_kg_downstream_artifact_visible(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
     summary = {
@@ -393,6 +398,90 @@ def _memory_semantic_feedback_requires_review() -> dict[str, Any]:
             "feedback": feedback,
             "promotion_target": "semantic_proposal",
             "silent_catalog_mutation": False,
+        },
+    )
+
+
+def _rag_kg_downstream_artifact_visible() -> dict[str, Any]:
+    trace_events = [
+        {
+            "action": "rag_retrieval",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "rag.retrieval.completed",
+                        "metadata": {
+                            "source_artifact_id": "artifact-agent-audit",
+                            "chunk_id": "chunk-semantic-tool-success-rate",
+                            "chunk_hash": "sha256:semantic-tool-success",
+                            "citation_ref": "S1",
+                            "source_candidate_count": 2,
+                        },
+                    },
+                    {
+                        "name": "kg.context.selected",
+                        "metadata": {
+                            "claim_id": "kg-claim-tool-success-rate",
+                            "source_artifact_id": "artifact-agent-audit",
+                            "citation_ref": "S1",
+                            "semantic_term_ids": ("kg_claim",),
+                        },
+                    },
+                ]
+            },
+        }
+    ]
+    expectations = TraceExpectations(
+        required_runtime_event_names=(
+            "rag.retrieval.completed",
+            "kg.context.selected",
+        ),
+        required_runtime_event_metadata_keys={
+            "rag.retrieval.completed": (
+                "source_artifact_id",
+                "chunk_id",
+                "chunk_hash",
+                "citation_ref",
+                "source_candidate_count",
+            ),
+            "kg.context.selected": (
+                "claim_id",
+                "source_artifact_id",
+                "citation_ref",
+                "semantic_term_ids",
+            ),
+        },
+        required_stream_parts=("tool-output-available",),
+        required_stream_rich_renderers=("file_analyze",),
+        required_stream_artifact_files=("rag-kg-sources.json", "kg-paths.json"),
+    )
+    trace_verdict = evaluate_trace_gates(trace_events, expectations)
+    stream_verdict = evaluate_stream_gates(
+        [
+            'data: {"type":"start"}\n\n',
+            (
+                'data: {"type":"tool-input-start","toolName":"file_analyze",'
+                '"toolCallId":"rag-artifact"}\n\n'
+            ),
+            (
+                'data: {"type":"tool-output-available","toolName":"file_analyze",'
+                '"toolCallId":"rag-artifact","output":{"files":['
+                '{"name":"rag-kg-sources.json"},{"name":"kg-paths.json"}]}}\n\n'
+            ),
+            'data: {"type":"text-delta","delta":"Grounded sources ready."}\n\n',
+            'data: {"type":"finish"}\n\n',
+        ],
+        expectations,
+    )
+    failures = [*trace_verdict.failures, *stream_verdict.failures]
+    return _scenario_result(
+        scenario_id="knowledge-rag-kg-downstream-artifact-visible",
+        passed=trace_verdict.passed and stream_verdict.passed,
+        failures=list(failures),
+        details={
+            "trace_verdict": trace_verdict.as_dict(),
+            "stream_verdict": stream_verdict.as_dict(),
         },
     )
 

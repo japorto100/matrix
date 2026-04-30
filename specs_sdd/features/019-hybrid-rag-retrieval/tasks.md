@@ -180,3 +180,9 @@ feature_id: 019
     query text.
 - T055 Add Meta-Harness gate proving lexical candidates cannot support answers
   without provenance.
+- [partial-static] T056 Add downstream artifact gate for RAG/KG answer support.
+  - 2026-04-30: `knowledge-contract` now requires RAG/KG runtime events with
+    source artifact, chunk/hash, citation and KG claim metadata plus Agent Chat
+    stream artifact filenames `rag-kg-sources.json` and `kg-paths.json`. This
+    prevents retrieval-only success from passing when downstream sources/paths
+    would not be inspectable.

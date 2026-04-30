@@ -130,6 +130,8 @@ migrated_from:
     authorization metadata, resolved secrets and unredacted request telemetry.
   - 2026-04-30: provider-free tests also forbid raw parent history/output and
     child policy drift in subagent runtime events.
+  - 2026-04-30: provider-free stream tests require downstream RAG/KG artifact
+    filenames and renderer-capable tool output before a scenario can pass.
 - [x] T070 Add skill-search trace fields for trigger-quality/debugging:
   selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.
   - 2026-04-30: `find_skills_with_trace()` and `skill_found` audit metadata

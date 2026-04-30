@@ -473,5 +473,13 @@ directly into shared memory, and return only a parent-side memory handoff with
 digest metadata. This is intentionally provider-free and synthetic, so it tests
 the trace contract before any live A2A/provider run.
 
+2026-04-30 downstream artifact update: stream gates can now require concrete
+stream parts, rich renderer candidates and artifact filenames. The
+provider-free `knowledge-contract` uses this to make RAG/KG success depend on
+both upstream provenance (`rag.retrieval.completed` and `kg.context.selected`)
+and downstream Agent Chat-visible artifacts (`rag-kg-sources.json` and
+`kg-paths.json`). This prevents a retrieval-only candidate from passing while
+the UI would have no inspectable sources or paths.
+
 The proposer can still be Codex/manual during this phase, but candidate packets
 must contain enough raw traces for an evaluator to reject placebo changes.

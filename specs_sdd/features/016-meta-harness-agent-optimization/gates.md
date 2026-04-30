@@ -258,8 +258,10 @@ PY
   runtime-event metadata keys inside audit rows.
 - Trace gates can enforce runtime-event metadata values, including list
   membership for child tool allowlists.
-- Stream/downstream gates assert tool cards, artifact links and degradation
-  markers that Agent Chat or Control UI would display.
+- Stream/downstream gates assert tool cards, rich renderers, artifact links and
+  degradation markers that Agent Chat or Control UI would display.
 - Subagent scenarios require child isolation plus parent-side memory curation.
 - Ingestion/RAG/KG scenarios fail if downstream artifact/runtime events are
   missing even when answer text is present.
+  - 2026-04-30: `knowledge-contract` requires RAG/KG source/path artifact
+    filenames in stream output plus source/citation runtime-event metadata.

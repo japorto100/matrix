@@ -182,6 +182,9 @@ def test_trace_expectations_parse_runtime_event_gates():
             "forbidden_runtime_event_metadata_values": {
                 "*": {"headers.authorization": "Bearer sk-test"}
             },
+            "required_stream_parts": ["tool-output-available"],
+            "required_stream_rich_renderers": ["file_analyze"],
+            "required_stream_artifact_files": ["rag-sources.json"],
         }
     )
 
@@ -198,6 +201,9 @@ def test_trace_expectations_parse_runtime_event_gates():
     assert expectations.forbidden_runtime_event_metadata_values == {
         "*": {"headers.authorization": "Bearer sk-test"}
     }
+    assert expectations.required_stream_parts == ("tool-output-available",)
+    assert expectations.required_stream_rich_renderers == ("file_analyze",)
+    assert expectations.required_stream_artifact_files == ("rag-sources.json",)
 
 
 def test_trace_gates_check_route_decision_metadata(monkeypatch):
@@ -639,6 +645,55 @@ def test_stream_gates_check_ui_visible_tool_parts():
     assert verdict.passed is True
     assert verdict.observed_tools == ("get_chart_state",)
     assert verdict.observed_rich_renderers == ("get_chart_state",)
+
+
+def test_stream_gates_check_required_artifact_files_and_renderers():
+    chunks = [
+        'data: {"type":"start"}\n\n',
+        'data: {"type":"tool-input-start","toolName":"file_analyze","toolCallId":"t1"}\n\n',
+        (
+            'data: {"type":"tool-output-available","toolName":"file_analyze",'
+            '"toolCallId":"t1","output":{"files":[{"name":"rag-sources.json"}]}}\n\n'
+        ),
+        'data: {"type":"text-delta","delta":"ok"}\n\n',
+        'data: {"type":"finish"}\n\n',
+    ]
+
+    verdict = scenario_runner.evaluate_stream_gates(
+        chunks,
+        scenario_runner.TraceExpectations(
+            required_tools=("file_analyze",),
+            required_stream_parts=("tool-output-available",),
+            required_stream_rich_renderers=("file_analyze",),
+            required_stream_artifact_files=("rag-sources.json",),
+        ),
+    )
+
+    assert verdict.passed is True
+    assert verdict.observed_artifact_files == ("rag-sources.json",)
+    assert verdict.observed_rich_renderers == ("file_analyze",)
+
+
+def test_stream_gates_fail_missing_required_artifact_files_and_renderers():
+    chunks = [
+        'data: {"type":"start"}\n\n',
+        'data: {"type":"text-delta","delta":"ok"}\n\n',
+        'data: {"type":"finish"}\n\n',
+    ]
+
+    verdict = scenario_runner.evaluate_stream_gates(
+        chunks,
+        scenario_runner.TraceExpectations(
+            required_stream_parts=("tool-output-available",),
+            required_stream_rich_renderers=("file_analyze",),
+            required_stream_artifact_files=("rag-sources.json",),
+        ),
+    )
+
+    assert verdict.passed is False
+    assert "missing stream part: tool-output-available" in verdict.failures
+    assert "missing stream rich renderer: file_analyze" in verdict.failures
+    assert "missing stream artifact file: rag-sources.json" in verdict.failures
 
 
 def test_stream_gates_fail_on_soft_unavailable_tool_output():

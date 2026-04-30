@@ -115,6 +115,10 @@ feature_id: 022
   - 2026-04-30: provider-free `knowledge-contract` adds cross-feature
     memory/KG/RAG/semantic boundary scenarios and writes Meta-Harness
     candidate artifacts. Real simulated-user live agent traces remain open.
+  - 2026-04-30: `knowledge-contract` adds
+    `knowledge-rag-kg-downstream-artifact-visible`, requiring source/path
+    artifact filenames in the Agent Chat stream in addition to RAG/KG runtime
+    source/citation events.
 - T031 [partial-done] Add Pareto candidates for retrieval mode and embedding dimension.
   - 2026-04-27: retrieval mode candidates include split summaries and
     holdout-pass fields for outer-loop decisions. Embedding-dimension

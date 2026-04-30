@@ -453,8 +453,14 @@ feature_id: 016
     `memory_write_policy=parent_only`, `allowed_tools=semantic_lookup`, forbids
     `memory_add`, and requires `memory.retain.blocked` for child durable memory
     writes. Live A2A/provider execution remains a separate gate.
-- T128 Add ingestion/RAG/KG downstream artifact gates so retrieval success alone
-  cannot pass a scenario.
+- [partial-static] T128 Add ingestion/RAG/KG downstream artifact gates so
+  retrieval success alone cannot pass a scenario.
+  - 2026-04-30: `TraceExpectations` now supports required stream parts, rich
+    renderers and artifact filenames. `knowledge-contract` includes
+    `knowledge-rag-kg-downstream-artifact-visible`, which requires
+    RAG/KG runtime events with source/citation metadata and Agent Chat stream
+    artifacts `rag-kg-sources.json` plus `kg-paths.json`. Browser visual
+    rendering and live ingestion remain separate gates.
 
 ## Verify Gates
 

@@ -126,6 +126,13 @@ citation, memory raw evidence ref, document/chunk or KG claim ref. This keeps
 regex/BM25/semantic discovery useful without allowing unattributed context to
 silently become answer evidence.
 
+2026-04-30 downstream artifact follow-up: provider-free `knowledge-contract`
+now connects retrieval provenance to Agent Chat downstream visibility. RAG/KG
+runtime events must carry source artifact, chunk/hash, citation and claim
+metadata, and the stream gate must expose source/path artifact filenames. This
+keeps retrieval quality and UI inspectability coupled before browser/live
+verification.
+
 ## 2026-04-30 BM25 / Regex Discovery Transfer
 
 Inputs: `Z_Additional_For_Tool_Stuff.md`, Feature 024 tool search and Feature

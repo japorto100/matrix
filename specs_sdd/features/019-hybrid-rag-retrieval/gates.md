@@ -25,6 +25,9 @@ feature_id: 019
 - 2026-04-30: selected `retrieve(...)` context emits `provenance_status` on
   hits/references and supports `require_context_provenance=True` as a
   fail-closed gate.
+- 2026-04-30: `knowledge-contract` also gates downstream Agent Chat-visible
+  RAG/KG source/path artifact filenames, so provenance must be inspectable
+  beyond answer text.
 
 - Remote embeddings are configurable without hardcoding one provider.
 - Local embedding downloads are disabled by default and cache to HDD when

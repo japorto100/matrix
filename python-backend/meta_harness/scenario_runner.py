@@ -142,6 +142,9 @@ class TraceExpectations:
     forbidden_runtime_event_metadata_values: dict[str, dict[str, str]] = field(
         default_factory=dict
     )
+    required_stream_parts: tuple[str, ...] = ()
+    required_stream_rich_renderers: tuple[str, ...] = ()
+    required_stream_artifact_files: tuple[str, ...] = ()
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
@@ -225,6 +228,15 @@ class TraceExpectations:
             ),
             forbidden_runtime_event_metadata_values=(
                 forbidden_runtime_event_metadata_values
+            ),
+            required_stream_parts=tuple(
+                str(x) for x in raw.get("required_stream_parts", [])
+            ),
+            required_stream_rich_renderers=tuple(
+                str(x) for x in raw.get("required_stream_rich_renderers", [])
+            ),
+            required_stream_artifact_files=tuple(
+                str(x) for x in raw.get("required_stream_artifact_files", [])
             ),
             required_route_decisions=tuple(
                 str(x) for x in raw.get("required_route_decisions", [])
@@ -1024,6 +1036,16 @@ def evaluate_stream_gates(
     for tool in expectations.required_tools:
         if tool not in observed_tools:
             failures.append(f"missing stream tool part: {tool}")
+
+    for part in expectations.required_stream_parts:
+        if part not in observed_parts:
+            failures.append(f"missing stream part: {part}")
+    for renderer in expectations.required_stream_rich_renderers:
+        if renderer not in rich_renderers:
+            failures.append(f"missing stream rich renderer: {renderer}")
+    for artifact_file in expectations.required_stream_artifact_files:
+        if artifact_file not in artifact_files:
+            failures.append(f"missing stream artifact file: {artifact_file}")
 
     if expectations.required_tools and "tool-output-available" not in observed_parts:
         failures.append("missing stream tool-output-available part")

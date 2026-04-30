@@ -44,3 +44,9 @@ matters for subagent observability because a trace that merely says
 isolated context mode, parent-only memory policy and child tool allowlist
 membership while rejecting direct memory-write tools or raw parent history in
 runtime-event metadata.
+
+Stream gates now also have explicit downstream artifact assertions. A
+RAG/KG scenario can require `tool-output-available`, a renderer-capable tool and
+specific artifact filenames, while trace gates require the corresponding
+source/citation runtime events. This keeps observability tied to what Agent Chat
+can actually render, not only to retrieval scores.
