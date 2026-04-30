@@ -107,6 +107,8 @@ feature_id: 029
     and KG claim ids without raw source text.
   - 2026-04-30: memory recall/retain audit rows now carry matching runtime
     events for completed recall/retain and retain-timeout states.
+  - 2026-04-30: tool call/result audit rows now carry Feature-033 `tool`
+    runtime events with `tool_call_id`, duration/status and result-key metadata.
 - T040 Add status/kill/pause/replay controls where backend support exists and
   explicit unsupported outcomes elsewhere.
 - T041 Link ops events to Prompt Cache and Report Artifact surfaces.

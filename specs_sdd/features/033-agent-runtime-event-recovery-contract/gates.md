@@ -16,7 +16,9 @@ feature_id: 033
     remains open.
   - 2026-04-30 partial: memory audit rows preserve thread id and runtime
     envelope metadata for recall/retain replay.
-- G002 Runtime events preserve tool_call_id where applicable.
+- [x] G002 Runtime events preserve tool_call_id where applicable.
+  - 2026-04-30: `tool_node` runtime events include `tool_call_id` for started
+    and result paths, and focused tests assert the id survives audit metadata.
 - [x] G003 Raw secrets, provider reasoning and oversized payloads are redacted
   or capped.
   - 2026-04-30: runtime event payloads use the shared redaction contract, and

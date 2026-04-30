@@ -28,6 +28,9 @@ feature_id: 033
     unavailable, blocked, completed, failed and timeout/stale outcomes.
   - 2026-04-30: successful memory recall/retain and retain-timeout audit rows
     persist the same runtime envelopes for replay.
+  - 2026-04-30: tool execution emits `tool` runtime events for started,
+    completed, failed and timeout/stale paths, preserving `tool_call_id` and
+    result-key metadata without inlining tool output.
   - 2026-04-30: retrieval API emits RAG runtime events for start/completion and
     KG selection events when claims survive context-bubble selection.
   - 2026-04-30: scoped retrieval calls persist the same redacted RAG/KG runtime
@@ -57,7 +60,7 @@ feature_id: 033
   - 2026-04-30: `agent.control.ops` exposes redacted runtime events from audit
     metadata in `agent-ops-event/v1`, and `/control/ops` renders Runtime Lanes
     with kind/status rollups and event drilldown.
-  - 2026-04-30: LLM, Memory and scoped RAG/KG producers now write runtime
+  - 2026-04-30: LLM, Tool, Memory and scoped RAG/KG producers now write runtime
     events into audit metadata, giving Ops real replay input beyond frontend
     stream state.
 - T022 Add Meta-Harness gates for event completeness and redaction.

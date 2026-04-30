@@ -123,3 +123,8 @@ query/source text stays outside the event payload.
 runtime envelopes too. That means the Ops Runtime Lanes can explain memory
 selection, retain route/provider and timeout/stale states from audit replay
 without parsing prompt text or assistant output.
+
+2026-04-30 tool follow-up: tool call/result audit rows now include `tool`
+runtime events. Ops can distinguish started/completed/failed/stale tool
+lifecycles, retain `tool_call_id` for downstream chat correlation, and show
+result-key metadata without copying full tool output into the event lane.

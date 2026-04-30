@@ -17,6 +17,7 @@ import anyio
 from agent.context import AgentExecutionContext
 from agent.graph.state import AgentGraphState, ToolResult
 from agent.roles import TRADING_ROLE_TOOLS, TradingRole
+from agent.runtime_events import make_runtime_event
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
 
     tool_results: list[ToolResult] = []
     tool_messages: list[dict[str, Any]] = []
+    runtime_events: list[dict[str, Any]] = []
 
     for tc, raw_result in zip(tool_calls, results):
         if isinstance(raw_result, BaseException):
@@ -100,6 +102,16 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
             tr = raw_result  # type: ignore[assignment]  # gather returns ToolResult when no exception
 
         tool_results.append(tr)
+        runtime_events.append(
+            _tool_runtime_event(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                status="failed" if tr["error"] else "completed",
+                thread_id=ctx.thread_id,
+                summary="Tool execution failed" if tr["error"] else "Tool execution completed",
+                metadata=_tool_result_event_metadata(tr),
+            )
+        )
 
         # Sanitize before sending to LLM (P0: XML tags, P1: regex, P2: PromptGuard)
         if tr["error"]:
@@ -140,6 +152,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         "tool_results": tool_results,
         "tool_calls": [],  # Clear pending calls
         "messages": tool_messages,
+        "runtime_events": runtime_events,
     }
 
 
@@ -169,6 +182,42 @@ def _cap_tool_llm_content(tool_name: str, content: str) -> str:
     return content[:TOOL_LLM_OUTPUT_MAX_CHARS].rstrip() + marker
 
 
+def _tool_runtime_event(
+    *,
+    tool_call_id: str,
+    tool_name: str,
+    status: str,
+    thread_id: str,
+    summary: str,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload = {
+        "tool_call_id": tool_call_id,
+        "tool_name": tool_name,
+        **(metadata or {}),
+    }
+    return make_runtime_event(
+        kind="tool",  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        name=f"tool.{tool_name}",
+        summary=summary,
+        thread_id=thread_id,
+        metadata=payload,
+    )
+
+
+def _tool_result_event_metadata(result: ToolResult) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
+        "result_type": type(result["result"]).__name__,
+        "has_error": bool(result["error"]),
+    }
+    if isinstance(result["result"], dict):
+        metadata["result_keys"] = list(result["result"].keys())[:20]
+    if result["error"]:
+        metadata["error_type"] = "tool_error"
+    return metadata
+
+
 async def _execute_single(
     tc: dict[str, Any],
     registry: ToolRegistry,
@@ -181,6 +230,14 @@ async def _execute_single(
     tool = registry.lookup(tc["tool_name"])
     budget_metadata = _tool_budget_metadata(ctx.thread_id, tc["tool_name"])
     if not tool:
+        runtime_event = _tool_runtime_event(
+            tool_call_id=tc["tool_call_id"],
+            tool_name=tc["tool_name"],
+            status="failed",
+            thread_id=ctx.thread_id,
+            summary="Tool lookup failed",
+            metadata={"error_type": "unknown_tool"},
+        )
         await audit_log(
             action=AuditAction.TOOL_RESULT,
             thread_id=ctx.thread_id,
@@ -188,7 +245,7 @@ async def _execute_single(
             input_data=tc["tool_input"],
             success=False,
             output_data={"error": f"Unknown tool: {tc['tool_name']}"},
-            metadata=budget_metadata,
+            metadata={**budget_metadata, "runtime_events": [runtime_event]},
         )
         return ToolResult(
             tool_call_id=tc["tool_call_id"],
@@ -201,13 +258,21 @@ async def _execute_single(
         tc["tool_name"], "mcp" if hasattr(tool, "mcp") else "builtin"
     ) as span:
         start = audit_timer()
+        started_event = _tool_runtime_event(
+            tool_call_id=tc["tool_call_id"],
+            tool_name=tc["tool_name"],
+            status="started",
+            thread_id=ctx.thread_id,
+            summary="Tool execution started",
+            metadata=budget_metadata,
+        )
         await audit_log(
             action=AuditAction.TOOL_CALL,
             thread_id=ctx.thread_id,
             agent_id=ctx.user_id,
             tool_name=tc["tool_name"],
             input_data=tc["tool_input"],
-            metadata=budget_metadata,
+            metadata={**budget_metadata, "runtime_events": [started_event]},
         )
 
         try:
@@ -220,6 +285,23 @@ async def _execute_single(
                 result = await tool.execute(tc["tool_input"], ctx)
 
             elapsed = audit_duration(start)
+            runtime_event = _tool_runtime_event(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                status="completed",
+                thread_id=ctx.thread_id,
+                summary="Tool execution completed",
+                metadata={
+                    **budget_metadata,
+                    "duration_ms": elapsed,
+                    "result_type": type(result).__name__,
+                    **(
+                        {"result_keys": list(result.keys())[:20]}
+                        if isinstance(result, dict)
+                        else {}
+                    ),
+                },
+            )
             await audit_log(
                 action=AuditAction.TOOL_RESULT,
                 thread_id=ctx.thread_id,
@@ -229,7 +311,7 @@ async def _execute_single(
                 output_data=result,
                 duration_ms=elapsed,
                 success=True,
-                metadata=budget_metadata,
+                metadata={**budget_metadata, "runtime_events": [runtime_event]},
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -244,6 +326,19 @@ async def _execute_single(
         except TimeoutError:
             elapsed = audit_duration(start)
             effective_timeout = _effective_tool_timeout(tc["tool_name"])
+            runtime_event = _tool_runtime_event(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                status="stale",
+                thread_id=ctx.thread_id,
+                summary="Tool execution timed out",
+                metadata={
+                    **budget_metadata,
+                    "duration_ms": elapsed,
+                    "timeout_s": effective_timeout,
+                    "error_type": "timeout",
+                },
+            )
             await audit_log(
                 action=AuditAction.TOOL_RESULT,
                 thread_id=ctx.thread_id,
@@ -253,7 +348,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": f"timeout after {effective_timeout}s"},
-                metadata=budget_metadata,
+                metadata={**budget_metadata, "runtime_events": [runtime_event]},
             )
 
             span.set_attribute("tool.duration_ms", elapsed)
@@ -268,6 +363,18 @@ async def _execute_single(
             )
         except Exception as e:
             elapsed = audit_duration(start)
+            runtime_event = _tool_runtime_event(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                status="failed",
+                thread_id=ctx.thread_id,
+                summary="Tool execution failed",
+                metadata={
+                    **budget_metadata,
+                    "duration_ms": elapsed,
+                    "error_type": type(e).__name__,
+                },
+            )
             await audit_log(
                 action=AuditAction.TOOL_RESULT,
                 thread_id=ctx.thread_id,
@@ -277,7 +384,7 @@ async def _execute_single(
                 duration_ms=elapsed,
                 success=False,
                 output_data={"error": str(e)},
-                metadata=budget_metadata,
+                metadata={**budget_metadata, "runtime_events": [runtime_event]},
             )
 
             span.set_attribute("tool.duration_ms", elapsed)

@@ -152,6 +152,9 @@ async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
     assert result["messages"][0]["tool_call_id"] == "call_123"
     assert result["messages"][0]["tool_use_id"] == "call_123"
     assert '{"ok": true}' in result["messages"][0]["content"]
+    assert result["runtime_events"][0]["kind"] == "tool"
+    assert result["runtime_events"][0]["status"] == "completed"
+    assert result["runtime_events"][0]["metadata"]["tool_call_id"] == "call_123"
 
 
 @pytest.mark.asyncio
@@ -239,3 +242,8 @@ async def test_execute_single_audits_tool_budget_metadata(monkeypatch):
     assert result_event["metadata"]["tokens_used"] == 123
     assert result_event["metadata"]["iterations_used"] == 1
     assert result_event["metadata"]["iterations_limit"] > 0
+    runtime_event = result_event["metadata"]["runtime_events"][0]
+    assert runtime_event["kind"] == "tool"
+    assert runtime_event["status"] == "completed"
+    assert runtime_event["metadata"]["tool_call_id"] == "call_budget"
+    assert runtime_event["metadata"]["result_keys"] == ["ok"]

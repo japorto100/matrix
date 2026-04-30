@@ -43,7 +43,7 @@ currently returns runtime events in graph/API state also persists a redacted
 event reference for replay: memory retain/recall, RAG retrieval, KG claim
 selection, tool execution and subagent lifecycle.
 
-2026-04-30 implementation update: LLM, memory recall/retain and scoped RAG/KG
-retrieval now persist runtime-event envelopes into audit metadata. Tool
-execution and durable subagent registry/replay are the remaining producer
-classes before Ops replay can be considered complete.
+2026-04-30 implementation update: LLM, tool execution, memory recall/retain and
+scoped RAG/KG retrieval now persist runtime-event envelopes into audit metadata.
+Durable subagent registry/replay is the remaining producer class before Ops
+replay can be considered complete.
