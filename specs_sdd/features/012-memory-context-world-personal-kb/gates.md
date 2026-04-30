@@ -93,6 +93,9 @@ feature_id: 012
 - [x] Current/live-market prompts without personal-memory cues skip automatic
   personal-memory prefetch before Memory-Fusion/MemPalace engine lookup and
   emit a `memory.recall.skipped` runtime event.
+- [x] Remote embedding audit metadata redacts API keys while preserving
+  provider/model/base-url host, key presence, key fingerprint and live-call
+  budget for Control/Meta-Harness inspection.
 - [ ] Hindsight and MemPalace share one evaluated embedding dimension or have
   explicitly separated indexes plus a reset/re-embedding migration plan.
 - [ ] Reranker strategy is Pareto-evaluated (`rrf`, local cross-encoder,

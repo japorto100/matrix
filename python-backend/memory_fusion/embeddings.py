@@ -12,6 +12,7 @@ import os
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
+from urllib.parse import urlparse
 
 import httpx
 
@@ -71,6 +72,32 @@ def _deterministic_vector(text: str, dim: int) -> list[float]:
     return values
 
 
+def _secret_fingerprint(secret: str) -> str:
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()[:12]
+
+
+def embedding_audit_snapshot(
+    *,
+    provider: str,
+    model: str,
+    base_url: str = "",
+    api_key: str = "",
+) -> dict[str, str | bool | int]:
+    """Return redacted, provider-agnostic embedding config metadata."""
+    parsed = urlparse(base_url) if base_url else None
+    api_key_present = bool(api_key.strip())
+    return {
+        "provider": provider,
+        "model": model,
+        "base_url_host": parsed.netloc if parsed else "",
+        "api_key_present": api_key_present,
+        "api_key_redacted": "[redacted]" if api_key_present else "",
+        "api_key_fingerprint": _secret_fingerprint(api_key) if api_key_present else "",
+        "quota_policy": os.environ.get("MEMORY_EMBEDDING_QUOTA_POLICY", "unset"),
+        "live_call_budget": _env_int("MEMORY_EMBEDDING_LIVE_CALL_BUDGET", 1),
+    }
+
+
 @dataclass
 class OpenRouterEmbedder:
     """OpenRouter embeddings client.
@@ -83,6 +110,14 @@ class OpenRouterEmbedder:
     model: str = "sentence-transformers/all-minilm-l6-v2"
     base_url: str = "https://openrouter.ai/api/v1"
     timeout_s: float = 30.0
+
+    def audit_metadata(self) -> dict[str, str | bool | int]:
+        return embedding_audit_snapshot(
+            provider="openrouter",
+            model=self.model,
+            base_url=self.base_url,
+            api_key=self.api_key,
+        )
 
     async def embed(self, texts: str | Sequence[str]) -> list[list[float]]:
         texts = _coerce_texts(texts)

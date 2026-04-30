@@ -381,3 +381,13 @@ the user also gives a memory/personal cue such as "my", "previous", "remember",
 `memory.recall.skipped` with a provider-agnostic reason so Agent Chat,
 Control UI and Meta-Harness traces can distinguish intentional skip from memory
 unavailability.
+
+## 2026-04-30 Embedding Audit Follow-Up
+
+Remote memory embeddings now have a small provider-agnostic audit snapshot.
+The snapshot records provider, model, base-url host, API-key presence, a short
+key fingerprint, quota policy and live-call budget, while replacing the actual
+key with `[redacted]`. This is intentionally separate from model-quality
+promotion: it satisfies the redaction/quota visibility gate, but T039e still
+requires retrieval-quality and cost evidence before changing production
+embedding defaults.

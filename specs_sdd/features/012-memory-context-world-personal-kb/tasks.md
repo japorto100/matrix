@@ -105,8 +105,13 @@ migrated_from:
   Postgres/pgvector while preserving the Hindsight-compatible async API.
 - T039e Evaluate OpenRouter embedding model defaults for quality/cost; free
   model is allowed for dev smoke only until retrieval quality is measured.
-- T039f Add credential/redaction/quota audit gate for remote embedding calls
-  because MemPalace drawers may contain raw chat and tool output.
+- [x] T039f [done-static] Add credential/redaction/quota audit gate for remote
+  embedding calls because MemPalace drawers may contain raw chat and tool
+  output.
+  - 2026-04-30: `embedding_audit_snapshot` and
+    `OpenRouterEmbedder.audit_metadata()` expose provider/model/base-url host,
+    key presence, key fingerprint, redacted key marker and live-call budget
+    without leaking the raw API key.
 - [x] T039g Research upstream MemPalace and Hindsight recommendations for embedding
   model/vector dimension; distinguish vector dimension from MemPalace's
   house/room/drawer hierarchy and record reset/re-embedding requirements.

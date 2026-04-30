@@ -232,6 +232,8 @@ PY
 - Runtime anti-bloat gates verify current/live-market prompts without
   personal-memory cues emit `memory.recall.skipped` before engine lookup,
   while memory-cued market prompts still enter recall.
+- Embedding provider snapshots used by Memory-Fusion expose quota and redacted
+  credential metadata but never raw API keys.
 - Memory fixture manifests capture `user_id`, `bank_id`, `palace_path`,
   provider env and seed data for reproduction.
 - Config snapshots expose Memory-Fusion Pareto hypotheses: embedding model/

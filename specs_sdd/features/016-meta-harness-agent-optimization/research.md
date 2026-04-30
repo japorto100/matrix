@@ -537,3 +537,10 @@ lookup and surfaces `memory.recall.skipped`. Market prompts that mention
 personal allocations, previous preferences or explicit recall still flow into
 normal memory recall. This gives the Meta-Harness a clean upstream signal for
 "no MemPalace injection" without relying on absence of context text alone.
+
+2026-04-30 embedding audit update: Memory-Fusion now exposes redacted embedding
+provider metadata through a provider-agnostic snapshot. The Meta-Harness can
+inspect provider/model/base-url host, key presence/fingerprint, quota policy and
+live-call budget without ever seeing the raw OpenRouter key. This supports
+Feature 012 T039f while keeping model-quality selection (T039e) as a separate
+Pareto/search problem.
