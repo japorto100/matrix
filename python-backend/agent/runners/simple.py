@@ -123,7 +123,13 @@ async def _run_simple(
     """Core multi-turn loop — delegates to llm_node + tool_node."""
     from agent.graph.nodes.llm_node import llm_node
     from agent.graph.nodes.tool_node import tool_node
-    from agent.graph.runner import _memory_bank_id_for_user
+    from agent.graph.runner import (
+        CONTEXT_OVERFLOW_RETRY_FLAG,
+        _compress_messages_for_context_overflow_retry,
+        _context_overflow_retry_event,
+        _is_context_overflow_recovery,
+        _memory_bank_id_for_user,
+    )
     from agent.security.credentials import get_user_role_model
     from agent.sessions import create_session, update_session
     from agent.tracing import session_span, set_session_summary
@@ -190,12 +196,38 @@ async def _run_simple(
         all_tool_results: list[dict[str, Any]] = []
         try:
             yield sse(TextStartPacket(id=text_id))
+            context_overflow_retried = False
 
             for iteration in range(MAX_ITERATIONS):
                 state["iteration"] = iteration
 
                 # Reuses every Phase-B hook wired into llm_node.
-                llm_out = await llm_node(state)
+                try:
+                    llm_out = await llm_node(state)
+                except Exception as exc:  # noqa: BLE001
+                    if context_overflow_retried or not _is_context_overflow_recovery(exc):
+                        raise
+                    before_messages = len(state["messages"])
+                    state["messages"] = await _compress_messages_for_context_overflow_retry(
+                        state["messages"],
+                        ctx=ctx,
+                    )
+                    context_overflow_retried = True
+                    event = _context_overflow_retry_event(
+                        thread_id=ctx.thread_id,
+                        runner="simple",
+                        before_messages=before_messages,
+                        after_messages=len(state["messages"]),
+                        error=exc,
+                    )
+                    state["runtime_events"] = list(state.get("runtime_events") or []) + [
+                        event
+                    ]
+                    flags = list(state.get("degradation_flags") or [])
+                    if CONTEXT_OVERFLOW_RETRY_FLAG not in flags:
+                        flags.append(CONTEXT_OVERFLOW_RETRY_FLAG)
+                    state["degradation_flags"] = flags
+                    llm_out = await llm_node(state)
                 _merge(state, llm_out)
 
                 tool_calls = state.get("tool_calls") or []

@@ -182,6 +182,15 @@ context blocks, not as bare user instructions, and prompt-injection-like text
 inside the summary is flagged. This does not replace future compression
 quality gates, but it removes the most obvious poisoning failure mode.
 
+2026-04-30 context-overflow retry update: the error classifier already mapped
+context overflow to `RecoveryStrategy.compress`, but the main runners did not
+act on it. LangGraph and SimpleLoop now do one bounded recovery attempt:
+compress current messages, reset iteration state for the compressed prompt,
+emit `llm.context_overflow_compress_retry`, then retry once. If the retry
+fails, normal ErrorPacket classification still surfaces the provider failure.
+This is the Matrix interpretation of Hermes' compression retry reset: recover
+from a too-large prompt without entering a provider retry loop.
+
 ## 2026-04-30 Runtime Tool Discovery Slice
 
 The earlier progressive-disclosure work lived mostly in Control/catalog

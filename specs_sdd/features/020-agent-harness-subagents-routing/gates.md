@@ -32,6 +32,11 @@ feature_id: 020
   - 2026-04-30: compressed summaries are wrapped as untrusted
     `context_summary` blocks and regex-detected injection text adds a security
     warning before the next LLM turn sees the summary.
+- [x] Context-overflow recovery retries once after compression and resets retry
+  state.
+  - 2026-04-30: LangGraph and SimpleLoop classify context overflow via the
+    provider-agnostic error classifier, compress messages, retry exactly once
+    from iteration zero and surface `context_overflow_compress_retry`.
 - [ ] Subagent behavior remains out of production until search and holdout
   gates prove value.
   - 2026-04-30: domain delegate candidate metadata now records

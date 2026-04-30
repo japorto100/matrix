@@ -173,6 +173,14 @@ phrases, a security warning is added before reinsertion. This does not make
 LLM compression fully trustworthy, but it gives the next turn a clear boundary
 between current user intent and lossy historical context.
 
+2026-04-30 context-overflow recovery update: provider errors classified as
+context overflow now trigger a bounded compression recovery in both runners.
+The harness compresses the active messages, restarts the retry from iteration
+zero for that compressed context and surfaces
+`context_overflow_compress_retry`. The guard is deliberately one-shot; repeated
+provider failures still exit through the normal ErrorPacket path instead of
+looping.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

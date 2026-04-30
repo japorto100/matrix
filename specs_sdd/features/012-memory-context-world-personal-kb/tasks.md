@@ -192,6 +192,12 @@ migrated_from:
     `<context_summary trusted="false">` with explicit "historical context only"
     wording. Regex-detected injection-like text adds a security warning before
     the summary is reinserted into the message list.
+- [x] T053 [done-static] Connect context-overflow provider errors to bounded
+  compression recovery.
+  - 2026-04-30: when the provider-agnostic error classifier returns
+    `RecoveryStrategy.compress`, both agent runners compress the active message
+    set and retry exactly once from fresh iteration state, surfacing
+    `context_overflow_compress_retry` metadata.
 
 ## Global World Evidence And KG Handoff
 

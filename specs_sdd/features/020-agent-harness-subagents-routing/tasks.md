@@ -175,6 +175,12 @@ feature_id: 020
   - 2026-04-30: compressed context summaries are now explicitly untrusted and
     injection-pattern marked before reinsertion. Compression retry reset remains
     open; context-poisoning has a first static guard under Feature 012.
+  - 2026-04-30: context-overflow recovery now performs exactly one
+    compress-and-retry in both LangGraph and SimpleLoop, resets the retry state
+    to iteration zero for the compressed message set, and emits
+    `context_overflow_compress_retry` degradation/runtime metadata. This closes
+    the compression retry reset slice; broader provider fallback loops remain
+    Feature 011 work.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.

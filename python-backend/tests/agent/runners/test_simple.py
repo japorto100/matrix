@@ -395,6 +395,53 @@ async def test_simple_loop_stops_repeated_tool_failures(monkeypatch):
     assert "tool_retry_guard_stopped" in joined
 
 
+@pytest.mark.asyncio
+async def test_simple_loop_compress_retries_once_on_context_overflow():
+    """Context-overflow LLM errors trigger one compress-and-retry path."""
+    from agent.runners import simple
+
+    llm_calls = 0
+
+    async def _fake_llm_node(state):
+        nonlocal llm_calls
+        llm_calls += 1
+        if llm_calls == 1:
+            raise RuntimeError("context length exceeded: prompt is too long")
+        assert "context_overflow_compress_retry" in state["degradation_flags"]
+        return {
+            "final_response": "Recovered.",
+            "messages": [{"role": "assistant", "content": "Recovered."}],
+            "tool_calls": [],
+            "runtime_events": [],
+        }
+
+    async def _fake_approval_node(state):
+        return {"tool_calls": state["tool_calls"]}
+
+    async def _fake_tool_node(state):
+        pytest.fail("tool_node must not run for no-tool context retry")
+
+    with _simple_runner_patches(
+        llm_node=_fake_llm_node,
+        approval_node=_fake_approval_node,
+        tool_node=_fake_tool_node,
+    ):
+        chunks = [
+            c
+            async for c in simple.run_simple_agent_loop(
+                _make_ctx(),
+                [{"role": "user", "content": "x" * 1000}],
+                ab_row_id=None,
+            )
+        ]
+
+    joined = "\n".join(chunks)
+    assert llm_calls == 2
+    assert "Recovered." in joined
+    assert "llm.context_overflow_compress_retry" in joined
+    assert "context_overflow_compress_retry" in joined
+
+
 def _make_ctx():
     from agent.context import AgentExecutionContext
     from agent.tools.registry import ToolRegistry

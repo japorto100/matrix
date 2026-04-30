@@ -28,6 +28,8 @@ from agent.streaming import (
 
 logger = logging.getLogger(__name__)
 
+CONTEXT_OVERFLOW_RETRY_FLAG = "context_overflow_compress_retry"
+
 
 TOOL_INSTRUCTION_PROMPT = """
 ## Tool Instruction Compliance
@@ -114,6 +116,57 @@ def _schedule_safe_sync_turn(
             final_response=final_response,
             generation=generation,
         )
+    )
+
+
+def _is_context_overflow_recovery(exc: BaseException) -> bool:
+    try:
+        from agent.resilience.error_classifier import RecoveryStrategy, classify_error
+
+        return classify_error(exc).recovery is RecoveryStrategy.compress
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _context_overflow_retry_event(
+    *,
+    thread_id: str,
+    runner: str,
+    before_messages: int,
+    after_messages: int,
+    error: BaseException,
+) -> dict:
+    from agent.runtime_events import make_runtime_event
+
+    return make_runtime_event(
+        kind="llm",
+        status="active",
+        name="llm.context_overflow_compress_retry",
+        summary="Context overflow recovered by compressing messages and retrying once",
+        thread_id=thread_id,
+        metadata={
+            "runner": runner,
+            "recovery_strategy": "compress",
+            "before_messages": before_messages,
+            "after_messages": after_messages,
+            "error_type": type(error).__name__,
+        },
+    )
+
+
+async def _compress_messages_for_context_overflow_retry(
+    messages: list[dict],
+    *,
+    ctx: AgentExecutionContext,
+) -> list[dict]:
+    from agent.middleware.compression import compress
+
+    keep = max(2, _int_env("AGENT_CONTEXT_OVERFLOW_RETRY_KEEP_MESSAGES", 12))
+    return await compress(
+        messages,
+        keep=keep,
+        user_id=getattr(ctx, "user_id", None),
+        bank_id=getattr(ctx, "bank_id", None) or _memory_bank_id_for_user(ctx.user_id) or "",
     )
 
 
@@ -607,7 +660,41 @@ async def _run_graph(
             text_id = "t1"
             yield sse(TextStartPacket(id=text_id))
 
-            result = await graph.ainvoke(initial_state, config=config)
+            compressed_retry_event: dict | None = None
+            try:
+                result = await graph.ainvoke(initial_state, config=config)
+            except Exception as first_exc:  # noqa: BLE001
+                if not _is_context_overflow_recovery(first_exc):
+                    raise
+                retry_messages = await _compress_messages_for_context_overflow_retry(
+                    initial_state["messages"],
+                    ctx=ctx,
+                )
+                compressed_retry_event = _context_overflow_retry_event(
+                    thread_id=ctx.thread_id,
+                    runner="langgraph",
+                    before_messages=len(initial_state["messages"]),
+                    after_messages=len(retry_messages),
+                    error=first_exc,
+                )
+                retry_state = {
+                    **initial_state,
+                    "messages": retry_messages,
+                    "iteration": 0,
+                    "degradation_flags": [
+                        *list(initial_state.get("degradation_flags") or []),
+                        CONTEXT_OVERFLOW_RETRY_FLAG,
+                    ],
+                    "runtime_events": [compressed_retry_event],
+                }
+                result = await graph.ainvoke(retry_state, config=config)
+                existing_events = result.get("runtime_events") or []
+                if compressed_retry_event not in existing_events:
+                    result["runtime_events"] = [compressed_retry_event, *existing_events]
+                flags = list(result.get("degradation_flags") or [])
+                if CONTEXT_OVERFLOW_RETRY_FLAG not in flags:
+                    flags.append(CONTEXT_OVERFLOW_RETRY_FLAG)
+                result["degradation_flags"] = flags
 
             final = result.get("final_response", "")
             if final:
