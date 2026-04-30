@@ -51,9 +51,15 @@ feature_id: 024
 
 ## 2026-04-30 Added Gates
 
-- [ ] MCP reload emits prompt-cache invalidation impact metadata.
-- [ ] Cached agent sessions are invalidated or rebound after descriptor/tool
+- [x] MCP reload emits prompt-cache invalidation impact metadata.
+  - 2026-04-30: confirmed and preview reloads return
+    `agent-cache-impact/v1` metadata with previous/current catalog digests.
+- [x] Cached agent sessions are invalidated or rebound after descriptor/tool
   catalog changes.
-- [ ] Descriptor diffs and reload decisions emit Feature 033 runtime events.
+  - 2026-04-30: unknown or changed prior digests produce `rebind_required`,
+    giving cached sessions a deterministic rebinding signal.
+- [x] Descriptor diffs and reload decisions emit Feature 033 runtime events.
+  - 2026-04-30: reload impact is mirrored as `cache.invalidated`/
+    `cache.unchanged` runtime event metadata for Ops replay.
 - [ ] Progressive discovery remains metadata-only until full schema exposure is
   policy-approved.

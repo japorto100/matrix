@@ -40,6 +40,7 @@ def test_prompt_cache_read_model_summarizes_usage_and_breaks() -> None:
 
     assert model["contract"] == "prompt-cache-read-model/v1"
     assert model["summary"]["requests"] == 1
+    assert model["summary"]["cache_impacts"] == 0
     assert model["summary"]["cache_read_tokens"] == 40
     assert model["summary"]["cache_write_tokens"] == 5
     assert model["summary"]["total_tokens"] == 120
@@ -68,3 +69,45 @@ def test_prompt_cache_read_model_preserves_unknown_cache_fields() -> None:
         "cache_read_tokens",
         "cache_write_tokens",
     ]
+
+
+def test_prompt_cache_read_model_surfaces_cache_impacts() -> None:
+    event = _audit_event(
+        metadata={
+            "cache_impact": {
+                "contract": "agent-cache-impact/v1",
+                "source": "mcp_reload",
+                "reason": "mcp_descriptor_catalog_reloaded",
+                "previous_digest": "old",
+                "next_digest": "new",
+                "previous_digest_known": True,
+                "changed": True,
+                "action": "rebind_required",
+                "scope": {"server_id": "matrix-internal"},
+                "details": {"tool_count": 1},
+            },
+            "runtime_events": [
+                {
+                    "metadata": {
+                        "cache_impact": {
+                            "contract": "agent-cache-impact/v1",
+                            "source": "mcp_reload",
+                            "reason": "mcp_descriptor_catalog_reloaded",
+                            "previous_digest": "old",
+                            "next_digest": "new",
+                            "previous_digest_known": True,
+                            "changed": True,
+                            "action": "rebind_required",
+                        }
+                    }
+                }
+            ],
+        }
+    )
+
+    model = build_prompt_cache_read_model(audit_events=[event])
+
+    assert model["summary"]["cache_impacts"] == 1
+    assert model["summary"]["cache_invalidations"] == 1
+    assert model["cache_impacts"][0]["source"] == "mcp_reload"
+    assert model["cache_impacts"][0]["links"]["ops_event"] == "/control/ops?session=thread-1"

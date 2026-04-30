@@ -34,5 +34,8 @@ feature_id: 033
     `a2a_delegation_timeout`; kill/cancel still need Control operation support.
   - 2026-04-30: memory retain timeout maps to `memory.retain.timeout`,
     status `stale` and degradation flag `memory_retain_timeout`.
-- G007 Control operations return explicit supported/unsupported outcomes.
+- [partial-static] G007 Control operations return explicit supported/unsupported outcomes.
+  - 2026-04-30: MCP and skill reload preview/confirm paths return explicit
+    status plus cache-impact runtime events. Pause/kill/replay controls still
+    need backend operation support.
 - G008 Meta-Harness can replay event streams without browser dependencies.

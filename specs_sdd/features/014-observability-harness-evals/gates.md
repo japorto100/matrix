@@ -68,5 +68,8 @@ feature_id: 014
   default.
 - Runtime event envelopes preserve event id, parent id, session id, status,
   timestamp and redacted metadata.
-- Pause/kill/replay/reload actions emit both audit-safe and trace-safe refs.
+- [partial-static] Pause/kill/replay/reload actions emit both audit-safe and
+  trace-safe refs.
+  - 2026-04-30: reload paths now emit audit-safe cache-impact metadata and
+    trace-safe runtime events; pause/kill/replay verification remains open.
 - Unknown provider counters remain explicit unknowns, not fabricated zeros.

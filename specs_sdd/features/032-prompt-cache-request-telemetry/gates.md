@@ -14,10 +14,17 @@ feature_id: 032
   memory/KG as factual user content.
 - G003 Stable prompt/tool digests are deterministic across equivalent runs.
 - G004 Cache-break events include a reason or explicitly say reason unknown.
-- G005 MCP reload and tool descriptor changes mark cache invalidation impact.
-- G006 Skills reload does not mutate the system prompt in the same turn.
+- [x] G005 MCP reload and tool descriptor changes mark cache invalidation impact.
+  - 2026-04-30: `agent-cache-impact/v1` carries previous/current digest,
+    source, reason and `rebind_required` action for MCP reloads.
+- [x] G006 Skills reload does not mutate the system prompt in the same turn.
+  - 2026-04-30: `/skills/reload` is a control action with
+    `reload_mode=next_turn_rebind`; toggles/imports audit cache-impact metadata
+    and runtime events for the next agent turn.
 - [partial-static] G007 Control UI shows cache evidence without provider-specific secrets.
   - 2026-04-30: Ops drilldown shows provider/model/cache counters and digests
     from redacted request telemetry. `/control/prompt-cache` now renders the
     dedicated trace table from the same audit-backed read model.
+  - 2026-04-30: prompt-cache read model also replays cache-impact events so the
+    surface can join cache invalidation, request telemetry and Ops events.
 - G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.

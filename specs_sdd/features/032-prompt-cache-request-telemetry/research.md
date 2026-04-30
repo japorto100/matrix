@@ -41,3 +41,9 @@ feature_id: 032
 digests, cache read/write counters and cache-break reasons. The dedicated
 `/control/prompt-cache` surface reads the same audit-backed data and keeps
 unknown counters explicit instead of fabricating cache values.
+
+2026-04-30 reload follow-up: MCP reload, skill reload, skill toggle and skill
+import now use the same provider-agnostic `agent-cache-impact/v1` envelope. The
+digest material is redacted to hashes and metadata, not raw prompts or raw skill
+content. This keeps the Hermes/OpenClaw cache-stability lesson but makes the
+contract independent of OpenAI/Anthropic-specific cache APIs.

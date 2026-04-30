@@ -107,8 +107,12 @@ migrated_from:
   prompt digest, tool digest, token counters and unknown-counter flags.
 - T067 Add runtime event envelope trace fields for run/turn/tool/memory/RAG/KG/
   artifact/subagent events.
-- T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
+- [partial-static] T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
   reload and cached-session invalidation.
+  - 2026-04-30: MCP and skill reload/toggle/import emit
+    `agent-cache-impact/v1` plus Feature 033 `cache.invalidated`/
+    `cache.unchanged` runtime events. Pause/kill/replay action traces remain
+    pending.
 - T069 Add redaction tests for request telemetry and runtime event payloads.
 - [x] T070 Add skill-search trace fields for trigger-quality/debugging:
   selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.

@@ -49,3 +49,9 @@ envelopes into audit metadata. Ops derives a static `subagent_runs` read-model
 from those events. Durable child process registry, kill/pause/replay controls
 and cost/token rollups remain the next reliability layer, not a blocker for
 audit replay.
+
+2026-04-30 cache-control update: MCP reload and skill reload/toggle/import now
+produce the same runtime event envelope with kind `control`. The payload carries
+only cache-impact digests, source/reason and rebind/no-change action metadata,
+so Ops and prompt-cache replay can show invalidation without leaking prompt,
+tool schema or skill body text.

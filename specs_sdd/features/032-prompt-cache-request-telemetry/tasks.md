@@ -27,10 +27,13 @@ feature_id: 032
 - T012 Add request metadata capture for request id, processing time and
   rate-limit headers when providers expose them.
 - T013 Add deterministic prompt/tool digest generation with secret redaction.
-- T014 Detect meaningful cache-read drops and emit a cache-break event with
+- [partial-static] T014 Detect meaningful cache-read drops and emit a cache-break event with
   reasons.
-- T015 Ensure MCP reload and tool catalog changes mark cached agent sessions
+- [x] T015 [done-static] Ensure MCP reload and tool catalog changes mark cached agent sessions
   stale or force a rebind.
+  - 2026-04-30: MCP reload and skill reload/toggle/import now return or audit
+    `agent-cache-impact/v1`; unknown or changed prior digests set
+    `rebind_required` for cached sessions without mutating the same turn.
 
 ## UI And Harness
 
@@ -46,3 +49,5 @@ feature_id: 032
   ordering.
 - T022 Add regression scenario where MCP reload invalidates cache and surfaces
   explicit impact metadata.
+  - 2026-04-30: static regressions cover MCP reload impact,
+    skill catalog digest changes and prompt-cache replay of cache-impact events.

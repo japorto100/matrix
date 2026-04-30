@@ -35,6 +35,9 @@ feature_id: 033
     KG selection events when claims survive context-bubble selection.
   - 2026-04-30: scoped retrieval calls persist the same redacted RAG/KG runtime
     events into audit metadata for Ops replay, without storing raw query text.
+  - 2026-04-30: control-plane MCP/skill reload and skill toggle/import emit
+    `control` runtime events (`cache.invalidated`/`cache.unchanged`) carrying
+    only cache-impact digests and action metadata.
 - [partial-static] T011 Add subagent registry model for accepted, started, completed, failed,
   timed out, killed and stale runs.
   - 2026-04-30: runtime event stream covers accepted/started/completed/failed

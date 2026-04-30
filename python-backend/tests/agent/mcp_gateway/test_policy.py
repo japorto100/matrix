@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 from agent.mcp_gateway.policy import (
     McpServerConfig,
@@ -407,6 +408,37 @@ async def test_control_mcp_catalog_endpoint_is_metadata_only(monkeypatch):
     assert item["provenance"]["server_id"] == "matrix-internal"
     assert item["descriptor_diff"]["changed"] is False
     assert item["descriptor_diff"]["requires_reapproval"] is False
+    assert len(payload["catalog_digest"]) == 64
+
+
+async def test_control_mcp_reload_previews_cache_impact(monkeypatch):
+    from agent.control import mcp as control_mcp
+
+    monkeypatch.setattr(
+        control_mcp,
+        "_internal_matrix_mcp",
+        lambda: {
+            "id": "matrix-internal",
+            "name": "Matrix Internal MCP",
+            "url": "http://127.0.0.1:8094/mcp",
+            "transport": "http",
+            "status": "connected",
+            "tools": ["memory_search"],
+            "last_ping": None,
+        },
+    )
+
+    req = control_mcp.ReloadMcpRequest(previous_digest="old-digest")
+    payload = await control_mcp.reload_mcp_catalog(
+        req,
+        SimpleNamespace(headers={}),
+    )
+
+    assert payload["status"] == "confirmation_required"
+    assert payload["cache_impact"]["contract"] == "agent-cache-impact/v1"
+    assert payload["cache_impact"]["source"] == "mcp_reload"
+    assert payload["cache_impact"]["action"] == "rebind_required"
+    assert payload["runtime_events"][0]["name"] == "cache.invalidated"
 
 
 async def test_agent_mcp_catalog_endpoint_filters_visible_entries(monkeypatch):

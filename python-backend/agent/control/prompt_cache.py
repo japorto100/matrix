@@ -48,19 +48,32 @@ def build_prompt_cache_read_model(
     audit_events: Iterable[dict[str, Any]],
     limit: int = 100,
 ) -> dict[str, Any]:
+    events = list(audit_events)
     items = [
         item
-        for event in audit_events
+        for event in events
         for item in _telemetry_items_from_audit_event(event)
     ][:limit]
     by_provider = _sum_counts(items, "provider")
     by_model = _sum_counts(items, "model")
     cache_breaks = _sum_break_reasons(items)
+    cache_impacts = [
+        impact
+        for event in events
+        for impact in _cache_impacts_from_audit_event(event)
+    ][:limit]
     return {
         "contract": "prompt-cache-read-model/v1",
         "items": items,
+        "cache_impacts": cache_impacts,
         "summary": {
             "requests": len(items),
+            "cache_impacts": len(cache_impacts),
+            "cache_invalidations": sum(
+                1
+                for impact in cache_impacts
+                if impact.get("action") == "rebind_required"
+            ),
             "cache_read_tokens": sum(
                 _safe_int(item["usage"].get("cache_read_tokens")) for item in items
             ),
@@ -127,6 +140,64 @@ def _telemetry_items_from_audit_event(event: dict[str, Any]) -> list[dict[str, A
             }
         )
     return items
+
+
+def _cache_impacts_from_audit_event(event: dict[str, Any]) -> list[dict[str, Any]]:
+    metadata = _as_dict(event.get("metadata"))
+    candidates: list[Any] = []
+    if metadata.get("cache_impact"):
+        candidates.append(metadata.get("cache_impact"))
+    for key in ("runtime_events", "runtimeEvents"):
+        runtime_events = metadata.get(key)
+        if not isinstance(runtime_events, list):
+            continue
+        for runtime_event in runtime_events[:50]:
+            event_metadata = _as_dict(
+                runtime_event.get("metadata") if isinstance(runtime_event, dict) else None
+            )
+            if event_metadata.get("cache_impact"):
+                candidates.append(event_metadata.get("cache_impact"))
+
+    impacts: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for raw in candidates:
+        impact = _as_dict(raw)
+        if not impact:
+            continue
+        key = "|".join(
+            (
+                str(impact.get("source") or ""),
+                str(impact.get("reason") or ""),
+                str(impact.get("previous_digest") or ""),
+                str(impact.get("next_digest") or ""),
+            )
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        impacts.append(
+            {
+                "event_id": f"audit:{event.get('id')}",
+                "audit_ref": str(event.get("id") or ""),
+                "timestamp": _iso(event.get("timestamp")),
+                "thread_id": str(event.get("thread_id") or ""),
+                "contract": str(impact.get("contract") or ""),
+                "source": str(impact.get("source") or ""),
+                "reason": str(impact.get("reason") or ""),
+                "previous_digest": str(impact.get("previous_digest") or ""),
+                "next_digest": str(impact.get("next_digest") or ""),
+                "previous_digest_known": bool(impact.get("previous_digest_known")),
+                "changed": bool(impact.get("changed")),
+                "action": str(impact.get("action") or ""),
+                "affected_sessions": impact.get("affected_sessions") or [],
+                "scope": _as_dict(impact.get("scope")),
+                "details": _as_dict(impact.get("details")),
+                "links": {
+                    "ops_event": _control_href("ops", "session", event.get("thread_id")),
+                },
+            }
+        )
+    return impacts
 
 
 def _sum_counts(items: list[dict[str, Any]], field: str) -> dict[str, int]:

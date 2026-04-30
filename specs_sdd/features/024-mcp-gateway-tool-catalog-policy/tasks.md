@@ -161,11 +161,16 @@ feature_id: 024
 
 ## 2026-04-30 Prompt Cache / Reload Additions
 
-- T048 Add MCP reload confirmation metadata with prompt-cache invalidation
+- [x] T048 [done-static] Add MCP reload confirmation metadata with prompt-cache invalidation
   impact.
-- T049 Invalidate or rebind cached agent sessions after MCP descriptor/tool
+- [x] T049 [done-static] Invalidate or rebind cached agent sessions after MCP descriptor/tool
   catalog changes.
-- T050 Emit Feature 032 cache-impact and Feature 033 runtime events for MCP
+- [x] T050 [done-static] Emit Feature 032 cache-impact and Feature 033 runtime events for MCP
   reload, descriptor diff and policy denial.
+  - 2026-04-30: `/api/v1/control/mcp/reload` previews or confirms
+    `agent-cache-impact/v1` with catalog digest, `rebind_required` action when
+    the prior digest is unknown/changed, and `cache.invalidated` runtime event.
+    Static regression covers the no-browser path in
+    `tests/agent/mcp_gateway/test_policy.py`.
 - T051 Keep progressive search metadata-only until policy allows full schema
   exposure.

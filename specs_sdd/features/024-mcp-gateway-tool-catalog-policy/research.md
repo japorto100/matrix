@@ -137,6 +137,14 @@ MCP/tool reloads must be treated as prompt-cache and runtime-cache events:
 
 The same pattern applies to builtin tools so MCP is not a special policy island.
 
+2026-04-30 implementation note: Matrix now exposes MCP reload as a
+confirmation-first control action rather than a model-visible tool. The reload
+path computes a deterministic effective-catalog digest from descriptor hashes,
+approval level, visibility and denial reasons; returns `agent-cache-impact/v1`;
+and emits a Feature 033 runtime event. This transfers the Hermes MCP reload
+lesson without copying CLI-specific behavior: the web/control surface owns the
+reload and the agent runtime receives a rebind signal.
+
 ## Checked Sources
 
 - Matrix root `Z_Additional_For_Tool_Stuff.md`.
