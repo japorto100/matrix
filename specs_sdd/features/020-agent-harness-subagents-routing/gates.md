@@ -28,6 +28,10 @@ feature_id: 020
   - 2026-04-30: runner scheduling assigns per-thread memory-sync generations;
     `_safe_sync_turn` serializes by thread and unit coverage proves stale
     generations do not call the MemoryManager.
+- [x] Compressed historical context is not reinserted as bare user intent.
+  - 2026-04-30: compressed summaries are wrapped as untrusted
+    `context_summary` blocks and regex-detected injection text adds a security
+    warning before the next LLM turn sees the summary.
 - [ ] Subagent behavior remains out of production until search and holdout
   gates prove value.
   - 2026-04-30: domain delegate candidate metadata now records

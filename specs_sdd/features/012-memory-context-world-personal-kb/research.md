@@ -165,6 +165,14 @@ runtime harness guard, not a MemoryProvider API change: providers continue to
 own retain semantics, while the agent loop prevents stale background writes
 from racing newer turns.
 
+2026-04-30 context-poisoning update: compressed summaries are no longer
+reinserted as bare user text. The summary content is wrapped as
+`<context_summary trusted="false">` and preceded with an instruction that it is
+historical context only. If the summary itself contains known prompt-injection
+phrases, a security warning is added before reinsertion. This does not make
+LLM compression fully trustworthy, but it gives the next turn a clear boundary
+between current user intent and lossy historical context.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

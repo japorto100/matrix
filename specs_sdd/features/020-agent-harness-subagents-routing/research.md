@@ -176,6 +176,12 @@ counter. `_safe_sync_turn` then serializes writes for that thread and skips old
 generations if a newer turn already scheduled persistence. Compression retry
 reset and context-poisoning gates remain separate follow-ups.
 
+2026-04-30 context-poisoning update: the first static guard is now in
+compression itself. LLM summaries are reinserted as untrusted historical
+context blocks, not as bare user instructions, and prompt-injection-like text
+inside the summary is flagged. This does not replace future compression
+quality gates, but it removes the most obvious poisoning failure mode.
+
 ## 2026-04-30 Runtime Tool Discovery Slice
 
 The earlier progressive-disclosure work lived mostly in Control/catalog

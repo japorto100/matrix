@@ -186,6 +186,12 @@ migrated_from:
 - [x] T051 [done-static] Verify compression/compaction thresholds use
   provider/model context window metadata instead of hardcoded defaults where
   available.
+- [x] T052 [done-static] Harden compressed context summaries against prompt
+  injection/context poisoning.
+  - 2026-04-30: LLM-generated compressed summaries are now wrapped in
+    `<context_summary trusted="false">` with explicit "historical context only"
+    wording. Regex-detected injection-like text adds a security warning before
+    the summary is reinserted into the message list.
 
 ## Global World Evidence And KG Handoff
 

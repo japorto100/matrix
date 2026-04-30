@@ -172,6 +172,9 @@ feature_id: 020
     runner scheduling path: automatic post-answer sync uses per-thread
     generations and skips stale generations before MemoryManager writes.
     Compression retry reset and deeper context-poisoning checks remain open.
+  - 2026-04-30: compressed context summaries are now explicitly untrusted and
+    injection-pattern marked before reinsertion. Compression retry reset remains
+    open; context-poisoning has a first static guard under Feature 012.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.
