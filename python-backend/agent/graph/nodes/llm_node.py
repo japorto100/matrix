@@ -17,6 +17,7 @@ from agent.graph.state import AgentGraphState, ToolCall
 from agent.llm.provider_capabilities import model_capabilities
 from agent.llm.request_telemetry import (
     build_request_telemetry,
+    response_metadata,
     telemetry_span_attributes,
 )
 from agent.llm_client import get_litellm_client
@@ -323,6 +324,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         _bucket_key_id = (
             credential.key_id if credential is not None else _provider_label(model)
         )
+        _rate_buckets: list[Any] = []
         try:
             _rate_buckets = get_rate_limit_registry().capture_from_response(
                 response,
@@ -380,6 +382,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         prior_request_telemetry = state.get("request_telemetry") or []
         if prior_request_telemetry:
             previous_telemetry = prior_request_telemetry[-1]
+        elapsed = audit_duration(start)
         request_telemetry = build_request_telemetry(
             provider=provider,
             model=resolved_model,
@@ -395,6 +398,11 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "routing_used": routing_used,
                 "tool_count": len(openai_tools),
                 "capabilities_known": known_capabilities,
+                "response": response_metadata(
+                    response,
+                    rate_limit_buckets=_rate_buckets,
+                    duration_ms=elapsed,
+                ),
             },
         )
         for key, value in telemetry_span_attributes(request_telemetry).items():
@@ -477,7 +485,6 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "done": not bool(tool_calls),
             },
         )
-        elapsed = audit_duration(start)
         await audit_log(
             action=AuditAction.LLM_RESPONSE,
             thread_id=thread_id,

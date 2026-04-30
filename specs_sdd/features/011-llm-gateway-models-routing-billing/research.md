@@ -108,3 +108,11 @@ The gateway needs a provider-agnostic request accounting layer:
 This is deliberately not a vendor cache implementation. It is telemetry and
 routing context that works for OpenRouter/LiteLLM-compatible, local and future
 provider adapters.
+
+2026-04-30 implementation update: request telemetry now includes redacted
+provider response metadata. The runtime extracts only allowlisted request-id
+and processing-duration headers, local request duration and normalized
+RateLimitBucket snapshots. It does not persist raw headers, raw prompt text or
+resolved credentials. This closes the non-live part of T077 and gives Feature
+032 prompt-cache/Ops surfaces enough data to explain cache and quota behavior
+without binding to a single vendor API.

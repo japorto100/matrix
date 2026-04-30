@@ -24,8 +24,12 @@ feature_id: 032
 - T010 Implement normalized usage extraction for prompt/input/output/cache
   read/cache write/total counters.
 - T011 Record last-call usage and session totals in agent runtime traces.
-- T012 Add request metadata capture for request id, processing time and
-  rate-limit headers when providers expose them.
+- [x] T012 [done-static] Add request metadata capture for request id,
+  processing time and rate-limit headers when providers expose them.
+  - 2026-04-30: LLM runtime telemetry now stores allowlisted response metadata
+    under `metadata.response`: request id, provider/local duration and
+    normalized rate-limit buckets. It intentionally excludes raw headers,
+    prompt text and secrets.
 - T013 Add deterministic prompt/tool digest generation with secret redaction.
 - [partial-static] T014 Detect meaningful cache-read drops and emit a cache-break event with
   reasons.

@@ -196,6 +196,14 @@ async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
                 choices=[SimpleNamespace(message=message)],
                 usage=None,
                 model=kwargs["model"],
+                _hidden_params={
+                    "additional_headers": {
+                        "x-request-id": "req-llm-1",
+                        "x-ratelimit-limit-requests": "100",
+                        "x-ratelimit-remaining-requests": "99",
+                        "x-ratelimit-reset-requests": "30",
+                    }
+                },
             )
 
     class _FakeClient:
@@ -248,6 +256,10 @@ async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
     assert captured["model"] == "openrouter/test-model"
     assert result["final_response"] == "ok"
     assert result["request_telemetry"][0]["contract"] == "provider-request-telemetry/v1"
+    response_metadata = result["request_telemetry"][0]["metadata"]["response"]
+    assert response_metadata["request_id"] == "req-llm-1"
+    assert response_metadata["rate_limits"][0]["window"] == "requests"
+    assert response_metadata["rate_limits"][0]["remaining"] == 99
     assert result["runtime_events"][0]["contract"] == "agent-runtime-event/v1"
     assert "say ok" not in str(result["request_telemetry"][0])
 

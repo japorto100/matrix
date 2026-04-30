@@ -127,8 +127,12 @@ migrated_from:
 
 ## 2026-04-30 Provider Telemetry Additions
 
-- T077 Add provider-agnostic request telemetry extraction for request id,
-  processing time and rate-limit headers when available.
+- [x] T077 [done-static] Add provider-agnostic request telemetry extraction for
+  request id, processing time and rate-limit headers when available.
+  - 2026-04-30: `provider-request-telemetry/v1` now records allowlisted
+    response metadata from LiteLLM-compatible responses: request id,
+    provider processing duration, local duration and normalized rate-limit
+    buckets. Raw headers and prompts are not stored.
 - T078 Add normalized usage counters for input, output, cache read, cache
   write and total.
 - T079 Add transport/model/cache capability metadata for Feature 032 cache

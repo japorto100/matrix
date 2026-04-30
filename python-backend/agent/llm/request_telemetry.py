@@ -9,6 +9,21 @@ from typing import Any
 
 REQUEST_TELEMETRY_CONTRACT = "provider-request-telemetry/v1"
 
+_REQUEST_ID_HEADER_KEYS = (
+    "x-request-id",
+    "request-id",
+    "x-openai-request-id",
+    "x-litellm-request-id",
+    "x-requestid",
+)
+_PROCESSING_MS_HEADER_KEYS = (
+    "x-processing-ms",
+    "openrouter-processing-ms",
+    "x-litellm-response-duration-ms",
+    "x-response-time-ms",
+    "server-timing",
+)
+
 
 @dataclass(frozen=True)
 class UsageTelemetry:
@@ -224,6 +239,32 @@ def telemetry_span_attributes(telemetry: dict[str, Any]) -> dict[str, Any]:
     return attrs
 
 
+def response_metadata(
+    response: Any,
+    *,
+    rate_limit_buckets: list[Any] | tuple[Any, ...] = (),
+    duration_ms: float | int | None = None,
+) -> dict[str, Any]:
+    """Return redacted provider response metadata for request telemetry."""
+
+    headers = _response_headers(response)
+    metadata: dict[str, Any] = {}
+    request_id = _first_header(headers, _REQUEST_ID_HEADER_KEYS)
+    if request_id:
+        metadata["request_id"] = request_id
+    processing_ms = _first_processing_ms(headers)
+    if processing_ms is not None:
+        metadata["provider_processing_ms"] = processing_ms
+    if duration_ms is not None:
+        metadata["duration_ms"] = round(float(duration_ms), 3)
+
+    limits = [_rate_limit_bucket_metadata(bucket) for bucket in rate_limit_buckets]
+    limits = [item for item in limits if item]
+    if limits:
+        metadata["rate_limits"] = limits
+    return metadata
+
+
 def _normalize_message_for_digest(
     message: dict[str, Any], *, include_text: bool
 ) -> dict[str, Any]:
@@ -260,6 +301,76 @@ def _content_shape(value: Any, *, include_text: bool) -> Any:
             shaped["text_digest"] = _sha256_text(text) if include_text else ""
         return shaped
     return {"type": type(value).__name__}
+
+
+def _response_headers(response: Any) -> dict[str, str]:
+    hidden = getattr(response, "_hidden_params", None)
+    if isinstance(hidden, dict) and isinstance(hidden.get("additional_headers"), dict):
+        return {
+            str(key).lower(): str(value)
+            for key, value in hidden["additional_headers"].items()
+        }
+    raw_headers = getattr(response, "headers", None)
+    if isinstance(raw_headers, dict):
+        return {str(key).lower(): str(value) for key, value in raw_headers.items()}
+    if isinstance(response, dict) and isinstance(response.get("headers"), dict):
+        return {
+            str(key).lower(): str(value)
+            for key, value in response["headers"].items()
+        }
+    return {}
+
+
+def _first_header(headers: dict[str, str], keys: tuple[str, ...]) -> str:
+    for key in keys:
+        value = headers.get(key)
+        if value:
+            return str(value)
+    return ""
+
+
+def _first_processing_ms(headers: dict[str, str]) -> float | None:
+    for key in _PROCESSING_MS_HEADER_KEYS:
+        value = headers.get(key)
+        parsed = _parse_processing_ms(value)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _parse_processing_ms(value: str | None) -> float | None:
+    if not value:
+        return None
+    text = str(value).strip().lower()
+    if text.endswith("ms"):
+        text = text[:-2].strip()
+    if text.endswith("s"):
+        try:
+            return round(float(text[:-1].strip()) * 1000, 3)
+        except ValueError:
+            return None
+    if "dur=" in text:
+        _, tail = text.split("dur=", 1)
+        text = tail.split(",", 1)[0].split(";", 1)[0].strip()
+    try:
+        return round(float(text), 3)
+    except ValueError:
+        return None
+
+
+def _rate_limit_bucket_metadata(bucket: Any) -> dict[str, Any]:
+    window = str(getattr(bucket, "window", "") or "")
+    if not window:
+        return {}
+    return {
+        "window": window,
+        "limit": int(getattr(bucket, "limit", 0) or 0),
+        "remaining": int(getattr(bucket, "remaining", 0) or 0),
+        "reset_seconds": float(getattr(bucket, "reset_seconds", 0.0) or 0.0),
+        "usage_pct": round(float(getattr(bucket, "usage_pct", 0.0) or 0.0), 3),
+        "provider": str(getattr(bucket, "provider", "") or ""),
+        "provider_key_id": str(getattr(bucket, "provider_key_id", "") or ""),
+    }
 
 
 def _shape_only(value: Any) -> Any:

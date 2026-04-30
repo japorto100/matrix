@@ -8,6 +8,7 @@ from agent.llm.request_telemetry import (
     digest_prompt,
     digest_tool_catalog,
     normalize_usage,
+    response_metadata,
 )
 
 
@@ -83,3 +84,36 @@ def test_build_request_telemetry_has_no_raw_prompt() -> None:
     assert telemetry["contract"] == "provider-request-telemetry/v1"
     assert telemetry["usage"]["total_tokens"] == 3
     assert "private prompt" not in str(telemetry)
+
+
+def test_response_metadata_extracts_redacted_request_and_rate_limits() -> None:
+    response = SimpleNamespace(
+        _hidden_params={
+            "additional_headers": {
+                "x-request-id": "req-123",
+                "openrouter-processing-ms": "42.5",
+            }
+        }
+    )
+    bucket = SimpleNamespace(
+        window="requests",
+        limit=100,
+        remaining=25,
+        reset_seconds=30.0,
+        usage_pct=75.0,
+        provider="openrouter",
+        provider_key_id="opaque-key-id",
+    )
+
+    metadata = response_metadata(
+        response,
+        rate_limit_buckets=[bucket],
+        duration_ms=51.23456,
+    )
+
+    assert metadata["request_id"] == "req-123"
+    assert metadata["provider_processing_ms"] == 42.5
+    assert metadata["duration_ms"] == 51.235
+    assert metadata["rate_limits"][0]["window"] == "requests"
+    assert metadata["rate_limits"][0]["remaining"] == 25
+    assert "additional_headers" not in str(metadata)

@@ -42,6 +42,13 @@ digests, cache read/write counters and cache-break reasons. The dedicated
 `/control/prompt-cache` surface reads the same audit-backed data and keeps
 unknown counters explicit instead of fabricating cache values.
 
+2026-04-30 response metadata update: `provider-request-telemetry/v1` now carries
+allowlisted provider response metadata under `metadata.response`: request id,
+provider processing duration, local duration and normalized rate-limit buckets.
+This is intentionally not a raw-header dump. It gives prompt-cache and Ops
+surfaces enough quota/latency context while preserving provider-agnostic
+redaction.
+
 2026-04-30 reload follow-up: MCP reload, skill reload, skill toggle and skill
 import now use the same provider-agnostic `agent-cache-impact/v1` envelope. The
 digest material is redacted to hashes and metadata, not raw prompts or raw skill
