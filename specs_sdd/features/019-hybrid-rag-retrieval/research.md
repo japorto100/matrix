@@ -118,6 +118,11 @@ claim metadata. Browser-local retrieval from `Z_Browser_RAG_WebGPU_CPU_Models.md
 stays a candidate lane, while backend RAG/KG remains the auditable source of
 truth for shared/global context.
 
+2026-04-30 lexical lane note: BM25/regex candidates are useful for recall and
+source discovery, but they are not answer support unless they carry the same
+provenance contract as vector/KG context. The provider-free knowledge contract
+now encodes this with `knowledge-lexical-candidate-without-provenance-blocked`.
+
 2026-04-30 runtime follow-up: `retrieve(...)` now annotates selected hits and
 references with `provenance_status`. Agent callers that are about to use
 retrieved context for answer support can pass `require_context_provenance=True`

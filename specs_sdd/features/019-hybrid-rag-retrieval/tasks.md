@@ -182,8 +182,13 @@ feature_id: 019
     `audit_runtime_events=True`) now persist the same redacted runtime events
     to audit as `rag_retrieval`, keyed by query digest/length rather than raw
     query text.
-- T055 Add Meta-Harness gate proving lexical candidates cannot support answers
-  without provenance.
+- [x] T055 [done-static] Add Meta-Harness gate proving lexical candidates
+  cannot support answers without provenance.
+  - 2026-04-30: `knowledge-lexical-candidate-without-provenance-blocked`
+    requires a BM25/lexical selected context with missing provenance to surface
+    `CONTEXT_PROVENANCE_MISSING`; runtime unit coverage verifies
+    `retrieve(..., require_context_provenance=True)` degrades lexical hits
+    without source/citation refs.
 - [partial-static] T056 Add downstream artifact gate for RAG/KG answer support.
   - 2026-04-30: `knowledge-contract` now requires RAG/KG runtime events with
     source artifact, chunk/hash, citation and KG claim metadata plus Agent Chat

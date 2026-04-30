@@ -69,6 +69,7 @@ def run_knowledge_contract_scenarios(
         _compaction_tool_output_provenance_contract(),
         _memory_to_kg_promotion_blocked_without_evidence(),
         _rag_kg_semantic_context_grounded(),
+        _lexical_candidate_without_provenance_blocked(),
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
         _memory_semantic_feedback_requires_review(),
@@ -418,6 +419,61 @@ def _semantic_ambiguity_and_permission_fail_closed() -> dict[str, Any]:
             "lookup": lookup,
             "metric_plan": plan,
         },
+    )
+
+
+def _lexical_candidate_without_provenance_blocked() -> dict[str, Any]:
+    trace_events = [
+        {
+            "action": "rag_retrieval",
+            "success": False,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "rag.retrieve.completed",
+                        "metadata": {
+                            "lexical_hit_count": 1,
+                            "lane_counts": {"bm25": 1},
+                            "selected_lanes": ["bm25"],
+                            "selected_context_ids": ["bm25-unattributed"],
+                            "missing_provenance_ids": ["bm25-unattributed"],
+                            "degraded": True,
+                            "degraded_reasons": ["CONTEXT_PROVENANCE_MISSING"],
+                        },
+                    }
+                ]
+            },
+        }
+    ]
+    expectations = TraceExpectations(
+        required_actions=("rag_retrieval",),
+        required_runtime_event_names=("rag.retrieve.completed",),
+        required_runtime_event_metadata_keys={
+            "rag.retrieve.completed": (
+                "lexical_hit_count",
+                "lane_counts",
+                "selected_lanes",
+                "missing_provenance_ids",
+                "degraded_reasons",
+            )
+        },
+    )
+    verdict = evaluate_trace_gates(trace_events, expectations)
+    metadata = trace_events[0]["metadata"]["runtime_events"][0]["metadata"]
+    failures = list(verdict.failures)
+    if metadata.get("lexical_hit_count") != 1:
+        failures.append("missing-lexical-hit-count")
+    if "bm25" not in set(metadata.get("selected_lanes") or []):
+        failures.append("lexical-lane-not-selected")
+    if not metadata.get("missing_provenance_ids"):
+        failures.append("lexical-missing-provenance-not-surfaced")
+    if "CONTEXT_PROVENANCE_MISSING" not in set(metadata.get("degraded_reasons") or []):
+        failures.append("lexical-provenance-gate-not-fail-closed")
+    return _scenario_result(
+        scenario_id="knowledge-lexical-candidate-without-provenance-blocked",
+        passed=verdict.passed and not failures,
+        failures=failures,
+        details={"trace_verdict": verdict.as_dict()},
     )
 
 

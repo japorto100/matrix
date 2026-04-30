@@ -192,6 +192,30 @@ async def test_retrieve_can_fail_closed_on_missing_context_provenance() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_blocks_lexical_answer_support_without_provenance() -> None:
+    result = await retrieve(
+        "Find unattributed lexical evidence",
+        mode="text",
+        require_context_provenance=True,
+        bm25_hits=[
+            {
+                "id": "bm25-unattributed",
+                "text": "A lexical match without source cannot support an answer.",
+                "score": 3.1,
+            }
+        ],
+    )
+
+    assert result.degraded is True
+    assert "CONTEXT_PROVENANCE_MISSING" in (result.degraded_reasons or [])
+    assert result.hits and result.hits[0]["metadata"]["retrieval_lane"] == "bm25"
+    assert result.hits[0]["metadata"]["provenance_status"] == "missing"
+    completed = result.runtime_events[1]["metadata"]
+    assert completed["lexical_hit_count"] == 1
+    assert completed["missing_provenance_ids"] == ["bm25-unattributed"]
+
+
+@pytest.mark.asyncio
 async def test_retrieve_preserves_bm25_and_regex_lane_metadata() -> None:
     result = await retrieve(
         "Find tool retry guard evidence",

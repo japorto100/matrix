@@ -46,10 +46,13 @@ feature_id: 019
   - 2026-04-30: runtime retrieval annotates BM25/regex/lexical/vector/KG
     candidates with `retrieval_lane`, `lane_score`, lane counts and selected
     lanes without inlining source text into runtime metadata.
-- Lexical hits can improve recall but cannot become answer support without
+- [x] Lexical hits can improve recall but cannot become answer support without
   source/citation/provenance refs.
   - 2026-04-30: lexical hits flow through the same
     `require_context_provenance=True` fail-closed gate as vector/KG hits.
+  - 2026-04-30: `knowledge-lexical-candidate-without-provenance-blocked`
+    gates this in Meta-Harness; contract-suite now has 47 provider-free
+    scenarios.
 - [x] Retrieval runtime events preserve selected context ids without inlining large
   source text.
   - 2026-04-30: retrieval result runtime events carry ids/counts/status only;
