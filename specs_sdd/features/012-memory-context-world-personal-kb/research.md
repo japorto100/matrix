@@ -210,6 +210,16 @@ derived memory as usable. This references `Z_Semantik_layer and so on.md`
 indirectly through the correction handoff: personal feedback may propose
 semantic changes, but it does not mutate global definitions or KG truth.
 
+2026-04-30 context-injection comparison update: `meta_harness.memory_context_smoke`
+now emits three provider-free candidates for the same task:
+Hindsight-summary-only, MemPalace-verbatim-only and Fusion. This implements the
+MemMachine-style judgement locally: summaries are useful but insufficient
+without exact evidence, while verbatim recall is safer but misses derived
+context. The Fusion candidate wins the static Pareto comparison only when both
+summary and source-backed exact evidence are available, preserving the
+Hindsight/MemPalace distinction instead of collapsing them into one memory
+bucket.
+
 ## World Model Research
 
 World model is not personal memory. It needs evidence, claims, status and

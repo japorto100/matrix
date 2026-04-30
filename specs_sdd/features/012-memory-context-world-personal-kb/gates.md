@@ -73,7 +73,12 @@ feature_id: 012
 ## G4 Memory Backends / Evals
 
 - [x] Context engine, memory provider, KG store and vector store tests pass.
-- [ ] Hindsight/MemPalace/Fusion runners execute against the shared corpus.
+- [x] Hindsight/MemPalace/Fusion static candidates execute against the shared
+  deterministic corpus.
+  - 2026-04-30: `memory-context-smoke` compares Hindsight-only,
+    MemPalace-verbatim-only and Fusion candidates without provider calls and
+    writes normal Meta-Harness aggregate artifacts. Live shared-corpus runners
+    remain a separate gate.
 - [ ] OpenRouter embedding defaults are quality/cost-gated before production
   MemPalace writes use remote embeddings broadly.
 - [x] Dev/Meta-Harness has an explicit no-network deterministic 384d embedding

@@ -153,13 +153,17 @@ migrated_from:
 - [x] T039r [done-static-live-smoke] Add a hydration-worker design and smoke: pending MemPalace rows are
   picked up, embedded with the configured provider, dimension-checked against
   the active index and marked failed with reason instead of silently skipped.
-- T039s Add context-injection evals comparing Hindsight-only,
+- [x] T039s [done-static] Add context-injection evals comparing Hindsight-only,
   MemPalace-verbatim-only and Fusion answers for the same task. This is not a
   competition between systems; it determines when exact session evidence must
   constrain derived memory.
   - 2026-04-30: first static cross-feature check exists in
     `knowledge-contract`; full shared-corpus Hindsight/MemPalace/Fusion
     comparison remains open.
+  - 2026-04-30: `memory-context-smoke` now writes provider-free Meta-Harness
+    candidates for Hindsight-only, MemPalace-verbatim-only and Fusion. Fusion
+    wins only when summary and exact source-backed evidence are both present;
+    each candidate writes normal aggregate/results artifacts for Pareto review.
 - [x] T039t [done-static] Add stale async memory flush guard for automatic
   post-answer retain.
   - 2026-04-30: both LangGraph and SimpleLoop now schedule automatic
