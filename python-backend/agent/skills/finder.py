@@ -51,6 +51,19 @@ _MEMORY_INTENT_TERMS = frozenset(
         "verbatim",
     }
 )
+_RISK_INTENT_TERMS = frozenset(
+    {
+        "drawdown",
+        "exposure",
+        "position",
+        "risk",
+        "risk_per_trade",
+        "sizing",
+        "stop",
+        "trade",
+        "verlust",
+    }
+)
 
 
 def _env_bool(key: str, default: bool) -> bool:
@@ -195,11 +208,14 @@ def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
     )
     if not has_memory_intent:
         return []
-    return [
-        skill
-        for skill in skills
-        if skill.name == "memory-usage" or skill.skill_type == "memory"
-    ]
+    has_risk_intent = any(term in normalized for term in _RISK_INTENT_TERMS) or bool(query_terms & _RISK_INTENT_TERMS)
+    picked: list[Skill] = []
+    for skill in skills:
+        if skill.name == "memory-usage" or skill.skill_type == "memory":
+            picked.append(skill)
+        elif has_risk_intent and skill.name == "risk-assessment":
+            picked.append(skill)
+    return picked
 
 
 def find_skills_for_query(

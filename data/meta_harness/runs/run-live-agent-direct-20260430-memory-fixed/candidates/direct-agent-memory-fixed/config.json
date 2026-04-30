@@ -1,0 +1,204 @@
+{
+  "version": "",
+  "roles": {
+    "fundamentals_analyst": {
+      "system_prompt": "You are a Fundamentals Analyst. Analyze company financials: balance sheets, income statements, cash flow, earnings reports, and valuation metrics. Provide data-driven assessments of intrinsic value and financial health. Focus on P/E, P/B, debt ratios, revenue growth, and margin trends.",
+      "prompt_length": 286
+    },
+    "sentiment_analyst": {
+      "system_prompt": "You are a Sentiment Analyst. Analyze market sentiment from news, social media, analyst ratings, and market indicators (VIX, put/call ratios, fund flows). Assess whether sentiment is bullish, bearish, or neutral. Identify sentiment shifts and contrarian signals.",
+      "prompt_length": 261
+    },
+    "technical_analyst": {
+      "system_prompt": "You are a Technical Analyst. Analyze price charts, patterns, and indicators. Use RSI, MACD, moving averages, Bollinger Bands, support/resistance levels, volume analysis, and candlestick patterns. Identify trend direction, momentum, and potential reversal points.",
+      "prompt_length": 262
+    },
+    "researcher": {
+      "system_prompt": "You are a Research Analyst. Synthesize findings from fundamental, sentiment, and technical analysis. Present balanced bull and bear arguments. Weigh evidence objectively and highlight key uncertainties. Provide a research summary with confidence level. When producing report artifacts, every factual paragraph must cite source markers like [S1] or explicitly mark unsupported material as [UNSUPPORTED]; validate with report_validate before calling report_build.",
+      "prompt_length": 461
+    },
+    "trader": {
+      "system_prompt": "You are a Trader. Based on the research summary, make actionable trading decisions. Define entry/exit points, position size, and timeframe. Consider risk/reward ratio, market conditions, and portfolio context. Always state your conviction level and reasoning.",
+      "prompt_length": 259
+    },
+    "risk_manager": {
+      "system_prompt": "You are a Risk Manager. Evaluate proposed trades for risk exposure. Check position sizing, portfolio concentration, correlation risk, and drawdown limits. Approve, modify, or reject trade proposals based on risk parameters. Enforce maximum loss limits and diversification rules. For generated risk reports, require source citations, checksum validation, and report_validate evidence before publication or attachment handoff.",
+      "prompt_length": 424
+    }
+  },
+  "tools": [
+    {
+      "name": "get_chart_state",
+      "description": "Get the current trading chart state: active symbol, timeframe, and enabled indicators. Read-only."
+    },
+    {
+      "name": "set_chart_state",
+      "description": "Request a chart state change (symbol or timeframe). The change is queued as a pending mutation and requires user confirmation before it is applied. Never executes trades."
+    },
+    {
+      "name": "get_portfolio_summary",
+      "description": "Get the user's portfolio summary: open positions, exposure, and balances from the Go Gateway. Read-only."
+    },
+    {
+      "name": "get_geomap_focus",
+      "description": "Get the current geopolitical map focus: active region and top geopolitical event markers. Useful for correlating market moves with geopolitical events. Read-only."
+    },
+    {
+      "name": "save_memory",
+      "description": "Save a short scratchpad note by key for this thread/work session. This is not the long-term memory store and it does not emit memory_retain. Use memory_add instead whenever the user asks you to rememb"
+    },
+    {
+      "name": "load_memory",
+      "description": "Load a previously saved note from working memory by key. Returns the content if found, or null if the key does not exist."
+    },
+    {
+      "name": "memory_search",
+      "description": "Search your long-term memory for relevant facts, experiences, and knowledge. Use this when the user explicitly says to use memory_search, asks you to recall stored knowledge, or you need past preferen"
+    },
+    {
+      "name": "memory_add",
+      "description": "Store an important fact, preference, decision, project memory, or exact evidence in persistent long-term memory. Use this when the user explicitly says to use memory_add, asks you to remember somethin"
+    },
+    {
+      "name": "canvas_create_shape",
+      "description": "Creates a new shape on the infinite canvas. Types: text, geo (rectangle/ellipse), arrow, note. Returns the shape ID for later updates."
+    },
+    {
+      "name": "canvas_create_novel_block",
+      "description": "Creates an editable rich-text block (Notion-style) on the canvas. Users can edit the content inline with slash-commands, formatting, etc."
+    },
+    {
+      "name": "canvas_update_shape",
+      "description": "Updates text or position of an existing canvas shape."
+    },
+    {
+      "name": "canvas_delete_shape",
+      "description": "Deletes a shape from the infinite canvas by its ID."
+    },
+    {
+      "name": "sandbox_execute",
+      "description": "Execute code in an isolated sandbox environment. Supports Python (with pandas, numpy, matplotlib, pandas-ta), JavaScript, TypeScript, Bash, Go, and Java. Returns stdout, stderr, and any generated file"
+    },
+    {
+      "name": "sandbox_browser",
+      "description": "Open a web page in an isolated browser sandbox with Playwright. Extracts page text and/or takes screenshots. Isolated from host browser \u2014 only allowed domains reachable. Use for JS-heavy financial new"
+    },
+    {
+      "name": "file_analyze",
+      "description": "Analyze a user-uploaded file in an isolated sandbox. Use this when the user uploads a CSV, Excel, JSON, or code file and wants analysis, statistics, charts, or data processing. The file is available a"
+    },
+    {
+      "name": "semantic_lookup",
+      "description": "Resolve an authoritative Matrix semantic term or metric before answering questions about metrics, KG concepts, RAG concepts, definitions, freshness, or provenance. Use this instead of guessing definit"
+    },
+    {
+      "name": "report_validate",
+      "description": "Validate a provider-agnostic report manifest/source pair before publication. Checks required metadata, citation usage and checksum rules without writing files."
+    },
+    {
+      "name": "report_build",
+      "description": "Build deterministic report artifacts from Markdown source and citations. Writes only under MATRIX_REPORT_ARTIFACT_DIR/data/reports using the safe markdown-fallback renderer until Quarkdown is explicit"
+    },
+    {
+      "name": "render_a2ui_surface",
+      "description": "Render a rich UI widget tree on the frontend. Use surface_id 'main' for the standalone dashboard canvas on '/'; use 'chat-<messageId>' for inline chat-message widgets. tree is an A2UI v0.9 component-t"
+    },
+    {
+      "name": "schedule_task",
+      "description": "Create a scheduled task. Before calling, infer the fields from the user's natural-language request (any language you understand) and echo a human-readable summary back in your chat reply so the user c"
+    },
+    {
+      "name": "schedule_list",
+      "description": "Return the user's scheduled tasks (all statuses)."
+    },
+    {
+      "name": "schedule_pause",
+      "description": "Pause a scheduled task (status \u2192 paused). Can be resumed."
+    },
+    {
+      "name": "schedule_resume",
+      "description": "Resume a paused scheduled task (status \u2192 active)."
+    },
+    {
+      "name": "schedule_cancel",
+      "description": "Cancel a scheduled task (status \u2192 cancelled). Soft delete \u2014 row retained for audit."
+    },
+    {
+      "name": "schedule_list_runs",
+      "description": "Return past executions of a scheduled task (status, duration, summary)."
+    },
+    {
+      "name": "schedule_edit",
+      "description": "Edit an existing scheduled task. Provide only the fields you want to change (prompt, cron_expr, scheduled_at_ms, tz, delivery_target, max_executions). Cannot change kind \u2014 to switch between recurring/"
+    },
+    {
+      "name": "schedule_run_now",
+      "description": "Fire a scheduled task RIGHT NOW (one-off manual trigger). The task's normal cron / scheduled_at continues unchanged. Useful for testing a prompt before relying on its schedule, or running a weekly tas"
+    }
+  ],
+  "memory_config": {
+    "fundamentals_analyst": {
+      "memory_write": true,
+      "memory_recall_tags": null
+    },
+    "sentiment_analyst": {
+      "memory_write": true,
+      "memory_recall_tags": null
+    },
+    "technical_analyst": {
+      "memory_write": true,
+      "memory_recall_tags": null
+    },
+    "researcher": {
+      "memory_write": true,
+      "memory_recall_tags": null
+    },
+    "trader": {
+      "memory_write": true,
+      "memory_recall_tags": null
+    },
+    "risk_manager": {
+      "memory_write": false,
+      "memory_recall_tags": null
+    }
+  },
+  "runtime_config": {
+    "llm": {
+      "default_model": "",
+      "default_utility_model": "openrouter/openrouter/free",
+      "litellm_base_url": "http://localhost:4000",
+      "agent_max_output_tokens": "512",
+      "turn_timeout_seconds": "120"
+    },
+    "memory": {
+      "agent_memory_engine": "auto",
+      "embedding_provider": "deterministic",
+      "embedding_model": "deterministic-dev-384d",
+      "embedding_base_url": "https://openrouter.ai/api/v1",
+      "fusion_verbatim_backend": "mempalace",
+      "hindsight_reranker_provider": "rrf",
+      "bank_id_shape": "user_{user_id}",
+      "pareto_hypotheses": [
+        "embedding_model_dimension_quality_cost",
+        "reranker_strategy_quality_latency_cost",
+        "mempalace_trigger_policy_context_bloat"
+      ]
+    },
+    "trace_store": {
+      "audit_store_priority": "AUDIT_DB_URL -> HINDSIGHT_DB_URL -> JSONL",
+      "audit_db_url_configured": false,
+      "hindsight_db_url_configured": true,
+      "jsonl_dir": "/home/lipfi2/code/matrix/python-backend/data/audit",
+      "expected_postgres_table": "agent.audit_events",
+      "source_query": "agent.audit.store.get_audit_store().query(thread_id=...)",
+      "postgres_required_for_persistent_live_runs": true,
+      "jsonl_fallback_for_local_smoke": true,
+      "sandbox_required_for_core_harness": false
+    }
+  },
+  "consent_config": {
+    "max_iterations": 10,
+    "tool_timeout_sec": 30.0
+  },
+  "graph_flow": "START \u2192 memory_recall \u2192 llm_call \u2192 [approval_gate \u2192 tool_execute \u2192 increment]* \u2192 memory_retain \u2192 END"
+}

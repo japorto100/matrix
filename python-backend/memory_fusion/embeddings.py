@@ -2,7 +2,7 @@
 
 Matrix production memory should not cold-load local embedding models during
 agent or Meta-Harness loops. OpenRouter is the default remote provider; tests
-can inject a deterministic embedder explicitly.
+and explicit dev harness runs can select a deterministic embedder.
 """
 
 from __future__ import annotations
@@ -42,6 +42,33 @@ class Embedder(Protocol):
 
     async def embed(self, texts: str | Sequence[str]) -> list[list[float]]:
         """Return one embedding vector per input text."""
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer") from exc
+    if value <= 0:
+        raise RuntimeError(f"{name} must be positive")
+    return value
+
+
+def _deterministic_vector(text: str, dim: int) -> list[float]:
+    values: list[float] = []
+    block = 0
+    while len(values) < dim:
+        digest = hashlib.sha256(f"{block}:{text}".encode()).digest()
+        for byte in digest:
+            raw = byte / 255.0
+            values.append(round((raw * 2.0) - 1.0, 6))
+            if len(values) == dim:
+                break
+        block += 1
+    return values
 
 
 @dataclass
@@ -150,7 +177,7 @@ class HindsightOpenRouterEmbeddings:
 
 @dataclass
 class DeterministicEmbedder:
-    """Small no-network embedder for tests only."""
+    """No-network embedder for tests and explicit dev harness runs."""
 
     model: str = "deterministic-test-8d"
     dim: int = 8
@@ -160,12 +187,44 @@ class DeterministicEmbedder:
         return [self._embed_one(text) for text in texts]
 
     def _embed_one(self, text: str) -> list[float]:
-        digest = hashlib.sha256(text.encode("utf-8")).digest()
-        values = []
-        for idx in range(self.dim):
-            raw = digest[idx] / 255.0
-            values.append(round((raw * 2.0) - 1.0, 6))
-        return values
+        return _deterministic_vector(text, self.dim)
+
+
+@dataclass
+class HindsightDeterministicEmbeddings:
+    """Hindsight-compatible deterministic embeddings for dev/Meta-Harness.
+
+    This is intentionally opt-in. Production should keep using a real remote or
+    local embedding provider so recall quality is measured on realistic vectors.
+    """
+
+    model: str = "deterministic-dev-384d"
+    _dimension: int = 384
+
+    @property
+    def provider_name(self) -> str:
+        return "deterministic"
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    async def initialize(self) -> None:
+        return None
+
+    def encode(self, texts: str | Sequence[str]) -> list[list[float]]:
+        texts = _coerce_texts(texts)
+        return [_deterministic_vector(text, self._dimension) for text in texts]
+
+
+def _deterministic_embedder_from_env(*, default_dim: int = 384) -> DeterministicEmbedder:
+    dim = _env_int("MEMORY_EMBEDDING_DIMENSION", default_dim)
+    model = (
+        os.environ.get("MEMORY_EMBEDDING_MODEL")
+        or os.environ.get("MEMPALACE_EMBEDDING_MODEL")
+        or f"deterministic-dev-{dim}d"
+    )
+    return DeterministicEmbedder(model=model, dim=dim)
 
 
 def create_mempalace_embedder() -> Embedder:
@@ -175,7 +234,7 @@ def create_mempalace_embedder() -> Embedder:
         or "openrouter"
     ).strip().lower()
     if provider == "deterministic":
-        return DeterministicEmbedder()
+        return _deterministic_embedder_from_env()
     if provider != "openrouter":
         raise RuntimeError(f"Unsupported MEMPALACE_EMBEDDING_PROVIDER={provider!r}")
 
@@ -195,8 +254,11 @@ def create_mempalace_embedder() -> Embedder:
     return OpenRouterEmbedder(api_key=api_key, model=model, base_url=base_url)
 
 
-def create_hindsight_embedder() -> HindsightOpenRouterEmbeddings:
+def create_hindsight_embedder() -> HindsightOpenRouterEmbeddings | HindsightDeterministicEmbeddings:
     provider = os.environ.get("MEMORY_EMBEDDING_PROVIDER", "openrouter").strip().lower()
+    if provider == "deterministic":
+        embedder = _deterministic_embedder_from_env()
+        return HindsightDeterministicEmbeddings(model=embedder.model, _dimension=embedder.dim)
     if provider not in {"openrouter", "openai-compatible"}:
         raise RuntimeError(f"Unsupported MEMORY_EMBEDDING_PROVIDER={provider!r} for Hindsight")
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()

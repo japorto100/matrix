@@ -65,6 +65,19 @@ async def create_hindsight_engine(
         ),
         "HINDSIGHT_API_RETAIN_DEFAULT_STRATEGY": retain_default_strategy,
     }
+    memory_env = {
+        key: os.environ.get(key)
+        for key in (
+            "MEMORY_EMBEDDING_PROVIDER",
+            "MEMORY_EMBEDDING_MODEL",
+            "MEMORY_EMBEDDING_DIMENSION",
+            "MEMORY_EMBEDDING_BASE_URL",
+            "HINDSIGHT_EMBEDDING_MODEL",
+            "MEMPALACE_EMBEDDING_MODEL",
+            "OPENROUTER_EMBEDDING_MODEL",
+        )
+        if os.environ.get(key) is not None
+    }
     with _temporary_env(overrides):
         from hindsight_api.engine.memory_engine import MemoryEngine
 
@@ -75,6 +88,7 @@ async def create_hindsight_engine(
         for key, value in overrides.items():
             if value is not None:
                 os.environ[key] = value
+        os.environ.update(memory_env)
 
         embeddings = create_hindsight_embedder()
 

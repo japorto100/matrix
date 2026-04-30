@@ -123,6 +123,21 @@ Reusable helpers needed from the start:
 - Pareto frontier loader over filesystem/DB candidates.
 - keep/discard/defer decision ledger.
 - proposer interaction ledger for Codex-run iterations.
+- paper-style candidate manifest and outer-loop experience packet.
+
+Paper-aligned artifact rule:
+
+- `meta_harness/` is the optimizer implementation.
+- optimized harness surfaces are agent runtime, memory fusion, RAG/KG,
+  skills/tool policy, Matrix transport/session handling and context assembly.
+- every candidate must expose source references, scores and raw traces or typed
+  benchmark evidence through `candidate_manifest.json`.
+- before proposing new changes, create or inspect an `experience_packet.json`
+  that lists Pareto frontier, dominated candidates, failure clusters,
+  candidate decisions and inner-loop bridge candidates.
+- inner loops can propose candidates, but only the outer loop can promote them.
+- Autoresearch discipline applies to the run: fixed evaluator, fixed budget,
+  keep/discard/defer log and no evaluator mutation during a run.
 
 ## Evaluation Plan
 

@@ -1,0 +1,553 @@
+{
+  "run_id": "run-live-agent-direct-20260430-memory-fixed",
+  "candidate_id": "direct-agent-memory-fixed",
+  "scenario_id": "lp-portfolio-001",
+  "thread_id": "mh-lp-portfolio-001-75850120",
+  "user_id": "meta-harness-user",
+  "category": "tool_portfolio_risk",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+    },
+    {
+      "role": "assistant",
+      "content": "Based on the portfolio summary retrieved, here's the assessment:\n\n## Portfolio Snapshot\n- **Open Positions**: 0 (empty portfolio)\n- **Total Exposure**: 0\n- **Data Source**: Stub (likely test/demo data)\n\n## Risk Assessment\n\n### Concentration Risk\n- **Level**: None\n- **Reason**: With no open positions, there is no concentration of exposure in any single asset or sector.\n- **Threshold Check**: Not applicable (0% exposure vs typical 20% max per asset guideline)\n\n### Correlation Risk\n- **Level**: None\n- **Reason**: No positions means no correlated exposures to assess (e.g., multiple USD pairs, tech stocks, etc.).\n- **Threshold Check**: Not applicable (0% correlated exposure vs typical 5% max guideline)\n\n## Overall Portfolio Risk\n- **Risk Score**: 1/10 (minimal risk due to no market exposure)\n- **Approval Status**: N/A (no trades to assess)\n- **Recommendation**: Portfolio is currently unexposed to market risk. When adding positions, apply standard risk rules:\n  - Max 1-2% account risk per trade\n  - Max 5% correlated exposure\n  - Max 20% single-asset concentration\n  - Monitor drawdown (keep <10-20%)\n\n*Note: The portfolio data appears to be from a stub/test environment. In a live account with actual positions, this analysis would reflect real exposure levels.*"
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-lp-portfolio-001-75850120\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-75850120\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"delta\": \"Based on the portfolio summary retrieved, here's the assessment:\\n\\n## Portfolio Snapshot\\n- **Open Positions**: 0 (empty portfolio)\\n- **Total Exposure**: 0\\n- **Data Source**: Stub (likely test/demo data)\\n\\n## Risk Assessment\\n\\n### Concentration Risk\\n- **Level**: None\\n- **Reason**: With no open positions, there is no concentration of exposure in any single asset or sector.\\n- **Threshold Check**: Not applicable (0% exposure vs typical 20% max per asset guideline)\\n\\n### Correlation Risk\\n- **Level**: None\\n- **Reason**: No positions means no correlated exposures to assess (e.g., multiple USD pairs, tech stocks, etc.).\\n- **Threshold Check**: Not applicable (0% correlated exposure vs typical 5% max guideline)\\n\\n## Overall Portfolio Risk\\n- **Risk Score**: 1/10 (minimal risk due to no market exposure)\\n- **Approval Status**: N/A (no trades to assess)\\n- **Recommendation**: Portfolio is currently unexposed to market risk. When adding positions, apply standard risk rules:\\n  - Max 1-2% account risk per trade\\n  - Max 5% correlated exposure\\n  - Max 20% single-asset concentration\\n  - Monitor drawdown (keep <10-20%)\\n\\n*Note: The portfolio data appears to be from a stub/test environment. In a live account with actual positions, this analysis would reflect real exposure levels.*\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+    "data: {\"type\": \"start-step\"}\n\n",
+    "data: {\"toolName\": \"get_portfolio_summary\", \"toolCallId\": \"chatcmpl-tool-930f5445cd7f4ac4\", \"type\": \"tool-input-start\"}\n\n",
+    "data: {\"toolCallId\": \"chatcmpl-tool-930f5445cd7f4ac4\", \"output\": {\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-lp-portfolio-001-75850120\", \"promptTokens\": 20013, \"completionTokens\": 452, \"reasoningTokens\": 162, \"cachedTokens\": 0, \"totalTokens\": 20465, \"provider\": \"openrouter\", \"model\": \"openrouter/nvidia/nemotron-3-super-120b-a12b:free\", \"sourceLayerCounts\": {\"personal_raw\": 4}, \"degradationFlags\": [\"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [{\"id\": \"fusion:0:debug-direct-chart:default:202604300326#user_meta-harness-user__summary_debug-direct-chart:default:202604300326_0\", \"title\": \"Chat Turn\", \"preview\": \"User requested chart analysis using get_chart_state tool for active chart symbol, timeframe, and indicators | When: 2026-04-30 | Involving: user\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"debug-direct-chart:default:202604300326#user_meta-harness-user__summary_debug-direct-chart:default:202604300326_0\", \"sourceConfidence\": \"1\", \"actorRole\": \"default\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"world\", \"route\": \"fusion\", \"tokenCount\": 20, \"contextTier\": \"L1\"}, {\"id\": \"fusion:1:debug-direct-chart:default:202604300326#0\", \"title\": \"Chat Turn\", \"preview\": \"User asked: Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.\\nAgent responded: Current chart state:\\n\\n- **Symbol**: EURUSD (Euro / US Dollar)\\n- **Timeframe**: 4H (4-hour)\\n- **Indicators**: ...\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"debug-direct-chart:default:202604300326#0\", \"sourceConfidence\": \"1\", \"actorRole\": \"default\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"experience\", \"route\": \"fusion\", \"tokenCount\": 58, \"contextTier\": \"L1\"}, {\"id\": \"fusion:2:?#?\", \"title\": \"Chat Turn\", \"preview\": \"User requested chart analysis using get_chart_state tool for active chart symbol, timeframe, and indicators.\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"?#?\", \"sourceConfidence\": \"1\", \"actorRole\": \"default\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"observation\", \"route\": \"fusion\", \"tokenCount\": 14, \"contextTier\": \"L1\"}, {\"id\": \"fusion:3:mh-lp-chart-001-f4cbe149:default:202604300328#0\", \"title\": \"Chat Turn\", \"preview\": \"User asked: Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.\\nAgent responded: Based on the current chart state:\\n\\n- **Symbol**: EURUSD (Euro / US Dollar)\\n- **Timeframe**: 4H (4-hour)\\n- **I...\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"mh-lp-chart-001-f4cbe149:default:202604300328#0\", \"sourceConfidence\": \"1\", \"actorRole\": \"default\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"experience\", \"route\": \"fusion\", \"tokenCount\": 59, \"contextTier\": \"L1\"}], \"queryGate\": {}, \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"openrouter/nvidia/nemotron-3-super-120b-a12b:free\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 1785,
+      "timestamp": "2026-04-30 03:28:40.108452+00:00",
+      "action": "memory_retain",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "User asked: Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.\nAgent responded: Based on the portfolio summary retrieved, here's the assessment:\n\n## Portfolio Snapshot\n- **Open Positions**: 0 (empty portfolio)\n- **Total Exposure**: 0\n- **Data Source**: Stub (likely test/demo data)\n\n## Risk Assessment\n\n### Concentration Risk\n- **Level**: None\n- **Reason**: With no open positions, there is no concentration of exposure in any single asset or sector.\n- **Threshold Check**: Not applicable (0% exposure vs typical 20% max per asset guideline)\n\n### Correlation Risk\n- **Level**: None\n- **Reason**: No positions means no correlated exposures to assess (e.g., multiple USD pairs, tech stocks, etc.).\n- **Threshold Check**: Not applicable (0% correlated exposure vs typical 5% max guideline)\n\n## Overall Portfolio Risk\n- **Risk Score**: 1/10 (minimal risk due to no market exposure)\n- **Approval Status**: N/A (no trades to assess)\n- **Recommendation**: Portfolio is currently unexposed to market risk. When adding positions, apply standard risk rules:\n  - Max 1-2% account risk per trade\n  - Max 5% correlated exposure\n  - Max 20% single-asset concentration\n  - Monitor drawdown (keep <10-20%)\n\n*Note: The portfolio data appears to be from a stub/test environment. In a live account with actual positions, this analysis would reflect real exposure levels.*",
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness-user",
+        "role": "default",
+        "content_length": 1414,
+        "conflict": false,
+        "route": "verbatim",
+        "provider": "fusion",
+        "providers": "verbatim,summary_async",
+        "summary_status": "background_queued"
+      },
+      "iteration": null
+    },
+    {
+      "id": 1784,
+      "timestamp": "2026-04-30 03:28:40.014751+00:00",
+      "action": "memory_retain",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 90,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness-user",
+        "route": "verbatim",
+        "consumer": "agent_writer",
+        "user_id": "meta-harness-user",
+        "actor_role": "default",
+        "item_count": 1,
+        "policy_decision": "write_allowed",
+        "source_status": "unreferenced"
+      },
+      "iteration": null
+    },
+    {
+      "id": 1783,
+      "timestamp": "2026-04-30 03:28:39.835451+00:00",
+      "action": "llm_response",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "<tool_output source=\"get_portfolio_summary\" trusted=\"true\">\n{\"positions\": [], \"total_exposure\": 0, \"source\": \"stub\"}\n</tool_output>",
+      "output": "Based on the portfolio summary retrieved, here's the assessment:\n\n## Portfolio Snapshot\n- **Open Positions**: 0 (empty portfolio)\n- **Total Exposure**: 0\n- **Data Source**: Stub (likely test/demo data)\n\n## Risk Assessment\n\n### Concentration Risk\n- **Level**: None\n- **Reason**: With no open positions, there is no concentration of exposure in any single asset or sector.\n- **Threshold Check**: Not applicable (0% exposure vs typical 20% max per asset guideline)\n\n### Correlation Risk\n- **Level**: None\n- **Reason**: No positions means no correlated exposures to assess (e.g., multiple USD pairs, tech stocks, etc.).\n- **Threshold Check**: Not applicable (0% correlated exposure vs typical 5% max guideline)\n\n## Overall Portfolio Risk\n- **Risk Score**: 1/10 (minimal risk due to no market exposure)\n- **Approval Status**: N/A (no trades to assess)\n- **Recommendation**: Portfolio is currently unexposed to market risk. When adding positions, apply standard risk rules:\n  - Max 1-2% account risk per trade\n  - Max 5% correlated exposure\n  - Max 20% single-asset concentration\n  - Monitor drawdown (keep <10-20%)\n\n*Note: The portfolio data appears to be from a stub/test environment. In a live account with actual positions, this analysis would reflect real exposure levels.*",
+      "duration_ms": 8116,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "done": true,
+        "tool_calls_count": 0,
+        "token_usage": 10450,
+        "content_cleaned": false
+      },
+      "iteration": 2
+    },
+    {
+      "id": 1782,
+      "timestamp": "2026-04-30 03:28:39.745613+00:00",
+      "action": "route_decision",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "runner": "langgraph",
+        "decision": "direct_answer",
+        "route_taxonomy": "direct_answer",
+        "delegation_decision": "none",
+        "delegate_kind": null,
+        "spawn_depth": 0,
+        "max_spawn_depth": 0,
+        "allowed_tools": [],
+        "memory_scope": "current_user",
+        "budget": {},
+        "fallback_reason": "subagents_disabled",
+        "tool_calls_count": 0,
+        "tool_names": [],
+        "routing_reason": "config_absent",
+        "routing_used": false,
+        "routing_picked_model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "memory_route_requested": false,
+        "retrieval_route_requested": false
+      },
+      "iteration": 2
+    },
+    {
+      "id": 1781,
+      "timestamp": "2026-04-30 03:28:31.594983+00:00",
+      "action": "tool_result",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_portfolio_summary",
+      "input": null,
+      "output": {
+        "positions": [],
+        "total_exposure": 0,
+        "source": "stub"
+      },
+      "duration_ms": 180,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "thread_id": "mh-lp-portfolio-001-75850120",
+        "tool_name": "get_portfolio_summary",
+        "tool_calls_total_before": 0,
+        "tool_calls_total_limit": 50,
+        "tool_calls_for_tool_before": 0,
+        "tool_calls_for_tool_limit": 0,
+        "tokens_used": 10015,
+        "tokens_limit": 100000,
+        "iterations_used": 0,
+        "iterations_limit": 10
+      },
+      "iteration": null
+    },
+    {
+      "id": 1780,
+      "timestamp": "2026-04-30 03:28:31.415257+00:00",
+      "action": "tool_call",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_portfolio_summary",
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "thread_id": "mh-lp-portfolio-001-75850120",
+        "tool_name": "get_portfolio_summary",
+        "tool_calls_total_before": 0,
+        "tool_calls_total_limit": 50,
+        "tool_calls_for_tool_before": 0,
+        "tool_calls_for_tool_limit": 0,
+        "tokens_used": 10015,
+        "tokens_limit": 100000,
+        "iterations_used": 0,
+        "iterations_limit": 10
+      },
+      "iteration": null
+    },
+    {
+      "id": 1779,
+      "timestamp": "2026-04-30 03:28:31.314140+00:00",
+      "action": "consent_decision",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_portfolio_summary",
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "decision": "auto_allow",
+        "policy_id": "yaml:default"
+      },
+      "iteration": null
+    },
+    {
+      "id": 1778,
+      "timestamp": "2026-04-30 03:28:31.218003+00:00",
+      "action": "llm_response",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+      "output": null,
+      "duration_ms": 5668,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "done": false,
+        "tool_calls_count": 1,
+        "token_usage": 10015,
+        "content_cleaned": false
+      },
+      "iteration": 0
+    },
+    {
+      "id": 1777,
+      "timestamp": "2026-04-30 03:28:31.112611+00:00",
+      "action": "route_decision",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "runner": "langgraph",
+        "decision": "tool_use",
+        "route_taxonomy": "tool_use",
+        "delegation_decision": "none",
+        "delegate_kind": null,
+        "spawn_depth": 0,
+        "max_spawn_depth": 0,
+        "allowed_tools": [
+          "get_portfolio_summary"
+        ],
+        "memory_scope": "current_user",
+        "budget": {},
+        "fallback_reason": "subagents_disabled",
+        "tool_calls_count": 1,
+        "tool_names": [
+          "get_portfolio_summary"
+        ],
+        "routing_reason": "config_absent",
+        "routing_used": false,
+        "routing_picked_model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "memory_route_requested": false,
+        "retrieval_route_requested": false
+      },
+      "iteration": 0
+    },
+    {
+      "id": 1776,
+      "timestamp": "2026-04-30 03:28:25.428122+00:00",
+      "action": "memory_recall",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": "### Personal Raw Evidence\n- [available] User requested chart analysis using get_chart_state tool for active chart symbol, timeframe, and indicators | When: 2026-04-30 | Involving: user (debug-direct-chart:default:202604300326#user_meta-harness-user__summary_debug-direct-chart:default:202604300326_0)\n- [available] User asked: Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.\nAgent responded: Current chart state:\n\n- **Symbol**: EURUSD (Euro / US Dollar)\n- **Timeframe**: 4H (4-hour)\n- **Indicators**: RSI, MACD\n\nThe chart is set up for swing analysis on EURUSD with momentum (RSI) and trend-following (MACD) indicators active on the 4-hour timeframe. (debug-direct-chart:default:202604300326#0)\n- [available] User requested chart analysis using get_chart_state tool for active chart symbol, timeframe, and indicators. (?#?)\n- [available] User asked: Use your get_chart_state tool now, then summarize the active chart symbol, timeframe, and indicators.\nAgent responded: Based on the current chart state:\n\n- **Symbol**: EURUSD (Euro / US Dollar)\n- **Timeframe**: 4H (4-hour)\n- **Indicators**: RSI, MACD\n\nThe chart is configured for swing analysis on EURUSD, using momentum (RSI) and trend-following (MACD) indicators on the 4-hour timeframe. (mh-lp-chart-001-f4cbe149:default:202604300328#0)",
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness-user",
+        "role": "default",
+        "facts_recalled": 4,
+        "entities": 2,
+        "tokens_used": 1343
+      },
+      "iteration": null
+    },
+    {
+      "id": 1775,
+      "timestamp": "2026-04-30 03:28:25.337131+00:00",
+      "action": "memory_recall",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 305,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_meta-harness-user",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "meta-harness-user",
+        "actor_role": "default",
+        "item_count": 4,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "source_status": "unreferenced",
+        "query": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk."
+      },
+      "iteration": null
+    },
+    {
+      "id": 1773,
+      "timestamp": "2026-04-30 03:28:24.082519+00:00",
+      "action": "skill_used",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:risk-assessment",
+          "global:memory-usage",
+          "global:plan"
+        ],
+        "skill_names": [
+          "risk-assessment",
+          "memory-usage",
+          "plan"
+        ],
+        "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+        "user_id": "meta-harness-user",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 1772,
+      "timestamp": "2026-04-30 03:28:23.984008+00:00",
+      "action": "skill_found",
+      "user_id": "local",
+      "thread_id": "mh-lp-portfolio-001-75850120",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:risk-assessment",
+          "global:memory-usage",
+          "global:plan"
+        ],
+        "skill_names": [
+          "risk-assessment",
+          "memory-usage",
+          "plan"
+        ],
+        "query_preview": "Use your get_portfolio_summary tool now, then assess whether my portfolio has concentration or correlation risk.",
+        "user_id": "meta-harness-user",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-lp-portfolio-001-75850120",
+    "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "completed": true,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 2,
+    "turn_efficiency": 0.5,
+    "total_tokens": 20465,
+    "token_efficiency": 10232,
+    "total_duration_ms": 13784,
+    "tool_calls": 1,
+    "tool_success_rate": 1.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 2,
+    "memory_retains": 2,
+    "memory_utilization": true,
+    "skills_loaded": [
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.061395,
+    "fitness_score": 0.8913,
+    "trace_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "route_decision",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_portfolio_summary"
+      ],
+      "observed_skills": [
+        "global:memory-usage",
+        "global:plan",
+        "global:risk-assessment",
+        "memory-usage",
+        "plan",
+        "risk-assessment"
+      ],
+      "tool_success_rate": 1.0,
+      "observed_memory_routes": [
+        "fusion",
+        "verbatim"
+      ],
+      "observed_memory_providers": [
+        "fusion",
+        "summary_async",
+        "verbatim"
+      ]
+    },
+    "stream_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_parts": [
+        "finish",
+        "message-metadata",
+        "start",
+        "start-step",
+        "text-delta",
+        "text-end",
+        "text-start",
+        "tool-input-start",
+        "tool-output-available"
+      ],
+      "observed_tools": [
+        "get_portfolio_summary"
+      ],
+      "observed_rich_renderers": [
+        "get_portfolio_summary"
+      ],
+      "observed_artifact_files": []
+    }
+  },
+  "trace_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "consent_decision",
+      "llm_response",
+      "memory_recall",
+      "memory_retain",
+      "route_decision",
+      "skill_found",
+      "skill_used",
+      "tool_call",
+      "tool_result"
+    ],
+    "observed_tools": [
+      "get_portfolio_summary"
+    ],
+    "observed_skills": [
+      "global:memory-usage",
+      "global:plan",
+      "global:risk-assessment",
+      "memory-usage",
+      "plan",
+      "risk-assessment"
+    ],
+    "tool_success_rate": 1.0,
+    "observed_memory_routes": [
+      "fusion",
+      "verbatim"
+    ],
+    "observed_memory_providers": [
+      "fusion",
+      "summary_async",
+      "verbatim"
+    ]
+  },
+  "stream_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_parts": [
+      "finish",
+      "message-metadata",
+      "start",
+      "start-step",
+      "text-delta",
+      "text-end",
+      "text-start",
+      "tool-input-start",
+      "tool-output-available"
+    ],
+    "observed_tools": [
+      "get_portfolio_summary"
+    ],
+    "observed_rich_renderers": [
+      "get_portfolio_summary"
+    ],
+    "observed_artifact_files": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "dispatcher"
+}

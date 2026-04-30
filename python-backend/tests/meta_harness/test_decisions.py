@@ -7,6 +7,7 @@ import pytest
 from meta_harness.decisions import (
     load_candidate_decisions,
     record_candidate_decision,
+    sanitize_decision_for_proposer,
 )
 
 
@@ -43,3 +44,20 @@ def test_record_candidate_decision_requires_rationale(tmp_path):
             rationale="",
             data_dir=tmp_path,
         )
+
+
+def test_sanitize_decision_for_proposer_hides_holdout_metrics():
+    sanitized = sanitize_decision_for_proposer(
+        {
+            "candidate_id": "candidate-a",
+            "metrics": {
+                "trace_gate_pass_rate": 1.0,
+                "holdout_pass_rate": 0.5,
+                "nested": {"holdout_score": 0.4},
+            },
+        }
+    )
+
+    assert sanitized["metrics"]["trace_gate_pass_rate"] == 1.0
+    assert sanitized["metrics"]["holdout_pass_rate"] == "[protected]"
+    assert sanitized["metrics"]["nested"]["holdout_score"] == "[protected]"

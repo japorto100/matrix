@@ -87,6 +87,12 @@ PY
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli domain-contract --run-id run-domain-contract-20260430 --data-dir /tmp/matrix-domain-contract`
 - CLI provider-free knowledge contract:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-20260430 --data-dir /tmp/matrix-knowledge-contract`
+- CLI paper-style experience packet:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli experience-packet --run-id run-agent-harness-paper-loop-20260430 --limit 80`
+- CLI pending-eval envelope:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli pending-eval --run-id <run> --candidate-id <candidate> --candidate-type code_patch --domain-id agent-runtime-routing --write-scope python-backend/agent/runners/ --evaluation "search then holdout"`
+- CLI fail-closed promotion preflight:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli promotion-check --run-id <run> --candidate-id <candidate>`
 
 - Required env depends on runner mode: `AGENT_DEFAULT_MODEL` or request model,
   provider credentials/LiteLLM routing for LLM calls, and `HINDSIGHT_DB_URL` or
@@ -119,6 +125,8 @@ PY
 - Multi-turn scenarios preserve thread identity.
 - Search and holdout sets are separate.
 - Scenario output stores raw SSE and trace artifacts.
+- Candidate manifests fail if raw trace files are empty, invalid or missing
+  without a typed benchmark artifact.
 - Scenario metadata includes run/candidate/scenario/thread/user ids.
 - In-process scenarios can explicitly select `dispatcher`, `langgraph` or
   `simple`; service-mode scenarios document that they exercise the app
@@ -143,11 +151,30 @@ PY
 - Observed `tool_result.success=false` fails trace gates by default; only
   scenarios that explicitly set `allow_tool_failures=true` may tolerate failed
   tool results.
+- Soft-unavailable tool payloads fail even when transport says
+  `success=true`: examples include `Memory not available`, `unavailable`, and
+  `memory_add` returning `stored=false`.
 - Consent gate records allow/deny/inform/confirm decisions where expected.
 - Sandbox/file/browser scenarios never run without explicit local capability.
 - Scheduler scenarios verify DB/tool behavior without requiring Matrix delivery
   in Phase 1.
 - A2UI scenarios verify tool call and emitted payload, not frontend rendering.
+
+## Stream/UI Gates
+
+- Headless Agent Chat stream gates call the same `/api/agent/chat` BFF route
+  the frontend uses, without browser rendering.
+- Required tools must appear in UI-visible SSE parts:
+  `tool-input-start`/`tool-input-*` and `tool-output-available`.
+- Stream gates require `finish` and warn when no `text-delta` is visible.
+- Stream gates detect rich renderer candidates used by the frontend:
+  `get_chart_state`, `get_portfolio_summary`, `render_a2ui_surface`,
+  `sandbox_execute` and `file_analyze`.
+- Stream gates collect artifact filenames from tool outputs so later browser
+  gates can verify `SandboxArtifact`, images, PDFs and data-file links.
+- Stream gates fail on the same soft-unavailable payloads as trace gates.
+- Browser/Playwright live gates remain separate and are required for actual
+  visual rendering, layout and click/download behavior.
 
 ## Memory Gates
 
@@ -194,7 +221,9 @@ PY
 - Proposer can inspect source/config snapshots.
 - Proposer can inspect raw prior traces.
 - Proposer can inspect scores and rejected-candidate reasons.
-- Proposer does not see holdout scores during search.
+- Proposer does not see holdout scores during search; proposer-visible
+  decision packets sanitize `holdout*` metric fields and manifests flag
+  holdout-visible payload keys as failures.
 - Candidate write scope is bounded and reviewable.
 - Proposer may suggest developer-reviewed harness changes only; autonomous
   coding-agent behavior is not a product runtime feature in this phase.
@@ -209,7 +238,11 @@ PY
 - Candidate is feasible before promotion: completion rate 1.0 and trace-gate
   pass rate 1.0, or an explicit human override explains why feasibility is
   being waived.
+- Agent Chat candidates additionally require stream-gate pass rate 1.0 before
+  promotion when SSE artifacts are present.
 - Holdout does not regress beyond tolerance.
+- `promotion-check` fails closed without `pending_eval.json`, passing search
+  metrics, passing holdout verdict and passing safety verdict.
 - Safety gates pass.
 - Required tool and memory gates pass.
 - Cost/latency regression is within budget or explicitly accepted.

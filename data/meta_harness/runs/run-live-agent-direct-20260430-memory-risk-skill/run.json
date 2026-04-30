@@ -1,0 +1,24 @@
+{
+  "run_id": "run-live-agent-direct-20260430-memory-risk-skill",
+  "candidate_id": "direct-agent-memory-risk-skill",
+  "created_at": "2026-04-30T03:33:10.205500+00:00",
+  "stack": {
+    "python_agent": true,
+    "frontend_required": false,
+    "go_gateway_required": false,
+    "memory_engine": "auto",
+    "litellm_base_url": "http://localhost:4000",
+    "agent_max_output_tokens": "512",
+    "trace_store": {
+      "audit_store_priority": "AUDIT_DB_URL -> HINDSIGHT_DB_URL -> JSONL",
+      "audit_db_url_configured": false,
+      "hindsight_db_url_configured": true,
+      "jsonl_dir": "/home/lipfi2/code/matrix/python-backend/data/audit",
+      "expected_postgres_table": "agent.audit_events",
+      "source_query": "agent.audit.store.get_audit_store().query(thread_id=...)",
+      "postgres_required_for_persistent_live_runs": true,
+      "jsonl_fallback_for_local_smoke": true,
+      "sandbox_required_for_core_harness": false
+    }
+  }
+}

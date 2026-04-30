@@ -16,6 +16,15 @@ outer loop over executable code, not as a prompt-only tweak. The proposer is a
 coding agent that reads a filesystem containing prior candidate source code,
 scores and execution traces, then proposes new harnesses.
 
+2026-04-30 full-paper reread correction: the important mechanism is not merely
+having a Pareto command or running trace gates. The proposer needs filesystem
+access to prior executable harnesses, score files and raw execution traces at
+candidate granularity. Summaries are explicitly insufficient in the paper's
+ablation. For Matrix, a valid proposer packet must therefore point to raw
+`traces/**/*.json`, `sse/*.jsonl`, `scores.json`/`aggregate.json`,
+`source_snapshot.json` and the candidate decision ledger. `meta_harness/` is
+the optimizer; the optimized harness is the agent-adjacent runtime around it.
+
 Matrix mapping:
 
 - harness code: agent prompts, context assembly, memory policy, tool policy,
@@ -30,6 +39,29 @@ Matrix mapping:
 Important implication: the current proposer path is useful but insufficient
 because it compresses traces into short summaries. Feature 016 needs raw,
 queryable artifacts.
+
+Implemented follow-up: `meta_harness.outer_loop` creates
+`candidate_manifest.json` and `experience_packet.json` artifacts. The manifest
+marks missing source snapshots, scores, raw traces/benchmark evidence and
+holdout-visible files as paper-readiness failures. The experience packet keeps
+frontier/dominated candidates, failure clusters, decisions and inner-loop
+candidates together while excluding holdout results from proposer context.
+
+Evaluator-sidecar correction: paper-readiness must not accept an empty trace
+file. `candidate_manifest.json` now records trace event count and fails with
+`trace-empty` or invalid trace-list errors. The proposer-visible decision stream
+sanitizes any `holdout*` fields, and `promotion-check` fails closed unless
+pending-eval, search, holdout and safety evidence are all present.
+
+Role separation for Codex-run loops:
+
+- Codex-as-proposer may inspect search artifacts and edit bounded runtime
+  surfaces.
+- Codex-as-simulated-user may drive fixed search scenarios to collect traces.
+- The frozen evaluator remains the CLI/trace-gate/Pareto lane; proposer notes
+  cannot certify promotion.
+- Holdout execution remains an explicit promotion step and is not visible in
+  proposer packets.
 
 ## Official Repo / Domain-Spec Correction
 
@@ -170,6 +202,12 @@ Autoresearch contributes process discipline, not direct runtime code:
 
 For Matrix this means scenario fixtures and judges are frozen during a run.
 Harness candidates may change; the scoring harness may not.
+
+Inner-loop bridge decision: inner loops should be connected, but only as
+candidate generators. A RAG/KG/memory/tool-policy inner loop can produce typed
+candidate artifacts with frozen inputs and metrics. The Meta-Harness outer loop
+must still decide promotion after trace gates and Pareto ranking. This avoids
+turning inner-loop sweeps into hidden evaluator mutation or self-certification.
 
 ## Early Implementation Slice
 
@@ -333,3 +371,70 @@ The Z_ pass adds new Meta-Harness domains:
 All scenarios must remain provider-agnostic. The harness can call whatever
 configured provider is available, but the gates judge behavior, traces and
 artifacts, not vendor-specific response style.
+
+## 2026-04-30 Agent Chat Stream Findings
+
+The Meta-Harness paper requirement for raw execution traces is necessary but
+not sufficient for Agent Chat UI claims. Agent Chat has two downstream truths:
+
+- backend trace truth: Postgres/audit events prove route decisions, skills,
+  tool calls, memory events and scoring.
+- UI stream truth: SSE data parts prove what the frontend can render in
+  `AgentChatMessage`, `AgentChatToolBlock`, `ToolOutputRenderer`,
+  A2UI surfaces and artifact components.
+
+Headless HTTP against the real Next BFF route `/api/agent/chat` is enough to
+prove stream shape without rendering a browser, because the React UI consumes
+the same AI SDK stream parts. Browser/Playwright is still required for visual
+layout and rich-renderer correctness.
+
+Live evidence from `run-live-frontend-chat-20260430-db`:
+
+- `get_chart_state` and `get_portfolio_summary` were visible both as backend
+  audit `tool_call`/`tool_result` and as SSE `tool-input-start` /
+  `tool-output-available`; these map to rich chat renderers.
+- `memory_add` and `memory_search` were also visible in audit and stream, but
+  their payloads said `Memory not available`. This is not a successful memory
+  scenario even if transport-level `success=true`, so gates now fail on
+  soft-unavailable payloads.
+- Frontdoor trace requires DB stability before the run; an earlier run through
+  `/api/agent/chat` produced UI-visible tool parts but no audit events because
+  Postgres had been smart-shutdown. The correct response is a failing harness
+  artifact, not manual success.
+
+## 2026-04-30 Memory Provider Hardening
+
+The live frontdoor memory gap came from the embedding provider, not from the
+LLM chat provider. OpenRouter chat completed through LiteLLM, while
+OpenRouter embeddings returned 402, causing `auto_fusion_provider` to return
+`None`. Meta-Harness now treats that as a failing dependency, and
+memory_fusion has an explicit `MEMORY_EMBEDDING_PROVIDER=deterministic`
+lane for dev/harness orchestration runs.
+
+This remains provider-agnostic: the harness records provider/model/dimension
+and evaluates behavior. Deterministic embeddings may prove that Agent Chat,
+tools, audit, Fusion routing and UI stream surfaces work. They must not be used
+to promote retrieval-quality, ranking or semantic-memory claims without a
+separate real embedding candidate and holdout evaluation.
+
+## 2026-04-30 Live Provider Quota Finding
+
+`openrouter/openrouter/free` is an unreliable live-gate model selector for
+Agent Chat verification: LiteLLM reports missing model metadata and the router
+can stall long enough to trigger turn timeouts. A concrete OpenRouter free
+model, `openrouter/nvidia/nemotron-3-super-120b-a12b:free`, successfully ran
+the direct Agent endpoint and produced real tool, memory and stream traces.
+
+Follow-up live evidence:
+
+- `run-live-agent-direct-20260430-memory-fixed` proved that the memory
+  dependency was fixed: `memory_add` returned `stored=true`, `memory_search`
+  ran, Fusion/Verbatim routes were observed and stream gates passed.
+- The only remaining gate failure in that run was skill coverage: the memory
+  prompt contained `risk per trade`, but only `memory-usage` fired. The
+  Skill-Finder now preserves `risk-assessment` for memory intents that also
+  contain risk/trade/position-sizing terms.
+- `run-live-agent-direct-20260430-memory-risk-skill` then proved the corrected
+  skill selection in audit, but OpenRouter returned `429 free-models-per-day`
+  before the model could call tools. This remains a live-provider quota
+  blocker, not an agent/memory regression.

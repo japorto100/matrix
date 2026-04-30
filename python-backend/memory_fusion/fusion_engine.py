@@ -470,12 +470,30 @@ class FusionMemoryEngine:
     async def close(self) -> None:
         return None
 
+    @staticmethod
+    async def _backend_status(engine: Any) -> dict[str, Any]:
+        if hasattr(engine, "health_check"):
+            return dict(await engine.health_check())
+        if hasattr(engine, "status"):
+            return dict(await engine.status())
+        return {"healthy": False, "error": "backend exposes no health_check/status"}
+
+    @staticmethod
+    def _backend_healthy(status: dict[str, Any]) -> bool:
+        if status.get("error"):
+            return False
+        if "healthy" in status:
+            return bool(status["healthy"])
+        if "ok" in status:
+            return bool(status["ok"])
+        return bool(status)
+
     async def health_check(self) -> dict[str, Any]:
-        summary_status = await self.summary_engine.health_check()
-        verbatim_status = await self.verbatim_engine.health_check()
+        summary_status = await self._backend_status(self.summary_engine)
+        verbatim_status = await self._backend_status(self.verbatim_engine)
         return {
             "provider": FUSION_ROUTE,
-            "healthy": bool(summary_status) and bool(verbatim_status),
+            "healthy": self._backend_healthy(summary_status) and self._backend_healthy(verbatim_status),
             "summary": summary_status,
             "verbatim": verbatim_status,
             "summary_llm_provider": self.summary_llm_provider,

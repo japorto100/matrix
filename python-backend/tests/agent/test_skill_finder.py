@@ -188,6 +188,46 @@ def test_memory_intent_prefers_memory_skill_without_plan_or_risk(
     assert [skill.name for skill in out] == ["memory-usage"]
 
 
+def test_memory_risk_intent_keeps_memory_and_risk_skills(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(tmp_path / "usage.json"))
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search remember previous conversation",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="plan",
+            description="Use when the user asks to plan before executing",
+            category="meta",
+            content="before we do outline approach",
+            path=tmp_path / "plan",
+        ),
+        Skill(
+            name="risk-assessment",
+            description="Use when the user asks about risk or whether a trade should be approved",
+            category="risk",
+            content="risk stop position sizing should",
+            path=tmp_path / "risk",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Use memory_add to remember my 1 percent risk per trade preference.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["memory-usage", "risk-assessment"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

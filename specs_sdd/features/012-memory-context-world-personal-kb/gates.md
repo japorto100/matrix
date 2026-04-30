@@ -65,6 +65,9 @@ feature_id: 012
 - [ ] Hindsight/MemPalace/Fusion runners execute against the shared corpus.
 - [ ] OpenRouter embedding defaults are quality/cost-gated before production
   MemPalace writes use remote embeddings broadly.
+- [x] Dev/Meta-Harness has an explicit no-network deterministic 384d embedding
+  lane for orchestration and trace gates; it is not a production recall-quality
+  default.
 - [ ] Hindsight and MemPalace share one evaluated embedding dimension or have
   explicitly separated indexes plus a reset/re-embedding migration plan.
 - [ ] Reranker strategy is Pareto-evaluated (`rrf`, local cross-encoder,

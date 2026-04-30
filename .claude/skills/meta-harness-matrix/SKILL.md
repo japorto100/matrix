@@ -13,7 +13,10 @@ user explicitly enables another backend.
 
 Optimize the harness around the fixed Matrix agent: context assembly, memory
 routing, tool policy, consent/recovery behavior, skill selection, scenario
-fixtures, scoring and trace gates.
+fixtures, scoring and trace gates. In this repository the agent harness is the
+agent-adjacent runtime, not the `meta_harness/` package itself: `agent/`,
+`memory_fusion/`, RAG/KG, skills, tools/MCP, Matrix transport/session handling
+and context construction are candidate surfaces.
 
 Out of scope for this phase:
 
@@ -23,6 +26,9 @@ Out of scope for this phase:
 - scenario-specific hacks.
 - pure parameter sweeps unless the hypothesis says why that parameter is the
   mechanism under test.
+- changing holdout fixtures, deterministic evaluators or goldens during an
+  active run.
+- treating inner-loop metrics as promotion authority.
 
 ## Required Inputs
 
@@ -39,20 +45,67 @@ Before proposing a candidate, inspect the relevant subset of:
 - `python-backend/agent/runners/`
 - `python-backend/memory_fusion/`
 - `python-backend/agent/skills/`
+- `data/meta_harness/runs/*/experience_packet.json`
+- `data/meta_harness/runs/*/candidates/*/candidate_manifest.json`
 
 Use GitNexus impact analysis before editing code symbols.
 
 ## Workflow
 
-1. Analyze search-set results, trace-gate failures, candidate decisions and raw
-   traces.
-2. Identify one to three falsifiable hypotheses. Each candidate should test one
+1. Build or inspect an outer-loop experience packet:
+   `uv run python -m meta_harness.meta_cli experience-packet --run-id <id>`.
+2. Analyze search-set results, trace-gate failures, candidate decisions, source
+   snapshots and raw traces. Do not rely on summaries when raw files exist.
+3. Identify one to three falsifiable hypotheses. Each candidate should test one
    mechanism.
-3. Prefer cheap prototypes or static checks before editing runtime code.
-4. Implement only bounded, reviewable changes in the declared write scope.
-5. Write or update candidate metadata so the outer loop can evaluate it.
-6. Do not run holdout unless the user or command explicitly authorizes it.
-7. Record keep/discard/defer rationale after evaluation.
+4. Prefer cheap prototypes or static checks before editing runtime code.
+5. Implement only bounded, reviewable changes in the declared write scope.
+6. Write or update candidate metadata so the outer loop can evaluate it.
+7. Run only search-set/provider-free or explicitly budgeted live-search gates.
+8. Do not run holdout unless the user or command explicitly authorizes it.
+9. Record keep/discard/defer rationale after evaluation.
+
+## Role Separation
+
+In a Codex-driven run, Codex may act as both proposer and simulated user, but
+the roles stay separate:
+
+- proposer: inspects search artifacts, source, scores and raw traces; proposes
+  bounded candidate changes.
+- simulated user: drives fixed scenario fixtures to generate controlled traces.
+- evaluator: frozen CLI lanes, trace gates and Pareto computation; the proposer
+  cannot self-certify promotion.
+- promotion: explicit decision plus frontier/holdout gates. Candidate notes are
+  never sufficient.
+
+Holdout paths and scores must not be included in proposer packets.
+
+## Paper-Required Candidate Artifacts
+
+Each evaluated candidate should have:
+
+- `candidate_manifest.json`
+- `run.json`
+- `config.json`
+- `source_snapshot.json`
+- `scores.json` or `aggregate.json`
+- `verdicts.json`
+- raw `traces/**/*.json` and `sse/*.jsonl` when it is a scenario run
+- benchmark-specific evidence for benchmark/inner-loop candidates
+- `decision.json` or candidate-decision ledger entry after evaluation
+
+If any of these are missing, improve artifact capture before trusting the
+candidate as Meta-Harness evidence.
+
+## Inner Loop and Autoresearch
+
+Inner loops are candidate generators only. They may sweep RAG, KG, memory,
+skill or tool-policy spaces and write typed candidates, but the outer loop must
+validate and promote them.
+
+Autoresearch contributes run discipline: fixed evaluator, fixed budget,
+keep/discard/crash status, no evaluator mutation during the run, and rollback
+on regression. Use that discipline for Matrix candidate decisions.
 
 ## Candidate Quality Bar
 

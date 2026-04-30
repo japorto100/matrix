@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 META_HARNESS_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "meta_harness"
 DecisionKind = Literal["keep", "discard", "defer"]
+PROPOSER_PROTECTED_KEY_FRAGMENTS = ("holdout",)
 
 
 @dataclass(frozen=True)
@@ -92,3 +93,23 @@ def load_candidate_decisions(
         except json.JSONDecodeError:
             continue
     return decisions
+
+
+def sanitize_decision_for_proposer(decision: dict[str, Any]) -> dict[str, Any]:
+    """Return a proposer-visible decision without protected holdout fields."""
+
+    return _sanitize_value(decision)
+
+
+def _sanitize_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        sanitized: dict[str, Any] = {}
+        for key, nested in value.items():
+            if any(fragment in str(key).casefold() for fragment in PROPOSER_PROTECTED_KEY_FRAGMENTS):
+                sanitized[str(key)] = "[protected]"
+                continue
+            sanitized[str(key)] = _sanitize_value(nested)
+        return sanitized
+    if isinstance(value, list):
+        return [_sanitize_value(item) for item in value]
+    return value

@@ -328,6 +328,12 @@ def write_inner_loop_artifacts(
         _write_json(candidate_dir / "verdicts.json", verdicts)
         _write_json(candidate_dir / "config.json", _config_snapshot())
         _write_json(candidate_dir / "source_snapshot.json", _source_snapshot(candidate))
+        try:
+            from meta_harness.outer_loop import write_candidate_manifest
+
+            write_candidate_manifest(candidate_dir)
+        except Exception as exc:  # noqa: BLE001
+            _write_json(candidate_dir / "candidate_manifest_error.json", {"error": str(exc)})
         written.append(
             {
                 "candidate_id": candidate.candidate_id,

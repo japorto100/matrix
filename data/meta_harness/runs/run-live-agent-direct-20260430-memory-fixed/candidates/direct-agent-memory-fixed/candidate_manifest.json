@@ -1,0 +1,100 @@
+{
+  "artifact_inventory": {
+    "benchmark_artifacts": [],
+    "config": true,
+    "decision": false,
+    "pending_eval": false,
+    "proposal": false,
+    "raw_traces": true,
+    "results": true,
+    "run_manifest": true,
+    "scores": true,
+    "source_snapshot": true,
+    "sse": true,
+    "verdicts": true
+  },
+  "candidate_id": "direct-agent-memory-fixed",
+  "candidate_path": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-live-agent-direct-20260430-memory-fixed/candidates/direct-agent-memory-fixed",
+  "candidate_type": "scenario_run",
+  "paper_failures": [],
+  "paper_mapping": {
+    "arxiv_id": "2603.28052v1",
+    "execution_traces": "traces/**/*.json plus sse/*.jsonl when available",
+    "paper_ref": "docs/Meta-Harness-2603.28052v1.md",
+    "scores": "scores.json or aggregate.json",
+    "source_code": "source_snapshot.source_files or repository paths",
+    "test_leakage_policy": "holdout paths and scores are excluded from proposer packets"
+  },
+  "paper_ready": true,
+  "result_files": [
+    "results/lp-chart-001.json",
+    "results/lp-memory-001.json",
+    "results/lp-portfolio-001.json"
+  ],
+  "roles": {
+    "evaluator": "frozen Meta-Harness runner and trace gates",
+    "promotion_authority": "Pareto frontier plus explicit decision/holdout gates",
+    "proposer": "Codex or explicitly enabled external proposer",
+    "simulated_user": "scenario fixtures/search-set driver"
+  },
+  "run_id": "run-live-agent-direct-20260430-memory-fixed",
+  "source_files": [
+    {
+      "bytes": 35646,
+      "path": "python-backend/agent/app.py",
+      "sha256": "62d1e9121aa3a5c238839caadf69efe3d5dd6413ea17bb20870225ee6f6fe11f"
+    },
+    {
+      "bytes": 13183,
+      "path": "python-backend/agent/runners/dispatcher.py",
+      "sha256": "feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4"
+    },
+    {
+      "bytes": 20135,
+      "path": "python-backend/agent/runners/simple.py",
+      "sha256": "5a77dce3f5014a8a4adb76704310e848f868816a06fc84af6fc25b977bf9b6a8"
+    },
+    {
+      "bytes": 30221,
+      "path": "python-backend/agent/graph/runner.py",
+      "sha256": "9f4ad717ba73511c555b85451c476b120da6f393afa35c2cfb817ac910d64a93"
+    },
+    {
+      "bytes": 24260,
+      "path": "python-backend/agent/graph/nodes/llm_node.py",
+      "sha256": "a1be967675ad944cde581d8edfb55a833fb7c55e2ad8de186eb8027ec37c580c"
+    },
+    {
+      "bytes": 11357,
+      "path": "python-backend/agent/graph/nodes/tool_node.py",
+      "sha256": "55f6726a55ee86eef0bdb0716be3c73cae0803709e00ded57a180ae088614f7b"
+    },
+    {
+      "bytes": 20526,
+      "path": "python-backend/agent/graph/nodes/memory_node.py",
+      "sha256": "827b9e064cbf9b1726cb1b3eaf864d73000a0dd058daae115c6ec6771268d344"
+    },
+    {
+      "bytes": 4433,
+      "path": "python-backend/agent/tools/registry.py",
+      "sha256": "695970e0a3fb76944da51c789a06fe400d2ad1d2b2fa0646cb16f01ef7c33a35"
+    },
+    {
+      "bytes": 10801,
+      "path": "python-backend/meta_harness/evaluator.py",
+      "sha256": "e1f1938bf990b19902a6218a049be0c61c0c7061a43e30a3320d00b50e9a0eda"
+    },
+    {
+      "bytes": 59599,
+      "path": "python-backend/meta_harness/scenario_runner.py",
+      "sha256": "509498ddeeb9452b73be88e872e48643102ec12ce07f6f6de4a26ee3a47384b8"
+    }
+  ],
+  "trace_event_count": 54,
+  "trace_files": [
+    "traces/lp-chart-001/mh-lp-chart-001-f4cbe149.json",
+    "traces/lp-memory-001/mh-lp-memory-001-5cabb261.json",
+    "traces/lp-portfolio-001/mh-lp-portfolio-001-75850120.json"
+  ],
+  "trace_quality_failures": []
+}

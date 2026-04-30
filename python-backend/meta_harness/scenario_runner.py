@@ -281,6 +281,22 @@ class TraceGateVerdict:
 
 
 @dataclass(frozen=True)
+class StreamGateVerdict:
+    """UI-stream assertion result for one scenario run."""
+
+    passed: bool
+    failures: tuple[str, ...]
+    warnings: tuple[str, ...]
+    observed_parts: tuple[str, ...]
+    observed_tools: tuple[str, ...]
+    observed_rich_renderers: tuple[str, ...] = ()
+    observed_artifact_files: tuple[str, ...] = ()
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class ScenarioRunResult:
     """Result artifact for one executed scenario."""
 
@@ -296,12 +312,15 @@ class ScenarioRunResult:
     trace_events: tuple[dict[str, Any], ...]
     score: dict[str, Any]
     trace_verdict: TraceGateVerdict
+    stream_verdict: StreamGateVerdict | None = None
     artifact_dir: str | None = None
     runner_variant: str = "dispatcher"
 
     def as_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["trace_verdict"] = self.trace_verdict.as_dict()
+        if self.stream_verdict is not None:
+            data["stream_verdict"] = self.stream_verdict.as_dict()
         return data
 
 
@@ -333,6 +352,33 @@ def _event_input(event: dict[str, Any]) -> dict[str, Any]:
         except json.JSONDecodeError:
             return {}
     return value if isinstance(value, dict) else {}
+
+
+def _event_output(event: dict[str, Any]) -> Any:
+    value = event.get("output")
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
+def _tool_unavailable_reason(tool_name: str, output: Any) -> str:
+    """Detect soft-failed tool payloads that were marked successful in transport."""
+    if isinstance(output, str):
+        normalized = output.casefold()
+        if "not available" in normalized or "unavailable" in normalized:
+            return f"tool unavailable: {tool_name}"
+        return ""
+    if not isinstance(output, dict):
+        return ""
+    message = str(output.get("message") or output.get("error") or "").casefold()
+    if "not available" in message or "unavailable" in message:
+        return f"tool unavailable: {tool_name}"
+    if tool_name in {"memory_add", "save_memory"} and output.get("stored") is False:
+        return f"tool unavailable: {tool_name} stored=false"
+    return ""
 
 
 def _normalized_memory_add_key(event: dict[str, Any]) -> tuple[str, str] | None:
@@ -655,6 +701,14 @@ def evaluate_trace_gates(
     tool_results = [event for event in events if _event_action(event) == "tool_result"]
     tool_success_rate: float | None = None
     if tool_results:
+        for event in tool_results:
+            tool_name = _event_tool(event) or "<unknown>"
+            unavailable_reason = _tool_unavailable_reason(
+                tool_name,
+                _event_output(event),
+            )
+            if unavailable_reason:
+                failures.append(unavailable_reason)
         if expectations.max_repeated_tool_failures_per_tool is not None:
             failed_counts: dict[str, int] = {}
             for event in tool_results:
@@ -706,6 +760,93 @@ def evaluate_trace_gates(
         observed_memory_routes=tuple(sorted(memory_routes)),
         observed_memory_providers=tuple(sorted(memory_providers)),
         tool_success_rate=tool_success_rate,
+    )
+
+
+def evaluate_stream_gates(
+    chunks: list[str],
+    expectations: TraceExpectations,
+) -> StreamGateVerdict:
+    """Evaluate what the Agent Chat UI can render from SSE data parts."""
+    payloads = [
+        payload
+        for payload in (_parse_sse_payload(chunk) for chunk in chunks)
+        if payload is not None
+    ]
+    observed_parts = {
+        str(payload.get("type"))
+        for payload in payloads
+        if payload.get("type")
+    }
+    tool_outputs = [
+        payload
+        for payload in payloads
+        if payload.get("type") == "tool-output-available"
+    ]
+    tool_starts = [
+        payload
+        for payload in payloads
+        if str(payload.get("type") or "").startswith("tool-input")
+    ]
+    tool_name_by_call_id = {
+        str(payload.get("toolCallId")): str(payload.get("toolName") or "")
+        for payload in tool_starts
+        if payload.get("toolCallId") and payload.get("toolName")
+    }
+    observed_tools = {
+        str(payload.get("toolName") or "")
+        for payload in [*tool_starts, *tool_outputs]
+        if payload.get("toolName")
+    }
+    rich_renderers = {
+        tool
+        for tool in observed_tools
+        if tool
+        in {
+            "file_analyze",
+            "get_chart_state",
+            "get_portfolio_summary",
+            "render_a2ui_surface",
+            "sandbox_execute",
+        }
+    }
+    artifact_files: set[str] = set()
+    failures: list[str] = []
+    warnings: list[str] = []
+
+    for payload in tool_outputs:
+        tool_name = str(payload.get("toolName") or "") or tool_name_by_call_id.get(
+            str(payload.get("toolCallId") or ""),
+            "",
+        )
+        output = payload.get("output")
+        unavailable_reason = _tool_unavailable_reason(tool_name, output)
+        if unavailable_reason:
+            failures.append(f"stream {unavailable_reason}")
+        if isinstance(output, dict):
+            for item in output.get("files") or []:
+                if isinstance(item, dict) and item.get("name"):
+                    artifact_files.add(str(item["name"]))
+
+    for tool in expectations.required_tools:
+        if tool not in observed_tools:
+            failures.append(f"missing stream tool part: {tool}")
+
+    if expectations.required_tools and "tool-output-available" not in observed_parts:
+        failures.append("missing stream tool-output-available part")
+    if "finish" not in observed_parts:
+        failures.append("missing stream finish part")
+    if "text-delta" not in observed_parts:
+        warnings.append("missing stream text-delta part")
+
+    return StreamGateVerdict(
+        passed=not failures,
+        failures=tuple(failures),
+        warnings=tuple(warnings),
+        observed_parts=tuple(sorted(observed_parts)),
+        observed_tools=tuple(sorted(observed_tools)),
+        observed_rich_renderers=tuple(sorted(rich_renderers)),
+        observed_artifact_files=tuple(sorted(artifact_files)),
     )
 
 
@@ -832,9 +973,19 @@ def _meta_harness_service_headers(
     return headers
 
 
+def _agent_chat_endpoint_url(agent_url: str) -> tuple[str, bool]:
+    """Return the concrete chat endpoint and whether it is a frontend BFF route."""
+    clean_url = agent_url.rstrip("/")
+    if clean_url.endswith("/api/agent/chat"):
+        return clean_url, True
+    if clean_url.endswith("/api/v1/agent/chat"):
+        return clean_url, False
+    return f"{clean_url}/api/v1/agent/chat", False
+
+
 def service_agent_runner(agent_url: str) -> AgentRunner:
     """Create a runner that drives the live FastAPI agent chat endpoint."""
-    base_url = agent_url.rstrip("/")
+    chat_url, is_frontend_bff = _agent_chat_endpoint_url(agent_url)
 
     async def _runner(
         *,
@@ -868,7 +1019,7 @@ def service_agent_runner(agent_url: str) -> AgentRunner:
             payload["model"] = model
         if system_prompt:
             payload["context"] = system_prompt
-        if run_id:
+        if run_id and not is_frontend_bff:
             payload["metaHarnessRunId"] = run_id
             payload["metaHarnessScenarioId"] = scenario_id
             env_api_key = _harness_env_api_key(model)
@@ -886,7 +1037,7 @@ def service_agent_runner(agent_url: str) -> AgentRunner:
         async with httpx.AsyncClient(timeout=None) as client:
             async with client.stream(
                 "POST",
-                f"{base_url}/api/v1/agent/chat",
+                chat_url,
                 json=payload,
                 headers=headers,
             ) as response:
@@ -1018,11 +1169,17 @@ async def run_scenario(
         scenario.expectations,
         response_text=response_text,
     )
+    stream_verdict = evaluate_stream_gates(all_sse, scenario.expectations)
     if timeout_errors:
         verdict = replace(
             verdict,
             passed=False,
             failures=tuple([*verdict.failures, "harness timeout"]),
+        )
+        stream_verdict = replace(
+            stream_verdict,
+            passed=False,
+            failures=tuple([*stream_verdict.failures, "harness timeout"]),
         )
     if runner_errors:
         verdict = replace(
@@ -1030,7 +1187,13 @@ async def run_scenario(
             passed=False,
             failures=tuple([*verdict.failures, "harness runner error"]),
         )
+        stream_verdict = replace(
+            stream_verdict,
+            passed=False,
+            failures=tuple([*stream_verdict.failures, "harness runner error"]),
+        )
     score["trace_gates"] = verdict.as_dict()
+    score["stream_gates"] = stream_verdict.as_dict()
 
     result = ScenarioRunResult(
         run_id=run_id,
@@ -1045,6 +1208,7 @@ async def run_scenario(
         trace_events=tuple(events),
         score=score,
         trace_verdict=verdict,
+        stream_verdict=stream_verdict,
         runner_variant=effective_runner_variant,
     )
     if write_artifacts:
@@ -1139,7 +1303,17 @@ def write_scenario_artifacts(
         encoding="utf-8",
     )
     (candidate_dir / "verdicts.json").write_text(
-        json.dumps(result.trace_verdict.as_dict(), indent=2, default=str),
+        json.dumps(
+            {
+                **result.trace_verdict.as_dict(),
+                "trace": result.trace_verdict.as_dict(),
+                "stream": result.stream_verdict.as_dict()
+                if result.stream_verdict is not None
+                else None,
+            },
+            indent=2,
+            default=str,
+        ),
         encoding="utf-8",
     )
     (trace_dir / f"{result.thread_id}.json").write_text(
@@ -1161,6 +1335,15 @@ def write_scenario_artifacts(
         json.dumps(result.as_dict(), indent=2, default=str),
         encoding="utf-8",
     )
+    try:
+        from meta_harness.outer_loop import write_candidate_manifest
+
+        write_candidate_manifest(candidate_dir)
+    except Exception as exc:  # noqa: BLE001
+        (candidate_dir / "candidate_manifest_error.json").write_text(
+            json.dumps({"error": str(exc)}, indent=2, default=str),
+            encoding="utf-8",
+        )
     return candidate_dir
 
 
@@ -1168,6 +1351,9 @@ def _aggregate_results(results: list[ScenarioRunResult]) -> dict[str, Any]:
     n = len(results)
     completed = sum(1 for r in results if r.score.get("completed"))
     trace_passed = sum(1 for r in results if r.trace_verdict.passed)
+    stream_passed = sum(
+        1 for r in results if r.stream_verdict is None or r.stream_verdict.passed
+    )
     total_tokens = sum(int(r.score.get("total_tokens") or 0) for r in results)
     total_cost = sum(float(r.score.get("cost_estimate_usd") or 0.0) for r in results)
     total_duration = sum(float(r.score.get("total_duration_ms") or 0.0) for r in results)
@@ -1193,6 +1379,7 @@ def _aggregate_results(results: list[ScenarioRunResult]) -> dict[str, Any]:
         "scenarios_evaluated": n,
         "completion_rate": round(completed / max(n, 1), 4),
         "trace_gate_pass_rate": round(trace_passed / max(n, 1), 4),
+        "stream_gate_pass_rate": round(stream_passed / max(n, 1), 4),
         "avg_turns": round(avg_turns, 3),
         "turn_efficiency": round(1.0 / max(avg_turns, 1.0), 4),
         "tool_success_rate": round(sum(tool_rates) / len(tool_rates), 4)
@@ -1220,12 +1407,19 @@ def _aggregate_results(results: list[ScenarioRunResult]) -> dict[str, Any]:
             {
                 "scenario_id": r.scenario_id,
                 "failures": list(r.trace_verdict.failures),
+                "stream_failures": list(r.stream_verdict.failures)
+                if r.stream_verdict is not None
+                else [],
                 "observed_actions": list(r.trace_verdict.observed_actions),
                 "observed_tools": list(r.trace_verdict.observed_tools),
+                "observed_stream_tools": list(r.stream_verdict.observed_tools)
+                if r.stream_verdict is not None
+                else [],
                 "observed_skills": list(r.trace_verdict.observed_skills),
             }
             for r in results
             if not r.trace_verdict.passed
+            or (r.stream_verdict is not None and not r.stream_verdict.passed)
         ],
     }
 

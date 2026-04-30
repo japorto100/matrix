@@ -306,6 +306,13 @@ def _load_recent_meta_harness_artifacts(
                 "source_snapshot": _read_json_if_exists(
                     candidate_dir / "source_snapshot.json"
                 ),
+                "candidate_manifest": _read_json_if_exists(
+                    candidate_dir / "candidate_manifest.json"
+                ),
+                "pending_eval": _read_json_if_exists(
+                    candidate_dir / "pending_eval.json"
+                ),
+                "decision": _read_json_if_exists(candidate_dir / "decision.json"),
                 "raw_trace_previews": [
                     _compact_trace_file(path) for path in trace_files[:3]
                 ],
@@ -316,9 +323,15 @@ def _load_recent_meta_harness_artifacts(
 
 def _load_recent_candidate_decisions(limit: int = 20) -> list[dict[str, Any]]:
     try:
-        from meta_harness.decisions import load_candidate_decisions
+        from meta_harness.decisions import (
+            load_candidate_decisions,
+            sanitize_decision_for_proposer,
+        )
 
-        return load_candidate_decisions(limit=limit)
+        return [
+            sanitize_decision_for_proposer(decision)
+            for decision in load_candidate_decisions(limit=limit)
+        ]
     except Exception:  # noqa: BLE001
         return []
 

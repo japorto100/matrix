@@ -1,0 +1,73 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required tool: memory_add",
+    "missing required tool: memory_search",
+    "missing tool_result events for tool success rate threshold"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "memory_recall",
+    "skill_found",
+    "skill_used"
+  ],
+  "observed_tools": [],
+  "observed_skills": [
+    "global:memory-usage",
+    "global:risk-assessment",
+    "memory-usage",
+    "risk-assessment"
+  ],
+  "tool_success_rate": null,
+  "observed_memory_routes": [
+    "fusion"
+  ],
+  "observed_memory_providers": [],
+  "trace": {
+    "passed": false,
+    "failures": [
+      "missing required tool: memory_add",
+      "missing required tool: memory_search",
+      "missing tool_result events for tool success rate threshold"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:memory-usage",
+      "global:risk-assessment",
+      "memory-usage",
+      "risk-assessment"
+    ],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion"
+    ],
+    "observed_memory_providers": []
+  },
+  "stream": {
+    "passed": false,
+    "failures": [
+      "missing stream tool part: memory_add",
+      "missing stream tool part: memory_search",
+      "missing stream tool-output-available part",
+      "missing stream finish part"
+    ],
+    "warnings": [
+      "missing stream text-delta part"
+    ],
+    "observed_parts": [
+      "error",
+      "message-metadata",
+      "start",
+      "text-start"
+    ],
+    "observed_tools": [],
+    "observed_rich_renderers": [],
+    "observed_artifact_files": []
+  }
+}

@@ -76,6 +76,121 @@ async def test_cli_history_reads_decisions(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_cli_experience_packet_writes_outer_loop_packet(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    candidate_dir = tmp_path / "runs" / "run-1" / "candidates" / "candidate-a"
+    trace_dir = candidate_dir / "traces" / "scenario-1"
+    trace_dir.mkdir(parents=True)
+    (tmp_path / "runs" / "run-1" / "run.json").write_text(
+        json.dumps({"run_id": "run-1"}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "aggregate.json").write_text(
+        json.dumps(
+            {
+                "completion_rate": 1.0,
+                "trace_gate_pass_rate": 1.0,
+                "fitness_score": 0.8,
+                "tool_success_rate": 1.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (candidate_dir / "source_snapshot.json").write_text(
+        json.dumps({"files": [{"path": "python-backend/agent/runners/simple.py"}]}),
+        encoding="utf-8",
+    )
+    (trace_dir / "thread.json").write_text(
+        json.dumps([{"action": "llm_response", "success": True}]),
+        encoding="utf-8",
+    )
+    args = meta_cli.build_parser().parse_args(
+        [
+            "experience-packet",
+            "--run-id",
+            "run-exp",
+            "--data-dir",
+            str(tmp_path),
+            "--limit",
+            "5",
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["run_id"] == "run-exp"
+    assert result["candidate_count"] == 1
+    assert result["paper_readiness"]["paper_ready_candidates"] == 1
+    assert (tmp_path / "runs" / "run-exp" / "experience_packet.json").exists()
+    assert (candidate_dir / "candidate_manifest.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_cli_pending_eval_and_promotion_check(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    candidate_dir = tmp_path / "runs" / "run-1" / "candidates" / "candidate-a"
+    trace_dir = candidate_dir / "traces" / "scenario-1"
+    trace_dir.mkdir(parents=True)
+    (tmp_path / "runs" / "run-1" / "run.json").write_text(
+        json.dumps({"run_id": "run-1"}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "aggregate.json").write_text(
+        json.dumps({"completion_rate": 1.0, "trace_gate_pass_rate": 1.0}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "source_snapshot.json").write_text(
+        json.dumps({"files": [{"path": "python-backend/agent/runners/simple.py"}]}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "safety.json").write_text(
+        json.dumps({"passed": True}),
+        encoding="utf-8",
+    )
+    (trace_dir / "thread.json").write_text(
+        json.dumps([{"action": "llm_response"}]),
+        encoding="utf-8",
+    )
+    pending_args = meta_cli.build_parser().parse_args(
+        [
+            "pending-eval",
+            "--run-id",
+            "run-1",
+            "--candidate-id",
+            "candidate-a",
+            "--candidate-type",
+            "code_patch",
+            "--domain-id",
+            "agent-runtime-routing",
+            "--write-scope",
+            "python-backend/agent/runners/",
+            "--evaluation",
+            "search then holdout",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+    check_args = meta_cli.build_parser().parse_args(
+        [
+            "promotion-check",
+            "--run-id",
+            "run-1",
+            "--candidate-id",
+            "candidate-a",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+
+    pending = await meta_cli._main_async(pending_args)
+    check = await meta_cli._main_async(check_args)
+
+    assert pending["holdout_visible_to_proposer"] is False
+    assert check["passed"] is False
+    assert "missing-holdout-verdict" in check["failures"]
+
+
+@pytest.mark.asyncio
 async def test_cli_rag_benchmark_writes_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
     monkeypatch.setenv("AGENT_DEFAULT_MODEL", "openrouter/test-model")
@@ -312,7 +427,7 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
 
     assert result["passed"] is True
     assert result["lane_count"] == 6
-    assert result["scenario_count"] == 30
+    assert result["scenario_count"] == 31
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 
@@ -365,7 +480,7 @@ async def test_cli_knowledge_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 5
+    assert result["scenario_count"] == 6
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "knowledge-memory-ground-truth-preserved" in scenario_ids
     assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids

@@ -752,7 +752,9 @@ class MempalaceMemoryEngine:
         return {
             "provider": "mempalace-postgres",
             "storage": "postgres-pgvector",
-            "embedding_provider": "openrouter" if self.embedder.model != "deterministic-test-8d" else "deterministic",
+            "embedding_provider": "deterministic"
+            if self.embedder.model.startswith("deterministic-")
+            else "openrouter",
             "embedding_model": self.embedder.model,
             "count": int(row["count"] if row else 0),
             "embedding_pending": int(pending["count"] if pending else 0),

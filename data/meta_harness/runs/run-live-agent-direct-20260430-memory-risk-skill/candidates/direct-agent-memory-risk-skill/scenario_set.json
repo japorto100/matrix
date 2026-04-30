@@ -1,0 +1,57 @@
+{
+  "scenarios": [
+    {
+      "id": "lp-memory-001",
+      "category": "tool_memory_add_search",
+      "turns": [
+        {
+          "user": "Use memory_add now to remember this exact preference: meta_harness_probe_prefers_1_percent_risk_per_trade."
+        },
+        {
+          "user": "Use memory_search now to recall the meta_harness_probe preference and tell me what you found."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "skill_used"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "memory_add",
+          "memory_search"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "memory-usage",
+          "risk-assessment"
+        ],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_route_decisions": [],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": null,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": true,
+        "min_tool_success_rate": 1.0,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {},
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

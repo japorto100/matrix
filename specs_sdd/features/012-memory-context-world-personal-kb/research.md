@@ -230,3 +230,20 @@ Anthropic, Hindsight internals or a specific vector backend. The ids are
 trace/correlation refs for memory operations and diffs; DB-row-level diff
 tables can replace or enrich them later without changing the agent context
 contract.
+
+# 2026-04-30 Dev/Meta-Harness Embedding Lane
+
+Live Agent Chat memory traces exposed a practical provider failure: the real
+OpenRouter chat path worked, but the OpenRouter embeddings endpoint returned
+402 and made the Fusion provider unavailable. The fix is not a silent
+production fallback. `MEMORY_EMBEDDING_PROVIDER=deterministic` is now an
+explicit, provider-agnostic dev/Meta-Harness lane with 384-dimensional
+reproducible vectors for Hindsight and MemPalace.
+
+This references the Meta-Harness lesson from the Z_ pass and paper work:
+traces must show real tool/memory behavior, and unavailable dependencies must
+fail gates instead of being counted as success. Deterministic embeddings are
+acceptable only when the scenario is measuring orchestration, trace integrity,
+memory write/read plumbing or UI stream visibility. Retrieval-quality claims
+still require OpenRouter/OpenAI-compatible/local model candidates and Pareto
+evaluation on held-out corpora.

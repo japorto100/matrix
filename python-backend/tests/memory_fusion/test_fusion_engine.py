@@ -56,6 +56,28 @@ class _FakeEngine:
         return {"ok": True}
 
 
+class _StatusOnlyEngine:
+    async def status(self):
+        return {"provider": "mempalace-postgres", "storage": "postgres-pgvector"}
+
+
+@pytest.mark.asyncio
+async def test_health_check_accepts_status_only_backend() -> None:
+    engine = FusionMemoryEngine(
+        summary_engine=_FakeEngine(),
+        verbatim_engine=_StatusOnlyEngine(),
+        summary_llm_provider="openrouter",
+        verbatim_llm_provider="mempalace-postgres",
+        summary_extraction_mode="concise",
+        verbatim_extraction_mode="verbatim",
+    )
+
+    status = await engine.health_check()
+
+    assert status["healthy"] is True
+    assert status["verbatim"]["provider"] == "mempalace-postgres"
+
+
 @pytest.mark.asyncio
 async def test_runtime_fusion_prefers_mempalace_db_url(monkeypatch) -> None:
     from memory_fusion import engine as runtime_engine

@@ -59,6 +59,13 @@ function sseErrorFrame(msg: string): Uint8Array {
  * Returns an array of frames to emit (may be 1:1 or 1:N for text deltas).
  */
 const SMOOTH_DELAY_MS = 12;
+const HARNESS_HEADER_ALLOWLIST = [
+	"x-auth-user",
+	"x-meta-harness-run-id",
+	"x-meta-harness-scenario-id",
+	"x-meta-harness-consent-allow-tools",
+	"x-meta-harness-api-key",
+];
 
 function splitTextDelta(frame: string): string[] {
 	const dataLine = frame.split("\n").find((l) => l.startsWith("data:"));
@@ -126,6 +133,10 @@ export async function POST(request: NextRequest) {
 		"X-Request-ID": requestId,
 	};
 	if (userRole) headers["X-User-Role"] = userRole;
+	for (const name of HARNESS_HEADER_ALLOWLIST) {
+		const value = request.headers.get(name)?.trim();
+		if (value) headers[name] = value;
+	}
 
 	let upstream: Response;
 	try {

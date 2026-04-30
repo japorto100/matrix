@@ -10,7 +10,7 @@ def bridge_hindsight_env() -> None:
     litellm_url = os.environ.get("LITELLM_BASE_URL", "http://localhost:4000")
     utility_model = os.environ.get("AGENT_DEFAULT_UTILITY_MODEL", "")
     embedding_provider = os.environ.get("MEMORY_EMBEDDING_PROVIDER", "openrouter").strip().lower()
-    if embedding_provider not in {"openrouter", "openai-compatible"}:
+    if embedding_provider not in {"openrouter", "openai-compatible", "deterministic"}:
         raise RuntimeError(f"Unsupported MEMORY_EMBEDDING_PROVIDER={embedding_provider!r} for Hindsight")
     embedding_model = (
         os.environ.get("MEMORY_EMBEDDING_MODEL")

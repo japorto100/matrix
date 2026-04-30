@@ -255,6 +255,40 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("pareto", help="Show Pareto frontier summary")
 
+    experience = sub.add_parser(
+        "experience-packet",
+        help="Write a paper-aligned Meta-Harness outer-loop experience packet",
+    )
+    experience.add_argument("--run-id", default="")
+    experience.add_argument("--data-dir", type=Path, default=None)
+    experience.add_argument("--limit", type=int, default=40)
+    experience.add_argument(
+        "--no-write-manifests",
+        action="store_true",
+        help="Inspect candidates without writing candidate_manifest.json files",
+    )
+
+    pending_eval = sub.add_parser(
+        "pending-eval",
+        help="Write a frozen pending-evaluation envelope for one candidate",
+    )
+    pending_eval.add_argument("--run-id", required=True)
+    pending_eval.add_argument("--candidate-id", required=True)
+    pending_eval.add_argument("--candidate-type", required=True)
+    pending_eval.add_argument("--domain-id", required=True)
+    pending_eval.add_argument("--write-scope", action="append", default=[])
+    pending_eval.add_argument("--evaluation", required=True)
+    pending_eval.add_argument("--rollback-ref", default="")
+    pending_eval.add_argument("--data-dir", type=Path, default=None)
+
+    promotion_check = sub.add_parser(
+        "promotion-check",
+        help="Fail-closed preflight for candidate promotion",
+    )
+    promotion_check.add_argument("--run-id", required=True)
+    promotion_check.add_argument("--candidate-id", required=True)
+    promotion_check.add_argument("--data-dir", type=Path, default=None)
+
     history = sub.add_parser("history", help="Show recent candidate decisions")
     history.add_argument("--limit", type=int, default=50)
     history.add_argument("--data-dir", type=Path, default=None)
@@ -486,6 +520,42 @@ async def _main_async(args: argparse.Namespace) -> dict:
         from meta_harness.pareto import get_frontier_summary
 
         return get_frontier_summary()
+    if args.command == "experience-packet":
+        from meta_harness.outer_loop import write_experience_packet
+
+        kwargs = {
+            "run_id": args.run_id or "run-outer-loop-experience",
+            "limit": args.limit,
+            "write_manifests": not args.no_write_manifests,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return write_experience_packet(**kwargs)
+    if args.command == "pending-eval":
+        from meta_harness.outer_loop import write_pending_eval
+
+        kwargs = {
+            "run_id": args.run_id,
+            "candidate_id": args.candidate_id,
+            "candidate_type": args.candidate_type,
+            "domain_id": args.domain_id,
+            "write_scope": args.write_scope,
+            "evaluation": args.evaluation,
+            "rollback_ref": args.rollback_ref,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return write_pending_eval(**kwargs)
+    if args.command == "promotion-check":
+        from meta_harness.outer_loop import promotion_gate
+
+        kwargs = {
+            "run_id": args.run_id,
+            "candidate_id": args.candidate_id,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return promotion_gate(**kwargs)
     if args.command == "history":
         from meta_harness.decisions import load_candidate_decisions
 

@@ -29,6 +29,12 @@ feature_id: 016
 - T006b Require every candidate artifact to state whether it is a config
   overlay, prompt/policy change, code patch or benchmark-only result; vague
   "agent improved" candidates are invalid.
+- [x] T006f [done-static] Align candidate manifests with the Meta-Harness paper:
+  every candidate now receives a `candidate_manifest.json` inventory that
+  states candidate type, source snapshot, scores, raw trace/benchmark evidence,
+  role separation and holdout visibility failures.
+  - 2026-04-30: `meta_harness.outer_loop` writes paper-readiness manifests for
+    scenario and inner-loop candidates without changing runtime semantics.
 - [x] T006d [done-static] Add provider-free python-backend domain contract lane.
   - 2026-04-30: `meta_harness.domain_contract` declares frozen optimization
     domains for agent runtime, Matrix transport/session hygiene, subagent
@@ -44,9 +50,13 @@ feature_id: 016
 - [x] T006e [done-static] Aggregate `domain-contract` into `contract-suite` so
   Meta-Harness cannot optimize backend agent domains without first proving
   fixed evaluator/search/holdout/write-scope contracts.
-- T006c Keep proposer and evaluator roles separate: proposer may inspect
-  search traces and candidate history, but promotion must run frozen outer-loop
-  gates and holdout.
+- [x] T006c [done-static] Keep proposer and evaluator roles separate:
+  proposer may inspect search traces and candidate history, but promotion must
+  run frozen outer-loop gates and holdout.
+  - 2026-04-30: proposer-visible decision/history packets sanitize `holdout*`
+    metrics, candidate manifests fail if holdout payload fields are visible,
+    and `promotion-check` blocks search-only candidates without holdout/safety
+    evidence.
 - [x] T007 Create Matrix-specific Meta-Harness skill for Codex-as-proposer.
 - [x] T008 Add CLI/config guard so external LLM proposer/judge calls are disabled
   by default unless a run explicitly opts in.
@@ -186,15 +196,28 @@ feature_id: 016
 - T074 Keep proposer free to inspect full history, but constrain write scope and
   forbidden actions.
 - [x] T075 Add keep/discard result log inspired by Autoresearch.
-- T076 Implement official-style proposer iteration ledger:
+- [x] T076 [done-static] Implement official-style proposer iteration ledger:
   analyze -> prototype/patch -> pending_eval -> outer-loop evaluate -> decide.
+  - 2026-04-30: CLI `pending-eval` writes a frozen candidate envelope with
+    candidate type, domain id, write scope, evaluation text, rollback ref and
+    no-self-certification flags. Search/holdout execution remains separate.
 - T077 Persist proposer interaction/log summaries even when Codex, not an API
   LLM, acts as proposer.
 - T078 Add domain-specific proposer prompts for the first stable domains:
   source-grounding/RAG, memory lifecycle, tool routing and provider budget.
-- T079 Add a "no self-certification" gate: candidate notes can recommend a
-  promotion, but only evaluator artifacts and holdout verdicts can mark it
-  promoted.
+- [x] T079 [done-static] Add a "no self-certification" gate: candidate notes
+  can recommend a promotion, but only evaluator artifacts and holdout verdicts
+  can mark it promoted.
+  - 2026-04-30: CLI `promotion-check` fails closed unless
+    `candidate_manifest.json`, `pending_eval.json`, passing search metrics,
+    passing holdout verdict and passing safety verdict are present.
+- [x] T079a [done-static] Add paper-style outer-loop experience packets for
+  Codex-as-proposer.
+  - 2026-04-30: CLI `experience-packet` writes
+    `data/meta_harness/runs/<run_id>/experience_packet.json` with frontier,
+    dominated versions, candidate manifests, failure clusters, decisions,
+    inner-loop bridge and Autoresearch discipline flags. It excludes holdout
+    results by construction.
 
 ## Scoring / Promotion
 
@@ -375,6 +398,39 @@ feature_id: 016
     passed 16/16 scenarios across Features 020, 024, 027 and 030.
   - 2026-04-30: after adding `knowledge-contract`, the same suite passed
     21/21 scenarios across Features 012/017/019/020/022/024/025/027/030.
+- [x] T122 [done-static-live-smoke] Add Agent Chat stream/UI downstream gates.
+  - 2026-04-30: Meta-Harness service runs can target the real
+    `/api/agent/chat` Next BFF route headlessly. `StreamGateVerdict` now
+    checks SSE parts the UI renders (`tool-input-*`, `tool-output-available`,
+    `finish`, rich renderer candidates and artifact file payloads) separately
+    from backend audit trace gates.
+  - 2026-04-30: live frontdoor run
+    `run-live-frontend-chat-20260430-db` passed chart and portfolio tool
+    stream/trace probes, and exposed a real memory-service gap:
+    `memory_add`/`memory_search` were visible in SSE and audit, but returned
+    `Memory not available`.
+- [x] T123 [done-static] Fail trace and stream gates on soft-unavailable tool
+  payloads.
+  - 2026-04-30: successful transport is no longer enough for memory tools:
+    `{"stored": false}` or payload messages such as `Memory not available`
+    fail both audit trace gates and UI stream gates.
+- [x] T123a [done-static-live-prep] Add explicit deterministic embedding lane
+  for dev/Meta-Harness memory orchestration.
+  - 2026-04-30: Hindsight and MemPalace can both use
+    `MEMORY_EMBEDDING_PROVIDER=deterministic` with a shared 384d model. This
+    unblocks memory/tool/audit/UI-stream traces without hiding remote embedding
+    quota failures or claiming retrieval quality.
+- [x] T123b [done-static] Preserve domain skills for compound memory intents.
+  - 2026-04-30: memory prompts with risk/trade/position-sizing terms now keep
+    both `memory-usage` and `risk-assessment`; focused Skill-Finder tests cover
+    the previous false-negative.
+- [ ] T123c [blocked-live-provider] Re-run the memory-risk live scenario after
+  OpenRouter free-model quota resets or a paid/provider-specific key is
+  available. Current blocker is `429 free-models-per-day`, while audit already
+  proves corrected skill selection.
+- T124 Add browser-render live gates for Agent Chat UI surfaces after headless
+  stream gates pass: tool blocks, rich renderers, A2UI surfaces,
+  SandboxArtifact/PDF/data-file links and attachment previews.
 
 ## Verify Gates
 
@@ -385,6 +441,10 @@ feature_id: 016
 - Meta-Harness credential mode is explicit: anonymous/dev runs are documented,
   named-user runs require DB credentials or fail closed.
 - Candidate artifact directory contains raw traces and scores.
+- Candidate artifact directory contains `candidate_manifest.json` and the
+  manifest marks missing source/scores/raw traces as paper-readiness failures.
+- `experience-packet` can be generated before each proposer iteration and
+  points to raw files instead of replacing them with summaries.
 - Proposer consumes candidate artifacts rather than one compressed summary.
 - Matrix Meta-Harness `domain_spec.md` exists before larger iterative searches.
 - Pareto CLI can load existing artifact history and reports feasibility,

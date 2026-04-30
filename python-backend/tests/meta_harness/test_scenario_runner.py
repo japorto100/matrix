@@ -70,6 +70,19 @@ def test_trace_gates_fail_for_missing_and_forbidden_tool(monkeypatch):
     assert "missing expected memory activity" in verdict.failures
 
 
+def test_agent_chat_endpoint_url_accepts_frontend_bff_url():
+    assert scenario_runner._agent_chat_endpoint_url("http://agent.local") == (
+        "http://agent.local/api/v1/agent/chat",
+        False,
+    )
+    assert scenario_runner._agent_chat_endpoint_url(
+        "http://agent.local/api/v1/agent/chat"
+    ) == ("http://agent.local/api/v1/agent/chat", False)
+    assert scenario_runner._agent_chat_endpoint_url(
+        "http://frontend.local/api/agent/chat"
+    ) == ("http://frontend.local/api/agent/chat", True)
+
+
 def test_trace_gates_do_not_count_consent_request_as_tool_success(monkeypatch):
     monkeypatch.setattr(
         scenario_runner,
@@ -435,6 +448,75 @@ def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):
     )
 
 
+def test_trace_gates_fail_on_soft_unavailable_tool_output(monkeypatch):
+    monkeypatch.setattr(
+        scenario_runner,
+        "_registered_tool_names",
+        lambda: {"memory_add", "memory_search"},
+    )
+    events = [
+        {
+            "action": "tool_result",
+            "toolName": "memory_add",
+            "success": True,
+            "output": {"stored": False, "message": "Memory not available"},
+        },
+        {
+            "action": "tool_result",
+            "toolName": "memory_search",
+            "success": True,
+            "output": {"results": [], "message": "Memory not available"},
+        },
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_tools=("memory_add", "memory_search"),
+            min_tool_success_rate=1.0,
+        ),
+    )
+
+    assert verdict.passed is False
+    assert "tool unavailable: memory_add" in verdict.failures
+    assert "tool unavailable: memory_search" in verdict.failures
+
+
+def test_stream_gates_check_ui_visible_tool_parts():
+    chunks = [
+        'data: {"type":"start"}\n\n',
+        'data: {"type":"tool-input-start","toolName":"get_chart_state","toolCallId":"t1"}\n\n',
+        'data: {"type":"tool-output-available","toolName":"get_chart_state","toolCallId":"t1","output":{"symbol":"EURUSD"}}\n\n',
+        'data: {"type":"text-delta","delta":"ok"}\n\n',
+        'data: {"type":"finish"}\n\n',
+    ]
+
+    verdict = scenario_runner.evaluate_stream_gates(
+        chunks,
+        scenario_runner.TraceExpectations(required_tools=("get_chart_state",)),
+    )
+
+    assert verdict.passed is True
+    assert verdict.observed_tools == ("get_chart_state",)
+    assert verdict.observed_rich_renderers == ("get_chart_state",)
+
+
+def test_stream_gates_fail_on_soft_unavailable_tool_output():
+    chunks = [
+        'data: {"type":"tool-input-start","toolName":"memory_search","toolCallId":"t1"}\n\n',
+        'data: {"type":"tool-output-available","toolCallId":"t1","output":{"results":[],"message":"Memory not available"}}\n\n',
+        'data: {"type":"finish"}\n\n',
+    ]
+
+    verdict = scenario_runner.evaluate_stream_gates(
+        chunks,
+        scenario_runner.TraceExpectations(required_tools=("memory_search",)),
+    )
+
+    assert verdict.passed is False
+    assert "stream tool unavailable: memory_search" in verdict.failures
+
+
 def test_trace_gates_check_response_and_memory_evidence_terms(monkeypatch):
     monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
     events = [
@@ -625,6 +707,10 @@ def test_write_scenario_artifacts(monkeypatch, tmp_path):
 
     assert (artifact_dir / "scores.json").exists()
     assert (artifact_dir / "verdicts.json").exists()
+    verdicts = json.loads((artifact_dir / "verdicts.json").read_text())
+    assert verdicts["passed"] is True
+    assert verdicts["trace"]["passed"] is True
+    assert verdicts["stream"] is None
     assert (artifact_dir / "config.json").exists()
     assert (artifact_dir / "source_snapshot.json").exists()
     run_manifest = json.loads((tmp_path / "runs" / "run-test" / "run.json").read_text())
@@ -707,6 +793,7 @@ def test_write_run_aggregate_overwrites_candidate_scores(tmp_path):
     aggregate = scenario_runner.write_run_aggregate(results, data_dir=tmp_path)
 
     assert aggregate["trace_gate_pass_rate"] == 0.5
+    assert aggregate["stream_gate_pass_rate"] == 1.0
     assert aggregate["completion_rate"] == 1.0
     candidate_dir = tmp_path / "runs" / "run-agg" / "candidates" / "baseline"
     scores = json.loads((candidate_dir / "scores.json").read_text())
