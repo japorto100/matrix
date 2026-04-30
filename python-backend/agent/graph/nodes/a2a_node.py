@@ -291,6 +291,19 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
         )
 
         if task.state == "completed" and task.result:
+            child_session_id = f"a2a-{task.task_id}"
+            result_digest = _result_digest(task.result)
+            handoff_metadata = {
+                "child_session_id": child_session_id,
+                "child_task_id": task.task_id,
+                "child_memory_write_allowed": False,
+                "parent_curated_memory_handoff": True,
+                "retain_decision": "parent_review_required",
+                "source_refs": [f"a2a:{task.task_id}", child_session_id],
+                "confidence": "unverified_child_summary",
+                "degradation_flags": [],
+                "result_digest": result_digest,
+            }
             runtime_events.extend(
                 [
                     _event(
@@ -301,7 +314,8 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                         metadata={
                             **policy,
                             "child_task_id": task.task_id,
-                            "result_digest": _result_digest(task.result),
+                            "child_session_id": child_session_id,
+                            "result_digest": result_digest,
                         },
                     ),
                     make_runtime_event(
@@ -311,12 +325,7 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                         summary="Delegation outcome is available for parent-side memory curation",
                         thread_id=str(state.get("thread_id", "") or ""),
                         turn=int(state.get("iteration", 0) or 0),
-                        metadata={
-                            "child_task_id": task.task_id,
-                            "child_memory_write_allowed": False,
-                            "parent_curated_memory_handoff": True,
-                            "result_digest": _result_digest(task.result),
-                        },
+                        metadata=handoff_metadata,
                     ),
                 ]
             )

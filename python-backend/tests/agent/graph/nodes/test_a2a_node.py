@@ -97,7 +97,13 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     ]
     handoff = result["runtime_events"][-1]
     assert handoff["kind"] == "memory"
+    assert handoff["metadata"]["child_session_id"] == "a2a-task-1"
+    assert handoff["metadata"]["child_task_id"] == "task-1"
     assert handoff["metadata"]["child_memory_write_allowed"] is False
+    assert handoff["metadata"]["retain_decision"] == "parent_review_required"
+    assert handoff["metadata"]["source_refs"] == ["a2a:task-1", "a2a-task-1"]
+    assert handoff["metadata"]["confidence"] == "unverified_child_summary"
+    assert handoff["metadata"]["degradation_flags"] == []
     assert handoff["metadata"]["result_digest"]
     assert audit_rows[0]["metadata"]["child_task_id"] == "task-1"
     assert audit_rows[0]["metadata"]["runtime_events"][2]["status"] == "completed"

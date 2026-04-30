@@ -17,13 +17,14 @@ def test_knowledge_contract_runs_provider_free_scenarios(tmp_path):
 
     assert result["passed"] is True
     assert result["feature_id"] == "012/017/019/022/025"
-    assert result["scenario_count"] == 7
+    assert result["scenario_count"] == 8
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "knowledge-memory-ground-truth-preserved" in scenario_ids
     assert "knowledge-personal-memory-kg-promotion-blocked" in scenario_ids
     assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids
     assert "knowledge-rag-kg-downstream-artifact-visible" in scenario_ids
     assert "knowledge-memory-semantic-feedback-review-proposal" in scenario_ids
+    assert "knowledge-delegation-parent-memory-handoff" in scenario_ids
     artifact = tmp_path / "runs" / "run-knowledge" / "knowledge_contract.json"
     aggregate = (
         tmp_path
@@ -36,7 +37,7 @@ def test_knowledge_contract_runs_provider_free_scenarios(tmp_path):
     assert artifact.exists()
     assert aggregate.exists()
     saved = json.loads(artifact.read_text(encoding="utf-8"))
-    assert saved["passed_count"] == 7
+    assert saved["passed_count"] == 8
 
 
 def test_kg_claim_proposal_requires_evidence_and_semantic_links():

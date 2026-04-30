@@ -242,8 +242,14 @@ migrated_from:
 
 ## 2026-04-30 Delegation Memory Additions
 
-- T091 Add parent-side delegation memory curation contract with child session
-  id, task id, source refs, confidence/degradation and retain/skip decision.
+- [x] T091 [done-static] Add parent-side delegation memory curation contract
+  with child session id, task id, source refs, confidence/degradation and
+  retain/skip decision.
+  - 2026-04-30: A2A delegation completion now emits
+    `subagent.parent_memory_handoff` with `child_session_id`, `child_task_id`,
+    `source_refs`, `confidence`, `degradation_flags`, `retain_decision` and a
+    result digest. The child remains blocked from durable shared-memory writes;
+    the parent receives a review-required handoff.
 - [x] T092 [done-static] Ensure child/subagent runs cannot write durable shared
   memory by default.
   - 2026-04-30: A2A child context is now carried as runtime policy, not only as
@@ -259,8 +265,11 @@ migrated_from:
   - 2026-04-30: successful memory recall/retain and retain-timeout audit rows
     now also carry the same redacted `agent-runtime-event/v1` envelope for Ops
     replay, without adding memory text to event metadata.
-- T094 Add Meta-Harness scenario where delegated evidence is summarized by the
-  parent before any memory write.
+- [x] T094 [done-static] Add Meta-Harness scenario where delegated evidence is
+  summarized by the parent before any memory write.
+  - 2026-04-30: `knowledge-delegation-parent-memory-handoff` verifies the
+    provider-free contract for parent-curated delegation evidence before memory
+    retention.
 
 ## Verify Gates
 

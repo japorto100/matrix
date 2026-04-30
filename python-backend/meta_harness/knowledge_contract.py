@@ -71,6 +71,7 @@ def run_knowledge_contract_scenarios(
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
         _memory_semantic_feedback_requires_review(),
+        _delegation_parent_memory_handoff_contract(),
         _rag_kg_downstream_artifact_visible(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -483,6 +484,62 @@ def _rag_kg_downstream_artifact_visible() -> dict[str, Any]:
             "trace_verdict": trace_verdict.as_dict(),
             "stream_verdict": stream_verdict.as_dict(),
         },
+    )
+
+
+def _delegation_parent_memory_handoff_contract() -> dict[str, Any]:
+    trace_events = [
+        {
+            "action": "memory_retain",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "subagent.parent_memory_handoff",
+                        "metadata": {
+                            "child_session_id": "a2a-task-1",
+                            "child_task_id": "task-1",
+                            "child_memory_write_allowed": False,
+                            "parent_curated_memory_handoff": True,
+                            "retain_decision": "parent_review_required",
+                            "source_refs": ("a2a:task-1", "a2a-task-1"),
+                            "confidence": "unverified_child_summary",
+                            "degradation_flags": (),
+                            "result_digest": "sha256:delegation-result",
+                        },
+                    }
+                ]
+            },
+        }
+    ]
+    expectations = TraceExpectations(
+        required_runtime_event_names=("subagent.parent_memory_handoff",),
+        required_runtime_event_metadata_keys={
+            "subagent.parent_memory_handoff": (
+                "child_session_id",
+                "child_task_id",
+                "source_refs",
+                "confidence",
+                "degradation_flags",
+                "retain_decision",
+                "result_digest",
+            )
+        },
+    )
+    trace_verdict = evaluate_trace_gates(trace_events, expectations)
+    metadata = trace_events[0]["metadata"]["runtime_events"][0]["metadata"]
+    failures = list(trace_verdict.failures)
+    if metadata.get("child_memory_write_allowed") is not False:
+        failures.append("child-memory-write-not-blocked")
+    if metadata.get("parent_curated_memory_handoff") is not True:
+        failures.append("parent-curated-handoff-missing")
+    if metadata.get("retain_decision") != "parent_review_required":
+        failures.append("delegation-retain-decision-not-parent-review")
+    return _scenario_result(
+        scenario_id="knowledge-delegation-parent-memory-handoff",
+        passed=trace_verdict.passed and not failures,
+        failures=failures,
+        details={"trace_verdict": trace_verdict.as_dict()},
     )
 
 

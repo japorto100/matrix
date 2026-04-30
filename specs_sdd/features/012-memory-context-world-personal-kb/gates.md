@@ -91,11 +91,16 @@ feature_id: 012
 
 ## G6 Delegation Memory
 
-- Subagent/child runs have no default direct write path into durable personal,
+- [x] Subagent/child runs have no default direct write path into durable personal,
   world or KG memory.
-- Parent memory curation records child session id, task id, source refs,
+- [x] Parent memory curation records child session id, task id, source refs,
   confidence/degradation and retain/skip result.
-- Delegation summaries are evidence for parent decisions, not global truth.
+- [x] Delegation summaries are evidence for parent decisions, not global truth.
+- [x] Provider-free Meta-Harness knowledge contract covers the delegation
+  parent-memory handoff shape before any durable parent write.
+  - 2026-04-30: `knowledge-delegation-parent-memory-handoff` requires
+    `child_memory_write_allowed=false`, `parent_curated_memory_handoff=true`,
+    review-required retain decision, source refs and result digest.
 - [x] Memory runtime events redact content while preserving trace refs.
   - 2026-04-30: memory recall/retain events carry bank/role/route/provider,
     source-layer counts, query-gate reason and timeout/degradation metadata
