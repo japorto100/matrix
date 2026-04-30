@@ -265,6 +265,91 @@ async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_llm_node_emits_prompt_cache_break_runtime_event(monkeypatch):
+    from agent.graph.nodes import llm_node as llm_module
+
+    class _FakeCompletions:
+        async def create(self, **kwargs):
+            message = SimpleNamespace(content="ok", tool_calls=None)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)],
+                usage=SimpleNamespace(
+                    prompt_tokens=10,
+                    completion_tokens=2,
+                    total_tokens=12,
+                    prompt_tokens_details={"cached_tokens": 10},
+                ),
+                model=kwargs["model"],
+                _hidden_params={"additional_headers": {"x-request-id": "req-cache-1"}},
+            )
+
+    class _FakeClient:
+        chat = SimpleNamespace(completions=_FakeCompletions())
+
+    class _FakePool:
+        async def acquire(self, **_kwargs):
+            return None
+
+    class _FakeSpan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def set_attribute(self, *_args, **_kwargs):
+            return None
+
+        def add_event(self, *_args, **_kwargs):
+            return None
+
+        def track_generation(self, *_args, **_kwargs):
+            return None
+
+    async def _noop_audit_log(**_kwargs):
+        return None
+
+    monkeypatch.setattr(llm_module, "get_litellm_client", lambda: _FakeClient())
+    monkeypatch.setattr(llm_module, "get_credential_pool", lambda: _FakePool())
+    monkeypatch.setattr(
+        "agent.tracing.turn_span", lambda *_args, **_kwargs: _FakeSpan()
+    )
+    monkeypatch.setattr("agent.audit.logger.audit_log", _noop_audit_log)
+
+    result = await llm_module.llm_node(
+        {
+            "model": "openrouter/test-model",
+            "messages": [{"role": "user", "content": "say ok"}],
+            "system_prompt": "test",
+            "thread_id": "t-cache",
+            "iteration": 1,
+            "tool_definitions": [],
+            "user_id": "anonymous",
+            "request_telemetry": [
+                {
+                    "model": "openrouter/test-model",
+                    "prompt_digest": "prev-prompt",
+                    "prompt_layout_digest": "prev-layout",
+                    "tool_catalog_digest": "prev-tools",
+                    "usage": {"cache_read_tokens": 100},
+                }
+            ],
+        }
+    )
+
+    cache_event = next(
+        event
+        for event in result["runtime_events"]
+        if event["name"] == "llm.prompt_cache_break"
+    )
+    assert cache_event["kind"] == "llm"
+    assert cache_event["status"] == "active"
+    assert cache_event["metadata"]["request_id"] == "req-cache-1"
+    assert "prompt_layout_changed" in cache_event["metadata"]["cache_break_reasons"]
+    assert "cache_read_drop" in cache_event["metadata"]["cache_break_reasons"]
+
+
+@pytest.mark.asyncio
 async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
     from agent.audit.logger import AuditAction
     from agent.graph.nodes import llm_node as llm_module

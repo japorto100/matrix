@@ -405,6 +405,12 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 ),
             },
         )
+        cache_break_event = _cache_break_runtime_event(
+            request_telemetry=request_telemetry,
+            previous_telemetry=previous_telemetry,
+            thread_id=thread_id,
+            iteration=iteration,
+        )
         for key, value in telemetry_span_attributes(request_telemetry).items():
             span.set_attribute(key, value)
 
@@ -485,6 +491,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "done": not bool(tool_calls),
             },
         )
+        runtime_events = [runtime_event]
+        if cache_break_event is not None:
+            runtime_events.append(cache_break_event)
         await audit_log(
             action=AuditAction.LLM_RESPONSE,
             thread_id=thread_id,
@@ -502,7 +511,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "token_usage": token_usage,
                 "content_cleaned": assistant_content != (choice.message.content or ""),
                 "request_telemetry": request_telemetry,
-                "runtime_events": [runtime_event],
+                "runtime_events": runtime_events,
             },
         )
 
@@ -551,8 +560,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         )
         total_cached_tokens = int(state.get("cached_tokens", 0) or 0) + cached_tokens
         total_token_usage = int(state.get("token_usage", 0) or 0) + token_usage
-        for key, value in runtime_event_span_attributes(runtime_event).items():
-            span.set_attribute(key, value)
+        for event in runtime_events:
+            for key, value in runtime_event_span_attributes(event).items():
+                span.set_attribute(key, value)
 
         result: dict[str, Any] = {
             "tool_calls": tool_calls,
@@ -563,7 +573,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             "cached_tokens": total_cached_tokens,
             "token_usage": total_token_usage,
             "request_telemetry": [request_telemetry],
-            "runtime_events": [runtime_event],
+            "runtime_events": runtime_events,
             "llm_provider": provider,
             "llm_model": resolved_model,
         }
@@ -587,6 +597,73 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
 def _known_false(known_capabilities: bool, value: Any) -> bool:
     """Return True only when model metadata explicitly says a field is unsupported."""
     return known_capabilities and value is False
+
+
+def _cache_break_runtime_event(
+    *,
+    request_telemetry: dict[str, Any],
+    previous_telemetry: dict[str, Any] | None,
+    thread_id: str,
+    iteration: int,
+) -> dict[str, Any] | None:
+    reasons = [
+        str(reason)
+        for reason in (request_telemetry.get("cache_break_reasons") or ())
+        if str(reason) != "first_request"
+    ]
+    usage = request_telemetry.get("usage") if isinstance(request_telemetry.get("usage"), dict) else {}
+    previous_usage = (
+        previous_telemetry.get("usage")
+        if isinstance(previous_telemetry, dict)
+        and isinstance(previous_telemetry.get("usage"), dict)
+        else {}
+    )
+    current_cache_read = _optional_int(usage.get("cache_read_tokens"))
+    previous_cache_read = _optional_int(previous_usage.get("cache_read_tokens"))
+    if (
+        previous_cache_read is not None
+        and previous_cache_read > 0
+        and current_cache_read is not None
+        and current_cache_read < previous_cache_read
+    ):
+        reasons.append("cache_read_drop")
+    reasons = sorted(set(reasons))
+    if not reasons:
+        return None
+
+    metadata = request_telemetry.get("metadata")
+    response = metadata.get("response", {}) if isinstance(metadata, dict) else {}
+    return make_runtime_event(
+        kind="llm",
+        status="active",
+        name="llm.prompt_cache_break",
+        summary="Prompt/cache locality changed",
+        thread_id=thread_id,
+        turn=iteration,
+        metadata={
+            "cache_break_reasons": reasons,
+            "provider": str(request_telemetry.get("provider") or ""),
+            "model": str(request_telemetry.get("model") or ""),
+            "prompt_layout_digest": str(
+                request_telemetry.get("prompt_layout_digest") or ""
+            ),
+            "tool_catalog_digest": str(
+                request_telemetry.get("tool_catalog_digest") or ""
+            ),
+            "cache_read_tokens": current_cache_read,
+            "previous_cache_read_tokens": previous_cache_read,
+            "request_id": response.get("request_id") if isinstance(response, dict) else "",
+        },
+    )
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _model_may_use_ephemeral_cache(model: str) -> bool:

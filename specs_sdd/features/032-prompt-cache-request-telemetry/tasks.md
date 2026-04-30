@@ -31,8 +31,12 @@ feature_id: 032
     normalized rate-limit buckets. It intentionally excludes raw headers,
     prompt text and secrets.
 - T013 Add deterministic prompt/tool digest generation with secret redaction.
-- [partial-static] T014 Detect meaningful cache-read drops and emit a cache-break event with
-  reasons.
+- [x] T014 [done-static] Detect meaningful cache-read drops and emit a
+  cache-break event with reasons.
+  - 2026-04-30: `llm_node` emits `llm.prompt_cache_break` runtime events when
+    request telemetry reports model/prompt/tool cache-break reasons or when
+    cache-read tokens drop versus the previous request. Event metadata carries
+    digests, reasons, request id and cache-read counters only.
 - [x] T015 [done-static] Ensure MCP reload and tool catalog changes mark cached agent sessions
   stale or force a rebind.
   - 2026-04-30: MCP reload and skill reload/toggle/import now return or audit

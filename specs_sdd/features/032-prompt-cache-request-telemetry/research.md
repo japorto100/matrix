@@ -49,6 +49,13 @@ This is intentionally not a raw-header dump. It gives prompt-cache and Ops
 surfaces enough quota/latency context while preserving provider-agnostic
 redaction.
 
+2026-04-30 cache-break runtime update: `llm_node` now emits a separate
+`llm.prompt_cache_break` runtime event when cache locality changes after the
+first request. The event is derived from provider-agnostic request telemetry:
+model/prompt/tool digest breaks plus cache-read-token drops versus the previous
+request. It carries digests and counters only, so Agent Chat/Ops can render a
+diagnostic card without parsing provider-specific chunks or raw prompts.
+
 2026-04-30 reload follow-up: MCP reload, skill reload, skill toggle and skill
 import now use the same provider-agnostic `agent-cache-impact/v1` envelope. The
 digest material is redacted to hashes and metadata, not raw prompts or raw skill

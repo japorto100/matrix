@@ -38,6 +38,10 @@ feature_id: 033
   - 2026-04-30: control-plane MCP/skill reload and skill toggle/import emit
     `control` runtime events (`cache.invalidated`/`cache.unchanged`) carrying
     only cache-impact digests and action metadata.
+  - 2026-04-30: LLM prompt-cache changes now emit
+    `llm.prompt_cache_break` runtime events with cache-break reasons, digests,
+    request id and cache-read counters, instead of requiring downstream
+    surfaces to parse request telemetry internals.
 - [partial-static] T011 Add subagent registry model for accepted, started, completed, failed,
   timed out, killed and stale runs.
   - 2026-04-30: runtime event stream covers accepted/started/completed/failed
