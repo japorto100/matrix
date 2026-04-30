@@ -119,6 +119,9 @@ feature_id: 029
   - 2026-04-30: Subagent Ops read-model marks `status=supported` and
     `kill/pause/replay=unsupported`, so the frontend can display control
     availability without implying durable child-process control.
+  - 2026-04-30: Session control endpoints emit `control` runtime events for
+    status, kill confirmation/completion, pause unsupported and replay
+    unsupported; Ops can replay them through the existing runtime lanes.
 - [partial-static] T041 Link ops events to Prompt Cache and Report Artifact surfaces.
   - 2026-04-30: Ops events now expose `linked_surfaces.prompt_cache` from
     provider-agnostic request telemetry and `linked_surfaces.report_artifacts`

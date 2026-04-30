@@ -142,3 +142,9 @@ durable memory write path.
 `provider-request-telemetry/v1`; report links are derived from `report_id`,
 manifest and output refs. This keeps cross-surface navigation based on typed
 refs instead of scraping assistant text.
+
+2026-04-30 session-control follow-up: session status, kill, pause and replay
+are now represented as control-plane runtime events. Kill is implemented only
+behind explicit confirmation on the new endpoint; pause and replay return
+unsupported outcomes instead of silent no-ops. Ops can show the control result
+from audit replay without needing browser state.

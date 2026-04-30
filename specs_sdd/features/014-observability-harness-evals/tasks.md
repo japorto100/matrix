@@ -113,6 +113,9 @@ migrated_from:
     `agent-cache-impact/v1` plus Feature 033 `cache.invalidated`/
     `cache.unchanged` runtime events. Pause/kill/replay action traces remain
     pending.
+  - 2026-04-30: session status/kill/pause/replay control endpoints now emit
+    audit-safe `control` runtime events; pause/replay remain unsupported but
+    observable.
 - T069 Add redaction tests for request telemetry and runtime event payloads.
 - [x] T070 Add skill-search trace fields for trigger-quality/debugging:
   selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.

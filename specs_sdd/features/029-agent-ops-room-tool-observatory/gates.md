@@ -44,6 +44,8 @@ feature_id: 029
   unsupported outcomes.
   - 2026-04-30: Subagent run rows return explicit control availability:
     status supported; kill, pause and replay unsupported.
+  - 2026-04-30: Session control endpoints return supported status, confirmed
+    kill or explicit pause/replay unsupported events with audit replay metadata.
 - [partial-static] Ops events link to Prompt Cache and Report Artifact surfaces.
   - 2026-04-30: selected Ops events render prompt-cache and report-artifact
     links when telemetry or report refs are present. Prompt-cache links target

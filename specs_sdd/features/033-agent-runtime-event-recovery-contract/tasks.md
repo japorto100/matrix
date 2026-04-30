@@ -55,8 +55,12 @@ feature_id: 033
 - [x] T013 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit a parent-only memory handoff
     event with digest and no raw output payload.
-- T014 Add status/kill/pause/replay control intents where backend support
+- [partial-static] T014 Add status/kill/pause/replay control intents where backend support
   exists; unsupported controls must return structured unsupported events.
+  - 2026-04-30: `/api/v1/control/sessions/{thread_id}/status` returns a
+    supported status runtime event, `/kill` requires explicit confirmation
+    before checkpoint/session cancellation, and `/pause` plus `/replay` return
+    explicit unsupported `control` runtime events.
 
 ## UI And Harness
 

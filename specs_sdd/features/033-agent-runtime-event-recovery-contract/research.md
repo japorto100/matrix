@@ -55,3 +55,10 @@ produce the same runtime event envelope with kind `control`. The payload carries
 only cache-impact digests, source/reason and rebind/no-change action metadata,
 so Ops and prompt-cache replay can show invalidation without leaking prompt,
 tool schema or skill body text.
+
+2026-04-30 session-control update: the legacy destructive session delete is now
+paired with explicit control endpoints. Kill requires confirmation on the new
+endpoint and records checkpoint deletion/session cancellation as a runtime
+event; pause and replay intentionally return unsupported runtime events instead
+of pretending capability exists. This matches the Hermes lesson: operator
+controls must be observable even before every control is durable.

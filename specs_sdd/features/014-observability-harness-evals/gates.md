@@ -72,4 +72,7 @@ feature_id: 014
   trace-safe refs.
   - 2026-04-30: reload paths now emit audit-safe cache-impact metadata and
     trace-safe runtime events; pause/kill/replay verification remains open.
+  - 2026-04-30: session control endpoints now emit trace-safe runtime events
+    for status, kill confirmation/completion and pause/replay unsupported
+    outcomes.
 - Unknown provider counters remain explicit unknowns, not fabricated zeros.
