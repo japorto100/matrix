@@ -98,3 +98,14 @@ should reconstruct tool, memory, retrieval and subagent state from stable
 events, not from assistant prose or provider-specific traces. The change is
 additive and provider-agnostic; older callers get derived IDs while scoped RAG
 calls now preserve thread/session identity in their own runtime events.
+
+2026-04-30 taxonomy update: Feature 033 now treats kind and outcome as backend
+contract, not UI convention. `RUNTIME_EVENT_KIND_DEFINITIONS` gives each
+producer family stable name prefixes for agent lifecycle, model, tool, memory,
+retrieval, KG, artifact, subagent, MCP, Matrix and control events.
+`metadata.outcome` is normalized to `ok`, `error`, `timeout`, `killed`,
+`cancelled`, `stale` or `deferred` while preserving explicit producer outcomes
+such as confirmed session kill. The provider-free routing contract checks this
+directly through `routing-runtime-event-kind-outcome-taxonomy`, keeping replay
+semantics independent of LiteLLM/OpenRouter/provider telemetry and independent
+of the Control/Ops frontend.

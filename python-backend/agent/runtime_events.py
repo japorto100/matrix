@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 RUNTIME_EVENT_CONTRACT = "agent-runtime-event/v1"
 RUNTIME_EVENT_REDACTION_POLICY = "runtime-event-redaction/v1"
@@ -37,6 +37,80 @@ RuntimeEventStatus = Literal[
     "stale",
     "cancelled",
 ]
+
+RuntimeEventOutcome = Literal[
+    "ok",
+    "error",
+    "timeout",
+    "killed",
+    "cancelled",
+    "stale",
+    "deferred",
+]
+
+RUNTIME_EVENT_KIND_DEFINITIONS: dict[RuntimeEventKind, dict[str, tuple[str, ...] | str]] = {
+    "run": {
+        "description": "Agent run lifecycle.",
+        "name_prefixes": ("run.",),
+    },
+    "turn": {
+        "description": "User/assistant turn lifecycle.",
+        "name_prefixes": ("turn.",),
+    },
+    "llm": {
+        "description": "Model request, response and provider-neutral recovery events.",
+        "name_prefixes": ("llm.", "model."),
+    },
+    "tool": {
+        "description": "Tool call start/result/failure events.",
+        "name_prefixes": ("tool.",),
+    },
+    "memory": {
+        "description": "Memory recall, retain, block and handoff events.",
+        "name_prefixes": ("memory.",),
+    },
+    "rag": {
+        "description": "Vector, lexical and fused retrieval events.",
+        "name_prefixes": ("rag.", "retrieval."),
+    },
+    "kg": {
+        "description": "KG claim selection, path and projection events.",
+        "name_prefixes": ("kg.",),
+    },
+    "artifact": {
+        "description": "Generated report/file/downstream artifact events.",
+        "name_prefixes": ("artifact.", "report."),
+    },
+    "subagent": {
+        "description": "Delegation/subagent lifecycle and parent handoff events.",
+        "name_prefixes": ("subagent.", "a2a."),
+    },
+    "mcp": {
+        "description": "MCP catalog, gateway and tool-descriptor lifecycle events.",
+        "name_prefixes": ("mcp.",),
+    },
+    "matrix": {
+        "description": "Matrix transport/session hygiene events.",
+        "name_prefixes": ("matrix.",),
+    },
+    "control": {
+        "description": "Control-plane operation, status and cache-impact events.",
+        "name_prefixes": ("control.", "cache."),
+    },
+}
+
+RUNTIME_EVENT_OUTCOME_BY_STATUS: dict[RuntimeEventStatus, RuntimeEventOutcome] = {
+    "accepted": "deferred",
+    "started": "deferred",
+    "active": "deferred",
+    "waiting": "deferred",
+    "needs_approval": "deferred",
+    "blocked": "deferred",
+    "failed": "error",
+    "completed": "ok",
+    "stale": "stale",
+    "cancelled": "cancelled",
+}
 
 SENSITIVE_KEY_PARTS = (
     "api_key",
@@ -102,6 +176,7 @@ def make_runtime_event(
     turn_id: str = "",
     metadata: dict[str, Any] | None = None,
     payload: dict[str, Any] | None = None,
+    outcome: RuntimeEventOutcome | None = None,
 ) -> dict[str, Any]:
     """Build a redacted runtime event dict for SSE, traces and read models."""
 
@@ -119,6 +194,12 @@ def make_runtime_event(
     )
     resolved_span_id = str(span_id or resolved_event_id)
     resolved_parent_id = str(parent_id or parent_event_id or "")
+    resolved_metadata = _metadata_with_outcome(
+        status=status,
+        name=name,
+        metadata=metadata or {},
+        outcome=outcome,
+    )
     return RuntimeEvent(
         kind=kind,
         status=status,
@@ -133,9 +214,63 @@ def make_runtime_event(
         thread_id=resolved_thread_id,
         turn=turn,
         turn_id=resolved_turn_id,
-        metadata=metadata or {},
+        metadata=resolved_metadata,
         payload=payload or {},
     ).to_dict()
+
+
+def runtime_event_kind_definition(kind: RuntimeEventKind) -> dict[str, tuple[str, ...] | str]:
+    """Return the provider-agnostic event-kind definition used by replay gates."""
+
+    return RUNTIME_EVENT_KIND_DEFINITIONS[kind]
+
+
+def runtime_event_name_matches_kind(*, kind: RuntimeEventKind, name: str) -> bool:
+    """Check whether a runtime event name belongs to the declared kind."""
+
+    prefixes = RUNTIME_EVENT_KIND_DEFINITIONS[kind]["name_prefixes"]
+    return any(str(name).startswith(prefix) for prefix in prefixes)
+
+
+def normalize_runtime_event_outcome(
+    *, status: RuntimeEventStatus, name: str = "", metadata: dict[str, Any] | None = None
+) -> RuntimeEventOutcome:
+    """Map current event state to the stable replay outcome taxonomy."""
+
+    source = metadata or {}
+    explicit = source.get("outcome")
+    if explicit in get_args(RuntimeEventOutcome):
+        return explicit
+    lowered_name = name.lower()
+    error_type = str(source.get("error_type") or "").lower()
+    reason = str(source.get("reason") or "").lower()
+    if "timeout" in lowered_name or "timeout" in error_type or "timeout" in reason:
+        return "timeout"
+    if explicit == "killed" or "kill" in lowered_name or reason == "killed":
+        return "killed"
+    return RUNTIME_EVENT_OUTCOME_BY_STATUS[status]
+
+
+def _metadata_with_outcome(
+    *,
+    status: RuntimeEventStatus,
+    name: str,
+    metadata: dict[str, Any],
+    outcome: RuntimeEventOutcome | None,
+) -> dict[str, Any]:
+    resolved = dict(metadata)
+    if outcome is not None:
+        resolved["outcome"] = outcome
+    else:
+        resolved.setdefault(
+            "outcome",
+            normalize_runtime_event_outcome(
+                status=status,
+                name=name,
+                metadata=resolved,
+            ),
+        )
+    return resolved
 
 
 def redact_runtime_payload(value: Any) -> Any:

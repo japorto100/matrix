@@ -41,6 +41,10 @@ feature_id: 033
   - 2026-04-30: confirmed session kill emits status `cancelled` with metadata
     `outcome=killed`, preserving a stable distinction without widening the
     global runtime-event status enum.
+  - 2026-04-30: every new runtime event now gets a provider-agnostic
+    `metadata.outcome` derived from status/name/reason unless the producer
+    explicitly supplied one. Timeout and killed outcomes are preserved as
+    first-class replay taxonomy values rather than inferred from UI labels.
 - [partial-static] G007 Control operations return explicit supported/unsupported outcomes.
   - 2026-04-30: MCP and skill reload preview/confirm paths return explicit
     status plus cache-impact runtime events. Pause/kill/replay controls still
@@ -52,3 +56,7 @@ feature_id: 033
   - 2026-04-30: provider-free routing contract includes
     `routing-runtime-event-replay-identity`, which validates the replay
     envelope and redaction policy without starting the frontend or a browser.
+  - 2026-04-30: provider-free routing contract also includes
+    `routing-runtime-event-kind-outcome-taxonomy`, validating event kind/name
+    consistency and stable outcomes across LLM, tool, memory, subagent and
+    control events.

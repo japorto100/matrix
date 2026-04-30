@@ -408,7 +408,7 @@ async def test_cli_routing_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 12
+    assert result["scenario_count"] == 13
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "routing-no-tool-no-subagent" in scenario_ids
     assert "routing-domain-delegate-deferred" in scenario_ids
@@ -474,7 +474,7 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
 
     assert result["passed"] is True
     assert result["lane_count"] == 8
-    assert result["scenario_count"] == 49
+    assert result["scenario_count"] == 50
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 

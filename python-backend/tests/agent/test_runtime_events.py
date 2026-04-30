@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from agent.runtime_events import make_runtime_event, redact_runtime_payload
+from agent.runtime_events import (
+    make_runtime_event,
+    normalize_runtime_event_outcome,
+    redact_runtime_payload,
+    runtime_event_kind_definition,
+    runtime_event_name_matches_kind,
+)
 
 
 def test_runtime_event_redacts_secret_metadata() -> None:
@@ -28,6 +34,7 @@ def test_runtime_event_redacts_secret_metadata() -> None:
     assert event["metadata"]["nested"]["safe"] == "ok"
     assert event["payload"]["token"] == "[redacted]"
     assert event["payload"]["tail"] == "ok"
+    assert event["metadata"]["outcome"] == "ok"
     assert event["redaction"]["policy"] == "runtime-event-redaction/v1"
     assert event["redaction"]["applied"] is True
 
@@ -60,3 +67,37 @@ def test_redact_runtime_payload_truncates_large_text() -> None:
 
     assert payload["text"].endswith("...[truncated]")
     assert len(payload["text"]) < 840
+
+
+def test_runtime_event_kind_and_outcome_taxonomy() -> None:
+    assert runtime_event_kind_definition("subagent")["name_prefixes"] == (
+        "subagent.",
+        "a2a.",
+    )
+    assert runtime_event_name_matches_kind(
+        kind="subagent",
+        name="subagent.delegation.completed",
+    )
+    assert not runtime_event_name_matches_kind(
+        kind="subagent",
+        name="memory.retain.blocked",
+    )
+    assert normalize_runtime_event_outcome(
+        status="stale",
+        name="subagent.delegation.timeout",
+    ) == "timeout"
+    assert normalize_runtime_event_outcome(
+        status="cancelled",
+        metadata={"outcome": "killed"},
+    ) == "killed"
+
+
+def test_runtime_event_preserves_explicit_outcome() -> None:
+    event = make_runtime_event(
+        kind="control",
+        status="cancelled",
+        name="control.session.kill",
+        metadata={"outcome": "killed"},
+    )
+
+    assert event["metadata"]["outcome"] == "killed"

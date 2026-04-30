@@ -11,7 +11,7 @@ from agent.routing.delegation_policy import (
     build_delegation_defer_metadata,
     build_route_decision_metadata,
 )
-from agent.runtime_events import make_runtime_event
+from agent.runtime_events import make_runtime_event, runtime_event_name_matches_kind
 from meta_harness.scenario_runner import TraceExpectations, evaluate_trace_gates
 
 DEFAULT_RUN_ID = "run-routing-contract"
@@ -38,6 +38,7 @@ def run_routing_contract_scenarios(
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
         _runtime_event_replay_identity_gate(),
+        _runtime_event_taxonomy_gate(),
         _tool_hook_policy_trace_shape_gate(),
         _context_overflow_compress_retry_trace_gate(),
         _subagent_isolation_runtime_gate(),
@@ -398,6 +399,93 @@ def _runtime_event_replay_identity_gate() -> dict[str, Any]:
     passed = verdict.passed and not failures
     return {
         "id": "routing-runtime-event-replay-identity",
+        "passed": passed,
+        "expected_gate_passed": True,
+        "actual_gate_passed": passed,
+        "failures": failures,
+        "verdict": verdict.as_dict(),
+    }
+
+
+def _runtime_event_taxonomy_gate() -> dict[str, Any]:
+    runtime_events = [
+        make_runtime_event(
+            kind="llm",
+            status="started",
+            name="llm.request.started",
+            session_id="session-taxonomy",
+        ),
+        make_runtime_event(
+            kind="tool",
+            status="completed",
+            name="tool.semantic_lookup",
+            session_id="session-taxonomy",
+            metadata={"tool_call_id": "call-taxonomy-1"},
+        ),
+        make_runtime_event(
+            kind="memory",
+            status="blocked",
+            name="memory.retain.blocked",
+            session_id="session-taxonomy",
+        ),
+        make_runtime_event(
+            kind="subagent",
+            status="stale",
+            name="subagent.delegation.timeout",
+            session_id="session-taxonomy",
+            metadata={"reason": "node_timeout"},
+        ),
+        make_runtime_event(
+            kind="control",
+            status="cancelled",
+            name="control.session.kill",
+            session_id="session-taxonomy",
+            metadata={"outcome": "killed"},
+        ),
+    ]
+    events = [
+        {
+            "action": "runtime_replay",
+            "success": True,
+            "metadata": {"runtime_events": runtime_events},
+        }
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_runtime_event_names=(
+                "llm.request.started",
+                "tool.semantic_lookup",
+                "memory.retain.blocked",
+                "subagent.delegation.timeout",
+                "control.session.kill",
+            ),
+            required_runtime_event_metadata_keys={
+                "llm.request.started": ("outcome",),
+                "tool.semantic_lookup": ("outcome", "tool_call_id"),
+                "memory.retain.blocked": ("outcome",),
+                "subagent.delegation.timeout": ("outcome",),
+                "control.session.kill": ("outcome",),
+            },
+            required_runtime_event_metadata_values={
+                "llm.request.started": {"outcome": "deferred"},
+                "tool.semantic_lookup": {"outcome": "ok"},
+                "memory.retain.blocked": {"outcome": "deferred"},
+                "subagent.delegation.timeout": {"outcome": "timeout"},
+                "control.session.kill": {"outcome": "killed"},
+            },
+        ),
+    )
+    failures = list(verdict.failures)
+    for event in runtime_events:
+        if not runtime_event_name_matches_kind(
+            kind=event["kind"],
+            name=str(event.get("name") or ""),
+        ):
+            failures.append(f"runtime-event-kind-name-mismatch:{event.get('name')}")
+    passed = verdict.passed and not failures
+    return {
+        "id": "routing-runtime-event-kind-outcome-taxonomy",
         "passed": passed,
         "expected_gate_passed": True,
         "actual_gate_passed": passed,

@@ -17,10 +17,16 @@ feature_id: 033
     complete provider-agnostic envelope. Missing `run_id`, `session_id`,
     `turn_id`, `span_id` and `parent_id` are derived without breaking older
     callers, and metadata/payload are redacted before replay.
-- T002 Define event kinds for agent lifecycle, model request, tool call/result,
+- [x] T002 [done-static] Define event kinds for agent lifecycle, model request, tool call/result,
   memory, retrieval, KG claim, artifact and subagent lifecycle.
-- T003 Define outcome taxonomy: ok, error, timeout, killed, cancelled, stale
+- [x] T003 [done-static] Define outcome taxonomy: ok, error, timeout, killed, cancelled, stale
   and deferred.
+  - 2026-04-30: `agent.runtime_events` now exposes provider-agnostic kind
+    definitions with allowed event-name prefixes for run/turn/LLM/tool/memory/
+    RAG/KG/artifact/subagent/MCP/Matrix/control events. `make_runtime_event()`
+    also adds a stable `metadata.outcome` taxonomy without overriding explicit
+    caller outcomes, and maps timeout/kill cases separately from generic stale
+    or cancelled status.
 - [x] T004 [done-static] Define payload caps and output-tail policy.
   - 2026-04-30: runtime events cap strings/lists through the shared redaction
     path and record `runtime-event-redaction/v1` policy metadata on every
@@ -113,3 +119,7 @@ feature_id: 033
     event identity provider-free: `run_id`, `session_id`, `thread_id`,
     `turn_id`, `span_id`, payload and redaction policy must be present, and
     payload secrets must be redacted.
+  - 2026-04-30: `routing-runtime-event-kind-outcome-taxonomy` now gates the
+    runtime taxonomy itself: LLM/tool/memory/subagent/control events must carry
+    matching kind/name prefixes and stable outcomes (`deferred`, `ok`,
+    `timeout`, `killed`) for replay.
