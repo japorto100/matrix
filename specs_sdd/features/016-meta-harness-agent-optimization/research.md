@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization Research
 status: planned
 owner: filip
 created: 2026-04-26
-updated: 2026-04-30
+updated: 2026-05-01
 feature_id: 016
 ---
 
@@ -15,6 +15,13 @@ The paper's central claim is that harness engineering should be optimized as an
 outer loop over executable code, not as a prompt-only tweak. The proposer is a
 coding agent that reads a filesystem containing prior candidate source code,
 scores and execution traces, then proposes new harnesses.
+
+2026-05-01 boundary correction: Feature 016 is infrastructure and evidence
+surface, not the proof that Meta-Harness has been iteratively applied. Feature
+034 now owns the real outer-loop execution marker:
+`true_meta_harness_iteration=true` only when baseline artifacts, raw artifact
+inspection, bounded candidate creation, frozen search evaluation, decision log
+and frontier update all exist. Static contract lanes remain support lanes.
 
 2026-04-30 full-paper reread correction: the important mechanism is not merely
 having a Pareto command or running trace gates. The proposer needs filesystem

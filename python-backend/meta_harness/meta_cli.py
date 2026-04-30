@@ -260,6 +260,28 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Set {ENABLE_EXTERNAL_LLM_ENV}=true for this proposer loop",
     )
 
+    outer_loop = sub.add_parser(
+        "outer-loop",
+        help="Run a real paper-style Meta-Harness outer-loop iteration",
+    )
+    outer_loop.add_argument("--run-id", default="")
+    outer_loop.add_argument("--data-dir", type=Path, default=None)
+    outer_loop.add_argument("--scenario-path", type=Path, default=None)
+    outer_loop.add_argument("--iterations", type=int, default=1)
+    outer_loop.add_argument("--max-scenarios", type=int, default=1)
+    outer_loop.add_argument(
+        "--runner-variant",
+        choices=("dispatcher", "langgraph", "simple"),
+        default="simple",
+    )
+    outer_loop.add_argument("--user-id", default="anonymous")
+    outer_loop.add_argument("--model", default="")
+    outer_loop.add_argument("--domain-id", default="")
+    outer_loop.add_argument("--candidate-system-prompt", default="")
+    outer_loop.add_argument("--dry-run", action="store_true")
+    outer_loop.add_argument("--provider-calls-budget", type=int, default=0)
+    outer_loop.add_argument("--max-wall-clock-minutes", type=int, default=30)
+
     decide = sub.add_parser("decide", help="Record keep/discard/defer decision")
     decide.add_argument("--run-id", required=True)
     decide.add_argument("--candidate-id", required=True)
@@ -535,6 +557,30 @@ async def _main_async(args: argparse.Namespace) -> dict:
             eval_concurrency=args.eval_concurrency,
         )
         return {"iterations": len(results), "proposals": results}
+    if args.command == "outer-loop":
+        from meta_harness.real_outer_loop import (
+            DEFAULT_DOMAIN_ID,
+            DEFAULT_SCENARIO_PATH,
+            run_real_outer_loop,
+        )
+
+        kwargs = {
+            "run_id": args.run_id or None,
+            "scenario_path": args.scenario_path or DEFAULT_SCENARIO_PATH,
+            "iterations": args.iterations,
+            "max_scenarios": args.max_scenarios,
+            "runner_variant": args.runner_variant,
+            "user_id": args.user_id,
+            "model": args.model,
+            "domain_id": args.domain_id or DEFAULT_DOMAIN_ID,
+            "candidate_system_prompt": args.candidate_system_prompt,
+            "dry_run": args.dry_run,
+            "provider_calls_budget": args.provider_calls_budget,
+            "max_wall_clock_minutes": args.max_wall_clock_minutes,
+        }
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return await run_real_outer_loop(**kwargs)
     if args.command == "decide":
         from meta_harness.decisions import record_candidate_decision
 

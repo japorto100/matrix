@@ -533,9 +533,18 @@ def _json_payload_has_holdout_key(path: Path) -> bool:
 
 
 def _contains_key_fragment(value: Any, fragment: str) -> bool:
+    safe_policy_keys = {
+        "holdout_visible_to_proposer",
+        "holdout_policy",
+        "promotion_requires_explicit_holdout_gate",
+        "allow_holdout",
+    }
     if isinstance(value, dict):
         for key, nested in value.items():
-            if fragment in str(key).casefold():
+            normalized_key = str(key).casefold()
+            if normalized_key in safe_policy_keys:
+                continue
+            if fragment in normalized_key:
                 return True
             if _contains_key_fragment(nested, fragment):
                 return True

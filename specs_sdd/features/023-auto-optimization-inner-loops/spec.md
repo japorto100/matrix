@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops
 status: planned
 owner: filip
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-05-01
 feature_id: 023
 ---
 
@@ -11,8 +11,9 @@ feature_id: 023
 
 ## Current State / Ist
 
-Matrix has a working Meta-Harness outer loop with scenario runs, trace gates,
-candidate artifacts, Pareto ranking and decision ledgers. It also has a small
+Matrix has the Meta-Harness substrate from Feature 016: scenario runs, trace
+gates, candidate artifacts, Pareto ranking and decision ledgers. Feature 034
+owns the real iterative outer loop that consumes those artifacts. It also has a small
 RAG/KG benchmark writer and deterministic canaries for vector-only, KG-only and
 fused retrieval.
 
@@ -62,7 +63,8 @@ Outer loop:
 
 ## Relationship To Other Features
 
-- Feature 016 owns Meta-Harness outer-loop mechanics.
+- Feature 016 owns Meta-Harness substrate mechanics.
+- Feature 034 owns real iterative outer-loop execution and promotion decisions.
 - Feature 019 owns runtime retrieval APIs and context assembly.
 - Feature 021 owns ingestion/parser/source artifact pipelines.
 - Feature 022 owns RAG/KG benchmark lab and retrieval score artifacts.

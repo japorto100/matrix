@@ -3,7 +3,7 @@ title: Meta-Harness Agent Optimization
 status: implementation_started
 owner: filip
 created: 2026-04-26
-updated: 2026-04-27
+updated: 2026-05-01
 feature_id: 016
 depends_on:
   - 007-agent-chat-voice-runtime
@@ -62,7 +62,14 @@ by local Podman storage/image state.
 
 ## Target State / Soll
 
-Feature 016 turns the existing pieces into a production-oriented outer loop for
+Feature 016 owns the agent-harness substrate: scenarios, trace gates,
+candidate artifacts, holdout guards, promotion preflight and CLI/MCP surfaces.
+Feature 034 owns the real iterative paper-style outer-loop execution over this
+substrate. In concrete terms, Feature 016 provides the runner and evidence;
+Feature 034 decides whether a run completed a true propose/evaluate/decide
+iteration.
+
+Feature 016 turns the existing pieces into a production-oriented substrate for
 improving the Matrix agent harness:
 
 1. A Meta-Harness runner plays simulated users against the real Python Agent.

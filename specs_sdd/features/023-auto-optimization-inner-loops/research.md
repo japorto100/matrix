@@ -3,7 +3,7 @@ title: Auto-Optimization Inner Loops Research
 status: draft
 owner: filip
 created: 2026-04-27
-updated: 2026-04-30
+updated: 2026-05-01
 feature_id: 023
 ---
 
@@ -95,6 +95,12 @@ recall provider blend + query gate + injection order + compaction threshold
 ```
 
 Do not use AutoRAG to directly edit product code.
+
+2026-05-01 boundary correction: inner-loop runs are candidate generators only.
+Their `promote_outer_loop` decision means "eligible for Feature 034", not
+production promotion. Feature 034 must still run the candidate in the Matrix
+agent harness, inspect raw traces/source/scores, apply frozen search gates,
+record keep/discard/defer and protect holdout results.
 
 ## 2026-04-29 Z_ Follow-Up
 

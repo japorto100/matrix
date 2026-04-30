@@ -3,7 +3,7 @@ title: Feature Index
 status: draft
 owner: filip
 created: 2026-04-25
-updated: 2026-04-29
+updated: 2026-05-01
 ---
 
 # Feature Index
@@ -43,6 +43,10 @@ aktive, gemischte oder gate-lastige Themen stehen weiter hinten.
 | 028 | `028-visual-memory-layout-extraction` | planned | Screenshot/document visual evidence, OCR/layout memory and optical-compression experiments behind gates |
 | 029 | `029-agent-ops-room-tool-observatory` | planned | Agent/tool/session ops-room surface and replay read-model over traces and Meta-Harness artifacts |
 | 030 | `030-matrix-widget-app-host` | planned | Approved Matrix widget/app host with client fallback, sandbox/origin policy and MCP resource handoff |
+| 031 | `031-first-party-matrix-widget-apps` | planned | First-party Matrix widget/app inventory that mirrors mobile-client-compatible widget behavior and defers agent-specific UI to Agent Chat |
+| 032 | `032-prompt-cache-request-telemetry` | planned | Provider-agnostic request/cache telemetry, cache-impact events, durable thread aggregates and live provider probe |
+| 033 | `033-agent-runtime-event-recovery-contract` | planned | Runtime event envelope, recovery taxonomy, subagent/memory/RAG/tool replay and Control/Agent Chat downstream events |
+| 034 | `034-real-meta-harness-outer-loop` | planned | Paper-style iterative Meta-Harness execution over Feature 016 artifacts and Feature 023 inner-loop candidates |
 
 See `REVIEW_001_023_2026-04-27.md` for the previous done/live/research/open
 classification. Do not read `implementation_done` in older feature frontmatter
@@ -120,3 +124,11 @@ Die umfangreichsten Live-Verify-Listen liegen hier:
   Meta-Harness run replay
 - Feature 030: Matrix widget proposal/approval, room-state mutation, fallback
   rendering and client compatibility checks
+- Feature 031: first-party Matrix widget compatibility inventory and mobile
+  client parity gates
+- Feature 032: prompt-cache telemetry, durable aggregates and provider live
+  cache probe
+- Feature 033: runtime event replay, subagent/memory/RAG/tool recovery events
+  and Control/Agent Chat downstream visibility
+- Feature 034: real no-browser Meta-Harness iteration loop with proposer
+  artifact inspection, frozen search eval, decision ledger and holdout guard
