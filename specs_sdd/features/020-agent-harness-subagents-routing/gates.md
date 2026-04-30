@@ -37,6 +37,9 @@ feature_id: 020
   - 2026-04-30: LangGraph and SimpleLoop classify context overflow via the
     provider-agnostic error classifier, compress messages, retry exactly once
     from iteration zero and surface `context_overflow_compress_retry`.
+  - 2026-04-30: `routing-context-overflow-compress-retry-trace-shape` requires
+    `llm.context_overflow_compress_retry` metadata and forbids raw prompt,
+    message and summary payloads in runtime events.
 - [ ] Subagent behavior remains out of production until search and holdout
   gates prove value.
   - 2026-04-30: domain delegate candidate metadata now records

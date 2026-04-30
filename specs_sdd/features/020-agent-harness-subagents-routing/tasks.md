@@ -94,7 +94,7 @@ feature_id: 020
   - 2026-04-30: `TraceExpectations.forbidden_event_metadata_keys` gates
     provider-specific metadata and resolved secrets in trace artifacts;
     `routing-forbidden-provider-secret-metadata-fails` proves the failure path.
-- T026 Add compression/thrashing gates: no infinite compression loop, retry
+- [x] T026 Add compression/thrashing gates: no infinite compression loop, retry
   counters reset after compression, no context poisoning.
   - 2026-04-30: repeated same-tool failures are now runtime-stopped in both
     SimpleLoop and LangGraph via `agent.loop_guards`, preventing tool/LLM
@@ -193,6 +193,9 @@ feature_id: 020
     `context_overflow_compress_retry` degradation/runtime metadata. This closes
     the compression retry reset slice; broader provider fallback loops remain
     Feature 011 work.
+  - 2026-04-30: `routing-context-overflow-compress-retry-trace-shape` now gates
+    the recovery runtime event shape and forbids raw messages/prompts/summaries
+    from leaking into runtime metadata.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.

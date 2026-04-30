@@ -37,6 +37,7 @@ def run_routing_contract_scenarios(
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
         _tool_hook_policy_trace_shape_gate(),
+        _context_overflow_compress_retry_trace_gate(),
         _subagent_isolation_runtime_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -418,6 +419,65 @@ def _tool_hook_policy_trace_shape_gate() -> dict[str, Any]:
     )
     return _scenario_result(
         scenario_id="routing-tool-hook-policy-trace-shape",
+        verdict_passed=verdict.passed,
+        expected_passed=True,
+        verdict=verdict,
+    )
+
+
+def _context_overflow_compress_retry_trace_gate() -> dict[str, Any]:
+    events = [
+        {
+            "action": "llm_response",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "llm.context_overflow_compress_retry",
+                        "metadata": {
+                            "runner": "langgraph",
+                            "recovery_strategy": "compress",
+                            "before_messages": 42,
+                            "after_messages": 12,
+                            "error_type": "ContextWindowExceededError",
+                        },
+                    }
+                ],
+                "degradation_flags": ("context_overflow_compress_retry",),
+            },
+        }
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_runtime_event_names=("llm.context_overflow_compress_retry",),
+            required_runtime_event_metadata_keys={
+                "llm.context_overflow_compress_retry": (
+                    "runner",
+                    "recovery_strategy",
+                    "before_messages",
+                    "after_messages",
+                    "error_type",
+                )
+            },
+            required_runtime_event_metadata_values={
+                "llm.context_overflow_compress_retry": {
+                    "recovery_strategy": "compress",
+                }
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": (
+                    "messages",
+                    "raw_prompt",
+                    "raw_summary",
+                    "api_key",
+                    "authorization",
+                )
+            },
+        ),
+    )
+    return _scenario_result(
+        scenario_id="routing-context-overflow-compress-retry-trace-shape",
         verdict_passed=verdict.passed,
         expected_passed=True,
         verdict=verdict,
