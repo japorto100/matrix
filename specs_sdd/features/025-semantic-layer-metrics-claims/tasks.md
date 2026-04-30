@@ -126,6 +126,9 @@ feature_id: 025
   - 2026-04-30: `knowledge-semantic-lexical-candidate-requires-confirmation`
     proves near-miss candidates such as `tool success ratio` stay
     non-authoritative and require confirmation.
+  - 2026-04-30: Feature 019 retrieval now propagates the same near-miss
+    candidates as runtime metadata and degraded reasons, while selecting no
+    context until the semantic phrase is exact or user-confirmed.
 - [x] T036 [done-static] Meta-Harness scenario: unstructured document concept
   must link to a KG claim and RAG citation.
   - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` requires semantic

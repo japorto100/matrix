@@ -147,6 +147,11 @@ feature_id: 019
     `semantic_context` handoff metadata for terms (`semantic_term_ids`,
     KG claim types and RAG source classes), so model-visible tool output can
     feed later RAG/KG retrieval without exposing the full semantic catalog.
+  - 2026-04-30: `retrieve(...)` now carries near-miss semantic phrase
+    candidates through the same fail-closed path: unknown phrases with lexical
+    candidates emit candidate ids/counts and
+    `SEMANTIC_FILTER_CANDIDATES_REQUIRE_CONFIRMATION`, but select no context
+    until an exact semantic term/metric is chosen.
 - T051 [partial-static] Add Feature 028 visual-layout blocks as retrievable evidence with source
   coordinates.
   - 2026-04-29: `visual-layout-source-coordinates-001` now proves selected

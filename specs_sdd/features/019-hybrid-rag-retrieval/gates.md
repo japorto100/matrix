@@ -22,6 +22,9 @@ feature_id: 019
 - 2026-04-30: `retrieve(...)` applies optional `semantic_filter`/
   `semantic_phrase` constraints before fusion/context-bubble selection and
   emits semantic-filter degradation reasons on no-match, ambiguity or not-found.
+- 2026-04-30: semantic near-miss candidates are visible in retrieval runtime
+  metadata as ids/counts only and remain fail-closed via
+  `SEMANTIC_FILTER_CANDIDATES_REQUIRE_CONFIRMATION`.
 - 2026-04-30: selected `retrieve(...)` context emits `provenance_status` on
   hits/references and supports `require_context_provenance=True` as a
   fail-closed gate.

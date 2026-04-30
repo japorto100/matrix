@@ -33,6 +33,9 @@ feature_id: 025
   surface `candidate_matches`, but they remain non-authoritative and require
   confirmation before any metric answer. This is covered by
   `knowledge-semantic-lexical-candidate-requires-confirmation`.
+- [x] G007 has retrieval-runtime coverage for near-miss candidates: RAG emits
+  candidate ids/counts and a confirmation-required degradation reason instead
+  of selecting context from an unconfirmed semantic phrase.
 - [x] G006/G007 are covered by
   `knowledge-rag-kg-semantic-context-grounded`.
 - [x] G007 also has runtime coverage through Feature 019 semantic retrieval

@@ -217,6 +217,9 @@ feature_id: 022
   - 2026-04-30: Feature 025 semantic lookup now has a lexical candidate lane
     for near-miss phrases. Benchmark candidates may use it for clarification or
     search, but it is not promotable as an authoritative answer path.
+  - 2026-04-30: Feature 019 retrieval now surfaces those candidates in runtime
+    metadata with a confirmation-required degradation reason, giving Feature
+    022 a deterministic non-browser gate for semantic near-miss behavior.
 - T051 [done-static] Add Feature 028 visual-layout evidence benchmark cases.
   - 2026-04-29: `visual-layout-source-coordinates-001` requires page/bbox,
     layout block type, OCR confidence, image checksum and exact citation refs.

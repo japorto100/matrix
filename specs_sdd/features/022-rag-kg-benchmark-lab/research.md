@@ -127,3 +127,8 @@ near-misses. Feature 022 should treat that as a candidate dimension for
 clarification/search quality, not as answer correctness. A run can get credit
 for surfacing the right candidate, but it still must fail if the final answer
 uses a non-authoritative candidate as if it were an exact semantic contract.
+
+Feature 019 now exposes the same distinction at runtime:
+`SEMANTIC_FILTER_CANDIDATES_REQUIRE_CONFIRMATION` plus metadata-only candidate
+ids/counts. This is the benchmarkable line between useful semantic discovery
+and unsafe answer support.

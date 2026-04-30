@@ -193,3 +193,13 @@ lane, provenance status and a small allowlist of source/chunk/citation metadata.
 It intentionally excludes hit content and full source bodies. Runtime events
 emit candidate ids/counts only, so Agent Chat/Ops can show source options
 without turning event logs into another document store.
+
+## 2026-04-30 Semantic Candidate Propagation
+
+Feature 025's lexical semantic candidates now propagate into retrieval as
+clarification metadata. If `semantic_phrase` is unknown but has near-miss
+candidates, retrieval still filters out all context and marks the run degraded,
+but `rag.retrieve.completed` exposes `semantic_candidate_count` and
+`semantic_candidate_ids`. This lets Agent Chat/Ops explain "I found a likely
+semantic metric, please confirm" without treating a BM25-style match as an
+authoritative semantic contract.

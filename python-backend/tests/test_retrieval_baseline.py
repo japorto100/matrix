@@ -387,6 +387,34 @@ async def test_retrieve_builds_semantic_filter_from_phrase() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_surfaces_semantic_near_miss_candidates_fail_closed() -> None:
+    result = await retrieve(
+        "Find tool success ratio evidence.",
+        mode="text",
+        semantic_phrase="tool success ratio",
+        vector_hits=[
+            {
+                "id": "chunk-tool-success",
+                "text": "Agent tool success rate is successful_tool_results / total_tool_results.",
+                "score": 0.8,
+                "metadata": {"metric_id": "agent_tool_success_rate"},
+            }
+        ],
+    )
+
+    assert result.degraded is True
+    assert result.hits == []
+    assert "SEMANTIC_FILTER_NOT_FOUND" in (result.degraded_reasons or [])
+    assert "SEMANTIC_FILTER_CANDIDATES_REQUIRE_CONFIRMATION" in (
+        result.degraded_reasons or []
+    )
+    completed = result.runtime_events[1]["metadata"]
+    assert completed["semantic_lookup_status"] == "not_found"
+    assert completed["semantic_candidate_count"] == 1
+    assert completed["semantic_candidate_ids"] == ["agent_tool_success_rate"]
+
+
+@pytest.mark.asyncio
 async def test_retrieve_reports_degraded_missing_kg_hits() -> None:
     result = await retrieve(
         "How is Russia connected to EU sanctions?",

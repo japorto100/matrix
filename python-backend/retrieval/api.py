@@ -112,6 +112,11 @@ def _semantic_filter_from_kwargs(kwargs: dict[str, object]) -> dict[str, Any] | 
             if lookup["matched"]
             else "not_found"
         )
+        candidates = _semantic_candidate_refs(lookup.get("candidate_matches"))
+        if candidates:
+            semantic_filter["candidate_matches"] = candidates
+            semantic_filter["candidate_count"] = len(candidates)
+            semantic_filter["top_candidate_id"] = candidates[0]["id"]
         if lookup["ambiguous"] or not lookup["matched"]:
             return semantic_filter
         match = lookup["matches"][0]
@@ -132,6 +137,31 @@ def _semantic_filter_from_kwargs(kwargs: dict[str, object]) -> dict[str, Any] | 
         return None
     semantic_filter.setdefault("semantic_catalog_version", DEFAULT_SEMANTIC_CATALOG.version)
     return semantic_filter
+
+
+def _semantic_candidate_refs(candidates: object) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    if not isinstance(candidates, list | tuple):
+        return out
+    for candidate in candidates[:5]:
+        if not isinstance(candidate, dict):
+            continue
+        item = candidate.get("item") if isinstance(candidate.get("item"), dict) else {}
+        candidate_type = str(candidate.get("type") or "")
+        candidate_id = item.get("term_id") if candidate_type == "term" else item.get("metric_id")
+        if not candidate_id:
+            continue
+        out.append(
+            {
+                "type": candidate_type,
+                "id": str(candidate_id),
+                "name": str(item.get("name") or ""),
+                "score": candidate.get("score"),
+                "matched_terms": list(candidate.get("matched_terms") or []),
+                "requires_confirmation": True,
+            }
+        )
+    return out
 
 
 def _hit_matches_semantic_filter(
@@ -492,6 +522,8 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         degraded_reasons.append("SEMANTIC_FILTER_AMBIGUOUS")
     if semantic_filter and semantic_filter.get("lookup_status") == "not_found":
         degraded_reasons.append("SEMANTIC_FILTER_NOT_FOUND")
+        if semantic_filter.get("candidate_matches"):
+            degraded_reasons.append("SEMANTIC_FILTER_CANDIDATES_REQUIRE_CONFIRMATION")
 
     match plan.mode:
         case RetrievalMode.text:
@@ -576,6 +608,17 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 "degraded": bool(degraded_reasons),
                 "degraded_reasons": degraded_reasons,
                 "semantic_filter_present": semantic_filter is not None,
+                "semantic_lookup_status": (semantic_filter or {}).get(
+                    "lookup_status", ""
+                ),
+                "semantic_candidate_count": (semantic_filter or {}).get(
+                    "candidate_count", 0
+                ),
+                "semantic_candidate_ids": [
+                    str(candidate.get("id") or "")
+                    for candidate in (semantic_filter or {}).get("candidate_matches", [])
+                    if isinstance(candidate, dict)
+                ],
             },
         )
     )

@@ -167,3 +167,9 @@ This improves agent ergonomics for phrases like "tool success ratio" without
 letting a near miss become a metric contract. Retrieval/RAG/KG can use the same
 candidate metadata for search UI or clarification, while answers still need an
 exact term/metric or an explicit user choice.
+
+2026-04-30 retrieval propagation follow-up: Feature 019 now forwards these
+near-miss candidates into retrieval runtime events as metadata-only ids/counts.
+This completes the safe handoff: RAG can explain a semantic miss and suggest a
+candidate, but the selected context stays empty and degraded until the semantic
+contract is exact or user-confirmed.
