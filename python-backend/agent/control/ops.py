@@ -34,6 +34,28 @@ MEMORY_ACTION_TERMS = ("memory", "retain", "recall")
 RAG_ACTION_TERMS = ("rag", "retrieval", "vector", "semantic")
 KG_ACTION_TERMS = ("kg", "graph", "claim")
 APPROVAL_ACTION_TERMS = ("approval", "consent", "human")
+MATRIX_ACTION_TERMS = (
+    "matrix",
+    "appservice",
+    "bridge",
+    "nats",
+    "e2ee",
+    "xsign",
+    "cross-sign",
+    "bootstrap",
+    "mention",
+    "reaction",
+    "thread",
+    "echo",
+    "reconnect",
+    "pairing",
+)
+MATRIX_BLOCKER_KEYS = (
+    "matrix_blocker",
+    "blocker_reason",
+    "transport_blocker",
+    "session_blocker",
+)
 
 
 def _db_url() -> str:
@@ -168,6 +190,7 @@ def audit_event_to_ops_event(
     metadata = _as_dict(event.get("metadata"))
     status = _derive_status(event)
     tool_name = str(event.get("tool_name") or "")
+    blocker_reason = _matrix_blocker_reason(metadata, action)
     return {
         "id": f"audit:{event.get('id')}",
         "source": "audit",
@@ -188,6 +211,12 @@ def audit_event_to_ops_event(
         "input": redact_payload(event.get("input")),
         "output": redact_payload(event.get("output")),
         "metadata": redact_payload(metadata),
+        "blocker_reason": blocker_reason,
+        "matrix_room_id": _metadata_text(metadata, "matrix_room_id", "room_id"),
+        "matrix_event_id": _metadata_text(metadata, "matrix_event_id", "event_id"),
+        "matrix_thread_id": _metadata_text(
+            metadata, "matrix_thread_id", "thread_root", "thread_id"
+        ),
     }
 
 
@@ -214,6 +243,12 @@ def redact_payload(value: Any) -> Any:
 
 def _derive_status(event: dict[str, Any]) -> str:
     action = str(event.get("action") or "").lower()
+    metadata = _as_dict(event.get("metadata"))
+    blocker_reason = _matrix_blocker_reason(metadata, action)
+    if blocker_reason == "approval_reaction_wait":
+        return "needs_approval"
+    if blocker_reason:
+        return "blocked"
     if event.get("success") is False:
         return "blocked"
     if any(term in action for term in APPROVAL_ACTION_TERMS):
@@ -225,6 +260,8 @@ def _derive_status(event: dict[str, Any]) -> str:
 
 def _event_type(action: str, tool_name: str) -> str:
     text = f"{action} {tool_name}".lower()
+    if any(term in text for term in MATRIX_ACTION_TERMS):
+        return "matrix_transport"
     if any(term in text for term in MEMORY_ACTION_TERMS):
         return "memory"
     if any(term in text for term in RAG_ACTION_TERMS):
@@ -236,6 +273,39 @@ def _event_type(action: str, tool_name: str) -> str:
     if tool_name:
         return "tool_call"
     return "trace"
+
+
+def _matrix_blocker_reason(metadata: dict[str, Any], action: str = "") -> str:
+    for key in MATRIX_BLOCKER_KEYS:
+        value = str(metadata.get(key) or "").strip()
+        if value:
+            return value
+    text = f"{action} {json.dumps(metadata, default=str)}".lower()
+    if "approval" in text and "reaction" in text and "wait" in text:
+        return "approval_reaction_wait"
+    if "echo" in text and ("loop" in text or "blocked" in text):
+        return "echo_loop_blocked"
+    if "mention" in text and ("required" in text or "gate" in text):
+        return "mention_required"
+    if "free" in text and "response" in text and "room" in text:
+        return "free_response_room"
+    if "reconnect" in text or "replay" in text:
+        return "reconnect_replay"
+    if "xsign" in text or "cross-sign" in text:
+        return "xsign_bootstrap_required"
+    if "e2ee" in text and "bootstrap" in text:
+        return "e2ee_bootstrap_required"
+    if "malformed" in text and "thread" in text:
+        return "malformed_thread_reply"
+    return ""
+
+
+def _metadata_text(metadata: dict[str, Any], *keys: str) -> str:
+    for key in keys:
+        value = str(metadata.get(key) or "").strip()
+        if value:
+            return value
+    return ""
 
 
 def _apply_ops_filters(

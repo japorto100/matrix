@@ -82,3 +82,56 @@ def test_build_ops_read_model_filters_and_reports_blockers():
     assert model["summary"]["blockers"] == 1
     assert model["sessions"][0]["status"] == "blocked"
     assert model["items"][0]["event_type"] == "tool_call"
+
+
+def test_matrix_transport_blocker_is_first_class_ops_event():
+    event = audit_event_to_ops_event(
+        _audit_event(
+            id=3,
+            action="matrix_echo_loop_guard",
+            tool_name="",
+            success=True,
+            metadata={
+                "matrix_blocker": "echo_loop_blocked",
+                "matrix_room_id": "!room:example.org",
+                "matrix_event_id": "$event",
+            },
+        )
+    )
+
+    assert event["event_type"] == "matrix_transport"
+    assert event["status"] == "blocked"
+    assert event["blocker_reason"] == "echo_loop_blocked"
+    assert event["matrix_room_id"] == "!room:example.org"
+    assert event["matrix_event_id"] == "$event"
+
+
+def test_matrix_approval_reaction_wait_maps_to_approval_lane():
+    model = build_ops_read_model(
+        audit_events=[
+            _audit_event(
+                id=4,
+                action="matrix_approval_reaction_wait",
+                tool_name="",
+                success=True,
+                metadata={
+                    "room_id": "!room:example.org",
+                    "event_id": "$approval",
+                },
+            )
+        ],
+        sessions=[
+            {
+                "thread_id": "thread-1",
+                "role": "researcher",
+                "checkpoint_count": 1,
+                "is_active": False,
+            }
+        ],
+    )
+
+    assert model["items"][0]["event_type"] == "matrix_transport"
+    assert model["items"][0]["status"] == "needs_approval"
+    assert model["items"][0]["blocker_reason"] == "approval_reaction_wait"
+    assert model["summary"]["approvals"] == 1
+    assert model["sessions"][0]["status"] == "needs_approval"

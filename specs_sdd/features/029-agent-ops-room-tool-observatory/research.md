@@ -76,3 +76,11 @@ the ops room should make visible once Feature 006 emits them:
 This is not a Hermes UI import. It is an observability consequence: the Matrix
 runtime should surface these transport/session decisions through the same
 `AgentOpsEvent` read model used for tool, approval, memory, RAG and KG events.
+
+2026-04-30 implementation follow-up: the backend read model now recognizes
+Matrix transport/session audit rows directly. Known blocker classes such as
+`echo_loop_blocked`, `mention_required`, `approval_reaction_wait`,
+`reconnect_replay`, `e2ee_bootstrap_required` and `xsign_bootstrap_required`
+become first-class `matrix_transport` ops events with room/event/thread ids
+when present. This keeps the frontend dense 2D board useful for Matrix-native
+agent failures without importing Hermes' UI model.

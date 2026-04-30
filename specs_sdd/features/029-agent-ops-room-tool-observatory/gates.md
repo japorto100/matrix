@@ -3,7 +3,7 @@ title: Agent Ops Room Tool Observatory Gates
 status: planned
 owner: filip
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-04-30
 feature_id: 029
 ---
 
@@ -24,5 +24,8 @@ feature_id: 029
 - [x] G007 Optional 3D/spatial view cannot replace the dense 2D control surface.
 - G008 Matrix handoff links respect user/room permissions.
 - G009 Meta-Harness replay shows candidate, gates and verdicts.
-- G010 Matrix transport/session blockers from Feature 006 are visible as
+- [x] G010 Matrix transport/session blockers from Feature 006 are visible as
   first-class ops events, not buried in raw logs.
+  - 2026-04-30: static backend coverage proves Matrix transport audit rows
+    become `matrix_transport` ops events with `blocker_reason` and room/event
+    ids, and approval reaction waits are counted in the approval lane.
