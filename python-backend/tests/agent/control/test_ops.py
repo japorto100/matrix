@@ -157,3 +157,45 @@ def test_llm_request_telemetry_is_ops_event() -> None:
     assert event["event_type"] == "llm"
     assert event["request_telemetry"]["provider"] == "openrouter"
     assert event["request_telemetry"]["api_key"] == "[redacted]"
+
+
+def test_runtime_events_are_redacted_and_summarized() -> None:
+    model = build_ops_read_model(
+        audit_events=[
+            _audit_event(
+                id=6,
+                action="llm_response",
+                tool_name="",
+                metadata={
+                    "runtime_events": [
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "llm",
+                            "status": "completed",
+                            "name": "llm_call",
+                            "timestamp": "2026-04-29T12:00:01+00:00",
+                            "metadata": {"api_key": "secret", "model": "provider/model"},
+                        },
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "memory",
+                            "status": "blocked",
+                            "name": "memory.retain.blocked",
+                            "timestamp": "2026-04-29T12:00:00+00:00",
+                        },
+                    ]
+                },
+            )
+        ],
+        sessions=[],
+    )
+
+    assert model["summary"]["runtime_events"] == 2
+    assert model["runtime_summary"]["by_kind"] == {"llm": 1, "memory": 1}
+    assert model["runtime_summary"]["by_status"] == {"completed": 1, "blocked": 1}
+    assert model["runtime_summary"]["latest"]["name"] == "llm_call"
+    assert model["items"][0]["runtime_event_count"] == 2
+    assert (
+        model["items"][0]["runtime_events"][0]["metadata"]["api_key"] == "[redacted]"
+    )
+    assert model["items"][0]["runtime_events"][0]["audit_ref"] == "6"

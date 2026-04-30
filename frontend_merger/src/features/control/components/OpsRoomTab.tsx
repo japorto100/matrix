@@ -19,7 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOpsEvents, useTools } from "@/lib/queries/hooks";
 import { cn } from "@/lib/utils";
 import { mockOpsReadModel, mockTools } from "../mock-data";
-import type { AgentOpsEvent, AgentOpsReadModel, AgentOpsSession, ToolDefinition } from "../types";
+import type {
+	AgentOpsEvent,
+	AgentOpsReadModel,
+	AgentOpsSession,
+	AgentRuntimeEvent,
+	ToolDefinition,
+} from "../types";
 
 type LaneStatus = "active" | "waiting" | "blocked" | "replay" | "needs_approval" | "failed";
 
@@ -60,6 +66,15 @@ function compactJson(value: unknown): string {
 	}
 }
 
+function countEntries(counts?: Record<string, number>): Array<[string, number]> {
+	return Object.entries(counts ?? {}).sort(([, a], [, b]) => b - a);
+}
+
+function runtimeLabel(event?: AgentRuntimeEvent): string {
+	if (!event) return "runtime";
+	return event.name || [event.kind, event.status].filter(Boolean).join(":") || "runtime";
+}
+
 export function OpsRoomTab() {
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [riskFilter, setRiskFilter] = useState("all");
@@ -78,6 +93,13 @@ export function OpsRoomTab() {
 	const ops = (opsQuery.data as AgentOpsReadModel | undefined) ?? mockOpsReadModel;
 	const sessions = ops.sessions as AgentOpsSession[];
 	const events = ops.items as AgentOpsEvent[];
+	const runtimeEvents = ops.runtime_events ?? [];
+	const runtimeSummary = ops.runtime_summary ?? {
+		total: runtimeEvents.length,
+		by_kind: {},
+		by_status: {},
+		latest: runtimeEvents[0],
+	};
 	const toolByName = new Map(tools.map((tool) => [tool.name, tool]));
 	const toolEvents = events.filter((event) => event.tool_name);
 	const blockedEvents = ops.blockers;
@@ -94,7 +116,7 @@ export function OpsRoomTab() {
 					<h2 className="text-base font-semibold">Agent Ops Room</h2>
 					<p className="text-xs text-muted-foreground">
 						{ops.summary.sessions} sessions · {ops.summary.tool_events} recent tool events ·{" "}
-						{ops.summary.blockers} blockers
+						{ops.summary.blockers} blockers · {runtimeSummary.total} runtime events
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -155,7 +177,7 @@ export function OpsRoomTab() {
 				</Badge>
 			</div>
 
-			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
 				<div className="rounded-lg border border-border bg-card/30 p-3">
 					<div className="flex items-center justify-between gap-2">
 						<span className="text-[11px] text-muted-foreground">Active</span>
@@ -187,6 +209,13 @@ export function OpsRoomTab() {
 					<div className="mt-2 text-lg font-semibold">
 						{sessions.filter((session) => session.status === "replay").length}
 					</div>
+				</div>
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">Runtime Events</span>
+						<Activity className="h-3.5 w-3.5 text-cyan-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">{runtimeSummary.total}</div>
 				</div>
 			</div>
 
@@ -232,6 +261,63 @@ export function OpsRoomTab() {
 				</Card>
 
 				<div className="space-y-4">
+					<Card>
+						<CardHeader className="pb-3">
+							<CardTitle className="flex items-center gap-1.5 text-sm">
+								<Activity className="h-3.5 w-3.5" />
+								Runtime Lanes
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								{countEntries(runtimeSummary.by_kind).length === 0 ? (
+									<Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+										no events
+									</Badge>
+								) : (
+									countEntries(runtimeSummary.by_kind).map(([kind, count]) => (
+										<Badge key={kind} variant="outline" className="h-5 px-1.5 text-[10px]">
+											{kind} {count}
+										</Badge>
+									))
+								)}
+							</div>
+							<div className="flex flex-wrap gap-1.5">
+								{countEntries(runtimeSummary.by_status)
+									.slice(0, 6)
+									.map(([status, count]) => (
+										<Badge
+											key={status}
+											variant="outline"
+											className={cn(
+												"h-5 px-1.5 text-[10px]",
+												STATUS_COLOR[(status as LaneStatus) || "waiting"] ??
+													"border-border text-muted-foreground",
+											)}
+										>
+											{status} {count}
+										</Badge>
+									))}
+							</div>
+							{runtimeEvents.slice(0, 5).map((event, index) => (
+								<div
+									key={event.event_id ?? `${event.name}-${index}`}
+									className="rounded border border-border/50 p-2"
+								>
+									<div className="flex items-start justify-between gap-2">
+										<p className="min-w-0 truncate font-mono text-xs">{runtimeLabel(event)}</p>
+										<Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+											{event.kind ?? "unknown"}
+										</Badge>
+									</div>
+									<p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+										{event.summary || event.status || "runtime event"}
+									</p>
+								</div>
+							))}
+						</CardContent>
+					</Card>
+
 					<Card>
 						<CardHeader className="pb-3">
 							<CardTitle className="flex items-center gap-1.5 text-sm">
@@ -311,6 +397,8 @@ export function OpsRoomTab() {
 										input: selectedEvent.input,
 										output: selectedEvent.output,
 										metadata: selectedEvent.metadata,
+										request_telemetry: selectedEvent.request_telemetry,
+										runtime_events: selectedEvent.runtime_events,
 									})}
 								</pre>
 							</CardContent>

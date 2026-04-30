@@ -12,8 +12,10 @@ feature_id: 033
 - G001 Every model/tool/memory/retrieval/subagent event has run and session
   identity.
 - G002 Runtime events preserve tool_call_id where applicable.
-- G003 Raw secrets, provider reasoning and oversized payloads are redacted or
-  capped.
+- [x] G003 Raw secrets, provider reasoning and oversized payloads are redacted
+  or capped.
+  - 2026-04-30: runtime event payloads use the shared redaction contract, and
+    Ops read-model tests assert nested secrets are redacted before UI exposure.
 - [x] G004 Subagent execution is fail-closed unless explicitly enabled.
   - 2026-04-30: `a2a_delegate_node` default path blocks before client
     creation and records `a2a_delegation_spawn_depth_blocked`.

@@ -68,8 +68,11 @@ feature_id: 010
 
 - [ ] Prompt Cache surface shows counters, request metadata and cache-break
   reasons without secrets.
-- [ ] Runtime Event surface shows model/tool/memory/RAG/KG/subagent events
-  using Feature 033 envelope.
+- [partial-static] Runtime Event surface shows model/tool/memory/RAG/KG/subagent
+  events using Feature 033 envelope.
+  - 2026-04-30: Control Ops renders generic runtime lanes from redacted
+    `agent-runtime-event/v1` entries and typechecks against the shared frontend
+    contract. Live RAG/KG/subagent coverage still needs browser/live pass.
 - [ ] MCP reload UI shows prompt-cache invalidation impact before execution.
 - [ ] Report Artifact list includes Meta-Harness, Matrix QA and runtime trace
   artifacts.

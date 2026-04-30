@@ -135,3 +135,8 @@ Control UI should expose operational read models, not hidden developer logs:
 
 The UI consequence is a dense operator console, not a marketing page. Any mock
 fallback must be visually detectable during live verify.
+
+2026-04-30 implementation note: `/control/ops` now includes Runtime Lanes from
+Feature 033 events exposed by Feature 029. This keeps Control UI as a read-model
+surface: it shows event kind/status rollups and selected-event drilldown, while
+event production and persistence remain owned by the agent runtime features.

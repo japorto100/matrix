@@ -315,7 +315,57 @@ export interface AuditEvent {
 }
 
 export type AgentOpsEventStatus = "active" | "waiting" | "blocked" | "failed" | "needs_approval";
-export type AgentOpsEventType = "trace" | "tool_call" | "approval" | "memory" | "rag" | "kg";
+export type AgentOpsEventType =
+	| "trace"
+	| "tool_call"
+	| "approval"
+	| "memory"
+	| "rag"
+	| "kg"
+	| "llm"
+	| "matrix_transport";
+export type AgentRuntimeEventKind =
+	| "run"
+	| "turn"
+	| "llm"
+	| "tool"
+	| "memory"
+	| "rag"
+	| "kg"
+	| "artifact"
+	| "subagent"
+	| "mcp"
+	| "matrix"
+	| "control"
+	| "unknown";
+export type AgentRuntimeEventStatus =
+	| "accepted"
+	| "started"
+	| "active"
+	| "waiting"
+	| "needs_approval"
+	| "blocked"
+	| "failed"
+	| "completed"
+	| "stale"
+	| "cancelled"
+	| "unknown";
+
+export interface AgentRuntimeEvent {
+	contract?: "agent-runtime-event/v1" | string;
+	event_id?: string;
+	parent_event_id?: string;
+	kind?: AgentRuntimeEventKind | string;
+	status?: AgentRuntimeEventStatus | string;
+	name?: string;
+	summary?: string;
+	session_id?: string;
+	thread_id?: string;
+	turn?: number;
+	timestamp?: string;
+	audit_ref?: string;
+	metadata?: Record<string, unknown>;
+}
 
 export interface AgentOpsEvent {
 	id: string;
@@ -337,6 +387,13 @@ export interface AgentOpsEvent {
 	input?: Record<string, unknown>;
 	output?: Record<string, unknown>;
 	metadata?: Record<string, unknown>;
+	request_telemetry?: Record<string, unknown>;
+	runtime_events?: AgentRuntimeEvent[];
+	runtime_event_count?: number;
+	blocker_reason?: string;
+	matrix_room_id?: string;
+	matrix_event_id?: string;
+	matrix_thread_id?: string;
 }
 
 export interface AgentOpsSession {
@@ -354,6 +411,13 @@ export interface AgentOpsReadModel {
 	sessions: AgentOpsSession[];
 	blockers: AgentOpsEvent[];
 	approvals: AgentOpsEvent[];
+	runtime_events: AgentRuntimeEvent[];
+	runtime_summary: {
+		total: number;
+		by_kind: Record<string, number>;
+		by_status: Record<string, number>;
+		latest?: AgentRuntimeEvent;
+	};
 	filters: Record<string, string>;
 	summary: {
 		total_events: number;
@@ -361,6 +425,7 @@ export interface AgentOpsReadModel {
 		tool_events: number;
 		blockers: number;
 		approvals: number;
+		runtime_events?: number;
 		generated_at: string;
 	};
 	limit: number;

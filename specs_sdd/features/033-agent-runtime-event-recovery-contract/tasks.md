@@ -46,6 +46,11 @@ feature_id: 033
 
 ## UI And Harness
 
-- T020 Surface runtime events in Agent Chat downstream cards.
-- T021 Surface runtime events in Control/Ops tabs.
+- [x] T020 Surface runtime events in Agent Chat downstream cards.
+  - 2026-04-30: `AgentChatEventRail` renders runtime-event counts/statuses
+    from stream metadata and keeps request telemetry/cache diagnostics separate.
+- [x] T021 Surface runtime events in Control/Ops tabs.
+  - 2026-04-30: `agent.control.ops` exposes redacted runtime events from audit
+    metadata in `agent-ops-event/v1`, and `/control/ops` renders Runtime Lanes
+    with kind/status rollups and event drilldown.
 - T022 Add Meta-Harness gates for event completeness and redaction.

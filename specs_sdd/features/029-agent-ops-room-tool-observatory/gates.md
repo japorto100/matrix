@@ -34,7 +34,9 @@ feature_id: 029
 
 - [ ] Subagent states distinguish active, stale, recently ended, timeout,
   killed and completed.
-- [ ] Tool/model/memory/RAG/KG event lanes render capped output tails.
+- [x] Tool/model/memory/RAG/KG event lanes render capped output tails.
+  - 2026-04-30: Ops backend redacts/caps nested runtime-event payloads before
+    the frontend, and Runtime Lanes render counts plus compact event summaries.
 - [ ] Status/kill/pause/replay controls return explicit supported or
   unsupported outcomes.
 - [ ] Ops events link to Prompt Cache and Report Artifact surfaces.

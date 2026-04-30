@@ -464,6 +464,19 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         except Exception:  # noqa: BLE001
             logger.debug("cost-estimation failed", exc_info=True)
 
+        runtime_event = make_runtime_event(
+            kind="llm",
+            status="completed",
+            name="llm_call",
+            summary=f"{provider}:{resolved_model}",
+            thread_id=thread_id,
+            turn=iteration,
+            metadata={
+                "request_telemetry": request_telemetry,
+                "tool_calls_count": len(tool_calls),
+                "done": not bool(tool_calls),
+            },
+        )
         elapsed = audit_duration(start)
         await audit_log(
             action=AuditAction.LLM_RESPONSE,
@@ -482,6 +495,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "token_usage": token_usage,
                 "content_cleaned": assistant_content != (choice.message.content or ""),
                 "request_telemetry": request_telemetry,
+                "runtime_events": [runtime_event],
             },
         )
 
@@ -530,19 +544,6 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         )
         total_cached_tokens = int(state.get("cached_tokens", 0) or 0) + cached_tokens
         total_token_usage = int(state.get("token_usage", 0) or 0) + token_usage
-        runtime_event = make_runtime_event(
-            kind="llm",
-            status="completed",
-            name="llm_call",
-            summary=f"{provider}:{resolved_model}",
-            thread_id=thread_id,
-            turn=iteration,
-            metadata={
-                "request_telemetry": request_telemetry,
-                "tool_calls_count": len(tool_calls),
-                "done": not bool(tool_calls),
-            },
-        )
         for key, value in runtime_event_span_attributes(runtime_event).items():
             span.set_attribute(key, value)
 

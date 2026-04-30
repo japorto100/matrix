@@ -31,3 +31,14 @@ feature_id: 033
 - Stale child detection, timeout, kill and completion outcomes must be explicit
   events, not inferred from missing output.
 
+## 2026-04-30 Ops Surface Transfer
+
+Agent Chat already consumes runtime events from stream metadata. Control/Ops now
+uses the same envelope by reading `runtime_events` from audit metadata and
+rendering kind/status lanes. This confirms the contract can serve both
+downstream chat UX and operator read models without provider-specific fields.
+
+The next reliability step is not a bigger UI. It is ensuring every producer that
+currently returns runtime events in graph/API state also persists a redacted
+event reference for replay: memory retain/recall, RAG retrieval, KG claim
+selection, tool execution and subagent lifecycle.

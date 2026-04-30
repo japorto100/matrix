@@ -338,6 +338,9 @@ async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
     route_event = next(
         event for event in audit_events if event["action"] == AuditAction.ROUTE_DECISION
     )
+    response_event = next(
+        event for event in audit_events if event["action"] == AuditAction.LLM_RESPONSE
+    )
     assert route_event["thread_id"] == "t-route"
     assert route_event["metadata"]["runner"] == "simple"
     assert route_event["metadata"]["decision"] == "tool_use"
@@ -352,6 +355,8 @@ async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
     assert route_event["metadata"]["tool_names"] == ["memory_search"]
     assert route_event["metadata"]["memory_route_requested"] is True
     assert route_event["metadata"]["retrieval_route_requested"] is True
+    assert response_event["metadata"]["runtime_events"][0]["kind"] == "llm"
+    assert response_event["metadata"]["runtime_events"][0]["status"] == "completed"
     assert result["tool_calls"][0]["tool_name"] == "memory_search"
 
 

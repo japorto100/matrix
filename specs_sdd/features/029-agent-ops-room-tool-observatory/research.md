@@ -97,3 +97,19 @@ request telemetry should be joinable by session/turn/tool digest so the board
 can explain "why did this turn get expensive" without exposing raw prompts.
 
 This is an event/read-model feature, not a durable second source of truth.
+
+## 2026-04-30 Runtime Lane Implementation Note
+
+The first static implementation keeps the read model provider-agnostic:
+`agent.control.ops` extracts `agent-runtime-event/v1` entries from audit
+metadata, redacts nested payloads with the same secret/cap policy as tool
+inputs/outputs, and adds a `runtime_summary` by kind/status. The Control UI
+renders these as dense lanes inside `/control/ops` rather than creating a
+separate event store.
+
+Current live-source coverage is intentionally incremental. LLM responses now
+write their existing runtime event into audit metadata, so model calls appear
+in Ops without parsing stream chunks. Memory/RAG/KG/subagent producers already
+emit runtime events in graph/API outputs; the remaining hardening is to persist
+those into audit rows or a replayable event log without duplicating source
+content.

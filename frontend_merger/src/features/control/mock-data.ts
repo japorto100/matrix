@@ -1096,6 +1096,31 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 				input: event.input,
 				output: event.output,
 				metadata: event.metadata,
+				runtime_events:
+					event.action.toLowerCase().includes("memory") || event.tool_name?.includes("memory")
+						? [
+								{
+									contract: "agent-runtime-event/v1",
+									kind: "memory",
+									status: event.success ? "completed" : "failed",
+									name: event.success ? "memory.recall.completed" : "memory.recall.failed",
+									summary: "Memory runtime event from audit mock",
+									timestamp: event.timestamp,
+									audit_ref: String(event.id),
+								},
+							]
+						: [
+								{
+									contract: "agent-runtime-event/v1",
+									kind: "tool",
+									status: event.success ? "completed" : "failed",
+									name: event.tool_name ?? event.action,
+									summary: "Tool runtime event from audit mock",
+									timestamp: event.timestamp,
+									audit_ref: String(event.id),
+								},
+							],
+				runtime_event_count: 1,
 			};
 		}),
 	sessions: mockSessions.map((session) => {
@@ -1116,6 +1141,13 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 	}),
 	blockers: [],
 	approvals: [],
+	runtime_events: [],
+	runtime_summary: {
+		total: 0,
+		by_kind: {},
+		by_status: {},
+		latest: {},
+	},
 	filters: {},
 	summary: {
 		total_events: mockAuditEvents.filter((event) => event.tool_name).length,
@@ -1123,6 +1155,7 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 		tool_events: mockAuditEvents.filter((event) => event.tool_name).length,
 		blockers: mockAuditEvents.filter((event) => !event.success).length,
 		approvals: 0,
+		runtime_events: 0,
 		generated_at: "2026-04-29T12:00:00Z",
 	},
 	limit: 100,
@@ -1130,6 +1163,24 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 	contract: "agent-ops-event/v1",
 };
 mockOpsReadModel.blockers = mockOpsReadModel.items.filter((event) => event.status === "blocked");
+mockOpsReadModel.runtime_events = mockOpsReadModel.items.flatMap(
+	(event) => event.runtime_events ?? [],
+);
+mockOpsReadModel.runtime_summary = {
+	total: mockOpsReadModel.runtime_events.length,
+	by_kind: mockOpsReadModel.runtime_events.reduce<Record<string, number>>((acc, event) => {
+		const key = String(event.kind ?? "unknown");
+		acc[key] = (acc[key] ?? 0) + 1;
+		return acc;
+	}, {}),
+	by_status: mockOpsReadModel.runtime_events.reduce<Record<string, number>>((acc, event) => {
+		const key = String(event.status ?? "unknown");
+		acc[key] = (acc[key] ?? 0) + 1;
+		return acc;
+	}, {}),
+	latest: mockOpsReadModel.runtime_events[0] ?? {},
+};
+mockOpsReadModel.summary.runtime_events = mockOpsReadModel.runtime_events.length;
 
 export const mockWidgetProposals: MatrixWidgetApprovalItem[] = [
 	{

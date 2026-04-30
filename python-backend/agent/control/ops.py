@@ -149,6 +149,7 @@ def build_ops_read_model(
         for event in audit_events
     ]
     filtered_events = _apply_ops_filters(events, filters or {})
+    runtime_events = _runtime_events_from_ops_events(filtered_events)
     session_rows = [
         _session_to_ops_session(session, filtered_events)
         for session in sessions
@@ -165,6 +166,8 @@ def build_ops_read_model(
         "sessions": session_rows,
         "blockers": blockers,
         "approvals": approvals,
+        "runtime_events": runtime_events,
+        "runtime_summary": _runtime_summary(runtime_events),
         "filters": {key: value for key, value in (filters or {}).items() if value},
         "summary": {
             "total_events": len(filtered_events),
@@ -172,6 +175,7 @@ def build_ops_read_model(
             "tool_events": sum(1 for event in filtered_events if event.get("tool_name")),
             "blockers": len(blockers),
             "approvals": len(approvals),
+            "runtime_events": len(runtime_events),
             "generated_at": _now_iso(),
         },
         "limit": limit,
@@ -188,6 +192,7 @@ def audit_event_to_ops_event(
 
     action = str(event.get("action") or "")
     metadata = _as_dict(event.get("metadata"))
+    runtime_events = _runtime_events_from_metadata(metadata, event)
     status = _derive_status(event)
     tool_name = str(event.get("tool_name") or "")
     blocker_reason = _matrix_blocker_reason(metadata, action)
@@ -212,6 +217,8 @@ def audit_event_to_ops_event(
         "output": redact_payload(event.get("output")),
         "metadata": redact_payload(metadata),
         "request_telemetry": redact_payload(metadata.get("request_telemetry") or {}),
+        "runtime_events": runtime_events,
+        "runtime_event_count": len(runtime_events),
         "blocker_reason": blocker_reason,
         "matrix_room_id": _metadata_text(metadata, "matrix_room_id", "room_id"),
         "matrix_event_id": _metadata_text(metadata, "matrix_event_id", "event_id"),
@@ -309,6 +316,67 @@ def _metadata_text(metadata: dict[str, Any], *keys: str) -> str:
         if value:
             return value
     return ""
+
+
+def _runtime_events_from_metadata(
+    metadata: dict[str, Any],
+    audit_event: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    raw_items: list[Any] = []
+    for key in ("runtime_events", "runtimeEvents"):
+        value = metadata.get(key)
+        if isinstance(value, list):
+            raw_items.extend(value)
+    for key in ("runtime_event", "runtimeEvent"):
+        value = metadata.get(key)
+        if value:
+            raw_items.append(value)
+
+    out: list[dict[str, Any]] = []
+    for raw in raw_items[:50]:
+        if not isinstance(raw, dict):
+            continue
+        event = redact_payload(raw)
+        if not isinstance(event, dict):
+            continue
+        if audit_event and not event.get("thread_id"):
+            event["thread_id"] = audit_event.get("thread_id") or ""
+        if audit_event and not event.get("audit_ref"):
+            event["audit_ref"] = str(audit_event.get("id") or "")
+        out.append(event)
+    return out
+
+
+def _runtime_events_from_ops_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    runtime_events: list[dict[str, Any]] = []
+    for event in events:
+        for runtime_event in event.get("runtime_events") or []:
+            if isinstance(runtime_event, dict):
+                runtime_events.append(runtime_event)
+    return sorted(
+        runtime_events,
+        key=lambda item: str(item.get("timestamp") or ""),
+        reverse=True,
+    )
+
+
+def _runtime_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+    by_kind: dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    latest: dict[str, Any] | None = None
+    for event in events:
+        kind = str(event.get("kind") or "unknown")
+        status = str(event.get("status") or "unknown")
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+        by_status[status] = by_status.get(status, 0) + 1
+        if latest is None or str(event.get("timestamp") or "") > str(latest.get("timestamp") or ""):
+            latest = event
+    return {
+        "total": len(events),
+        "by_kind": by_kind,
+        "by_status": by_status,
+        "latest": latest or {},
+    }
 
 
 def _apply_ops_filters(

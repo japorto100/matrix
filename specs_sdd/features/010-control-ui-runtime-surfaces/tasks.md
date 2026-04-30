@@ -155,8 +155,12 @@ migrated_from:
 
 - T098 Add Prompt Cache tab fed by Feature 032 counters, request metadata and
   cache-break reasons.
-- T099 Add Runtime Events tab/rail fed by Feature 033 model/tool/memory/RAG/KG
-  and subagent events.
+- [partial-static] T099 Add Runtime Events tab/rail fed by Feature 033
+  model/tool/memory/RAG/KG and subagent events.
+  - 2026-04-30: `/control/ops` now renders Runtime Lanes from
+    `agent-runtime-event/v1` entries surfaced through `/ops/events`, including
+    kind/status rollups and selected-event drilldown. Dedicated tab and full
+    live coverage remain follow-ups.
 - T100 Add MCP reload impact UI showing descriptor diff and prompt-cache
   invalidation.
 - T101 Extend report artifact list to include Meta-Harness, Matrix QA and

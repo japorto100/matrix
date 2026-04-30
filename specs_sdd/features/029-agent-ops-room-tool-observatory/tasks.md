@@ -95,8 +95,13 @@ feature_id: 029
 
 - T038 Add subagent run list with active, stale, recently-ended, timeout,
   killed and completed states from Feature 033.
-- T039 Add tool/model/memory/RAG/KG runtime event lanes with capped output
-  tails.
+- [x] T039 [done-static] Add tool/model/memory/RAG/KG runtime event lanes with
+  capped output tails.
+  - 2026-04-30: `/api/v1/control/ops/events` extracts redacted
+    `runtime_events` from audit metadata, emits `runtime_summary`, and
+    `/control/ops` renders kind/status lanes plus selected-event drilldown.
+    LLM response audit metadata now carries the same runtime event that the
+    agent stream returns.
 - T040 Add status/kill/pause/replay controls where backend support exists and
   explicit unsupported outcomes elsewhere.
 - T041 Link ops events to Prompt Cache and Report Artifact surfaces.
