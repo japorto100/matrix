@@ -137,15 +137,26 @@ feature_id: 016
   - 2026-04-30: `ml-memory-correction-conflict-001` requires the corrected
     verbatim-first/source-ref preference and forbids the stale summary-only
     answer while preserving automatic recall/retain source gates.
-- T036 Add Hindsight diagnostic scenarios that verify summarized preference/fact
-  recall, update, deletion and outcome-learning behavior.
-- T037 Add MemPalace diagnostic scenarios that verify verbatim/episodic recall,
-  loci metadata, source/session refs and query-sanitization behavior.
-- T038 Add orchestration scenarios where Hindsight and MemPalace both contain
-  useful but different evidence, and the agent must combine them without
-  inventing.
-- T039 Add orchestration conflict scenarios where MemPalace verbatim evidence
-  should constrain or correct stale Hindsight summaries.
+- [x] T036 [done-static] Add Hindsight diagnostic scenarios that verify
+  summarized preference/fact recall, update, deletion and outcome-learning
+  behavior.
+  - 2026-04-30: `ml-memory-hindsight-summary-update-001` gates the summary
+    route/provider and stale-summary rejection. Deletion/outcome-learning live
+    backend probes remain under Feature 012 runner work.
+- [x] T037 [done-static] Add MemPalace diagnostic scenarios that verify
+  verbatim/episodic recall, loci metadata, source/session refs and
+  query-sanitization behavior.
+  - 2026-04-30: `ml-memory-mempalace-verbatim-loci-001` gates verbatim route,
+    MemPalace provider, exact evidence, loci and session/source refs.
+- [x] T038 [done-static] Add orchestration scenarios where Hindsight and
+  MemPalace both contain useful but different evidence, and the agent must
+  combine them without inventing.
+  - 2026-04-30: `ml-memory-fusion-combine-evidence-001` requires Fusion to use
+    both Hindsight summary and MemPalace exact evidence terms.
+- [x] T039 [done-static] Add orchestration conflict scenarios where MemPalace
+  verbatim evidence should constrain or correct stale Hindsight summaries.
+  - 2026-04-30: `ml-memory-fusion-verbatim-corrects-summary-001` forbids the
+    stale Hindsight summary and requires the source-backed verbatim correction.
 - [x] T039a Add a scenario proving global KG/nonicdb retrieval is not used as an
   agent-memory substitute when the expected behavior is Hindsight or MemPalace
   recall.

@@ -676,6 +676,29 @@ def test_memory_lifecycle_scenarios_gate_memory_sources():
     assert "summary-only" in correction.forbidden_response_terms
     assert correction.required_event_metadata_values == automatic.required_event_metadata_values
 
+    hindsight = by_id["ml-memory-hindsight-summary-update-001"].expectations
+    assert hindsight.required_memory_routes == ("summary",)
+    assert hindsight.required_memory_providers == ("hindsight",)
+    assert "liquidity" in hindsight.required_response_terms
+    assert "capital preservation before upside capture" in (
+        hindsight.forbidden_response_terms
+    )
+
+    mempalace = by_id["ml-memory-mempalace-verbatim-loci-001"].expectations
+    assert mempalace.required_memory_routes == ("verbatim",)
+    assert mempalace.required_memory_providers == ("mempalace",)
+    assert "loci" in mempalace.required_memory_metadata_keys
+    assert "session_id" in mempalace.required_memory_metadata_keys
+
+    fusion = by_id["ml-memory-fusion-combine-evidence-001"].expectations
+    assert fusion.required_memory_routes == ("fusion",)
+    assert fusion.required_memory_providers == ("hindsight", "mempalace")
+    assert "same macro driver" in fusion.required_response_terms
+
+    conflict = by_id["ml-memory-fusion-verbatim-corrects-summary-001"].expectations
+    assert conflict.required_memory_providers == ("hindsight", "mempalace")
+    assert "3 correlated crypto positions" in conflict.forbidden_response_terms
+
 
 def test_trace_gates_warn_on_duplicate_memory_add_content(monkeypatch):
     monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: {"memory_add"})

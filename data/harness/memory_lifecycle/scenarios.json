@@ -119,6 +119,145 @@
       "metadata": {
         "focus": "compaction policy explanation must not trigger an unnecessary memory write"
       }
+    },
+    {
+      "id": "ml-memory-hindsight-summary-update-001",
+      "category": "memory_lifecycle_hindsight_diagnostic",
+      "turns": [
+        {
+          "user": "Remember this derived preference: when comparing swing trades, summarize my preference as capital preservation before upside capture."
+        },
+        {
+          "user": "Update that preference: for swing trades, summarize my preference as capital preservation, then liquidity, then upside capture."
+        },
+        {
+          "user": "What is my summarized swing-trade preference now?"
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_recall", "memory_retain"],
+        "required_skills": ["memory-usage"],
+        "required_memory_routes": ["summary"],
+        "required_memory_providers": ["hindsight"],
+        "required_response_terms": [
+          "capital preservation",
+          "liquidity",
+          "upside capture"
+        ],
+        "forbidden_response_terms": ["capital preservation before upside capture"],
+        "required_memory_evidence_terms": ["swing trades", "liquidity"],
+        "required_memory_metadata_keys": ["bank_id", "route", "provider", "source"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "Hindsight summarized preference recall/update without requiring verbatim MemPalace evidence"
+      }
+    },
+    {
+      "id": "ml-memory-mempalace-verbatim-loci-001",
+      "category": "memory_lifecycle_mempalace_diagnostic",
+      "turns": [
+        {
+          "user": "Remember the exact episodic note: mempalace_episode_alpha exact drawer text: review copper only after London close."
+        },
+        {
+          "user": "Recall the exact mempalace_episode_alpha drawer text with its source/session reference."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_recall", "memory_retain"],
+        "required_skills": ["memory-usage"],
+        "required_memory_routes": ["verbatim"],
+        "required_memory_providers": ["mempalace"],
+        "required_response_terms": [
+          "review copper only after London close",
+          "source"
+        ],
+        "required_memory_evidence_terms": [
+          "mempalace_episode_alpha",
+          "review copper only after London close"
+        ],
+        "required_memory_metadata_keys": [
+          "bank_id",
+          "route",
+          "provider",
+          "source_ref",
+          "session_id",
+          "loci"
+        ],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "MemPalace verbatim/episodic recall with loci and source/session refs"
+      }
+    },
+    {
+      "id": "ml-memory-fusion-combine-evidence-001",
+      "category": "memory_lifecycle_fusion_orchestration",
+      "turns": [
+        {
+          "user": "Remember this summary preference: I prefer risk reviews to start with exposure concentration."
+        },
+        {
+          "user": "Remember this exact evidence note: fusion_episode_beta source says hedge first when two positions share the same macro driver."
+        },
+        {
+          "user": "Use both my summarized preference and exact evidence note to explain how to start a risk review."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_recall", "memory_retain"],
+        "required_skills": ["memory-usage", "risk-assessment"],
+        "required_memory_routes": ["fusion"],
+        "required_memory_providers": ["hindsight", "mempalace"],
+        "required_response_terms": [
+          "exposure concentration",
+          "hedge first",
+          "same macro driver"
+        ],
+        "required_memory_evidence_terms": [
+          "fusion_episode_beta",
+          "exposure concentration",
+          "same macro driver"
+        ],
+        "required_memory_metadata_keys": ["bank_id", "route", "provider", "source_ref"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "Fusion combines Hindsight summary evidence with MemPalace verbatim evidence"
+      }
+    },
+    {
+      "id": "ml-memory-fusion-verbatim-corrects-summary-001",
+      "category": "memory_lifecycle_fusion_conflict",
+      "turns": [
+        {
+          "user": "Remember this summarized risk rule: stale summary says I accept 3 correlated crypto positions."
+        },
+        {
+          "user": "Remember this exact correction: current source-backed rule says I accept at most 1 correlated crypto position."
+        },
+        {
+          "user": "What is my current correlated crypto position rule?"
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_recall", "memory_retain"],
+        "required_skills": ["memory-usage", "risk-assessment"],
+        "required_memory_routes": ["fusion"],
+        "required_memory_providers": ["hindsight", "mempalace"],
+        "required_response_terms": ["at most 1", "correlated crypto"],
+        "forbidden_response_terms": ["3 correlated crypto positions"],
+        "required_memory_evidence_terms": [
+          "exact correction",
+          "at most 1 correlated crypto position"
+        ],
+        "required_memory_metadata_keys": ["bank_id", "route", "provider", "source_ref"],
+        "expected_memory": true
+      },
+      "metadata": {
+        "focus": "Fresh/source-backed MemPalace verbatim evidence constrains stale Hindsight summary"
+      }
     }
   ]
 }

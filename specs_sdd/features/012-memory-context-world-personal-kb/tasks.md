@@ -83,6 +83,10 @@ migrated_from:
   - 2026-04-30: Feature 016 also adds a protected `memory_holdout` split for
     correction/source/boundary regressions; this guards promotion but does not
     replace backend-specific MemPalace trigger-policy evals.
+  - 2026-04-30: Feature 016 static lifecycle fixtures now cover Hindsight
+    summary, MemPalace verbatim/loci, Fusion combine and Fusion conflict gates;
+    full backend trigger-policy runners for high-risk and old-session recovery
+    remain open here.
 - T039 Add anti-bloat evals proving MemPalace is not injected by default for
   simple current/live-market questions.
 - [x] T039a Review MemPalace upstream documentation and git repo freshness before

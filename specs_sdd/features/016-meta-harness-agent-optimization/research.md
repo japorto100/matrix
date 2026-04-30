@@ -519,3 +519,12 @@ evidence and Personal-Memory-vs-KG/RAG boundary behavior. The evaluator treats
 the CLI exposes it only as a protected split. Legacy query scoring now carries
 `forbidden_tools`, which matters because memory holdout cases often need to
 prove "recall without write" rather than generic memory activity.
+
+2026-04-30 memory diagnostic fixture expansion: Feature 012's Hindsight vs
+MemPalace distinction is now reflected in `memory_lifecycle` fixtures instead
+of only prose. The added scenarios separate summary-provider behavior
+(`hindsight`/`summary`), verbatim episodic behavior (`mempalace`/`verbatim`
+with loci and session/source refs), Fusion combine behavior and Fusion conflict
+behavior where fresh source-backed verbatim evidence overrides a stale summary.
+This is still provider-agnostic at the harness level: route/provider names are
+trace contracts, not vendor APIs.

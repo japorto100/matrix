@@ -214,6 +214,10 @@ PY
 - Orchestration conflict scenarios must prefer fresh/source-backed verbatim
   evidence over stale summarized memory when the scenario explicitly corrects a
   fact.
+- 2026-04-30: `data/harness/memory_lifecycle/scenarios.json` includes static
+  Hindsight summary, MemPalace verbatim/loci, Fusion combine and Fusion
+  conflict fixtures. Tests assert their route/provider/evidence gates are
+  loaded before live backend execution is attempted.
 - Memory conflict scenarios detect stale or contradictory recall behavior.
 - Deterministic gates check expected recall terms, forbidden stale terms,
   evidence/source presence, route metadata and absence of unrelated mutation

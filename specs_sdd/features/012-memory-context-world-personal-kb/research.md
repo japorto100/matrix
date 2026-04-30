@@ -361,3 +361,12 @@ separate from proposer-visible search fixtures: Memory-Fusion improvements can
 learn from search traces, but promotion has to survive hidden cases where the
 correct behavior is recall/source citation without accidental `memory_add` or
 `save_memory` writes.
+
+## 2026-04-30 Memory Diagnostic Fixture Follow-Up
+
+The Meta-Harness memory lifecycle set now mirrors the intended Memory-Fusion
+architecture more closely: Hindsight summary behavior, MemPalace verbatim/loci
+behavior, Fusion evidence-combine behavior and stale-summary conflict behavior
+are separate fixtures with explicit route/provider/evidence gates. This gives
+backend runner work a fixed contract before live Hindsight/MemPalace probes are
+allowed to influence promotion.
