@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from agent.a2a.client import A2ATask
 from agent.graph.nodes import a2a_node
 
@@ -122,3 +124,39 @@ async def test_a2a_delegate_node_surfaces_timeout_as_stale_runtime_event(
     assert result["degradation_flags"] == ["a2a_delegation_timeout"]
     assert result["runtime_events"][-1]["status"] == "stale"
     assert result["runtime_events"][-1]["metadata"]["child_task_id"] == "task-timeout"
+
+
+async def test_a2a_delegate_node_wraps_blocking_client_with_node_timeout(
+    monkeypatch,
+) -> None:
+    audit_rows: list[dict] = []
+    captured: dict = {}
+
+    async def _audit_log(**kwargs):
+        audit_rows.append(kwargs)
+
+    monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
+    monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
+    monkeypatch.setenv("AGENT_A2A_DELEGATION_TIMEOUT_SECONDS", "0.01")
+    monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
+    monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
+
+    class FakeClient:
+        async def send_message(self, **_kwargs):
+            await asyncio.sleep(60)
+            return A2ATask(task_id="never", state="completed", result="late")
+
+        async def close(self) -> None:
+            captured["closed"] = True
+
+    monkeypatch.setattr(a2a_node, "A2AClient", FakeClient)
+
+    result = await a2a_node.a2a_delegate_node(_state())  # type: ignore[arg-type]
+
+    assert result["degradation_flags"] == ["a2a_delegation_timeout"]
+    assert result["runtime_events"][-1]["name"] == "subagent.delegation.timeout"
+    assert result["runtime_events"][-1]["status"] == "stale"
+    assert result["runtime_events"][-1]["metadata"]["error"] == "node_level_timeout"
+    assert captured["closed"] is True
+    assert audit_rows[0]["success"] is False
+    assert audit_rows[0]["metadata"]["error"] == "node_level_timeout"

@@ -268,6 +268,9 @@ gated A2A node path:
 - completed child output is handed back to the parent for memory curation as a
   digest-backed `subagent.parent_memory_handoff` event; the child cannot write
   shared memory directly.
+- node-level child-send timeout uses `AGENT_A2A_DELEGATION_TIMEOUT_SECONDS` so
+  a blocking/faulty A2A client becomes a stale delegation event with audit
+  metadata and the child client is still closed.
 
 This is still not production-promoted subagent behavior. It is the minimum
 runtime contract that allows Meta-Harness to evaluate single-hop delegation

@@ -9,6 +9,7 @@ Remote: A2A Client → HTTP → Remote Agent → Response
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from hashlib import sha256
@@ -46,6 +47,14 @@ def _max_concurrent_children() -> int:
         return max(1, int(raw))
     except ValueError:
         return 1
+
+
+def _delegation_timeout_seconds() -> float:
+    raw = os.environ.get("AGENT_A2A_DELEGATION_TIMEOUT_SECONDS", "120").strip()
+    try:
+        return max(0.1, float(raw))
+    except ValueError:
+        return 120.0
 
 
 def _requested_tools(state: AgentGraphState) -> list[str]:
@@ -266,16 +275,19 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
     ]
     try:
         next_depth = current_depth + 1
-        task = await client.send_message(
-            agent_url=agent_url,
-            message=user_msg,
-            context=_delegation_context(
-                role=role,
-                state=state,
-                next_depth=next_depth,
-                max_depth=max_depth,
-                tool_policy=policy["tool_policy"],
+        task = await asyncio.wait_for(
+            client.send_message(
+                agent_url=agent_url,
+                message=user_msg,
+                context=_delegation_context(
+                    role=role,
+                    state=state,
+                    next_depth=next_depth,
+                    max_depth=max_depth,
+                    tool_policy=policy["tool_policy"],
+                ),
             ),
+            timeout=_delegation_timeout_seconds(),
         )
 
         if task.state == "completed" and task.result:
@@ -352,6 +364,33 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             ],
             "runtime_events": runtime_events,
             "degradation_flags": [f"a2a_delegation_{task.state}"],
+        }
+    except TimeoutError:
+        error = "node_level_timeout"
+        logger.warning("A2A delegation node timed out: role=%s", role)
+        runtime_events.append(
+            _event(
+                status="stale",
+                name="subagent.delegation.timeout",
+                state=state,
+                summary="A2A child request exceeded node-level timeout",
+                metadata={**policy, "error": error},
+            )
+        )
+        await _audit_delegation_runtime_events(
+            state=state,
+            role=str(role),
+            runtime_events=runtime_events,
+            policy=policy,
+            success=False,
+            error=error,
+        )
+        return {
+            "messages": [
+                {"role": "assistant", "content": f"[{role} A2A error]: timeout"}
+            ],
+            "runtime_events": runtime_events,
+            "degradation_flags": ["a2a_delegation_timeout"],
         }
     finally:
         await client.close()

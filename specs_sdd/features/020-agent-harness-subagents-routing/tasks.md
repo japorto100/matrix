@@ -254,6 +254,10 @@ feature_id: 020
   - 2026-04-30: the same lifecycle events are persisted into audit metadata so
     Feature 029 can reconstruct subagent run rows in Ops replay, not only from
     transient graph state.
+  - 2026-04-30: `a2a_delegate_node` now wraps child sends with
+    `AGENT_A2A_DELEGATION_TIMEOUT_SECONDS`; even a blocking/faulty client is
+    converted into a stale `subagent.delegation.timeout` runtime event and the
+    child client is closed.
 - [x] T049 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit
     `subagent.parent_memory_handoff` as a parent-only memory event with result

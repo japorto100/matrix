@@ -87,3 +87,5 @@ feature_id: 020
 - [x] Subagent lifecycle emits Feature 033 runtime events.
   - 2026-04-30: accepted/started/completed/failed and timeout-as-stale are
     unit-tested through `a2a_delegate_node`.
+  - 2026-04-30: node-level child-send timeout converts a hung child client into
+    stale `subagent.delegation.timeout` metadata and closes the client.
