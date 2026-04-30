@@ -36,12 +36,15 @@ mechanisms, not the scope:
 - use transport separation to simplify model/provider routing.
 - use explicit delegation metadata before real subagents.
 - use max-depth and sibling-coordination ideas for future bounded delegates.
-- use pre-tool/transform hooks as ToolRegistry/HITL design input.
+- use pre-tool/transform hooks as ToolRegistry/HITL design input, but only
+  behind explicit per-turn policy and runtime/audit events.
 - use compression/reasoning-leak/secret-persistence fixes as safety gates.
 - do not expose autonomous coding agents as a user-facing product mode in this
   phase.
 - do not let subagents silently write memory, promote KG claims or schedule
   tasks.
+- do not add shell/output hooks without an explicit policy surface and
+  runtime-event/audit proof.
 
 ## Required Metadata
 

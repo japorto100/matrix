@@ -85,6 +85,9 @@ class AgentGraphState(TypedDict):
     # Runtime events emitted by nodes for Agent Chat / Control surfaces.
     runtime_events: Annotated[list[dict[str, Any]], operator.add]
 
+    # Explicit per-turn tool hook policy. Missing/None means no hook behavior.
+    tool_hook_policy: dict[str, Any] | None
+
     # Provider/model metadata for the latest run
     llm_provider: str
     llm_model: str

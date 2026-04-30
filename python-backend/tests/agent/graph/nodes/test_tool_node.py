@@ -35,6 +35,11 @@ class _StubTool(TradingTool):
         return {"ok": True}
 
 
+class _SecretTool(_StubTool):
+    async def execute(self, tool_input: dict[str, Any], ctx: Any) -> dict[str, Any]:
+        return {"keep": "ok", "secret": "raw-secret"}
+
+
 def _registry() -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(_StubTool("get_portfolio_summary"))
@@ -158,6 +163,52 @@ async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_tool_node_passes_explicit_hook_policy(monkeypatch):
+    seen: list[dict[str, Any] | None] = []
+
+    async def fake_execute_single(tc, registry, ctx, *, hook_policy=None):
+        seen.append(hook_policy)
+        return {
+            "tool_call_id": tc["tool_call_id"],
+            "tool_name": tc["tool_name"],
+            "result": {"ok": True},
+            "error": None,
+        }
+
+    class _Limiter:
+        def record_tool_call(self, thread_id: str, tool_name: str) -> None:
+            return None
+
+    policy = {"deny_tools": ["set_chart_state"]}
+    monkeypatch.setattr(tool_node_module.ToolRegistry, "load", classmethod(lambda cls: _registry()))
+    monkeypatch.setattr(tool_node_module, "_execute_single", fake_execute_single)
+    monkeypatch.setattr(
+        "agent.consent.rate_limiter.get_rate_limiter",
+        lambda: _Limiter(),
+    )
+
+    await tool_node(
+        {
+            "tool_calls": [
+                {
+                    "tool_call_id": "call_hook",
+                    "tool_name": "get_portfolio_summary",
+                    "tool_input": {},
+                },
+            ],
+            "tool_hook_policy": policy,
+            "current_role": None,
+            "user_id": "alice",
+            "thread_id": "t1",
+            "model": "test-model",
+            "reasoning_effort": None,
+        }
+    )
+
+    assert seen == [policy]
+
+
+@pytest.mark.asyncio
 async def test_tool_node_caps_large_sanitized_tool_message(monkeypatch):
     large_payload = "x" * (TOOL_LLM_OUTPUT_MAX_CHARS + 5000)
 
@@ -247,3 +298,103 @@ async def test_execute_single_audits_tool_budget_metadata(monkeypatch):
     assert runtime_event["status"] == "completed"
     assert runtime_event["metadata"]["tool_call_id"] == "call_budget"
     assert runtime_event["metadata"]["result_keys"] == ["ok"]
+
+
+@pytest.mark.asyncio
+async def test_execute_single_vetoes_tool_with_explicit_hook_policy(monkeypatch):
+    captured: list[dict[str, Any]] = []
+
+    async def fake_audit_log(**kwargs):
+        captured.append(kwargs)
+
+    monkeypatch.setattr("agent.audit.logger.audit_log", fake_audit_log)
+
+    ctx = AgentExecutionContext(
+        user_id="alice",
+        thread_id="t-hook-veto",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+    )
+
+    result = await _execute_single(
+        {
+            "tool_call_id": "call_veto",
+            "tool_name": "get_portfolio_summary",
+            "tool_input": {},
+        },
+        _registry(),
+        ctx,
+        hook_policy={
+            "pre_tool_veto": {
+                "get_portfolio_summary": "blocked-by-test-policy",
+            }
+        },
+    )
+
+    assert result["result"] == {}
+    assert result["error"] == "Tool vetoed by hook policy: blocked-by-test-policy"
+    result_event = captured[-1]
+    assert result_event["success"] is False
+    assert result_event["output_data"] == {
+        "error": "tool vetoed by hook policy",
+        "reason": "blocked-by-test-policy",
+    }
+    runtime_event = result_event["metadata"]["runtime_events"][0]
+    assert runtime_event["status"] == "blocked"
+    assert runtime_event["metadata"]["hook_policy"] == {
+        "hook": "pre_tool_call",
+        "decision": "veto",
+        "reason": "blocked-by-test-policy",
+    }
+
+
+@pytest.mark.asyncio
+async def test_execute_single_transforms_tool_result_with_explicit_hook_policy(monkeypatch):
+    captured: list[dict[str, Any]] = []
+    registry = ToolRegistry()
+    registry.register(_SecretTool("get_portfolio_summary"))
+
+    async def fake_audit_log(**kwargs):
+        captured.append(kwargs)
+
+    monkeypatch.setattr("agent.audit.logger.audit_log", fake_audit_log)
+
+    ctx = AgentExecutionContext(
+        user_id="alice",
+        thread_id="t-hook-transform",
+        model="test-model",
+        system_prompt="",
+        tools=(),
+    )
+
+    result = await _execute_single(
+        {
+            "tool_call_id": "call_transform",
+            "tool_name": "get_portfolio_summary",
+            "tool_input": {},
+        },
+        registry,
+        ctx,
+        hook_policy={
+            "redact_result_keys": {
+                "get_portfolio_summary": ["secret"],
+            }
+        },
+    )
+
+    assert result["error"] is None
+    assert result["result"] == {
+        "keep": "ok",
+        "secret": "[redacted_by_tool_hook]",
+    }
+    result_event = captured[-1]
+    assert result_event["success"] is True
+    assert result_event["output_data"] == result["result"]
+    runtime_event = result_event["metadata"]["runtime_events"][0]
+    assert runtime_event["status"] == "completed"
+    assert runtime_event["metadata"]["hook_policy"] == {
+        "hook": "transform_tool_result",
+        "decision": "transformed",
+        "redacted_keys": ["secret"],
+    }

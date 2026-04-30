@@ -100,8 +100,20 @@ feature_id: 020
     SimpleLoop and LangGraph via `agent.loop_guards`, preventing tool/LLM
     thrash before max-iteration exhaustion. Compression reset and context
     poisoning gates remain open.
-- T027 Add hook-policy gates: pre-tool veto, transformed tool result and shell
+- [x] T027 Add hook-policy gates: pre-tool veto, transformed tool result and shell
   hook behavior must be explicit in audit traces before use.
+  - 2026-04-30: LangGraph `tool_node` now accepts an explicit per-turn
+    `tool_hook_policy`. Missing policy is fail-open/unchanged; configured
+    `pre_tool_veto`/`deny_tools` blocks execution with a blocked runtime event,
+    and configured result-key redaction transforms tool output before audit,
+    stream handoff and the next LLM turn. Unit coverage proves veto, transform
+    and graph-state policy propagation.
+  - 2026-04-30: Shell/output hooks remain intentionally unsupported in the
+    Python backend. Any future shell hook must first add the same explicit
+    audit/runtime-event policy surface before it can be used.
+  - 2026-04-30: `meta_harness routing-contract` now includes
+    `routing-tool-hook-policy-trace-shape`; `run-tool-hook-policy-gate` passed
+    10/10 provider-free scenarios.
 
 ## Implementation Candidates
 

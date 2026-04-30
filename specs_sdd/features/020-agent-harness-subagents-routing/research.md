@@ -80,6 +80,25 @@ Deferred transfer candidates:
 - TUI overlays except as event-model inspiration for Control UI.
 - Unreviewed shell/output transformation hooks.
 
+## 2026-04-30 Tool Hook Policy Transfer
+
+Hermes' useful signal is the lifecycle boundary, not the plugin surface itself:
+tools may need pre-call veto and output transformation hooks, but those hooks
+must be policy-controlled and observable before they can affect agent behavior.
+
+Matrix now implements the smallest provider-agnostic backend slice inside the
+LangGraph tool runtime:
+
+- missing `tool_hook_policy` preserves existing behavior.
+- `pre_tool_veto`/`deny_tools` blocks a tool before validation/execution and
+  writes a blocked runtime event with `hook=pre_tool_call`.
+- `redact_result_keys` transforms configured dict fields before audit output,
+  stream handoff and the next LLM turn, and writes
+  `hook=transform_tool_result`.
+- shell/output hooks are deliberately still absent; if Matrix later adds a
+  terminal/shell execution surface, it must reuse the same explicit audit and
+  runtime-event policy shape first.
+
 Open design pressure: route-decision telemetry should be implemented before
 subagent behavior. Without it, Meta-Harness cannot tell whether a future answer
 was improved by routing, retrieval, memory, model choice or accidental prompt

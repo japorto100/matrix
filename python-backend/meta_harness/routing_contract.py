@@ -36,6 +36,7 @@ def run_routing_contract_scenarios(
         _repeated_failed_tool_calls_fails_gate(),
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
+        _tool_hook_policy_trace_shape_gate(),
         _subagent_isolation_runtime_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -316,6 +317,107 @@ def _runtime_event_redaction_shape_gate() -> dict[str, Any]:
     )
     return _scenario_result(
         scenario_id="routing-runtime-event-redaction-shape",
+        verdict_passed=verdict.passed,
+        expected_passed=True,
+        verdict=verdict,
+    )
+
+
+def _tool_hook_policy_trace_shape_gate() -> dict[str, Any]:
+    events = [
+        {
+            "action": "tool_result",
+            "toolName": "memory_search",
+            "success": False,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "tool.memory_search",
+                        "metadata": {
+                            "tool_call_id": "call-hook-veto",
+                            "tool_name": "memory_search",
+                            "error_type": "tool_hook_veto",
+                            "hook_policy": {
+                                "hook": "pre_tool_call",
+                                "decision": "veto",
+                                "reason": "policy-test-veto",
+                            },
+                        },
+                    }
+                ]
+            },
+        },
+        {
+            "action": "tool_result",
+            "toolName": "file_analyze",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "tool.file_analyze",
+                        "metadata": {
+                            "tool_call_id": "call-hook-transform",
+                            "tool_name": "file_analyze",
+                            "result_type": "dict",
+                            "hook_policy": {
+                                "hook": "transform_tool_result",
+                                "decision": "transformed",
+                                "redacted_keys": ("secret",),
+                            },
+                        },
+                    }
+                ]
+            },
+        },
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            allow_tool_failures=True,
+            required_runtime_event_names=(
+                "tool.memory_search",
+                "tool.file_analyze",
+            ),
+            required_runtime_event_metadata_keys={
+                "tool.memory_search": (
+                    "tool_call_id",
+                    "tool_name",
+                    "hook_policy.hook",
+                    "hook_policy.decision",
+                    "hook_policy.reason",
+                ),
+                "tool.file_analyze": (
+                    "tool_call_id",
+                    "tool_name",
+                    "hook_policy.hook",
+                    "hook_policy.decision",
+                    "hook_policy.redacted_keys",
+                ),
+            },
+            required_runtime_event_metadata_values={
+                "tool.memory_search": {
+                    "hook_policy.hook": "pre_tool_call",
+                    "hook_policy.decision": "veto",
+                },
+                "tool.file_analyze": {
+                    "hook_policy.hook": "transform_tool_result",
+                    "hook_policy.decision": "transformed",
+                    "hook_policy.redacted_keys": "secret",
+                },
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": (
+                    "raw_result",
+                    "raw_output",
+                    "secret",
+                    "api_key",
+                    "authorization",
+                )
+            },
+        ),
+    )
+    return _scenario_result(
+        scenario_id="routing-tool-hook-policy-trace-shape",
         verdict_passed=verdict.passed,
         expected_passed=True,
         verdict=verdict,

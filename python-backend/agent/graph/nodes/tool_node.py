@@ -72,8 +72,16 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         reasoning_effort=state.get("reasoning_effort"),
     )
 
+    hook_policy = state.get("tool_hook_policy") or {}
+
     # Parallel execution
-    tasks = [_execute_single(tc, registry, ctx) for tc in tool_calls]
+    if hook_policy:
+        tasks = [
+            _execute_single(tc, registry, ctx, hook_policy=hook_policy)
+            for tc in tool_calls
+        ]
+    else:
+        tasks = [_execute_single(tc, registry, ctx) for tc in tool_calls]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Record tool calls in rate limiter
@@ -218,10 +226,78 @@ def _tool_result_event_metadata(result: ToolResult) -> dict[str, Any]:
     return metadata
 
 
+def _hook_policy_veto(
+    *,
+    tool_name: str,
+    hook_policy: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    policy = hook_policy or {}
+    deny_tools = {str(item) for item in policy.get("deny_tools") or ()}
+    veto_map = policy.get("pre_tool_veto") or {}
+    if not isinstance(veto_map, dict):
+        veto_map = {}
+    if tool_name in veto_map:
+        return {
+            "hook": "pre_tool_call",
+            "decision": "veto",
+            "reason": str(veto_map.get(tool_name) or "tool-vetoed"),
+        }
+    if tool_name in deny_tools:
+        return {
+            "hook": "pre_tool_call",
+            "decision": "veto",
+            "reason": str(policy.get("reason") or "tool-denylisted"),
+        }
+    return None
+
+
+def _result_transform_policy(
+    *,
+    tool_name: str,
+    hook_policy: dict[str, Any] | None,
+) -> tuple[str, ...]:
+    policy = hook_policy or {}
+    redact_config = policy.get("redact_result_keys") or {}
+    if not isinstance(redact_config, dict):
+        return ()
+    keys: list[str] = []
+    for item in redact_config.get("*") or ():
+        keys.append(str(item))
+    for item in redact_config.get(tool_name) or ():
+        keys.append(str(item))
+    return tuple(dict.fromkeys(keys))
+
+
+def _apply_tool_result_transform(
+    *,
+    tool_name: str,
+    result: Any,
+    hook_policy: dict[str, Any] | None,
+) -> tuple[Any, dict[str, Any] | None]:
+    redact_keys = _result_transform_policy(tool_name=tool_name, hook_policy=hook_policy)
+    if not redact_keys or not isinstance(result, dict):
+        return result, None
+    transformed = dict(result)
+    redacted: list[str] = []
+    for key in redact_keys:
+        if key in transformed:
+            transformed[key] = "[redacted_by_tool_hook]"
+            redacted.append(key)
+    if not redacted:
+        return result, None
+    return transformed, {
+        "hook": "transform_tool_result",
+        "decision": "transformed",
+        "redacted_keys": redacted,
+    }
+
+
 async def _execute_single(
     tc: dict[str, Any],
     registry: ToolRegistry,
     ctx: AgentExecutionContext,
+    *,
+    hook_policy: dict[str, Any] | None = None,
 ) -> ToolResult:
     """Fuehrt ein einzelnes Tool mit Timeout aus. Audit-logged + OTel traced."""
     from agent.audit.logger import AuditAction, audit_duration, audit_log, audit_timer
@@ -275,6 +351,46 @@ async def _execute_single(
             metadata={**budget_metadata, "runtime_events": [started_event]},
         )
 
+        veto = _hook_policy_veto(tool_name=tc["tool_name"], hook_policy=hook_policy)
+        if veto is not None:
+            elapsed = audit_duration(start)
+            runtime_event = _tool_runtime_event(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                status="blocked",
+                thread_id=ctx.thread_id,
+                summary="Tool execution vetoed by hook policy",
+                metadata={
+                    **budget_metadata,
+                    "duration_ms": elapsed,
+                    "hook_policy": veto,
+                    "error_type": "tool_hook_veto",
+                },
+            )
+            await audit_log(
+                action=AuditAction.TOOL_RESULT,
+                thread_id=ctx.thread_id,
+                agent_id=ctx.user_id,
+                tool_name=tc["tool_name"],
+                input_data=tc["tool_input"],
+                duration_ms=elapsed,
+                success=False,
+                output_data={
+                    "error": "tool vetoed by hook policy",
+                    "reason": veto["reason"],
+                },
+                metadata={**budget_metadata, "runtime_events": [runtime_event]},
+            )
+            span.set_attribute("tool.duration_ms", elapsed)
+            span.set_attribute("tool.success", False)
+            span.set_attribute("tool.hook_policy_decision", "veto")
+            return ToolResult(
+                tool_call_id=tc["tool_call_id"],
+                tool_name=tc["tool_name"],
+                result={},
+                error=f"Tool vetoed by hook policy: {veto['reason']}",
+            )
+
         try:
             # Validation
             tool.validate(tc["tool_input"], ctx)
@@ -283,6 +399,11 @@ async def _execute_single(
             timeout = _effective_tool_timeout(tc["tool_name"])
             with anyio.fail_after(timeout):
                 result = await tool.execute(tc["tool_input"], ctx)
+            result, transform = _apply_tool_result_transform(
+                tool_name=tc["tool_name"],
+                result=result,
+                hook_policy=hook_policy,
+            )
 
             elapsed = audit_duration(start)
             runtime_event = _tool_runtime_event(
@@ -300,6 +421,7 @@ async def _execute_single(
                         if isinstance(result, dict)
                         else {}
                     ),
+                    **({"hook_policy": transform} if transform else {}),
                 },
             )
             await audit_log(

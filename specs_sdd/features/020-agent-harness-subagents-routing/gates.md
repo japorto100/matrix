@@ -52,6 +52,18 @@ feature_id: 020
   - 2026-04-30: `_prepare_system_prompt()` adds relevant tool hints only from
     `ctx.tools`, capped by progressive-disclosure level, and unit coverage
     asserts that hidden/high-disclosure schemas do not enter the prompt.
+- [x] Tool hook policy is explicit before mutating or blocking tool behavior.
+  - 2026-04-30: `tool_hook_policy` is default-off in graph state. When present,
+    pre-tool veto emits a blocked runtime event and transformed tool results
+    include `hook_policy` metadata before the result reaches audit, stream
+    handoff or the next LLM turn.
+  - 2026-04-30: `routing-tool-hook-policy-trace-shape` requires veto and
+    transform hook metadata while forbidding raw output/secrets in runtime
+    events; `run-tool-hook-policy-gate` passed 10/10.
+- [x] Shell/output hooks cannot silently mutate backend tool output.
+  - 2026-04-30: no shell hook runtime exists in the Python backend; Feature 020
+    keeps it fail-closed until a future implementation adds explicit
+    runtime-event/audit policy gates.
 
 ## 2026-04-30 Added Gates
 
