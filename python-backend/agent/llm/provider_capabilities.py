@@ -17,6 +17,7 @@ KNOWN_PROVIDER_PREFIXES = frozenset(
         "gemini",
         "google",
         "groq",
+        "llamacpp",
         "mistral",
         "ollama",
         "openai",
@@ -25,6 +26,34 @@ KNOWN_PROVIDER_PREFIXES = frozenset(
         "vllm",
     }
 )
+
+LOCAL_MODEL_CAPABILITY_OVERRIDES: dict[str, dict[str, Any]] = {
+    "bonsai-8b": {
+        "provider": "llamacpp",
+        "max_input_tokens": 65536,
+        "max_output_tokens": None,
+        "supports_tools": True,
+        "supports_streaming": True,
+        "supports_reasoning": False,
+        "supports_reasoning_effort": False,
+        "supports_structured_output": False,
+        "supports_vision": False,
+        "prompt_cost_per_token": 0.0,
+        "completion_cost_per_token": 0.0,
+    },
+    "llamacpp/bonsai-8b": {
+        "max_input_tokens": 65536,
+        "max_output_tokens": None,
+        "supports_tools": True,
+        "supports_streaming": True,
+        "supports_reasoning": False,
+        "supports_reasoning_effort": False,
+        "supports_structured_output": False,
+        "supports_vision": False,
+        "prompt_cost_per_token": 0.0,
+        "completion_cost_per_token": 0.0,
+    }
+}
 
 FAKE_PROVIDER_MARKERS = frozenset(
     {
@@ -71,6 +100,9 @@ def provider_label_from_model(model: str | None) -> str:
     """Infer the transport/provider label from a LiteLLM model id."""
 
     normalized = normalize_model_id(model)
+    local_override = LOCAL_MODEL_CAPABILITY_OVERRIDES.get(normalized.lower())
+    if local_override is not None and local_override.get("provider"):
+        return str(local_override["provider"])
     parts = [part for part in normalized.split("/") if part]
     if not parts:
         return "litellm"
@@ -112,6 +144,17 @@ def model_capabilities(model: str | None) -> dict[str, Any]:
 
     normalized = normalize_model_id(model)
     provider = provider_label_from_model(normalized)
+    local_override = LOCAL_MODEL_CAPABILITY_OVERRIDES.get(normalized.lower())
+    if local_override is not None:
+        override = dict(local_override)
+        provider = str(override.pop("provider", provider))
+        return {
+            "model": normalized,
+            "provider": provider,
+            "source": "local_override",
+            "known_to_litellm": True,
+            **override,
+        }
     info = get_model_info(normalized) if normalized else None
     params = _string_list(
         (info or {}).get("supported_openai_params")
@@ -166,6 +209,12 @@ def configured_provider_snapshot(model: str | None = None) -> dict[str, Any]:
         "AGENT_LLM_PROVIDER",
         default=provider_label_from_model(agent_model),
     )
+    capabilities = model_capabilities(agent_model)
+    if llm_provider == "litellm" and capabilities.get("provider") not in {
+        "",
+        "litellm",
+    }:
+        llm_provider = str(capabilities["provider"])
     litellm_base_url = os.environ.get("LITELLM_BASE_URL", "")
     embedding_provider = env_first("EMBEDDER_PROVIDER", "MEMORY_EMBEDDING_PROVIDER")
     embedding_model = env_first("EMBEDDER_MODEL", "MEMORY_EMBEDDING_MODEL")
@@ -188,7 +237,7 @@ def configured_provider_snapshot(model: str | None = None) -> dict[str, Any]:
         "embedding_api_key_present": any(
             bool(os.environ.get(name)) for name in EMBEDDING_API_KEY_ENV_NAMES
         ),
-        "capabilities": model_capabilities(agent_model),
+        "capabilities": capabilities,
         "deterministic_fake": is_deterministic_fake_config(
             model=agent_model,
             provider=llm_provider,

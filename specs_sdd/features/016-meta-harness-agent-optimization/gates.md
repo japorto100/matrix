@@ -299,3 +299,9 @@ PY
   missing even when answer text is present.
   - 2026-04-30: `knowledge-contract` requires RAG/KG source/path artifact
     filenames in stream output plus source/citation runtime-event metadata.
+- Scenario scalar fitness must reflect deterministic expectation failures:
+  failed trace/stream gates keep raw verdicts and `base_fitness_score`, but
+  lower `fitness_score` so Pareto selection cannot promote a healthy wrong run.
+- Local-8B floor scenarios must cover direct routing, skill injection, memory,
+  tools/SSE, retrieval/KG boundary, semantic lookup and subagent policy before
+  larger live/browser gates are considered representative.

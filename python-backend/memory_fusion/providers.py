@@ -72,6 +72,11 @@ async def create_hindsight_engine(
     memory_env = {
         key: os.environ.get(key)
         for key in (
+            "LITELLM_BASE_URL",
+            "LITELLM_API_KEY",
+            "AGENT_LLM_PROVIDER",
+            "AGENT_DEFAULT_MODEL",
+            "AGENT_DEFAULT_UTILITY_MODEL",
             "MEMORY_EMBEDDING_PROVIDER",
             "MEMORY_EMBEDDING_MODEL",
             "MEMORY_EMBEDDING_DIMENSION",

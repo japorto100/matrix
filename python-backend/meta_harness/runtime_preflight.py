@@ -33,6 +33,8 @@ class RuntimePreflightResult:
     auto_start_attempted: bool
     auto_start_succeeded: bool
     tcp_ready_after: bool
+    postgres_ready_after: bool = False
+    postgres_ready_before: bool = False
     warnings: tuple[str, ...] = field(default_factory=tuple)
     failures: tuple[str, ...] = field(default_factory=tuple)
 
@@ -46,10 +48,12 @@ class RuntimePreflightResult:
             "port": self.port,
             "local_memory_eval_target": self.local_memory_eval_target,
             "tcp_ready_before": self.tcp_ready_before,
+            "postgres_ready_before": self.postgres_ready_before,
             "auto_start_enabled": self.auto_start_enabled,
             "auto_start_attempted": self.auto_start_attempted,
             "auto_start_succeeded": self.auto_start_succeeded,
             "tcp_ready_after": self.tcp_ready_after,
+            "postgres_ready_after": self.postgres_ready_after,
             "warnings": list(self.warnings),
             "failures": list(self.failures),
         }
@@ -75,10 +79,12 @@ def run_runtime_preflight(
             port=None,
             local_memory_eval_target=False,
             tcp_ready_before=False,
+            postgres_ready_before=False,
             auto_start_enabled=False,
             auto_start_attempted=False,
             auto_start_succeeded=False,
             tcp_ready_after=False,
+            postgres_ready_after=False,
         )
 
     db_env_key, db_url = _configured_db_url()
@@ -97,10 +103,12 @@ def run_runtime_preflight(
             port=None,
             local_memory_eval_target=False,
             tcp_ready_before=False,
+            postgres_ready_before=False,
             auto_start_enabled=False,
             auto_start_attempted=False,
             auto_start_succeeded=False,
             tcp_ready_after=False,
+            postgres_ready_after=False,
             warnings=tuple(warnings),
         )
 
@@ -116,28 +124,37 @@ def run_runtime_preflight(
             port=port,
             local_memory_eval_target=False,
             tcp_ready_before=False,
+            postgres_ready_before=False,
             auto_start_enabled=False,
             auto_start_attempted=False,
             auto_start_succeeded=False,
             tcp_ready_after=False,
+            postgres_ready_after=False,
             failures=tuple(failures),
         )
 
     tcp_ready_before = _tcp_ready(host, port, timeout=connect_timeout)
+    postgres_ready_before = (
+        _postgres_ready(db_url, connect_timeout=connect_timeout)
+        if tcp_ready_before
+        else False
+    )
     local_memory_eval_target = _is_local_memory_eval_target(host, port)
     auto_start_enabled = _default_auto_start() if auto_start is None else bool(auto_start)
     auto_start_attempted = False
     auto_start_succeeded = False
 
-    if not tcp_ready_before:
+    if not postgres_ready_before:
         if local_memory_eval_target and auto_start_enabled:
             auto_start_attempted = True
             auto_start_succeeded = _start_memory_eval_postgres(compose_file=compose_file)
         elif local_memory_eval_target:
-            warnings.append("local memory-eval Postgres is down and auto-start is disabled")
+            warnings.append(
+                "local memory-eval Postgres is not SQL-ready and auto-start is disabled"
+            )
         else:
             failures.append(
-                f"{db_env_key} endpoint {host}:{port} is not reachable; refusing to guess a DB service"
+                f"{db_env_key} endpoint {host}:{port} is not SQL-ready; refusing to guess a DB service"
             )
 
     tcp_ready_after = (
@@ -145,9 +162,22 @@ def run_runtime_preflight(
         if tcp_ready_before
         else _wait_for_tcp(host, port, timeout=connect_timeout, wait_seconds=wait_seconds)
     )
+    postgres_ready_after = (
+        _postgres_ready(db_url, connect_timeout=connect_timeout)
+        if postgres_ready_before
+        else _wait_for_postgres(
+            db_url,
+            connect_timeout=connect_timeout,
+            wait_seconds=wait_seconds,
+        )
+    )
     if not tcp_ready_after and local_memory_eval_target:
         failures.append(
             f"{MEMORY_EVAL_CONTAINER} did not become reachable on {host}:{port}"
+        )
+    if not postgres_ready_after and local_memory_eval_target:
+        failures.append(
+            f"{MEMORY_EVAL_CONTAINER} did not become SQL-ready on {host}:{port}"
         )
 
     return RuntimePreflightResult(
@@ -159,10 +189,12 @@ def run_runtime_preflight(
         port=port,
         local_memory_eval_target=local_memory_eval_target,
         tcp_ready_before=tcp_ready_before,
+        postgres_ready_before=postgres_ready_before,
         auto_start_enabled=auto_start_enabled,
         auto_start_attempted=auto_start_attempted,
         auto_start_succeeded=auto_start_succeeded,
         tcp_ready_after=tcp_ready_after,
+        postgres_ready_after=postgres_ready_after,
         warnings=tuple(warnings),
         failures=tuple(failures),
     )
@@ -240,6 +272,34 @@ def _wait_for_tcp(host: str, port: int, *, timeout: float, wait_seconds: float) 
         if _tcp_ready(host, port, timeout=timeout):
             return True
         time.sleep(0.25)
+    return False
+
+
+def _postgres_ready(db_url: str, *, connect_timeout: float) -> bool:
+    try:
+        import psycopg
+
+        timeout_seconds = max(1, int(connect_timeout))
+        with psycopg.connect(db_url, connect_timeout=timeout_seconds) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        return True
+    except Exception:  # noqa: BLE001 - readiness probe, not business logic
+        return False
+
+
+def _wait_for_postgres(
+    db_url: str,
+    *,
+    connect_timeout: float,
+    wait_seconds: float,
+) -> bool:
+    deadline = time.monotonic() + max(wait_seconds, 0.0)
+    while time.monotonic() <= deadline:
+        if _postgres_ready(db_url, connect_timeout=connect_timeout):
+            return True
+        time.sleep(0.5)
     return False
 
 

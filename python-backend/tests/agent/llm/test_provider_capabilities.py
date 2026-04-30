@@ -8,6 +8,8 @@ def test_provider_label_from_model_prefers_transport_prefix():
         pc.provider_label_from_model("openrouter/anthropic/claude-test") == "openrouter"
     )
     assert pc.provider_label_from_model("openai:gpt-4o") == "openai"
+    assert pc.provider_label_from_model("llamacpp/bonsai-8b") == "llamacpp"
+    assert pc.provider_label_from_model("bonsai-8b") == "llamacpp"
     assert pc.provider_label_from_model("plain-model") == "litellm"
 
 
@@ -37,3 +39,28 @@ def test_model_capabilities_unknown_model_is_explicit():
     assert caps["source"] == "unknown"
     assert caps["known_to_litellm"] is False
     assert "supports_tools" in caps
+
+
+def test_model_capabilities_local_bonsai_floor_is_explicit():
+    caps = pc.model_capabilities("llamacpp/bonsai-8b")
+
+    assert caps["source"] == "local_override"
+    assert caps["provider"] == "llamacpp"
+    assert caps["known_to_litellm"] is True
+    assert caps["max_input_tokens"] == 65536
+    assert caps["supports_tools"] is True
+    assert caps["prompt_cost_per_token"] == 0.0
+
+    alias_caps = pc.model_capabilities("bonsai-8b")
+    assert alias_caps["source"] == "local_override"
+    assert alias_caps["provider"] == "llamacpp"
+
+
+def test_configured_provider_snapshot_uses_local_override_provider(monkeypatch):
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "bonsai-8b")
+    monkeypatch.delenv("AGENT_LLM_PROVIDER", raising=False)
+
+    snapshot = pc.configured_provider_snapshot()
+
+    assert snapshot["llm_provider"] == "llamacpp"
+    assert snapshot["capabilities"]["provider"] == "llamacpp"

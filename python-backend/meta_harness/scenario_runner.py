@@ -28,14 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 def _provider_label(model: str) -> str:
-    parts = [part for part in str(model or "").split("/") if part]
-    if not parts:
-        return "litellm"
-    if parts[0] == "openrouter":
-        return "openrouter"
-    if parts[0] in {"anthropic", "openai", "google", "deepseek", "groq", "mistral"}:
-        return parts[0]
-    return "litellm"
+    from agent.llm.provider_capabilities import provider_label_from_model
+
+    return provider_label_from_model(model)
 
 
 def _env_flag_enabled(name: str, *, default: bool = True) -> bool:
@@ -1120,6 +1115,40 @@ def evaluate_stream_gates(
     )
 
 
+def apply_expectation_gate_fitness(
+    score: dict[str, Any],
+    *,
+    trace_verdict: TraceGateVerdict,
+    stream_verdict: StreamGateVerdict,
+) -> None:
+    """Fold deterministic gate failures into scalar fitness.
+
+    The scorer measures generic session health. Scenario gates measure whether
+    the agent actually satisfied the task contract. Keep both values visible,
+    but cap failed runs so Pareto selection cannot promote a healthy wrong run.
+    """
+    try:
+        base_fitness = float(score.get("fitness_score"))
+    except (TypeError, ValueError):
+        base_fitness = composite_fitness(score)
+
+    adjusted = max(0.0, min(1.0, base_fitness))
+    penalties: list[str] = []
+    if not trace_verdict.passed:
+        adjusted = min(adjusted * 0.35, 0.49)
+        penalties.append("trace_gate_failed")
+    if not stream_verdict.passed:
+        adjusted = min(adjusted * 0.70, 0.79)
+        penalties.append("stream_gate_failed")
+
+    score["base_fitness_score"] = round(base_fitness, 4)
+    score["fitness_score"] = round(adjusted, 4)
+    score["expectation_gate_passed"] = trace_verdict.passed and stream_verdict.passed
+    score["trace_gate_passed"] = trace_verdict.passed
+    score["stream_gate_passed"] = stream_verdict.passed
+    score["fitness_penalties"] = penalties
+
+
 def _parse_sse_payload(chunk: str) -> dict[str, Any] | None:
     if not chunk.startswith("data:"):
         return None
@@ -1464,6 +1493,11 @@ async def run_scenario(
         )
     score["trace_gates"] = verdict.as_dict()
     score["stream_gates"] = stream_verdict.as_dict()
+    apply_expectation_gate_fitness(
+        score,
+        trace_verdict=verdict,
+        stream_verdict=stream_verdict,
+    )
 
     result = ScenarioRunResult(
         run_id=run_id,

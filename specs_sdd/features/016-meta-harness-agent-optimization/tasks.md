@@ -516,6 +516,13 @@ feature_id: 016
     actual Agent ToolRegistry. Tool-node propagation now forwards nested
     RAG/KG/artifact runtime events, and `to_model_output()` ensures downstream
     artifacts are visible to UI/audit but compact for the next LLM turn.
+- [x] T129 [done-static-live-prep] Add expectation-adjusted scenario fitness and
+  Local-8B floor coverage for the Agent Harness boundary.
+  - 2026-05-01: `run_scenario()` now preserves `base_fitness_score` and caps
+    `fitness_score` when deterministic trace/stream gates fail. The new
+    `data/harness/local_8b_floor/scenarios.json` exercises direct routing,
+    skill injection, memory, tools/SSE, RAG/KG, semantic lookup and subagent
+    policy with a provider-agnostic 8B target model.
 
 ## Verify Gates
 

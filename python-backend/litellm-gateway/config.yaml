@@ -162,6 +162,17 @@ model_list:
   #     api_base: "http://localhost:1234/v1"
   #     api_key: "dummy"
 
+  # llama.cpp - local OpenAI-compatible server for 8B capability-floor gates.
+  # Start example:
+  #   /home/lipfi2/tools/llama.cpp/build/bin/llama-server \
+  #     -m /mnt/cold-storage/models/huggingface/models--prism-ml--Bonsai-8B-gguf/snapshots/48516770dd04643643e9f9019a2a349cf26c5dbd/Bonsai-8B.gguf \
+  #     --alias bonsai-8b --host 127.0.0.1 --port 8081 -c 4096 -t 4
+  - model_name: "llamacpp/*"
+    litellm_params:
+      model: "openai/*"
+      api_base: "http://127.0.0.1:8081/v1"
+      api_key: "dummy"
+
 # ==========================================================================
 # General Settings
 # ==========================================================================

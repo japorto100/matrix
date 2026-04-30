@@ -1,0 +1,52 @@
+{
+  "blocked": false,
+  "chat": {
+    "model": "bonsai-8b",
+    "passed": true,
+    "response_chars": 93
+  },
+  "chat_checked": true,
+  "chat_requested": true,
+  "feature_ids": [
+    "011",
+    "016",
+    "020"
+  ],
+  "passed": true,
+  "provider_gate": {
+    "allow_deterministic_fake": false,
+    "failures": [],
+    "passed": true,
+    "warnings": []
+  },
+  "provider_snapshot": {
+    "agent_max_output_tokens": "16",
+    "agent_model": "bonsai-8b",
+    "capabilities": {
+      "completion_cost_per_token": 0.0,
+      "known_to_litellm": true,
+      "max_input_tokens": 65536,
+      "max_output_tokens": null,
+      "model": "bonsai-8b",
+      "prompt_cost_per_token": 0.0,
+      "provider": "llamacpp",
+      "source": "local_override",
+      "supports_reasoning": false,
+      "supports_reasoning_effort": false,
+      "supports_streaming": true,
+      "supports_structured_output": false,
+      "supports_tools": true,
+      "supports_vision": false
+    },
+    "chat_api_key_present": true,
+    "deterministic_fake": false,
+    "embedding_api_key_present": true,
+    "embedding_dimension": "384",
+    "embedding_model": "deterministic-dev-384d",
+    "embedding_provider": "local",
+    "litellm_base_url": "http://127.0.0.1:8081/v1",
+    "llm_provider": "llamacpp",
+    "secrets_redacted": true
+  },
+  "run_id": "run-provider-smoke-bonsai-local-v3"
+}

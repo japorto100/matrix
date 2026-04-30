@@ -13,6 +13,8 @@ async def test_create_hindsight_engine_restores_runtime_db_env(monkeypatch):
 
     requested_db_url = "postgresql://postgres:postgres@localhost:55433/hindsight_dev"
     dotenv_db_url = "postgresql://postgres:wrong@localhost:5433/hindsight_dev"
+    requested_litellm_url = "http://127.0.0.1:8081/v1"
+    dotenv_litellm_url = "http://localhost:4000"
     created: dict[str, object] = {}
 
     class FakeMemoryEngine:
@@ -32,11 +34,14 @@ async def test_create_hindsight_engine_restores_runtime_db_env(monkeypatch):
     def mutate_env_on_import(name, globals=None, locals=None, fromlist=(), level=0):
         if name == "hindsight_api.engine.memory_engine":
             monkeypatch.setenv("HINDSIGHT_DB_URL", dotenv_db_url)
+            monkeypatch.setenv("LITELLM_BASE_URL", dotenv_litellm_url)
             monkeypatch.delenv("HINDSIGHT_API_DATABASE_URL", raising=False)
             return fake_memory_engine_mod
         return original_import(name, globals, locals, fromlist, level)
 
     monkeypatch.setenv("HINDSIGHT_DB_URL", requested_db_url)
+    monkeypatch.setenv("LITELLM_BASE_URL", requested_litellm_url)
+    monkeypatch.setenv("AGENT_DEFAULT_MODEL", "bonsai-8b")
     monkeypatch.setenv("MEMORY_EMBEDDING_PROVIDER", "deterministic")
     monkeypatch.setenv("MEMORY_EMBEDDING_MODEL", "deterministic-dev-384d")
     monkeypatch.setenv("MEMORY_EMBEDDING_DIMENSION", "384")
@@ -52,3 +57,5 @@ async def test_create_hindsight_engine_restores_runtime_db_env(monkeypatch):
     assert created["embeddings"] is not None
     assert os.environ["HINDSIGHT_DB_URL"] == requested_db_url
     assert os.environ["HINDSIGHT_API_DATABASE_URL"] == requested_db_url
+    assert os.environ["LITELLM_BASE_URL"] == requested_litellm_url
+    assert os.environ["AGENT_DEFAULT_MODEL"] == "bonsai-8b"

@@ -31,6 +31,12 @@ feature_id: 034
   promotion evidence.
 - [x] G013 Live no-browser `run`/`outer-loop` commands must preflight the trace
   DB endpoint and record the result as an artifact before evaluation.
+- [x] G014 Scenario scalar fitness must include deterministic expectation
+  failures, not only generic session health.
+- [partial-live-no-browser] G015 A provider-agnostic Local-8B floor suite must
+  exist for direct routing, skills, memory, tools, RAG/KG, semantic lookup and
+  subagent policy. Static parsing and provider smoke are complete; the full
+  seven-scenario live run is the next no-browser execution gate.
 
 2026-05-01 static gate evidence: `meta_harness.real_outer_loop` implements the
 no-browser iteration path and tests assert proposal/pending-eval/decision/
@@ -60,3 +66,19 @@ unit tests cover no-DB warning, local `:55433` auto-start, unknown unreachable
 DB fail-fast and `ensure_runtime_preflight` raising on failures. The real
 outer-loop summary now embeds `runtime_preflight`, and each run gets
 `runtime_preflight.json`.
+
+2026-05-01 Local-8B floor evidence: `data/harness/local_8b_floor/scenarios.json`
+defines the no-browser target-model floor across the Agent Harness boundary.
+`tests/meta_harness/test_scenario_runner.py` parses the suite and asserts the
+expected surfaces are represented. Direct `llama-server` provider smoke with
+`bonsai-8b` passed as `llamacpp`, and
+`run-local8b-floor-bonsai-direct-long-timeout` passed the direct routing floor
+through the real backend Agent Harness with trace/stream pass rate `1.0`.
+The remaining six scenarios are still live no-browser gates because they will
+deliberately reveal which skills/tools/memory/retrieval paths an 8B target can
+operate through.
+
+2026-05-01 expectation-fitness gate evidence: Scenario runs now keep
+`base_fitness_score` and lower `fitness_score` when trace or stream gates fail.
+This closes the Round-2 exact-recall scoring gap where trace presence could
+look healthy even when the visible answer missed required evidence.

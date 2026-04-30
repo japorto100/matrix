@@ -131,6 +131,13 @@ PROVIDER_REGISTRY: dict[str, dict[str, Any]] = {
         "models": [],
         "env_key": None,
     },
+    "llamacpp": {
+        "display_name": "llama.cpp",
+        "type": "local",
+        "models_endpoint": "http://127.0.0.1:8081/v1/models",
+        "models": ["bonsai-8b"],
+        "env_key": None,
+    },
 }
 
 # ─── Model Cache (in-memory, 1h TTL) ──────────────────────────────────────

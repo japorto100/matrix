@@ -281,6 +281,83 @@ Verification:
   should make answer-level exact-recall assertions first-class, not only trace
   presence assertions.
 
+## 2026-05-01 Local Bonsai / 8B Floor Finding
+
+Bonsai 8B is useful as the frozen target-agent floor, not as the
+Meta-Harness proposer. Local inspection found the GGUF model at
+`/mnt/cold-storage/models/huggingface/models--prism-ml--Bonsai-8B-gguf/.../Bonsai-8B.gguf`.
+It is Qwen3-family, about 8.19B parameters and advertises a 65,536 token
+context window. On this i7-2600/8GB machine, direct `llama-cli` generation was
+slow but usable for small no-browser traces, roughly 4 tok/s in the local
+smoke.
+
+`llama-server` was built locally and exposes an OpenAI-compatible endpoint at
+`http://127.0.0.1:8081/v1` with model alias `bonsai-8b`. A direct chat smoke
+returned the expected marker, and `meta_harness provider-smoke` passed when
+`LITELLM_BASE_URL` pointed at the local llama.cpp server. Matrix now records
+`bonsai-8b` as a provider-agnostic local capability override with provider
+`llamacpp`; no OpenAI/Anthropic-specific assumptions are needed.
+
+One live no-browser finding matters for future local-model rounds: the normal
+Agent Harness prompt is already about 1.1k prompt tokens even with tools
+disabled, because the run still includes system instructions, skill finder
+evidence, memory recall/retain hooks, route telemetry and downstream stream
+metadata. On CPU Bonsai this direct case took about 110 seconds. Therefore
+local 8B floor runs should use a realistic timeout such as
+`META_HARNESS_TURN_TIMEOUT_S=420` and low `AGENT_MAX_OUTPUT_TOKENS`, instead of
+clipping the harness surface to make the smoke look cheap.
+
+The first failed floor run was useful: TCP on `:55433` was not enough to prove
+Postgres readiness because a stale rootless port proxy accepted connections
+while the container was not SQL-ready. Runtime preflight now verifies an actual
+Postgres `SELECT 1`, auto-starts the known local Memory-Eval container when
+safe, and records `postgres_ready_before/after` in the artifact.
+
+The second failure exposed an env-leak: importing `hindsight_api` can reload
+repo env files and overwrite `LITELLM_BASE_URL`, sending the later LLM call to
+the default LiteLLM gateway instead of llama.cpp. `memory_fusion.providers`
+now restores explicit LLM provider/model/base-url env along with DB and
+embedding env after that import.
+
+Verification:
+
+- `run-provider-smoke-bonsai-local-v3` passed with provider snapshot
+  `llm_provider=llamacpp`, model `bonsai-8b`, and direct chat through
+  `http://127.0.0.1:8081/v1`.
+- `run-local8b-floor-bonsai-direct-long-timeout` passed the direct routing
+  scenario with real audit events, Memory-Fusion hooks, route decision,
+  `llm_response`, SSE text/finish packets and `trace_gate_pass_rate=1.0`.
+
+The right 8B usage is a floor gate:
+
+- Codex/frontier model remains proposer and code editor.
+- Bonsai/local 8B is the agent under test that must drive the Matrix Agent
+  Harness through standard chat/tool/SSE/memory paths.
+- Passing the floor does not prove top-end quality; failing the floor reveals
+  harness affordance or instruction/tool-schema issues that small models cannot
+  overcome.
+
+`data/harness/local_8b_floor/scenarios.json` turns this into an executable
+contract over the whole Agent Harness boundary: direct routing, skill
+injection, explicit memory, chart tool stream evidence, RAG/KG retrieval
+boundary, semantic lookup and subagent policy. This is synthetic only in the
+user input; it still runs the real backend agent, provider transport, tools,
+memory, audit and stream capture.
+
+## 2026-05-01 Expectation-Adjusted Fitness Finding
+
+Round 2 showed that generic session fitness is insufficient for Meta-Harness
+selection. A run can complete, call tools and emit healthy traces while still
+missing an answer-level exact term or downstream stream artifact. That is a
+wrong run for the scenario, so it must not keep a high scalar fitness merely
+because the transport was healthy.
+
+`run_scenario()` now keeps the original `base_fitness_score`, records
+`trace_gate_passed`, `stream_gate_passed` and `expectation_gate_passed`, and
+caps `fitness_score` when deterministic gates fail. The raw verdicts remain
+the primary evidence; the scalar change exists so Pareto/frontier code cannot
+accidentally promote a healthy but wrong candidate.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature

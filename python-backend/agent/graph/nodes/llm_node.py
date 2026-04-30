@@ -73,14 +73,9 @@ def _detail_value(details: Any, key: str) -> int:
 
 
 def _provider_label(model: str) -> str:
-    parts = [part for part in str(model or "").split("/") if part]
-    if not parts:
-        return "litellm"
-    if parts[0] == "openrouter":
-        return "openrouter"
-    if parts[0] in {"anthropic", "openai", "google", "deepseek", "groq", "mistral"}:
-        return parts[0]
-    return "litellm"
+    from agent.llm.provider_capabilities import provider_label_from_model
+
+    return provider_label_from_model(model)
 
 
 def _resolve_model_name(model: str | None) -> str:

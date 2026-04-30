@@ -571,3 +571,21 @@ inspect provider/model/base-url host, key presence/fingerprint, quota policy and
 live-call budget without ever seeing the raw OpenRouter key. This supports
 Feature 012 T039f while keeping model-quality selection (T039e) as a separate
 Pareto/search problem.
+
+2026-05-01 Local-8B floor update: Feature 034 now owns the real outer-loop
+iteration, but Feature 016 owns the reusable scenario/gate vocabulary. The
+new `local_8b_floor` suite maps the full Matrix Agent Harness boundary into
+one no-browser target-model floor: direct routing, Skill Finder/injection,
+explicit Memory-Fusion, tool execution plus Agent Chat stream evidence,
+RAG/KG world-context separation, semantic lookup and fail-closed subagent
+policy. This is provider-agnostic; the local smoke used llama.cpp/Bonsai 8B,
+but any OpenAI-compatible small model can be evaluated against the same file.
+`run-local8b-floor-bonsai-direct-long-timeout` proves the first direct-routing
+case through the real backend path, including Memory-Fusion hooks, route
+decision, audit trace, SSE stream and exact response term.
+
+2026-05-01 scoring update: deterministic gates are now part of scalar scenario
+fitness. Generic session health remains visible as `base_fitness_score`, but
+trace/stream failures apply explicit penalties. This closes the issue where a
+scenario with a missing exact response term could look Pareto-equivalent to a
+correct one because tool transport and completion were healthy.

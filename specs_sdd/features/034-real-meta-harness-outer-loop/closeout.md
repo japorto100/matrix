@@ -88,3 +88,24 @@ evaluation, decision logging and Pareto update.
   and
   `uv run pytest tests/meta_harness/test_runtime_preflight.py tests/meta_harness/test_real_outer_loop.py -q`
   passed.
+
+## 2026-05-01 Local-8B Floor And Scoring Evidence
+
+- Local provider path: `llama-server` can serve Bonsai 8B through
+  `http://127.0.0.1:8081/v1` as `bonsai-8b`; provider smoke passed against
+  that OpenAI-compatible endpoint and now reports provider `llamacpp`.
+- Harness suite: `data/harness/local_8b_floor/scenarios.json` defines the
+  backend no-browser floor for direct routing, skills, memory, chart tool/SSE,
+  retrieval/KG boundary, semantic lookup and subagent policy.
+- Live floor evidence:
+  `run-local8b-floor-bonsai-direct-long-timeout` passed the direct no-tool
+  Bonsai floor with `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`
+  and `completion_rate=1.0`. The run used the full backend harness, not a
+  shortened fake prompt; CPU latency was about 110s for 1131 prompt tokens.
+- Scoring fix: scenario fitness now records the raw base fitness and applies
+  deterministic gate penalties for trace/stream failures.
+- Verification:
+  `uv run ruff check meta_harness/scenario_runner.py tests/meta_harness/test_scenario_runner.py`
+  and
+  `uv run pytest tests/meta_harness/test_scenario_runner.py -q`
+  passed.

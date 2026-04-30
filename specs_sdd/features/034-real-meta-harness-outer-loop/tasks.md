@@ -148,6 +148,19 @@ feature_id: 034
     `AUDIT_DB_URL/HINDSIGHT_DB_URL`, auto-starts only the known local
     `matrix-memory-eval-postgres` on `:55433`, fails unknown unreachable DB
     targets, and writes `runtime_preflight.json` plus summary metadata.
+- [x] T067 [done-static-live-prep] Add a Local-8B Agent Harness floor suite
+  for the full no-browser backend surface.
+  - 2026-05-01: `data/harness/local_8b_floor/scenarios.json` covers direct
+    routing, skill injection, explicit Memory-Fusion, tool/SSE rendering,
+    RAG/KG retrieval boundary, semantic lookup and subagent policy. This is
+    the target-model floor for Bonsai/llama.cpp or any provider-agnostic 8B
+    OpenAI-compatible route.
+- [x] T068 [done-static] Fold deterministic trace/stream gate failures into
+  scalar scenario fitness.
+  - 2026-05-01: `run_scenario()` now records `base_fitness_score`,
+    `expectation_gate_passed`, per-gate booleans and `fitness_penalties`, then
+    caps failed trace/stream runs. The outer loop can no longer treat a
+    healthy-but-wrong response as Pareto-equivalent to a correct response.
 
 ## Documentation
 
@@ -161,3 +174,5 @@ feature_id: 034
   Claude Code with Opus-4.6 as proposer, while frozen target models varied by
   domain. Matrix keeps Codex/frontier model as proposer and uses OpenRouter/free
   routes only for cheap target-agent rollouts.
+- [x] T075 [done-static] Record local Bonsai/llama.cpp provider path and floor
+  scenario contract in `research.md`.

@@ -78,6 +78,32 @@ def test_agent_chat_endpoint_url_accepts_frontend_bff_url():
     assert scenario_runner._agent_chat_endpoint_url(
         "http://agent.local/api/v1/agent/chat"
     ) == ("http://agent.local/api/v1/agent/chat", False)
+
+
+def test_local_8b_floor_scenarios_cover_agent_harness_surfaces():
+    path = (
+        scenario_runner.META_HARNESS_DATA_DIR.parent
+        / "harness"
+        / "local_8b_floor"
+        / "scenarios.json"
+    )
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    scenarios = [
+        scenario_runner.Scenario.from_mapping(item) for item in raw["scenarios"]
+    ]
+    categories = {scenario.category for scenario in scenarios}
+
+    assert len(scenarios) == 7
+    assert "local_8b_skill_injection" in categories
+    assert "local_8b_memory_explicit" in categories
+    assert "local_8b_retrieval_context" in categories
+    assert "local_8b_semantic_lookup" in categories
+    assert "local_8b_subagent_policy" in categories
+    assert any(
+        "get_chart_state" in scenario.expectations.required_tools
+        and "get_chart_state" in scenario.expectations.required_stream_rich_renderers
+        for scenario in scenarios
+    )
     assert scenario_runner._agent_chat_endpoint_url(
         "http://frontend.local/api/agent/chat"
     ) == ("http://frontend.local/api/agent/chat", True)
@@ -1242,6 +1268,59 @@ async def test_run_scenario_uses_sse_finish_as_completion_signal(tmp_path, monke
     assert result.score["completed"] is True
     assert result.score["completion_source"] == "sse_finish"
     assert result.score["fitness_score"] > 0.5
+
+
+@pytest.mark.asyncio
+async def test_run_scenario_penalizes_failed_expectation_gates(tmp_path, monkeypatch):
+    class _Store:
+        async def query(self, *, thread_id=None, limit=100):
+            return [{"action": "llm_response", "threadId": thread_id, "success": True}]
+
+    monkeypatch.setattr("agent.audit.store.get_audit_store", lambda: _Store())
+
+    async def _fake_score(thread_id, *, eval_id=None):
+        return {
+            "thread_id": thread_id,
+            "eval_id": eval_id,
+            "completed": True,
+            "tool_calls": 0,
+            "turn_efficiency": 1.0,
+            "cost_estimate_usd": 0.0,
+            "fitness_score": 1.0,
+        }
+
+    monkeypatch.setattr(scenario_runner, "score_session", _fake_score)
+
+    async def _fake_runner(**kwargs):
+        return [
+            sse(TextStartPacket()),
+            sse(TextDeltaPacket(delta="generic answer")),
+            sse(FinishPacket()),
+        ]
+
+    scenario = scenario_runner.Scenario.from_mapping(
+        {
+            "id": "gate-fail",
+            "turns": [{"user": "say the exact marker"}],
+            "category": "smoke",
+            "expected_trace": {
+                "required_response_terms": ["required_marker_42"],
+            },
+        }
+    )
+
+    result = await scenario_runner.run_scenario(
+        scenario,
+        run_id="run-gate-fail",
+        runner=_fake_runner,
+        data_dir=tmp_path,
+    )
+
+    assert result.trace_verdict.passed is False
+    assert result.score["base_fitness_score"] == 1.0
+    assert result.score["fitness_score"] == 0.35
+    assert result.score["expectation_gate_passed"] is False
+    assert result.score["fitness_penalties"] == ["trace_gate_failed"]
 
 
 @pytest.mark.asyncio

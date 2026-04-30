@@ -30,6 +30,11 @@ def test_runtime_preflight_autostarts_local_memory_eval(monkeypatch, tmp_path):
         "_tcp_ready",
         lambda host, port, *, timeout: next(tcp_checks),
     )
+    monkeypatch.setattr(
+        runtime_preflight,
+        "_wait_for_postgres",
+        lambda db_url, *, connect_timeout, wait_seconds: True,
+    )
 
     def _fake_run(argv):
         calls.append(argv)
@@ -47,10 +52,49 @@ def test_runtime_preflight_autostarts_local_memory_eval(monkeypatch, tmp_path):
     assert result.auto_start_attempted is True
     assert result.auto_start_succeeded is True
     assert result.tcp_ready_after is True
+    assert result.postgres_ready_after is True
     assert calls == [
         ["podman", "container", "exists", "matrix-memory-eval-postgres"],
         ["podman", "start", "matrix-memory-eval-postgres"],
     ]
+
+
+def test_runtime_preflight_autostarts_when_tcp_proxy_is_stale(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+
+    monkeypatch.delenv("AUDIT_DB_URL", raising=False)
+    monkeypatch.setenv(
+        "HINDSIGHT_DB_URL",
+        "postgresql://postgres:postgres@127.0.0.1:55433/hindsight_dev",
+    )
+    monkeypatch.setattr(runtime_preflight, "_tcp_ready", lambda *args, **kwargs: True)
+    monkeypatch.setattr(
+        runtime_preflight,
+        "_postgres_ready",
+        lambda db_url, *, connect_timeout: False,
+    )
+    monkeypatch.setattr(
+        runtime_preflight,
+        "_wait_for_postgres",
+        lambda db_url, *, connect_timeout, wait_seconds: True,
+    )
+
+    def _fake_run(argv):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(runtime_preflight, "_run", _fake_run)
+
+    result = runtime_preflight.run_runtime_preflight(
+        command="run",
+        compose_file=tmp_path / "missing-compose.yml",
+        wait_seconds=0.1,
+    )
+
+    assert result.tcp_ready_before is True
+    assert result.postgres_ready_before is False
+    assert result.auto_start_attempted is True
+    assert result.postgres_ready_after is True
 
 
 def test_runtime_preflight_fails_unknown_unreachable_db(monkeypatch):

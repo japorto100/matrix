@@ -1,0 +1,153 @@
+{
+  "description": "Provider-agnostic Local-8B floor scenarios for the Matrix Agent Harness. These are no-browser synthetic user episodes with real backend execution. They cover direct routing, skill injection, memory, tools, retrieval/KG boundaries, semantic lookup and subagent/delegation policy.",
+  "scenarios": [
+    {
+      "id": "local8b-direct-routing-001",
+      "category": "local_8b_direct_routing",
+      "enable_tools": false,
+      "turns": [
+        {
+          "user": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["route_decision", "llm_response"],
+        "required_route_decisions": ["direct_answer"],
+        "required_delegation_decisions": ["none"],
+        "max_spawn_depth": 0,
+        "forbidden_actions": ["tool_call"],
+        "forbidden_tools": ["memory_search", "memory_add", "sandbox_execute", "delegate_task"],
+        "required_response_terms": ["local_8b_floor_direct_ok"]
+      },
+      "metadata": {
+        "focus": "Small local target model can follow a direct no-tool contract through the normal agent runner."
+      }
+    },
+    {
+      "id": "local8b-skill-risk-001",
+      "category": "local_8b_skill_injection",
+      "enable_tools": false,
+      "turns": [
+        {
+          "user": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["skill_used", "llm_response"],
+        "required_skills": ["risk-assessment"],
+        "required_route_decisions": ["direct_answer"],
+        "required_delegation_decisions": ["none"],
+        "max_spawn_depth": 0,
+        "forbidden_tools": ["memory_add", "delegate_task"],
+        "required_response_terms": ["risk_floor_ack"]
+      },
+      "metadata": {
+        "focus": "Skill finder/injection is part of the Agent Harness even when tools are disabled."
+      }
+    },
+    {
+      "id": "local8b-memory-explicit-001",
+      "category": "local_8b_memory_explicit",
+      "turns": [
+        {
+          "user": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
+        },
+        {
+          "user": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["memory_retain"],
+        "required_tools": ["memory_add", "memory_search"],
+        "required_skills": ["memory-usage"],
+        "required_memory_routes": ["fusion"],
+        "required_response_terms": ["bonsai_floor_memory_prefers_source_backed_recall"],
+        "required_memory_evidence_terms": ["bonsai_floor_memory_prefers_source_backed_recall"],
+        "expected_memory": true,
+        "min_tool_success_rate": 1.0
+      },
+      "metadata": {
+        "focus": "Explicit long-term memory add/search must work for the local 8B target model without relying on frontend interaction."
+      }
+    },
+    {
+      "id": "local8b-tool-chart-stream-001",
+      "category": "local_8b_tool_chart_stream",
+      "turns": [
+        {
+          "user": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["skill_used"],
+        "required_tools": ["get_chart_state"],
+        "required_skills": ["trading-analysis"],
+        "required_stream_rich_renderers": ["get_chart_state"],
+        "required_response_terms": ["symbol", "timeframe"],
+        "min_tool_success_rate": 1.0
+      },
+      "metadata": {
+        "focus": "Tool execution and downstream Agent Chat SSE/tool-output rendering evidence."
+      }
+    },
+    {
+      "id": "local8b-retrieval-context-001",
+      "category": "local_8b_retrieval_context",
+      "turns": [
+        {
+          "user": "Use retrieve_context for source-grounded context about how EU sanctions can affect Russian oil shipping finance. Do not store this as personal memory."
+        }
+      ],
+      "expected_trace": {
+        "required_tools": ["retrieve_context"],
+        "forbidden_tools": ["memory_add", "save_memory", "delegate_task"],
+        "forbidden_memory_routes": ["fusion", "summary", "verbatim"],
+        "forbidden_memory_providers": ["hindsight", "mempalace"],
+        "required_response_terms": ["sanctions"],
+        "min_tool_success_rate": 1.0
+      },
+      "metadata": {
+        "focus": "RAG/KG/world-context path must stay separate from personal memory."
+      }
+    },
+    {
+      "id": "local8b-semantic-lookup-001",
+      "category": "local_8b_semantic_lookup",
+      "turns": [
+        {
+          "user": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence."
+        }
+      ],
+      "expected_trace": {
+        "required_tools": ["semantic_lookup"],
+        "forbidden_tools": ["memory_add", "delegate_task"],
+        "required_response_terms": ["Sharpe"],
+        "min_tool_success_rate": 1.0
+      },
+      "metadata": {
+        "focus": "Semantic/metric grounding is part of retrieval-adjacent Agent Harness behavior."
+      }
+    },
+    {
+      "id": "local8b-subagent-policy-001",
+      "category": "local_8b_subagent_policy",
+      "enable_tools": false,
+      "turns": [
+        {
+          "user": "Do not delegate. Explain in one short sentence why a child agent cannot write shared memory in this harness, and include marker subagent_floor_ack."
+        }
+      ],
+      "expected_trace": {
+        "required_actions": ["route_decision", "llm_response"],
+        "required_route_decisions": ["direct_answer"],
+        "required_delegation_decisions": ["none"],
+        "max_spawn_depth": 0,
+        "forbidden_tools": ["delegate_task", "memory_add", "send_message"],
+        "required_response_terms": ["subagent_floor_ack"]
+      },
+      "metadata": {
+        "focus": "Subagent policy remains fail-closed and parent-owned while real delegation is product-deferred."
+      }
+    }
+  ]
+}

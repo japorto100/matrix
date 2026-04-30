@@ -175,11 +175,6 @@ def _last_user_text(messages: list[dict[str, Any]]) -> str:
 
 def _provider_label(model: str) -> str:
     """Mirror of :func:`agent.graph.nodes.llm_node._provider_label`."""
-    parts = [part for part in str(model or "").split("/") if part]
-    if not parts:
-        return "litellm"
-    if parts[0] == "openrouter":
-        return "openrouter"
-    if parts[0] in {"anthropic", "openai", "google", "deepseek", "groq", "mistral"}:
-        return parts[0]
-    return "litellm"
+    from agent.llm.provider_capabilities import provider_label_from_model
+
+    return provider_label_from_model(model)
