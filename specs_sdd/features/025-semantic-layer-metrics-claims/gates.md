@@ -25,6 +25,10 @@ feature_id: 025
 
 - [x] G003/G004 are covered by
   `knowledge-semantic-ambiguity-permission-fail-closed`.
+- [x] G001/G002/G005 now have provider-free agent-answer coverage through
+  `knowledge-semantic-lookup-before-metric-answer`: a metric-sensitive answer
+  must observe `semantic_lookup`, carry the metric id/catalog version/freshness
+  and keep `raw_sql_allowed=false`.
 - [x] G006/G007 are covered by
   `knowledge-rag-kg-semantic-context-grounded`.
 - [x] G007 also has runtime coverage through Feature 019 semantic retrieval
@@ -40,4 +44,6 @@ feature_id: 025
   can create a semantic correction proposal, but unreferenced memory feedback is
   rejected and the catalog is not mutated.
 - [x] G010 has provider-free static coverage through `knowledge-contract`;
-  live agent/Control UI verification remains in `live-verify.md`.
+  it now includes structured metric lookup, KG/RAG grounding, ambiguity,
+  corrections, lexical provenance and downstream artifact visibility. Live
+  agent/Control UI verification remains in `live-verify.md`.

@@ -10,7 +10,7 @@ def test_contract_suite_runs_provider_free_lanes(tmp_path):
 
     assert result["passed"] is True
     assert result["lane_count"] == 8
-    assert result["scenario_count"] == 47
+    assert result["scenario_count"] == 48
     kinds = {lane["kind"] for lane in result["lanes"]}
     assert kinds == {
         "domain_contract",
@@ -25,4 +25,4 @@ def test_contract_suite_runs_provider_free_lanes(tmp_path):
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
     saved = json.loads(artifact.read_text(encoding="utf-8"))
-    assert saved["passed_count"] == 47
+    assert saved["passed_count"] == 48

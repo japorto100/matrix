@@ -138,3 +138,18 @@ to reviewed proposals before global semantic definitions change.
 
 Runtime events should include semantic catalog version and selected term ids
 when a tool/RAG/KG answer depends on them.
+
+## 2026-04-30 Agent Metric Answer Gate
+
+The remaining backend risk was not the catalog itself, but the agent-runtime
+handoff: a model could still answer a metric question from prior context unless
+the trace contract required the semantic tool before the answer. Feature 025 now
+adds `knowledge-semantic-lookup-before-metric-answer` to
+`meta_harness.knowledge_contract`.
+
+This scenario is deliberately provider-agnostic and derives from the same root
+`Z_Semantik_layer and so on.md` judgement: metric answers need authoritative
+semantic mediation. The gate requires a `semantic_lookup` tool result, compact
+model output with `agent_tool_success_rate`, semantic catalog version, semantic
+contract, freshness and `raw_sql_allowed=false`, plus answer text that cites the
+approved data path rather than inventing a metric value.

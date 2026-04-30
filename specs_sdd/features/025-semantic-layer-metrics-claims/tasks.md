@@ -103,7 +103,12 @@ feature_id: 025
   - 2026-04-29: `/control/semantic` consumes the semantic catalog API with a
     fallback fixture, renders validation/conflicts, KG/RAG term metadata,
     metric permissions/freshness/source refs and a no-raw-SQL plan panel.
-- T034 Integration-test agent uses semantic lookup before metric answer.
+- [x] T034 [done-static] Integration-test agent uses semantic lookup before
+  metric answer.
+  - 2026-04-30: `knowledge-semantic-lookup-before-metric-answer` now requires
+    a `semantic_lookup` tool result before the answer, validates the compact
+    metric handoff (`agent_tool_success_rate`, catalog version, semantic
+    contract, freshness) and blocks raw SQL.
 - [x] T035 [done-static] Meta-Harness scenario: two similar metrics must not be
   conflated.
   - 2026-04-30: `knowledge-semantic-ambiguity-permission-fail-closed` checks

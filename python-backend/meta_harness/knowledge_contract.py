@@ -70,6 +70,7 @@ def run_knowledge_contract_scenarios(
         _memory_to_kg_promotion_blocked_without_evidence(),
         _rag_kg_semantic_context_grounded(),
         _lexical_candidate_without_provenance_blocked(),
+        _semantic_lookup_required_before_metric_answer(),
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
         _memory_semantic_feedback_requires_review(),
@@ -418,6 +419,135 @@ def _semantic_ambiguity_and_permission_fail_closed() -> dict[str, Any]:
             "catalog_validation": catalog_validation,
             "lookup": lookup,
             "metric_plan": plan,
+        },
+    )
+
+
+def _semantic_lookup_required_before_metric_answer() -> dict[str, Any]:
+    lookup = lookup_phrase(DEFAULT_SEMANTIC_CATALOG, "tool success rate")
+    failures: list[str] = []
+    if lookup.get("matched") is not True or lookup.get("ambiguous") is not False:
+        failures.append("semantic-metric-lookup-not-authoritative")
+    match = (lookup.get("matches") or [{}])[0]
+    metric = match.get("item") or {}
+    metric_plan = plan_metric_query(
+        DEFAULT_SEMANTIC_CATALOG,
+        str(metric.get("metric_id") or ""),
+        PermissionContext(user_id="alice", tenant_id="tenant-a", roles=("analyst",)),
+    )
+    model_output = {
+        "status": "matched_metric",
+        "phrase": "tool success rate",
+        "authoritative": bool(metric_plan.get("allowed")),
+        "ambiguous": False,
+        "refusal_reason": None,
+        "answer_template": {
+            "definition": metric.get("measure", ""),
+            "value": "Only answer with a computed value supplied by an approved data path.",
+            "provenance": list(metric.get("source_refs") or ()),
+            "freshness": metric.get("freshness_sla", ""),
+        },
+        "raw_sql_allowed": False,
+        "metric_plan": {
+            "allowed": metric_plan.get("allowed"),
+            "reason": metric_plan.get("reason"),
+            "metric_id": metric.get("metric_id"),
+            "semantic_catalog_version": DEFAULT_SEMANTIC_CATALOG.version,
+            "semantic_contract": metric_plan.get("semantic_contract"),
+            "freshness_sla": metric_plan.get("freshness_sla"),
+            "raw_sql_allowed": metric_plan.get("raw_sql_allowed", False),
+        },
+    }
+    trace_events = [
+        {
+            "action": "tool_result",
+            "toolName": "semantic_lookup",
+            "success": True,
+            "metadata": {
+                "tool_output": model_output,
+                "runtime_events": [
+                    {
+                        "name": "semantic.lookup.completed",
+                        "metadata": {
+                            "metric_id": "agent_tool_success_rate",
+                            "semantic_catalog_version": (
+                                DEFAULT_SEMANTIC_CATALOG.version
+                            ),
+                            "authoritative": True,
+                            "raw_sql_allowed": False,
+                        },
+                    }
+                ],
+            },
+        },
+        {
+            "action": "llm_response",
+            "success": True,
+            "metadata": {
+                "answer": (
+                    "Agent tool success rate uses the reviewed semantic metric "
+                    "agent_tool_success_rate, freshness 15m, and must be computed "
+                    "through an approved data path."
+                )
+            },
+        },
+    ]
+    expectations = TraceExpectations(
+        required_actions=("llm_response",),
+        required_tools=("semantic_lookup",),
+        required_runtime_event_names=("semantic.lookup.completed",),
+        required_runtime_event_metadata_keys={
+            "semantic.lookup.completed": (
+                "metric_id",
+                "semantic_catalog_version",
+                "authoritative",
+                "raw_sql_allowed",
+            )
+        },
+        required_runtime_event_metadata_values={
+            "semantic.lookup.completed": {
+                "metric_id": "agent_tool_success_rate",
+                "semantic_catalog_version": DEFAULT_SEMANTIC_CATALOG.version,
+                "authoritative": "true",
+                "raw_sql_allowed": "false",
+            }
+        },
+        required_response_terms=(
+            "agent_tool_success_rate",
+            "approved data path",
+            "freshness 15m",
+        ),
+    )
+    trace_verdict = evaluate_trace_gates(
+        trace_events,
+        expectations,
+        response_text=str(trace_events[1]["metadata"]["answer"]),
+    )
+    failures.extend(trace_verdict.failures)
+    metric_output = model_output.get("metric_plan") or {}
+    semantic_contract = metric_output.get("semantic_contract") or {}
+    for key in (
+        "metric_id",
+        "semantic_catalog_version",
+        "semantic_contract",
+        "freshness_sla",
+    ):
+        if metric_output.get(key) in (None, "", [], ()):
+            failures.append(f"missing-semantic-metric-output:{key}")
+    for key in ("measure", "source_table", "source_refs"):
+        if semantic_contract.get(key) in (None, "", [], ()):
+            failures.append(f"missing-semantic-contract:{key}")
+    if metric_output.get("raw_sql_allowed") is not False:
+        failures.append("semantic-metric-raw-sql-not-blocked")
+    if model_output.get("authoritative") is not True:
+        failures.append("semantic-metric-not-authoritative")
+    return _scenario_result(
+        scenario_id="knowledge-semantic-lookup-before-metric-answer",
+        passed=trace_verdict.passed and not failures,
+        failures=failures,
+        details={
+            "trace_verdict": trace_verdict.as_dict(),
+            "model_output": model_output,
         },
     )
 

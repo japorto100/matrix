@@ -474,7 +474,7 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
 
     assert result["passed"] is True
     assert result["lane_count"] == 8
-    assert result["scenario_count"] == 47
+    assert result["scenario_count"] == 48
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 
@@ -527,13 +527,14 @@ async def test_cli_knowledge_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 10
+    assert result["scenario_count"] == 11
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "knowledge-memory-ground-truth-preserved" in scenario_ids
     assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids
     assert "knowledge-delegation-parent-memory-handoff" in scenario_ids
     assert "knowledge-compaction-tool-output-provenance" in scenario_ids
     assert "knowledge-lexical-candidate-without-provenance-blocked" in scenario_ids
+    assert "knowledge-semantic-lookup-before-metric-answer" in scenario_ids
     artifact = tmp_path / "runs" / "run-knowledge" / "knowledge_contract.json"
     aggregate = (
         tmp_path
