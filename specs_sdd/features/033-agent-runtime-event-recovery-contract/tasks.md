@@ -24,6 +24,8 @@ feature_id: 033
 - [x] T010 Emit runtime events from current agent loop without changing behavior.
   - 2026-04-30: LLM runtime events are emitted from both SimpleLoop and
     LangGraph outputs; A2A subagent events now use the same envelope.
+  - 2026-04-30: memory recall/retain nodes emit the same envelope for
+    unavailable, blocked, completed, failed and timeout/stale outcomes.
 - [partial-static] T011 Add subagent registry model for accepted, started, completed, failed,
   timed out, killed and stale runs.
   - 2026-04-30: runtime event stream covers accepted/started/completed/failed

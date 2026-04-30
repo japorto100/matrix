@@ -221,8 +221,12 @@ migrated_from:
 - T091 Add parent-side delegation memory curation contract with child session
   id, task id, source refs, confidence/degradation and retain/skip decision.
 - T092 Ensure child/subagent runs cannot write durable shared memory by default.
-- T093 Emit runtime events for memory retain/recall/curation decisions that
+- [x] T093 Emit runtime events for memory retain/recall/curation decisions that
   Feature 033 and Feature 029 can display.
+  - 2026-04-30: `memory_recall_node` and `memory_retain_node` emit
+    Feature-033 runtime events for unavailable, blocked, completed, failed and
+    timeout/stale outcomes. Retain timeout audit now stores the error in
+    metadata instead of calling `audit_log(error=...)`.
 - T094 Add Meta-Harness scenario where delegated evidence is summarized by the
   parent before any memory write.
 

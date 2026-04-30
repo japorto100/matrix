@@ -23,6 +23,7 @@ from typing import Any
 
 from agent.graph.state import AgentGraphState
 from agent.roles import TRADING_ROLE_MEMORY
+from agent.runtime_events import make_runtime_event
 from context.policy import (
     LAYER_LABELS,
     apply_context_policy,
@@ -39,6 +40,25 @@ logger = logging.getLogger(__name__)
 
 # Progressive Context: trackt was schon injiziert wurde pro Thread (Paper 3 Pattern)
 _injected_context: dict[str, set[str]] = {}
+
+
+def _memory_event(
+    *,
+    status: str,
+    name: str,
+    state: AgentGraphState,
+    summary: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return make_runtime_event(
+        kind="memory",  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        name=name,
+        summary=summary,
+        thread_id=str(state.get("thread_id", "") or ""),
+        turn=int(state.get("iteration", 0) or 0),
+        metadata=metadata or {},
+    )
 
 
 def _memory_retain_timeout_seconds() -> float:
@@ -146,7 +166,16 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
             "degradation_flags": build_degradation_flags(
                 source_layer_counts={},
                 context_blocks=[],
-            )
+            ),
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.recall.unavailable",
+                    state=state,
+                    summary="Memory recall skipped because no memory engine is available",
+                    metadata={"source": "memory_recall_node"},
+                )
+            ],
         }
 
     user_msg = ""
@@ -247,6 +276,26 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                     "context_blocks": [],
                     "source_layer_counts": {},
                     "degradation_flags": degradation_flags or ["NO_PERSONAL_MEMORY"],
+                    "runtime_events": [
+                        _memory_event(
+                            status="completed",
+                            name="memory.recall.completed",
+                            state=state,
+                            summary="Memory recall completed without selected context",
+                            metadata={
+                                "bank_id": bank_id,
+                                "role": role,
+                                "facts_recalled": 0,
+                                "entities": len(result.entities)
+                                if result.entities
+                                else 0,
+                                "query_gate_action": query_gate.action,
+                                "query_gate_reason": query_gate.reason,
+                                "degradation_flags": degradation_flags
+                                or ["NO_PERSONAL_MEMORY"],
+                            },
+                        )
+                    ],
                     "query_gate": {
                         "action": query_gate.action,
                         "reason": query_gate.reason,
@@ -295,6 +344,27 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 "context_blocks": context_blocks,
                 "source_layer_counts": source_layer_counts,
                 "degradation_flags": degradation_flags,
+                "runtime_events": [
+                    _memory_event(
+                        status="completed",
+                        name="memory.recall.completed",
+                        state=state,
+                        summary="Memory recall selected context for prompt assembly",
+                        metadata={
+                            "bank_id": bank_id,
+                            "role": role,
+                            "facts_recalled": len(new_ids),
+                            "entities": len(result.entities)
+                            if result.entities
+                            else 0,
+                            "tokens_used": len(memory_text),
+                            "source_layer_counts": source_layer_counts,
+                            "query_gate_action": query_gate.action,
+                            "query_gate_reason": query_gate.reason,
+                            "degradation_flags": degradation_flags,
+                        },
+                    )
+                ],
                 "query_gate": {
                     "action": query_gate.action,
                     "reason": query_gate.reason,
@@ -309,7 +379,19 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 "degradation_flags": build_degradation_flags(
                     source_layer_counts={},
                     context_blocks=[],
-                )
+                ),
+                "runtime_events": [
+                    _memory_event(
+                        status="failed",
+                        name="memory.recall.failed",
+                        state=state,
+                        summary="Memory recall failed and was skipped",
+                        metadata={
+                            "source": "memory_recall_node",
+                            "error": str(e),
+                        },
+                    )
+                ],
             }
 
 
@@ -330,14 +412,34 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
 
     engine = await get_memory_engine()
     if engine is None:
-        return {}
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.retain.unavailable",
+                    state=state,
+                    summary="Memory retain skipped because no memory engine is available",
+                    metadata={"source": "memory_retain_node"},
+                )
+            ]
+        }
 
     role = state.get("current_role", "default")
     mem_config = _get_memory_config(role)
 
     if not mem_config.get("memory_write", True):
         logger.debug("Memory retain skipped: role '%s' is read-only", role)
-        return {}
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.retain.blocked",
+                    state=state,
+                    summary="Memory retain skipped because role is read-only",
+                    metadata={"role": role, "reason": "role_memory_write_disabled"},
+                )
+            ]
+        }
 
     response = state.get("final_response", "")
     if not response:
@@ -353,7 +455,7 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
 
     timeout_s = _memory_retain_timeout_seconds()
     try:
-        await asyncio.wait_for(
+        retain_metadata = await asyncio.wait_for(
             _retain_conversation_memory(
                 state=state,
                 engine=engine,
@@ -363,6 +465,17 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
             ),
             timeout=timeout_s,
         )
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="completed",
+                    name="memory.retain.completed",
+                    state=state,
+                    summary="Memory retain completed",
+                    metadata=retain_metadata,
+                )
+            ]
+        }
     except TimeoutError:
         logger.warning(
             "Memory retain timed out after %.1fs (thread=%s)",
@@ -377,18 +490,45 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 thread_id=state.get("thread_id", ""),
                 input_data=f"User asked: {user_msg}\nAgent responded: {response[:2000]}",
                 success=False,
-                error=f"memory retain timed out after {timeout_s:.1f}s",
                 metadata={
                     "bank_id": get_bank_id(state.get("user_id", "default")),
                     "role": role,
                     "timeout_s": timeout_s,
                     "source": "memory_retain_node",
+                    "error": f"memory retain timed out after {timeout_s:.1f}s",
                 },
             )
         except Exception:  # noqa: BLE001
             logger.debug("Memory retain timeout audit failed", exc_info=True)
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="stale",
+                    name="memory.retain.timeout",
+                    state=state,
+                    summary="Memory retain timed out and turn continued",
+                    metadata={
+                        "role": role,
+                        "timeout_s": timeout_s,
+                        "source": "memory_retain_node",
+                    },
+                )
+            ],
+            "degradation_flags": ["memory_retain_timeout"],
+        }
     except Exception as e:
         logger.debug("Memory retain skipped: %s", e)
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="failed",
+                    name="memory.retain.failed",
+                    state=state,
+                    summary="Memory retain failed and was skipped",
+                    metadata={"role": role, "error": str(e)},
+                )
+            ]
+        }
 
     return {}
 
@@ -400,7 +540,7 @@ async def _retain_conversation_memory(
     role: str,
     user_msg: str,
     response: str,
-) -> None:
+) -> dict[str, Any]:
     from hindsight_api.models import RequestContext
 
     from agent.tracing import memory_span
@@ -486,21 +626,23 @@ async def _retain_conversation_memory(
 
         from agent.audit.logger import AuditAction, audit_log
 
+        retain_metadata = {
+            "bank_id": bank_id,
+            "role": role,
+            "content_length": len(content),
+            "conflict": conflict.has_conflict if conflict else False,
+            "route": storage_route,
+            "provider": "fusion",
+            "providers": storage_providers,
+            "summary_status": summary_status,
+        }
+
         await audit_log(
             action=AuditAction.MEMORY_RETAIN,
             thread_id=thread_id,
             input_data=content[:2000],
             success=True,
-            metadata={
-                "bank_id": bank_id,
-                "role": role,
-                "content_length": len(content),
-                "conflict": conflict.has_conflict if conflict else False,
-                "route": storage_route,
-                "provider": "fusion",
-                "providers": storage_providers,
-                "summary_status": summary_status,
-            },
+            metadata=retain_metadata,
         )
 
         logger.info(
@@ -509,6 +651,7 @@ async def _retain_conversation_memory(
             role,
             thread_id,
         )
+        return retain_metadata
 
 
 def _queue_summary_retain(

@@ -9,6 +9,31 @@ from agent.graph.nodes import memory_node
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_emits_unavailable_runtime_event(monkeypatch):
+    async def _fake_get_memory_engine():
+        return None
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fake_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t1",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [{"role": "user", "content": "recall my preference"}],
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["kind"] == "memory"
+    assert event["status"] == "blocked"
+    assert event["name"] == "memory.recall.unavailable"
+
+
+@pytest.mark.asyncio
 async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
     audit_events: list[dict] = []
 
@@ -44,10 +69,13 @@ async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
         }
     )
 
-    assert result == {}
+    assert result["degradation_flags"] == ["memory_retain_timeout"]
+    assert result["runtime_events"][0]["kind"] == "memory"
+    assert result["runtime_events"][0]["status"] == "stale"
+    assert result["runtime_events"][0]["name"] == "memory.retain.timeout"
     assert audit_events
     assert audit_events[0]["success"] is False
-    assert "timed out" in audit_events[0]["error"]
+    assert "timed out" in audit_events[0]["metadata"]["error"]
 
 
 @pytest.mark.asyncio
@@ -85,7 +113,7 @@ async def test_retain_conversation_writes_verbatim_and_queues_summary(monkeypatc
     monkeypatch.setattr("agent.audit.logger.audit_log", _fake_audit_log)
     monkeypatch.setattr(memory_node.asyncio, "create_task", _create_task)
 
-    await memory_node._retain_conversation_memory(
+    metadata = await memory_node._retain_conversation_memory(
         state={
             "thread_id": "t1",
             "user_id": "u1",
@@ -104,3 +132,43 @@ async def test_retain_conversation_writes_verbatim_and_queues_summary(monkeypatc
     assert audit_events[0]["metadata"]["route"] == "verbatim"
     assert audit_events[0]["metadata"]["providers"] == "verbatim,summary_async"
     assert audit_events[0]["metadata"]["summary_status"] == "background_queued"
+    assert metadata["route"] == "verbatim"
+    assert metadata["summary_status"] == "background_queued"
+
+
+@pytest.mark.asyncio
+async def test_memory_retain_node_emits_completed_runtime_event(monkeypatch):
+    async def _fake_get_memory_engine():
+        return object()
+
+    async def _fake_retain(**_kwargs):
+        return {
+            "bank_id": "user_u1",
+            "role": "default",
+            "route": "verbatim",
+            "provider": "fusion",
+            "summary_status": "background_queued",
+        }
+
+    monkeypatch.setattr(memory_node, "_retain_conversation_memory", _fake_retain)
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fake_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "t1",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [{"role": "user", "content": "remember this"}],
+            "final_response": "done",
+            "agent_class": "advisory",
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["kind"] == "memory"
+    assert event["status"] == "completed"
+    assert event["name"] == "memory.retain.completed"
+    assert event["metadata"]["route"] == "verbatim"

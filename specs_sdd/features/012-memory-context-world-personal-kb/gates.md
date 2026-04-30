@@ -96,4 +96,7 @@ feature_id: 012
 - Parent memory curation records child session id, task id, source refs,
   confidence/degradation and retain/skip result.
 - Delegation summaries are evidence for parent decisions, not global truth.
-- Memory runtime events redact content while preserving trace refs.
+- [x] Memory runtime events redact content while preserving trace refs.
+  - 2026-04-30: memory recall/retain events carry bank/role/route/provider,
+    source-layer counts, query-gate reason and timeout/degradation metadata
+    without raw memory text or assistant response bodies.

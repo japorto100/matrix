@@ -23,5 +23,7 @@ feature_id: 033
 - [partial-static] G006 Stale, timeout, killed and cancelled states are distinguishable.
   - 2026-04-30: A2A timeout maps to stale runtime event plus
     `a2a_delegation_timeout`; kill/cancel still need Control operation support.
+  - 2026-04-30: memory retain timeout maps to `memory.retain.timeout`,
+    status `stale` and degradation flag `memory_retain_timeout`.
 - G007 Control operations return explicit supported/unsupported outcomes.
 - G008 Meta-Harness can replay event streams without browser dependencies.
