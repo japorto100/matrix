@@ -138,3 +138,22 @@ summaries and policy metadata first, then full skill files only after a bounded
 selection. User-supplied skill folders containing `SKILL.md` plus code/assets
 should be stored as structured manifests and file/blob refs, not flattened into
 one JSON prompt string.
+
+## 2026-04-30 Explainable Skill Search Trace
+
+Input: `Z_Additional_For_Tool_Stuff.md` search/find pressure, Feature 016
+Meta-Harness trace gates and the current `agent.skills.finder` BM25/RRF path.
+
+Matrix now keeps skill retrieval provider-free and explainable:
+
+- `find_skills_with_trace()` exposes query terms, selected skill ids, BM25
+  score/rank, dense rank when dense is active, RRF score, matched terms and the
+  selection/shortcut reason.
+- traces never include full skill body text or raw assets; they are suitable
+  for audit, Meta-Harness and Control UI.
+- memory-intent shortcuts and no-overlap rejections are explicit trace reasons,
+  so failed or over-broad skill selection can be debugged without rerunning an
+  LLM.
+- `iterative_find()` preserves per-round search traces and `skill_found` audit
+  events carry them. This gives future trigger-quality gates a deterministic
+  input before any real-LLM refinement or skill promotion logic runs.

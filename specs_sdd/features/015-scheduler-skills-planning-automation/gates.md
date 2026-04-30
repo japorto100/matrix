@@ -80,6 +80,10 @@ Static gates additionally verified on 2026-04-30:
   text/code assets from arbitrary subfolders in the existing JSONB asset shape.
 - Archive install security scan includes nonstandard code asset paths and
   blocks dangerous payloads before filesystem installation.
+- Skill search emits explainable, body-redacted BM25/RRF trace metadata:
+  selected ids, query terms, ranks/scores, matched terms and shortcut/ranking
+  reason. `skill_found` audit events carry the same search traces for
+  Meta-Harness and Control diagnostics.
 
 Remaining gates:
 

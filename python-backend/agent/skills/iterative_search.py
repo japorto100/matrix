@@ -23,8 +23,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from agent.skills.loader import Skill
@@ -59,6 +59,7 @@ class IterativeSearchResult:
     rounds: int
     queries: list[str]
     satisfied: bool
+    search_traces: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _enabled() -> bool:
@@ -136,14 +137,22 @@ async def iterative_find(
     Always returns a result, even if the loop is disabled (then it's one
     round with the original query — identical to `find_skills_for_query`).
     """
-    from agent.skills.finder import find_skills_for_query
+    from agent.skills.finder import find_skills_with_trace
 
     q = (query or "").strip()
     queries: list[str] = [q]
-    picked = find_skills_for_query(skills, q, top_k=top_k)
+    first_result = find_skills_with_trace(skills, q, top_k=top_k)
+    picked = first_result.picked
+    search_traces = [first_result.trace]
 
     if not _enabled() or not skills:
-        return IterativeSearchResult(picked, rounds=1, queries=queries, satisfied=True)
+        return IterativeSearchResult(
+            picked,
+            rounds=1,
+            queries=queries,
+            satisfied=True,
+            search_traces=search_traces,
+        )
 
     rounds = _max_rounds()
     satisfied = True
@@ -157,7 +166,9 @@ async def iterative_find(
         if satisfied or not reformulation or reformulation in queries:
             break
         queries.append(reformulation)
-        next_picked = find_skills_for_query(skills, reformulation, top_k=top_k)
+        next_result = find_skills_with_trace(skills, reformulation, top_k=top_k)
+        next_picked = next_result.picked
+        search_traces.append(next_result.trace)
         # Merge de-dup — prefer earlier (higher-ranked) for the same skill id.
         seen: set[str] = set()
         merged: list[Skill] = []
@@ -170,5 +181,9 @@ async def iterative_find(
         picked = merged[: (top_k or len(merged))]
 
     return IterativeSearchResult(
-        picked=picked, rounds=len(queries), queries=queries, satisfied=satisfied
+        picked=picked,
+        rounds=len(queries),
+        queries=queries,
+        satisfied=satisfied,
+        search_traces=search_traces,
     )

@@ -57,6 +57,12 @@ migrated_from:
   `memory_search`, remember/recall and context-compaction prompts load
   `memory-usage` without padding `plan`, `market-research` or
   `risk-assessment`.
+- [x] T031c Add explainable BM25/RRF skill-search traces for Meta-Harness and
+  Control diagnostics.
+  - 2026-04-30: `find_skills_with_trace()` returns selected ids, query terms,
+    BM25 ranks/scores, dense ranks when used, RRF score, matched terms and
+    selection reason without exposing skill body text. `iterative_find()` now
+    carries these traces into `skill_found` audit metadata.
 - [x] T032 Verify disabled skills are filtered via current preference path.
 - T033 Verify real LLM refinement with `AGENT_SKILL_REFINEMENT=true`.
 - T034 Verify real LLM iterative search.

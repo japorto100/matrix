@@ -12,7 +12,9 @@ import logging
 import math
 import os
 import re
+from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any
 
 from agent.skills.loader import Skill
 
@@ -66,6 +68,12 @@ _RISK_INTENT_TERMS = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class SkillSearchResult:
+    picked: list[Skill]
+    trace: dict[str, Any]
+
+
 def _env_bool(key: str, default: bool) -> bool:
     v = os.environ.get(key, "").strip().lower()
     if v in ("", "default"):
@@ -104,6 +112,10 @@ def tokenize(text: str) -> list[str]:
 def _doc_text(skill: Skill, max_content_chars: int = 4000) -> str:
     body = (skill.content or "")[:max_content_chars]
     return f"{skill.name} {skill.description} {body}"
+
+
+def _skill_id(skill: Skill) -> str:
+    return f"{skill.tier}:{skill.name}"
 
 
 class _BM25:
@@ -200,6 +212,34 @@ def _bm25_ranks(skills: list[Skill], query: str) -> list[int]:
     return order
 
 
+def _skill_trace_item(
+    skill: Skill,
+    *,
+    query_terms: set[str],
+    bm25_score: float,
+    bm25_rank: int | None,
+    dense_rank: int | None,
+    rrf_score: float,
+    selected: bool,
+    reason: str,
+) -> dict[str, Any]:
+    doc_terms = set(tokenize(_doc_text(skill)))
+    return {
+        "skill_id": _skill_id(skill),
+        "name": skill.name,
+        "tier": skill.tier,
+        "category": skill.category,
+        "skill_type": skill.skill_type,
+        "bm25_score": round(float(bm25_score), 6),
+        "bm25_rank": bm25_rank,
+        "dense_rank": dense_rank,
+        "rrf_score": round(float(rrf_score), 6),
+        "selected": selected,
+        "reason": reason,
+        "matched_terms": sorted(query_terms & doc_terms)[:16],
+    }
+
+
 def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
     normalized = query.casefold()
     query_terms = set(tokenize(query))
@@ -226,15 +266,86 @@ def find_skills_for_query(
     max_tokens: int | None = None,
 ) -> list[Skill]:
     """Return up to top_k skills ranked by hybrid lexical+dense; empty query → all skills."""
+    return find_skills_with_trace(
+        skills,
+        query,
+        top_k=top_k,
+        max_tokens=max_tokens,
+    ).picked
+
+
+def find_skills_with_trace(
+    skills: list[Skill],
+    query: str,
+    *,
+    top_k: int | None = None,
+    max_tokens: int | None = None,
+) -> SkillSearchResult:
+    """Rank skills and return explainable, redacted retrieval metadata."""
     if not skills:
-        return []
+        return SkillSearchResult(
+            [],
+            {
+                "query_terms": [],
+                "selected_skill_ids": [],
+                "dense_enabled": False,
+                "reason": "no_skills",
+                "candidates": [],
+            },
+        )
     q = (query or "").strip()
     if not q or not _env_bool("AGENT_SKILL_FINDER", True):
-        return skills
+        return SkillSearchResult(
+            skills,
+            {
+                "query_terms": tokenize(q),
+                "selected_skill_ids": [_skill_id(skill) for skill in skills],
+                "dense_enabled": False,
+                "reason": "query_empty_or_finder_disabled",
+                "candidates": [
+                    _skill_trace_item(
+                        skill,
+                        query_terms=set(tokenize(q)),
+                        bm25_score=0.0,
+                        bm25_rank=None,
+                        dense_rank=None,
+                        rrf_score=0.0,
+                        selected=True,
+                        reason="passthrough",
+                    )
+                    for skill in skills[:20]
+                ],
+            },
+        )
 
     memory_intent_skills = _memory_intent_skill_subset(skills, q)
     if memory_intent_skills:
-        return memory_intent_skills
+        query_terms = set(tokenize(q))
+        selected_ids = {_skill_id(skill) for skill in memory_intent_skills}
+        return SkillSearchResult(
+            memory_intent_skills,
+            {
+                "query_terms": sorted(query_terms),
+                "selected_skill_ids": [_skill_id(skill) for skill in memory_intent_skills],
+                "dense_enabled": False,
+                "reason": "memory_intent_shortcut",
+                "candidates": [
+                    _skill_trace_item(
+                        skill,
+                        query_terms=query_terms,
+                        bm25_score=0.0,
+                        bm25_rank=None,
+                        dense_rank=None,
+                        rrf_score=0.0,
+                        selected=_skill_id(skill) in selected_ids,
+                        reason="memory_intent_match"
+                        if _skill_id(skill) in selected_ids
+                        else "not_memory_intent",
+                    )
+                    for skill in skills[:20]
+                ],
+            },
+        )
 
     tk = top_k if top_k is not None else int(os.environ.get("AGENT_SKILL_FINDER_TOP_K", "3"))
     max_tok = max_tokens if max_tokens is not None else int(
@@ -244,14 +355,39 @@ def find_skills_for_query(
     bm_scores = _bm25_scores(skills, q)
     dense_enabled = _dense_enabled_for(skills)
     if not dense_enabled and (not bm_scores or max(bm_scores) <= 0.0):
-        return []
+        query_terms = set(tokenize(q))
+        return SkillSearchResult(
+            [],
+            {
+                "query_terms": sorted(query_terms),
+                "selected_skill_ids": [],
+                "dense_enabled": False,
+                "reason": "no_lexical_overlap",
+                "candidates": [
+                    _skill_trace_item(
+                        skill,
+                        query_terms=query_terms,
+                        bm25_score=bm_scores[i] if i < len(bm_scores) else 0.0,
+                        bm25_rank=i + 1,
+                        dense_rank=None,
+                        rrf_score=0.0,
+                        selected=False,
+                        reason="zero_bm25_overlap",
+                    )
+                    for i, skill in enumerate(skills[:20])
+                ],
+            },
+        )
 
     bm_order = sorted(range(len(skills)), key=lambda i: bm_scores[i], reverse=True)
+    dense_ranks_by_index: dict[int, int] = {}
     if dense_enabled:
         dn_order = _dense_ranks(skills, q)
+        dense_ranks_by_index = {idx: rank + 1 for rank, idx in enumerate(dn_order)}
         rrf = _rrf([bm_order, dn_order])
     else:
         rrf = _rrf([bm_order])
+    bm_ranks_by_index = {idx: rank + 1 for rank, idx in enumerate(bm_order)}
 
     # Sort by RRF score desc. In BM25-only mode, do not pad the prompt with
     # zero-overlap skills just because top_k has spare capacity.
@@ -278,8 +414,35 @@ def find_skills_for_query(
             break
 
     if not picked:
-        return skills[:tk]
-    return picked
+        picked = skills[:tk]
+
+    query_terms = set(tokenize(q))
+    selected_ids = {_skill_id(skill) for skill in picked}
+    trace_indices = idx_sorted[:20] if idx_sorted else list(range(min(len(skills), 20)))
+    return SkillSearchResult(
+        picked,
+        {
+            "query_terms": sorted(query_terms),
+            "selected_skill_ids": [_skill_id(skill) for skill in picked],
+            "dense_enabled": dense_enabled,
+            "reason": "ranked",
+            "top_k": tk,
+            "max_tokens": max_tok,
+            "candidates": [
+                _skill_trace_item(
+                    skills[i],
+                    query_terms=query_terms,
+                    bm25_score=bm_scores[i] if i < len(bm_scores) else 0.0,
+                    bm25_rank=bm_ranks_by_index.get(i),
+                    dense_rank=dense_ranks_by_index.get(i),
+                    rrf_score=rrf.get(i, 0.0),
+                    selected=_skill_id(skills[i]) in selected_ids,
+                    reason="selected" if _skill_id(skills[i]) in selected_ids else "ranked_not_selected",
+                )
+                for i in trace_indices
+            ],
+        },
+    )
 
 
 def filter_disabled_skills(skills: list[Skill], user_id: str | None) -> list[Skill]:

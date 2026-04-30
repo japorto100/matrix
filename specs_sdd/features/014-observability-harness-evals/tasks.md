@@ -110,3 +110,8 @@ migrated_from:
 - T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
   reload and cached-session invalidation.
 - T069 Add redaction tests for request telemetry and runtime event payloads.
+- [x] T070 Add skill-search trace fields for trigger-quality/debugging:
+  selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.
+  - 2026-04-30: `find_skills_with_trace()` and `skill_found` audit metadata
+    expose body-redacted search traces that Meta-Harness can assert without
+    browser or provider calls.

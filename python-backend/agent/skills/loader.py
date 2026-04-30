@@ -388,6 +388,7 @@ async def format_skills_for_prompt_async(
                 if len(search_result.queries) > 1
                 else None,
                 "satisfied": search_result.satisfied,
+                "search_traces": search_result.search_traces,
             },
         )
 

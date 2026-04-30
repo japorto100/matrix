@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from agent.skills.finder import find_skills_for_query, tokenize
+from agent.skills.finder import find_skills_for_query, find_skills_with_trace, tokenize
 from agent.skills.loader import Skill, format_skills_for_prompt_async, parse_skill_file
 
 
@@ -37,6 +37,44 @@ Body about OPEC.
     out = find_skills_for_query(skills, "crude oil OPEC energy", top_k=1)
     assert len(out) == 1
     assert out[0].name == "oil-markets"
+
+
+def test_find_skills_with_trace_explains_bm25_selection(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="market-research",
+            description="Market sentiment and equity research",
+            category="research",
+            content="AAPL sentiment catalyst analyst positioning",
+            path=tmp_path / "market",
+        ),
+        Skill(
+            name="risk-assessment",
+            description="Position sizing and portfolio risk",
+            category="risk",
+            content="drawdown stop loss portfolio risk",
+            path=tmp_path / "risk",
+        ),
+    ]
+
+    result = find_skills_with_trace(
+        skills,
+        "current market sentiment for AAPL",
+        top_k=1,
+    )
+
+    assert [skill.name for skill in result.picked] == ["market-research"]
+    assert result.trace["selected_skill_ids"] == ["global:market-research"]
+    assert result.trace["dense_enabled"] is False
+    assert result.trace["reason"] == "ranked"
+    selected = result.trace["candidates"][0]
+    assert selected["skill_id"] == "global:market-research"
+    assert selected["selected"] is True
+    assert "market" in selected["matched_terms"]
 
 
 def test_small_corpus_skips_dense_by_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
