@@ -434,10 +434,17 @@ feature_id: 016
 
 ## 2026-04-30 Cache / Runtime / Subagent Additions
 
-- T125 Add scenario assertions for Feature 032 cache/request telemetry:
-  counters, unknown flags, prompt/tool digests and cache-break hypotheses.
-- T126 Add scenario assertions for Feature 033 runtime events and downstream UI
-  artifacts.
+- [partial-static] T125 Add scenario assertions for Feature 032 cache/request
+  telemetry: counters, unknown flags, prompt/tool digests and cache-break
+  hypotheses.
+  - 2026-04-30: provider-free routing contract now asserts
+    `llm.prompt_cache_break` runtime-event diagnostics with request id,
+    provider/model and cache-read counters, without leaking raw request data.
+- [partial-static] T126 Add scenario assertions for Feature 033 runtime events
+  and downstream UI artifacts.
+  - 2026-04-30: `TraceExpectations` supports required runtime event names and
+    required/forbidden runtime-event metadata keys. Downstream stream/browser
+    artifact gates remain open.
 - T127 Add subagent-isolation scenario with child tool-policy, parent memory
   curation and child trace rollup.
 - T128 Add ingestion/RAG/KG downstream artifact gates so retrieval success alone

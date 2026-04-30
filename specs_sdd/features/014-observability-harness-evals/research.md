@@ -30,3 +30,10 @@ Findings to transfer:
   outcomes with run/session identity.
 - Event payloads must be capped/redacted and replayable by Meta-Harness.
 
+2026-04-30 implementation note: `TraceExpectations` now understands nested
+runtime events inside audit metadata, not just top-level audit actions. This
+lets provider-free scenarios verify request/cache and runtime-event redaction
+before browser/live-provider lanes: required event names prove completeness,
+required metadata keys prove useful diagnostics, and forbidden wildcard keys
+catch raw prompts, raw headers, authorization values, resolved secrets or
+unredacted request telemetry.

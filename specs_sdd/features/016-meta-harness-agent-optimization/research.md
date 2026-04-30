@@ -456,5 +456,14 @@ The harness therefore needs scenario assertions over:
 - subagent isolation, parent-side memory curation and child trace rollups.
 - ingestion/RAG/KG downstream artifact visibility, not only retrieval scores.
 
+2026-04-30 implementation note: the first non-browser runtime-event gate is
+now in the provider-free routing contract. The harness reads nested
+`runtime_events` from audit rows and can require event names plus required or
+forbidden metadata keys. This specifically covers the Feature 032/033
+intersection: prompt-cache break events must expose cache diagnostics useful to
+the evaluator while omitting raw prompts, headers, authorization fields,
+resolved secrets and full request telemetry. The next step is to reuse the same
+gate vocabulary for subagent isolation and RAG/KG downstream artifact scenarios.
+
 The proposer can still be Codex/manual during this phase, but candidate packets
 must contain enough raw traces for an evaluator to reject placebo changes.

@@ -89,4 +89,9 @@ feature_id: 033
   - 2026-04-30: Subagent lifecycle events are also persisted through audit and
     surfaced as `/control/ops` subagent run rows with explicit unsupported
     control states.
-- T022 Add Meta-Harness gates for event completeness and redaction.
+- [x] T022 Add Meta-Harness gates for event completeness and redaction.
+  - 2026-04-30: `TraceExpectations` can now require nested runtime event
+    names and required/forbidden runtime-event metadata keys. The routing
+    contract suite includes a provider-free `llm.prompt_cache_break` redaction
+    shape gate that fails on raw prompts, headers, authorization material,
+    resolved secrets or unredacted request telemetry.

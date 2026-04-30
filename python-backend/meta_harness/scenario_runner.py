@@ -129,6 +129,13 @@ class TraceExpectations:
     forbidden_event_metadata_keys: dict[str, tuple[str, ...]] = field(
         default_factory=dict
     )
+    required_runtime_event_names: tuple[str, ...] = ()
+    required_runtime_event_metadata_keys: dict[str, tuple[str, ...]] = field(
+        default_factory=dict
+    )
+    forbidden_runtime_event_metadata_keys: dict[str, tuple[str, ...]] = field(
+        default_factory=dict
+    )
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
@@ -151,6 +158,18 @@ class TraceExpectations:
         forbidden_event_metadata_keys = {
             str(action): tuple(str(key) for key in keys)
             for action, keys in (raw.get("forbidden_event_metadata_keys") or {}).items()
+        }
+        required_runtime_event_metadata_keys = {
+            str(name): tuple(str(key) for key in keys)
+            for name, keys in (
+                raw.get("required_runtime_event_metadata_keys") or {}
+            ).items()
+        }
+        forbidden_runtime_event_metadata_keys = {
+            str(name): tuple(str(key) for key in keys)
+            for name, keys in (
+                raw.get("forbidden_runtime_event_metadata_keys") or {}
+            ).items()
         }
         return cls(
             required_actions=tuple(str(x) for x in raw.get("required_actions", [])),
@@ -184,6 +203,11 @@ class TraceExpectations:
             ),
             required_event_metadata_keys=required_event_metadata_keys,
             forbidden_event_metadata_keys=forbidden_event_metadata_keys,
+            required_runtime_event_names=tuple(
+                str(x) for x in raw.get("required_runtime_event_names", [])
+            ),
+            required_runtime_event_metadata_keys=required_runtime_event_metadata_keys,
+            forbidden_runtime_event_metadata_keys=forbidden_runtime_event_metadata_keys,
             required_route_decisions=tuple(
                 str(x) for x in raw.get("required_route_decisions", [])
             ),
@@ -519,6 +543,46 @@ def _metadata_contains_key(metadata: dict[str, Any], key: str) -> bool:
     return True
 
 
+def _runtime_events_from_trace_events(
+    events: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    runtime_events: list[dict[str, Any]] = []
+    for event in events:
+        for value in (
+            event.get("runtime_events"),
+            event.get("runtimeEvents"),
+            _event_metadata(event).get("runtime_events"),
+            _event_metadata(event).get("runtimeEvents"),
+        ):
+            if isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError:
+                    continue
+            if isinstance(value, dict):
+                runtime_events.append(value)
+            elif isinstance(value, list):
+                runtime_events.extend(item for item in value if isinstance(item, dict))
+    return runtime_events
+
+
+def _runtime_event_name(event: dict[str, Any]) -> str:
+    return str(event.get("name") or event.get("event") or event.get("type") or "")
+
+
+def _runtime_event_metadata(event: dict[str, Any]) -> dict[str, Any]:
+    metadata = event.get("metadata")
+    if metadata is None:
+        metadata = event.get("data")
+    if isinstance(metadata, str):
+        try:
+            parsed = json.loads(metadata)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return metadata if isinstance(metadata, dict) else {}
+
+
 def _memory_metadata_keys(events: list[dict[str, Any]]) -> set[str]:
     keys: set[str] = set()
     for event in events:
@@ -570,6 +634,10 @@ def evaluate_trace_gates(
     normalized_response = _normalized_gate_text(response_text)
     memory_blob = _memory_event_blob(events)
     memory_metadata_keys = _memory_metadata_keys(events)
+    runtime_events = _runtime_events_from_trace_events(events)
+    runtime_event_names = {
+        name for name in (_runtime_event_name(event) for event in runtime_events) if name
+    }
 
     for action in expectations.required_actions:
         if action not in action_set:
@@ -667,6 +735,38 @@ def evaluate_trace_gates(
                 for event in matching_events
             ):
                 failures.append(f"forbidden metadata key for {action}: {key}")
+    for name in expectations.required_runtime_event_names:
+        if name not in runtime_event_names:
+            failures.append(f"missing required runtime event: {name}")
+    for name, keys in expectations.required_runtime_event_metadata_keys.items():
+        matching_events = [
+            event for event in runtime_events if _runtime_event_name(event) == name
+        ]
+        if not matching_events:
+            failures.append(f"missing runtime event for metadata gate: {name}")
+            continue
+        for key in keys:
+            if not any(
+                _metadata_contains_key(_runtime_event_metadata(event), key)
+                for event in matching_events
+            ):
+                failures.append(
+                    f"missing required runtime metadata key for {name}: {key}"
+                )
+    for name, keys in expectations.forbidden_runtime_event_metadata_keys.items():
+        matching_events = (
+            runtime_events
+            if name == "*"
+            else [event for event in runtime_events if _runtime_event_name(event) == name]
+        )
+        for key in keys:
+            if any(
+                _metadata_contains_key(_runtime_event_metadata(event), key)
+                for event in matching_events
+            ):
+                failures.append(
+                    f"forbidden runtime metadata key for {name}: {key}"
+                )
     for decision in expectations.required_route_decisions:
         if decision not in route_decisions:
             failures.append(f"missing required route decision: {decision}")

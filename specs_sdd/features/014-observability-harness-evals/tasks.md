@@ -105,8 +105,12 @@ migrated_from:
 
 - T066 Add provider request/cache usage trace fields: provider, model, router,
   prompt digest, tool digest, token counters and unknown-counter flags.
-- T067 Add runtime event envelope trace fields for run/turn/tool/memory/RAG/KG/
-  artifact/subagent events.
+- [partial-static] T067 Add runtime event envelope trace fields for run/turn/
+  tool/memory/RAG/KG/artifact/subagent events.
+  - 2026-04-30: Meta-Harness can assert nested runtime event names and
+    metadata shape from audit rows via `required_runtime_event_names`,
+    `required_runtime_event_metadata_keys` and
+    `forbidden_runtime_event_metadata_keys`.
 - [partial-static] T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
   reload and cached-session invalidation.
   - 2026-04-30: MCP and skill reload/toggle/import emit
@@ -116,7 +120,11 @@ migrated_from:
   - 2026-04-30: session status/kill/pause/replay control endpoints now emit
     audit-safe `control` runtime events; pause/replay remain unsupported but
     observable.
-- T069 Add redaction tests for request telemetry and runtime event payloads.
+- [partial-static] T069 Add redaction tests for request telemetry and runtime
+  event payloads.
+  - 2026-04-30: provider-free tests cover runtime-event redaction gates for
+    prompt-cache break diagnostics, forbidding raw prompts, headers,
+    authorization metadata, resolved secrets and unredacted request telemetry.
 - [x] T070 Add skill-search trace fields for trigger-quality/debugging:
   selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.
   - 2026-04-30: `find_skills_with_trace()` and `skill_found` audit metadata

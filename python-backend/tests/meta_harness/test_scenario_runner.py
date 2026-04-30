@@ -166,6 +166,28 @@ def test_trace_expectations_parse_tool_catalog_gates():
     assert expectations.max_tool_disclosure_level == 2
 
 
+def test_trace_expectations_parse_runtime_event_gates():
+    expectations = scenario_runner.TraceExpectations.from_mapping(
+        {
+            "required_runtime_event_names": ["llm.prompt_cache_break"],
+            "required_runtime_event_metadata_keys": {
+                "llm.prompt_cache_break": ["request_id"]
+            },
+            "forbidden_runtime_event_metadata_keys": {
+                "*": ["raw_prompt", "headers.authorization"]
+            },
+        }
+    )
+
+    assert expectations.required_runtime_event_names == ("llm.prompt_cache_break",)
+    assert expectations.required_runtime_event_metadata_keys == {
+        "llm.prompt_cache_break": ("request_id",)
+    }
+    assert expectations.forbidden_runtime_event_metadata_keys == {
+        "*": ("raw_prompt", "headers.authorization")
+    }
+
+
 def test_trace_gates_check_route_decision_metadata(monkeypatch):
     monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
     events = [
@@ -275,6 +297,87 @@ def test_trace_gates_fail_for_forbidden_event_metadata_key(monkeypatch):
         in verdict.failures
     )
     assert "forbidden metadata key for route_decision: resolved_secret" in verdict.failures
+
+
+def test_trace_gates_check_runtime_event_metadata(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "llm_response",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "llm.prompt_cache_break",
+                        "metadata": {
+                            "request_id": "req-1",
+                            "cache_read_tokens": 8,
+                            "layout_digest": "abc",
+                        },
+                    }
+                ]
+            },
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_runtime_event_names=("llm.prompt_cache_break",),
+            required_runtime_event_metadata_keys={
+                "llm.prompt_cache_break": ("request_id", "cache_read_tokens")
+            },
+            forbidden_runtime_event_metadata_keys={
+                "llm.prompt_cache_break": ("raw_prompt", "headers.authorization")
+            },
+        ),
+    )
+
+    assert verdict.passed is True
+
+
+def test_trace_gates_fail_for_forbidden_runtime_event_metadata(monkeypatch):
+    monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
+    events = [
+        {
+            "action": "llm_response",
+            "success": True,
+            "runtime_events": [
+                {
+                    "event": "llm.prompt_cache_break",
+                    "data": {
+                        "request_id": "req-1",
+                        "raw_prompt": "secret prompt",
+                        "headers": {"authorization": "Bearer sk-test"},
+                    },
+                }
+            ],
+        }
+    ]
+
+    verdict = scenario_runner.evaluate_trace_gates(
+        events,
+        scenario_runner.TraceExpectations(
+            required_runtime_event_names=("llm.prompt_cache_break",),
+            required_runtime_event_metadata_keys={
+                "llm.prompt_cache_break": ("request_id", "cache_read_tokens")
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": ("raw_prompt", "headers.authorization")
+            },
+        ),
+    )
+
+    assert verdict.passed is False
+    assert (
+        "missing required runtime metadata key for llm.prompt_cache_break: "
+        "cache_read_tokens"
+    ) in verdict.failures
+    assert "forbidden runtime metadata key for *: raw_prompt" in verdict.failures
+    assert (
+        "forbidden runtime metadata key for *: headers.authorization"
+        in verdict.failures
+    )
 
 
 def test_trace_gates_fail_for_provider_retry_loop(monkeypatch):

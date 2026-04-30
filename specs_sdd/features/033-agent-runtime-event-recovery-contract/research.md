@@ -70,3 +70,13 @@ child allowlist and propagates parent-only memory policy into both runners.
 Memory retain then emits a blocked runtime event before durable Memory access.
 This strengthens the subagent event contract because `parent_memory_handoff`
 is now the only write-intended path for delegated outcomes.
+
+2026-04-30 Meta-Harness gate update: runtime events are no longer only a UI
+surface. `TraceExpectations` can assert nested runtime event names and metadata
+shape inside audit rows, including wildcard forbidden metadata keys. The
+provider-free routing contract now includes `llm.prompt_cache_break` as a
+redaction-shape scenario, so cache diagnostics must expose request id, provider
+model and cache counters without raw prompts, raw headers, authorization values,
+resolved secrets or unredacted request telemetry. This references the same
+runtime-event contract described in the fresh Z_ agent harness notes while
+remaining provider-agnostic.

@@ -254,6 +254,8 @@ PY
 
 - Candidate manifests include request/cache telemetry files when provider calls
   occur.
+- Trace gates can require runtime event names and enforce required/forbidden
+  runtime-event metadata keys inside audit rows.
 - Stream/downstream gates assert tool cards, artifact links and degradation
   markers that Agent Chat or Control UI would display.
 - Subagent scenarios require child isolation plus parent-side memory curation.

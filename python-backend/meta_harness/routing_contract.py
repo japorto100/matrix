@@ -35,6 +35,7 @@ def run_routing_contract_scenarios(
         _provider_retry_loop_fails_gate(),
         _repeated_failed_tool_calls_fails_gate(),
         _forbidden_provider_and_secret_metadata_fails_gate(),
+        _runtime_event_redaction_shape_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
     summary = {
@@ -259,6 +260,63 @@ def _forbidden_provider_and_secret_metadata_fails_gate() -> dict[str, Any]:
         scenario_id="routing-forbidden-provider-secret-metadata-fails",
         verdict_passed=verdict.passed,
         expected_passed=False,
+        verdict=verdict,
+    )
+
+
+def _runtime_event_redaction_shape_gate() -> dict[str, Any]:
+    events = [
+        {
+            "action": "llm_response",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "llm.prompt_cache_break",
+                        "metadata": {
+                            "request_id": "req-cache-1",
+                            "reasons": ("cache_read_tokens_dropped",),
+                            "provider": "litellm",
+                            "model": "provider/model",
+                            "cache_read_tokens": 0,
+                            "previous_cache_read_tokens": 128,
+                        },
+                    }
+                ]
+            },
+        }
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_runtime_event_names=("llm.prompt_cache_break",),
+            required_runtime_event_metadata_keys={
+                "llm.prompt_cache_break": (
+                    "request_id",
+                    "reasons",
+                    "provider",
+                    "model",
+                    "cache_read_tokens",
+                    "previous_cache_read_tokens",
+                )
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": (
+                    "api_key",
+                    "authorization",
+                    "headers",
+                    "raw_prompt",
+                    "request_telemetry",
+                    "response.headers",
+                    "resolved_secret",
+                )
+            },
+        ),
+    )
+    return _scenario_result(
+        scenario_id="routing-runtime-event-redaction-shape",
+        verdict_passed=verdict.passed,
+        expected_passed=True,
         verdict=verdict,
     )
 
