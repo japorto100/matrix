@@ -158,8 +158,11 @@ feature_id: 019
     `lexical_hits`; selected hits/references preserve `retrieval_lane` and
     `lane_score`, runtime events expose lane counts and selected lanes, and
     lexical hits still require provenance for answer support.
-- T053 Reuse Feature 024 progressive-disclosure search primitives for tool,
-  skill and source-discovery candidates where applicable.
+- T053 [partial-static] Reuse Feature 024 progressive-disclosure search
+  primitives for tool, skill and source-discovery candidates where applicable.
+  - 2026-04-30: agent runtime prompt preparation now reuses builtin tool
+    progressive search for metadata-only Tool Discovery Hints. Skill search
+    already has BM25/dense traces; source-discovery candidates remain open.
 - [x] T054 Emit Feature 033 runtime events for retrieval start, selected contexts,
   missing provenance and artifact/citation refs.
   - 2026-04-30: `retrieve(...)` returns `runtime_events` with

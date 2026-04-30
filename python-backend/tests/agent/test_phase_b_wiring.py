@@ -34,6 +34,7 @@ from agent.resilience.credential_pool import (
     CredentialPool,
     reset_credential_pool,
 )
+from agent.tools.base import TradingTool
 from context.context_engine import (
     ContextEngineConfig,
     ContextStage,
@@ -129,6 +130,29 @@ class _FakePool(CredentialPool):
 
     async def mark_success(self, credential: Credential) -> None:
         self.mark_success_calls.append(credential)
+
+
+class _PromptTool(TradingTool):
+    def __init__(self, name: str, description: str) -> None:
+        self._name = name
+        self._description = description
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def definition(self) -> dict:
+        return {
+            "name": self._name,
+            "description": self._description,
+            "input_schema": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+            },
+        }
+
+    async def execute(self, tool_input: dict, ctx) -> dict:
+        return {"ok": True}
 
 
 @pytest.fixture(autouse=True)
@@ -270,6 +294,47 @@ async def test_prepare_system_prompt_passes_thread_to_skill_audit(monkeypatch):
     assert captured["thread_id"] == "thread-skills"
     assert captured["session_id"] == "thread-skills"
     assert captured["user_id"] == "anonymous"
+
+
+async def test_prepare_system_prompt_injects_metadata_only_tool_hints(monkeypatch):
+    from agent.context import AgentExecutionContext
+    from agent.graph import runner
+
+    async def no_skills(*_args, **_kwargs):
+        return ""
+
+    monkeypatch.setattr(
+        "agent.skills.loader.format_skills_for_prompt_async",
+        no_skills,
+    )
+    monkeypatch.setattr(
+        "agent.temporal_context.get_temporal_context",
+        lambda user_id=None: "",
+    )
+    set_memory_manager(MemoryManager([]))
+
+    ctx = AgentExecutionContext(
+        user_id="anonymous",
+        thread_id="thread-tools",
+        model="openrouter/openrouter/auto",
+        system_prompt="base prompt",
+        tools=(
+            _PromptTool("memory_search", "Search durable memory facts."),
+            _PromptTool("sandbox_execute", "Execute code in a sandbox."),
+        ),
+    )
+
+    prompt = await runner._prepare_system_prompt(
+        ctx,
+        [{"role": "user", "content": "search memory for my portfolio preference"}],
+    )
+
+    assert "## Tool Discovery Hints" in prompt
+    assert "memory_search" in prompt
+    assert "group=memory" in prompt
+    assert "approval=inform" in prompt
+    assert "sandbox_execute" not in prompt
+    assert "input_schema" not in prompt
 
 
 async def test_prepare_system_prompt_injects_memory_with_canonical_bank_id(monkeypatch):

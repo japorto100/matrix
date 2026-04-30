@@ -34,6 +34,11 @@ feature_id: 020
     prove default depth zero does not instantiate the A2A client.
 - [x] Enabled single-hop A2A uses fresh bounded child context, not inherited
   conversation/tool/memory state.
+- [x] Runtime tool discovery is metadata-only and uses the current agent
+  context tools.
+  - 2026-04-30: `_prepare_system_prompt()` adds relevant tool hints only from
+    `ctx.tools`, capped by progressive-disclosure level, and unit coverage
+    asserts that hidden/high-disclosure schemas do not enter the prompt.
 
 ## 2026-04-30 Added Gates
 

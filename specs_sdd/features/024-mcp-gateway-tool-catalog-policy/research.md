@@ -108,6 +108,10 @@ explicit credential scopes, approval gates and audit evidence.
   after effective-catalog filtering via `search_effective_catalog()` and
   `/control/mcp/catalog/agent/search`, returning provenance/risk/approval
   summaries without schemas.
+- 2026-04-30 runtime transfer: `_prepare_system_prompt()` now consumes builtin
+  tool search directly for the active `AgentExecutionContext.tools` and injects
+  compact `Tool Discovery Hints`. This keeps the same metadata-only boundary
+  while moving the benefit from Control into the real agent loop.
 
 ## Design Consequence
 

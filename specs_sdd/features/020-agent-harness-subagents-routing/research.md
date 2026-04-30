@@ -169,6 +169,25 @@ This implements the max-tool-retry part of Feature 020. Compression retry
 reset, stale async memory flush and deeper context-poisoning checks remain
 Feature 012/016 follow-ups.
 
+## 2026-04-30 Runtime Tool Discovery Slice
+
+The earlier progressive-disclosure work lived mostly in Control/catalog
+surfaces. That was useful for inspection but did not directly improve agent
+runtime routing. Matrix now applies the same metadata-only search primitive in
+`_prepare_system_prompt()`:
+
+- source: current `AgentExecutionContext.tools`, not a global unfiltered list.
+- search: `agent.tools.catalog.search_tool_catalog()` over summaries,
+  group/risk/approval and policy reasons.
+- exposure: name, group, risk, approval and summary only; no input schemas or
+  hidden descriptors are added to the prompt.
+- behavior: provider tool-calling payload remains unchanged, so this is a
+  routing hint rather than a tool-execution contract change.
+
+This maps the Hermes lesson to Matrix more accurately: the loop gets better
+local tool awareness without copying CLI-agent tool behavior or exposing
+dangerous/high-disclosure tools prematurely.
+
 ## 2026-04-30 Default-Off Single-Hop Delegation Slice
 
 The Hermes pattern transfers best as policy-first delegation, not as a CLI

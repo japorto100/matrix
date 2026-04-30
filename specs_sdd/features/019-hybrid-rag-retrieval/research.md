@@ -160,3 +160,20 @@ supplies runtime scope (`thread_id`, `session_id`) or explicitly opts in with
 containing only ids/counts/status, degradation reasons and a short query digest.
 This gives Feature 029 enough data to render RAG/KG lanes without treating the
 audit store as a second retrieval corpus.
+
+## 2026-04-30 Runtime Discovery Follow-Up
+
+Feature 024's progressive-disclosure primitive now reaches the agent prompt
+path for builtin tools. `_prepare_system_prompt()` searches the active
+`ctx.tools` with the current user query and adds schema-free Tool Discovery
+Hints. This is adjacent to RAG because it gives the same lexical/BM25-style
+discovery pattern three runtime uses:
+
+- RAG/context candidates via `retrieve(...)` lexical lanes.
+- Skill candidates via `agent.skills.finder` traces.
+- Tool candidates via `agent.tools.catalog.search_tool_catalog()` in prompt
+  preparation.
+
+Open item: source-discovery candidates still need the same metadata-only
+contract before the agent can ask for candidate sources without pulling full
+documents into the prompt.

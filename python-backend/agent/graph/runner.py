@@ -43,6 +43,13 @@ before answering. Do not answer from memory or a prior result instead.
 """
 
 
+def _bool_env(key: str, default: bool) -> bool:
+    raw = os.environ.get(key, "").strip().lower()
+    if raw in {"", "default"}:
+        return default
+    return raw in {"1", "true", "yes", "on"}
+
+
 # exec-hermes Phase-B P4: LiteLLM model_metadata wrapper. The hardcoded
 # dict and _fallback_model_max_tokens helper have been removed in favour
 # of the TTL-cached LiteLLM lookup.
@@ -53,6 +60,76 @@ def _float_env(key: str, default: float) -> float:
         return float(os.environ.get(key, str(default)))
     except ValueError:
         return default
+
+
+def _int_env(key: str, default: int) -> int:
+    try:
+        return int(os.environ.get(key, str(default)))
+    except ValueError:
+        return default
+
+
+def _tool_discovery_prompt_block(
+    tools: tuple | list,
+    query: str,
+    *,
+    limit: int | None = None,
+    max_level: int | None = None,
+) -> str:
+    """Return metadata-only tool hints for the current user query.
+
+    Tool schemas still flow through the normal provider tool-calling payload.
+    This block is only a compact routing hint so the model can prefer relevant
+    available tools without exposing hidden schemas or high-disclosure entries.
+    """
+
+    if not _bool_env("AGENT_TOOL_DISCOVERY_HINTS", True):
+        return ""
+    q = (query or "").strip()
+    if not q or not tools:
+        return ""
+    try:
+        from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
+
+        entries = builtin_tool_catalog(list(tools))
+        matches = search_tool_catalog(
+            entries,
+            q,
+            limit=limit
+            if limit is not None
+            else max(1, _int_env("AGENT_TOOL_DISCOVERY_HINT_LIMIT", 5)),
+            max_level=max_level
+            if max_level is not None
+            else max(1, _int_env("AGENT_TOOL_DISCOVERY_MAX_LEVEL", 2)),
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("tool discovery prompt block skipped", exc_info=True)
+        return ""
+
+    if not matches:
+        return ""
+
+    lines = [
+        "## Tool Discovery Hints",
+        (
+            "These are metadata-only hints for relevant available tools. "
+            "Use normal tool calls when a listed tool is needed."
+        ),
+    ]
+    for item in matches:
+        name = str(item.get("name") or "").strip()
+        if not name:
+            continue
+        summary = " ".join(str(item.get("summary") or "").split())
+        if len(summary) > 180:
+            summary = summary[:177].rstrip() + "..."
+        lines.append(
+            "- "
+            f"{name} "
+            f"(group={item.get('group')}, risk={item.get('risk')}, "
+            f"approval={item.get('approval')}): {summary}"
+        )
+    return "\n".join(lines) if len(lines) > 2 else ""
 
 
 async def run_agent_loop(
@@ -152,6 +229,17 @@ async def _prepare_system_prompt(
             logger.warning("skill prompt injection timed out — continuing without skills")
         except Exception:
             pass
+
+        try:
+            tool_hints = _tool_discovery_prompt_block(
+                ctx.tools,
+                _last_user_text(messages),
+            )
+            if tool_hints:
+                system_prompt = f"{system_prompt}\n\n{tool_hints}"
+                span.set_attribute("agent.tool_discovery_hints", True)
+        except Exception:  # noqa: BLE001
+            logger.debug("tool discovery hint injection skipped", exc_info=True)
 
         # exec-10 Phase 3.5: Temporal Context
         try:

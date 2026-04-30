@@ -171,6 +171,13 @@ feature_id: 020
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.
+- [x] T038 [done-static] Move progressive tool discovery into the actual
+  runtime prompt path, not only Control.
+  - 2026-04-30: `_prepare_system_prompt()` now injects query-gated
+    metadata-only `Tool Discovery Hints` from the current `ctx.tools` via
+    `agent.tools.catalog.search_tool_catalog()`. The block includes name,
+    group, risk, approval and summary only; full input schemas still flow only
+    through the normal provider tool-calling payload.
 
 ## Verification
 

@@ -174,3 +174,5 @@ feature_id: 024
     `tests/agent/mcp_gateway/test_policy.py`.
 - T051 Keep progressive search metadata-only until policy allows full schema
   exposure.
+  - 2026-04-30: runtime prompt injection now reuses builtin tool search as
+    metadata-only `Tool Discovery Hints`; no schemas/descriptors are injected.

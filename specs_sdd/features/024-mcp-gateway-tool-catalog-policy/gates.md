@@ -63,3 +63,7 @@ feature_id: 024
     `cache.unchanged` runtime event metadata for Ops replay.
 - [ ] Progressive discovery remains metadata-only until full schema exposure is
   policy-approved.
+  - 2026-04-30: the agent runtime now consumes builtin tool discovery only as
+    `Tool Discovery Hints` with name/group/risk/approval/summary; provider tool
+    schemas remain in the normal tool-calling payload and are not duplicated in
+    the prompt.
