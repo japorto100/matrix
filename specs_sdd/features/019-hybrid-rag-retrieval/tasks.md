@@ -118,10 +118,17 @@ feature_id: 019
 - T044 [done-static] Canary: simple/general QA where dense retrieval should remain enough.
 - T045 [done-static] Aggregate retrieval canaries with Recall@k, nDCG@k and
   pass-rate metrics before larger RAGChecker/RAGAS/GraphRAG-Bench runs.
-- T046 Verify simple document QA does not regress when KG/fused retrieval is
+- [x] T046 [done-static] Verify simple document QA does not regress when KG/fused retrieval is
   enabled.
-- T047 Verify multi-hop/world-model queries have enough expected path evidence
+- [x] T047 [done-static] Verify multi-hop/world-model queries have enough expected path evidence
   to justify LightRAG/HippoRAG-style candidates.
+  - 2026-04-30: `test_holdout_canaries_cover_graph_overreach_and_multihop_path`
+    runs fused retrieval over `holdout-simple-doc-001`,
+    `holdout-hierarchy-aware-parser-001` and `holdout-red-sea-diesel-001`.
+    The first two protect simple document/parser-derived QA from graph
+    overreach, while the multi-hop holdout requires the explicit Red Sea ->
+    shipping lanes -> EU diesel cracks KG path before fused/graph candidates
+    can claim benefit.
 - T048 [done-static] Verify graph retrieval does not degrade simple document-grounded QA
   when parser/chunking quality is held constant.
   - 2026-04-29: holdout canaries now include both `holdout-simple-doc-001`

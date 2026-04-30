@@ -167,6 +167,11 @@ feature_id: 017
 - T047 [partial-static] Add RAGSearch-style comparison: vector-only, KG-only and fused retrieval
   under matched query, context, model and retrieval budgets; implementation
   owner is Feature 019, KG claim/path source owner is Feature 017.
+  - 2026-04-30: Feature 019 now covers the static matched-budget slice through
+    `compare_candidates(...)`: vector-only, KG-only and fused candidates are
+    evaluated on the same search/holdout canaries. The remaining partial is a
+    larger external/public RAGSearch-style dataset, not the Matrix-owned
+    deterministic KG path gate.
 - T048 [done-static] Add multi-hop trading/geopolitical canaries where global KG/nonicdb is
   expected to improve retrieval stability over dense RAG.
   - 2026-04-27: Feature 022 now includes `nornicdb-projection-replay-001`, a
