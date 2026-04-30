@@ -68,3 +68,6 @@ feature_id: 033
     the backend read model without browser dependencies.
   - 2026-04-30: `retrieve_context` provides a provider-free replay path for
     RAG/KG/artifact runtime events through normal tool execution.
+  - 2026-04-30: `routing-llm-failure-runtime-event-shape` verifies failed LLM
+    calls are replayable from audit metadata without browser dependencies or
+    provider-specific raw payloads.

@@ -14,6 +14,9 @@ feature_id: 032
     and completion vs output tokens. Fresh input is only populated when cache
     read/write counters are known; otherwise `unknown_fields` records the
     missing counters.
+  - 2026-04-30: docs now make cache ownership explicit: provider/gateway owns
+    actual prompt-cache storage, while Matrix owns only redacted counters,
+    digests, rollups and cache-impact metadata.
 - G002 Request ids and rate-limit headers are redacted and never written to
   memory/KG as factual user content.
   - 2026-04-30: free-form request telemetry metadata is recursively sanitized:

@@ -55,6 +55,10 @@ feature_id: 033
     `llm.prompt_cache_break` runtime events with cache-break reasons, digests,
     request id and cache-read counters, instead of requiring downstream
     surfaces to parse request telemetry internals.
+  - 2026-04-30: failed LLM calls now audit a redacted `llm.call.failed`
+    runtime event before the existing runner recovery/error path continues.
+    Metadata carries provider, model, error type, classified reason/recovery,
+    retryable flag and status code only; raw prompts/messages are absent.
   - 2026-04-30: tool execution now propagates tool-result nested
     `runtime_events` into the run state after the normal `tool.*` event. This
     lets `retrieve_context` forward `rag.retrieve.*`, `kg.*` and
@@ -136,3 +140,6 @@ feature_id: 033
     runtime taxonomy itself: LLM/tool/memory/subagent/control events must carry
     matching kind/name prefixes and stable outcomes (`deferred`, `ok`,
     `timeout`, `killed`) for replay.
+  - 2026-04-30: `routing-llm-failure-runtime-event-shape` requires failed LLM
+    calls to persist a replayable `llm.call.failed` event with provider-neutral
+    failure taxonomy and no raw prompts or secrets.

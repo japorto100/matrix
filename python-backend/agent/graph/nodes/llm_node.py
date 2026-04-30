@@ -285,10 +285,23 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             # before re-raising. The outer runner catches + classifies again
             # for the ErrorPacket — here we add the classification to the trace
             # record so exec-17 Harness analysis sees the same dispatch.
+            failure_metadata: dict[str, Any] = {
+                "provider": _provider_label(model),
+                "model": model,
+                "error_type": type(exc).__name__,
+            }
             try:
                 from agent.resilience.error_classifier import classify_error
 
                 _cls = classify_error(exc)
+                failure_metadata.update(
+                    {
+                        "reason": _cls.reason.value,
+                        "recovery": _cls.recovery.value,
+                        "retryable": _cls.retryable,
+                        "status_code": _cls.status_code,
+                    }
+                )
                 span.add_event(
                     "llm_error",
                     {
@@ -313,6 +326,29 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                         logger.debug("apply_recovery failed", exc_info=True)
             except Exception:  # noqa: BLE001 — classification must never mask the real error
                 pass
+            runtime_event = make_runtime_event(
+                kind="llm",
+                status="failed",
+                name="llm.call.failed",
+                summary="LLM call failed",
+                thread_id=thread_id,
+                turn=iteration,
+                metadata=failure_metadata,
+            )
+            for key, value in runtime_event_span_attributes(runtime_event).items():
+                span.set_attribute(key, value)
+            await audit_log(
+                action=AuditAction.LLM_RESPONSE,
+                thread_id=thread_id,
+                iteration=iteration,
+                duration_ms=audit_duration(start),
+                success=False,
+                metadata={
+                    "model": model,
+                    "runtime_events": [runtime_event],
+                    "failure": failure_metadata,
+                },
+            )
             raise
         choice = response.choices[0]
         assistant_content = _clean_assistant_content(choice.message.content or "")

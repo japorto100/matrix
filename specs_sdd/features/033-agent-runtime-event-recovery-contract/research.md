@@ -125,3 +125,10 @@ the run state after the canonical `tool.*` event. This is needed for
 `artifact.rag_kg_sources.ready` event are downstream UI/Ops facts, not model
 text. The full tool result still goes to UI/audit, but the next LLM turn gets
 the tool's compact `to_model_output()` instead.
+
+2026-04-30 LLM failure replay update: failed provider calls now produce a
+redacted `llm.call.failed` runtime event before the original exception
+continues to the runner. This closes an observability gap between span-only
+LLM errors and audit-backed replay. The event stores provider, model,
+error type and classifier output (`reason`, `recovery`, `retryable`,
+`status_code`) but never the raw user prompt or provider request body.

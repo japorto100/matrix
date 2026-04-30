@@ -29,6 +29,9 @@ feature_id: 032
 - Cache counters should be normalized into `input`, `output`, `cache_read`,
   `cache_write` and `total`, with "unknown" preserved when providers do not
   expose a value.
+- The actual prompt/KV cache is provider-owned. Matrix cannot inspect, delete
+  or reuse provider cache entries directly; it can only shape requests with
+  provider-supported hints and record returned usage counters.
 - Cache-break evidence needs a snapshot of provider, model, transport,
   cache-retention mode, system-prompt digest and tool digest.
 - The snapshot should be provider-neutral enough to survive transport changes:
@@ -90,3 +93,10 @@ provider-free `prompt-cache-snapshot-break-dimensions` gate verifies transport,
 cache-retention, stream-strategy and system-prompt break reasons, while MCP and
 skill reloads stay represented by `agent-cache-impact/v1` so reload provenance
 does not get confused with one request's prompt diff.
+
+2026-04-30 Z_Prompt_Cache alignment: large `cached` token counters are
+cumulative reuse counters across requests, not one huge context window. Matrix
+matches this interpretation by treating cache reads/writes as provider usage
+telemetry and by rolling them up per thread/session. The cache storage itself
+remains upstream/provider-owned; Matrix stores only redacted request telemetry,
+digests and cache-impact events.

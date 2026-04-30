@@ -458,6 +458,79 @@ async def test_llm_node_emits_route_decision_for_tool_use(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_llm_node_audits_failed_llm_call_runtime_event(monkeypatch):
+    from agent.audit.logger import AuditAction
+    from agent.graph.nodes import llm_node as llm_module
+
+    audit_events: list[dict] = []
+    span_attrs: dict[str, object] = {}
+
+    class _FakeCompletions:
+        async def create(self, **_kwargs):
+            raise RuntimeError("rate limit hit - retry after 30s")
+
+    class _FakeClient:
+        chat = SimpleNamespace(completions=_FakeCompletions())
+
+    class _FakePool:
+        async def acquire(self, **_kwargs):
+            return None
+
+    class _FakeSpan:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def set_attribute(self, key, value):
+            span_attrs[str(key)] = value
+
+        def add_event(self, *_args, **_kwargs):
+            return None
+
+        def track_generation(self, *_args, **_kwargs):
+            return None
+
+    async def _capture_audit_log(**kwargs):
+        audit_events.append(kwargs)
+
+    monkeypatch.setattr(llm_module, "get_litellm_client", lambda: _FakeClient())
+    monkeypatch.setattr(llm_module, "get_credential_pool", lambda: _FakePool())
+    monkeypatch.setattr(
+        "agent.tracing.turn_span", lambda *_args, **_kwargs: _FakeSpan()
+    )
+    monkeypatch.setattr("agent.audit.logger.audit_log", _capture_audit_log)
+
+    with pytest.raises(RuntimeError, match="rate limit"):
+        await llm_module.llm_node(
+            {
+                "model": "openrouter/test-model",
+                "messages": [{"role": "user", "content": "private prompt"}],
+                "system_prompt": "test",
+                "thread_id": "t-fail",
+                "iteration": 3,
+                "tool_definitions": [],
+                "user_id": "anonymous",
+            }
+        )
+
+    response_event = next(
+        event for event in audit_events if event["action"] == AuditAction.LLM_RESPONSE
+    )
+    runtime_event = response_event["metadata"]["runtime_events"][0]
+    assert response_event["success"] is False
+    assert runtime_event["kind"] == "llm"
+    assert runtime_event["status"] == "failed"
+    assert runtime_event["name"] == "llm.call.failed"
+    assert runtime_event["metadata"]["provider"] == "openrouter"
+    assert runtime_event["metadata"]["error_type"] == "RuntimeError"
+    assert "recovery" in runtime_event["metadata"]
+    assert "private prompt" not in str(response_event)
+    assert span_attrs["runtime_event.name"] == "llm.call.failed"
+
+
+@pytest.mark.asyncio
 async def test_llm_node_omits_known_unsupported_provider_fields(monkeypatch):
     from agent.graph.nodes import llm_node as llm_module
 

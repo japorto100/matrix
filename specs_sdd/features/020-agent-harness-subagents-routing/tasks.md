@@ -200,6 +200,11 @@ feature_id: 020
   - 2026-04-30: `routing-context-overflow-compress-retry-trace-shape` now gates
     the recovery runtime event shape and forbids raw messages/prompts/summaries
     from leaking into runtime metadata.
+  - 2026-04-30: failed LLM calls now emit `llm.call.failed` audit/runtime
+    events with provider-neutral failure classification before the existing
+    runner error path continues. `routing-llm-failure-runtime-event-shape`
+    gates provider/model/error/recovery metadata without raw prompts or
+    secrets.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.
@@ -226,6 +231,9 @@ feature_id: 020
   - 2026-04-30:
     `uv run python -m meta_harness.meta_cli routing-contract --run-id run-routing-contract-20260430 --data-dir /tmp/matrix-meta-harness-routing-contract`
     passed 7/7 scenarios and wrote `routing_contract.json`.
+  - 2026-04-30:
+    `uv run python -m meta_harness.meta_cli routing-contract --run-id run-routing-llm-failure-event-gate`
+    passed 15/15 scenarios, including the new LLM failure runtime-event shape.
 
 ## 2026-04-30 Gated Single-Hop Subagent Additions
 

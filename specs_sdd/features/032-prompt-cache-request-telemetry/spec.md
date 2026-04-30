@@ -32,6 +32,12 @@ the data.
 normalized counters, not raw prompts, raw tool schemas, provider headers or
 secrets.
 
+Matrix does not own or persist the provider prompt/KV cache. Actual cached
+prefix state lives inside the provider or gateway transport, with provider-owned
+TTL, eviction, billing and cache-key behavior. Matrix stores only redacted
+telemetry, digests and cache-impact evidence that let Control/Ops explain
+cache reuse or churn after the fact.
+
 Required cache snapshot fields:
 
 - provider, model, router, transport, cache retention and stream strategy

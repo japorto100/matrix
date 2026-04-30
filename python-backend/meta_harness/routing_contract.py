@@ -38,6 +38,7 @@ def run_routing_contract_scenarios(
         _repeated_failed_tool_calls_fails_gate(),
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
+        _llm_failure_runtime_event_gate(),
         _runtime_event_replay_identity_gate(),
         _runtime_event_taxonomy_gate(),
         _tool_hook_policy_trace_shape_gate(),
@@ -323,6 +324,58 @@ def _runtime_event_redaction_shape_gate() -> dict[str, Any]:
     )
     return _scenario_result(
         scenario_id="routing-runtime-event-redaction-shape",
+        verdict_passed=verdict.passed,
+        expected_passed=True,
+        verdict=verdict,
+    )
+
+
+def _llm_failure_runtime_event_gate() -> dict[str, Any]:
+    event = make_runtime_event(
+        kind="llm",
+        status="failed",
+        name="llm.call.failed",
+        summary="LLM call failed",
+        thread_id="thread-routing",
+        turn=2,
+        metadata={
+            "provider": "openrouter",
+            "model": "openrouter/test-model",
+            "error_type": "RateLimitError",
+            "reason": "rate_limit",
+            "recovery": "backoff_then_retry",
+            "retryable": True,
+            "status_code": 429,
+        },
+    )
+    verdict = evaluate_trace_gates(
+        [
+            {
+                "action": "llm_response",
+                "success": False,
+                "metadata": {"runtime_events": [event]},
+            }
+        ],
+        TraceExpectations(
+            required_runtime_event_names=("llm.call.failed",),
+            required_runtime_event_metadata_keys={
+                "llm.call.failed": (
+                    "provider",
+                    "model",
+                    "error_type",
+                    "reason",
+                    "recovery",
+                    "retryable",
+                    "status_code",
+                )
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": ("raw_prompt", "messages", "api_key", "authorization")
+            },
+        ),
+    )
+    return _scenario_result(
+        scenario_id="routing-llm-failure-runtime-event-shape",
         verdict_passed=verdict.passed,
         expected_passed=True,
         verdict=verdict,

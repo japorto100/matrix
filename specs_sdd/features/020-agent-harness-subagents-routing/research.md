@@ -229,6 +229,15 @@ fails, normal ErrorPacket classification still surfaces the provider failure.
 This is the Matrix interpretation of Hermes' compression retry reset: recover
 from a too-large prompt without entering a provider retry loop.
 
+2026-04-30 LLM failure event update: provider/runtime errors were previously
+visible to spans and runner ErrorPackets but not always replayable through the
+audit/runtime-event lane. `llm_node` now writes a failed `llm.call.failed`
+runtime event before re-raising, using the shared error classifier for
+provider-neutral `reason`, `recovery`, `retryable` and status-code metadata.
+The provider-free routing contract gates this shape through
+`routing-llm-failure-runtime-event-shape`; raw prompts, messages, API keys and
+authorization material remain forbidden.
+
 ## 2026-04-30 Runtime Tool Discovery Slice
 
 The earlier progressive-disclosure work lived mostly in Control/catalog
