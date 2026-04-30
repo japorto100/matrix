@@ -24,10 +24,20 @@ import type {
 	AgentOpsReadModel,
 	AgentOpsSession,
 	AgentRuntimeEvent,
+	AgentSubagentRun,
 	ToolDefinition,
 } from "../types";
 
-type LaneStatus = "active" | "waiting" | "blocked" | "replay" | "needs_approval" | "failed";
+type LaneStatus =
+	| "active"
+	| "waiting"
+	| "blocked"
+	| "replay"
+	| "needs_approval"
+	| "failed"
+	| "completed"
+	| "stale"
+	| "cancelled";
 
 const STATUS_COLOR: Record<LaneStatus, string> = {
 	active: "border-emerald-500/40 text-emerald-400",
@@ -36,6 +46,9 @@ const STATUS_COLOR: Record<LaneStatus, string> = {
 	replay: "border-amber-500/40 text-amber-400",
 	needs_approval: "border-orange-500/40 text-orange-400",
 	failed: "border-rose-500/40 text-rose-400",
+	completed: "border-emerald-500/40 text-emerald-400",
+	stale: "border-amber-500/40 text-amber-400",
+	cancelled: "border-zinc-500/40 text-zinc-400",
 };
 
 function formatRelative(iso?: string): string {
@@ -75,6 +88,14 @@ function runtimeLabel(event?: AgentRuntimeEvent): string {
 	return event.name || [event.kind, event.status].filter(Boolean).join(":") || "runtime";
 }
 
+function statusClass(status?: string): string {
+	return STATUS_COLOR[(status as LaneStatus) || "waiting"] ?? "border-border text-muted-foreground";
+}
+
+function subagentTitle(run: AgentSubagentRun): string {
+	return run.role || run.delegate_kind || run.child_task_id || run.run_id;
+}
+
 export function OpsRoomTab() {
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [riskFilter, setRiskFilter] = useState("all");
@@ -94,6 +115,7 @@ export function OpsRoomTab() {
 	const sessions = ops.sessions as AgentOpsSession[];
 	const events = ops.items as AgentOpsEvent[];
 	const runtimeEvents = ops.runtime_events ?? [];
+	const subagentRuns = ops.subagent_runs ?? [];
 	const runtimeSummary = ops.runtime_summary ?? {
 		total: runtimeEvents.length,
 		by_kind: {},
@@ -116,7 +138,8 @@ export function OpsRoomTab() {
 					<h2 className="text-base font-semibold">Agent Ops Room</h2>
 					<p className="text-xs text-muted-foreground">
 						{ops.summary.sessions} sessions · {ops.summary.tool_events} recent tool events ·{" "}
-						{ops.summary.blockers} blockers · {runtimeSummary.total} runtime events
+						{ops.summary.blockers} blockers · {runtimeSummary.total} runtime events ·{" "}
+						{subagentRuns.length} subagent runs
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -177,7 +200,7 @@ export function OpsRoomTab() {
 				</Badge>
 			</div>
 
-			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
 				<div className="rounded-lg border border-border bg-card/30 p-3">
 					<div className="flex items-center justify-between gap-2">
 						<span className="text-[11px] text-muted-foreground">Active</span>
@@ -216,6 +239,13 @@ export function OpsRoomTab() {
 						<Activity className="h-3.5 w-3.5 text-cyan-400" />
 					</div>
 					<div className="mt-2 text-lg font-semibold">{runtimeSummary.total}</div>
+				</div>
+				<div className="rounded-lg border border-border bg-card/30 p-3">
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-[11px] text-muted-foreground">Subagents</span>
+						<Radar className="h-3.5 w-3.5 text-emerald-400" />
+					</div>
+					<div className="mt-2 text-lg font-semibold">{subagentRuns.length}</div>
 				</div>
 			</div>
 
@@ -289,11 +319,7 @@ export function OpsRoomTab() {
 										<Badge
 											key={status}
 											variant="outline"
-											className={cn(
-												"h-5 px-1.5 text-[10px]",
-												STATUS_COLOR[(status as LaneStatus) || "waiting"] ??
-													"border-border text-muted-foreground",
-											)}
+											className={cn("h-5 px-1.5 text-[10px]", statusClass(status))}
 										>
 											{status} {count}
 										</Badge>
@@ -315,6 +341,53 @@ export function OpsRoomTab() {
 									</p>
 								</div>
 							))}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className="pb-3">
+							<CardTitle className="flex items-center gap-1.5 text-sm">
+								<Radar className="h-3.5 w-3.5" />
+								Subagent Runs
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3">
+							{subagentRuns.length === 0 ? (
+								<p className="text-xs text-muted-foreground">
+									No delegated child runs in current window.
+								</p>
+							) : (
+								subagentRuns.slice(0, 6).map((run) => (
+									<div key={run.run_id} className="rounded border border-border/50 p-3">
+										<div className="flex items-start justify-between gap-2">
+											<div className="min-w-0">
+												<p className="truncate font-mono text-xs">{subagentTitle(run)}</p>
+												<p className="text-[10px] text-muted-foreground">
+													{run.child_task_id ?? run.run_id}
+												</p>
+											</div>
+											<Badge
+												variant="outline"
+												className={cn("h-5 px-1.5 text-[10px]", statusClass(run.status))}
+											>
+												{run.status}
+											</Badge>
+										</div>
+										<div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+											<span>{run.event_count} events</span>
+											<span>depth {run.next_spawn_depth ?? run.spawn_depth ?? 0}</span>
+											<span>{formatRelative(run.ended_at ?? run.started_at)}</span>
+										</div>
+										<div className="mt-2 flex flex-wrap gap-1.5">
+											{Object.entries(run.controls ?? {}).map(([name, state]) => (
+												<Badge key={name} variant="outline" className="h-5 px-1.5 text-[10px]">
+													{name} {state}
+												</Badge>
+											))}
+										</div>
+									</div>
+								))
+							)}
 						</CardContent>
 					</Card>
 

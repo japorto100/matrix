@@ -32,11 +32,16 @@ feature_id: 029
 
 ## 2026-04-30 Added Gates
 
-- [ ] Subagent states distinguish active, stale, recently ended, timeout,
+- [partial-static] Subagent states distinguish active, stale, recently ended, timeout,
   killed and completed.
+  - 2026-04-30: Ops derives `subagent_runs` from audited Feature-033 runtime
+    events and renders active/blocked/completed/failed/stale/cancelled-style
+    states. Killed/paused durable controls are still future backend work.
 - [x] Tool/model/memory/RAG/KG event lanes render capped output tails.
   - 2026-04-30: Ops backend redacts/caps nested runtime-event payloads before
     the frontend, and Runtime Lanes render counts plus compact event summaries.
-- [ ] Status/kill/pause/replay controls return explicit supported or
+- [partial-static] Status/kill/pause/replay controls return explicit supported or
   unsupported outcomes.
+  - 2026-04-30: Subagent run rows return explicit control availability:
+    status supported; kill, pause and replay unsupported.
 - [ ] Ops events link to Prompt Cache and Report Artifact surfaces.

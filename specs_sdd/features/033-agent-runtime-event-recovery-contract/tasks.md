@@ -40,6 +40,10 @@ feature_id: 033
   - 2026-04-30: runtime event stream covers accepted/started/completed/failed
     and timeout-as-stale for A2A child attempts. Durable registry and kill
     state remain Control follow-ups.
+  - 2026-04-30: Ops now derives a replayable `subagent_runs` read-model from
+    audited runtime events, grouped by child task id. This is the static
+    registry/read-model bridge; durable process registry and kill/pause remain
+    future work.
 - [x] T012 Add gated single-hop subagent execution with default-off/fail-closed
   policy.
   - 2026-04-30: A2A execution is blocked unless
@@ -63,4 +67,7 @@ feature_id: 033
   - 2026-04-30: LLM, Tool, Memory and scoped RAG/KG producers now write runtime
     events into audit metadata, giving Ops real replay input beyond frontend
     stream state.
+  - 2026-04-30: Subagent lifecycle events are also persisted through audit and
+    surfaced as `/control/ops` subagent run rows with explicit unsupported
+    control states.
 - T022 Add Meta-Harness gates for event completeness and redaction.

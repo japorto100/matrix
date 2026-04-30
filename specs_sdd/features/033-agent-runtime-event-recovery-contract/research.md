@@ -43,7 +43,9 @@ currently returns runtime events in graph/API state also persists a redacted
 event reference for replay: memory retain/recall, RAG retrieval, KG claim
 selection, tool execution and subagent lifecycle.
 
-2026-04-30 implementation update: LLM, tool execution, memory recall/retain and
-scoped RAG/KG retrieval now persist runtime-event envelopes into audit metadata.
-Durable subagent registry/replay is the remaining producer class before Ops
-replay can be considered complete.
+2026-04-30 implementation update: LLM, tool execution, memory recall/retain,
+scoped RAG/KG retrieval and A2A subagent lifecycle now persist runtime-event
+envelopes into audit metadata. Ops derives a static `subagent_runs` read-model
+from those events. Durable child process registry, kill/pause/replay controls
+and cost/token rollups remain the next reliability layer, not a blocker for
+audit replay.

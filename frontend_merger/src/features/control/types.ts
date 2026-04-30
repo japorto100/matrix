@@ -367,6 +367,23 @@ export interface AgentRuntimeEvent {
 	metadata?: Record<string, unknown>;
 }
 
+export interface AgentSubagentRun {
+	run_id: string;
+	child_task_id?: string;
+	parent_thread_id?: string;
+	role?: string;
+	delegate_kind?: string;
+	status: AgentRuntimeEventStatus | string;
+	started_at?: string;
+	ended_at?: string;
+	event_count: number;
+	spawn_depth?: number;
+	next_spawn_depth?: number;
+	max_spawn_depth?: number;
+	last_event?: AgentRuntimeEvent;
+	controls?: Record<string, string>;
+}
+
 export interface AgentOpsEvent {
 	id: string;
 	source: "audit" | "trace" | "meta_harness";
@@ -412,6 +429,7 @@ export interface AgentOpsReadModel {
 	blockers: AgentOpsEvent[];
 	approvals: AgentOpsEvent[];
 	runtime_events: AgentRuntimeEvent[];
+	subagent_runs: AgentSubagentRun[];
 	runtime_summary: {
 		total: number;
 		by_kind: Record<string, number>;
@@ -426,6 +444,7 @@ export interface AgentOpsReadModel {
 		blockers: number;
 		approvals: number;
 		runtime_events?: number;
+		subagent_runs?: number;
 		generated_at: string;
 	};
 	limit: number;

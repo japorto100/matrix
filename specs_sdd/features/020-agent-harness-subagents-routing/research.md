@@ -184,6 +184,8 @@ gated A2A node path:
   lesson that worker agents must not block on parent/UI stdin.
 - Feature 033 runtime events expose accepted, started, completed, failed and
   timeout/stale states without raw child output in metadata.
+- A2A lifecycle events are persisted into audit metadata so Ops can rebuild
+  subagent run rows from replay, not only from transient graph output.
 - completed child output is handed back to the parent for memory curation as a
   digest-backed `subagent.parent_memory_handoff` event; the child cannot write
   shared memory directly.

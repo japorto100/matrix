@@ -150,6 +150,7 @@ def build_ops_read_model(
     ]
     filtered_events = _apply_ops_filters(events, filters or {})
     runtime_events = _runtime_events_from_ops_events(filtered_events)
+    subagent_runs = _subagent_runs_from_runtime_events(runtime_events)
     session_rows = [
         _session_to_ops_session(session, filtered_events)
         for session in sessions
@@ -168,6 +169,7 @@ def build_ops_read_model(
         "approvals": approvals,
         "runtime_events": runtime_events,
         "runtime_summary": _runtime_summary(runtime_events),
+        "subagent_runs": subagent_runs,
         "filters": {key: value for key, value in (filters or {}).items() if value},
         "summary": {
             "total_events": len(filtered_events),
@@ -176,6 +178,7 @@ def build_ops_read_model(
             "blockers": len(blockers),
             "approvals": len(approvals),
             "runtime_events": len(runtime_events),
+            "subagent_runs": len(subagent_runs),
             "generated_at": _now_iso(),
         },
         "limit": limit,
@@ -377,6 +380,74 @@ def _runtime_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         "by_status": by_status,
         "latest": latest or {},
     }
+
+
+def _subagent_runs_from_runtime_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        if str(event.get("kind") or "") != "subagent":
+            continue
+        metadata = _as_dict(event.get("metadata"))
+        key = (
+            str(metadata.get("child_task_id") or "").strip()
+            or str(event.get("audit_ref") or "").strip()
+            or str(event.get("event_id") or "").strip()
+        )
+        if not key:
+            continue
+        grouped.setdefault(key, []).append(event)
+
+    runs: list[dict[str, Any]] = []
+    terminal_statuses = {"blocked", "failed", "completed", "stale", "cancelled"}
+    for key, run_events in grouped.items():
+        ordered = sorted(run_events, key=lambda item: str(item.get("timestamp") or ""))
+        latest = ordered[-1]
+        metadata = _as_dict(latest.get("metadata"))
+        latest_status = str(latest.get("status") or "unknown")
+        started_at = next(
+            (
+                str(event.get("timestamp") or "")
+                for event in ordered
+                if str(event.get("status") or "") in {"accepted", "started", "active"}
+            ),
+            str(ordered[0].get("timestamp") or ""),
+        )
+        ended_at = (
+            str(latest.get("timestamp") or "")
+            if latest_status in terminal_statuses
+            else ""
+        )
+        runs.append(
+            {
+                "run_id": key,
+                "child_task_id": str(metadata.get("child_task_id") or ""),
+                "parent_thread_id": str(latest.get("thread_id") or ""),
+                "role": str(metadata.get("role") or metadata.get("delegate_role") or ""),
+                "delegate_kind": str(metadata.get("delegate_kind") or ""),
+                "status": latest_status,
+                "started_at": started_at,
+                "ended_at": ended_at,
+                "event_count": len(ordered),
+                "spawn_depth": _safe_int(metadata.get("spawn_depth")),
+                "next_spawn_depth": _safe_int(metadata.get("next_spawn_depth")),
+                "max_spawn_depth": _safe_int(metadata.get("max_spawn_depth")),
+                "last_event": latest,
+                "controls": {
+                    "status": "supported",
+                    "kill": "unsupported",
+                    "pause": "unsupported",
+                    "replay": "unsupported",
+                },
+            }
+        )
+    return sorted(runs, key=lambda item: str(item.get("started_at") or ""), reverse=True)
+
+
+def _safe_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _apply_ops_filters(

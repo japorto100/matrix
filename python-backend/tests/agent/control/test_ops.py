@@ -199,3 +199,60 @@ def test_runtime_events_are_redacted_and_summarized() -> None:
         model["items"][0]["runtime_events"][0]["metadata"]["api_key"] == "[redacted]"
     )
     assert model["items"][0]["runtime_events"][0]["audit_ref"] == "6"
+
+
+def test_subagent_runtime_events_build_run_read_model() -> None:
+    model = build_ops_read_model(
+        audit_events=[
+            _audit_event(
+                id=7,
+                action="route_decision",
+                tool_name="",
+                metadata={
+                    "runtime_events": [
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "subagent",
+                            "status": "started",
+                            "name": "subagent.delegation.started",
+                            "thread_id": "thread-parent",
+                            "timestamp": "2026-04-29T12:00:00+00:00",
+                            "metadata": {
+                                "child_task_id": "task-1",
+                                "role": "researcher",
+                                "delegate_kind": "domain",
+                                "spawn_depth": 0,
+                                "next_spawn_depth": 1,
+                                "max_spawn_depth": 1,
+                            },
+                        },
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "subagent",
+                            "status": "completed",
+                            "name": "subagent.delegation.completed",
+                            "thread_id": "thread-parent",
+                            "timestamp": "2026-04-29T12:00:01+00:00",
+                            "metadata": {
+                                "child_task_id": "task-1",
+                                "role": "researcher",
+                                "delegate_kind": "domain",
+                                "spawn_depth": 0,
+                                "next_spawn_depth": 1,
+                                "max_spawn_depth": 1,
+                            },
+                        },
+                    ]
+                },
+            )
+        ],
+        sessions=[],
+    )
+
+    assert model["summary"]["subagent_runs"] == 1
+    run = model["subagent_runs"][0]
+    assert run["child_task_id"] == "task-1"
+    assert run["role"] == "researcher"
+    assert run["status"] == "completed"
+    assert run["ended_at"] == "2026-04-29T12:00:01+00:00"
+    assert run["controls"]["kill"] == "unsupported"

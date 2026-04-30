@@ -128,3 +128,11 @@ without parsing prompt text or assistant output.
 runtime events. Ops can distinguish started/completed/failed/stale tool
 lifecycles, retain `tool_call_id` for downstream chat correlation, and show
 result-key metadata without copying full tool output into the event lane.
+
+2026-04-30 subagent follow-up: A2A delegation now persists its Feature-033
+`subagent` lifecycle envelopes into audit metadata. The Ops read model groups
+those events into `subagent_runs` by child task id and exposes role,
+delegate-kind, depth, timestamps, last event and explicit control availability.
+This follows the Z_/Hermes observation that child agents should be observable
+as bounded, isolated runs while parent-side memory curation remains the only
+durable memory write path.

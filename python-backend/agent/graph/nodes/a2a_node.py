@@ -87,6 +87,42 @@ def _result_digest(value: str | None) -> str:
     return sha256(value.encode("utf-8")).hexdigest()
 
 
+async def _audit_delegation_runtime_events(
+    *,
+    state: AgentGraphState,
+    role: str,
+    runtime_events: list[dict[str, Any]],
+    policy: dict[str, Any],
+    success: bool,
+    child_task_id: str = "",
+    error: str = "",
+) -> None:
+    try:
+        from agent.audit.logger import AuditAction, audit_log
+
+        await audit_log(
+            action=AuditAction.ROUTE_DECISION,
+            thread_id=str(state.get("thread_id", "") or ""),
+            agent_id=str(state.get("agent_id", "default") or "default"),
+            user_id=str(state.get("user_id", "local") or "local"),
+            success=success,
+            metadata={
+                "contract": "subagent-delegation-runtime/v1",
+                "role": role,
+                "delegation_decision": policy.get("delegation_decision", ""),
+                "delegate_kind": policy.get("delegate_kind", ""),
+                "child_task_id": child_task_id,
+                "spawn_depth": policy.get("spawn_depth", 0),
+                "next_spawn_depth": policy.get("next_spawn_depth", 0),
+                "max_spawn_depth": policy.get("max_spawn_depth", 0),
+                "error": error,
+                "runtime_events": runtime_events,
+            },
+        )
+    except Exception:  # noqa: BLE001
+        logger.debug("A2A delegation runtime audit failed", exc_info=True)
+
+
 def _delegation_context(
     *,
     role: str,
@@ -154,16 +190,25 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             current_depth,
             max_depth,
         )
+        runtime_events = [
+            _event(
+                status="blocked",
+                name="subagent.delegation.blocked",
+                state=state,
+                summary="A2A delegation blocked by spawn-depth policy",
+                metadata=policy,
+            )
+        ]
+        await _audit_delegation_runtime_events(
+            state=state,
+            role=str(role),
+            runtime_events=runtime_events,
+            policy=policy,
+            success=False,
+            error="spawn_depth_exceeded",
+        )
         return {
-            "runtime_events": [
-                _event(
-                    status="blocked",
-                    name="subagent.delegation.blocked",
-                    state=state,
-                    summary="A2A delegation blocked by spawn-depth policy",
-                    metadata=policy,
-                )
-            ],
+            "runtime_events": runtime_events,
             "degradation_flags": ["a2a_delegation_spawn_depth_blocked"],
         }
 
@@ -178,16 +223,25 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
             break
 
     if not user_msg:
+        runtime_events = [
+            _event(
+                status="blocked",
+                name="subagent.delegation.blocked",
+                state=state,
+                summary="A2A delegation blocked because no user message was available",
+                metadata={**policy, "fallback_reason": "missing_user_message"},
+            )
+        ]
+        await _audit_delegation_runtime_events(
+            state=state,
+            role=str(role),
+            runtime_events=runtime_events,
+            policy=policy,
+            success=False,
+            error="missing_user_message",
+        )
         return {
-            "runtime_events": [
-                _event(
-                    status="blocked",
-                    name="subagent.delegation.blocked",
-                    state=state,
-                    summary="A2A delegation blocked because no user message was available",
-                    metadata={**policy, "fallback_reason": "missing_user_message"},
-                )
-            ],
+            "runtime_events": runtime_events,
             "degradation_flags": ["a2a_delegation_missing_user_message"],
         }
 
@@ -254,6 +308,14 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                     ),
                 ]
             )
+            await _audit_delegation_runtime_events(
+                state=state,
+                role=str(role),
+                runtime_events=runtime_events,
+                policy=policy,
+                success=True,
+                child_task_id=task.task_id,
+            )
             return {
                 "messages": [
                     {"role": "assistant", "content": f"[{role} via A2A]: {task.result}"}
@@ -274,6 +336,15 @@ async def a2a_delegate_node(state: AgentGraphState) -> dict[str, Any]:
                 summary="A2A child request did not complete",
                 metadata={**policy, "child_task_id": task.task_id, "error": error},
             )
+        )
+        await _audit_delegation_runtime_events(
+            state=state,
+            role=str(role),
+            runtime_events=runtime_events,
+            policy=policy,
+            success=False,
+            child_task_id=task.task_id,
+            error=error,
         )
         return {
             "messages": [

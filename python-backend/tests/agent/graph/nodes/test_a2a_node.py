@@ -22,9 +22,15 @@ async def test_a2a_delegate_node_fails_closed_when_spawn_depth_default_zero(
     monkeypatch,
 ) -> None:
     calls = {"client": 0}
+    audit_rows: list[dict] = []
+
+    async def _audit_log(**kwargs):
+        audit_rows.append(kwargs)
+
     monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
     monkeypatch.delenv("AGENT_A2A_MAX_SPAWN_DEPTH", raising=False)
     monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
+    monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
 
     class FakeClient:
         def __init__(self) -> None:
@@ -38,6 +44,7 @@ async def test_a2a_delegate_node_fails_closed_when_spawn_depth_default_zero(
     assert result["runtime_events"][0]["kind"] == "subagent"
     assert result["runtime_events"][0]["status"] == "blocked"
     assert result["runtime_events"][0]["metadata"]["delegation_decision"] == "blocked"
+    assert audit_rows[0]["metadata"]["runtime_events"][0]["name"] == "subagent.delegation.blocked"
     assert calls["client"] == 0
 
 
@@ -45,9 +52,15 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     monkeypatch,
 ) -> None:
     captured: dict = {}
+    audit_rows: list[dict] = []
+
+    async def _audit_log(**kwargs):
+        audit_rows.append(kwargs)
+
     monkeypatch.setenv("AGENT_REMOTE_RESEARCHER", "http://agent.local")
     monkeypatch.setenv("AGENT_A2A_MAX_SPAWN_DEPTH", "1")
     monkeypatch.setattr(a2a_node, "REMOTE_AGENTS", {})
+    monkeypatch.setattr("agent.audit.logger.audit_log", _audit_log)
 
     class FakeClient:
         async def send_message(self, **kwargs):
@@ -84,6 +97,8 @@ async def test_a2a_delegate_node_uses_fresh_bounded_child_context(
     assert handoff["kind"] == "memory"
     assert handoff["metadata"]["child_memory_write_allowed"] is False
     assert handoff["metadata"]["result_digest"]
+    assert audit_rows[0]["metadata"]["child_task_id"] == "task-1"
+    assert audit_rows[0]["metadata"]["runtime_events"][2]["status"] == "completed"
 
 
 async def test_a2a_delegate_node_surfaces_timeout_as_stale_runtime_event(

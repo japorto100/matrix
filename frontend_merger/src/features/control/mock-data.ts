@@ -1123,6 +1123,42 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 				runtime_event_count: 1,
 			};
 		}),
+	subagent_runs: [
+		{
+			run_id: "task-researcher-child",
+			child_task_id: "task-researcher-child",
+			parent_thread_id: "thr_a1b2c3",
+			role: "researcher",
+			delegate_kind: "leaf",
+			status: "completed",
+			started_at: "2026-04-29T11:56:10Z",
+			ended_at: "2026-04-29T11:58:34Z",
+			event_count: 2,
+			spawn_depth: 0,
+			next_spawn_depth: 1,
+			max_spawn_depth: 1,
+			controls: {
+				status: "supported",
+				kill: "unsupported",
+				pause: "unsupported",
+				replay: "unsupported",
+			},
+			last_event: {
+				contract: "agent-runtime-event/v1",
+				kind: "subagent",
+				status: "completed",
+				name: "subagent.completed",
+				summary: "Research delegation completed",
+				thread_id: "thr_a1b2c3",
+				timestamp: "2026-04-29T11:58:34Z",
+				metadata: {
+					child_task_id: "task-researcher-child",
+					role: "researcher",
+					delegate_kind: "leaf",
+				},
+			},
+		},
+	],
 	sessions: mockSessions.map((session) => {
 		const events = mockAuditEvents.filter((event) => event.thread_id === session.thread_id);
 		return {
@@ -1156,6 +1192,7 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 		blockers: mockAuditEvents.filter((event) => !event.success).length,
 		approvals: 0,
 		runtime_events: 0,
+		subagent_runs: 1,
 		generated_at: "2026-04-29T12:00:00Z",
 	},
 	limit: 100,

@@ -93,8 +93,13 @@ feature_id: 029
 
 ## 2026-04-30 Runtime Event Additions
 
-- T038 Add subagent run list with active, stale, recently-ended, timeout,
+- [partial-static] T038 Add subagent run list with active, stale, recently-ended, timeout,
   killed and completed states from Feature 033.
+  - 2026-04-30: A2A delegation now persists `subagent` runtime events into
+    audit metadata. `/api/v1/control/ops/events` derives `subagent_runs`
+    grouped by child task id and `/control/ops` renders the run list with
+    status, depth, timestamps and explicit unsupported control states. Kill
+    and pause remain future Control operations.
 - [x] T039 [done-static] Add tool/model/memory/RAG/KG runtime event lanes with
   capped output tails.
   - 2026-04-30: `/api/v1/control/ops/events` extracts redacted
@@ -109,6 +114,9 @@ feature_id: 029
     events for completed recall/retain and retain-timeout states.
   - 2026-04-30: tool call/result audit rows now carry Feature-033 `tool`
     runtime events with `tool_call_id`, duration/status and result-key metadata.
-- T040 Add status/kill/pause/replay controls where backend support exists and
+- [partial-static] T040 Add status/kill/pause/replay controls where backend support exists and
   explicit unsupported outcomes elsewhere.
+  - 2026-04-30: Subagent Ops read-model marks `status=supported` and
+    `kill/pause/replay=unsupported`, so the frontend can display control
+    availability without implying durable child-process control.
 - T041 Link ops events to Prompt Cache and Report Artifact surfaces.

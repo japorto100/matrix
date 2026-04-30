@@ -211,6 +211,9 @@ feature_id: 020
   - 2026-04-30: A2A node emits `subagent.delegation.accepted`,
     `started`, `completed`, `failed` and timeout-as-`stale` runtime events.
     Kill/pause remain future Control operations.
+  - 2026-04-30: the same lifecycle events are persisted into audit metadata so
+    Feature 029 can reconstruct subagent run rows in Ops replay, not only from
+    transient graph state.
 - [x] T049 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit
     `subagent.parent_memory_handoff` as a parent-only memory event with result
