@@ -474,6 +474,56 @@ export interface AgentOpsReadModel {
 	contract: "agent-ops-event/v1";
 }
 
+export interface PromptCacheUsage {
+	prompt_tokens?: number | null;
+	completion_tokens?: number | null;
+	total_tokens?: number | null;
+	reasoning_tokens?: number | null;
+	cache_read_tokens?: number | null;
+	cache_write_tokens?: number | null;
+	unknown_fields?: string[];
+}
+
+export interface PromptCacheTrace {
+	event_id: string;
+	audit_ref: string;
+	timestamp: string;
+	thread_id: string;
+	provider: string;
+	model: string;
+	router: string;
+	iteration: number;
+	prompt_digest: string;
+	prompt_layout_digest: string;
+	tool_catalog_digest: string;
+	cache_break_reasons: string[];
+	usage: PromptCacheUsage;
+	links: {
+		ops_event: string;
+		context: string;
+	};
+}
+
+export interface PromptCacheReadModel {
+	contract: "prompt-cache-read-model/v1";
+	items: PromptCacheTrace[];
+	summary: {
+		requests: number;
+		cache_read_tokens: number;
+		cache_write_tokens: number;
+		prompt_tokens: number;
+		completion_tokens: number;
+		total_tokens: number;
+		cache_breaks: number;
+		unknown_cache_fields: number;
+		generated_at: string;
+	};
+	by_provider: Record<string, number>;
+	by_model: Record<string, number>;
+	cache_break_reasons: Record<string, number>;
+	limit: number;
+}
+
 // Sessions = LangGraph thread checkpoints (exec-10)
 // Backend returns minimal fields (thread_id + last_checkpoint + checkpoint_count + is_active).
 // Frontend SessionsTab shows rich fields only when present — all other fields are optional.

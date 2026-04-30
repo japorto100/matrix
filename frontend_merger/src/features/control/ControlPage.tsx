@@ -18,6 +18,7 @@ import { McpTab } from "./components/McpTab";
 import { OpsRoomTab } from "./components/OpsRoomTab";
 import { OverviewTab } from "./components/OverviewTab";
 import { PermissionsTab } from "./components/PermissionsTab";
+import { PromptCacheTab } from "./components/PromptCacheTab";
 import { ReportsTab } from "./components/ReportsTab";
 import { SandboxTab } from "./components/SandboxTab";
 import { SecurityTab } from "./components/SecurityTab";
@@ -55,6 +56,7 @@ export function ControlPage() {
 		if (pathname.startsWith("/control/sandbox")) return <SandboxTab />;
 		if (pathname.startsWith("/control/audit")) return <AuditTab />;
 		if (pathname.startsWith("/control/ops")) return <OpsRoomTab />;
+		if (pathname.startsWith("/control/prompt-cache")) return <PromptCacheTab />;
 		if (pathname.startsWith("/control/mcp")) return <McpTab />;
 		if (pathname.startsWith("/control/a2a")) return <A2aTab />;
 

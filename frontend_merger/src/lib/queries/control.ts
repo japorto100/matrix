@@ -23,6 +23,7 @@ import type {
 	ModelRouting,
 	OverviewSnapshot,
 	PermissionCell,
+	PromptCacheReadModel,
 	ReportArtifact,
 	SandboxRun,
 	ScheduledTask,
@@ -177,6 +178,15 @@ export const opsQueries = {
 		const qs = params.toString();
 		return apiGet(`/api/control/ops/events${qs ? `?${qs}` : ""}`);
 	},
+};
+
+export const promptCacheKeys = {
+	all: ["control", "prompt-cache"] as const,
+	readModel: () => ["control", "prompt-cache", "read-model"] as const,
+};
+
+export const promptCacheQueries = {
+	readModel: async (): Promise<PromptCacheReadModel> => apiGet("/api/control/prompt-cache"),
 };
 
 // ─── Sandbox ───────────────────────────────────────────────────────────────

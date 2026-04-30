@@ -14,6 +14,7 @@ import type {
 	ModelRouting,
 	OverviewSnapshot,
 	PermissionCell,
+	PromptCacheReadModel,
 	ReportArtifact,
 	SandboxRun,
 	SecurityPosture,
@@ -1102,7 +1103,7 @@ export const mockOpsReadModel: AgentOpsReadModel = {
 								prompt_cache: {
 									surface: "prompt_cache",
 									label: "Prompt Cache",
-									href: "/control/context?thread_id=thr_a1b2c3",
+									href: "/control/prompt-cache?thread_id=thr_a1b2c3",
 									provider: "openrouter",
 									model: "provider/mock-model",
 									prompt_digest: "mock-prompt-digest",
@@ -1246,6 +1247,79 @@ mockOpsReadModel.runtime_summary = {
 	latest: mockOpsReadModel.runtime_events[0] ?? {},
 };
 mockOpsReadModel.summary.runtime_events = mockOpsReadModel.runtime_events.length;
+
+export const mockPromptCacheReadModel: PromptCacheReadModel = {
+	contract: "prompt-cache-read-model/v1",
+	items: [
+		{
+			event_id: "audit:1042",
+			audit_ref: "1042",
+			timestamp: "2026-04-07T09:35:12Z",
+			thread_id: "thr_a1b2c3",
+			provider: "openrouter",
+			model: "provider/mock-model",
+			router: "langgraph",
+			iteration: 3,
+			prompt_digest: "mock-prompt-digest",
+			prompt_layout_digest: "mock-layout-digest",
+			tool_catalog_digest: "mock-tool-digest",
+			cache_break_reasons: [],
+			usage: {
+				prompt_tokens: 8192,
+				completion_tokens: 768,
+				total_tokens: 8960,
+				cache_read_tokens: 5120,
+				cache_write_tokens: 256,
+				unknown_fields: [],
+			},
+			links: {
+				ops_event: "/control/ops?session=thr_a1b2c3",
+				context: "/control/context?thread_id=thr_a1b2c3",
+			},
+		},
+		{
+			event_id: "audit:1035",
+			audit_ref: "1035",
+			timestamp: "2026-04-07T08:12:00Z",
+			thread_id: "thr_d4e5f6",
+			provider: "openrouter",
+			model: "provider/mock-model",
+			router: "simple",
+			iteration: 1,
+			prompt_digest: "mock-prompt-digest-2",
+			prompt_layout_digest: "mock-layout-digest-2",
+			tool_catalog_digest: "mock-tool-digest-2",
+			cache_break_reasons: ["tool_catalog_changed"],
+			usage: {
+				prompt_tokens: 4096,
+				completion_tokens: 512,
+				total_tokens: 4608,
+				cache_read_tokens: 0,
+				cache_write_tokens: 128,
+				unknown_fields: ["reasoning_tokens"],
+			},
+			links: {
+				ops_event: "/control/ops?session=thr_d4e5f6",
+				context: "/control/context?thread_id=thr_d4e5f6",
+			},
+		},
+	],
+	summary: {
+		requests: 2,
+		cache_read_tokens: 5120,
+		cache_write_tokens: 384,
+		prompt_tokens: 12288,
+		completion_tokens: 1280,
+		total_tokens: 13568,
+		cache_breaks: 1,
+		unknown_cache_fields: 0,
+		generated_at: "2026-04-30T10:00:00Z",
+	},
+	by_provider: { openrouter: 2 },
+	by_model: { "provider/mock-model": 2 },
+	cache_break_reasons: { tool_catalog_changed: 1 },
+	limit: 100,
+};
 
 export const mockWidgetProposals: MatrixWidgetApprovalItem[] = [
 	{

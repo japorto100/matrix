@@ -123,6 +123,5 @@ feature_id: 029
   - 2026-04-30: Ops events now expose `linked_surfaces.prompt_cache` from
     provider-agnostic request telemetry and `linked_surfaces.report_artifacts`
     from `report_id`/manifest/output refs. `/control/ops` renders those links
-    in the selected event drilldown; `/control/reports?report_id=...` opens
-    with that report filtered. A dedicated Prompt Cache tab is still Feature
-    032 follow-up, so prompt-cache links currently land on `/control/context`.
+    in the selected event drilldown; `/control/reports?report_id=...` and
+    `/control/prompt-cache?thread_id=...` open filtered target surfaces.

@@ -38,6 +38,6 @@ feature_id: 032
 
 2026-04-30 implementation note: Ops now converts request telemetry into a
 `linked_surfaces.prompt_cache` ref with provider, model, prompt/layout/tool
-digests, cache read/write counters and cache-break reasons. This is not yet the
-full Prompt Cache dashboard, but it gives every LLM ops event a typed,
-provider-agnostic bridge to the Control cache/debug surface.
+digests, cache read/write counters and cache-break reasons. The dedicated
+`/control/prompt-cache` surface reads the same audit-backed data and keeps
+unknown counters explicit instead of fabricating cache values.

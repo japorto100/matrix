@@ -38,8 +38,10 @@ feature_id: 032
   cache-break reasons and recent request traces.
   - 2026-04-30: Ops events expose prompt-cache link metadata from
     `provider-request-telemetry/v1` including provider, model, prompt/tool
-    digests, cache read/write counters and cache-break reasons. The link
-    targets `/control/context` until a dedicated cache surface is added.
+    digests, cache read/write counters and cache-break reasons.
+  - 2026-04-30: `/api/v1/control/prompt-cache` now builds a read model from
+    audit request telemetry, and `/control/prompt-cache` renders current
+    counters, break reasons, provider/model distribution and recent traces.
 - T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
 - T022 Add regression scenario where MCP reload invalidates cache and surfaces

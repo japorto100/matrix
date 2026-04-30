@@ -477,7 +477,7 @@ def _linked_surfaces(
         links["prompt_cache"] = {
             "surface": "prompt_cache",
             "label": "Prompt Cache",
-            "href": _control_href("context", "thread_id", event.get("thread_id")),
+            "href": _control_href("prompt-cache", "thread_id", event.get("thread_id")),
             "provider": str(telemetry.get("provider") or ""),
             "model": str(telemetry.get("model") or ""),
             "prompt_digest": str(telemetry.get("prompt_digest") or ""),

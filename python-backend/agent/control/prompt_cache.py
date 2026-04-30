@@ -1,0 +1,217 @@
+"""Control Surface - prompt cache and request telemetry read model."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from collections.abc import Iterable
+from datetime import UTC, datetime
+from typing import Any
+from urllib.parse import quote
+
+import psycopg
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from agent.control.request_scope import ensure_user_scope
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["control", "prompt-cache"])
+
+
+def _db_url() -> str:
+    return os.environ.get(
+        "HINDSIGHT_DB_URL", "postgresql://postgres@localhost:5433/hindsight_dev"
+    )
+
+
+@router.get("/prompt-cache")
+async def get_prompt_cache(
+    request: Request,
+    user_id: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+) -> dict[str, Any]:
+    """Return provider-agnostic request/cache telemetry from audit replay."""
+
+    scope = ensure_user_scope(request, user_id)
+    try:
+        audit_events = _query_audit_events(scope.user_id, limit=limit)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prompt-cache read model failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"prompt-cache: {exc}") from exc
+    return build_prompt_cache_read_model(audit_events=audit_events, limit=limit)
+
+
+def build_prompt_cache_read_model(
+    *,
+    audit_events: Iterable[dict[str, Any]],
+    limit: int = 100,
+) -> dict[str, Any]:
+    items = [
+        item
+        for event in audit_events
+        for item in _telemetry_items_from_audit_event(event)
+    ][:limit]
+    by_provider = _sum_counts(items, "provider")
+    by_model = _sum_counts(items, "model")
+    cache_breaks = _sum_break_reasons(items)
+    return {
+        "contract": "prompt-cache-read-model/v1",
+        "items": items,
+        "summary": {
+            "requests": len(items),
+            "cache_read_tokens": sum(
+                _safe_int(item["usage"].get("cache_read_tokens")) for item in items
+            ),
+            "cache_write_tokens": sum(
+                _safe_int(item["usage"].get("cache_write_tokens")) for item in items
+            ),
+            "prompt_tokens": sum(_safe_int(item["usage"].get("prompt_tokens")) for item in items),
+            "completion_tokens": sum(_safe_int(item["usage"].get("completion_tokens")) for item in items),
+            "total_tokens": sum(_safe_int(item["usage"].get("total_tokens")) for item in items),
+            "cache_breaks": sum(cache_breaks.values()),
+            "unknown_cache_fields": sum(
+                1
+                for item in items
+                for field in item["usage"].get("unknown_fields", [])
+                if "cache" in str(field)
+            ),
+            "generated_at": _now_iso(),
+        },
+        "by_provider": by_provider,
+        "by_model": by_model,
+        "cache_break_reasons": cache_breaks,
+        "limit": limit,
+    }
+
+
+def _telemetry_items_from_audit_event(event: dict[str, Any]) -> list[dict[str, Any]]:
+    metadata = _as_dict(event.get("metadata"))
+    raw_items: list[Any] = []
+    for key in ("request_telemetry", "requestTelemetry"):
+        value = metadata.get(key)
+        if isinstance(value, list):
+            raw_items.extend(value)
+        elif value:
+            raw_items.append(value)
+
+    items: list[dict[str, Any]] = []
+    for raw in raw_items:
+        telemetry = _as_dict(raw)
+        if not telemetry:
+            continue
+        usage = _as_dict(telemetry.get("usage"))
+        thread_id = str(telemetry.get("thread_id") or event.get("thread_id") or "")
+        prompt_digest = str(telemetry.get("prompt_digest") or "")
+        tool_digest = str(telemetry.get("tool_catalog_digest") or "")
+        items.append(
+            {
+                "event_id": f"audit:{event.get('id')}",
+                "audit_ref": str(event.get("id") or ""),
+                "timestamp": _iso(event.get("timestamp")),
+                "thread_id": thread_id,
+                "provider": str(telemetry.get("provider") or ""),
+                "model": str(telemetry.get("model") or ""),
+                "router": str(telemetry.get("router") or ""),
+                "iteration": _safe_int(telemetry.get("iteration")),
+                "prompt_digest": prompt_digest,
+                "prompt_layout_digest": str(telemetry.get("prompt_layout_digest") or ""),
+                "tool_catalog_digest": tool_digest,
+                "cache_break_reasons": _as_str_list(telemetry.get("cache_break_reasons")),
+                "usage": usage,
+                "links": {
+                    "ops_event": _control_href("ops", "session", thread_id),
+                    "context": _control_href("context", "thread_id", thread_id),
+                },
+            }
+        )
+    return items
+
+
+def _sum_counts(items: list[dict[str, Any]], field: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        key = str(item.get(field) or "unknown")
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda pair: pair[0]))
+
+
+def _sum_break_reasons(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        reasons = item.get("cache_break_reasons") or []
+        if not reasons:
+            continue
+        for reason in reasons:
+            key = str(reason or "unknown")
+            counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda pair: pair[0]))
+
+
+def _query_audit_events(user_id: str, *, limit: int) -> list[dict[str, Any]]:
+    with psycopg.connect(_db_url(), autocommit=True) as conn:
+        cur = conn.execute(
+            """
+            SELECT id, timestamp, action, user_id, thread_id, metadata
+            FROM agent.audit_events
+            WHERE user_id = %s
+            ORDER BY timestamp DESC
+            LIMIT %s
+            """,
+            (user_id, limit),
+        )
+        cols = [d[0] for d in cur.description] if cur.description else []
+        return [_row_to_dict(row, cols) for row in cur.fetchall()]
+
+
+def _row_to_dict(row: Any, cols: list[str]) -> dict[str, Any]:
+    data = dict(zip(cols, row, strict=True))
+    data["metadata"] = _as_dict(data.get("metadata"))
+    if data.get("timestamp"):
+        data["timestamp"] = _iso(data["timestamp"])
+    return data
+
+
+def _control_href(tab: str, query_key: str, query_value: Any) -> str:
+    value = str(query_value or "").strip()
+    if not value:
+        return f"/control/{tab}"
+    return f"/control/{tab}?{query_key}={quote(value)}"
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _as_str_list(value: Any) -> list[str]:
+    if isinstance(value, list | tuple):
+        return [str(item) for item in value if str(item)]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _safe_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _iso(value: Any) -> str:
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value or _now_iso())
+
+
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat()

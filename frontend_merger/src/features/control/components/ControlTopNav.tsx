@@ -9,6 +9,7 @@ import {
 	Activity,
 	Boxes,
 	CalendarClock,
+	DatabaseZap,
 	FileSearch,
 	GitBranch,
 	LayoutDashboard,
@@ -167,6 +168,13 @@ const TABS: SubTab[] = [
 		label: "Ops",
 		icon: <Activity className="h-3 w-3" />,
 		match: (p) => p.startsWith("/control/ops"),
+		section: "dev",
+	},
+	{
+		href: "/control/prompt-cache",
+		label: "Cache",
+		icon: <DatabaseZap className="h-3 w-3" />,
+		match: (p) => p.startsWith("/control/prompt-cache"),
 		section: "dev",
 	},
 	{

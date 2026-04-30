@@ -165,7 +165,7 @@ def test_llm_request_telemetry_is_ops_event() -> None:
     assert event["request_telemetry"]["provider"] == "openrouter"
     assert event["request_telemetry"]["api_key"] == "[redacted]"
     prompt_cache = event["linked_surfaces"]["prompt_cache"]
-    assert prompt_cache["href"] == "/control/context?thread_id=thread-1"
+    assert prompt_cache["href"] == "/control/prompt-cache?thread_id=thread-1"
     assert prompt_cache["provider"] == "openrouter"
     assert prompt_cache["model"] == "provider/model"
     assert prompt_cache["cache_read_tokens"] == 12

@@ -38,6 +38,8 @@ import {
 	overviewQueries,
 	permissionsKeys,
 	permissionsQueries,
+	promptCacheKeys,
+	promptCacheQueries,
 	reportKeys,
 	reportQueries,
 	sandboxKeys,
@@ -244,6 +246,14 @@ export function useOpsEvents(filters: Record<string, string> = {}) {
 		queryKey: opsKeys.events(filters),
 		queryFn: () => opsQueries.events(filters),
 		refetchInterval: 5_000,
+	});
+}
+
+export function usePromptCache() {
+	return useQuery({
+		...DEFAULTS,
+		queryKey: promptCacheKeys.readModel(),
+		queryFn: () => promptCacheQueries.readModel(),
 	});
 }
 

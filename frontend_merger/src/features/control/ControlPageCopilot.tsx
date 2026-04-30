@@ -25,6 +25,7 @@ const KNOWN_TABS = [
 	"system",
 	"sandbox",
 	"audit",
+	"prompt-cache",
 	"mcp",
 	"a2a",
 	"api",

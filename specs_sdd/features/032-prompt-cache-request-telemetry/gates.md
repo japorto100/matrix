@@ -18,5 +18,6 @@ feature_id: 032
 - G006 Skills reload does not mutate the system prompt in the same turn.
 - [partial-static] G007 Control UI shows cache evidence without provider-specific secrets.
   - 2026-04-30: Ops drilldown shows provider/model/cache counters and digests
-    from redacted request telemetry. Dedicated cache trace table is still open.
+    from redacted request telemetry. `/control/prompt-cache` now renders the
+    dedicated trace table from the same audit-backed read model.
 - G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
