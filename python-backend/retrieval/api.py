@@ -11,6 +11,7 @@ import inspect
 from dataclasses import dataclass
 from typing import Any
 
+from agent.runtime_events import make_runtime_event
 from retrieval.composers.context_bubble import build_context_bubble
 from retrieval.core.types import RetrievalHit, RetrievalMode
 from retrieval.rerankers.rrf import reciprocal_rank_fusion
@@ -30,6 +31,23 @@ class RetrievalResult:
     verification: dict[str, Any] | None = None
     degraded: bool = False
     degraded_reasons: list[str] | None = None
+    runtime_events: list[dict[str, Any]] | None = None
+
+
+def _retrieval_event(
+    *,
+    status: str,
+    name: str,
+    summary: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return make_runtime_event(
+        kind="rag",  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        name=name,
+        summary=summary,
+        metadata=metadata or {},
+    )
 
 
 def _normalize_hits(items: object, *, default_source: str) -> list[RetrievalHit]:
@@ -194,6 +212,19 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         query,
         requested_mode=requested_mode if isinstance(requested_mode, str) else None,
     )
+    runtime_events = [
+        _retrieval_event(
+            status="started",
+            name="rag.retrieve.started",
+            summary="Retrieval started",
+            metadata={
+                "intent": plan.mode.value,
+                "requested_mode": requested_mode if isinstance(requested_mode, str) else "",
+                "semantic_filter_present": semantic_filter is not None,
+                "semantic_lookup_status": (semantic_filter or {}).get("lookup_status", ""),
+            },
+        )
+    ]
     vector_hits = _normalize_hits(kwargs.get("vector_hits"), default_source="vector")
     kg_hits = _normalize_hits(kwargs.get("kg_hits"), default_source="kg")
     if (
@@ -311,6 +342,43 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         }
         if not citation_result.supported:
             degraded_reasons.append("ANSWER_CITATION_VERIFY_FAILED")
+    selected_kg_claim_ids = _selected_kg_claim_ids(bubble.hits)
+    missing_provenance_ids = [
+        hit_id for hit_id, status in provenance_by_hit_id.items() if status == "missing"
+    ]
+    runtime_events.append(
+        _retrieval_event(
+            status="completed",
+            name="rag.retrieve.completed",
+            summary="Retrieval completed",
+            metadata={
+                "intent": plan.mode.value,
+                "vector_hit_count": len(vector_hits),
+                "kg_hit_count": len(kg_hits),
+                "selected_context_ids": [hit.id for hit in bubble.hits],
+                "reference_ids": [str(ref.get("id") or "") for ref in bubble.references],
+                "selected_kg_claim_ids": selected_kg_claim_ids,
+                "kg_access_recorded_count": kg_access_count,
+                "missing_provenance_ids": missing_provenance_ids,
+                "degraded": bool(degraded_reasons),
+                "degraded_reasons": degraded_reasons,
+                "semantic_filter_present": semantic_filter is not None,
+            },
+        )
+    )
+    if selected_kg_claim_ids:
+        runtime_events.append(
+            make_runtime_event(
+                kind="kg",
+                status="completed",
+                name="kg.retrieval.selected_claims",
+                summary="KG claims selected into retrieval context",
+                metadata={
+                    "claim_ids": selected_kg_claim_ids,
+                    "kg_access_recorded_count": kg_access_count,
+                },
+            )
+        )
     return RetrievalResult(
         context=bubble.text,
         hits=[
@@ -351,4 +419,5 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
         verification=verification,
         degraded=bool(degraded_reasons),
         degraded_reasons=degraded_reasons,
+        runtime_events=runtime_events,
     )

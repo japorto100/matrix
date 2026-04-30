@@ -42,7 +42,10 @@ feature_id: 019
 - BM25/regex/semantic/KG lanes expose lane name, score and degradation reason.
 - Lexical hits can improve recall but cannot become answer support without
   source/citation/provenance refs.
-- Retrieval runtime events preserve selected context ids without inlining large
+- [x] Retrieval runtime events preserve selected context ids without inlining large
   source text.
+  - 2026-04-30: retrieval result runtime events carry ids/counts/status only;
+    focused tests assert selected context/KG ids are present and source text is
+    absent from event metadata.
 - Tool/skill/source discovery uses progressive disclosure before full schema or
   document exposure.

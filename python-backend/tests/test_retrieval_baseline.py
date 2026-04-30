@@ -119,6 +119,16 @@ async def test_retrieve_hybrid_from_supplied_candidates() -> None:
     assert "Russian oil" in result.context or "SANCTIONED_BY" in result.context
     assert result.hits[0]["metadata"]["provenance_status"] == "complete"
     assert result.references[0]["metadata"]["provenance_status"] == "complete"
+    assert result.runtime_events
+    assert [event["name"] for event in result.runtime_events[:2]] == [
+        "rag.retrieve.started",
+        "rag.retrieve.completed",
+    ]
+    completed = result.runtime_events[1]
+    assert completed["metadata"]["selected_context_ids"]
+    assert completed["metadata"]["selected_kg_claim_ids"] == ["claim-1"]
+    assert "Russian oil" not in str(completed["metadata"])
+    assert result.runtime_events[2]["kind"] == "kg"
 
 
 @pytest.mark.asyncio
@@ -139,6 +149,10 @@ async def test_retrieve_can_fail_closed_on_missing_context_provenance() -> None:
     assert result.degraded is True
     assert "CONTEXT_PROVENANCE_MISSING" in (result.degraded_reasons or [])
     assert result.hits and result.hits[0]["metadata"]["provenance_status"] == "missing"
+    assert result.runtime_events
+    assert result.runtime_events[1]["metadata"]["missing_provenance_ids"] == [
+        "chunk-without-source"
+    ]
 
 
 @pytest.mark.asyncio

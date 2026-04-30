@@ -156,7 +156,12 @@ feature_id: 019
   degradation output.
 - T053 Reuse Feature 024 progressive-disclosure search primitives for tool,
   skill and source-discovery candidates where applicable.
-- T054 Emit Feature 033 runtime events for retrieval start, selected contexts,
+- [x] T054 Emit Feature 033 runtime events for retrieval start, selected contexts,
   missing provenance and artifact/citation refs.
+  - 2026-04-30: `retrieve(...)` returns `runtime_events` with
+    `rag.retrieve.started`, `rag.retrieve.completed` and optional
+    `kg.retrieval.selected_claims`. Events include selected context ids,
+    reference ids, selected KG claim ids, missing-provenance ids, semantic
+    filter presence and degradation reasons without inlining source text.
 - T055 Add Meta-Harness gate proving lexical candidates cannot support answers
   without provenance.

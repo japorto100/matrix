@@ -146,6 +146,12 @@ feature_id: 017
   path.
 - T044 [done-static] Unit-test vector/KG RRF fusion, attribution and selected
   KG-claim access telemetry from Feature 019.
+- T044a [done-static] Emit selected-KG runtime event metadata when fused
+  retrieval promotes KG claims into the final context.
+  - 2026-04-30: `retrieve(...)` adds `kg.retrieval.selected_claims` events
+    with selected claim ids and KG-access count whenever KG claims survive
+    context-bubble selection. Event metadata carries ids/counts only, not
+    source text.
 - T045 [partial-static] Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
 - T046 [done-static] Verify global KG retrieval is not used as an agent-memory
