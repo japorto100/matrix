@@ -68,3 +68,14 @@ feature_id: 032
   - 2026-04-30: `prompt-cache-thread-session-rollup` validates backend
     `by_thread` rollups for cache read/write totals, cache-break count and
     provider de-duplication from audit-backed telemetry.
+- [x] G011 All-time prompt-cache totals survive beyond the recent audit replay
+  window.
+  - 2026-04-30: `agent.prompt_cache_thread_summaries` stores per-user,
+    per-thread cumulative request/cache-impact/cache-read/write/token totals.
+    The Control API returns `aggregate: prompt-cache-aggregate/v1`, while
+    recent `items` remain limited trace rows.
+- [x] G012 Live provider probe uses the real Agent LLM path, not a mock.
+  - 2026-04-30: `scripts/live_prompt_cache_probe.py` exercises
+    `llm_node` with a long stable prefix and real OpenRouter/LiteLLM
+    credentials; it passes only when the provider exposes second-call
+    cache-read evidence.

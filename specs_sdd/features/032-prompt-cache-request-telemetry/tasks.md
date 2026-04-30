@@ -55,6 +55,10 @@ feature_id: 032
   - 2026-04-30: per-call telemetry now includes cache snapshot fields used by
     runtime traces and Control read models: transport, cache retention, stream
     strategy, system digest, tool count and sorted tool names.
+  - 2026-04-30: `/control/prompt-cache` now materializes all-time per-user,
+    per-thread prompt-cache aggregates into
+    `agent.prompt_cache_thread_summaries`, so cumulative cached-token counters
+    are no longer limited to the recent audit replay window.
 - [x] T012 [done-static] Add request metadata capture for request id,
   processing time and rate-limit headers when providers expose them.
   - 2026-04-30: LLM runtime telemetry now stores allowlisted response metadata
@@ -94,6 +98,9 @@ feature_id: 032
   - 2026-04-30: read model rows now expose cache snapshot fields for the UI:
     transport, cache-retention, stream strategy, system prompt digest, tool
     count and sorted tool names.
+  - 2026-04-30: backend response now includes `aggregate:
+    prompt-cache-aggregate/v1` with durable all-time totals and `by_thread`
+    rollups sourced from `agent.prompt_cache_thread_summaries`.
 - [x] T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
   - 2026-04-30: `prompt-cache-contract` adds provider-free scenarios for
@@ -119,3 +126,16 @@ feature_id: 032
     transport/cache-retention/stream-strategy/system-prompt break reasons plus
     sorted tool snapshot fields. The `prompt-cache-contract` lane now has 7
     scenarios.
+- [x] T025 [done-static] Add durable cumulative prompt-cache aggregate storage.
+  - 2026-04-30: Alembic revision `034_prompt_cache_aggregates` adds
+    `agent.prompt_cache_thread_summaries`; Control refreshes it from
+    `agent.audit_events` and exposes all-time request/cache/read/write/token
+    totals separately from recent trace rows.
+  - 2026-04-30: `prompt-cache-durable-aggregate-rollup` was added to the
+    provider-free Meta-Harness lane, raising the prompt-cache contract to 8
+    scenarios.
+- [x] T026 [done-static] Add OpenRouter/Claude live probe gate for provider
+  cache counters.
+  - 2026-04-30: `scripts/live_prompt_cache_probe.py` runs two same-prefix
+    Agent LLM calls through `llm_node` and fails unless the second call exposes
+    `cache_read_tokens > 0`.

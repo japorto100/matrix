@@ -100,3 +100,18 @@ matches this interpretation by treating cache reads/writes as provider usage
 telemetry and by rolling them up per thread/session. The cache storage itself
 remains upstream/provider-owned; Matrix stores only redacted request telemetry,
 digests and cache-impact events.
+
+2026-04-30 durable aggregate update: to avoid confusing "recent trace window"
+with "all-time cached token reuse", Control now materializes per-user,
+per-thread cumulative stats in `agent.prompt_cache_thread_summaries`. This
+preserves the Z_Prompt_Cache interpretation that cached tokens can be much
+larger than fresh input over many calls, while keeping Matrix provider-agnostic:
+only counters, provider/model labels, digests and redacted thread summaries are
+stored. The actual cache state remains provider/gateway-owned.
+
+2026-04-30 live probe update: `scripts/live_prompt_cache_probe.py` verifies the
+real Agent LLM path, not a mock. It sends two same-prefix calls through
+`llm_node`, using the existing Anthropic-family `cache_control` injection and
+fails unless the second call exposes provider cache-read counters. This is a
+live gate because OpenRouter/model support and upstream cache behavior are
+runtime facts, not static guarantees.

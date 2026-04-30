@@ -40,7 +40,9 @@ async def get_prompt_cache(
     except Exception as exc:  # noqa: BLE001
         logger.warning("prompt-cache read model failed: %s", exc)
         raise HTTPException(status_code=500, detail=f"prompt-cache: {exc}") from exc
-    return build_prompt_cache_read_model(audit_events=audit_events, limit=limit)
+    read_model = build_prompt_cache_read_model(audit_events=audit_events, limit=limit)
+    read_model["aggregate"] = _refresh_prompt_cache_aggregate(scope.user_id)
+    return read_model
 
 
 def build_prompt_cache_read_model(
@@ -98,6 +100,67 @@ def build_prompt_cache_read_model(
         "by_thread": by_thread,
         "cache_break_reasons": cache_breaks,
         "limit": limit,
+    }
+
+
+def build_prompt_cache_aggregate_model(
+    read_model: dict[str, Any],
+    *,
+    user_id: str = "",
+    source: str = "audit_events",
+) -> dict[str, Any]:
+    """Build all-time prompt-cache totals from a read model.
+
+    This is still provider telemetry, not a local prompt-cache store. The
+    aggregate is the durable Control/Ops rollup for cumulative cached-token
+    counters like the ones described in Z_Prompt_Cache.md.
+    """
+
+    by_thread = _as_dict(read_model.get("by_thread"))
+    summary = {
+        "threads": len(by_thread),
+        "requests": 0,
+        "cache_impacts": 0,
+        "cache_invalidations": 0,
+        "cache_breaks": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "unknown_cache_fields": 0,
+        "providers": [],
+        "models": [],
+        "generated_at": _now_iso(),
+    }
+    for thread in by_thread.values():
+        thread_summary = _as_dict(thread)
+        for key in (
+            "requests",
+            "cache_impacts",
+            "cache_invalidations",
+            "cache_breaks",
+            "cache_read_tokens",
+            "cache_write_tokens",
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens",
+            "unknown_cache_fields",
+        ):
+            summary[key] += _safe_int(thread_summary.get(key))
+        for provider in _as_str_list(thread_summary.get("providers")):
+            _append_unique(summary["providers"], provider)
+        for model in _as_str_list(thread_summary.get("models")):
+            _append_unique(summary["models"], model)
+
+    summary["providers"].sort()
+    summary["models"].sort()
+    return {
+        "contract": "prompt-cache-aggregate/v1",
+        "source": source,
+        "user_id": user_id,
+        "summary": summary,
+        "by_thread": by_thread,
     }
 
 
@@ -252,6 +315,7 @@ def _thread_summaries(
                 "unknown_cache_fields": 0,
                 "providers": [],
                 "models": [],
+                "first_timestamp": "",
                 "last_timestamp": "",
             },
         )
@@ -272,6 +336,11 @@ def _thread_summaries(
         _append_unique(summary["providers"], item.get("provider"))
         _append_unique(summary["models"], item.get("model"))
         timestamp = str(item.get("timestamp") or "")
+        if timestamp and (
+            not str(summary.get("first_timestamp") or "")
+            or timestamp < str(summary.get("first_timestamp") or "")
+        ):
+            summary["first_timestamp"] = timestamp
         if timestamp > str(summary.get("last_timestamp") or ""):
             summary["last_timestamp"] = timestamp
 
@@ -293,6 +362,7 @@ def _thread_summaries(
                 "unknown_cache_fields": 0,
                 "providers": [],
                 "models": [],
+                "first_timestamp": "",
                 "last_timestamp": "",
             },
         )
@@ -300,6 +370,11 @@ def _thread_summaries(
         if impact.get("action") == "rebind_required":
             summary["cache_invalidations"] += 1
         timestamp = str(impact.get("timestamp") or "")
+        if timestamp and (
+            not str(summary.get("first_timestamp") or "")
+            or timestamp < str(summary.get("first_timestamp") or "")
+        ):
+            summary["first_timestamp"] = timestamp
         if timestamp > str(summary.get("last_timestamp") or ""):
             summary["last_timestamp"] = timestamp
 
@@ -326,6 +401,129 @@ def _query_audit_events(user_id: str, *, limit: int) -> list[dict[str, Any]]:
         )
         cols = [d[0] for d in cur.description] if cur.description else []
         return [_row_to_dict(row, cols) for row in cur.fetchall()]
+
+
+def _refresh_prompt_cache_aggregate(user_id: str) -> dict[str, Any]:
+    """Materialize all-time per-thread prompt-cache telemetry for one user."""
+
+    try:
+        with psycopg.connect(_db_url(), autocommit=True) as conn:
+            all_events = _query_all_prompt_cache_events(conn, user_id)
+            read_model = build_prompt_cache_read_model(
+                audit_events=all_events,
+                limit=max(len(all_events) * 10, 1),
+            )
+            aggregate = build_prompt_cache_aggregate_model(
+                read_model,
+                user_id=user_id,
+                source="agent.audit_events",
+            )
+            _write_prompt_cache_aggregate(conn, aggregate)
+            return aggregate
+    except Exception as exc:  # noqa: BLE001
+        logger.info("prompt-cache aggregate refresh unavailable: %s", exc)
+        return {
+            "contract": "prompt-cache-aggregate/v1",
+            "source": "unavailable",
+            "user_id": user_id,
+            "summary": {
+                "threads": 0,
+                "requests": 0,
+                "cache_impacts": 0,
+                "cache_invalidations": 0,
+                "cache_breaks": 0,
+                "cache_read_tokens": 0,
+                "cache_write_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "unknown_cache_fields": 0,
+                "providers": [],
+                "models": [],
+                "generated_at": _now_iso(),
+            },
+            "by_thread": {},
+        }
+
+
+def _query_all_prompt_cache_events(conn: Any, user_id: str) -> list[dict[str, Any]]:
+    cur = conn.execute(
+        """
+        SELECT id, timestamp, action, user_id, thread_id, metadata
+        FROM agent.audit_events
+        WHERE user_id = %s
+          AND metadata IS NOT NULL
+        ORDER BY timestamp ASC
+        """,
+        (user_id,),
+    )
+    cols = [d[0] for d in cur.description] if cur.description else []
+    return [_row_to_dict(row, cols) for row in cur.fetchall()]
+
+
+def _write_prompt_cache_aggregate(conn: Any, aggregate: dict[str, Any]) -> None:
+    user_id = str(aggregate.get("user_id") or "")
+    by_thread = _as_dict(aggregate.get("by_thread"))
+    if not user_id:
+        return
+
+    conn.execute(
+        "DELETE FROM agent.prompt_cache_thread_summaries WHERE user_id = %s",
+        (user_id,),
+    )
+    for thread_id, raw_summary in by_thread.items():
+        summary = _as_dict(raw_summary)
+        conn.execute(
+            """
+            INSERT INTO agent.prompt_cache_thread_summaries (
+                user_id, thread_id, first_seen, last_seen, request_count,
+                cache_impact_count, cache_invalidation_count, cache_break_count,
+                cache_read_tokens, cache_write_tokens, prompt_tokens,
+                completion_tokens, total_tokens, unknown_cache_fields,
+                providers, models, thread_summary, updated_at
+            )
+            VALUES (
+                %s, %s, NULLIF(%s, '')::timestamptz, NULLIF(%s, '')::timestamptz,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s::jsonb, %s::jsonb, %s::jsonb, now()
+            )
+            ON CONFLICT (user_id, thread_id) DO UPDATE SET
+                last_seen = EXCLUDED.last_seen,
+                request_count = EXCLUDED.request_count,
+                cache_impact_count = EXCLUDED.cache_impact_count,
+                cache_invalidation_count = EXCLUDED.cache_invalidation_count,
+                cache_break_count = EXCLUDED.cache_break_count,
+                cache_read_tokens = EXCLUDED.cache_read_tokens,
+                cache_write_tokens = EXCLUDED.cache_write_tokens,
+                prompt_tokens = EXCLUDED.prompt_tokens,
+                completion_tokens = EXCLUDED.completion_tokens,
+                total_tokens = EXCLUDED.total_tokens,
+                unknown_cache_fields = EXCLUDED.unknown_cache_fields,
+                providers = EXCLUDED.providers,
+                models = EXCLUDED.models,
+                thread_summary = EXCLUDED.thread_summary,
+                updated_at = now()
+            """,
+            (
+                user_id,
+                str(thread_id),
+                str(summary.get("first_timestamp") or ""),
+                str(summary.get("last_timestamp") or ""),
+                _safe_int(summary.get("requests")),
+                _safe_int(summary.get("cache_impacts")),
+                _safe_int(summary.get("cache_invalidations")),
+                _safe_int(summary.get("cache_breaks")),
+                _safe_int(summary.get("cache_read_tokens")),
+                _safe_int(summary.get("cache_write_tokens")),
+                _safe_int(summary.get("prompt_tokens")),
+                _safe_int(summary.get("completion_tokens")),
+                _safe_int(summary.get("total_tokens")),
+                _safe_int(summary.get("unknown_cache_fields")),
+                json.dumps(_as_str_list(summary.get("providers"))),
+                json.dumps(_as_str_list(summary.get("models"))),
+                json.dumps(summary, default=str),
+            ),
+        )
 
 
 def _row_to_dict(row: Any, cols: list[str]) -> dict[str, Any]:

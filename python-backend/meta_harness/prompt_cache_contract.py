@@ -30,6 +30,7 @@ def run_prompt_cache_contract_scenarios(
         _cache_snapshot_break_dimension_gate(),
         _mcp_reload_cache_impact_gate(),
         _thread_rollup_gate(),
+        _durable_aggregate_gate(),
         _usage_unknown_counter_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
@@ -391,6 +392,79 @@ def _thread_rollup_gate() -> dict[str, Any]:
         "prompt-cache-thread-session-rollup",
         failures=failures,
         evidence={"thread_summary": summary},
+    )
+
+
+def _durable_aggregate_gate() -> dict[str, Any]:
+    from agent.control.prompt_cache import (
+        build_prompt_cache_aggregate_model,
+        build_prompt_cache_read_model,
+    )
+
+    read_model = build_prompt_cache_read_model(
+        audit_events=[
+            {
+                "id": "audit-cache-aggregate-1",
+                "timestamp": "2026-04-30T10:00:00+00:00",
+                "thread_id": "thread-a",
+                "metadata": {
+                    "request_telemetry": {
+                        "provider": "provider-a",
+                        "model": "model-a",
+                        "thread_id": "thread-a",
+                        "cache_break_reasons": ["first_request"],
+                        "usage": {
+                            "prompt_tokens": 100,
+                            "completion_tokens": 10,
+                            "total_tokens": 110,
+                            "cache_read_tokens": 70,
+                            "cache_write_tokens": 5,
+                            "unknown_fields": [],
+                        },
+                    }
+                },
+            },
+            {
+                "id": "audit-cache-aggregate-2",
+                "timestamp": "2026-04-30T10:05:00+00:00",
+                "thread_id": "thread-b",
+                "metadata": {
+                    "request_telemetry": {
+                        "provider": "provider-a",
+                        "model": "model-b",
+                        "thread_id": "thread-b",
+                        "cache_break_reasons": [],
+                        "usage": {
+                            "prompt_tokens": 40,
+                            "completion_tokens": 4,
+                            "total_tokens": 44,
+                            "cache_read_tokens": 20,
+                            "cache_write_tokens": 0,
+                            "unknown_fields": ["reasoning_tokens"],
+                        },
+                    }
+                },
+            },
+        ],
+        limit=2,
+    )
+    aggregate = build_prompt_cache_aggregate_model(read_model, user_id="user-cache")
+    summary = aggregate.get("summary", {})
+    failures: list[str] = []
+    if aggregate.get("contract") != "prompt-cache-aggregate/v1":
+        failures.append("aggregate-contract-missing")
+    if summary.get("threads") != 2:
+        failures.append("aggregate-thread-count")
+    if summary.get("requests") != 2:
+        failures.append("aggregate-request-count")
+    if summary.get("cache_read_tokens") != 90:
+        failures.append("aggregate-cache-read")
+    if set(summary.get("models") or []) != {"model-a", "model-b"}:
+        failures.append("aggregate-model-dedupe")
+    return _scenario(
+        "prompt-cache-durable-aggregate-rollup",
+        failures=failures,
+        evidence={"aggregate_summary": summary},
     )
 
 

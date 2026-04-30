@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from agent.control.prompt_cache import build_prompt_cache_read_model
+from agent.control.prompt_cache import (
+    build_prompt_cache_aggregate_model,
+    build_prompt_cache_read_model,
+)
 
 
 def _audit_event(**overrides):
@@ -65,6 +68,9 @@ def test_prompt_cache_read_model_summarizes_usage_and_breaks() -> None:
     assert item["system_prompt_digest"] == "system-a"
     assert item["tool_count"] == 2
     assert item["tool_names"] == ["memory_search", "semantic_lookup"]
+    assert model["by_thread"]["thread-1"]["first_timestamp"] == (
+        "2026-04-30T10:00:00+00:00"
+    )
 
 
 def test_prompt_cache_read_model_preserves_unknown_cache_fields() -> None:
@@ -129,3 +135,42 @@ def test_prompt_cache_read_model_surfaces_cache_impacts() -> None:
     assert model["by_thread"]["thread-1"]["cache_invalidations"] == 1
     assert model["cache_impacts"][0]["source"] == "mcp_reload"
     assert model["cache_impacts"][0]["links"]["ops_event"] == "/control/ops?session=thread-1"
+
+
+def test_prompt_cache_aggregate_model_rolls_up_all_threads() -> None:
+    second = _audit_event(
+        id=2,
+        timestamp="2026-04-30T10:05:00+00:00",
+        thread_id="thread-2",
+        metadata={
+            "request_telemetry": {
+                "provider": "openrouter",
+                "model": "provider/other",
+                "thread_id": "thread-2",
+                "cache_break_reasons": [],
+                "usage": {
+                    "prompt_tokens": 30,
+                    "completion_tokens": 4,
+                    "total_tokens": 34,
+                    "cache_read_tokens": 20,
+                    "cache_write_tokens": 0,
+                    "unknown_fields": ["cache_write_tokens"],
+                },
+            }
+        },
+    )
+    read_model = build_prompt_cache_read_model(audit_events=[_audit_event(), second])
+
+    aggregate = build_prompt_cache_aggregate_model(read_model, user_id="alice")
+
+    assert aggregate["contract"] == "prompt-cache-aggregate/v1"
+    assert aggregate["user_id"] == "alice"
+    assert aggregate["summary"]["threads"] == 2
+    assert aggregate["summary"]["requests"] == 2
+    assert aggregate["summary"]["cache_read_tokens"] == 60
+    assert aggregate["summary"]["cache_write_tokens"] == 5
+    assert aggregate["summary"]["providers"] == ["openrouter"]
+    assert aggregate["summary"]["models"] == ["provider/model", "provider/other"]
+    assert aggregate["by_thread"]["thread-2"]["last_timestamp"] == (
+        "2026-04-30T10:05:00+00:00"
+    )

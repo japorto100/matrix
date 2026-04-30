@@ -38,6 +38,11 @@ TTL, eviction, billing and cache-key behavior. Matrix stores only redacted
 telemetry, digests and cache-impact evidence that let Control/Ops explain
 cache reuse or churn after the fact.
 
+Durable cumulative cache stats live in
+`agent.prompt_cache_thread_summaries`. This table materializes all-time
+per-user, per-thread request/cache totals from `agent.audit_events`; it is not a
+prompt-cache data store and contains no raw prompts or tool schemas.
+
 Required cache snapshot fields:
 
 - provider, model, router, transport, cache retention and stream strategy
