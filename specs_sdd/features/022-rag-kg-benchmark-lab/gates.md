@@ -41,3 +41,10 @@ feature_id: 022
   - 2026-04-27: canary expectations can require reference metadata keys; the
     benchmark runner fails candidates that lose source artifact, chunk hash,
     parser/chunker or `citation_ref` metadata on selected references.
+- KG/fused candidates must prove their graph projection is rebuildable from the
+  primary Postgres/source-artifact store before promotion.
+  - 2026-04-30: metadata compatibility now fail-closes KG-bearing candidates
+    without `kg_projection_source_of_truth=postgres_source_artifacts`,
+    `kg_projection_rebuildable=true` and `kg_projection_replay_checksum`.
+    The NornicDB projection canary also checks selected KG reference metadata
+    for `rebuildable` and `replay_checksum`.

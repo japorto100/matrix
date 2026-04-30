@@ -56,6 +56,9 @@ MATRIX_KG_ONLY = RetrievalCandidate(
         "feature": "017",
         "class": "baseline",
         "kg_projection_version": "postgres-fixture/v1",
+        "kg_projection_source_of_truth": "postgres_source_artifacts",
+        "kg_projection_rebuildable": True,
+        "kg_projection_replay_checksum": "kgproj_fixture_v1",
     },
 )
 MATRIX_FUSED = RetrievalCandidate(
@@ -68,6 +71,9 @@ MATRIX_FUSED = RetrievalCandidate(
         "feature": "019/017",
         "class": "rrf",
         "kg_projection_version": "postgres-fixture/v1",
+        "kg_projection_source_of_truth": "postgres_source_artifacts",
+        "kg_projection_rebuildable": True,
+        "kg_projection_replay_checksum": "kgproj_fixture_v1",
     },
 )
 DEFAULT_MATRIX_CANDIDATES = (MATRIX_VECTOR_ONLY, MATRIX_KG_ONLY, MATRIX_FUSED)
@@ -78,6 +84,11 @@ REQUIRED_CANDIDATE_METADATA = (
     "embedding_model",
     "embedding_dimension",
     "kg_projection_version",
+)
+KG_REBUILD_CANDIDATE_METADATA = (
+    "kg_projection_source_of_truth",
+    "kg_projection_rebuildable",
+    "kg_projection_replay_checksum",
 )
 
 
@@ -171,10 +182,22 @@ def metadata_compatibility(candidate: RetrievalCandidate) -> dict[str, Any]:
         for key in REQUIRED_CANDIDATE_METADATA
         if candidate.metadata.get(key) in (None, "")
     ]
+    kg_required = list(KG_REBUILD_CANDIDATE_METADATA) if candidate.include_kg else []
+    for key in kg_required:
+        if candidate.metadata.get(key) in (None, ""):
+            missing.append(key)
     failures = [f"missing-candidate-metadata:{key}" for key in missing]
+    if candidate.include_kg and candidate.metadata.get("kg_projection_rebuildable") is not True:
+        failures.append("kg-projection-not-rebuildable")
+    if (
+        candidate.include_kg
+        and candidate.metadata.get("kg_projection_source_of_truth")
+        != "postgres_source_artifacts"
+    ):
+        failures.append("kg-projection-source-not-postgres")
     return {
         "passed": not failures,
-        "required_keys": list(REQUIRED_CANDIDATE_METADATA),
+        "required_keys": list(REQUIRED_CANDIDATE_METADATA) + kg_required,
         "missing_keys": missing,
         "failures": failures,
     }

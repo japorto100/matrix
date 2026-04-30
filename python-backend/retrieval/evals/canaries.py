@@ -409,6 +409,8 @@ NORNICDB_PROJECTION_CANARY = RetrievalCanary(
                 "chunk_id",
                 "chunk_hash",
                 "citation_ref",
+                "rebuildable",
+                "replay_checksum",
             )
         },
         required_kg_paths=(("EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"),),
@@ -430,6 +432,8 @@ NORNICDB_PROJECTION_CANARY = RetrievalCanary(
                     "https://arxiv.org/pdf/2604.09666"
                     "#chunk=chunk-arxiv-2604-09666-url"
                 ),
+                "rebuildable": True,
+                "replay_checksum": "kgproj_fixture_v1",
                 "path": ["EU", "SANCTIONS", "Russian oil", "SHIPPING_INSURANCE"],
             },
         },

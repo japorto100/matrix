@@ -15,6 +15,8 @@ from meta_harness.decisions import record_candidate_decision
 from meta_harness.proposer import META_HARNESS_DATA_DIR
 from retrieval.evals.benchmark_lab import (
     DEFAULT_MATRIX_CANDIDATES,
+    KG_REBUILD_CANDIDATE_METADATA,
+    REQUIRED_CANDIDATE_METADATA,
     RetrievalCandidate,
     compare_candidates,
 )
@@ -24,16 +26,6 @@ from retrieval.evals.canaries import (
 )
 
 DEFAULT_RETRIEVAL_CANARIES = DEFAULT_SEARCH_CANARIES
-
-REQUIRED_CANDIDATE_METADATA = (
-    "source_corpus",
-    "parser_version",
-    "chunker_version",
-    "embedding_model",
-    "embedding_dimension",
-    "kg_projection_version",
-)
-
 
 async def run_retrieval_benchmark(
     *,
@@ -282,13 +274,26 @@ def _graph_retrieval_decision(candidate: dict[str, Any]) -> dict[str, Any] | Non
 def _metadata_compatibility(candidate: dict[str, Any]) -> dict[str, Any]:
     metadata = candidate.get("metadata") if isinstance(candidate, dict) else {}
     metadata = metadata if isinstance(metadata, dict) else {}
+    include_kg = bool(candidate.get("include_kg")) if isinstance(candidate, dict) else False
+    kg_required = list(KG_REBUILD_CANDIDATE_METADATA) if include_kg else []
     missing = [
         key for key in REQUIRED_CANDIDATE_METADATA if metadata.get(key) in (None, "")
     ]
+    for key in kg_required:
+        if metadata.get(key) in (None, ""):
+            missing.append(key)
     failures = [f"missing-candidate-metadata:{key}" for key in missing]
+    if include_kg and metadata.get("kg_projection_rebuildable") is not True:
+        failures.append("kg-projection-not-rebuildable")
+    if (
+        include_kg
+        and metadata.get("kg_projection_source_of_truth")
+        != "postgres_source_artifacts"
+    ):
+        failures.append("kg-projection-source-not-postgres")
     return {
         "passed": not failures,
-        "required_keys": list(REQUIRED_CANDIDATE_METADATA),
+        "required_keys": list(REQUIRED_CANDIDATE_METADATA) + kg_required,
         "missing_keys": missing,
         "failures": failures,
     }

@@ -106,3 +106,16 @@ retrieving or answering correctly.
 
 This keeps RAG/KG/semantic experiments comparable across provider, embedding
 and local/offline candidates.
+
+## 2026-04-30 KG Rebuildability Update
+
+Feature 017 projection replay snapshots now expose whether a graph projection
+can be rebuilt from Postgres-owned source artifacts. Feature 022 uses that as a
+benchmark compatibility gate instead of treating NornicDB/nonicdb as a second
+source of truth. KG/fused candidates must declare the Postgres source of truth,
+`kg_projection_rebuildable=true` and a replay checksum; the projection canary
+also requires selected KG references to carry `rebuildable` and
+`replay_checksum`. The provider-free `rag-benchmark` run
+`run-kg-rebuildable-benchmark-gate` passed with `matrix-fused-vector-kg`
+fitness `0.9908`, while promotion still defers because this run intentionally
+has no holdout split.

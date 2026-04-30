@@ -140,6 +140,17 @@ async def test_projection_replay_canary_requires_nornicdb_metadata() -> None:
     assert kg_result["reference_metadata"]["claim-nornicdb-sanctions-insurance"][
         "projection_target"
     ] == "nornicdb"
+    assert kg_result["reference_metadata"]["claim-nornicdb-sanctions-insurance"][
+        "rebuildable"
+    ] is True
+    assert kg_result["reference_metadata"]["claim-nornicdb-sanctions-insurance"][
+        "replay_checksum"
+    ].startswith("kgproj_")
+    assert by_id["matrix-kg-only"]["metadata_compatibility"]["required_keys"][-3:] == [
+        "kg_projection_source_of_truth",
+        "kg_projection_rebuildable",
+        "kg_projection_replay_checksum",
+    ]
     assert [
         "EU",
         "SANCTIONS",
@@ -148,6 +159,41 @@ async def test_projection_replay_canary_requires_nornicdb_metadata() -> None:
     ] in kg_result["kg_paths"]
     assert vector_result["passed"] is False
     assert "missing-source:kg" in vector_result["failures"]
+
+
+@pytest.mark.asyncio
+async def test_kg_candidates_fail_when_projection_is_not_rebuildable() -> None:
+    candidate = RetrievalCandidate(
+        id="kg-without-rebuild-proof",
+        mode="graph",
+        include_vector=False,
+        include_kg=True,
+        metadata={
+            "source_corpus": "matrix-retrieval-canaries@2026-04-27",
+            "parser_version": "deterministic-fixture/v1",
+            "chunker_version": "deterministic-fixture/v1",
+            "embedding_model": "deterministic-fixture",
+            "embedding_dimension": 0,
+            "kg_projection_version": "postgres-fixture/v1",
+            "kg_projection_source_of_truth": "secondary_graph",
+            "kg_projection_rebuildable": False,
+            "kg_projection_replay_checksum": "kgproj_weak",
+        },
+    )
+
+    report = await compare_candidates(
+        [NORNICDB_PROJECTION_CANARY],
+        candidates=(candidate,),
+        k=5,
+    )
+    compatibility = report["candidates"][0]["metadata_compatibility"]
+    result = report["candidates"][0]["results"][0]
+
+    assert compatibility["passed"] is False
+    assert "kg-projection-not-rebuildable" in compatibility["failures"]
+    assert "kg-projection-source-not-postgres" in compatibility["failures"]
+    assert result["passed"] is False
+    assert "kg-projection-not-rebuildable" in result["failures"]
 
 
 @pytest.mark.asyncio

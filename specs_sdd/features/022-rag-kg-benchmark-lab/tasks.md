@@ -200,6 +200,13 @@ feature_id: 022
     to expose `projection_target=nornicdb`, projection event id, source
     artifact id, chunk id/hash, citation ref and the expected compact KG path.
     This is a static adapter/canary gate; live NornicDB execution remains T043.
+  - 2026-04-30: Feature 022 now consumes Feature 017 rebuildability metadata
+    directly. KG/fused candidates must declare
+    `kg_projection_source_of_truth=postgres_source_artifacts`,
+    `kg_projection_rebuildable=true` and a `kg_projection_replay_checksum`.
+    The NornicDB canary also requires selected KG references to expose
+    `rebuildable` and `replay_checksum`, so a secondary graph projection cannot
+    be promoted unless it is replayable from Postgres-owned source artifacts.
 - T049 Add Feature 026 browser-local retrieval benchmark lane.
 - T050 [done-static] Add Feature 025 semantic-term benchmark cases.
   - 2026-04-29: `semantic-term-tool-success-001` requires semantic catalog
