@@ -40,16 +40,40 @@ def test_normalize_usage_preserves_unknown_fields() -> None:
         prompt_tokens=10,
         completion_tokens=3,
         prompt_tokens_details={"cached_tokens": 4},
+        cache_creation_input_tokens=1,
     )
 
     normalized = normalize_usage(usage)
 
     assert normalized.prompt_tokens == 10
+    assert normalized.input_tokens == 5
     assert normalized.completion_tokens == 3
+    assert normalized.output_tokens == 3
     assert normalized.total_tokens == 13
     assert normalized.cache_read_tokens == 4
+    assert normalized.cache_write_tokens == 1
     assert "reasoning_tokens" in normalized.unknown_fields
+    assert "cache_write_tokens" not in normalized.unknown_fields
+
+
+def test_normalize_usage_keeps_fresh_input_unknown_when_cache_unknown() -> None:
+    normalized = normalize_usage({"prompt_tokens": 10, "completion_tokens": 3})
+
+    assert normalized.prompt_tokens == 10
+    assert normalized.input_tokens is None
+    assert normalized.output_tokens == 3
+    assert "input_tokens" in normalized.unknown_fields
+    assert "cache_read_tokens" in normalized.unknown_fields
     assert "cache_write_tokens" in normalized.unknown_fields
+
+
+def test_normalize_usage_marks_output_unknown_when_completion_missing() -> None:
+    normalized = normalize_usage({"prompt_tokens": 10})
+
+    assert normalized.completion_tokens is None
+    assert normalized.output_tokens is None
+    assert "completion_tokens" in normalized.unknown_fields
+    assert "output_tokens" in normalized.unknown_fields
 
 
 def test_detect_cache_break_reasons() -> None:

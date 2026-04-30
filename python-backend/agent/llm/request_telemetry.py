@@ -28,7 +28,9 @@ _PROCESSING_MS_HEADER_KEYS = (
 @dataclass(frozen=True)
 class UsageTelemetry:
     prompt_tokens: int | None = None
+    input_tokens: int | None = None
     completion_tokens: int | None = None
+    output_tokens: int | None = None
     total_tokens: int | None = None
     reasoning_tokens: int | None = None
     cache_read_tokens: int | None = None
@@ -138,8 +140,20 @@ def normalize_usage(usage: Any) -> UsageTelemetry:
         prompt_details.get("cache_creation_input_tokens"),
         prompt_details.get("cache_write_tokens"),
     )
+    input_tokens = None
+    if prompt is not None and cache_read is not None and cache_write is not None:
+        input_tokens = max(0, prompt - cache_read - cache_write)
 
     unknown: list[str] = []
+    if prompt is None:
+        unknown.append("prompt_tokens")
+    if completion is None:
+        unknown.append("completion_tokens")
+        unknown.append("output_tokens")
+    if total is None:
+        unknown.append("total_tokens")
+    if input_tokens is None:
+        unknown.append("input_tokens")
     if reasoning is None:
         unknown.append("reasoning_tokens")
     if cache_read is None:
@@ -149,7 +163,9 @@ def normalize_usage(usage: Any) -> UsageTelemetry:
 
     return UsageTelemetry(
         prompt_tokens=prompt,
+        input_tokens=input_tokens,
         completion_tokens=completion,
+        output_tokens=completion,
         total_tokens=total,
         reasoning_tokens=reasoning,
         cache_read_tokens=cache_read,
@@ -225,7 +241,9 @@ def telemetry_span_attributes(telemetry: dict[str, Any]) -> dict[str, Any]:
     }
     for key in (
         "prompt_tokens",
+        "input_tokens",
         "completion_tokens",
+        "output_tokens",
         "total_tokens",
         "reasoning_tokens",
         "cache_read_tokens",

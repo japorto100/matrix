@@ -21,16 +21,28 @@ feature_id: 032
 
 ## Backend
 
-- T010 Implement normalized usage extraction for prompt/input/output/cache
+- [x] T010 Implement normalized usage extraction for prompt/input/output/cache
   read/cache write/total counters.
-- T011 Record last-call usage and session totals in agent runtime traces.
+  - 2026-04-30: `UsageTelemetry` now carries provider-agnostic
+    `prompt_tokens`, fresh `input_tokens`, `completion_tokens`,
+    `output_tokens`, `total_tokens`, `reasoning_tokens`,
+    `cache_read_tokens` and `cache_write_tokens`. Fresh input remains
+    `unknown` unless prompt, cache-read and cache-write counters are all known.
+- [partial-static] T011 Record last-call usage and session totals in agent runtime traces.
+  - 2026-04-30: per-call `request_telemetry` is emitted by `llm_node`, and
+    graph state still accumulates prompt/completion/reasoning/cache/total
+    counters. A consolidated per-session telemetry summary remains open.
 - [x] T012 [done-static] Add request metadata capture for request id,
   processing time and rate-limit headers when providers expose them.
   - 2026-04-30: LLM runtime telemetry now stores allowlisted response metadata
     under `metadata.response`: request id, provider/local duration and
     normalized rate-limit buckets. It intentionally excludes raw headers,
     prompt text and secrets.
-- T013 Add deterministic prompt/tool digest generation with secret redaction.
+- [x] T013 Add deterministic prompt/tool digest generation with secret redaction.
+  - 2026-04-30: request telemetry computes `prompt_digest`,
+    `prompt_layout_digest` and `tool_catalog_digest` from normalized prompt
+    shape and sorted tool descriptors. Raw prompt text and tool schemas are not
+    stored in telemetry.
 - [x] T014 [done-static] Detect meaningful cache-read drops and emit a
   cache-break event with reasons.
   - 2026-04-30: `llm_node` emits `llm.prompt_cache_break` runtime events when

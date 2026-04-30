@@ -133,8 +133,12 @@ migrated_from:
     response metadata from LiteLLM-compatible responses: request id,
     provider processing duration, local duration and normalized rate-limit
     buckets. Raw headers and prompts are not stored.
-- T078 Add normalized usage counters for input, output, cache read, cache
+- [x] T078 Add normalized usage counters for input, output, cache read, cache
   write and total.
+  - 2026-04-30: request telemetry now reports prompt/input,
+    completion/output, total, reasoning, cache-read and cache-write counters
+    provider-agnostically while preserving unknown counters instead of
+    fabricating zeros.
 - T079 Add transport/model/cache capability metadata for Feature 032 cache
   snapshots.
 - T080 Ensure provider-specific reasoning and resolved credentials are redacted

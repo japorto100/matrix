@@ -10,9 +10,15 @@ feature_id: 032
 # Gates
 
 - G001 Telemetry is provider-agnostic and preserves unknown counters as unknown.
+  - 2026-04-30: normalized request usage now separates prompt vs fresh input
+    and completion vs output tokens. Fresh input is only populated when cache
+    read/write counters are known; otherwise `unknown_fields` records the
+    missing counters.
 - G002 Request ids and rate-limit headers are redacted and never written to
   memory/KG as factual user content.
 - G003 Stable prompt/tool digests are deterministic across equivalent runs.
+  - 2026-04-30: `digest_prompt()` separates content digest from layout digest,
+    and `digest_tool_catalog()` sorts tools before hashing descriptor shape.
 - G004 Cache-break events include a reason or explicitly say reason unknown.
 - [x] G005 MCP reload and tool descriptor changes mark cache invalidation impact.
   - 2026-04-30: `agent-cache-impact/v1` carries previous/current digest,
