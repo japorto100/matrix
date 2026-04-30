@@ -465,5 +465,13 @@ the evaluator while omitting raw prompts, headers, authorization fields,
 resolved secrets and full request telemetry. The next step is to reuse the same
 gate vocabulary for subagent isolation and RAG/KG downstream artifact scenarios.
 
+2026-04-30 subagent gate update: `TraceExpectations` can now assert
+runtime-event metadata values, including list membership. The routing contract
+uses this to check the Hermes-derived but Matrix-specific isolation rule:
+child tasks run in isolated context, get a narrow tool allowlist, cannot retain
+directly into shared memory, and return only a parent-side memory handoff with
+digest metadata. This is intentionally provider-free and synthetic, so it tests
+the trace contract before any live A2A/provider run.
+
 The proposer can still be Codex/manual during this phase, but candidate packets
 must contain enough raw traces for an evaluator to reject placebo changes.

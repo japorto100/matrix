@@ -80,3 +80,12 @@ model and cache counters without raw prompts, raw headers, authorization values,
 resolved secrets or unredacted request telemetry. This references the same
 runtime-event contract described in the fresh Z_ agent harness notes while
 remaining provider-agnostic.
+
+2026-04-30 subagent harness update: value-level runtime metadata assertions now
+cover the child isolation contract. The provider-free contract requires
+`subagent.delegation.accepted/started/completed`, a
+`subagent.parent_memory_handoff` digest and a `memory.retain.blocked` event.
+It asserts `context_mode=isolated`, `memory_write_policy=parent_only`, child
+allowlist membership for `semantic_lookup` and absence of `memory_add`. This
+ports the Hermes child-tool isolation lesson into Matrix's event contract
+without treating Hermes' CLI execution model as a product runtime template.

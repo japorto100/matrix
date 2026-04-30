@@ -176,6 +176,12 @@ def test_trace_expectations_parse_runtime_event_gates():
             "forbidden_runtime_event_metadata_keys": {
                 "*": ["raw_prompt", "headers.authorization"]
             },
+            "required_runtime_event_metadata_values": {
+                "llm.prompt_cache_break": {"provider": "litellm"}
+            },
+            "forbidden_runtime_event_metadata_values": {
+                "*": {"headers.authorization": "Bearer sk-test"}
+            },
         }
     )
 
@@ -185,6 +191,12 @@ def test_trace_expectations_parse_runtime_event_gates():
     }
     assert expectations.forbidden_runtime_event_metadata_keys == {
         "*": ("raw_prompt", "headers.authorization")
+    }
+    assert expectations.required_runtime_event_metadata_values == {
+        "llm.prompt_cache_break": {"provider": "litellm"}
+    }
+    assert expectations.forbidden_runtime_event_metadata_values == {
+        "*": {"headers.authorization": "Bearer sk-test"}
     }
 
 
@@ -313,6 +325,8 @@ def test_trace_gates_check_runtime_event_metadata(monkeypatch):
                             "request_id": "req-1",
                             "cache_read_tokens": 8,
                             "layout_digest": "abc",
+                            "provider": "litellm",
+                            "allowed_tools": ["semantic_lookup"],
                         },
                     }
                 ]
@@ -329,6 +343,15 @@ def test_trace_gates_check_runtime_event_metadata(monkeypatch):
             },
             forbidden_runtime_event_metadata_keys={
                 "llm.prompt_cache_break": ("raw_prompt", "headers.authorization")
+            },
+            required_runtime_event_metadata_values={
+                "llm.prompt_cache_break": {
+                    "provider": "litellm",
+                    "allowed_tools": "semantic_lookup",
+                }
+            },
+            forbidden_runtime_event_metadata_values={
+                "llm.prompt_cache_break": {"allowed_tools": "memory_add"}
             },
         ),
     )
@@ -365,6 +388,12 @@ def test_trace_gates_fail_for_forbidden_runtime_event_metadata(monkeypatch):
             forbidden_runtime_event_metadata_keys={
                 "*": ("raw_prompt", "headers.authorization")
             },
+            required_runtime_event_metadata_values={
+                "llm.prompt_cache_break": {"provider": "litellm"}
+            },
+            forbidden_runtime_event_metadata_values={
+                "*": {"headers.authorization": "Bearer sk-test"}
+            },
         ),
     )
 
@@ -378,6 +407,14 @@ def test_trace_gates_fail_for_forbidden_runtime_event_metadata(monkeypatch):
         "forbidden runtime metadata key for *: headers.authorization"
         in verdict.failures
     )
+    assert (
+        "missing required runtime metadata value for "
+        "llm.prompt_cache_break: provider=litellm"
+    ) in verdict.failures
+    assert (
+        "forbidden runtime metadata value for "
+        "*: headers.authorization=Bearer sk-test"
+    ) in verdict.failures
 
 
 def test_trace_gates_fail_for_provider_retry_loop(monkeypatch):

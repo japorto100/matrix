@@ -61,12 +61,18 @@ feature_id: 033
     allowed tools and parent-only memory policy. Ordinary chat context does not
     become policy unless the request is an `a2a-*` child request with the
     Matrix delegation prefix.
+  - 2026-04-30: Meta-Harness routing contract now verifies the same policy at
+    trace level: isolated context, parent-only memory, narrow child allowlist
+    and no direct `memory_add`.
 - [x] T013 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit a parent-only memory handoff
     event with digest and no raw output payload.
   - 2026-04-30: child-side durable retain attempts are blocked by the Memory
     node with a redacted runtime event, so the parent handoff remains the only
     durable-memory path for delegated outcomes.
+  - 2026-04-30: provider-free contract scenario requires
+    `subagent.parent_memory_handoff` plus `memory.retain.blocked`, making
+    parent-side curation a trace gate rather than an implementation comment.
 - [partial-static] T014 Add status/kill/pause/replay control intents where backend support
   exists; unsupported controls must return structured unsupported events.
   - 2026-04-30: `/api/v1/control/sessions/{thread_id}/status` returns a
@@ -91,7 +97,8 @@ feature_id: 033
     control states.
 - [x] T022 Add Meta-Harness gates for event completeness and redaction.
   - 2026-04-30: `TraceExpectations` can now require nested runtime event
-    names and required/forbidden runtime-event metadata keys. The routing
-    contract suite includes a provider-free `llm.prompt_cache_break` redaction
-    shape gate that fails on raw prompts, headers, authorization material,
-    resolved secrets or unredacted request telemetry.
+    names, required/forbidden runtime-event metadata keys and required/
+    forbidden metadata values. The routing contract suite includes provider-free
+    `llm.prompt_cache_break` and subagent-isolation gates that fail on raw
+    prompts, headers, authorization material, resolved secrets, unredacted
+    request telemetry or child memory/tool policy drift.

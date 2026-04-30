@@ -136,6 +136,12 @@ class TraceExpectations:
     forbidden_runtime_event_metadata_keys: dict[str, tuple[str, ...]] = field(
         default_factory=dict
     )
+    required_runtime_event_metadata_values: dict[str, dict[str, str]] = field(
+        default_factory=dict
+    )
+    forbidden_runtime_event_metadata_values: dict[str, dict[str, str]] = field(
+        default_factory=dict
+    )
     required_route_decisions: tuple[str, ...] = ()
     required_runner_variants: tuple[str, ...] = ()
     required_delegation_decisions: tuple[str, ...] = ()
@@ -171,6 +177,12 @@ class TraceExpectations:
                 raw.get("forbidden_runtime_event_metadata_keys") or {}
             ).items()
         }
+        required_runtime_event_metadata_values = _metadata_value_expectations(
+            raw.get("required_runtime_event_metadata_values") or {}
+        )
+        forbidden_runtime_event_metadata_values = _metadata_value_expectations(
+            raw.get("forbidden_runtime_event_metadata_values") or {}
+        )
         return cls(
             required_actions=tuple(str(x) for x in raw.get("required_actions", [])),
             forbidden_actions=tuple(str(x) for x in raw.get("forbidden_actions", [])),
@@ -208,6 +220,12 @@ class TraceExpectations:
             ),
             required_runtime_event_metadata_keys=required_runtime_event_metadata_keys,
             forbidden_runtime_event_metadata_keys=forbidden_runtime_event_metadata_keys,
+            required_runtime_event_metadata_values=(
+                required_runtime_event_metadata_values
+            ),
+            forbidden_runtime_event_metadata_values=(
+                forbidden_runtime_event_metadata_values
+            ),
             required_route_decisions=tuple(
                 str(x) for x in raw.get("required_route_decisions", [])
             ),
@@ -543,6 +561,44 @@ def _metadata_contains_key(metadata: dict[str, Any], key: str) -> bool:
     return True
 
 
+_MISSING_METADATA_VALUE = object()
+
+
+def _metadata_value(metadata: dict[str, Any], key: str) -> Any:
+    if not key:
+        return _MISSING_METADATA_VALUE
+    current: Any = metadata
+    for part in key.split("."):
+        if not isinstance(current, dict) or part not in current:
+            return _MISSING_METADATA_VALUE
+        current = current[part]
+    return current
+
+
+def _metadata_value_matches(actual: Any, expected: str) -> bool:
+    normalized_expected = _normalized_gate_text(expected)
+    if isinstance(actual, bool):
+        return str(actual).casefold() == normalized_expected
+    if isinstance(actual, dict):
+        return normalized_expected in _normalized_gate_text(
+            json.dumps(actual, default=str, sort_keys=True)
+        )
+    if isinstance(actual, (list, tuple, set)):
+        return any(_metadata_value_matches(item, expected) for item in actual)
+    return _normalized_gate_text(actual) == normalized_expected
+
+
+def _metadata_value_expectations(raw: dict[str, Any]) -> dict[str, dict[str, str]]:
+    expectations: dict[str, dict[str, str]] = {}
+    for event_name, values in raw.items():
+        if not isinstance(values, dict):
+            continue
+        expectations[str(event_name)] = {
+            str(key): str(value) for key, value in values.items()
+        }
+    return expectations
+
+
 def _runtime_events_from_trace_events(
     events: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -766,6 +822,43 @@ def evaluate_trace_gates(
             ):
                 failures.append(
                     f"forbidden runtime metadata key for {name}: {key}"
+                )
+    for name, values in expectations.required_runtime_event_metadata_values.items():
+        matching_events = [
+            event for event in runtime_events if _runtime_event_name(event) == name
+        ]
+        if not matching_events:
+            failures.append(f"missing runtime event for metadata value gate: {name}")
+            continue
+        for key, expected in values.items():
+            if not any(
+                _metadata_value_matches(
+                    _metadata_value(_runtime_event_metadata(event), key),
+                    expected,
+                )
+                for event in matching_events
+            ):
+                failures.append(
+                    "missing required runtime metadata value for "
+                    f"{name}: {key}={expected}"
+                )
+    for name, values in expectations.forbidden_runtime_event_metadata_values.items():
+        matching_events = (
+            runtime_events
+            if name == "*"
+            else [event for event in runtime_events if _runtime_event_name(event) == name]
+        )
+        for key, forbidden in values.items():
+            if any(
+                _metadata_value_matches(
+                    _metadata_value(_runtime_event_metadata(event), key),
+                    forbidden,
+                )
+                for event in matching_events
+            ):
+                failures.append(
+                    "forbidden runtime metadata value for "
+                    f"{name}: {key}={forbidden}"
                 )
     for decision in expectations.required_route_decisions:
         if decision not in route_decisions:

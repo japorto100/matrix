@@ -111,6 +111,9 @@ migrated_from:
     metadata shape from audit rows via `required_runtime_event_names`,
     `required_runtime_event_metadata_keys` and
     `forbidden_runtime_event_metadata_keys`.
+  - 2026-04-30: value-level runtime-event assertions now cover subagent
+    isolation metadata such as child context mode, parent-only memory policy
+    and child tool allowlist membership.
 - [partial-static] T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
   reload and cached-session invalidation.
   - 2026-04-30: MCP and skill reload/toggle/import emit
@@ -125,6 +128,8 @@ migrated_from:
   - 2026-04-30: provider-free tests cover runtime-event redaction gates for
     prompt-cache break diagnostics, forbidding raw prompts, headers,
     authorization metadata, resolved secrets and unredacted request telemetry.
+  - 2026-04-30: provider-free tests also forbid raw parent history/output and
+    child policy drift in subagent runtime events.
 - [x] T070 Add skill-search trace fields for trigger-quality/debugging:
   selected ids, query terms, BM25/RRF scores, matched terms and ranking reason.
   - 2026-04-30: `find_skills_with_trace()` and `skill_found` audit metadata

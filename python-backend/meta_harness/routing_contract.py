@@ -36,6 +36,7 @@ def run_routing_contract_scenarios(
         _repeated_failed_tool_calls_fails_gate(),
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
+        _subagent_isolation_runtime_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
     summary = {
@@ -315,6 +316,131 @@ def _runtime_event_redaction_shape_gate() -> dict[str, Any]:
     )
     return _scenario_result(
         scenario_id="routing-runtime-event-redaction-shape",
+        verdict_passed=verdict.passed,
+        expected_passed=True,
+        verdict=verdict,
+    )
+
+
+def _subagent_isolation_runtime_gate() -> dict[str, Any]:
+    child_task_id = "task-child-1"
+    events = [
+        {
+            "action": "a2a_delegation",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "subagent.delegation.accepted",
+                        "metadata": {
+                            "child_task_id": child_task_id,
+                            "context_mode": "isolated",
+                            "memory_write_policy": "parent_only",
+                            "allowed_tools": ("semantic_lookup",),
+                            "spawn_depth": 1,
+                        },
+                    },
+                    {
+                        "name": "subagent.delegation.started",
+                        "metadata": {
+                            "child_task_id": child_task_id,
+                            "context_mode": "isolated",
+                        },
+                    },
+                    {
+                        "name": "subagent.delegation.completed",
+                        "metadata": {
+                            "child_task_id": child_task_id,
+                            "status": "completed",
+                        },
+                    },
+                    {
+                        "name": "subagent.parent_memory_handoff",
+                        "metadata": {
+                            "child_task_id": child_task_id,
+                            "child_memory_write_allowed": False,
+                            "output_digest": "sha256:child-output",
+                        },
+                    },
+                ]
+            },
+        },
+        {
+            "action": "memory_retain",
+            "success": False,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "memory.retain.blocked",
+                        "metadata": {
+                            "thread_id": "a2a-child-1",
+                            "reason": "child_memory_write_disabled",
+                            "memory_write_policy": "parent_only",
+                        },
+                    }
+                ]
+            },
+        },
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_runtime_event_names=(
+                "subagent.delegation.accepted",
+                "subagent.delegation.started",
+                "subagent.delegation.completed",
+                "subagent.parent_memory_handoff",
+                "memory.retain.blocked",
+            ),
+            required_runtime_event_metadata_keys={
+                "subagent.delegation.accepted": (
+                    "child_task_id",
+                    "context_mode",
+                    "memory_write_policy",
+                    "allowed_tools",
+                    "spawn_depth",
+                ),
+                "subagent.parent_memory_handoff": (
+                    "child_task_id",
+                    "child_memory_write_allowed",
+                    "output_digest",
+                ),
+                "memory.retain.blocked": (
+                    "thread_id",
+                    "reason",
+                    "memory_write_policy",
+                ),
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": (
+                    "raw_output",
+                    "messages",
+                    "parent_history",
+                    "api_key",
+                    "authorization",
+                )
+            },
+            required_runtime_event_metadata_values={
+                "subagent.delegation.accepted": {
+                    "context_mode": "isolated",
+                    "memory_write_policy": "parent_only",
+                    "allowed_tools": "semantic_lookup",
+                },
+                "subagent.parent_memory_handoff": {
+                    "child_memory_write_allowed": "false"
+                },
+                "memory.retain.blocked": {
+                    "reason": "child_memory_write_disabled",
+                    "memory_write_policy": "parent_only",
+                },
+            },
+            forbidden_runtime_event_metadata_values={
+                "subagent.delegation.accepted": {"allowed_tools": "memory_add"}
+            },
+        ),
+    )
+    return _scenario_result(
+        scenario_id="routing-subagent-isolation-runtime",
         verdict_passed=verdict.passed,
         expected_passed=True,
         verdict=verdict,

@@ -445,8 +445,14 @@ feature_id: 016
   - 2026-04-30: `TraceExpectations` supports required runtime event names and
     required/forbidden runtime-event metadata keys. Downstream stream/browser
     artifact gates remain open.
-- T127 Add subagent-isolation scenario with child tool-policy, parent memory
-  curation and child trace rollup.
+- [partial-static] T127 Add subagent-isolation scenario with child tool-policy,
+  parent memory curation and child trace rollup.
+  - 2026-04-30: provider-free routing contract now includes
+    `routing-subagent-isolation-runtime`. It requires accepted/started/
+    completed/handoff subagent runtime events, verifies isolated child context,
+    `memory_write_policy=parent_only`, `allowed_tools=semantic_lookup`, forbids
+    `memory_add`, and requires `memory.retain.blocked` for child durable memory
+    writes. Live A2A/provider execution remains a separate gate.
 - T128 Add ingestion/RAG/KG downstream artifact gates so retrieval success alone
   cannot pass a scenario.
 

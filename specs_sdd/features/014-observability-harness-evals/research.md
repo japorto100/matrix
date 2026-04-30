@@ -37,3 +37,10 @@ before browser/live-provider lanes: required event names prove completeness,
 required metadata keys prove useful diagnostics, and forbidden wildcard keys
 catch raw prompts, raw headers, authorization values, resolved secrets or
 unredacted request telemetry.
+
+The same gate vocabulary now includes required/forbidden metadata values. This
+matters for subagent observability because a trace that merely says
+`subagent.delegation.completed` is insufficient. The evaluator can assert
+isolated context mode, parent-only memory policy and child tool allowlist
+membership while rejecting direct memory-write tools or raw parent history in
+runtime-event metadata.

@@ -256,6 +256,8 @@ PY
   occur.
 - Trace gates can require runtime event names and enforce required/forbidden
   runtime-event metadata keys inside audit rows.
+- Trace gates can enforce runtime-event metadata values, including list
+  membership for child tool allowlists.
 - Stream/downstream gates assert tool cards, artifact links and degradation
   markers that Agent Chat or Control UI would display.
 - Subagent scenarios require child isolation plus parent-side memory curation.
