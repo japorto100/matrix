@@ -122,6 +122,13 @@ def build_parser() -> argparse.ArgumentParser:
     routing_contract.add_argument("--run-id", default="")
     routing_contract.add_argument("--data-dir", type=Path, default=None)
 
+    prompt_cache_contract = sub.add_parser(
+        "prompt-cache-contract",
+        help="Run provider-free Feature 032 prompt-cache telemetry scenarios",
+    )
+    prompt_cache_contract.add_argument("--run-id", default="")
+    prompt_cache_contract.add_argument("--data-dir", type=Path, default=None)
+
     domain_contract = sub.add_parser(
         "domain-contract",
         help="Run provider-free python-backend Meta-Harness domain scenarios",
@@ -394,6 +401,15 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_routing_contract_scenarios(**kwargs)
+    if args.command == "prompt-cache-contract":
+        from meta_harness.prompt_cache_contract import (
+            run_prompt_cache_contract_scenarios,
+        )
+
+        kwargs = {"run_id": args.run_id or "run-prompt-cache-contract"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_prompt_cache_contract_scenarios(**kwargs)
     if args.command == "domain-contract":
         from meta_harness.domain_contract import run_domain_contract_scenarios
 

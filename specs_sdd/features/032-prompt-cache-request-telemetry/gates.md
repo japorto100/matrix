@@ -33,4 +33,9 @@ feature_id: 032
     dedicated trace table from the same audit-backed read model.
   - 2026-04-30: prompt-cache read model also replays cache-impact events so the
     surface can join cache invalidation, request telemetry and Ops events.
-- G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
+- [x] G008 Meta-Harness can fail a candidate that churns stable prompt/tool order.
+  - 2026-04-30: `prompt-cache-contract` requires unchanged prompt/layout/tool
+    digests for equivalent inputs and no cache-break reasons when only tool
+    ordering changes.
+  - 2026-04-30: `run-prompt-cache-contract-gate` passed 4/4 without provider
+    calls.

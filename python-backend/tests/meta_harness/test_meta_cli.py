@@ -408,11 +408,32 @@ async def test_cli_routing_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 7
+    assert result["scenario_count"] == 11
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "routing-no-tool-no-subagent" in scenario_ids
     assert "routing-domain-delegate-deferred" in scenario_ids
     artifact = tmp_path / "runs" / "run-routing" / "routing_contract.json"
+    assert artifact.exists()
+
+
+@pytest.mark.asyncio
+async def test_cli_prompt_cache_contract_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        [
+            "prompt-cache-contract",
+            "--run-id",
+            "run-prompt-cache",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 4
+    artifact = tmp_path / "runs" / "run-prompt-cache" / "prompt_cache_contract.json"
     assert artifact.exists()
 
 
@@ -426,8 +447,8 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["lane_count"] == 6
-    assert result["scenario_count"] == 31
+    assert result["lane_count"] == 7
+    assert result["scenario_count"] == 40
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 
@@ -480,7 +501,7 @@ async def test_cli_knowledge_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 6
+    assert result["scenario_count"] == 7
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "knowledge-memory-ground-truth-preserved" in scenario_ids
     assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids

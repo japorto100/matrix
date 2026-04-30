@@ -65,8 +65,12 @@ feature_id: 032
   - 2026-04-30: `/api/v1/control/prompt-cache` now builds a read model from
     audit request telemetry, and `/control/prompt-cache` renders current
     counters, break reasons, provider/model distribution and recent traces.
-- T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
+- [x] T021 Add Meta-Harness cache-stability scenario with stable prompt/tool
   ordering.
+  - 2026-04-30: `prompt-cache-contract` adds provider-free scenarios for
+    stable prompt/tool digests, content-only prompt change reasons, tool schema
+    cache-break reasons and unknown usage counters.
+  - 2026-04-30: `run-prompt-cache-contract-gate` passed 4/4 scenarios.
 - T022 Add regression scenario where MCP reload invalidates cache and surfaces
   explicit impact metadata.
   - 2026-04-30: static regressions cover MCP reload impact,
