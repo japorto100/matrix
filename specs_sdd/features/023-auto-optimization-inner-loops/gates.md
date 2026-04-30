@@ -18,8 +18,10 @@ feature_id: 023
 - Visual-memory candidates from Feature 028 record source refs and confidence.
 
 - G001 [partial-pass] Search spaces are explicit and bounded for the first
-  deterministic RAG retrieval-mode sweep; parser/memory/tool search spaces
-  remain open.
+  deterministic RAG retrieval-mode sweep. Memory, skill/tool, runner and KG
+  search spaces are now emitted as static candidate metadata; parser and
+  browser-RAG spaces still need broader runtime sweeps before this becomes a
+  full pass.
 - G002 [pass-initial] Every deterministic RAG inner-loop candidate records full
   config, changed parameters and baseline metadata.
 - G003 [pass-initial] Search-set and holdout-set are separate.
@@ -37,3 +39,7 @@ feature_id: 023
   constraints: pinned skills remain write-protected, usage sidecar evidence is
   read-only for optimization, and promotion/archive decisions must pass Feature
   016 Meta-Harness before product mutation.
+- G009 [pass-static] Agent-harness candidate spaces preserve hard runtime
+  invariants: memory candidates require evidence trace refs, runner candidates
+  keep approval/confirm gates fail-closed, and KG candidates require semantic
+  term ids plus source/citation/hash evidence before promotion.

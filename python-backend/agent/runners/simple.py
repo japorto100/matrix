@@ -223,6 +223,20 @@ async def _run_simple(
                 _merge(state, tool_out)
                 if not tool_node_emitted_messages:
                     _append_tool_messages(state, approved_tool_calls, new_results)
+                from agent.loop_guards import repeated_tool_failure_guard
+
+                guard = repeated_tool_failure_guard(all_tool_results)
+                if guard is not None:
+                    flags = list(state.get("degradation_flags") or [])
+                    if guard["degradation_flag"] not in flags:
+                        flags.append(guard["degradation_flag"])
+                    state["degradation_flags"] = flags
+                    state["loop_guard"] = guard
+                    state["done"] = True
+                    state["final_response"] = guard["message"]
+                    _record_iteration(ctx.thread_id)
+                    state["iteration"] = iteration + 1
+                    break
                 _record_iteration(ctx.thread_id)
                 state["iteration"] = iteration + 1
 

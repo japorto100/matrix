@@ -593,6 +593,22 @@ async def test_cli_inner_loop_writes_candidate_artifacts(tmp_path, monkeypatch):
     assert payload["parameters"]["candidate_search_spaces"]["tool_policy"][
         "token_passthrough"
     ] == ["deny"]
+    spaces = payload["parameters"]["candidate_search_spaces"]
+    assert spaces["tool_policy"]["discovery_policy"] == [
+        "regex_bm25_rrf_visible_descriptors"
+    ]
+    assert spaces["memory_context"]["evidence_trace_required"] == [
+        "source_status",
+        "raw_evidence_ref",
+        "operation_log_id",
+        "diff_ref",
+    ]
+    assert spaces["skills"]["trigger_threshold"] == ["current_bm25_dense_rrf"]
+    assert spaces["skills"]["mutation_policy"] == ["recommend_only"]
+    assert spaces["runner"]["variants"] == ["dispatcher", "langgraph", "simple"]
+    assert spaces["runner"]["confirm_unavailable"] == ["fail_closed"]
+    assert spaces["kg"]["projection_backend"] == ["off", "postgres", "nornicdb"]
+    assert spaces["kg"]["semantic_term_ids_required"] is True
     assert "source_grounding" in payload["parameters"]["candidate_search_spaces"]
     assert "semantic_layer" in payload["parameters"]["candidate_search_spaces"]
     assert "visual_memory" in payload["parameters"]["candidate_search_spaces"]

@@ -52,6 +52,8 @@ def _route_after_llm(state: AgentGraphState) -> str:
 
 def _route_after_tools(state: AgentGraphState) -> str:
     """Routing nach Tool Execution: max iterations → retain, sonst → LLM."""
+    if state.get("done"):
+        return "retain"
     iteration = state.get("iteration", 0) + 1
     max_iter = state.get("max_iterations", MAX_ITERATIONS)
     if iteration >= max_iter:
@@ -66,7 +68,23 @@ async def _increment_iteration(state: AgentGraphState) -> dict[str, Any]:
         from agent.consent.rate_limiter import get_rate_limiter
 
         get_rate_limiter().record_iteration(thread_id)
-    return {"iteration": state.get("iteration", 0) + 1}
+    update: dict[str, Any] = {"iteration": state.get("iteration", 0) + 1}
+    from agent.loop_guards import repeated_tool_failure_guard
+
+    guard = repeated_tool_failure_guard(state.get("tool_results"))
+    if guard is not None:
+        flags = list(state.get("degradation_flags") or [])
+        if guard["degradation_flag"] not in flags:
+            flags.append(guard["degradation_flag"])
+        update.update(
+            {
+                "done": True,
+                "final_response": guard["message"],
+                "degradation_flags": flags,
+                "loop_guard": guard,
+            }
+        )
+    return update
 
 
 def create_agent_graph(checkpointer: Any | None = None) -> Any:

@@ -155,3 +155,27 @@ runtime invariants:
 This connects Feature 023 to `Z_Additional_For_Tool_Stuff.md` and Feature 016:
 tool/skill optimization is useful only when it cannot relax security, provenance
 or pinned-lifecycle constraints.
+
+## 2026-04-30 Agent Harness Candidate Spaces
+
+Derived from `Z_Additional_For_Tool_Stuff.md`, the Matrix memory/KG follow-up
+notes, Hermes bounded-subagent lessons and the implemented Feature 012/015/017
+runtime constraints.
+
+The inner loop now emits provider-agnostic, static candidate dimensions for the
+agent harness around RAG candidates:
+
+- memory context: Hindsight/MemPalace blend, query gate, compaction threshold,
+  injection order, decay and required evidence trace fields.
+- skills/tools: regex/BM25/RRF descriptor discovery, current skill trigger
+  policy, max selected skills, usage evidence, pinned write fence and
+  recommend-only mutation semantics.
+- runner: dispatcher/LangGraph/simple parity, timeout, iteration/output-token
+  bounds, approval interrupts and fail-closed confirm-unavailable behavior.
+- KG: projection backend, path depth, temporal filtering, access/recency decay,
+  vector/KG fusion weight and promotion evidence requirements.
+
+These search spaces deliberately describe what a bounded optimizer may vary.
+They are not permission to edit product code or mutate catalogs directly; every
+candidate still has to become a Feature 016 Meta-Harness artifact before an
+outer-loop promotion decision.

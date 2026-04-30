@@ -19,6 +19,11 @@ feature_id: 020
   - 2026-04-30: provider-free routing-contract scenarios cover tool-budget
     exhaustion, provider retry loops and repeated failed tool calls as expected
     gate failures.
+- [x] Runtime loop guards stop repeated same-tool failures before another model
+  retry.
+  - 2026-04-30: `agent.loop_guards.repeated_tool_failure_guard()` is used by
+    both SimpleLoop and LangGraph increment routing and surfaces
+    `tool_retry_guard_stopped` in degradation metadata.
 - [ ] Subagent behavior remains out of production until search and holdout
   gates prove value.
   - 2026-04-30: domain delegate candidate metadata now records

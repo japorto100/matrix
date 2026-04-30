@@ -96,6 +96,10 @@ feature_id: 020
     `routing-forbidden-provider-secret-metadata-fails` proves the failure path.
 - T026 Add compression/thrashing gates: no infinite compression loop, retry
   counters reset after compression, no context poisoning.
+  - 2026-04-30: repeated same-tool failures are now runtime-stopped in both
+    SimpleLoop and LangGraph via `agent.loop_guards`, preventing tool/LLM
+    thrash before max-iteration exhaustion. Compression reset and context
+    poisoning gates remain open.
 - T027 Add hook-policy gates: pre-tool veto, transformed tool result and shell
   hook behavior must be explicit in audit traces before use.
 
@@ -159,6 +163,11 @@ feature_id: 020
   - 2026-04-30: static Meta-Harness gates now cover repeated tool failures,
     provider retry loops and forbidden provider/secret metadata. Compression
     reset and stale async memory flush guards remain open under Feature 012/016.
+  - 2026-04-30: runtime now stops after
+    `AGENT_MAX_TOOL_FAILURES_PER_TOOL` repeated failures for the same tool in
+    SimpleLoop and LangGraph, emits `tool_retry_guard_stopped`, and returns a
+    bounded final response instead of asking the model for another identical
+    tool retry.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.

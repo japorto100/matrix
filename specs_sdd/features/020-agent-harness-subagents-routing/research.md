@@ -151,6 +151,24 @@ Findings:
   trace metadata. This stays provider-agnostic: the gate checks metadata shape,
   not a vendor SDK name.
 
+## 2026-04-30 Runtime Tool Retry Guard
+
+Hermes' compression/retry hardening translates to Matrix as bounded runtime
+guardrails, not as coding-agent-specific retry behavior.
+
+Matrix now stops after repeated failures for the same tool before asking the
+model to retry again. The guard is provider-agnostic and shared by the graphless
+SimpleLoop and the LangGraph increment path:
+
+- threshold: `AGENT_MAX_TOOL_FAILURES_PER_TOOL`, default `2`.
+- signal: `tool_retry_guard_stopped` in degradation metadata.
+- behavior: set `done=true`, keep the last tool evidence in messages/results
+  and return a bounded final response rather than looping until max iterations.
+
+This implements the max-tool-retry part of Feature 020. Compression retry
+reset, stale async memory flush and deeper context-poisoning checks remain
+Feature 012/016 follow-ups.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

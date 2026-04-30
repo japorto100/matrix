@@ -86,24 +86,29 @@ feature_id: 023
 
 ## Memory/Agent Inner Loop
 
-- T030 Define memory candidate dimensions: Hindsight/MemPalace recall blend,
+- T030 [done-static] Define memory candidate dimensions: Hindsight/MemPalace recall blend,
   query gate threshold, pre-save/compaction threshold, injection order and
   decay settings.
-- T031 Define skill/tool candidate dimensions: trigger threshold, max selected
+- T031 [done-static] Define skill/tool candidate dimensions: trigger threshold, max selected
   skills, tool subset, output transformation and consent behavior.
   - 2026-04-30: skill/tool candidates must also include lifecycle-safe
     dimensions from Feature 015: prompt usage deltas, pinned write-fence
     preservation, archive/import overwrite refusal and Control read-model
     visibility. Inner loops may suggest pin/archive/promote decisions, but
     cannot directly overwrite pinned skills or mutate product code.
-- T032 Define runner candidate dimensions: dispatcher/simple/LangGraph parity,
+- T032 [done-static] Define runner candidate dimensions: dispatcher/simple/LangGraph parity,
   timeout, max iterations and max output tokens.
   - 2026-04-29: add consent/approval parity to runner dimensions:
     `approval_interrupts`, confirm-unavailable fail-closed behavior and
     duplicate tool-message prevention are now explicit runner candidate checks.
-- T033 Define KG candidate dimensions: projection backend off/Postgres-only/
+- T033 [done-static] Define KG candidate dimensions: projection backend off/Postgres-only/
   NornicDB, path expansion depth, temporal filter, access/recency decay and
   KG/vector fusion weight.
+  - 2026-04-30: `meta_harness.inner_loop` now emits bounded
+    `memory_context`, `skills`, `runner` and `kg` candidate search spaces for
+    every deterministic RAG candidate. Tool/skill discovery includes the
+    provider-agnostic regex/BM25/RRF descriptor pattern from the Z_ docs while
+    keeping mutation policy `recommend_only` and security gates fail-closed.
 
 ## Verification
 

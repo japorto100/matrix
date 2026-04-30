@@ -311,6 +311,90 @@ async def test_simple_loop_does_not_duplicate_tool_messages():
     assert "Done." in "\n".join(chunks)
 
 
+@pytest.mark.asyncio
+async def test_simple_loop_stops_repeated_tool_failures(monkeypatch):
+    """Repeated same-tool failures stop the graphless loop before another LLM call."""
+    from agent.runners import simple
+
+    monkeypatch.setenv("AGENT_MAX_TOOL_FAILURES_PER_TOOL", "2")
+    llm_calls = 0
+    tool_calls_seen = 0
+
+    async def _fake_llm_node(state):
+        nonlocal llm_calls
+        llm_calls += 1
+        call_id = f"call-fail-{llm_calls}"
+        return {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": call_id,
+                            "type": "function",
+                            "function": {
+                                "name": "kg_search",
+                                "arguments": "{\"query\":\"alpha\"}",
+                            },
+                        }
+                    ],
+                }
+            ],
+            "tool_calls": [
+                {
+                    "tool_call_id": call_id,
+                    "tool_name": "kg_search",
+                    "tool_input": {"query": "alpha"},
+                }
+            ],
+        }
+
+    async def _fake_approval_node(state):
+        return {"tool_calls": state["tool_calls"]}
+
+    async def _fake_tool_node(state):
+        nonlocal tool_calls_seen
+        tool_calls_seen += 1
+        call = state["tool_calls"][0]
+        return {
+            "tool_results": [
+                {
+                    "tool_call_id": call["tool_call_id"],
+                    "tool_name": call["tool_name"],
+                    "result": {},
+                    "error": "backend unavailable",
+                }
+            ],
+            "tool_calls": [],
+            "messages": [
+                {
+                    "role": "tool",
+                    "tool_call_id": call["tool_call_id"],
+                    "content": "{\"error\":\"backend unavailable\"}",
+                }
+            ],
+        }
+
+    with _simple_runner_patches(
+        llm_node=_fake_llm_node,
+        approval_node=_fake_approval_node,
+        tool_node=_fake_tool_node,
+    ):
+        chunks = [
+            c
+            async for c in simple.run_simple_agent_loop(
+                _make_ctx(), [{"role": "user", "content": "search"}], ab_row_id=None,
+            )
+        ]
+
+    joined = "\n".join(chunks)
+    assert llm_calls == 2
+    assert tool_calls_seen == 2
+    assert "Stopped after repeated tool failures for kg_search" in joined
+    assert "tool_retry_guard_stopped" in joined
+
+
 def _make_ctx():
     from agent.context import AgentExecutionContext
     from agent.tools.registry import ToolRegistry
