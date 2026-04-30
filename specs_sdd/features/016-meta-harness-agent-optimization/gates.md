@@ -137,6 +137,10 @@ PY
 - Scenario output stores raw SSE and trace artifacts.
 - Candidate manifests fail if raw trace files are empty, invalid or missing
   without a typed benchmark artifact.
+- Candidate manifests fail if their candidate type is vague or legacy. Valid
+  types are explicit work classes such as `benchmark_candidate`,
+  `config_overlay`, `prompt_policy_change`, `policy_overlay`, `code_patch`,
+  `bounded_code_patch`, `docs_only` or `inner_loop_candidate`.
 - Scenario metadata includes run/candidate/scenario/thread/user ids.
 - In-process scenarios can explicitly select `dispatcher`, `langgraph` or
   `simple`; service-mode scenarios document that they exercise the app

@@ -19,6 +19,18 @@ from meta_harness.proposer import META_HARNESS_DATA_DIR
 
 PAPER_REF = "docs/Meta-Harness-2603.28052v1.md"
 PAPER_ARXIV_ID = "2603.28052v1"
+ALLOWED_CANDIDATE_TYPES = frozenset(
+    {
+        "benchmark_candidate",
+        "bounded_code_patch",
+        "code_patch",
+        "config_overlay",
+        "docs_only",
+        "inner_loop_candidate",
+        "policy_overlay",
+        "prompt_policy_change",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -45,7 +57,7 @@ class CandidateInventory:
     trace_quality_failures: tuple[str, ...] = ()
     result_files: tuple[str, ...] = ()
     source_files: tuple[dict[str, Any], ...] = ()
-    candidate_type: str = "scenario_run"
+    candidate_type: str = "benchmark_candidate"
     paper_failures: tuple[str, ...] = field(default_factory=tuple)
 
     @property
@@ -135,6 +147,7 @@ def build_candidate_inventory(candidate_dir: Path) -> CandidateInventory:
         or (candidate_dir / "aggregate.json").exists(),
         has_trace_or_benchmark=bool(trace_files or benchmark_artifacts),
         trace_quality_failures=trace_quality_failures,
+        candidate_type=candidate_type,
     )
     return CandidateInventory(
         run_id=run_id,
@@ -455,7 +468,7 @@ def _infer_candidate_type(candidate_dir: Path, benchmark_artifacts: tuple[str, .
         return "config_overlay"
     if (candidate_dir / "patch.diff").exists() or (candidate_dir / "diff.patch").exists():
         return "code_patch"
-    return "scenario_run"
+    return "benchmark_candidate"
 
 
 def _paper_failures(
@@ -466,8 +479,11 @@ def _paper_failures(
     has_scores: bool,
     has_trace_or_benchmark: bool,
     trace_quality_failures: list[str],
+    candidate_type: str,
 ) -> list[str]:
     failures: list[str] = []
+    if candidate_type not in ALLOWED_CANDIDATE_TYPES:
+        failures.append(f"invalid-candidate-type:{candidate_type}")
     if not has_run_manifest:
         failures.append("missing-run-manifest")
     if not has_source_snapshot:

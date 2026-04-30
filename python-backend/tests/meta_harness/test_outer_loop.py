@@ -26,6 +26,7 @@ def test_candidate_manifest_requires_paper_artifacts(tmp_path):
     manifest = write_candidate_manifest(candidate_dir)
 
     assert manifest["paper_ready"] is False
+    assert manifest["candidate_type"] == "benchmark_candidate"
     assert "missing-source-snapshot" in manifest["paper_failures"]
     assert "missing-raw-traces-or-benchmark-artifact" in manifest["paper_failures"]
     assert (candidate_dir / "candidate_manifest.json").exists()
@@ -232,3 +233,34 @@ def test_candidate_manifest_detects_holdout_payload_key(tmp_path):
 
     assert manifest["paper_ready"] is False
     assert "holdout-result-visible-to-proposer" in manifest["paper_failures"]
+
+
+def test_candidate_manifest_rejects_vague_legacy_candidate_type(tmp_path):
+    candidate_dir = tmp_path / "runs" / "run-1" / "candidates" / "candidate-a"
+    trace_dir = candidate_dir / "traces" / "scenario-1"
+    trace_dir.mkdir(parents=True)
+    (tmp_path / "runs" / "run-1" / "run.json").write_text(
+        json.dumps({"run_id": "run-1"}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "scores.json").write_text(
+        json.dumps({"completion_rate": 1.0, "trace_gate_pass_rate": 1.0}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "source_snapshot.json").write_text(
+        json.dumps({"files": [{"path": "python-backend/agent/runners/simple.py"}]}),
+        encoding="utf-8",
+    )
+    (candidate_dir / "candidate_manifest.json").write_text(
+        json.dumps({"candidate_type": "scenario_run"}),
+        encoding="utf-8",
+    )
+    (trace_dir / "thread.json").write_text(
+        json.dumps([{"action": "llm_response", "success": True}]),
+        encoding="utf-8",
+    )
+
+    manifest = write_candidate_manifest(candidate_dir)
+
+    assert manifest["paper_ready"] is False
+    assert "invalid-candidate-type:scenario_run" in manifest["paper_failures"]

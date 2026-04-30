@@ -26,9 +26,12 @@ feature_id: 016
   - 2026-04-27: `data/meta_harness/domain_spec.md` now defines source
     grounding/retrieval, memory lifecycle/context injection,
     runner/tool/provider routing and skills/inner-loop optimization domains.
-- T006b Require every candidate artifact to state whether it is a config
+- [x] T006b [done-static] Require every candidate artifact to state whether it is a config
   overlay, prompt/policy change, code patch or benchmark-only result; vague
   "agent improved" candidates are invalid.
+  - 2026-04-30: `candidate_manifest.json` now defaults scenario-only runs to
+    `benchmark_candidate` and rejects vague legacy candidate types such as
+    `scenario_run` as `invalid-candidate-type:*`.
 - [x] T006f [done-static] Align candidate manifests with the Meta-Harness paper:
   every candidate now receives a `candidate_manifest.json` inventory that
   states candidate type, source snapshot, scores, raw trace/benchmark evidence,

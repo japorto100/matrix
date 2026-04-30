@@ -53,6 +53,13 @@ file. `candidate_manifest.json` now records trace event count and fails with
 sanitizes any `holdout*` fields, and `promotion-check` fails closed unless
 pending-eval, search, holdout and safety evidence are all present.
 
+Candidate-type correction: paper-readiness must also reject vague candidate
+labels. Scenario-only runs are typed as `benchmark_candidate`, while legacy
+`scenario_run` or ad hoc labels fail with `invalid-candidate-type:*`. This
+keeps Meta-Harness candidates tied to a concrete work class: config overlay,
+prompt/policy change, code patch, docs-only, inner-loop output or benchmark
+result.
+
 Role separation for Codex-run loops:
 
 - Codex-as-proposer may inspect search artifacts and edit bounded runtime
