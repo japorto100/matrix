@@ -9,7 +9,7 @@ def test_routing_contract_scenarios_write_artifacts(tmp_path):
     result = run_routing_contract_scenarios(run_id="run-routing", data_dir=tmp_path)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 13
+    assert result["scenario_count"] == 14
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "routing-no-tool-no-subagent" in scenario_ids
     assert "routing-retrieval-beats-delegation" in scenario_ids
@@ -24,8 +24,9 @@ def test_routing_contract_scenarios_write_artifacts(tmp_path):
     assert "routing-tool-hook-policy-trace-shape" in scenario_ids
     assert "routing-context-overflow-compress-retry-trace-shape" in scenario_ids
     assert "routing-subagent-isolation-runtime" in scenario_ids
+    assert "routing-subagent-forged-child-tools-filtered" in scenario_ids
 
     artifact = tmp_path / "runs" / "run-routing" / "routing_contract.json"
     assert artifact.exists()
     saved = json.loads(artifact.read_text(encoding="utf-8"))
-    assert saved["passed_count"] == 13
+    assert saved["passed_count"] == 14

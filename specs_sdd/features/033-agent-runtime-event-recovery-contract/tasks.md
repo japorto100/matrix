@@ -78,6 +78,10 @@ feature_id: 033
     allowed tools and parent-only memory policy. Ordinary chat context does not
     become policy unless the request is an `a2a-*` child request with the
     Matrix delegation prefix.
+  - 2026-04-30: inbound child context is policy-filtered again at the server
+    boundary. A forged `allowed_tools` list cannot enable forbidden child tools
+    because the app reuses the provider-agnostic child tool policy before
+    constructing `AgentExecutionContext`.
   - 2026-04-30: Meta-Harness routing contract now verifies the same policy at
     trace level: isolated context, parent-only memory, narrow child allowlist
     and no direct `memory_add`.

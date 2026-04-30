@@ -456,6 +456,10 @@ feature_id: 016
     `memory_write_policy=parent_only`, `allowed_tools=semantic_lookup`, forbids
     `memory_add`, and requires `memory.retain.blocked` for child durable memory
     writes. Live A2A/provider execution remains a separate gate.
+  - 2026-04-30: routing contract also includes
+    `routing-subagent-forged-child-tools-filtered`, which proves the server-side
+    child tool policy strips forged `memory_add`, `delegate_task` and
+    `send_message` tool allowances before a child runner can use them.
 - [partial-static] T128 Add ingestion/RAG/KG downstream artifact gates so
   retrieval success alone cannot pass a scenario.
   - 2026-04-30: `TraceExpectations` now supports required stream parts, rich

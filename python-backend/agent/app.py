@@ -314,6 +314,10 @@ def _parse_a2a_child_policy(req: AgentChatRequest) -> dict[str, object]:
         for name in values.get("allowed_tools", "").split(",")
         if name.strip()
     )
+    from agent.routing.delegation_policy import build_child_tool_policy
+
+    child_tool_policy = build_child_tool_policy(requested_tools=allowed_tools)
+    filtered_allowed_tools = tuple(child_tool_policy["allowed_tools"])
     return {
         "delegation_role": values.get("role", ""),
         "parent_thread_id": values.get("parent_thread_id", ""),
@@ -322,7 +326,9 @@ def _parse_a2a_child_policy(req: AgentChatRequest) -> dict[str, object]:
         "context_mode": values.get("context_mode", "isolated"),
         "memory_scope": values.get("memory_scope", "explicit_context_only"),
         "memory_write_policy": "parent_only",
-        "allowed_tool_names": allowed_tools,
+        "allowed_tool_names": filtered_allowed_tools,
+        "blocked_tool_names": tuple(child_tool_policy["blocked_tools"]),
+        "child_tool_policy": child_tool_policy,
         "child_memory_write_allowed": False,
     }
 

@@ -81,6 +81,9 @@ feature_id: 020
   writes, cross-platform sends and interactive approval deadlocks.
   - 2026-04-30: policy filters recursive delegation, memory write,
     schedule/send and code-exec tools; approval is non-interactive auto-deny.
+  - 2026-04-30: the inbound Agent Chat child-policy parser reuses the same
+    server-side filter, so a forged `a2a-*` context cannot re-enable
+    `memory_add`, `delegate_task` or `send_message`.
 - [x] Parent-side memory handoff records delegation outcomes.
   - 2026-04-30: completed child result emits a parent memory-handoff runtime
     event with digest and `child_memory_write_allowed=false`.
@@ -91,3 +94,5 @@ feature_id: 020
     unit-tested through `a2a_delegate_node`.
   - 2026-04-30: node-level child-send timeout converts a hung child client into
     stale `subagent.delegation.timeout` metadata and closes the client.
+  - 2026-04-30: provider-free Meta-Harness now checks forged child-tool policy
+    filtering in `routing-subagent-forged-child-tools-filtered`.

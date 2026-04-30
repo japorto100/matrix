@@ -246,6 +246,11 @@ feature_id: 020
     propagate `memory_write_policy=parent_only` into both LangGraph and
     SimpleLoop state. `memory_retain_node` blocks these child turns before
     touching the durable Memory engine.
+  - 2026-04-30: inbound `a2a-*` child requests no longer trust the serialized
+    `allowed_tools` field blindly. The app re-applies the server-side child
+    tool policy, strips forbidden tools such as `memory_add`, `delegate_task`
+    and `send_message`, and passes only the filtered tool registry into the
+    runner.
 - [x] T048 Emit Feature 033 lifecycle events for accepted, started, tool activity,
   completed, error, timeout, killed and stale states.
   - 2026-04-30: A2A node emits `subagent.delegation.accepted`,
@@ -261,6 +266,9 @@ feature_id: 020
   - 2026-04-30: Ops replay now treats completion, stale timeout and parent
     memory handoff as one correlated run by `child_task_id`, exposing terminal
     reason and outcome while durable kill/pause remain future work.
+  - 2026-04-30: Meta-Harness routing contract adds
+    `routing-subagent-forged-child-tools-filtered`, proving forged child
+    `allowed_tools` cannot promote blocked memory/delegation/send tools.
 - [x] T049 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit
     `subagent.parent_memory_handoff` as a parent-only memory event with result

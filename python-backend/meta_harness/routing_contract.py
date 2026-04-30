@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.routing.delegation_policy import (
+    build_child_tool_policy,
     build_delegation_defer_metadata,
     build_route_decision_metadata,
 )
@@ -42,6 +43,7 @@ def run_routing_contract_scenarios(
         _tool_hook_policy_trace_shape_gate(),
         _context_overflow_compress_retry_trace_gate(),
         _subagent_isolation_runtime_gate(),
+        _subagent_forged_child_tools_filtered_gate(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
     summary = {
@@ -777,6 +779,91 @@ def _subagent_isolation_runtime_gate() -> dict[str, Any]:
         expected_passed=True,
         verdict=verdict,
     )
+
+
+def _subagent_forged_child_tools_filtered_gate() -> dict[str, Any]:
+    child_task_id = "task-child-forged-tools"
+    tool_policy = build_child_tool_policy(
+        requested_tools=(
+            "semantic_lookup",
+            "memory_add",
+            "delegate_task",
+            "send_message",
+        )
+    )
+    events = [
+        {
+            "action": "a2a_child_policy",
+            "success": True,
+            "metadata": {
+                "runtime_events": [
+                    {
+                        "name": "subagent.delegation.accepted",
+                        "metadata": {
+                            "child_task_id": child_task_id,
+                            "context_mode": "isolated",
+                            "memory_write_policy": tool_policy["memory_write_policy"],
+                            "allowed_tools": tuple(tool_policy["allowed_tools"]),
+                            "blocked_tools": tuple(tool_policy["blocked_tools"]),
+                            "approval_mode": tool_policy["approval_mode"],
+                            "recursive_delegation_allowed": tool_policy[
+                                "recursive_delegation_allowed"
+                            ],
+                            "cross_platform_send_allowed": tool_policy[
+                                "cross_platform_send_allowed"
+                            ],
+                        },
+                    }
+                ]
+            },
+        }
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_runtime_event_names=("subagent.delegation.accepted",),
+            required_runtime_event_metadata_keys={
+                "subagent.delegation.accepted": (
+                    "allowed_tools",
+                    "blocked_tools",
+                    "memory_write_policy",
+                    "approval_mode",
+                    "recursive_delegation_allowed",
+                    "cross_platform_send_allowed",
+                )
+            },
+            required_runtime_event_metadata_values={
+                "subagent.delegation.accepted": {
+                    "allowed_tools": "semantic_lookup",
+                    "blocked_tools": "memory_add",
+                    "memory_write_policy": "parent_only",
+                    "approval_mode": "non_interactive_auto_deny",
+                    "recursive_delegation_allowed": "false",
+                    "cross_platform_send_allowed": "false",
+                }
+            },
+            forbidden_runtime_event_metadata_values={
+                "subagent.delegation.accepted": {
+                    "allowed_tools": "memory_add",
+                }
+            },
+        ),
+    )
+    failures = list(verdict.failures)
+    if tool_policy["allowed_tools"] != ["semantic_lookup"]:
+        failures.append("forged-child-tools-not-filtered")
+    for forbidden_tool in ("memory_add", "delegate_task", "send_message"):
+        if forbidden_tool not in tool_policy["blocked_tools"]:
+            failures.append(f"forged-child-tool-not-blocked:{forbidden_tool}")
+    passed = verdict.passed and not failures
+    return {
+        "id": "routing-subagent-forged-child-tools-filtered",
+        "passed": passed,
+        "expected_gate_passed": True,
+        "actual_gate_passed": passed,
+        "failures": failures,
+        "verdict": verdict.as_dict(),
+    }
 
 
 def _write_json(path: Path, data: Any) -> None:

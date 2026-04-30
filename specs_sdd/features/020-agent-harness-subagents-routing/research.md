@@ -283,6 +283,14 @@ read model by `child_task_id`, so operators can see result digest, retain
 decision and `child_memory_write_allowed=false` while the runtime still blocks
 direct child writes.
 
+2026-04-30 forged child policy update: treating the A2A context string as
+Matrix-owned is not sufficient by itself, because the HTTP endpoint can still
+receive a request that imitates the prefix. The app now re-applies
+`build_child_tool_policy()` after parsing inbound child context, so serialized
+`allowed_tools` is only a request, not authority. Forbidden memory, recursive
+delegation and send tools are stripped before the child runner sees the tool
+registry, and the provider-free routing contract verifies that shape.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`
