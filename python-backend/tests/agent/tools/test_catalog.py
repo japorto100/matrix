@@ -63,9 +63,11 @@ def test_builtin_catalog_covers_real_registry_tools():
 
     assert "memory_add" in by_name
     assert "semantic_lookup" in by_name
+    assert "retrieve_context" in by_name
     assert "sandbox_execute" in by_name
     assert "get_portfolio_summary" in by_name
     assert by_name["semantic_lookup"].group == "semantic"
+    assert by_name["retrieve_context"].group == "retrieval"
     assert by_name["sandbox_execute"].risk == "critical"
     assert by_name["get_portfolio_summary"].progressive_disclosure_level == 1
 

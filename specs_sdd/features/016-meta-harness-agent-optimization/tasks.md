@@ -468,6 +468,10 @@ feature_id: 016
     RAG/KG runtime events with source/citation metadata and Agent Chat stream
     artifacts `rag-kg-sources.json` plus `kg-paths.json`. Browser visual
     rendering and live ingestion remain separate gates.
+  - 2026-04-30: `retrieve_context` moves this from contract-only into the
+    actual Agent ToolRegistry. Tool-node propagation now forwards nested
+    RAG/KG/artifact runtime events, and `to_model_output()` ensures downstream
+    artifacts are visible to UI/audit but compact for the next LLM turn.
 
 ## Verify Gates
 

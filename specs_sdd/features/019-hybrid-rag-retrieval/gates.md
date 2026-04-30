@@ -31,6 +31,9 @@ feature_id: 019
 - 2026-04-30: `knowledge-contract` also gates downstream Agent Chat-visible
   RAG/KG source/path artifact filenames, so provenance must be inspectable
   beyond answer text.
+- 2026-04-30: `retrieve_context` exposes that same contract to the actual
+  Agent ToolRegistry and keeps full source/path artifacts out of model-visible
+  tool messages through tool-specific `to_model_output()`.
 
 - Remote embeddings are configurable without hardcoding one provider.
 - Local embedding downloads are disabled by default and cache to HDD when
@@ -68,3 +71,6 @@ feature_id: 019
 - Semantic query planning has an agent-facing handoff: `semantic_lookup`
   returns compact term ids, catalog version, KG claim types and RAG source
   classes without exposing the full catalog or raw SQL.
+- `retrieve_context` consumes the compact `semantic_lookup.semantic_context`
+  handoff and fails closed through retrieval semantic filters instead of
+  asking the model to manually copy source constraints.

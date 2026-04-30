@@ -203,3 +203,19 @@ but `rag.retrieve.completed` exposes `semantic_candidate_count` and
 `semantic_candidate_ids`. This lets Agent Chat/Ops explain "I found a likely
 semantic metric, please confirm" without treating a BM25-style match as an
 authoritative semantic contract.
+
+## 2026-04-30 Agent Tool Integration
+
+The retrieval API was already testable and benchmarkable, but the live agent
+registry had no `retrieve_context` tool even though child/subagent policy
+listed it as an allowed read-only capability. The new tool closes that runtime
+gap provider-agnostically:
+
+- It calls `retrieval.api.retrieve(...)` with thread/session scope so RAG/KG
+  runtime events can be audited and replayed.
+- It accepts compact `semantic_lookup.semantic_context` handoff metadata for
+  exact term filtering.
+- It emits metadata-only downstream artifacts for source and KG-path
+  inspection.
+- Its `to_model_output()` strips full hits/file contents from the next LLM
+  turn while leaving the complete result available to UI/audit.

@@ -144,6 +144,10 @@ feature_id: 020
     `AGENT_A2A_MAX_SPAWN_DEPTH` explicitly permits the next depth. When enabled,
     the child receives a fresh bounded context containing role, parent thread,
     spawn depth and explicit-context-only memory scope.
+  - 2026-04-30: child read-only allowlists that referenced
+    `retrieve_context` now point at a real Agent ToolRegistry entry. This keeps
+    retrieval-capable leaf agents provider-agnostic without granting memory
+    writes, recursive delegation, sends or scheduling.
 - T034 Add transport abstraction candidate after Feature 011 review; avoid
   moving provider logic until Meta-Harness covers OpenRouter, mock, embeddings
   and local fallback paths.

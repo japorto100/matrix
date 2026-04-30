@@ -291,6 +291,14 @@ receive a request that imitates the prefix. The app now re-applies
 delegation and send tools are stripped before the child runner sees the tool
 registry, and the provider-free routing contract verifies that shape.
 
+2026-04-30 retrieval child-tool update: the policy allowlist previously named
+`retrieve_context`, but the real ToolRegistry did not implement it. That made
+retrieval-capable child agents a paper contract rather than executable runtime
+surface. `retrieve_context` is now a read-only provider-agnostic tool over the
+Feature 019 retrieval API. It emits RAG/KG/artifact runtime events and compact
+downstream file metadata, while durable memory writes remain blocked and
+parent-curated.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

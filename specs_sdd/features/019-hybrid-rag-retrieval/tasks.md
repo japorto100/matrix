@@ -200,3 +200,8 @@ feature_id: 019
     stream artifact filenames `rag-kg-sources.json` and `kg-paths.json`. This
     prevents retrieval-only success from passing when downstream sources/paths
     would not be inspectable.
+  - 2026-04-30: `retrieve_context` is now a first-class agent tool over
+    `retrieval.api.retrieve(...)`. It returns selected context, compact
+    references, runtime events and metadata-only downstream files
+    `rag-kg-sources.json`/`kg-paths.json`; `to_model_output()` sends only a
+    compact excerpt/references/file list into the next LLM turn.

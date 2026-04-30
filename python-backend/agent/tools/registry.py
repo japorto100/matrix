@@ -54,6 +54,7 @@ class ToolRegistry:
         from agent.tools.memory_tool import LoadMemoryTool, SaveMemoryTool
         from agent.tools.portfolio import GetPortfolioSummaryTool
         from agent.tools.report_artifacts import ReportBuildTool, ReportValidateTool
+        from agent.tools.retrieve_context import RetrieveContextTool
         from agent.tools.sandbox_browser_tool import SandboxBrowserTool
         from agent.tools.sandbox_tool import SandboxExecuteTool
         from agent.tools.scheduler_tools import (
@@ -89,6 +90,8 @@ class ToolRegistry:
         registry.register(FileAnalyzeTool())
         # Semantic Layer (Feature 025) — read-only metric/term contract lookup
         registry.register(SemanticLookupTool())
+        # Retrieval Layer (Feature 019) — source-grounded RAG/KG context lookup
+        registry.register(RetrieveContextTool())
         # Report Artifacts (Feature 027) — source-grounded report validation/build
         registry.register(ReportValidateTool())
         registry.register(ReportBuildTool())

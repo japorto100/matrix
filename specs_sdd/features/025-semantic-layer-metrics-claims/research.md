@@ -173,3 +173,9 @@ near-miss candidates into retrieval runtime events as metadata-only ids/counts.
 This completes the safe handoff: RAG can explain a semantic miss and suggest a
 candidate, but the selected context stays empty and degraded until the semantic
 contract is exact or user-confirmed.
+
+2026-04-30 agent retrieval handoff: `retrieve_context` now accepts the compact
+`semantic_context` emitted by `semantic_lookup.to_model_output()`. The handoff
+is intentionally narrow: catalog version, term ids and metric id only. That
+keeps semantic routing provider-agnostic and avoids making the model copy raw
+catalog records into retrieval filters.

@@ -40,6 +40,11 @@ class _SecretTool(_StubTool):
         return {"keep": "ok", "secret": "raw-secret"}
 
 
+class _CompactTool(_StubTool):
+    def to_model_output(self, result: dict[str, Any]) -> dict[str, Any]:
+        return {"summary": result["summary"]}
+
+
 def _registry() -> ToolRegistry:
     registry = ToolRegistry()
     registry.register(_StubTool("get_portfolio_summary"))
@@ -160,6 +165,69 @@ async def test_tool_node_emits_openai_compatible_tool_call_id(monkeypatch):
     assert result["runtime_events"][0]["kind"] == "tool"
     assert result["runtime_events"][0]["status"] == "completed"
     assert result["runtime_events"][0]["metadata"]["tool_call_id"] == "call_123"
+
+
+@pytest.mark.asyncio
+async def test_tool_node_uses_compact_model_output_and_propagates_tool_runtime_events(
+    monkeypatch,
+):
+    registry = ToolRegistry()
+    registry.register(_CompactTool("compact_tool"))
+
+    async def fake_execute_single(tc, registry, ctx):
+        return {
+            "tool_call_id": tc["tool_call_id"],
+            "tool_name": tc["tool_name"],
+            "result": {
+                "summary": "small",
+                "large": "x" * 5000,
+                "runtime_events": [
+                    {
+                        "kind": "rag",
+                        "status": "completed",
+                        "name": "rag.retrieve.completed",
+                        "metadata": {"selected_context_ids": ["chunk-1"]},
+                    }
+                ],
+            },
+            "error": None,
+        }
+
+    class _Limiter:
+        def record_tool_call(self, thread_id: str, tool_name: str) -> None:
+            return None
+
+    monkeypatch.setattr(tool_node_module.ToolRegistry, "load", classmethod(lambda cls: registry))
+    monkeypatch.setattr(tool_node_module, "_execute_single", fake_execute_single)
+    monkeypatch.setattr(
+        "agent.consent.rate_limiter.get_rate_limiter",
+        lambda: _Limiter(),
+    )
+
+    result = await tool_node(
+        {
+            "tool_calls": [
+                {
+                    "tool_call_id": "call_compact",
+                    "tool_name": "compact_tool",
+                    "tool_input": {},
+                },
+            ],
+            "current_role": None,
+            "user_id": "alice",
+            "thread_id": "t1",
+            "model": "test-model",
+            "reasoning_effort": None,
+        }
+    )
+
+    assert '"summary": "small"' in result["messages"][0]["content"]
+    assert "large" not in result["messages"][0]["content"]
+    assert result["tool_results"][0]["result"]["large"].startswith("x")
+    assert [event["name"] for event in result["runtime_events"]] == [
+        "tool.compact_tool",
+        "rag.retrieve.completed",
+    ]
 
 
 @pytest.mark.asyncio

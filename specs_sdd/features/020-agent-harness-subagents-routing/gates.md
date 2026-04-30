@@ -84,6 +84,9 @@ feature_id: 020
   - 2026-04-30: the inbound Agent Chat child-policy parser reuses the same
     server-side filter, so a forged `a2a-*` context cannot re-enable
     `memory_add`, `delegate_task` or `send_message`.
+  - 2026-04-30: `retrieve_context` is now an implemented read-only child tool
+    and remains bounded to retrieval/runtime artifact output; durable memory
+    writes still require parent-side curation.
 - [x] Parent-side memory handoff records delegation outcomes.
   - 2026-04-30: completed child result emits a parent memory-handoff runtime
     event with digest and `child_memory_write_allowed=false`.

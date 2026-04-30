@@ -117,3 +117,11 @@ important because the handoff deliberately belongs to the parent memory lane,
 not to the child lifecycle lane. The replay row now carries normalized outcome,
 terminal reason, result digest and parent-curation metadata while still showing
 kill/pause/replay as unsupported until a durable child registry exists.
+
+2026-04-30 tool-result runtime propagation update: tools can now emit nested
+runtime events in their result payload, and `tool_node` appends those events to
+the run state after the canonical `tool.*` event. This is needed for
+`retrieve_context`: the RAG/KG retrieval events and
+`artifact.rag_kg_sources.ready` event are downstream UI/Ops facts, not model
+text. The full tool result still goes to UI/audit, but the next LLM turn gets
+the tool's compact `to_model_output()` instead.

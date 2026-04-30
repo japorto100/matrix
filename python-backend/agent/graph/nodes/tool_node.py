@@ -125,10 +125,15 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
         if tr["error"]:
             llm_content = json.dumps({"error": tr["error"]})
         else:
+            model_output = _model_output_for_tool(
+                registry=registry,
+                tool_name=tc["tool_name"],
+                result=tr["result"],
+            )
             raw_content = (
-                json.dumps(tr["result"])
-                if isinstance(tr["result"], dict)
-                else str(tr["result"])
+                json.dumps(model_output)
+                if isinstance(model_output, dict)
+                else str(model_output)
             )
             san = sanitize_input(tc["tool_name"], raw_content)
             if san.blocked:
@@ -155,6 +160,7 @@ async def tool_node(state: AgentGraphState) -> dict[str, Any]:
                 "content": _cap_tool_llm_content(tc["tool_name"], llm_content),
             }
         )
+        runtime_events.extend(_runtime_events_from_tool_result(tr))
 
     return {
         "tool_results": tool_results,
@@ -188,6 +194,34 @@ def _cap_tool_llm_content(tool_name: str, content: str) -> str:
         f"max_chars={TOOL_LLM_OUTPUT_MAX_CHARS}]"
     )
     return content[:TOOL_LLM_OUTPUT_MAX_CHARS].rstrip() + marker
+
+
+def _model_output_for_tool(
+    *,
+    registry: ToolRegistry,
+    tool_name: str,
+    result: dict[str, Any] | str,
+) -> dict[str, Any] | str:
+    if not isinstance(result, dict):
+        return result
+    tool = registry.lookup(tool_name)
+    if tool is None:
+        return result
+    try:
+        return tool.to_model_output(result)
+    except Exception:  # noqa: BLE001
+        logger.warning("Tool model-output transform failed for %s", tool_name)
+        return result
+
+
+def _runtime_events_from_tool_result(result: ToolResult) -> list[dict[str, Any]]:
+    payload = result.get("result")
+    if not isinstance(payload, dict):
+        return []
+    events = payload.get("runtime_events")
+    if not isinstance(events, list):
+        return []
+    return [event for event in events if isinstance(event, dict)]
 
 
 def _tool_runtime_event(

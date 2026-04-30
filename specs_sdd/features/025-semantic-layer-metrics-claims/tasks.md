@@ -129,6 +129,9 @@ feature_id: 025
   - 2026-04-30: Feature 019 retrieval now propagates the same near-miss
     candidates as runtime metadata and degraded reasons, while selecting no
     context until the semantic phrase is exact or user-confirmed.
+  - 2026-04-30: `retrieve_context` now consumes exact
+    `semantic_lookup.semantic_context` metadata directly, so semantic term ids
+    can drive retrieval filters without exposing the full catalog or raw SQL.
 - [x] T036 [done-static] Meta-Harness scenario: unstructured document concept
   must link to a KG claim and RAG citation.
   - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` requires semantic

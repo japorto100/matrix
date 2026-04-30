@@ -484,3 +484,11 @@ the UI would have no inspectable sources or paths.
 
 The proposer can still be Codex/manual during this phase, but candidate packets
 must contain enough raw traces for an evaluator to reject placebo changes.
+
+2026-04-30 retrieve-context implementation update: the downstream artifact gate
+now reaches actual agent runtime, not only synthetic stream fixtures.
+`retrieve_context` is registered in the real ToolRegistry, consumes exact
+semantic handoff metadata, emits RAG/KG/artifact runtime events, and uses
+tool-specific `to_model_output()` so Meta-Harness can evaluate both upstream
+retrieval behavior and downstream source/path visibility without filling the
+next LLM context with full artifact payloads.

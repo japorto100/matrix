@@ -151,6 +151,8 @@ PY
 ## Tool Gates
 
 - Evaluator uses real ToolRegistry unless a scenario opts out.
+  - 2026-04-30: `retrieve_context` is part of the real ToolRegistry and is
+    covered by provider-free harness/tool-node tests without mock LLM output.
 - Required tool gate can pass and fail deterministically.
 - Forbidden tool gate can pass and fail deterministically.
 - Observed `tool_result.success=false` fails trace gates by default; only

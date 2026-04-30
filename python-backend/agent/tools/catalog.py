@@ -194,6 +194,8 @@ def _tool_group(name: str, description: str) -> str:
     text = f"{name} {description}".lower()
     if "memory" in text or "remember" in text:
         return "memory"
+    if name == "retrieve_context" or "retrieval" in text or "retrieve" in text:
+        return "retrieval"
     if "semantic" in text or "metric" in text or "provenance" in text:
         return "semantic"
     if "report" in text or "citation" in text or "renderer" in text:

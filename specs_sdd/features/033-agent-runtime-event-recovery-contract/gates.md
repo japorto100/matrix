@@ -23,6 +23,9 @@ feature_id: 033
 - [x] G002 Runtime events preserve tool_call_id where applicable.
   - 2026-04-30: `tool_node` runtime events include `tool_call_id` for started
     and result paths, and focused tests assert the id survives audit metadata.
+  - 2026-04-30: nested runtime events emitted by tools are appended after the
+    `tool.*` event, preserving tool-call identity while allowing RAG/KG/artifact
+    child events to reach stream metadata.
 - [x] G003 Raw secrets, provider reasoning and oversized payloads are redacted
   or capped.
   - 2026-04-30: runtime event payloads use the shared redaction contract, and
@@ -63,3 +66,5 @@ feature_id: 033
   - 2026-04-30: Ops replay correlates subagent lifecycle events with
     parent-memory-handoff events and preserves timeout/completion outcomes in
     the backend read model without browser dependencies.
+  - 2026-04-30: `retrieve_context` provides a provider-free replay path for
+    RAG/KG/artifact runtime events through normal tool execution.

@@ -55,6 +55,11 @@ feature_id: 033
     `llm.prompt_cache_break` runtime events with cache-break reasons, digests,
     request id and cache-read counters, instead of requiring downstream
     surfaces to parse request telemetry internals.
+  - 2026-04-30: tool execution now propagates tool-result nested
+    `runtime_events` into the run state after the normal `tool.*` event. This
+    lets `retrieve_context` forward `rag.retrieve.*`, `kg.*` and
+    `artifact.rag_kg_sources.ready` events to Agent Chat/Control without
+    treating full tool output as event payload.
 - [partial-static] T011 Add subagent registry model for accepted, started, completed, failed,
   timed out, killed and stale runs.
   - 2026-04-30: runtime event stream covers accepted/started/completed/failed
