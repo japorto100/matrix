@@ -50,6 +50,11 @@ feature_id: 012
 - [x] Memory-Fusion runtime stores and surfaces `source_status`,
   `raw_evidence_ref`, `operation_log_id` and `diff_ref` on retain/recall paths;
   audit logging carries the same trace keys.
+- [x] Memory recall runtime events expose selected source/session refs without
+  raw memory content.
+  - 2026-04-30: `memory.recall.completed` includes redacted `context_refs`
+    with source refs, evidence refs, operation/diff refs and room/thread/session
+    ids for downstream Agent Chat/Ops display.
 - [ ] Prompt assembly order is live-verified against the current runner path.
 
 ## G3 Compaction / Metadata

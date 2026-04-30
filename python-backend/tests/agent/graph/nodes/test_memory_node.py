@@ -80,6 +80,88 @@ async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_surfaces_source_session_refs(monkeypatch):
+    audit_events: list[dict] = []
+
+    class _Engine:
+        def _normalize_query(self, query: str) -> str:
+            return query
+
+        async def recall_async(self, **kwargs):
+            assert kwargs["operation_context"]["thread_id"] == "thread-1"
+            return SimpleNamespace(
+                results=[
+                    SimpleNamespace(
+                        id="mem-1",
+                        text="The portfolio risk budget is capped at two percent.",
+                        fact_type="experience",
+                        entities=["portfolio"],
+                        tags=["risk"],
+                        document_id="session-001.jsonl",
+                        chunk_id="0",
+                        metadata={
+                            "memory_layer": "personal_raw",
+                            "source_ref": "session-001.jsonl#0",
+                            "raw_evidence_ref": "session-001.jsonl#0",
+                            "operation_log_id": "memory-op:recall:user_1:fusion:session-001.jsonl",
+                            "diff_ref": "memory-diff:user_1:fusion:session-001.jsonl",
+                            "thread_id": "thread-1",
+                            "session_id": "session-1",
+                            "room_id": "!room:matrix.local",
+                            "status": "available",
+                        },
+                    )
+                ],
+                entities={},
+            )
+
+    async def _fake_get_memory_engine():
+        return _Engine()
+
+    async def _fake_audit_log(**kwargs):
+        audit_events.append(kwargs)
+
+    memory_node._injected_context.clear()
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fake_get_memory_engine,
+    )
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_bank_id",
+        lambda user_id: f"user_{user_id}",
+    )
+    monkeypatch.setattr("agent.audit.logger.audit_log", _fake_audit_log)
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "thread-1",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [{"role": "user", "content": "recall risk budget"}],
+            "iteration": 2,
+        }
+    )
+
+    block = result["context_blocks"][0]
+    assert block["sourceRefs"] == ["session-001.jsonl#0"]
+    assert block["rawEvidenceRef"] == "session-001.jsonl#0"
+    assert block["threadId"] == "thread-1"
+    assert block["sessionId"] == "session-1"
+    assert block["roomId"] == "!room:matrix.local"
+
+    event = result["runtime_events"][0]
+    context_ref = event["metadata"]["context_refs"][0]
+    assert event["name"] == "memory.recall.completed"
+    assert context_ref["source_refs"] == ["session-001.jsonl#0"]
+    assert context_ref["raw_evidence_ref"] == "session-001.jsonl#0"
+    assert context_ref["thread_id"] == "thread-1"
+    assert context_ref["session_id"] == "session-1"
+    assert context_ref["room_id"] == "!room:matrix.local"
+    assert "portfolio risk budget" not in str(context_ref)
+    assert audit_events[0]["metadata"]["runtime_events"][0]["metadata"]["context_refs"]
+
+
+@pytest.mark.asyncio
 async def test_memory_retain_node_blocks_child_shared_memory_writes(monkeypatch):
     async def _fail_get_memory_engine():
         raise AssertionError("child memory-write block must happen before engine lookup")

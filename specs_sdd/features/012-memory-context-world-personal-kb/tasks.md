@@ -179,7 +179,13 @@ migrated_from:
 - [x] T047 Add prompt-layout regression for cache-hit/cost when ready.
 - T048 Verify Hindsight/profile context can be injected without replacing live
   market/news/source-backed data.
-- T049 Verify MemPalace recall requires a trigger and emits source/session refs.
+- [x] T049 [done-static] Verify MemPalace recall requires a trigger and emits
+  source/session refs.
+  - 2026-04-30: `memory_recall_node` now surfaces selected context refs in the
+    provider-neutral runtime event: source refs, raw evidence ref,
+    operation/diff refs, thread id, session id, room id, layer and context
+    tier. Event metadata remains redacted and does not include recalled memory
+    text.
 - [x] T050 [done-static-live-smoke] Verify pre-save runs before both normal
   compression and context compaction, with MemPalace archival receiving the
   complete visible context.

@@ -166,6 +166,26 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
                 "operation_log_id": "memop-001",
                 "diff_ref": "memory-diff-001",
                 "evidence": "verbatim evidence before compaction",
+                "runtime_events": [
+                    {
+                        "name": "memory.recall.completed",
+                        "metadata": {
+                            "context_refs": [
+                                {
+                                    "source_refs": ["mempalace:drawer:turn-42"],
+                                    "raw_evidence_ref": "mempalace:drawer:turn-42",
+                                    "operation_log_id": "memop-001",
+                                    "diff_ref": "memory-diff-001",
+                                    "thread_id": "thread-42",
+                                    "session_id": "session-42",
+                                    "room_id": "!room:matrix.local",
+                                    "source_layer": "personal_raw",
+                                    "context_tier": "L0",
+                                }
+                            ]
+                        },
+                    }
+                ],
             },
             "createdAt": now,
         },
@@ -198,14 +218,37 @@ def _memory_ground_truth_preserved() -> dict[str, Any]:
                 "operation_log_id",
                 "diff_ref",
             ),
+            required_runtime_event_names=("memory.recall.completed",),
+            required_runtime_event_metadata_keys={
+                "memory.recall.completed": ("context_refs",)
+            },
             expected_memory=True,
         ),
         response_text="Use verbatim evidence before compaction.",
     )
+    context_refs = (
+        events[0]["metadata"]["runtime_events"][0]["metadata"].get("context_refs") or []
+    )
+    failures = list(verdict.failures)
+    if not context_refs:
+        failures.append("missing-memory-recall-context-refs")
+    else:
+        first_ref = context_refs[0]
+        for key in (
+            "source_refs",
+            "raw_evidence_ref",
+            "operation_log_id",
+            "diff_ref",
+            "thread_id",
+            "session_id",
+            "room_id",
+        ):
+            if first_ref.get(key) in (None, "", [], ()):
+                failures.append(f"missing-memory-context-ref:{key}")
     return _scenario_result(
         scenario_id="knowledge-memory-ground-truth-preserved",
-        passed=verdict.passed,
-        failures=list(verdict.failures),
+        passed=verdict.passed and not failures,
+        failures=failures,
         details={"trace_verdict": verdict.as_dict()},
     )
 

@@ -82,6 +82,9 @@ def _block_from_fact(fact: Any, *, fallback_id: int) -> dict[str, Any]:
         fact_type=str(getattr(fact, "fact_type", "") or ""),
     )
     text = str(getattr(fact, "text", "") or "")
+    document_id = str(getattr(fact, "document_id", "") or metadata.get("document_id") or "")
+    chunk_id = str(getattr(fact, "chunk_id", "") or metadata.get("chunk_id") or "")
+    source_refs = _memory_source_refs(metadata, document_id=document_id, chunk_id=chunk_id)
     return {
         "id": str(getattr(fact, "id", "") or fallback_id),
         "title": str(
@@ -98,10 +101,17 @@ def _block_from_fact(fact: Any, *, fallback_id: int) -> dict[str, Any]:
         "provenanceRef": str(
             metadata.get("provenance_ref")
             or metadata.get("source_ref")
-            or metadata.get("document_id")
-            or metadata.get("chunk_id")
+            or document_id
+            or chunk_id
             or ""
         ),
+        "sourceRefs": source_refs,
+        "rawEvidenceRef": str(metadata.get("raw_evidence_ref") or ""),
+        "operationLogId": str(metadata.get("operation_log_id") or ""),
+        "diffRef": str(metadata.get("diff_ref") or ""),
+        "threadId": str(metadata.get("thread_id") or ""),
+        "sessionId": str(metadata.get("session_id") or ""),
+        "roomId": str(metadata.get("room_id") or metadata.get("matrix_room_id") or ""),
         "sourceConfidence": metadata.get("source_confidence"),
         "actorRole": str(metadata.get("actor_role") or "unknown"),
         "status": str(metadata.get("status") or "available"),
@@ -112,6 +122,62 @@ def _block_from_fact(fact: Any, *, fallback_id: int) -> dict[str, Any]:
         "route": str(metadata.get("fusion_route") or ""),
         "tokenCount": max(1, len(text.split())) if text.strip() else 0,
     }
+
+
+def _memory_source_refs(
+    metadata: dict[str, Any],
+    *,
+    document_id: str = "",
+    chunk_id: str = "",
+) -> list[str]:
+    refs: list[str] = []
+    for key in (
+        "raw_evidence_ref",
+        "provenance_ref",
+        "source_ref",
+        "citation_ref",
+        "audit_event_id",
+    ):
+        value = metadata.get(key)
+        if isinstance(value, (list, tuple, set)):
+            candidates = [str(entry).strip() for entry in value]
+        else:
+            candidates = [str(value or "").strip()]
+        for candidate in candidates:
+            if candidate and candidate not in refs:
+                refs.append(candidate)
+
+    if document_id and chunk_id and "#" not in document_id:
+        doc_ref = f"{document_id}#{chunk_id}"
+        if doc_ref not in refs:
+            refs.append(doc_ref)
+    elif document_id and document_id not in refs:
+        refs.append(document_id)
+    return refs
+
+
+def _context_ref_summaries(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    summaries: list[dict[str, Any]] = []
+    for block in blocks:
+        refs = [
+            str(ref).strip()
+            for ref in block.get("sourceRefs", [])
+            if str(ref).strip()
+        ]
+        summary = {
+            "id": str(block.get("id") or ""),
+            "source_refs": refs,
+            "raw_evidence_ref": str(block.get("rawEvidenceRef") or ""),
+            "operation_log_id": str(block.get("operationLogId") or ""),
+            "diff_ref": str(block.get("diffRef") or ""),
+            "thread_id": str(block.get("threadId") or ""),
+            "session_id": str(block.get("sessionId") or ""),
+            "room_id": str(block.get("roomId") or ""),
+            "source_layer": str(block.get("sourceLayer") or ""),
+            "context_tier": str(block.get("contextTier") or ""),
+        }
+        summaries.append(summary)
+    return summaries
 
 
 def _format_prompt_line(block: dict[str, Any], fact: Any) -> str:
@@ -249,6 +315,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 if flag not in degradation_flags:
                     degradation_flags.append(flag)
             memory_text = _format_prompt_sections(context_blocks, facts_by_id)
+            context_ref_summaries = _context_ref_summaries(context_blocks)
             new_ids = {
                 str(block.get("id") or "")
                 for block in context_blocks
@@ -332,6 +399,7 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                     "query_gate_action": query_gate.action,
                     "query_gate_reason": query_gate.reason,
                     "degradation_flags": degradation_flags,
+                    "context_refs": context_ref_summaries,
                 },
             )
             await audit_log(
