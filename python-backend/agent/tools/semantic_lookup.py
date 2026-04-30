@@ -102,6 +102,13 @@ class SemanticLookupTool(TradingTool):
             result.update(
                 {
                     "status": "matched_term",
+                    "semantic_context": {
+                        "semantic_catalog_version": DEFAULT_SEMANTIC_CATALOG.version,
+                        "semantic_term_ids": [item.get("term_id", "")],
+                        "kg_claim_types": list(item.get("kg_claim_types") or ()),
+                        "rag_source_classes": list(item.get("rag_source_classes") or ()),
+                        "source_refs": list(item.get("source_refs") or ()),
+                    },
                     "answer_template": {
                         "definition": item.get("description", ""),
                         "provenance": item.get("source_refs", []),
@@ -151,11 +158,26 @@ class SemanticLookupTool(TradingTool):
             "answer_template": result.get("answer_template"),
             "raw_sql_allowed": False,
         }
+        semantic_context = result.get("semantic_context")
+        if isinstance(semantic_context, dict):
+            payload["semantic_context"] = {
+                "semantic_catalog_version": semantic_context.get(
+                    "semantic_catalog_version"
+                ),
+                "semantic_term_ids": semantic_context.get("semantic_term_ids") or [],
+                "kg_claim_types": semantic_context.get("kg_claim_types") or [],
+                "rag_source_classes": semantic_context.get("rag_source_classes") or [],
+                "source_refs": semantic_context.get("source_refs") or [],
+            }
         metric_plan = result.get("metric_plan")
         if isinstance(metric_plan, dict):
+            metric = metric_plan.get("metric")
+            metric_id = metric.get("metric_id") if isinstance(metric, dict) else None
             payload["metric_plan"] = {
                 "allowed": metric_plan.get("allowed"),
                 "reason": metric_plan.get("reason"),
+                "metric_id": metric_id,
+                "semantic_catalog_version": DEFAULT_SEMANTIC_CATALOG.version,
                 "semantic_contract": metric_plan.get("semantic_contract"),
                 "freshness_sla": metric_plan.get("freshness_sla"),
                 "raw_sql_allowed": metric_plan.get("raw_sql_allowed", False),

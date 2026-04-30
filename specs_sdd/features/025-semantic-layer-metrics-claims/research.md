@@ -57,6 +57,12 @@ tables, KG claims, RAG documents and operational metrics.
   users can inspect definitions, aliases, KG/RAG ties, metric scope/freshness
   and permission-aware plans, but the UI does not generate SQL or execute a
   metric.
+- 2026-04-30 agent handoff follow-up: `semantic_lookup` now returns a compact
+  semantic handoff envelope in model output. Term matches expose catalog
+  version, `semantic_term_ids`, KG claim types and RAG source classes; metric
+  matches expose metric id and catalog version inside the permission-aware
+  metric plan. This keeps the Feature 019 RAG/KG bridge provider-agnostic and
+  avoids dumping full catalog rows into the prompt.
 
 ## Design Consequence
 

@@ -80,6 +80,10 @@ feature_id: 025
     and `semantic_phrase`, using the semantic catalog to derive metric filters
     and filtering selected vector/KG candidates by `semantic_term_ids` and
     `metric_id`.
+  - 2026-04-30: `semantic_lookup.to_model_output()` now carries compact
+    semantic handoff metadata for terms (`semantic_term_ids`, KG claim types,
+    RAG source classes and catalog version) and metric id/catalog version for
+    metric plans.
 
 ## Verification
 

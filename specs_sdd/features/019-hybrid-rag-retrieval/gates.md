@@ -59,3 +59,6 @@ feature_id: 019
     replay without storing raw query text.
 - Tool/skill/source discovery uses progressive disclosure before full schema or
   document exposure.
+- Semantic query planning has an agent-facing handoff: `semantic_lookup`
+  returns compact term ids, catalog version, KG claim types and RAG source
+  classes without exposing the full catalog or raw SQL.

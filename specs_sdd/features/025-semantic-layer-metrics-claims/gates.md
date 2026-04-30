@@ -29,6 +29,9 @@ feature_id: 025
   `knowledge-rag-kg-semantic-context-grounded`.
 - [x] G007 also has runtime coverage through Feature 019 semantic retrieval
   filters over `semantic_term_ids` and `metric_id`.
+- [x] G007 now has agent-tool handoff coverage: compact `semantic_lookup`
+  model output carries catalog version, term ids, KG claim types and RAG source
+  classes for term matches, plus metric id/catalog version for metric plans.
 - [x] G008 is covered by
   `knowledge-semantic-correction-review-proposal`.
 - [x] G008 has runtime Control API coverage: corrections create/list/review

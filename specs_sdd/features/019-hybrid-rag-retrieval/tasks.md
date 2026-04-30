@@ -143,6 +143,10 @@ feature_id: 019
     `semantic_filter` and catalog-derived `semantic_phrase` constraints,
     filters vector/KG candidates deterministically by `semantic_term_ids` and
     `metric_id`, and reports explicit semantic-filter degradation reasons.
+  - 2026-04-30: Agent-facing `semantic_lookup` now returns compact
+    `semantic_context` handoff metadata for terms (`semantic_term_ids`,
+    KG claim types and RAG source classes), so model-visible tool output can
+    feed later RAG/KG retrieval without exposing the full semantic catalog.
 - T051 [partial-static] Add Feature 028 visual-layout blocks as retrievable evidence with source
   coordinates.
   - 2026-04-29: `visual-layout-source-coordinates-001` now proves selected

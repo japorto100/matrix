@@ -84,4 +84,24 @@ async def test_semantic_lookup_model_output_is_compact():
         "feature-014",
         "feature-016",
     ]
+    assert model_output["metric_plan"]["metric_id"] == "agent_tool_success_rate"
+    assert model_output["metric_plan"]["semantic_catalog_version"] == "1.0.0"
+    assert "matches" not in model_output
+
+
+@pytest.mark.asyncio
+async def test_semantic_lookup_term_output_carries_rag_kg_handoff_metadata():
+    tool = SemanticLookupTool()
+    result = await tool.execute({"phrase": "RAG citation"}, _ctx())
+
+    model_output = tool.to_model_output(result)
+
+    assert model_output["status"] == "matched_term"
+    assert model_output["semantic_context"] == {
+        "semantic_catalog_version": "1.0.0",
+        "semantic_term_ids": ["rag_citation"],
+        "kg_claim_types": [],
+        "rag_source_classes": ["document_chunk", "kg_claim"],
+        "source_refs": ["feature-019", "retrieval/verifiers/citation.py"],
+    }
     assert "matches" not in model_output
