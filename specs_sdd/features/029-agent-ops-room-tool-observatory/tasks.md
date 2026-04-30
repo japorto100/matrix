@@ -102,6 +102,9 @@ feature_id: 029
     `/control/ops` renders kind/status lanes plus selected-event drilldown.
     LLM response audit metadata now carries the same runtime event that the
     agent stream returns.
+  - 2026-04-30: scoped RAG/KG retrieval calls now audit their runtime events
+    as `rag_retrieval`, allowing the same Ops lanes to replay selected context
+    and KG claim ids without raw source text.
 - T040 Add status/kill/pause/replay controls where backend support exists and
   explicit unsupported outcomes elsewhere.
 - T041 Link ops events to Prompt Cache and Report Artifact surfaces.

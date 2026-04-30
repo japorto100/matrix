@@ -24,6 +24,7 @@ class AuditAction(StrEnum):
     MEMORY_LIST = "memory_list"
     MEMORY_GET = "memory_get"
     MEMORY_DELETE = "memory_delete"
+    RAG_RETRIEVAL = "rag_retrieval"
     SANDBOX_EXEC = "sandbox_exec"
     CONSENT_REQUEST = "consent_request"
     CONSENT_DECISION = "consent_decision"

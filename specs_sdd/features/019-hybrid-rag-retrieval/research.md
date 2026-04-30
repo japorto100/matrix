@@ -144,3 +144,12 @@ provenance. The practical contract is:
 This avoids a false split between "normal tools" and MCP tools: both can use
 the same progressive-disclosure search primitive before exposing full schemas
 or source content to an agent.
+
+## 2026-04-30 Runtime Audit Follow-Up
+
+Retrieval runtime events now have a replay bridge into Ops. When a caller
+supplies runtime scope (`thread_id`, `session_id`) or explicitly opts in with
+`audit_runtime_events=True`, `retrieve(...)` writes a `rag_retrieval` audit row
+containing only ids/counts/status, degradation reasons and a short query digest.
+This gives Feature 029 enough data to render RAG/KG lanes without treating the
+audit store as a second retrieval corpus.

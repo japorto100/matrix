@@ -49,6 +49,8 @@ feature_id: 017
 - [x] Selected KG claims emit runtime event metadata without source text.
   - 2026-04-30: fused retrieval emits `kg.retrieval.selected_claims` with
     selected claim ids and KG access counts after context-bubble selection.
+  - 2026-04-30: scoped retrieval audits the same KG event metadata for replay
+    while keeping claim text out of audit rows.
 
 ## Boundary Gates
 

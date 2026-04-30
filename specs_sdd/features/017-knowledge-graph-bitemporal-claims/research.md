@@ -186,3 +186,8 @@ and valid sourced claim.
 
 The runtime event contract from Feature 033 should carry KG claim/evidence ids
 as metadata, not inline whole graph payloads.
+
+2026-04-30 implementation note: Feature 019 now persists selected KG runtime
+events into scoped retrieval audit rows. The persisted form is still ids/counts
+only, preserving Feature 017's source/evidence boundary and avoiding audit-log
+promotion of claim text into a second KG source.

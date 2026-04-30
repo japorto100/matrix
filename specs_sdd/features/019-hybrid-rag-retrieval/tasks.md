@@ -163,5 +163,9 @@ feature_id: 019
     `kg.retrieval.selected_claims`. Events include selected context ids,
     reference ids, selected KG claim ids, missing-provenance ids, semantic
     filter presence and degradation reasons without inlining source text.
+  - 2026-04-30: scoped retrieval calls (`thread_id`/`session_id` or explicit
+    `audit_runtime_events=True`) now persist the same redacted runtime events
+    to audit as `rag_retrieval`, keyed by query digest/length rather than raw
+    query text.
 - T055 Add Meta-Harness gate proving lexical candidates cannot support answers
   without provenance.

@@ -7,10 +7,12 @@ composition. Live search adapters can attach behind the same contract.
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 from dataclasses import dataclass
 from typing import Any
 
+from agent.audit.logger import AuditAction, audit_log
 from agent.runtime_events import make_runtime_event
 from retrieval.composers.context_bubble import build_context_bubble
 from retrieval.core.types import RetrievalHit, RetrievalMode
@@ -203,6 +205,44 @@ async def _record_kg_access(
     return True, int(result or 0)
 
 
+async def _audit_retrieval_runtime_events(
+    *,
+    query: str,
+    kwargs: dict[str, object],
+    runtime_events: list[dict[str, Any]],
+    intent: str,
+    degraded_reasons: list[str],
+) -> None:
+    """Persist redacted retrieval runtime events for Ops replay when scoped."""
+
+    should_audit = (
+        kwargs.get("audit_runtime_events") is True
+        or bool(kwargs.get("thread_id"))
+        or bool(kwargs.get("session_id"))
+    )
+    if not should_audit:
+        return
+    try:
+        await audit_log(
+            action=AuditAction.RAG_RETRIEVAL,
+            user_id=str(kwargs.get("user_id") or "local"),
+            session_id=str(kwargs.get("session_id") or ""),
+            thread_id=str(kwargs.get("thread_id") or ""),
+            success=not bool(degraded_reasons),
+            metadata={
+                "contract": "agent-runtime-audit/v1",
+                "intent": intent,
+                "query_digest": hashlib.sha256(query.encode("utf-8")).hexdigest()[:16],
+                "query_length": len(query),
+                "runtime_events": runtime_events,
+                "degraded": bool(degraded_reasons),
+                "degraded_reasons": degraded_reasons,
+            },
+        )
+    except Exception:  # noqa: BLE001
+        return
+
+
 async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
     """Run routing, fusion and context composition for retrieval candidates."""
 
@@ -379,6 +419,13 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 },
             )
         )
+    await _audit_retrieval_runtime_events(
+        query=query,
+        kwargs=kwargs,
+        runtime_events=runtime_events,
+        intent=plan.mode.value,
+        degraded_reasons=degraded_reasons,
+    )
     return RetrievalResult(
         context=bubble.text,
         hits=[

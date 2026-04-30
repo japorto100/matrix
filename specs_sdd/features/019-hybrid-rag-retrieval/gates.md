@@ -47,5 +47,7 @@ feature_id: 019
   - 2026-04-30: retrieval result runtime events carry ids/counts/status only;
     focused tests assert selected context/KG ids are present and source text is
     absent from event metadata.
+  - 2026-04-30: scoped retrieval calls audit the same runtime events for Ops
+    replay without storing raw query text.
 - Tool/skill/source discovery uses progressive disclosure before full schema or
   document exposure.

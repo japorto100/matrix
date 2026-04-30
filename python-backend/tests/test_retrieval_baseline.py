@@ -132,6 +132,42 @@ async def test_retrieve_hybrid_from_supplied_candidates() -> None:
 
 
 @pytest.mark.asyncio
+async def test_retrieve_audits_runtime_events_when_scoped(monkeypatch) -> None:
+    from agent.audit.logger import AuditAction
+    from retrieval import api as retrieval_api
+
+    audit_rows: list[dict] = []
+
+    async def _capture_audit(**kwargs):
+        audit_rows.append(kwargs)
+
+    monkeypatch.setattr(retrieval_api, "audit_log", _capture_audit)
+
+    await retrieve(
+        "How do EU sanctions affect Russian oil exports today?",
+        thread_id="thread-rag",
+        user_id="u1",
+        audit_runtime_events=True,
+        vector_hits=[
+            {
+                "chunk_id": "chunk-1",
+                "text": "Shipping notes mention Russian oil export pressure.",
+                "score": 0.7,
+                "source_uri": "doc://shipping",
+            }
+        ],
+    )
+
+    assert audit_rows
+    row = audit_rows[0]
+    assert row["action"] == AuditAction.RAG_RETRIEVAL
+    assert row["thread_id"] == "thread-rag"
+    assert row["metadata"]["runtime_events"][0]["name"] == "rag.retrieve.started"
+    assert "query_digest" in row["metadata"]
+    assert "Russian oil" not in str(row["metadata"])
+
+
+@pytest.mark.asyncio
 async def test_retrieve_can_fail_closed_on_missing_context_provenance() -> None:
     result = await retrieve(
         "What does the source say?",

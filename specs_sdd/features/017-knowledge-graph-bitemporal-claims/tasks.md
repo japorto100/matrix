@@ -152,6 +152,9 @@ feature_id: 017
     with selected claim ids and KG-access count whenever KG claims survive
     context-bubble selection. Event metadata carries ids/counts only, not
     source text.
+  - 2026-04-30: scoped retrieval calls now persist those KG selection runtime
+    events through the `rag_retrieval` audit row, so Ops replay can show KG
+    context use without copying claim text into audit.
 - T045 [partial-static] Eval Recall@k, nDCG, answer faithfulness and latency on a small hybrid
   retrieval canary set.
 - T046 [done-static] Verify global KG retrieval is not used as an agent-memory

@@ -113,3 +113,8 @@ in Ops without parsing stream chunks. Memory/RAG/KG/subagent producers already
 emit runtime events in graph/API outputs; the remaining hardening is to persist
 those into audit rows or a replayable event log without duplicating source
 content.
+
+2026-04-30 follow-up: scoped RAG/KG retrieval is now on the audit path as
+`rag_retrieval`. The Ops read model can therefore replay selected context ids,
+selected KG claim ids and degradation reasons from audit metadata, while raw
+query/source text stays outside the event payload.
