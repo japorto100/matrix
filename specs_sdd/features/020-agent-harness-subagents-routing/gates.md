@@ -34,3 +34,12 @@ feature_id: 020
     prove default depth zero does not instantiate the A2A client.
 - [x] Enabled single-hop A2A uses fresh bounded child context, not inherited
   conversation/tool/memory state.
+
+## 2026-04-30 Added Gates
+
+- [ ] Gated single-hop subagent execution is default-off/fail-closed.
+- [ ] Child contexts are isolated by default; fork mode is explicit.
+- [ ] Child tool policy blocks recursive delegation, direct shared-memory
+  writes, cross-platform sends and interactive approval deadlocks.
+- [ ] Parent-side memory handoff records delegation outcomes.
+- [ ] Subagent lifecycle emits Feature 033 runtime events.

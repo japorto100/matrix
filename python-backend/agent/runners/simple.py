@@ -43,6 +43,7 @@ from agent.context import AgentExecutionContext
 from agent.streaming import (
     FinishPacket,
     MessageMetaPacket,
+    RuntimeEventPacket,
     StartPacket,
     StepStartPacket,
     TextDeltaPacket,
@@ -166,6 +167,8 @@ async def _run_simple(
         "reasoning_tokens": 0,
         "cached_tokens": 0,
         "token_usage": 0,
+        "request_telemetry": [],
+        "runtime_events": [],
         "llm_provider": "",
         "llm_model": model,
         "source_layer_counts": {},
@@ -282,6 +285,10 @@ async def _run_simple(
                             )
                         )
 
+            runtime_events = state.get("runtime_events", []) or []
+            for event in runtime_events:
+                yield sse(RuntimeEventPacket(event=event))
+
             yield sse(TextEndPacket(id=text_id))
 
             message_metadata = {
@@ -297,6 +304,8 @@ async def _run_simple(
                 "degradationFlags": state.get("degradation_flags", []) or [],
                 "contextBlocks": state.get("context_blocks", []) or [],
                 "queryGate": state.get("query_gate") or {},
+                "requestTelemetry": state.get("request_telemetry", []) or [],
+                "runtimeEvents": runtime_events,
                 "runner": "simple",
             }
             yield sse(MessageMetaPacket(message_metadata=message_metadata))
@@ -376,6 +385,8 @@ def _merge(state: dict[str, Any], delta: dict[str, Any]) -> None:
     for k, v in delta.items():
         if k == "messages" and isinstance(v, list):
             state["messages"].extend(v)
+        elif k in {"request_telemetry", "runtime_events"} and isinstance(v, list):
+            state[k] = list(state.get(k, []) or []) + v
         else:
             state[k] = v
 

@@ -115,3 +115,23 @@ The new Z_ material expands Control UI scope, but not as a monolith:
 Control UI should expose effective state from owning features. It should not
 become the owner of MCP policy, semantic truth, report rendering or agent
 runtime logic.
+
+## 2026-04-30 Control Surface Transfer
+
+Inputs: Hermes dashboard/reload notes, OpenClaude cache stats, OpenClaw
+runtime/control notes, Feature 032 and Feature 033.
+
+Control UI should expose operational read models, not hidden developer logs:
+
+- prompt cache/request telemetry: request counts, cache read/write tokens where
+  supplied, unknown-token counters, estimated cache break reasons and provider/
+  model labels without provider lock-in.
+- MCP/tool reload impact: changed descriptor/tool digests, cached agent session
+  invalidation/rebind result and explicit confirm flow.
+- runtime event recovery: active/stale/finished sessions, pause/kill/status
+  actions, replayable event history and downstream artifact links.
+- report artifacts: manifest, validation status, citation readiness, renderer
+  and Matrix publication readiness.
+
+The UI consequence is a dense operator console, not a marketing page. Any mock
+fallback must be visually detectable during live verify.

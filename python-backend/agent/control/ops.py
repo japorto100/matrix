@@ -211,6 +211,7 @@ def audit_event_to_ops_event(
         "input": redact_payload(event.get("input")),
         "output": redact_payload(event.get("output")),
         "metadata": redact_payload(metadata),
+        "request_telemetry": redact_payload(metadata.get("request_telemetry") or {}),
         "blocker_reason": blocker_reason,
         "matrix_room_id": _metadata_text(metadata, "matrix_room_id", "room_id"),
         "matrix_event_id": _metadata_text(metadata, "matrix_event_id", "event_id"),
@@ -262,6 +263,8 @@ def _event_type(action: str, tool_name: str) -> str:
     text = f"{action} {tool_name}".lower()
     if any(term in text for term in MATRIX_ACTION_TERMS):
         return "matrix_transport"
+    if "llm" in text or "request_telemetry" in text:
+        return "llm"
     if any(term in text for term in MEMORY_ACTION_TERMS):
         return "memory"
     if any(term in text for term in RAG_ACTION_TERMS):

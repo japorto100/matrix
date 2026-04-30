@@ -14,6 +14,7 @@ from agent.graph.agent_graph import MAX_ITERATIONS, create_agent_graph
 from agent.streaming import (
     FinishPacket,
     MessageMetaPacket,
+    RuntimeEventPacket,
     StartPacket,
     StepStartPacket,
     TextDeltaPacket,
@@ -422,6 +423,8 @@ async def _run_graph(
         "reasoning_tokens": 0,
         "cached_tokens": 0,
         "token_usage": 0,
+        "request_telemetry": [],
+        "runtime_events": [],
         "llm_provider": "",
         "llm_model": model,
         "source_layer_counts": {},
@@ -508,6 +511,10 @@ async def _run_graph(
                             )
                         )
 
+            runtime_events = result.get("runtime_events", []) or []
+            for event in runtime_events:
+                yield sse(RuntimeEventPacket(event=event))
+
             yield sse(TextEndPacket(id=text_id))
             # ADR-001 G5: forward routing-decision info to frontend so the
             # agent-chat UI can show a user-visible indicator when a cheap
@@ -531,6 +538,8 @@ async def _run_graph(
                 "degradationFlags": result.get("degradation_flags", []) or [],
                 "contextBlocks": result.get("context_blocks", []) or [],
                 "queryGate": result.get("query_gate") or {},
+                "requestTelemetry": result.get("request_telemetry", []) or [],
+                "runtimeEvents": runtime_events,
                 "routingUsed": routing_used,
                 "routingReason": routing_reason,
                 "routingPicked": routing_picked,

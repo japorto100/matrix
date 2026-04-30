@@ -69,3 +69,13 @@ feature_id: 006
   backlog.
 - [x] Content-ingestion sections are owned by memory/ingestion features, not
   this feature's closeout.
+
+## 2026-04-30 Added Gates
+
+- [ ] E2EE missing dependency/state fails loudly instead of silently
+  downgrading encrypted rooms.
+- [ ] Device verification, room-key backup and recovery-key restore are
+  individually visible.
+- [ ] Encrypted media produces a decrypted local file path only after policy
+  and crypto checks pass.
+- [ ] Bot-to-bot and self-loop suppression happen before agent execution.

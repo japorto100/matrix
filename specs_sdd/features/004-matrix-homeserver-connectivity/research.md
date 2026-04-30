@@ -55,3 +55,28 @@ migrated_from:
 Dendrite/Zendrite material remains historical fallback context from the Windows
 phase. It is not the active Linux-first homeserver path and should not create
 new implementation work unless Tuwunel becomes unavailable for the target scope.
+
+## 2026-04-30 OpenClaw / Matrix QA Transfer
+
+Inputs: `Z_matrix_widgets_formulars_and so on.md`, the OpenClaw Matrix/Tuwunel
+lane notes and the current Matrix SDK/Tuwunel changelog check.
+
+Useful transfer, provider-agnostic:
+
+- disposable Tuwunel lanes are the right verification primitive for Matrix
+  connectivity changes because they exercise real homeserver behavior without
+  depending on one hosted account.
+- Matrix account diagnostics should distinguish password/login, access token,
+  device id, E2EE bootstrap and backup/cross-signing readiness.
+- migration/recovery snapshots need to be explicit before homeserver upgrades,
+  because Matrix state loss is harder to debug than normal API regressions.
+- `.well-known`, media and push/notification routing belong in live verify
+  gates, not only static config checks.
+
+Not copied:
+
+- OpenClaw-specific terminal UX, CLI command naming or project-specific
+  storage layout.
+- any assumption that one Matrix client is the compatibility source of truth;
+  Element X and FluffyChat stay mobile compatibility references, while our web
+  client remains the operational UI.

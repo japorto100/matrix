@@ -88,3 +88,12 @@ feature_id: 012
   selected.
 - [ ] Control UI Inbox/Library/Document/Note surfaces are aligned with Feature
   010.
+
+## G6 Delegation Memory
+
+- Subagent/child runs have no default direct write path into durable personal,
+  world or KG memory.
+- Parent memory curation records child session id, task id, source refs,
+  confidence/degradation and retain/skip result.
+- Delegation summaries are evidence for parent decisions, not global truth.
+- Memory runtime events redact content while preserving trace refs.

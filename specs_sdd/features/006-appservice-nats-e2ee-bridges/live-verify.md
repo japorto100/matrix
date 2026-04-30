@@ -115,3 +115,14 @@ Remaining full-live blockers:
   - `agent_reply_found`: `true`
   - `agent_reply.event_id`: `$EdKTt1gKWBvMqyPbd1uZis9q6D73vqw-oERjt09myjk`
   - `agent_reply.body`: `matrix parser fixed`
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Restart appservice/NATS during an active room session and verify event
+  id dedupe prevents duplicate replies.
+- LV031 Verify encrypted media/event failure surfaces E2EE bootstrap status
+  instead of silent cleartext fallback.
+- LV032 Verify approval reactions carry room id, event id, thread id and actor
+  identity through bridge trace metadata.
+- LV033 Verify bridge health exposes transport, crypto and queue state
+  separately in Control/Ops events.

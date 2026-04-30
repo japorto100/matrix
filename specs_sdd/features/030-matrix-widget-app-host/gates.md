@@ -27,3 +27,8 @@ feature_id: 030
 - G011 Widget proposal/approval cannot bypass Matrix transport/session hygiene:
   mention/free-response rules, approval identity, E2EE blockers and echo-loop
   guards still apply.
+- G012 Widget lifecycle outcomes emit Feature 033 runtime events.
+- G013 Non-mobile-safe rich agent UI stays in Agent Chat UI with Matrix fallback
+  summaries only.
+- G014 Room-state mutation is blocked until Feature 006 transport/session
+  hygiene events show a clean approval path.

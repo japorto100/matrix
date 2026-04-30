@@ -90,3 +90,13 @@ feature_id: 029
 - T035 Live-verify blocked approval state.
 - T036 Live-verify Meta-Harness replay.
 - T037 Usability-gate optional 3D/spatial prototype before promotion.
+
+## 2026-04-30 Runtime Event Additions
+
+- T038 Add subagent run list with active, stale, recently-ended, timeout,
+  killed and completed states from Feature 033.
+- T039 Add tool/model/memory/RAG/KG runtime event lanes with capped output
+  tails.
+- T040 Add status/kill/pause/replay controls where backend support exists and
+  explicit unsupported outcomes elsewhere.
+- T041 Link ops events to Prompt Cache and Report Artifact surfaces.

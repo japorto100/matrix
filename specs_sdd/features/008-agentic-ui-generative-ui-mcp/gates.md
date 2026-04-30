@@ -70,3 +70,11 @@ feature_id: 008
   catalog policy accepts them.
 - Matrix widget/app hosting is delegated to Feature 030; A2UI stays a local
   renderer with text/tool fallback.
+
+## G8 Runtime Events / Artifacts
+
+- Runtime event cards render from provider-agnostic Feature 033 packets.
+- Prompt-cache telemetry cards are hidden outside developer/operator mode.
+- Unknown runtime event kinds render safely without dropping the timeline.
+- Report/PDF/data artifacts render from manifest/event refs, not raw model HTML.
+- Matrix room output remains markdown/link/media fallback first.

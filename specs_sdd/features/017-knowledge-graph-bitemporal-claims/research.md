@@ -172,3 +172,17 @@ claims require evidence refs, citation/source/hash and Feature 025
 `semantic_term_ids`. Any claim sourced from personal memory/Hindsight/MemPalace
 layers is rejected unless it stays in proposed review state. This keeps Hermes-
 style agent memory useful as evidence without letting it become global truth.
+
+## 2026-04-30 Runtime / URI Transfer
+
+Inputs: Hermes memory URI handling notes, Feature 012, Feature 019 and
+`Z_Semantik_layer and so on.md`.
+
+KG claim/evidence refs must be URI-canonicalized before entering runtime event,
+memory or report metadata. Summary pseudo-URIs, file paths, document chunks,
+claim ids and citation ids should normalize into typed refs with fallback read
+status, so KG/RAG/report consumers can distinguish missing source, stale source
+and valid sourced claim.
+
+The runtime event contract from Feature 033 should carry KG claim/evidence ids
+as metadata, not inline whole graph payloads.

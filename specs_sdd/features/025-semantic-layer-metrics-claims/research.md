@@ -119,3 +119,16 @@ semantic review proposal with `_feedback_source=memory_fusion`. This keeps the
 semantic catalog authoritative: Hindsight/MemPalace observations may propose
 definition changes, but they cannot silently promote a personal memory into
 shared metric/KG/RAG truth.
+
+## 2026-04-30 Semantic Retrieval Transfer
+
+Inputs: `Z_Semantik_layer and so on.md`, Feature 019 and Feature 012.
+
+Semantic terms, metrics and correction proposals are retrieval constraints and
+answer metadata, not hidden truth overrides. RAG/KG context can use semantic
+term ids and metric ids for filtering, but selected context must preserve
+catalog version, ambiguity status and source refs. Personal corrections route
+to reviewed proposals before global semantic definitions change.
+
+Runtime events should include semantic catalog version and selected term ids
+when a tool/RAG/KG answer depends on them.

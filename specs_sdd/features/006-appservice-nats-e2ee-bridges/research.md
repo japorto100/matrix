@@ -59,3 +59,23 @@ Related fresh local inputs:
   compatibility pressure.
 - Feature 030 research for the rule that Matrix room output must remain
   mobile-compatible with markdown/link/event fallbacks.
+
+## 2026-04-30 OpenClaw E2EE / Bridge Transfer
+
+Inputs: OpenClaw Matrix plugin and Tuwunel QA notes plus the same Z_ Matrix
+widget/mobile-compatibility materials.
+
+Additions for this bridge feature:
+
+- encrypted media and event handling must fail loud with actionable bootstrap
+  status when appservice/device crypto is unavailable.
+- reconnect/replay must carry an idempotency marker from Matrix event id through
+  NATS and Agent Chat trace metadata.
+- approval reactions and widget/report approvals need room id, event id,
+  thread id and actor identity checks before mutation.
+- bridge health should expose transport state, crypto state and queue state as
+  separate ops markers so Control UI can show the real blocker.
+
+This is still not a direct OpenClaw import. The Go appservice remains the
+Matrix-facing crypto/bridge boundary and Python receives normalized cleartext
+events plus traceable degradation metadata.

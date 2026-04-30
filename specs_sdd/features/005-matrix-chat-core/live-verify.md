@@ -127,3 +127,13 @@ Evidence:
   => `2 passed`, `4 passed`.
 - Frontend typecheck:
   `cd frontend_merger && bun run typecheck` => pass.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Verify room/DM/thread routing with mention-required, free-response DM
+  and ignored group-event cases.
+- LV031 Verify streaming agent replies do not trigger duplicate Matrix sends or
+  recursive pending-message drains.
+- LV032 Verify reaction-bound approvals bind to the original event/thread/actor.
+- LV033 Verify safe widget/report/link cards remain mobile-compatible and never
+  create arbitrary iframe execution in the Matrix timeline.

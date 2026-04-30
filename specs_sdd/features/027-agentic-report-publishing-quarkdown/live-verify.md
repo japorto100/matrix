@@ -34,3 +34,11 @@ feature_id: 027
 - LV011 Verify renderer can be disabled and fallback path still returns
   structured markdown.
 - LV012 Verify no provider-specific dependency exists in report generation.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Generate a report and verify validate/build/artifact runtime events.
+- LV031 Verify Agent Chat shows manifest-backed HTML/text/PDF/data artifacts.
+- LV032 Verify Control report artifact row links to session/turn/tool call.
+- LV033 Verify Meta-Harness fails a report scenario when answer text exists but
+  artifact manifest/event refs are missing.

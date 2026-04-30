@@ -249,3 +249,13 @@ PY
 - Raw memory utilization alone cannot make a candidate Pareto-better; memory
   quality must pass the relevant trace gates.
 - Rejected candidates keep rationale for future proposer analysis.
+
+## Cache / Runtime / Downstream Gates
+
+- Candidate manifests include request/cache telemetry files when provider calls
+  occur.
+- Stream/downstream gates assert tool cards, artifact links and degradation
+  markers that Agent Chat or Control UI would display.
+- Subagent scenarios require child isolation plus parent-side memory curation.
+- Ingestion/RAG/KG scenarios fail if downstream artifact/runtime events are
+  missing even when answer text is present.

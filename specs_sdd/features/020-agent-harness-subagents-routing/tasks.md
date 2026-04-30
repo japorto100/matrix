@@ -187,3 +187,15 @@ feature_id: 020
   - 2026-04-30:
     `uv run python -m meta_harness.meta_cli routing-contract --run-id run-routing-contract-20260430 --data-dir /tmp/matrix-meta-harness-routing-contract`
     passed 7/7 scenarios and wrote `routing_contract.json`.
+
+## 2026-04-30 Gated Single-Hop Subagent Additions
+
+- T045 Define provider-agnostic `delegate_task`/subagent execution interface
+  using isolated context by default and explicit fork mode only when requested.
+- T046 Implement single-hop gated execution default-off/fail-closed, with
+  depth and concurrency policy.
+- T047 Enforce child tool policy: no recursive delegation, no direct shared
+  memory writes, no cross-platform send, no interactive approval deadlocks.
+- T048 Emit Feature 033 lifecycle events for accepted, started, tool activity,
+  completed, error, timeout, killed and stale states.
+- T049 Add parent-side memory handoff event for delegation outcomes.

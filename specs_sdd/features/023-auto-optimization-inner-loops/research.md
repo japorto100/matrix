@@ -179,3 +179,19 @@ These search spaces deliberately describe what a bounded optimizer may vary.
 They are not permission to edit product code or mutate catalogs directly; every
 candidate still has to become a Feature 016 Meta-Harness artifact before an
 outer-loop promotion decision.
+
+## 2026-04-30 Inner Loop Transfer
+
+Inputs: Meta-Harness paper reread, Feature 016, Feature 032 and Feature 033.
+
+Inner loops need scenario-scoped mechanisms, not blind parameter churn. For
+agent harness work the first loops should target:
+
+- prompt-layout/cache locality improvements with measured cache-break reasons.
+- tool/skill discovery selection using lexical/BM25 summaries before full
+  schema exposure.
+- memory/RAG/KG answer-support gates with source refs.
+- downstream event completeness for Agent Chat/Control surfaces.
+
+Outer loop promotion should only compare candidates that carry raw traces,
+candidate manifests and evaluator-visible downstream artifacts.

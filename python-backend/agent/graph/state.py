@@ -79,6 +79,12 @@ class AgentGraphState(TypedDict):
     cached_tokens: int
     token_usage: int
 
+    # Provider-agnostic request/cache telemetry envelopes.
+    request_telemetry: Annotated[list[dict[str, Any]], operator.add]
+
+    # Runtime events emitted by nodes for Agent Chat / Control surfaces.
+    runtime_events: Annotated[list[dict[str, Any]], operator.add]
+
     # Provider/model metadata for the latest run
     llm_provider: str
     llm_model: str

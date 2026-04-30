@@ -41,3 +41,15 @@ migrated_from:
   execution in the chat timeline.
 - E2EE state is tested or blocked with reason.
 - [x] `exec2-04` no longer contains uncategorized gate groups.
+
+## 2026-04-30 OpenClaw / Hermes Additions
+
+- T013 Add Matrix thread routing tasks for room, DM and thread-scoped
+  sessions.
+- T014 Add mention/allowlist/bot-loop policy tasks for Matrix room events.
+- T015 Add streaming preview modes: final-only, partial edit and quiet
+  finalized-preview.
+- T016 Add reaction/read-receipt/media/voice Matrix event tasks.
+- T017 Add Tuwunel transport-real QA scenarios for canary, mention gating,
+  allowlist block, restart resume, thread follow-up/isolation and reaction
+  observation.

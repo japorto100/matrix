@@ -122,3 +122,19 @@ Gates:
 River/Postgres is the Phase-1 pragmatic scheduler. Temporal remains a later
 option for long-running workflows that need saga, compensation, replay or human
 approval. Do not introduce Temporal for cron-like tasks.
+
+## 2026-04-30 Skill Reload / Cache Transfer
+
+Inputs: Hermes skills reload change, `Z_Additional_For_Tool_Stuff.md`, Feature
+024 and Feature 032.
+
+Skill reload should be an operator/admin or explicit slash/control action, not
+a normal LLM tool that can invalidate prompt/tool caches mid-turn. Reload must
+emit a skill catalog digest, invalidate or rebind cached agent sessions and
+surface whether active plans continue with the old or new skill set.
+
+Skill search should use progressive disclosure: BM25/regex over short
+summaries and policy metadata first, then full skill files only after a bounded
+selection. User-supplied skill folders containing `SKILL.md` plus code/assets
+should be stored as structured manifests and file/blob refs, not flattened into
+one JSON prompt string.

@@ -86,3 +86,14 @@ feature_id: 027
   invalid manifests.
 - [x] T039 [done-static] Unit-test report validation/build tools and registry
   exposure.
+
+## 2026-04-30 Runtime Artifact Additions
+
+- T040 Emit Feature 033 runtime events for report validate/build/artifact
+  created/citation readiness.
+- T041 Add Agent Chat attachment handoff for report manifest, HTML/text/PDF
+  outputs and data artifacts.
+- T042 Add Control UI artifact event linkage so report rows point back to the
+  originating session/turn/tool call.
+- T043 Add Meta-Harness downstream gate that fails if report text exists but
+  artifact manifests/events are missing.

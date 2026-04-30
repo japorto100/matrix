@@ -109,3 +109,14 @@ feature_id: 030
   - 2026-04-29: ADR-0010 records that Matrix mobile compatibility is
     event/fallback-first; rich MCP Apps, code widgets and A2UI surfaces belong
     to Agent Chat UI, not Matrix timeline defaults.
+
+## 2026-04-30 Runtime / Mobile Boundary Additions
+
+- T039 Add runtime event refs to widget proposal, approval, deny, revoke and
+  stale-approval outcomes.
+- T040 Add explicit Element X / FluffyChat compatibility matrix for event,
+  link, media/file and room-state widget fallbacks.
+- T041 Keep non-mobile-safe MCP Apps/code widgets/tool dashboards in Agent Chat
+  UI and record Matrix fallback summary rules.
+- T042 Gate Matrix room-state mutation on Feature 006 transport/session hygiene
+  events: echo guard, mention/thread policy, E2EE blockers and reconnect replay.

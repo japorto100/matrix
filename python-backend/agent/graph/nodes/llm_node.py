@@ -15,6 +15,10 @@ from typing import Any
 from agent.errors import CredentialExhaustedError
 from agent.graph.state import AgentGraphState, ToolCall
 from agent.llm.provider_capabilities import model_capabilities
+from agent.llm.request_telemetry import (
+    build_request_telemetry,
+    telemetry_span_attributes,
+)
 from agent.llm_client import get_litellm_client
 from agent.resilience.credential_pool import (
     Credential,
@@ -23,6 +27,7 @@ from agent.resilience.credential_pool import (
 )
 from agent.resilience.rate_limit_tracker import RateLimitRegistry
 from agent.routing.delegation_policy import build_route_decision_metadata
+from agent.runtime_events import make_runtime_event, runtime_event_span_attributes
 from agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -369,6 +374,32 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "reasoning_tokens",
             )
 
+        resolved_model = str(getattr(response, "model", "") or model)
+        provider = _provider_label(resolved_model)
+        previous_telemetry = None
+        prior_request_telemetry = state.get("request_telemetry") or []
+        if prior_request_telemetry:
+            previous_telemetry = prior_request_telemetry[-1]
+        request_telemetry = build_request_telemetry(
+            provider=provider,
+            model=resolved_model,
+            router=str(state.get("runner_variant") or "unknown"),
+            thread_id=thread_id,
+            iteration=iteration,
+            messages=oai_messages,
+            tools=openai_tools,
+            usage=response.usage,
+            previous=previous_telemetry,
+            metadata={
+                "routing_reason": routing_reason,
+                "routing_used": routing_used,
+                "tool_count": len(openai_tools),
+                "capabilities_known": known_capabilities,
+            },
+        )
+        for key, value in telemetry_span_attributes(request_telemetry).items():
+            span.set_attribute(key, value)
+
         tool_calls: list[ToolCall] = []
         if choice.message.tool_calls:
             for tc in choice.message.tool_calls:
@@ -450,6 +481,7 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
                 "tool_calls_count": len(tool_calls),
                 "token_usage": token_usage,
                 "content_cleaned": assistant_content != (choice.message.content or ""),
+                "request_telemetry": request_telemetry,
             },
         )
 
@@ -498,7 +530,21 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
         )
         total_cached_tokens = int(state.get("cached_tokens", 0) or 0) + cached_tokens
         total_token_usage = int(state.get("token_usage", 0) or 0) + token_usage
-        resolved_model = str(getattr(response, "model", "") or model)
+        runtime_event = make_runtime_event(
+            kind="llm",
+            status="completed",
+            name="llm_call",
+            summary=f"{provider}:{resolved_model}",
+            thread_id=thread_id,
+            turn=iteration,
+            metadata={
+                "request_telemetry": request_telemetry,
+                "tool_calls_count": len(tool_calls),
+                "done": not bool(tool_calls),
+            },
+        )
+        for key, value in runtime_event_span_attributes(runtime_event).items():
+            span.set_attribute(key, value)
 
         result: dict[str, Any] = {
             "tool_calls": tool_calls,
@@ -508,7 +554,9 @@ async def llm_node(state: AgentGraphState) -> dict[str, Any]:
             "reasoning_tokens": total_reasoning_tokens,
             "cached_tokens": total_cached_tokens,
             "token_usage": total_token_usage,
-            "llm_provider": _provider_label(resolved_model),
+            "request_telemetry": [request_telemetry],
+            "runtime_events": [runtime_event],
+            "llm_provider": provider,
             "llm_model": resolved_model,
         }
         if tool_calls:

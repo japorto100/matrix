@@ -93,3 +93,15 @@ baseline, MarkItDown is an optional lightweight conversion candidate, Docling
 is the layout-rich SOTA candidate, and MinerU is a heavy complex/scanned PDF
 candidate. Promotion still depends on local benchmark evidence and resource
 fit, not on project popularity.
+
+## 2026-04-30 Ingestion Runtime Transfer
+
+Inputs: Feature 033, Feature 019, Feature 027 and the Z_ source-grounding pass.
+
+Ingestion runs should emit runtime events for parser selected, chunker version,
+source artifact id, citation/page anchors, vector/KG projection and downstream
+artifact readiness. This lets Agent Chat and Control UI show whether a document
+is actually usable by RAG/KG/report flows instead of only showing "uploaded".
+
+The event payload should link to manifests and source refs, not inline large
+document content.

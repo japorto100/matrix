@@ -432,6 +432,17 @@ feature_id: 016
   stream gates pass: tool blocks, rich renderers, A2UI surfaces,
   SandboxArtifact/PDF/data-file links and attachment previews.
 
+## 2026-04-30 Cache / Runtime / Subagent Additions
+
+- T125 Add scenario assertions for Feature 032 cache/request telemetry:
+  counters, unknown flags, prompt/tool digests and cache-break hypotheses.
+- T126 Add scenario assertions for Feature 033 runtime events and downstream UI
+  artifacts.
+- T127 Add subagent-isolation scenario with child tool-policy, parent memory
+  curation and child trace rollup.
+- T128 Add ingestion/RAG/KG downstream artifact gates so retrieval success alone
+  cannot pass a scenario.
+
 ## Verify Gates
 
 - Python-only scenario suite runs without frontend and Go.

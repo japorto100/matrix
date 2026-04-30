@@ -998,3 +998,14 @@ Checks:
 - A first attempt without clearing `HINDSIGHT_DB_URL` completed both runners but
   failed trace gates because the configured Postgres on `:5433` was not running;
   keep that as trace-store configuration evidence, not as a runner regression.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Run a cache/request telemetry scenario and verify candidate manifest
+  links raw telemetry files.
+- LV031 Run a runtime-event downstream scenario and verify stream gates catch
+  missing tool/artifact/degradation cards.
+- LV032 Run a subagent-isolation scenario and verify parent memory curation is
+  required.
+- LV033 Run ingestion/RAG/KG scenario and verify answer text alone cannot pass
+  without downstream artifact/runtime events.

@@ -119,6 +119,14 @@ class MessageMetaPacket:
 
 
 @dataclass
+class RuntimeEventPacket:
+    """Project-specific runtime event for Agent Chat and Control surfaces."""
+
+    event: dict
+    type: Literal["data-runtime-event"] = "data-runtime-event"
+
+
+@dataclass
 class FinishPacket:
     finish_reason: str = "stop"
     type: Literal["finish"] = "finish"

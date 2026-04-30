@@ -29,3 +29,12 @@ feature_id: 029
   - 2026-04-30: static backend coverage proves Matrix transport audit rows
     become `matrix_transport` ops events with `blocker_reason` and room/event
     ids, and approval reaction waits are counted in the approval lane.
+
+## 2026-04-30 Added Gates
+
+- [ ] Subagent states distinguish active, stale, recently ended, timeout,
+  killed and completed.
+- [ ] Tool/model/memory/RAG/KG event lanes render capped output tails.
+- [ ] Status/kill/pause/replay controls return explicit supported or
+  unsupported outcomes.
+- [ ] Ops events link to Prompt Cache and Report Artifact surfaces.

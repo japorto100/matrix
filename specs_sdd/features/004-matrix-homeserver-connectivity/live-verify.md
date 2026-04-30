@@ -49,3 +49,14 @@ partial local backend/live pass; browser/mobile/federation gates are not closed.
 - Appservice admin-command registration is no longer blocked by credentials;
   Feature 006 records the successful appservice registration and unencrypted
   Matrix bridge proof.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Spin up a disposable Tuwunel lane and verify `/versions`,
+  `.well-known`, media and MatrixRTC discovery without reusing the dev volume.
+- LV031 Run Matrix account diagnostics for login/access-token/device/E2EE/backup
+  readiness and verify each failure mode is distinguishable.
+- LV032 Take a homeserver migration/recovery snapshot before an upgrade drill
+  and verify rollback/read-only diagnostics.
+- LV033 Verify push/notification quiet-mode settings do not break direct Matrix
+  sync for the webclient.

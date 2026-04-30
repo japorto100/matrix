@@ -135,6 +135,17 @@ migrated_from:
 - For each tab, record whether data came from live backend or mock fallback.
 - Any mock fallback in live verify becomes a follow-up task.
 
+## 2026-04-30 Added Live Gates
+
+- LV030 Open Control request/cache telemetry and verify counters, unknown fields
+  and cache-break reasons from a real agent run.
+- LV031 Trigger MCP/tool reload and verify confirm/impact display plus cached
+  session invalidation/rebind result.
+- LV032 Open runtime sessions view and verify active/stale/finished state plus
+  pause/kill/status/replay actions.
+- LV033 Open report artifacts list and verify manifest validation, citation
+  readiness and originating session/turn refs where available.
+
 ## Result
 
 pending

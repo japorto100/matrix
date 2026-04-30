@@ -202,6 +202,8 @@ function AgentChatPanelInner({ config: _config, onMounted }: AgentChatPanelProps
 					contextPressure={contextPressure}
 					degradationFlags={contextDiagnostics.degradationFlags}
 					sourceLayerCounts={contextDiagnostics.sourceLayerCounts}
+					requestTelemetry={contextDiagnostics.requestTelemetry}
+					runtimeEvents={contextDiagnostics.runtimeEvents}
 				/>
 
 				<AgentChatThread

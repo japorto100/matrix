@@ -41,3 +41,13 @@ feature_id: 024
   `/control/audit/mcp-policy` events and success/denial status.
 - LV014 Verify shutdown/restart preserves or intentionally rebuilds descriptor
   snapshots according to the chosen persistence decision.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Reload MCP/tool catalog and verify changed descriptor/tool digests are
+  visible before confirmation.
+- LV031 Verify cached agent sessions are invalidated or rebound after reload.
+- LV032 Verify agent-facing catalog search returns only filtered summaries,
+  risk/provenance/approval metadata and no raw schemas/secrets.
+- LV033 Verify runtime telemetry links MCP catalog digest/tool digest to each
+  call or denial.

@@ -135,3 +135,25 @@ def test_matrix_approval_reaction_wait_maps_to_approval_lane():
     assert model["items"][0]["blocker_reason"] == "approval_reaction_wait"
     assert model["summary"]["approvals"] == 1
     assert model["sessions"][0]["status"] == "needs_approval"
+
+
+def test_llm_request_telemetry_is_ops_event() -> None:
+    event = audit_event_to_ops_event(
+        _audit_event(
+            id=5,
+            action="llm_response",
+            tool_name="",
+            metadata={
+                "request_telemetry": {
+                    "contract": "provider-request-telemetry/v1",
+                    "provider": "openrouter",
+                    "prompt_digest": "abc",
+                    "api_key": "secret",
+                }
+            },
+        )
+    )
+
+    assert event["event_type"] == "llm"
+    assert event["request_telemetry"]["provider"] == "openrouter"
+    assert event["request_telemetry"]["api_key"] == "[redacted]"

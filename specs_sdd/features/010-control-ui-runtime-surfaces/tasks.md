@@ -150,3 +150,14 @@ migrated_from:
 - Every Control UI tab has live data, actionable empty state or owning-feature gap.
 - Every mock fallback is identified during live verify.
 - All deferred slice work has a feature owner.
+
+## 2026-04-30 Prompt Cache / Runtime Additions
+
+- T098 Add Prompt Cache tab fed by Feature 032 counters, request metadata and
+  cache-break reasons.
+- T099 Add Runtime Events tab/rail fed by Feature 033 model/tool/memory/RAG/KG
+  and subagent events.
+- T100 Add MCP reload impact UI showing descriptor diff and prompt-cache
+  invalidation.
+- T101 Extend report artifact list to include Meta-Harness, Matrix QA and
+  runtime trace artifacts.

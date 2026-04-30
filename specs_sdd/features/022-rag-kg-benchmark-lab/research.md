@@ -87,3 +87,16 @@ This references `Z_Browser_RAG_WebGPU_CPU_Models.md` and
 measured candidate dimensions, not implicit defaults. External LightRAG,
 HippoRAG2 and related adapters still need matched-budget benchmarks before
 promotion.
+
+## 2026-04-30 Benchmark Transfer
+
+Inputs: Feature 019 lexical/semantic gates, Feature 032 usage telemetry and
+Feature 033 runtime events.
+
+Benchmark candidates should capture cost/latency/cache counters and runtime
+event completeness alongside retrieval quality. A candidate that improves an
+answer metric but loses citation provenance, hides cache misses or fails to
+emit downstream artifact events is not promotable without an explicit waiver.
+
+This keeps RAG/KG/semantic experiments comparable across provider, embedding
+and local/offline candidates.

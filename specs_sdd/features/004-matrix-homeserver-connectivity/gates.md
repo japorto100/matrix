@@ -53,3 +53,12 @@ Checked on 2026-04-25:
   active dev/prod config before this gate closes.
 - `max_request_size = 104857600` aligns with the Cloudflare 100 MB request cap.
 - `[global.well_known]` and `[[global.well_known.rtc_transports]]` are present.
+
+## 2026-04-30 Added Gates
+
+- [ ] Disposable Tuwunel QA lane provisions driver/SUT/observer users and
+  cleans up with bounded timeout.
+- [ ] Matrix account-state diagnostics distinguish default and named accounts.
+- [ ] E2EE startup verification and backup health are surfaced as
+  connectivity blockers.
+- [ ] Crypto/sync state migration refuses mutation without a recovery snapshot.

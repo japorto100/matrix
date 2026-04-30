@@ -100,3 +100,15 @@ grounded facts.
 - Quarkdown about page: `https://www.quarkdown.net/about`.
 - Quarkdown wiki HTML notes: `https://quarkdown.com/wiki/html/`.
 - Quarkdown GitHub: `https://github.com/iamgio/quarkdown`.
+
+## 2026-04-30 Runtime Artifact Transfer
+
+Inputs: Feature 033, Feature 010 and OpenClaw/OpenClaude artifact/control
+signals.
+
+Report generation should emit typed runtime events for validation, build start,
+build failure, artifact created, citation readiness and Matrix publication
+readiness. Agent Chat should render the artifact list from those events and
+Control UI should read the same manifest-backed index. Model text is allowed to
+mention the report, but the canonical downstream artifact is the manifest and
+its event refs.

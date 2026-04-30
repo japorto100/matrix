@@ -84,3 +84,16 @@ Matrix transport/session audit rows directly. Known blocker classes such as
 become first-class `matrix_transport` ops events with room/event/thread ids
 when present. This keeps the frontend dense 2D board useful for Matrix-native
 agent failures without importing Hermes' UI model.
+
+## 2026-04-30 Subagent / Runtime Observatory Transfer
+
+Inputs: Hermes subagent observability docs, OpenClaude cache stats, Feature 020,
+Feature 032 and Feature 033.
+
+Ops room should show subagents as runtime event rollups: parent session, child
+session id, role, depth, allowed toolset, status, cost/token/request summary,
+output-tail, memory-curation decision and kill/pause outcome. Prompt-cache
+request telemetry should be joinable by session/turn/tool digest so the board
+can explain "why did this turn get expensive" without exposing raw prompts.
+
+This is an event/read-model feature, not a durable second source of truth.

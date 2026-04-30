@@ -113,3 +113,14 @@ Remaining:
 - Control UI model explorer/picker;
 - DB-backed spend dashboard;
 - production credential/security drill for missing/invalid configured keys.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Run a real provider request and verify normalized prompt/completion/
+  reasoning/cache token counters or explicit unknown flags.
+- LV031 Verify prompt-layout and tool-catalog digests are recorded without raw
+  prompt text.
+- LV032 Change tool/skill/MCP catalog and verify request telemetry marks cache
+  locality break or session rebind.
+- LV033 Verify model-role settings exist for main, routing, summarizer, curator,
+  embedding and evaluator without provider-specific field names.

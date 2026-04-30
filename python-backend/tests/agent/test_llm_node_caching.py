@@ -247,6 +247,9 @@ async def test_llm_node_passes_max_tokens_to_litellm(monkeypatch):
     assert captured["max_tokens"] == 64
     assert captured["model"] == "openrouter/test-model"
     assert result["final_response"] == "ok"
+    assert result["request_telemetry"][0]["contract"] == "provider-request-telemetry/v1"
+    assert result["runtime_events"][0]["contract"] == "agent-runtime-event/v1"
+    assert "say ok" not in str(result["request_telemetry"][0])
 
 
 @pytest.mark.asyncio

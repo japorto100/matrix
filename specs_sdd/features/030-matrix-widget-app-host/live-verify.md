@@ -42,3 +42,13 @@ feature_id: 030
   widgets list status, origin and blocked reason.
 - LV018 Verify `matrix-js-sdk` 41.4.0 + `matrix-widget-api` 1.17.0 room widget
   parsing behavior against a real room-state event from the dev homeserver.
+
+## 2026-04-30 Added Live Gates
+
+- LV019 Verify widget proposal/approval/deny/revoke emits runtime event refs.
+- LV020 Verify Element X and FluffyChat compatibility matrix for event/link/
+  media/file/widget fallback when devices are available.
+- LV021 Verify non-mobile-safe MCP Apps/code widgets/tool dashboards stay in
+  Agent Chat UI and Matrix receives only fallback summaries.
+- LV022 Verify Feature 006 transport/session hygiene blockers prevent room-state
+  widget mutation.

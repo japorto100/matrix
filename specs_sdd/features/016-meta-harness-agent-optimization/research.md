@@ -438,3 +438,23 @@ Follow-up live evidence:
   skill selection in audit, but OpenRouter returned `429 free-models-per-day`
   before the model could call tools. This remains a live-provider quota
   blocker, not an agent/memory regression.
+
+## 2026-04-30 Cache / Runtime Event Harness Transfer
+
+Inputs: Feature 032, Feature 033, Meta-Harness paper reread and the Z_ pass.
+
+Meta-Harness gates need both upstream and downstream evidence. Upstream evidence
+means request, prompt-layout, tool-policy, memory/RAG/KG and provider counters.
+Downstream evidence means the events that Agent Chat or Control UI would show:
+tool cards, artifacts, PDFs/data files, report links, subagent summaries and
+error/degradation markers.
+
+The harness therefore needs scenario assertions over:
+
+- prompt-cache/request telemetry completeness and cache-break hypotheses.
+- runtime event envelope completeness and event ordering.
+- subagent isolation, parent-side memory curation and child trace rollups.
+- ingestion/RAG/KG downstream artifact visibility, not only retrieval scores.
+
+The proposer can still be Codex/manual during this phase, but candidate packets
+must contain enough raw traces for an evaluator to reject placebo changes.

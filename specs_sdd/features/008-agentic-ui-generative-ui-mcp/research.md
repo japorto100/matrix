@@ -185,3 +185,28 @@ Adoption judgement for Matrix:
   replay/resume, SDK `pruneMessages()` for browser-side history compaction,
   DevTools gated by local dev config, and eventual comparison of our approval
   continuation path against SDK approval helpers.
+
+## 2026-04-30 Runtime Artifact / Tool UI Transfer
+
+Inputs: `Z_Additional_For_Tool_Stuff.md`, Feature 032, Feature 033, OpenClaude
+cache-stat UI notes and OpenClaw artifact/tool stream observations.
+
+Feature 008 should treat runtime event packets as the canonical upstream signal
+for rich UI rendering. Tool calls, report artifacts, PDF/data files and A2UI
+surfaces should be typed cards derived from provider-agnostic events, not
+provider-specific message shapes. AI SDK helpers remain a frontend rendering
+adapter only.
+
+Concrete additions:
+
+- render prompt-cache/request telemetry as an optional compact diagnostic card
+  in Agent Chat when developer mode is enabled.
+- render runtime event lanes for tool start/result/error, artifact created,
+  memory/RAG/KG context and subagent summaries.
+- keep Matrix room output on markdown/link/media fallbacks and route rich tool
+  dashboards to Agent Chat UI.
+- preserve report artifacts from Feature 027 as first-class attachments, not
+  ad hoc links in model text.
+
+This references Z_ and ref-project findings, but keeps the runtime contract
+provider-agnostic and UI-framework independent.

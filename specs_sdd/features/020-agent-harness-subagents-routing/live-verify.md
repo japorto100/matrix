@@ -94,3 +94,14 @@ Checks:
   `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-simple/`
   and
   `data/meta_harness/runs/run-simple-approval-parity-jsonl-20260429/candidates/simple-approval-jsonl-langgraph/`.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Enable default-off single-hop subagent mode for one test user and verify
+  all other users fail closed.
+- LV031 Verify leaf child has no delegate/memory/send-message/execute-code tools
+  by default.
+- LV032 Verify child trace rollup contains role, depth, status, tool counts,
+  token/request summary and output-tail.
+- LV033 Verify parent interrupt/pause/kill stops active child runs and produces
+  recovery events.

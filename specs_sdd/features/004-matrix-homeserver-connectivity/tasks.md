@@ -33,3 +33,11 @@ migrated_from:
 - [x] Homeserver starts locally; devstack compose start-order still needs follow-up.
 - [x] Client discovery works locally; LAN/mobile/tunnel discovery remains deferred.
 - [x] External blockers have owner/status/date.
+
+## 2026-04-30 OpenClaw Matrix QA Additions
+
+- T008 Add disposable Tuwunel QA lane plan with driver, SUT and observer
+  users, private room setup, hard timeout and cleanup recovery command.
+- T009 Add account-scoped Matrix credential/state diagnostics for default and
+  named accounts.
+- T010 Add E2EE startup verification and backup status as connectivity gates.

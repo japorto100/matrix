@@ -314,3 +314,14 @@ Group-level classification for the current non-live pass:
 
 Every detailed gate above inherits its group status unless a later feature
 overrides it with a narrower task.
+
+## 2026-04-30 Added Gates
+
+- [ ] Matrix room, DM and thread routing semantics are verified separately.
+- [ ] Mention, allowlist and bot-loop policy blocks unauthorized room events.
+- [ ] Streaming preview modes are verified: final-only, partial edit and quiet
+  finalized-preview marker.
+- [ ] Reactions, read receipts, media, voice and `m.mentions` are verified as
+  Matrix events.
+- [ ] Transport-real Tuwunel QA covers canary, mention gating, allowlist block,
+  restart resume, thread follow-up/isolation and reaction observation.

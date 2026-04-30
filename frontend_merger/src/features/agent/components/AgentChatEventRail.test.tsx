@@ -29,4 +29,24 @@ describe("AgentChatEventRail", () => {
 		expect(screen.getByText("personal_memory:2 web:1")).toBeTruthy();
 		expect(screen.getByText("76% ctx")).toBeTruthy();
 	});
+
+	it("renders runtime and request telemetry summaries", () => {
+		render(
+			<AgentChatEventRail
+				status="live"
+				isStreaming={false}
+				requestTelemetry={[
+					{
+						cache_break_reasons: ["first_request"],
+						usage: { unknown_fields: ["cache_write_tokens"] },
+					},
+				]}
+				runtimeEvents={[{ kind: "llm", status: "completed" }]}
+			/>,
+		);
+
+		expect(screen.getByText("1 evt completed")).toBeTruthy();
+		expect(screen.getByText("cache:first_request")).toBeTruthy();
+		expect(screen.getByText("unknown:cache_write_tokens")).toBeTruthy();
+	});
 });

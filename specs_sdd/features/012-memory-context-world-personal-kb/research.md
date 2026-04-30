@@ -247,3 +247,18 @@ acceptable only when the scenario is measuring orchestration, trace integrity,
 memory write/read plumbing or UI stream visibility. Retrieval-quality claims
 still require OpenRouter/OpenAI-compatible/local model candidates and Pareto
 evaluation on held-out corpora.
+
+# 2026-04-30 Delegation Memory Transfer
+
+Inputs: Hermes `delegate_task` memory behavior, `Z_Additional_For_Tool_Stuff.md`
+and Feature 020.
+
+Subagents must not write shared personal/world memory directly. Child runs may
+emit tool/runtime events and a final summary, but parent-side memory curation is
+the only default path into durable memory. Parent curation must include child
+session id, task id, source refs, confidence/degradation and explicit
+retain/skip decision metadata.
+
+This keeps memory Fusion, KG and semantic layers aligned with the current
+evidence-first rule: delegated work can become evidence for a parent decision,
+not hidden truth mutation by a worker process.

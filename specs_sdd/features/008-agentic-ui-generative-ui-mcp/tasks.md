@@ -119,6 +119,17 @@ migrated_from:
     `getToolName()`, so provider/gateway static tool streams do not disappear
     from the timeline.
 
+## 2026-04-30 Runtime Event / Artifact UI Additions
+
+- T084 Render Feature 033 runtime event cards for tool start/result/error,
+  memory/RAG/KG context, subagent summary and artifact-created events.
+- T085 Render Feature 032 request/cache telemetry as a developer-mode Agent Chat
+  diagnostic card without leaking raw prompts.
+- T086 Promote Feature 027 report artifacts and PDF/data files to typed
+  attachment rows in Agent Chat instead of plain model-text links.
+- T087 Add a fallback renderer for unknown runtime event kinds that preserves
+  event id, status, timestamp and safe summary text.
+
 ## Verify Gates
 
 - [x] Malformed A2UI tree rejected.

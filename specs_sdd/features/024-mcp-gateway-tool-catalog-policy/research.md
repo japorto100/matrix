@@ -121,6 +121,22 @@ configured server -> descriptor snapshot -> risk policy -> filtered catalog
 Feature 008 can keep local A2UI. Feature 030 can host Matrix widgets. Feature
 024 decides which MCP tools and resources are allowed to enter those surfaces.
 
+## 2026-04-30 Prompt Cache / Reload Transfer
+
+Inputs: Hermes MCP reload/cache invalidation notes,
+`Z_Additional_For_Tool_Stuff.md` and Feature 032.
+
+MCP/tool reloads must be treated as prompt-cache and runtime-cache events:
+
+- tool descriptor digest changes invalidate or rebind cached agent sessions.
+- Control UI reload requires confirm/impact display when tool schemas,
+  approval levels or descriptor hashes changed.
+- agent-facing search sees only filtered metadata summaries, not raw descriptor
+  instructions or secret-bearing schemas.
+- runtime telemetry links MCP catalog digest/tool digest to each call or denial.
+
+The same pattern applies to builtin tools so MCP is not a special policy island.
+
 ## Checked Sources
 
 - Matrix root `Z_Additional_For_Tool_Stuff.md`.

@@ -36,3 +36,13 @@ feature_id: 019
 - Eval reports quality and latency, not only functional success.
 - Deterministic canaries cover at least one KG-improves scenario and one
   vector-only-enough scenario before larger GraphRAG benchmarks are run.
+
+## G2 Lexical / Runtime
+
+- BM25/regex/semantic/KG lanes expose lane name, score and degradation reason.
+- Lexical hits can improve recall but cannot become answer support without
+  source/citation/provenance refs.
+- Retrieval runtime events preserve selected context ids without inlining large
+  source text.
+- Tool/skill/source discovery uses progressive disclosure before full schema or
+  document exposure.

@@ -74,3 +74,13 @@ Static evidence 2026-04-29:
 ## Result
 
 pending
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Send an Agent Chat turn that emits tool/runtime events and verify cards
+  render for start/result/error without layout overflow.
+- LV031 Verify developer-mode request/cache telemetry card appears only for
+  allowed operators and contains no raw prompt text.
+- LV032 Trigger a report/PDF/data artifact and verify typed attachment rows use
+  manifest/runtime-event refs.
+- LV033 Verify unknown runtime event kinds render as safe fallback rows.

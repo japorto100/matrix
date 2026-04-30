@@ -27,3 +27,10 @@ feature_id: 027
   through the provider-free `report-grounding` command.
 - [x] G009 Report artifacts can be traced back to retrieval/KG inputs in the
   static frontend/backend artifact-list contract.
+
+## Runtime Artifact Gates
+
+- Report validation/build emits runtime events with manifest refs and status.
+- Agent Chat artifact list is manifest/event-backed, not model-text-only.
+- Control UI report rows link to originating session/turn/tool call when known.
+- Missing artifact event refs fail Meta-Harness downstream report gates.

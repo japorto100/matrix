@@ -103,3 +103,12 @@ feature_id: 019
 - Run vector-only, KG-only and fused retrieval on the same query.
 - Verify context assembly includes source refs and KG refs.
 - Run Self-RAG/citation verification and inspect unsupported claims.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Run BM25/regex/vector/KG/fused retrieval lanes against the same fixture
+  and verify lane metadata and scores are visible.
+- LV031 Verify lexical-only hits without provenance cannot support final answer
+  context.
+- LV032 Verify runtime retrieval events link selected context ids, citations and
+  degradation reasons without inlining full documents.

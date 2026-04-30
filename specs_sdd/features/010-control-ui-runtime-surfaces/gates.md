@@ -63,3 +63,13 @@ feature_id: 010
 - [x] Sandbox/security/HITL gaps route to Feature 013.
 - [x] Observability/audit/session gaps route to Feature 014.
 - [x] Skills/scheduler/planning gaps route to Feature 015.
+
+## 2026-04-30 Added Gates
+
+- [ ] Prompt Cache surface shows counters, request metadata and cache-break
+  reasons without secrets.
+- [ ] Runtime Event surface shows model/tool/memory/RAG/KG/subagent events
+  using Feature 033 envelope.
+- [ ] MCP reload UI shows prompt-cache invalidation impact before execution.
+- [ ] Report Artifact list includes Meta-Harness, Matrix QA and runtime trace
+  artifacts.

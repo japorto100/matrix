@@ -61,3 +61,12 @@ feature_id: 014
 - Each workpack records prerequisites, command/probe, expected evidence and
   owning feature.
 - A workpack is closed only with evidence, not by code existence.
+
+## Runtime / Cache Telemetry Gates
+
+- Provider request/cache telemetry is queryable without storing raw prompts by
+  default.
+- Runtime event envelopes preserve event id, parent id, session id, status,
+  timestamp and redacted metadata.
+- Pause/kill/replay/reload actions emit both audit-safe and trace-safe refs.
+- Unknown provider counters remain explicit unknowns, not fabricated zeros.

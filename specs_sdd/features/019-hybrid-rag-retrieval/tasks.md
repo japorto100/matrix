@@ -149,3 +149,14 @@ feature_id: 019
     references can carry page number, bbox, layout block type, OCR confidence
     and image checksum through the Context Bubble benchmark path. Runtime
     visual extraction/search remains Feature 028.
+
+## 2026-04-30 Lexical / Runtime Additions
+
+- T052 Add BM25/regex retrieval lane metadata to selected context and
+  degradation output.
+- T053 Reuse Feature 024 progressive-disclosure search primitives for tool,
+  skill and source-discovery candidates where applicable.
+- T054 Emit Feature 033 runtime events for retrieval start, selected contexts,
+  missing provenance and artifact/citation refs.
+- T055 Add Meta-Harness gate proving lexical candidates cannot support answers
+  without provenance.

@@ -52,6 +52,8 @@ export interface ContextDiagnostics {
 	degradationFlags: string[];
 	sourceLayerCounts: Record<string, number>;
 	contextBlocks: Array<Record<string, unknown>>;
+	requestTelemetry: Array<Record<string, unknown>>;
+	runtimeEvents: Array<Record<string, unknown>>;
 }
 
 export interface UseChatSessionReturn {
@@ -371,6 +373,12 @@ export function useChatSession(): UseChatSessionReturn {
 				: {},
 		contextBlocks: Array.isArray(latestMeta?.contextBlocks)
 			? (latestMeta.contextBlocks as Array<Record<string, unknown>>)
+			: [],
+		requestTelemetry: Array.isArray(latestMeta?.requestTelemetry)
+			? (latestMeta.requestTelemetry as Array<Record<string, unknown>>)
+			: [],
+		runtimeEvents: Array.isArray(latestMeta?.runtimeEvents)
+			? (latestMeta.runtimeEvents as Array<Record<string, unknown>>)
 			: [],
 	};
 

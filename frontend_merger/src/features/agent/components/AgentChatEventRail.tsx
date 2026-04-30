@@ -18,6 +18,8 @@ interface AgentChatEventRailProps {
 	contextPressure?: number;
 	degradationFlags?: string[];
 	sourceLayerCounts?: Record<string, number>;
+	requestTelemetry?: Array<Record<string, unknown>>;
+	runtimeEvents?: Array<Record<string, unknown>>;
 }
 
 const STATUS_CONFIG: Record<RailStatus, { label: string; dot: string }> = {
@@ -42,6 +44,8 @@ export function AgentChatEventRail({
 	contextPressure,
 	degradationFlags = [],
 	sourceLayerCounts = {},
+	requestTelemetry = [],
+	runtimeEvents = [],
 }: AgentChatEventRailProps) {
 	const { label, dot } = STATUS_CONFIG[status];
 	const showLatency = isStreaming && lastChunkMs !== undefined && lastChunkMs < 30_000;
@@ -50,6 +54,21 @@ export function AgentChatEventRail({
 		.filter(([, count]) => count > 0)
 		.map(([layer, count]) => `${layer}:${count}`)
 		.join(" ");
+	const latestTelemetry = requestTelemetry.at(-1);
+	const usage =
+		latestTelemetry?.usage && typeof latestTelemetry.usage === "object"
+			? (latestTelemetry.usage as Record<string, unknown>)
+			: undefined;
+	const cacheBreakReasons = Array.isArray(latestTelemetry?.cache_break_reasons)
+		? latestTelemetry.cache_break_reasons.map((item) => String(item)).filter(Boolean)
+		: [];
+	const unknownFields = Array.isArray(usage?.unknown_fields)
+		? usage.unknown_fields.map((item) => String(item)).filter(Boolean)
+		: [];
+	const runtimeSummary =
+		runtimeEvents.length > 0
+			? `${runtimeEvents.length} evt ${String(runtimeEvents.at(-1)?.status ?? "")}`.trim()
+			: "";
 
 	return (
 		<div className="flex flex-col shrink-0">
@@ -79,6 +98,21 @@ export function AgentChatEventRail({
 						</span>
 					))}
 					{layerSummary && <span className="whitespace-nowrap">{layerSummary}</span>}
+				</div>
+			)}
+			{(runtimeSummary || cacheBreakReasons.length > 0 || unknownFields.length > 0) && (
+				<div className="flex items-center gap-2 px-3 py-1 border-b border-border/20 bg-background/70 text-[9px] font-mono text-muted-foreground/50 overflow-x-auto">
+					{runtimeSummary && <span className="whitespace-nowrap">{runtimeSummary}</span>}
+					{cacheBreakReasons.map((reason) => (
+						<span key={`cache-${reason}`} className="text-sky-400 whitespace-nowrap">
+							cache:{reason}
+						</span>
+					))}
+					{unknownFields.length > 0 && (
+						<span className="text-muted-foreground/40 whitespace-nowrap">
+							unknown:{unknownFields.join(",")}
+						</span>
+					)}
 				</div>
 			)}
 			{/* AC64: context pressure bar */}

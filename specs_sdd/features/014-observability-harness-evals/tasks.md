@@ -100,3 +100,13 @@ migrated_from:
   definition version and ambiguity status.
 - T064 Add ops-room read-model export for Feature 029.
 - T065 Add widget proposal/audit trace fields from Feature 030.
+
+## 2026-04-30 Feature 032-033 Trace Additions
+
+- T066 Add provider request/cache usage trace fields: provider, model, router,
+  prompt digest, tool digest, token counters and unknown-counter flags.
+- T067 Add runtime event envelope trace fields for run/turn/tool/memory/RAG/KG/
+  artifact/subagent events.
+- T068 Add stale/recovery/action trace fields for pause, kill, replay, MCP
+  reload and cached-session invalidation.
+- T069 Add redaction tests for request telemetry and runtime event payloads.

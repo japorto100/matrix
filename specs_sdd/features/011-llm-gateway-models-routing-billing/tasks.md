@@ -124,3 +124,14 @@ migrated_from:
 - Model list loads.
 - Billing row/span exists for a real call.
 - Routing is off-by-default or passes G1-G6/P1 live verify.
+
+## 2026-04-30 Provider Telemetry Additions
+
+- T077 Add provider-agnostic request telemetry extraction for request id,
+  processing time and rate-limit headers when available.
+- T078 Add normalized usage counters for input, output, cache read, cache
+  write and total.
+- T079 Add transport/model/cache capability metadata for Feature 032 cache
+  snapshots.
+- T080 Ensure provider-specific reasoning and resolved credentials are redacted
+  from request telemetry.

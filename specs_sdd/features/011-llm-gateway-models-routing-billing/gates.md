@@ -72,3 +72,13 @@ feature_id: 011
 - [ ] L1 post-hoc mode labeling starts only after enough audit events exist.
 - [ ] L2/L3/L4 adaptive/classifier/training work remains deferred unless
   promoted.
+
+## 2026-04-30 Added Gates
+
+- [ ] Provider request telemetry normalizes request id, processing time and
+  rate-limit headers when available.
+- [ ] Usage counters distinguish input, output, cache read, cache write and
+  total.
+- [ ] Unknown provider counters remain unknown instead of guessed.
+- [ ] Provider-specific reasoning and resolved credentials are redacted from
+  telemetry and artifacts.

@@ -216,6 +216,16 @@ migrated_from:
 - T090 Add browser-local retrieval handoff to Feature 026 for private/local
   prefiltering before backend memory/RAG calls.
 
+## 2026-04-30 Delegation Memory Additions
+
+- T091 Add parent-side delegation memory curation contract with child session
+  id, task id, source refs, confidence/degradation and retain/skip decision.
+- T092 Ensure child/subagent runs cannot write durable shared memory by default.
+- T093 Emit runtime events for memory retain/recall/curation decisions that
+  Feature 033 and Feature 029 can display.
+- T094 Add Meta-Harness scenario where delegated evidence is summarized by the
+  parent before any memory write.
+
 ## Verify Gates
 
 - Memory API returns real data or healthy empty state.

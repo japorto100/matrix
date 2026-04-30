@@ -125,3 +125,12 @@ path.
 - Encrypted Matrix message can traverse appservice -> NATS -> Python.
 - [x] Reply path works for unencrypted live Matrix rooms.
 - Subject isolation/key deletion are verified or clearly deferred.
+
+## 2026-04-30 E2EE / Bridge Additions
+
+- T054 Add Matrix device verification, backup restore and recovery-key gates
+  before production E2EE promotion.
+- T055 Add migration snapshot requirement before crypto/sync state mutation.
+- T056 Add encrypted media decrypt/cache path requirements for downstream
+  agent tools.
+- T057 Add bridge policy gates for bot-to-bot and self-loop suppression.

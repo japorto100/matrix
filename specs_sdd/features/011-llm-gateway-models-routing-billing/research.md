@@ -86,3 +86,25 @@ snapshot, and make the Meta-Harness `provider-smoke` gate fail closed for mock
 providers unless explicitly allowed. This implements the non-browser part of
 Feature 011 T074/T076 while leaving the full live smoke matrix T075 open until
 the configured remote provider and embedding provider are exercised.
+
+## 2026-04-30 Provider Telemetry Transfer
+
+Inputs: OpenClaude cache-stat logging/config, Hermes dashboard model settings,
+Feature 032 and `Z_Additional_For_Tool_Stuff.md`.
+
+The gateway needs a provider-agnostic request accounting layer:
+
+- normalize prompt, completion, reasoning, cache-read and cache-write token
+  counters when a provider supplies them.
+- preserve unknown counters instead of inventing values when providers omit
+  cache/reasoning usage.
+- record provider/model/router/credential source and prompt-layout digest
+  without storing raw prompt text by default.
+- expose main, routing, summarizer, curator, embedding and evaluator model
+  roles as explicit settings, not OpenAI/Anthropic-specific fields.
+- warn when tool/MCP/skill reloads or prompt-layout changes break prompt-cache
+  locality for active sessions.
+
+This is deliberately not a vendor cache implementation. It is telemetry and
+routing context that works for OpenRouter/LiteLLM-compatible, local and future
+provider adapters.

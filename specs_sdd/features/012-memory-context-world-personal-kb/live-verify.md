@@ -289,3 +289,12 @@ Residual risk:
 - This is a callable worker method, not yet a scheduled background service. A
   scheduler/ops trigger still needs to be selected before production archive
   backlogs are expected to self-drain.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Run a delegated/subagent-style memory scenario and verify only the
+  parent can write durable memory.
+- LV031 Verify parent curation records child session id, task id, source refs,
+  confidence/degradation and retain/skip result.
+- LV032 Verify memory retain/recall/curation runtime events appear in Agent Chat
+  or Control/Ops without raw sensitive content.

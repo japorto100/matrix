@@ -158,3 +158,14 @@ feature_id: 024
     for allowed, poisoned and drift scenarios; no external MCP server required.
   - 2026-04-29 live-smoke: `run-mcp-catalog-policy-20260429` passed 3/3
     scenarios in `/tmp/matrix-meta-harness-mcp-policy`.
+
+## 2026-04-30 Prompt Cache / Reload Additions
+
+- T048 Add MCP reload confirmation metadata with prompt-cache invalidation
+  impact.
+- T049 Invalidate or rebind cached agent sessions after MCP descriptor/tool
+  catalog changes.
+- T050 Emit Feature 032 cache-impact and Feature 033 runtime events for MCP
+  reload, descriptor diff and policy denial.
+- T051 Keep progressive search metadata-only until policy allows full schema
+  exposure.

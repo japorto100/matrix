@@ -48,3 +48,12 @@ feature_id: 024
   BM25-style scoring and keeps high-disclosure schemas out of results.
 - [x] G013 MCP discovery searches only effective-catalog visible entries and
   returns provenance/risk/approval summaries without full schemas.
+
+## 2026-04-30 Added Gates
+
+- [ ] MCP reload emits prompt-cache invalidation impact metadata.
+- [ ] Cached agent sessions are invalidated or rebound after descriptor/tool
+  catalog changes.
+- [ ] Descriptor diffs and reload decisions emit Feature 033 runtime events.
+- [ ] Progressive discovery remains metadata-only until full schema exposure is
+  policy-approved.

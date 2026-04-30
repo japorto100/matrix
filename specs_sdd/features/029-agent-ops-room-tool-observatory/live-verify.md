@@ -27,3 +27,12 @@ feature_id: 029
 - LV010 Verify Matrix handoff link opens correct room/context.
 - LV011 Stress a long session and verify pagination/windowing.
 - LV012 Prototype spatial/3D view only after 2D live gates pass.
+
+## 2026-04-30 Added Live Gates
+
+- LV030 Run a subagent scenario and verify parent/child rollup, role, depth,
+  status, tool counts, token/request summary and output-tail.
+- LV031 Run provider request and verify prompt-cache/request telemetry joins by
+  session/turn/tool digest.
+- LV032 Trigger pause/kill/status and verify action result events appear with
+  redacted metadata.

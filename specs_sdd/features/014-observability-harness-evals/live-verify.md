@@ -127,6 +127,15 @@ owning feature's `live-verify.md` or `closeout.md`.
 partial backend live pass; OpenObserve/collector and browser dashboard gates
 remain open.
 
+## 2026-04-30 Added Live Gates
+
+- LV030 Query a real agent run and verify request/cache telemetry fields are
+  present with redacted prompt digests.
+- LV031 Query runtime events for run/turn/tool/memory/RAG/KG/artifact/subagent
+  and verify event id/parent id ordering.
+- LV032 Trigger pause/kill/replay/reload and verify trace/audit refs are linked
+  but separated per ADR-002.
+
 ## Backend Evidence 2026-04-27
 
 - Live Postgres migration:

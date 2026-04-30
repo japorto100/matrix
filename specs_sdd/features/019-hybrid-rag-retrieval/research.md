@@ -125,3 +125,22 @@ to degrade fail-closed when selected context has no source URI, artifact,
 citation, memory raw evidence ref, document/chunk or KG claim ref. This keeps
 regex/BM25/semantic discovery useful without allowing unattributed context to
 silently become answer evidence.
+
+## 2026-04-30 BM25 / Regex Discovery Transfer
+
+Inputs: `Z_Additional_For_Tool_Stuff.md`, Feature 024 tool search and Feature
+025 semantic filtering.
+
+Hybrid RAG should keep lexical retrieval as a first-class lane. Regex and
+BM25-style scoring are useful for tool/skill/resource discovery and for
+source-grounded RAG prefiltering, as long as answer support still requires
+provenance. The practical contract is:
+
+- lexical candidates may improve recall and debuggability.
+- semantic/KG filters may narrow candidates only when they preserve source refs.
+- selected context must expose retrieval lane, score fields and degradation
+  reason when a lane is unavailable.
+
+This avoids a false split between "normal tools" and MCP tools: both can use
+the same progressive-disclosure search primitive before exposing full schemas
+or source content to an agent.
