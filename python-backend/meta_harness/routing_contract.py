@@ -11,6 +11,7 @@ from agent.routing.delegation_policy import (
     build_delegation_defer_metadata,
     build_route_decision_metadata,
 )
+from agent.runtime_events import make_runtime_event
 from meta_harness.scenario_runner import TraceExpectations, evaluate_trace_gates
 
 DEFAULT_RUN_ID = "run-routing-contract"
@@ -36,6 +37,7 @@ def run_routing_contract_scenarios(
         _repeated_failed_tool_calls_fails_gate(),
         _forbidden_provider_and_secret_metadata_fails_gate(),
         _runtime_event_redaction_shape_gate(),
+        _runtime_event_replay_identity_gate(),
         _tool_hook_policy_trace_shape_gate(),
         _context_overflow_compress_retry_trace_gate(),
         _subagent_isolation_runtime_gate(),
@@ -322,6 +324,86 @@ def _runtime_event_redaction_shape_gate() -> dict[str, Any]:
         expected_passed=True,
         verdict=verdict,
     )
+
+
+def _runtime_event_replay_identity_gate() -> dict[str, Any]:
+    runtime_event = make_runtime_event(
+        kind="tool",
+        status="completed",
+        name="tool.semantic_lookup",
+        run_id="run-agent-033",
+        session_id="session-agent-033",
+        thread_id="thread-agent-033",
+        turn=3,
+        payload={"api_key": "sk-should-redact", "output_tail": "metric matched"},
+        metadata={
+            "tool_call_id": "call-semantic-1",
+            "tool_name": "semantic_lookup",
+            "result_keys": ("status", "metric_plan"),
+        },
+    )
+    events = [
+        {
+            "action": "tool_result",
+            "toolName": "semantic_lookup",
+            "success": True,
+            "metadata": {"runtime_events": [runtime_event]},
+        }
+    ]
+    verdict = evaluate_trace_gates(
+        events,
+        TraceExpectations(
+            required_tools=("semantic_lookup",),
+            required_runtime_event_names=("tool.semantic_lookup",),
+            required_runtime_event_metadata_keys={
+                "tool.semantic_lookup": (
+                    "tool_call_id",
+                    "tool_name",
+                    "result_keys",
+                )
+            },
+            forbidden_runtime_event_metadata_keys={
+                "*": ("api_key", "authorization", "raw_prompt", "resolved_secret")
+            },
+        ),
+    )
+    failures = list(verdict.failures)
+    for key in (
+        "event_id",
+        "run_id",
+        "session_id",
+        "thread_id",
+        "turn_id",
+        "span_id",
+        "timestamp",
+        "kind",
+        "status",
+        "payload",
+        "redaction",
+    ):
+        if runtime_event.get(key) in (None, "", [], ()):
+            failures.append(f"missing-runtime-event-envelope:{key}")
+    if runtime_event.get("run_id") != "run-agent-033":
+        failures.append("runtime-event-run-id-not-preserved")
+    if runtime_event.get("session_id") != "session-agent-033":
+        failures.append("runtime-event-session-id-not-preserved")
+    if runtime_event.get("turn_id") != "session-agent-033:turn:3":
+        failures.append("runtime-event-turn-id-not-derived")
+    if (runtime_event.get("redaction") or {}).get("policy") != (
+        "runtime-event-redaction/v1"
+    ):
+        failures.append("runtime-event-redaction-policy-missing")
+    if (runtime_event.get("payload") or {}).get("api_key") != "[redacted]":
+        failures.append("runtime-event-payload-secret-not-redacted")
+    passed = verdict.passed and not failures
+    return {
+        "id": "routing-runtime-event-replay-identity",
+        "passed": passed,
+        "expected_gate_passed": True,
+        "actual_gate_passed": passed,
+        "failures": failures,
+        "verdict": verdict.as_dict(),
+    }
 
 
 def _tool_hook_policy_trace_shape_gate() -> dict[str, Any]:

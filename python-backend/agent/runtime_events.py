@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 RUNTIME_EVENT_CONTRACT = "agent-runtime-event/v1"
+RUNTIME_EVENT_REDACTION_POLICY = "runtime-event-redaction/v1"
 
 RuntimeEventKind = Literal[
     "run",
@@ -56,17 +57,31 @@ class RuntimeEvent:
     name: str
     summary: str = ""
     event_id: str = field(default_factory=lambda: f"evt_{uuid.uuid4().hex}")
+    run_id: str = ""
+    span_id: str = ""
+    parent_id: str = ""
     parent_event_id: str = ""
     session_id: str = ""
     thread_id: str = ""
     turn: int = 0
+    turn_id: str = ""
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     metadata: dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
+    redaction: dict[str, Any] = field(default_factory=dict)
     contract: str = RUNTIME_EVENT_CONTRACT
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["metadata"] = redact_runtime_payload(payload.get("metadata") or {})
+        payload["payload"] = redact_runtime_payload(payload.get("payload") or {})
+        payload["redaction"] = {
+            "policy": RUNTIME_EVENT_REDACTION_POLICY,
+            "applied": True,
+            "max_string_chars": 800,
+            "max_items": 80,
+            **(payload.get("redaction") or {}),
+        }
         return payload
 
 
@@ -77,25 +92,49 @@ def make_runtime_event(
     name: str,
     summary: str = "",
     event_id: str | None = None,
+    run_id: str = "",
+    span_id: str = "",
+    parent_id: str = "",
     parent_event_id: str = "",
     session_id: str = "",
     thread_id: str = "",
     turn: int = 0,
+    turn_id: str = "",
     metadata: dict[str, Any] | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a redacted runtime event dict for SSE, traces and read models."""
 
+    resolved_event_id = event_id or f"evt_{uuid.uuid4().hex}"
+    resolved_thread_id = str(thread_id or "")
+    resolved_session_id = str(session_id or resolved_thread_id or "")
+    resolved_run_id = str(run_id or resolved_session_id or resolved_thread_id or resolved_event_id)
+    resolved_turn_id = str(
+        turn_id
+        or (
+            f"{resolved_session_id}:turn:{turn}"
+            if resolved_session_id and int(turn or 0) > 0
+            else ""
+        )
+    )
+    resolved_span_id = str(span_id or resolved_event_id)
+    resolved_parent_id = str(parent_id or parent_event_id or "")
     return RuntimeEvent(
         kind=kind,
         status=status,
         name=name,
         summary=summary,
-        event_id=event_id or f"evt_{uuid.uuid4().hex}",
+        event_id=resolved_event_id,
+        run_id=resolved_run_id,
+        span_id=resolved_span_id,
+        parent_id=resolved_parent_id,
         parent_event_id=parent_event_id,
-        session_id=session_id,
-        thread_id=thread_id,
+        session_id=resolved_session_id,
+        thread_id=resolved_thread_id,
         turn=turn,
+        turn_id=resolved_turn_id,
         metadata=metadata or {},
+        payload=payload or {},
     ).to_dict()
 
 
@@ -126,6 +165,8 @@ def runtime_event_span_attributes(event: dict[str, Any]) -> dict[str, Any]:
     return {
         "runtime_event.contract": str(event.get("contract") or RUNTIME_EVENT_CONTRACT),
         "runtime_event.id": str(event.get("event_id") or ""),
+        "runtime_event.run_id": str(event.get("run_id") or ""),
+        "runtime_event.span_id": str(event.get("span_id") or ""),
         "runtime_event.kind": str(event.get("kind") or ""),
         "runtime_event.status": str(event.get("status") or ""),
         "runtime_event.name": str(event.get("name") or ""),

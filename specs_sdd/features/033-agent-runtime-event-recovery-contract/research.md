@@ -89,3 +89,12 @@ It asserts `context_mode=isolated`, `memory_write_policy=parent_only`, child
 allowlist membership for `semantic_lookup` and absence of `memory_add`. This
 ports the Hermes child-tool isolation lesson into Matrix's event contract
 without treating Hermes' CLI execution model as a product runtime template.
+
+2026-04-30 replay identity update: the backend event envelope now carries the
+fields downstream replay actually needs: run/session/thread/turn identity,
+span/parent identity, payload and an explicit redaction policy marker. This
+continues the same Z_ agent-harness and Hermes/OpenClaw lesson: UI and Ops
+should reconstruct tool, memory, retrieval and subagent state from stable
+events, not from assistant prose or provider-specific traces. The change is
+additive and provider-agnostic; older callers get derived IDs while scoped RAG
+calls now preserve thread/session identity in their own runtime events.

@@ -162,7 +162,13 @@ async def test_retrieve_audits_runtime_events_when_scoped(monkeypatch) -> None:
     row = audit_rows[0]
     assert row["action"] == AuditAction.RAG_RETRIEVAL
     assert row["thread_id"] == "thread-rag"
-    assert row["metadata"]["runtime_events"][0]["name"] == "rag.retrieve.started"
+    runtime_event = row["metadata"]["runtime_events"][0]
+    assert runtime_event["name"] == "rag.retrieve.started"
+    assert runtime_event["thread_id"] == "thread-rag"
+    assert runtime_event["session_id"] == "thread-rag"
+    assert runtime_event["run_id"] == "thread-rag"
+    assert runtime_event["span_id"]
+    assert runtime_event["redaction"]["applied"] is True
     assert "query_digest" in row["metadata"]
     assert "Russian oil" not in str(row["metadata"])
 

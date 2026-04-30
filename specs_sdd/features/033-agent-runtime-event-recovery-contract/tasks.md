@@ -11,13 +11,20 @@ feature_id: 033
 
 ## Contract
 
-- T001 Define event envelope: event id, run id, session id, turn id, parent id,
+- [x] T001 [done-static] Define event envelope: event id, run id, session id, turn id, parent id,
   span id, timestamp, kind, status, payload and redaction marker.
+  - 2026-04-30: `agent.runtime_events.make_runtime_event()` now emits the
+    complete provider-agnostic envelope. Missing `run_id`, `session_id`,
+    `turn_id`, `span_id` and `parent_id` are derived without breaking older
+    callers, and metadata/payload are redacted before replay.
 - T002 Define event kinds for agent lifecycle, model request, tool call/result,
   memory, retrieval, KG claim, artifact and subagent lifecycle.
 - T003 Define outcome taxonomy: ok, error, timeout, killed, cancelled, stale
   and deferred.
-- T004 Define payload caps and output-tail policy.
+- [x] T004 [done-static] Define payload caps and output-tail policy.
+  - 2026-04-30: runtime events cap strings/lists through the shared redaction
+    path and record `runtime-event-redaction/v1` policy metadata on every
+    event.
 
 ## Runtime
 
@@ -102,3 +109,7 @@ feature_id: 033
     `llm.prompt_cache_break` and subagent-isolation gates that fail on raw
     prompts, headers, authorization material, resolved secrets, unredacted
     request telemetry or child memory/tool policy drift.
+  - 2026-04-30: `routing-runtime-event-replay-identity` now proves replayable
+    event identity provider-free: `run_id`, `session_id`, `thread_id`,
+    `turn_id`, `span_id`, payload and redaction policy must be present, and
+    payload secrets must be redacted.

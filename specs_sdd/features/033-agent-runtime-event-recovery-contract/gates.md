@@ -16,6 +16,10 @@ feature_id: 033
     remains open.
   - 2026-04-30 partial: memory audit rows preserve thread id and runtime
     envelope metadata for recall/retain replay.
+  - 2026-04-30 static: `make_runtime_event()` now derives non-empty `run_id`
+    and `session_id` from supplied session/thread identity, with event-id
+    fallback for local provider-free runs. Scoped retrieval events now preserve
+    thread/session identity in the event envelope before audit replay.
 - [x] G002 Runtime events preserve tool_call_id where applicable.
   - 2026-04-30: `tool_node` runtime events include `tool_call_id` for started
     and result paths, and focused tests assert the id survives audit metadata.
@@ -45,3 +49,6 @@ feature_id: 033
     supported, confirmation-required or unsupported runtime events; durable
     pause/replay execution remains open.
 - G008 Meta-Harness can replay event streams without browser dependencies.
+  - 2026-04-30: provider-free routing contract includes
+    `routing-runtime-event-replay-identity`, which validates the replay
+    envelope and redaction policy without starting the frontend or a browser.

@@ -42,6 +42,8 @@ def _retrieval_event(
     status: str,
     name: str,
     summary: str = "",
+    session_id: str = "",
+    thread_id: str = "",
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return make_runtime_event(
@@ -49,6 +51,8 @@ def _retrieval_event(
         status=status,  # type: ignore[arg-type]
         name=name,
         summary=summary,
+        session_id=session_id,
+        thread_id=thread_id,
         metadata=metadata or {},
     )
 
@@ -393,6 +397,8 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
             status="started",
             name="rag.retrieve.started",
             summary="Retrieval started",
+            session_id=str(kwargs.get("session_id") or ""),
+            thread_id=str(kwargs.get("thread_id") or ""),
             metadata={
                 "intent": plan.mode.value,
                 "requested_mode": requested_mode if isinstance(requested_mode, str) else "",
@@ -549,6 +555,8 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
             status="completed",
             name="rag.retrieve.completed",
             summary="Retrieval completed",
+            session_id=str(kwargs.get("session_id") or ""),
+            thread_id=str(kwargs.get("thread_id") or ""),
             metadata={
                 "intent": plan.mode.value,
                 "vector_hit_count": len(vector_hits),
@@ -578,6 +586,8 @@ async def retrieve(query: str, **kwargs: object) -> RetrievalResult:
                 status="completed",
                 name="kg.retrieval.selected_claims",
                 summary="KG claims selected into retrieval context",
+                session_id=str(kwargs.get("session_id") or ""),
+                thread_id=str(kwargs.get("thread_id") or ""),
                 metadata={
                     "claim_ids": selected_kg_claim_ids,
                     "kg_access_recorded_count": kg_access_count,
