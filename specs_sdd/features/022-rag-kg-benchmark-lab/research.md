@@ -119,3 +119,11 @@ also requires selected KG references to carry `rebuildable` and
 `run-kg-rebuildable-benchmark-gate` passed with `matrix-fused-vector-kg`
 fitness `0.9908`, while promotion still defers because this run intentionally
 has no holdout split.
+
+## 2026-04-30 Semantic Lexical Candidate Update
+
+Feature 025 now adds a BM25-like lexical candidate lane for semantic
+near-misses. Feature 022 should treat that as a candidate dimension for
+clarification/search quality, not as answer correctness. A run can get credit
+for surfacing the right candidate, but it still must fail if the final answer
+uses a non-authoritative candidate as if it were an exact semantic contract.

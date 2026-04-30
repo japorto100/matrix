@@ -29,6 +29,10 @@ feature_id: 025
   `knowledge-semantic-lookup-before-metric-answer`: a metric-sensitive answer
   must observe `semantic_lookup`, carry the metric id/catalog version/freshness
   and keep `raw_sql_allowed=false`.
+- [x] G001 now also covers near-miss lexical suggestions: unknown phrases may
+  surface `candidate_matches`, but they remain non-authoritative and require
+  confirmation before any metric answer. This is covered by
+  `knowledge-semantic-lexical-candidate-requires-confirmation`.
 - [x] G006/G007 are covered by
   `knowledge-rag-kg-semantic-context-grounded`.
 - [x] G007 also has runtime coverage through Feature 019 semantic retrieval

@@ -214,6 +214,9 @@ feature_id: 022
     citation of `chunk-semantic-tool-success-rate`.
   - 2026-04-30: `knowledge-contract` adds semantic ambiguity, permission
     denial and KG/RAG semantic-context gates to the provider-free suite.
+  - 2026-04-30: Feature 025 semantic lookup now has a lexical candidate lane
+    for near-miss phrases. Benchmark candidates may use it for clarification or
+    search, but it is not promotable as an authoritative answer path.
 - T051 [done-static] Add Feature 028 visual-layout evidence benchmark cases.
   - 2026-04-29: `visual-layout-source-coordinates-001` requires page/bbox,
     layout block type, OCR confidence, image checksum and exact citation refs.

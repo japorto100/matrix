@@ -67,6 +67,7 @@ class SemanticLookupTool(TradingTool):
             "ambiguous": lookup["ambiguous"],
             "authoritative": lookup["matched"],
             "matches": lookup["matches"],
+            "candidate_matches": lookup.get("candidate_matches") or [],
             "raw_sql_allowed": False,
         }
 
@@ -88,9 +89,13 @@ class SemanticLookupTool(TradingTool):
                 {
                     "status": "not_found",
                     "refusal_reason": "no-authoritative-definition",
+                    "suggested_phrases": _compact_candidate_matches(
+                        result["candidate_matches"]
+                    ),
                     "answer_template": (
                         "I do not have an authoritative Matrix semantic definition for this "
-                        "phrase, so I should not invent a metric or SQL query."
+                        "phrase, so I should not invent a metric or SQL query. If candidates "
+                        "are present, ask the user to confirm one first."
                     ),
                 }
             )
@@ -158,6 +163,9 @@ class SemanticLookupTool(TradingTool):
             "answer_template": result.get("answer_template"),
             "raw_sql_allowed": False,
         }
+        candidates = result.get("candidate_matches")
+        if isinstance(candidates, list) and candidates:
+            payload["candidate_matches"] = _compact_candidate_matches(candidates)
         semantic_context = result.get("semantic_context")
         if isinstance(semantic_context, dict):
             payload["semantic_context"] = {
@@ -183,3 +191,25 @@ class SemanticLookupTool(TradingTool):
                 "raw_sql_allowed": metric_plan.get("raw_sql_allowed", False),
             }
         return payload
+
+
+def _compact_candidate_matches(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for candidate in candidates[:5]:
+        item = candidate.get("item") if isinstance(candidate, dict) else None
+        if not isinstance(item, dict):
+            continue
+        candidate_type = str(candidate.get("type") or "")
+        item_id = item.get("term_id") if candidate_type == "term" else item.get("metric_id")
+        compact.append(
+            {
+                "type": candidate_type,
+                "id": str(item_id or ""),
+                "name": str(item.get("name") or ""),
+                "score": candidate.get("score"),
+                "matched_terms": list(candidate.get("matched_terms") or []),
+                "authoritative": False,
+                "requires_confirmation": True,
+            }
+        )
+    return compact

@@ -37,6 +37,19 @@ def test_alias_collision_is_ambiguous():
     assert lookup["ambiguous"] is True
 
 
+def test_lookup_phrase_returns_fail_closed_lexical_candidates():
+    lookup = lookup_phrase(DEFAULT_SEMANTIC_CATALOG, "tool success ratio")
+
+    assert lookup["matched"] is False
+    assert lookup["ambiguous"] is False
+    assert lookup["matches"] == []
+    candidate = lookup["candidate_matches"][0]
+    assert candidate["type"] == "metric"
+    assert candidate["item"]["metric_id"] == "agent_tool_success_rate"
+    assert "tool" in candidate["matched_terms"]
+    assert "success" in candidate["matched_terms"]
+
+
 def test_metric_plan_filters_missing_tenant_context():
     result = plan_metric_query(
         DEFAULT_SEMANTIC_CATALOG,

@@ -153,3 +153,17 @@ semantic mediation. The gate requires a `semantic_lookup` tool result, compact
 model output with `agent_tool_success_rate`, semantic catalog version, semantic
 contract, freshness and `raw_sql_allowed=false`, plus answer text that cites the
 approved data path rather than inventing a metric value.
+
+## 2026-04-30 Lexical Candidate Lane
+
+The `Z_` notes mention regex/BM25-style lookup tricks. For the semantic layer,
+the safe transfer is not automatic fuzzy matching. The implemented slice keeps
+exact alias matching authoritative and adds a provider-free lexical candidate
+lane only for non-matches. `lookup_phrase()` returns scored
+`candidate_matches`; `semantic_lookup` exposes them as compact suggestions with
+`authoritative=false` and `requires_confirmation=true`.
+
+This improves agent ergonomics for phrases like "tool success ratio" without
+letting a near miss become a metric contract. Retrieval/RAG/KG can use the same
+candidate metadata for search UI or clarification, while answers still need an
+exact term/metric or an explicit user choice.

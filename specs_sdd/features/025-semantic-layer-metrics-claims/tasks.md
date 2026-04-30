@@ -53,6 +53,10 @@ feature_id: 025
   - 2026-04-29: unknown phrases return `status=not_found`,
     `refusal_reason=no-authoritative-definition` and explicit no-invention
     guidance; ambiguous phrases fail closed.
+  - 2026-04-30: unknown phrases now also return fail-closed lexical
+    `candidate_matches` with scores and matched terms. These are suggestions
+    only: `matched=false`, `authoritative=false` and the model output requires
+    user confirmation before using one.
 - [x] T023 [done-static] Add answer template with definition, value, provenance and freshness.
   - 2026-04-29: matched terms/metrics return an answer template with
     definition/measure, source refs, freshness SLA and `raw_sql_allowed=false`.
@@ -93,6 +97,9 @@ feature_id: 025
 - [x] T033 Unit-test correction proposal workflow.
 - [x] T033a [done-static] Unit-test `semantic_lookup` tool registration,
   permission-fail-closed behavior, refusal guidance and compact model output.
+  - 2026-04-30: tests cover lexical candidate suggestions for near-miss
+    phrases such as `tool success ratio`, while preserving no-invention
+    semantics.
 - [x] T033b [done-static] Expose `semantic_lookup` in Control UI Tools registry
   fallback and filters.
   - 2026-04-29: Feature 010 `ToolsTab` shows the semantic group, risk/approval
@@ -113,6 +120,12 @@ feature_id: 025
   conflated.
   - 2026-04-30: `knowledge-semantic-ambiguity-permission-fail-closed` checks
     alias collision/ambiguity and permission fail-closed behavior.
+  - 2026-04-30: lexical semantic candidates remain fail-closed and do not
+    change exact-match ambiguity semantics; they are a retrieval/search aid, not
+    a metric answer.
+  - 2026-04-30: `knowledge-semantic-lexical-candidate-requires-confirmation`
+    proves near-miss candidates such as `tool success ratio` stay
+    non-authoritative and require confirmation.
 - [x] T036 [done-static] Meta-Harness scenario: unstructured document concept
   must link to a KG claim and RAG citation.
   - 2026-04-30: `knowledge-rag-kg-semantic-context-grounded` requires semantic

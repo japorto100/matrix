@@ -71,6 +71,7 @@ def run_knowledge_contract_scenarios(
         _rag_kg_semantic_context_grounded(),
         _lexical_candidate_without_provenance_blocked(),
         _semantic_lookup_required_before_metric_answer(),
+        _semantic_lexical_candidate_requires_confirmation(),
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
         _memory_semantic_feedback_requires_review(),
@@ -547,6 +548,106 @@ def _semantic_lookup_required_before_metric_answer() -> dict[str, Any]:
         failures=failures,
         details={
             "trace_verdict": trace_verdict.as_dict(),
+            "model_output": model_output,
+        },
+    )
+
+
+def _semantic_lexical_candidate_requires_confirmation() -> dict[str, Any]:
+    lookup = lookup_phrase(DEFAULT_SEMANTIC_CATALOG, "tool success ratio")
+    candidates = lookup.get("candidate_matches") or []
+    top_candidate = candidates[0] if candidates else {}
+    item = top_candidate.get("item") if isinstance(top_candidate, dict) else {}
+    model_output = {
+        "status": "not_found",
+        "phrase": lookup.get("phrase"),
+        "authoritative": False,
+        "ambiguous": False,
+        "refusal_reason": "no-authoritative-definition",
+        "candidate_matches": [
+            {
+                "type": top_candidate.get("type"),
+                "id": item.get("metric_id") if isinstance(item, dict) else "",
+                "name": item.get("name") if isinstance(item, dict) else "",
+                "score": top_candidate.get("score"),
+                "matched_terms": top_candidate.get("matched_terms") or [],
+                "authoritative": False,
+                "requires_confirmation": True,
+            }
+        ]
+        if top_candidate
+        else [],
+        "raw_sql_allowed": False,
+    }
+    trace_events = [
+        {
+            "action": "tool_result",
+            "toolName": "semantic_lookup",
+            "success": True,
+            "metadata": {
+                "tool_output": model_output,
+                "runtime_events": [
+                    {
+                        "name": "semantic.lookup.candidates",
+                        "metadata": {
+                            "phrase": "tool success ratio",
+                            "lookup_status": "not_found",
+                            "candidate_count": len(candidates),
+                            "top_candidate_id": model_output["candidate_matches"][0][
+                                "id"
+                            ]
+                            if model_output["candidate_matches"]
+                            else "",
+                            "authoritative": False,
+                            "requires_confirmation": True,
+                        },
+                    }
+                ],
+            },
+        }
+    ]
+    expectations = TraceExpectations(
+        required_tools=("semantic_lookup",),
+        required_runtime_event_names=("semantic.lookup.candidates",),
+        required_runtime_event_metadata_keys={
+            "semantic.lookup.candidates": (
+                "phrase",
+                "lookup_status",
+                "candidate_count",
+                "top_candidate_id",
+                "authoritative",
+                "requires_confirmation",
+            )
+        },
+        required_runtime_event_metadata_values={
+            "semantic.lookup.candidates": {
+                "lookup_status": "not_found",
+                "top_candidate_id": "agent_tool_success_rate",
+                "authoritative": "false",
+                "requires_confirmation": "true",
+            }
+        },
+    )
+    trace_verdict = evaluate_trace_gates(trace_events, expectations)
+    failures = list(trace_verdict.failures)
+    if lookup.get("matched") is not False:
+        failures.append("near-miss-semantic-lookup-became-authoritative")
+    if not candidates:
+        failures.append("near-miss-semantic-candidate-missing")
+    if model_output.get("authoritative") is not False:
+        failures.append("near-miss-semantic-output-authoritative")
+    if model_output.get("raw_sql_allowed") is not False:
+        failures.append("near-miss-semantic-raw-sql-allowed")
+    candidate_output = (model_output.get("candidate_matches") or [{}])[0]
+    if candidate_output.get("requires_confirmation") is not True:
+        failures.append("near-miss-semantic-confirmation-not-required")
+    return _scenario_result(
+        scenario_id="knowledge-semantic-lexical-candidate-requires-confirmation",
+        passed=trace_verdict.passed and not failures,
+        failures=failures,
+        details={
+            "trace_verdict": trace_verdict.as_dict(),
+            "lookup": lookup,
             "model_output": model_output,
         },
     )

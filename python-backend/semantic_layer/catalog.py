@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
+from math import log
 from typing import Any, Literal
 
 SemanticStatus = Literal["draft", "active", "deprecated"]
@@ -205,6 +207,7 @@ def lookup_phrase(catalog: SemanticCatalog, phrase: str) -> dict[str, Any]:
         "matched": len(matches) == 1,
         "ambiguous": len(matches) > 1,
         "matches": matches,
+        "candidate_matches": [] if matches else _lexical_candidates(catalog, phrase),
     }
 
 
@@ -306,3 +309,105 @@ def _metric_permission(
 
 def _normalize_phrase(phrase: str) -> str:
     return " ".join(str(phrase or "").strip().lower().replace("_", " ").split())
+
+
+def _phrase_tokens(phrase: str) -> tuple[str, ...]:
+    return tuple(
+        token
+        for token in re.findall(r"[a-z0-9]+", _normalize_phrase(phrase))
+        if len(token) > 1
+    )
+
+
+def _semantic_item_documents(catalog: SemanticCatalog) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for term in catalog.terms:
+        text = " ".join(
+            (
+                term.name,
+                *term.aliases,
+                term.description,
+                *term.kg_claim_types,
+                *term.rag_source_classes,
+            )
+        )
+        documents.append(
+            {
+                "type": "term",
+                "item": term.as_dict(),
+                "label": term.name,
+                "tokens": _phrase_tokens(text),
+            }
+        )
+    for metric in catalog.metrics:
+        text = " ".join(
+            (
+                metric.name,
+                *metric.aliases,
+                metric.measure,
+                *metric.dimensions,
+                *metric.filters,
+                metric.grain,
+                metric.source_table,
+            )
+        )
+        documents.append(
+            {
+                "type": "metric",
+                "item": metric.as_dict(),
+                "label": metric.name,
+                "tokens": _phrase_tokens(text),
+            }
+        )
+    return documents
+
+
+def _lexical_candidates(
+    catalog: SemanticCatalog,
+    phrase: str,
+    *,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    """Return fail-closed lexical suggestions for non-exact semantic lookups."""
+
+    query_tokens = set(_phrase_tokens(phrase))
+    if not query_tokens:
+        return []
+    documents = _semantic_item_documents(catalog)
+    document_count = len(documents)
+    if document_count == 0:
+        return []
+
+    document_frequency: dict[str, int] = {}
+    for document in documents:
+        for token in set(document["tokens"]):
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+
+    candidates: list[dict[str, Any]] = []
+    for document in documents:
+        tokens = tuple(document["tokens"])
+        matched_terms = tuple(
+            token for token in sorted(query_tokens) if token in set(tokens)
+        )
+        if not matched_terms:
+            continue
+        token_count = max(len(tokens), 1)
+        score = 0.0
+        for token in matched_terms:
+            term_frequency = tokens.count(token) / token_count
+            inverse_frequency = log((document_count + 1) / (document_frequency[token] + 0.5))
+            score += term_frequency * max(inverse_frequency, 0.0)
+        coverage = len(matched_terms) / max(len(query_tokens), 1)
+        score = round(score + coverage, 6)
+        if score <= 0:
+            continue
+        candidates.append(
+            {
+                "type": document["type"],
+                "item": document["item"],
+                "score": score,
+                "matched_terms": list(matched_terms),
+                "reason": "lexical_overlap",
+            }
+        )
+    return sorted(candidates, key=lambda item: item["score"], reverse=True)[:limit]

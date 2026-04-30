@@ -70,6 +70,29 @@ async def test_semantic_lookup_unknown_phrase_returns_refusal_guidance():
 
 
 @pytest.mark.asyncio
+async def test_semantic_lookup_unknown_phrase_returns_candidates_without_authority():
+    tool = SemanticLookupTool()
+
+    result = await tool.execute({"phrase": "tool success ratio"}, _ctx())
+    model_output = tool.to_model_output(result)
+
+    assert result["status"] == "not_found"
+    assert result["authoritative"] is False
+    assert result["suggested_phrases"][0]["id"] == "agent_tool_success_rate"
+    assert model_output["candidate_matches"] == [
+        {
+            "type": "metric",
+            "id": "agent_tool_success_rate",
+            "name": "Agent tool success rate",
+            "score": result["suggested_phrases"][0]["score"],
+            "matched_terms": ["success", "tool"],
+            "authoritative": False,
+            "requires_confirmation": True,
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_semantic_lookup_model_output_is_compact():
     tool = SemanticLookupTool()
     result = await tool.execute(
