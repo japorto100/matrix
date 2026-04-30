@@ -1,0 +1,526 @@
+{
+  "baseline": {
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-fixed/candidates/baseline",
+    "candidate_id": "baseline",
+    "completion_rate": 1.0,
+    "fitness_score": 0.8424,
+    "run_id": "run-metaharness-round-1-fixed",
+    "scenarios_evaluated": 1,
+    "trace_gate_pass_rate": 1.0
+  },
+  "budget": {
+    "iterations": 1,
+    "max_scenarios": 1,
+    "max_wall_clock_minutes": 20,
+    "provider_calls_budget": 12
+  },
+  "contract": "real-meta-harness-outer-loop/v1",
+  "created_at": "2026-04-30T22:58:23.567711+00:00",
+  "domain_id": "agent-runtime-memory-rag-tool-routing",
+  "dry_run": false,
+  "final_frontier_size": 15,
+  "frozen_evaluator_gate": {
+    "changed_paths": [],
+    "checked_paths": [
+      "/home/lipfi2/code/matrix/python-backend/../data/harness/memory_lifecycle/scenarios.json",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/evaluator.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/outer_loop.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/real_outer_loop.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/scenario_runner.py"
+    ],
+    "passed": true
+  },
+  "holdout_visible_to_proposer": false,
+  "iteration_results": [
+    {
+      "candidate": {
+        "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-fixed/candidates/iter-001-config-overlay",
+        "candidate_id": "iter-001-config-overlay",
+        "completion_rate": 1.0,
+        "fitness_score": 0.8423,
+        "run_id": "run-metaharness-round-1-fixed",
+        "scenarios_evaluated": 1,
+        "trace_gate_pass_rate": 1.0
+      },
+      "candidate_id": "iter-001-config-overlay",
+      "decision": {
+        "candidate_id": "iter-001-config-overlay",
+        "decided_at": "2026-04-30T22:58:22.935458+00:00",
+        "decision": "discard",
+        "follow_up": "Inspect raw traces for next bounded candidate before holdout.",
+        "metrics": {
+          "baseline": {
+            "completion_rate": 1.0,
+            "fitness_score": 0.8424,
+            "stream_gate_pass_rate": 1.0,
+            "trace_gate_pass_rate": 1.0
+          },
+          "candidate": {
+            "completion_rate": 1.0,
+            "fitness_score": 0.8423,
+            "stream_gate_pass_rate": 1.0,
+            "trace_gate_pass_rate": 1.0
+          },
+          "inspected_files_count": 24,
+          "true_meta_harness_iteration": true
+        },
+        "rationale": "iter-001-config-overlay regressed versus baseline on fitness_score under the frozen search evaluator.",
+        "run_id": "run-metaharness-round-1-fixed"
+      },
+      "dry_run": false,
+      "inspection": {
+        "artifact_classes": [
+          "decision",
+          "pending_eval",
+          "proposal",
+          "scores",
+          "source",
+          "trace",
+          "verdicts"
+        ],
+        "candidate_count_seen": 80,
+        "candidate_paths": [
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-fixed/candidates/baseline",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-knowledge-downstream-artifact-gate/candidates/knowledge-contract-static"
+        ],
+        "contract": "proposer-interaction-log/v1",
+        "created_at": "2026-04-30T22:58:05.544915+00:00",
+        "failure_clusters_seen": [
+          {
+            "count": 19,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline"
+            ],
+            "failure": "missing tool_result events for tool success rate threshold"
+          },
+          {
+            "count": 16,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required action: memory_retain"
+          },
+          {
+            "count": 14,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required memory route: fusion"
+          },
+          {
+            "count": 11,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline"
+            ],
+            "failure": "missing required tool: memory_add"
+          },
+          {
+            "count": 11,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/baseline"
+            ],
+            "failure": "missing required tool: memory_search"
+          },
+          {
+            "count": 9,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required response term: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+          },
+          {
+            "count": 9,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required memory metadata key: bank_id"
+          },
+          {
+            "count": 9,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required memory metadata key: source"
+          }
+        ],
+        "files_read": [
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-1-fixed/candidates/baseline/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "46d5060df891dd31d85af1c1b4086eb2560e490159cfe50461bb7145002fcb4e"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 651,
+            "path": "runs/run-metaharness-round-1-fixed/candidates/baseline/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-fixed\",\n  \"candidate_id\": \"baseline\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8424,\n  \"fitness_score\": 0.8424,\n  \"total_tokens\": 17885,\n  \"avg_tokens\": 17885.0,\n  \"token_efficiency\": 0.055913,\n  \"total_cost_usd\": 0.053655,\n  \"avg_cost_usd\": 0.053655,\n",
+            "sha256": "5a9335b9723f4c3373a9e3914de0ee91615922af6375fa31740da6ca68b5dd3a"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 651,
+            "path": "runs/run-metaharness-round-1-fixed/candidates/baseline/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-fixed\",\n  \"candidate_id\": \"baseline\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8424,\n  \"fitness_score\": 0.8424,\n  \"total_tokens\": 17885,\n  \"avg_tokens\": 17885.0,\n  \"token_efficiency\": 0.055913,\n  \"total_cost_usd\": 0.053655,\n  \"avg_cost_usd\": 0.053655,\n",
+            "sha256": "5a9335b9723f4c3373a9e3914de0ee91615922af6375fa31740da6ca68b5dd3a"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1684,
+            "path": "runs/run-metaharness-round-1-fixed/candidates/baseline/verdicts.json",
+            "preview": "{\n  \"passed\": true,\n  \"failures\": [],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"consent_decision\",\n    \"llm_response\",\n    \"memory_recall\",\n    \"memory_retain\",\n    \"route_decision\",\n    \"skill_found\",\n    \"skill_used\",\n    \"tool_call\",\n    \"tool_result\"\n  ],\n  \"observed_tools\": [\n    \"memory_add\",\n    \"memory_search\"\n  ],\n  \"observed_skills\": [\n    \"global:memory-usage\",\n    \"memory-usage\"\n  ],\n  \"tool_success_rate\": 1.0,\n  \"observed_memory_routes\": [\n    \"fusion\"\n  ],\n  \"observed_memory_p",
+            "sha256": "27e5f4225d6bad8b76ecb0c7cdf5df6dbd3f97405afff519338f32378ad572ee"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 70268,
+            "path": "runs/run-metaharness-round-1-fixed/candidates/baseline/traces/ml-memory-explicit-add-search-001/mh-ml-memory-explicit-add-search-001-c040ff93.json",
+            "preview": "[\n  {\n    \"id\": 129,\n    \"timestamp\": \"2026-04-30 22:58:04.002114+00:00\",\n    \"action\": \"llm_response\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-ml-memory-explicit-add-search-001-c040ff93\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": \"<tool_output source=\\\"memory_search\\\" trusted=\\\"true\\\">\\n{\\\"results\\\": [], \\\"count\\\": 0}\\n</tool_output>\",\n    \"output\": \"I couldn\\u2019t locate that exact phrase in my persistent memory. If you\\u2019d like me to s",
+            "sha256": "5c11b15dfc71efa46ad9449d86f0b3341edd0f86eef9ae95649c71be540db14c"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "46d5060df891dd31d85af1c1b4086eb2560e490159cfe50461bb7145002fcb4e"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 683,
+            "path": "runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-db-sanity-fixed\",\n  \"candidate_id\": \"db-sanity-fixed-gpt-oss20b-free\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8423,\n  \"fitness_score\": 0.8423,\n  \"total_tokens\": 17940,\n  \"avg_tokens\": 17940.0,\n  \"token_efficiency\": 0.055741,\n  \"total_cost_usd\": 0.053",
+            "sha256": "e2139c7a9510a78f10e8459751f0edefac4284225f9d3f7a15c8a5580cfa89ba"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 683,
+            "path": "runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-db-sanity-fixed\",\n  \"candidate_id\": \"db-sanity-fixed-gpt-oss20b-free\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8423,\n  \"fitness_score\": 0.8423,\n  \"total_tokens\": 17940,\n  \"avg_tokens\": 17940.0,\n  \"token_efficiency\": 0.055741,\n  \"total_cost_usd\": 0.053",
+            "sha256": "e2139c7a9510a78f10e8459751f0edefac4284225f9d3f7a15c8a5580cfa89ba"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1684,
+            "path": "runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free/verdicts.json",
+            "preview": "{\n  \"passed\": true,\n  \"failures\": [],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"consent_decision\",\n    \"llm_response\",\n    \"memory_recall\",\n    \"memory_retain\",\n    \"route_decision\",\n    \"skill_found\",\n    \"skill_used\",\n    \"tool_call\",\n    \"tool_result\"\n  ],\n  \"observed_tools\": [\n    \"memory_add\",\n    \"memory_search\"\n  ],\n  \"observed_skills\": [\n    \"global:memory-usage\",\n    \"memory-usage\"\n  ],\n  \"tool_success_rate\": 1.0,\n  \"observed_memory_routes\": [\n    \"fusion\"\n  ],\n  \"observed_memory_p",
+            "sha256": "27e5f4225d6bad8b76ecb0c7cdf5df6dbd3f97405afff519338f32378ad572ee"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 70433,
+            "path": "runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free/traces/ml-memory-explicit-add-search-001/mh-ml-memory-explicit-add-search-001-1a071144.json",
+            "preview": "[\n  {\n    \"id\": 106,\n    \"timestamp\": \"2026-04-30 22:57:00.641751+00:00\",\n    \"action\": \"llm_response\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-ml-memory-explicit-add-search-001-1a071144\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": \"<tool_output source=\\\"memory_search\\\" trusted=\\\"true\\\">\\n{\\\"results\\\": [], \\\"count\\\": 0}\\n</tool_output>\",\n    \"output\": \"I\\u2019ve just searched my memory for the fact you mentioned. No matching entry is currently",
+            "sha256": "082618ec6c7bdb54f0f9faac5bac8001b23b120385d4533796ae6417bae21139"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "46d5060df891dd31d85af1c1b4086eb2560e490159cfe50461bb7145002fcb4e"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 2201,
+            "path": "runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-db-sanity\",\n  \"candidate_id\": \"db-sanity-gpt-oss20b-free\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 0.75,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.7346,\n  \"fitness_score\": 0.7346,\n  \"total_tokens\": 27238,\n  \"avg_tokens\": 27238.0,\n  \"token_efficiency\": 0.036713,\n  \"total_cost_usd\": 0.081714,\n  \"avg",
+            "sha256": "086f88632d4d1fbe8faf4c93d54e3066a0731ae63387514fc0405b7a64d0179a"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 2201,
+            "path": "runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1-db-sanity\",\n  \"candidate_id\": \"db-sanity-gpt-oss20b-free\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 0.75,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.7346,\n  \"fitness_score\": 0.7346,\n  \"total_tokens\": 27238,\n  \"avg_tokens\": 27238.0,\n  \"token_efficiency\": 0.036713,\n  \"total_cost_usd\": 0.081714,\n  \"avg",
+            "sha256": "086f88632d4d1fbe8faf4c93d54e3066a0731ae63387514fc0405b7a64d0179a"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 3231,
+            "path": "runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free/verdicts.json",
+            "preview": "{\n  \"passed\": false,\n  \"failures\": [\n    \"missing required action: memory_retain\",\n    \"missing required memory route: fusion\",\n    \"missing required response term: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\",\n    \"missing required memory metadata key: bank_id\",\n    \"missing required memory metadata key: source\",\n    \"missing action for metadata value gate: memory_retain\",\n    \"missing action for metadata value gate: memory_recall\",\n    \"tool unavailable: memory_search\",\n",
+            "sha256": "63127f9ef33156aa92e09bca39d13d7c1b88c2eadc65e2b5fea3032e7b350937"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 101298,
+            "path": "runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free/traces/ml-memory-explicit-add-search-001/mh-ml-memory-explicit-add-search-001-8987a85d.json",
+            "preview": "[\n  {\n    \"id\": 83,\n    \"timestamp\": \"2026-04-30 22:54:06.057913+00:00\",\n    \"action\": \"llm_response\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-ml-memory-explicit-add-search-001-8987a85d\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": \"<tool_output source=\\\"memory_search\\\" trusted=\\\"true\\\">\\n{\\\"results\\\": [], \\\"message\\\": \\\"Memory not available\\\"}\\n</tool_output>\",\n    \"output\": \"I couldn\\u2019t find any prior record of that phrase in my memory. I",
+            "sha256": "69dd35639530a28b41845c45f21a9ed989b2df868c91e8651cd662aae68ee7fd"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "46d5060df891dd31d85af1c1b4086eb2560e490159cfe50461bb7145002fcb4e"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1851,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1\",\n  \"candidate_id\": \"iter-001-config-overlay\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.45,\n  \"fitness_score\": 0.45,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"cost_efficie",
+            "sha256": "fa5409b11f41e4ad81e634b0d0ef76aff35dbed8997508d09b8e91b69b394912"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1851,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1\",\n  \"candidate_id\": \"iter-001-config-overlay\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.45,\n  \"fitness_score\": 0.45,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"cost_efficie",
+            "sha256": "fa5409b11f41e4ad81e634b0d0ef76aff35dbed8997508d09b8e91b69b394912"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 2634,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/verdicts.json",
+            "preview": "{\n  \"passed\": false,\n  \"failures\": [\n    \"missing required action: memory_retain\",\n    \"missing required tool: memory_add\",\n    \"missing required tool: memory_search\",\n    \"missing required skill: memory-usage\",\n    \"missing expected memory activity\",\n    \"missing required memory route: fusion\",\n    \"missing required response term: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction\",\n    \"missing required memory evidence term: memory_lifecycle_probe_prefers_verbatim_evidence_befo",
+            "sha256": "159c9db5c9f32514c03e96c88931273e56847cffead321e8b8fce38146b00fad"
+          },
+          {
+            "artifact_class": "proposal",
+            "bytes": 2295,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/proposal.json",
+            "preview": "{\n  \"candidate_id\": \"iter-001-config-overlay\",\n  \"candidate_type\": \"config_overlay\",\n  \"config_overlay\": {\n    \"overlay_type\": \"system_prompt_override\",\n    \"provider_agnostic\": true,\n    \"system_prompt_override\": \"Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable form. Current search hypothesis: Tool-policy candidate should tighten selection/reco",
+            "sha256": "11ccd616c656df23cd2f794d30d4517ff72b20802ca28d210804bb8f1dc1ef99"
+          },
+          {
+            "artifact_class": "pending_eval",
+            "bytes": 626,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/pending_eval.json",
+            "preview": "{\n  \"candidate_id\": \"iter-001-config-overlay\",\n  \"candidate_type\": \"config_overlay\",\n  \"created_at\": \"2026-04-30T22:50:39.138781+00:00\",\n  \"domain_id\": \"agent-runtime-memory-rag-tool-routing\",\n  \"evaluation\": \"frozen search scenarios; holdout remains protected\",\n  \"frozen_evaluator_required\": true,\n  \"holdout_visible_to_proposer\": false,\n  \"proposer_self_certification_allowed\": false,\n  \"rollback_ref\": \"ref: refs/heads/metaharness_round_1\",\n  \"run_id\": \"run-metaharness-round-1\",\n  \"write_scope\":",
+            "sha256": "8614a606012c6309cf74409f12c68a5a31bd31c339160060420e1084fd33c21f"
+          },
+          {
+            "artifact_class": "decision",
+            "bytes": 787,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/decision.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-1\",\n  \"candidate_id\": \"iter-001-config-overlay\",\n  \"decision\": \"defer\",\n  \"rationale\": \"iter-001-config-overlay matched baseline under the frozen search evaluator; needs a stronger causal candidate before holdout.\",\n  \"decided_at\": \"2026-04-30T22:50:57.965233+00:00\",\n  \"metrics\": {\n    \"baseline\": {\n      \"completion_rate\": 1.0,\n      \"trace_gate_pass_rate\": 0.0,\n      \"stream_gate_pass_rate\": 1.0,\n      \"fitness_score\": 0.45\n    },\n    \"candidate\": {\n      \"",
+            "sha256": "0f603809858538fb0a203f22c130b3e32dc67ff710d97c9176828fc8e71edb4b"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 2,
+            "path": "runs/run-metaharness-round-1/candidates/iter-001-config-overlay/traces/ml-memory-explicit-add-search-001/mh-ml-memory-explicit-add-search-001-09613f4b.json",
+            "preview": "[]",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 227,
+            "path": "runs/run-knowledge-downstream-artifact-gate/candidates/knowledge-contract-static/aggregate.json",
+            "preview": "{\n  \"candidate_id\": \"knowledge-contract-static\",\n  \"completion_rate\": 1.0,\n  \"failed_scenarios\": [],\n  \"feature_id\": \"012/017/019/022/025\",\n  \"scenarios_evaluated\": 7,\n  \"tool_success_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0\n}",
+            "sha256": "2511208bb61fdf5c8c3b8efd23604494eacbf29c184ebbca51ed743c5567f4cb"
+          }
+        ],
+        "files_read_count": 24,
+        "frontier_size_seen": 15,
+        "notes": "This log records raw artifact reads by the deterministic proposer. It is not a summary-only substitute.",
+        "proposer": "deterministic-matrix-policy"
+      },
+      "iteration": 1,
+      "manifest": {
+        "artifact_inventory": {
+          "benchmark_artifacts": [],
+          "config": true,
+          "decision": false,
+          "pending_eval": true,
+          "proposal": true,
+          "raw_traces": true,
+          "results": true,
+          "run_manifest": true,
+          "scores": true,
+          "source_snapshot": true,
+          "sse": true,
+          "verdicts": true
+        },
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_path": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-fixed/candidates/iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "paper_failures": [],
+        "paper_mapping": {
+          "arxiv_id": "2603.28052v1",
+          "execution_traces": "traces/**/*.json plus sse/*.jsonl when available",
+          "paper_ref": "docs/Meta-Harness-2603.28052v1.md",
+          "scores": "scores.json or aggregate.json",
+          "source_code": "source_snapshot.source_files or repository paths",
+          "test_leakage_policy": "holdout paths and scores are excluded from proposer packets"
+        },
+        "paper_ready": true,
+        "result_files": [
+          "results/ml-memory-explicit-add-search-001.json"
+        ],
+        "roles": {
+          "evaluator": "frozen Meta-Harness runner and trace gates",
+          "promotion_authority": "Pareto frontier plus explicit decision/holdout gates",
+          "proposer": "Codex or explicitly enabled external proposer",
+          "simulated_user": "scenario fixtures/search-set driver"
+        },
+        "run_id": "run-metaharness-round-1-fixed",
+        "source_files": [
+          {
+            "bytes": 38821,
+            "path": "python-backend/agent/app.py",
+            "sha256": "d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93"
+          },
+          {
+            "bytes": 13183,
+            "path": "python-backend/agent/runners/dispatcher.py",
+            "sha256": "feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4"
+          },
+          {
+            "bytes": 22801,
+            "path": "python-backend/agent/runners/simple.py",
+            "sha256": "7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001"
+          },
+          {
+            "bytes": 39288,
+            "path": "python-backend/agent/graph/runner.py",
+            "sha256": "03349a4d743945e5db7b7ca1abb51831a420fec15ee44744461df29320633066"
+          },
+          {
+            "bytes": 30823,
+            "path": "python-backend/agent/graph/nodes/llm_node.py",
+            "sha256": "b9291b9b8a7f850f76e08d3499120f810824a73f48db424ae911deed88f92295"
+          },
+          {
+            "bytes": 20563,
+            "path": "python-backend/agent/graph/nodes/tool_node.py",
+            "sha256": "b1f8f6f2d6758c3c70135d2d82ab639ba405a6c32cb6fc29d4c561dc4b158ff8"
+          },
+          {
+            "bytes": 31982,
+            "path": "python-backend/agent/graph/nodes/memory_node.py",
+            "sha256": "dee9df94a1189487756fb6cadda78ebb936f846e0a841a9c30d46071b43d7442"
+          },
+          {
+            "bytes": 4633,
+            "path": "python-backend/agent/tools/registry.py",
+            "sha256": "d0b1e23598c585377e8bc47bde9843f1d2543215064aec1c323349160d2239be"
+          },
+          {
+            "bytes": 11128,
+            "path": "python-backend/meta_harness/evaluator.py",
+            "sha256": "a579eba1baedc61b4c726d9e41540c55383b90b9e7e7f95185899fb3bd07785a"
+          },
+          {
+            "bytes": 70828,
+            "path": "python-backend/meta_harness/scenario_runner.py",
+            "sha256": "d0c5dad63117a1d3e10298df5ca38357a67b57d8c6fd039e20bf32d76323987e"
+          }
+        ],
+        "trace_event_count": 22,
+        "trace_files": [
+          "traces/ml-memory-explicit-add-search-001/mh-ml-memory-explicit-add-search-001-7b088a4f.json"
+        ],
+        "trace_quality_failures": []
+      },
+      "pending_eval": {
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "created_at": "2026-04-30T22:58:05.547038+00:00",
+        "domain_id": "agent-runtime-memory-rag-tool-routing",
+        "evaluation": "frozen search scenarios; holdout remains protected",
+        "frozen_evaluator_required": true,
+        "holdout_visible_to_proposer": false,
+        "proposer_self_certification_allowed": false,
+        "rollback_ref": "ref: refs/heads/metaharness_round_1",
+        "run_id": "run-metaharness-round-1-fixed",
+        "write_scope": [
+          "python-backend/agent/",
+          "python-backend/memory_fusion/",
+          "python-backend/rag/",
+          "python-backend/kg/"
+        ]
+      },
+      "proposal": {
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "config_overlay": {
+          "overlay_type": "system_prompt_override",
+          "provider_agnostic": true,
+          "system_prompt_override": "Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable form. Current search hypothesis: Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+          "write_scope": [
+            "python-backend/agent/",
+            "python-backend/memory_fusion/",
+            "python-backend/rag/",
+            "python-backend/kg/"
+          ]
+        },
+        "created_at": "2026-04-30T22:58:05.545018+00:00",
+        "evidence": "missing tool_result events for tool success rate threshold",
+        "holdout_visible_to_proposer": false,
+        "hypothesis": "Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+        "iteration": 1,
+        "raw_artifact_inspection": {
+          "artifact_classes": [
+            "decision",
+            "pending_eval",
+            "proposal",
+            "scores",
+            "source",
+            "trace",
+            "verdicts"
+          ],
+          "candidate_paths": [
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-fixed/candidates/baseline",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity-fixed/candidates/db-sanity-fixed-gpt-oss20b-free",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-knowledge-downstream-artifact-gate/candidates/knowledge-contract-static"
+          ],
+          "files_read_count": 24
+        },
+        "run_id": "run-metaharness-round-1-fixed",
+        "self_certifies_promotion": false
+      }
+    }
+  ],
+  "iterations_completed": 1,
+  "iterations_requested": 1,
+  "roles": {
+    "evaluator": "frozen scenario runner and trace gates",
+    "promotion_authority": "decision ledger plus protected holdout gate",
+    "proposer": "deterministic Matrix proposer; Codex may inspect same artifacts",
+    "simulated_user": "scenario file"
+  },
+  "run_id": "run-metaharness-round-1-fixed",
+  "scenario_path": "/home/lipfi2/code/matrix/python-backend/../data/harness/memory_lifecycle/scenarios.json",
+  "support_lanes_are_not_full_meta_harness": true,
+  "true_meta_harness_iteration": true
+}

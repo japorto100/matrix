@@ -1,0 +1,24 @@
+{
+  "run_id": "run-metaharness-round-1-fixed",
+  "candidate_id": "iter-001-config-overlay",
+  "decision": "discard",
+  "rationale": "iter-001-config-overlay regressed versus baseline on fitness_score under the frozen search evaluator.",
+  "decided_at": "2026-04-30T22:58:22.935458+00:00",
+  "metrics": {
+    "baseline": {
+      "completion_rate": 1.0,
+      "trace_gate_pass_rate": 1.0,
+      "stream_gate_pass_rate": 1.0,
+      "fitness_score": 0.8424
+    },
+    "candidate": {
+      "completion_rate": 1.0,
+      "trace_gate_pass_rate": 1.0,
+      "stream_gate_pass_rate": 1.0,
+      "fitness_score": 0.8423
+    },
+    "inspected_files_count": 24,
+    "true_meta_harness_iteration": true
+  },
+  "follow_up": "Inspect raw traces for next bounded candidate before holdout."
+}

@@ -114,13 +114,24 @@ feature_id: 034
 
 ## First Real Application
 
-- [ ] T060 Run a first cheap loop over memory/RAG/tool-routing scenarios.
-- [ ] T061 Inspect dominated candidates and update the next proposal from raw
+- [x] T060 [done-live-no-browser] Run a first cheap loop over memory/RAG/tool-routing scenarios.
+- [x] T061 [done-live-no-browser] Inspect dominated candidates and update the next proposal from raw
   traces, not only aggregate scores.
-- [ ] T062 Apply one bounded runtime improvement if a search-set failure has a
+- [x] T062 [done-live-no-browser] Apply one bounded runtime improvement if a search-set failure has a
   clear causal trace.
-- [ ] T063 Re-run the frozen search evaluator and log keep/discard/defer.
+- [x] T063 [done-live-no-browser] Re-run the frozen search evaluator and log keep/discard/defer.
 - [ ] T064 Run holdout only after a candidate passes promotion preflight.
+  - 2026-05-01: first `run-metaharness-round-1` exposed empty traces and
+    Postgres/Memory-Fusion misrouting to a foreign `:5433` container. A bounded
+    runtime fix in `python-backend/memory_fusion/providers.py` preserves
+    explicit `HINDSIGHT_DB_URL`/`MEMPALACE_DB_URL` across the third-party
+    `hindsight_api` import. Verification:
+    `run-metaharness-round-1-db-sanity-fixed` passed with
+    `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`, memory route
+    `fusion`, tools `memory_add/memory_search`, and real provider telemetry.
+    Then `run-metaharness-round-1-fixed` completed a true propose/evaluate/
+    decide loop with baseline fitness `0.8424`, candidate fitness `0.8423`,
+    candidate `paper_ready=true`, and decision `discard`. Holdout remains open.
 
 ## Documentation
 
@@ -129,4 +140,4 @@ feature_id: 034
   iterative execution owner.
 - [x] T072 [done-static] Update Feature 023 docs to cross-link Feature 034 as the outer-loop
   promotion owner.
-- [ ] T073 Add closeout evidence when the first true loop completes.
+- [x] T073 [done-live-no-browser] Add closeout evidence when the first true loop completes.

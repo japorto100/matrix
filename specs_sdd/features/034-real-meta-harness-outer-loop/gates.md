@@ -36,3 +36,11 @@ proposer-interaction artifacts plus `true_meta_harness_iteration=true`. G004 is
 partial because current code hashes frozen files before/after but does not yet
 block arbitrary external git diffs. G012 remains open for the explicit Feature
 034 holdout execution command.
+
+2026-05-01 live no-browser gate evidence:
+`run-metaharness-round-1-fixed` passed G001-G003 and G005-G011 with real
+backend execution. Baseline and candidate both had raw traces/SSE/scores/
+verdicts/source snapshots, holdout stayed hidden, the candidate had explicit
+write scope and pending eval, trace/cost/latency metrics were written before
+decision, and the candidate was discarded as dominated. G004 remains partial
+for arbitrary code-patch candidates; G012 remains open.

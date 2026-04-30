@@ -56,6 +56,10 @@ async def create_hindsight_engine(
 
     bridge_hindsight_env()
 
+    runtime_env = {
+        "HINDSIGHT_DB_URL": db_url,
+        "MEMPALACE_DB_URL": os.environ.get("MEMPALACE_DB_URL"),
+    }
     overrides = {
         "HINDSIGHT_API_DATABASE_URL": db_url,
         "HINDSIGHT_API_LLM_PROVIDER": llm_provider,
@@ -83,8 +87,11 @@ async def create_hindsight_engine(
 
         from memory_fusion.embeddings import create_hindsight_embedder
 
-        # Hindsight's package import loads .env with override=True. Re-apply our
+        # Hindsight's package import loads .env with override=True. Re-apply the
         # explicit runtime bridge so harness/dev-stack DB URLs keep winning.
+        for key, value in runtime_env.items():
+            if value is not None:
+                os.environ[key] = value
         for key, value in overrides.items():
             if value is not None:
                 os.environ[key] = value

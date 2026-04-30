@@ -136,6 +136,61 @@ Sources:
 - [OpenRouter Prompt Caching](https://openrouter.ai/docs/features/prompt-caching)
 - [OpenRouter API overview](https://openrouter.ai/docs/api-reference/overview/)
 
+## 2026-05-01 Local Model Decision
+
+The first live no-browser loop should not use a tiny output cap. The limiting
+resource in this session is request count, not tokens. A 768-token cap is only
+appropriate for provider smoke tests; real agent/tool traces need enough output
+room for tool-call recovery, memory responses, SSE metadata and final answers.
+Round 1 therefore used `AGENT_MAX_OUTPUT_TOKENS=4096` with a small scenario
+count instead of many clipped rollouts.
+
+Checked routes:
+
+- `nvidia/nemotron-3-super-120b-a12b:free`: available in the OpenRouter model
+  catalog with large context and tool/structured-output support, but the local
+  direct test returned 429. Do not burn the limited request budget on this
+  route until rate limits recover.
+- `openrouter/free`: direct OpenRouter call succeeded and routed to
+  `openai/gpt-oss-20b:free`, but the local LiteLLM gateway returned an
+  insufficient-credits error for the alias.
+- `openrouter/openai/gpt-oss-20b:free`: passed through the local LiteLLM
+  gateway and was used for Round 1. It produced real tool calls, cache
+  telemetry and Memory-Fusion traces.
+
+Operational decision: for the next no-browser rounds, keep the request count
+low, use explicit provider/model routing instead of the `openrouter/free`
+alias, and prefer 4096-8192 output tokens depending on scenario complexity.
+The proposer remains Codex; OpenRouter supplies the agent under test, not the
+Meta-Harness proposer.
+
+## 2026-05-01 Round 1 Findings
+
+The first attempted run was valuable but not paper-ready: traces were empty
+because the local `:5433` port was owned by `geomapadvanced-postgres`, while
+Matrix's intended `matrix-postgres` container was only created. This produced
+Audit/Hindsight authentication errors and no Memory-Fusion events.
+
+The isolated Memory-Eval Postgres in `docker-compose.memory-eval.yml` on
+`:55433` is the right local target for Meta-Harness rounds when the normal
+dev-stack port is occupied. The remaining issue was that importing
+`hindsight_api` reloads `.env` and overwrites `HINDSIGHT_DB_URL`. The bounded
+fix in `memory_fusion.providers` preserves explicit runtime DB env after that
+import. After the fix:
+
+- `run-metaharness-round-1-db-sanity-fixed` produced a valid backend trace with
+  `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`, `memory_retain`,
+  `memory_recall`, `memory_add`, `memory_search` and route `fusion`.
+- `run-metaharness-round-1-fixed` was a true Meta-Harness iteration:
+  baseline passed, the proposer inspected raw artifacts, the candidate was
+  evaluated with the frozen runner, and the decision ledger discarded it as
+  dominated.
+
+The main design implication is important: Meta-Harness should first validate
+its trace substrate before spending model calls. Empty traces, provider alias
+failures and wrong DB routing must fail the round or produce infrastructure
+findings, not be treated as candidate quality.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature
