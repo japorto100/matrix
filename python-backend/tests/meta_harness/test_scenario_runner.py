@@ -218,6 +218,22 @@ def test_trace_expectations_parse_runtime_event_gates():
     assert expectations.required_stream_artifact_files == ("rag-sources.json",)
 
 
+def test_trace_expectations_from_legacy_query_preserves_forbidden_tools():
+    expectations = scenario_runner.TraceExpectations.from_legacy_query(
+        {
+            "expected_tools": ["memory_search"],
+            "forbidden_tools": ["memory_add", "schedule_task"],
+            "expected_skills": ["memory-usage"],
+            "expected_memory": True,
+        }
+    )
+
+    assert expectations.required_tools == ("memory_search",)
+    assert expectations.forbidden_tools == ("memory_add", "schedule_task")
+    assert expectations.required_skills == ("memory-usage",)
+    assert expectations.expected_memory is True
+
+
 def test_trace_gates_check_route_decision_metadata(monkeypatch):
     monkeypatch.setattr(scenario_runner, "_registered_tool_names", lambda: set())
     events = [

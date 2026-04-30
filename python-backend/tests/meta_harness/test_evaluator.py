@@ -98,6 +98,21 @@ async def test_evaluate_search_set_protects_holdout(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_evaluate_search_set_protects_memory_holdout(monkeypatch):
+    monkeypatch.setattr(
+        evaluator,
+        "load_query_set",
+        lambda split="search": [{"id": "mh1", "message": "hidden memory"}],
+    )
+
+    result = await evaluator.evaluate_search_set(split="memory_holdout")
+
+    assert result["split"] == "memory_holdout"
+    assert "protected" in result["error"].lower()
+    assert "memory_holdout" in result["path"]
+
+
+@pytest.mark.asyncio
 async def test_evaluate_search_set_can_explicitly_run_holdout(monkeypatch):
     monkeypatch.setattr(
         evaluator,
@@ -122,4 +137,32 @@ async def test_evaluate_search_set_can_explicitly_run_holdout(monkeypatch):
     )
 
     assert result["split"] == "holdout"
+    assert result["queries_evaluated"] == 1
+
+
+@pytest.mark.asyncio
+async def test_evaluate_search_set_can_explicitly_run_memory_holdout(monkeypatch):
+    monkeypatch.setattr(
+        evaluator,
+        "load_query_set",
+        lambda split="search": [{"id": "mh1", "message": "hidden memory"}],
+    )
+
+    async def _fake_evaluate_single(query, **kwargs):
+        return {
+            "query_id": query["id"],
+            "completed": True,
+            "turns": 1,
+            "total_tokens": 1,
+        }
+
+    monkeypatch.setattr(evaluator, "evaluate_single", _fake_evaluate_single)
+
+    result = await evaluator.evaluate_search_set(
+        split="memory_holdout",
+        allow_holdout=True,
+        use_cache=False,
+    )
+
+    assert result["split"] == "memory_holdout"
     assert result["queries_evaluated"] == 1

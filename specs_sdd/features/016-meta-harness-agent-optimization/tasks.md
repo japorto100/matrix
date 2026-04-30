@@ -158,7 +158,13 @@ feature_id: 016
   lifecycle scenarios include a no-write compaction-policy gate.
 - [x] T040 Add memory route assertions for `summary`, `verbatim`, `hybrid` and
   provider mode `hindsight|mempalace|fusion`.
-- T041 Add memory holdout set that is not visible to proposer/search runs.
+- [x] T041 [done-static] Add memory holdout set that is not visible to
+  proposer/search runs.
+  - 2026-04-30: `memory_holdout` is a protected evaluator split with its own
+    fixture file under `data/harness/memory_holdout/queries.json`; CLI/API
+    execution requires explicit `allow_holdout`, and legacy query gates now
+    preserve `forbidden_tools` so holdout fixtures can block accidental memory
+    writes.
 - [x] T042 Add deterministic memory correctness gates before any LLM judge:
   expected recall terms, forbidden stale terms, evidence/source presence and
   no unrelated mutation.

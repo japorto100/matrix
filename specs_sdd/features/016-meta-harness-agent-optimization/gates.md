@@ -222,6 +222,9 @@ PY
   `required_memory_providers` from audit metadata.
 - Explicit `memory_add` and `memory_search` tool paths emit corresponding
   `memory_retain`/`memory_recall` audit events with route/provider metadata.
+- The dedicated `memory_holdout` split is protected like the global holdout:
+  proposer/search runs cannot execute it unless `allow_holdout` is set
+  explicitly, and its legacy query fixtures can forbid write/scheduler tools.
 - Memory fixture manifests capture `user_id`, `bank_id`, `palace_path`,
   provider env and seed data for reproduction.
 - Config snapshots expose Memory-Fusion Pareto hypotheses: embedding model/

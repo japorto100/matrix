@@ -56,7 +56,11 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--max-queries", type=int, default=5)
     evaluate.add_argument("--concurrency", type=int, default=4)
     evaluate.add_argument("--no-cache", action="store_true")
-    evaluate.add_argument("--split", choices=("search", "holdout"), default="search")
+    evaluate.add_argument(
+        "--split",
+        choices=("search", "holdout", "memory_holdout"),
+        default="search",
+    )
     evaluate.add_argument("--allow-holdout", action="store_true")
     evaluate.add_argument("--eval-id", default="")
     evaluate.add_argument("--system-prompt-override", default="")

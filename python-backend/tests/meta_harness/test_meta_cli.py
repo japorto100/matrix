@@ -20,6 +20,19 @@ async def test_cli_evaluate_protects_holdout_by_default(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_cli_evaluate_protects_memory_holdout_by_default(monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        ["evaluate", "--split", "memory_holdout"]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["split"] == "memory_holdout"
+    assert "protected" in result["error"].lower()
+
+
+@pytest.mark.asyncio
 async def test_cli_propose_external_llm_disabled_by_default(monkeypatch):
     monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
     monkeypatch.delenv(ENABLE_EXTERNAL_LLM_ENV, raising=False)
@@ -408,7 +421,7 @@ async def test_cli_routing_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 13
+    assert result["scenario_count"] == 14
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "routing-no-tool-no-subagent" in scenario_ids
     assert "routing-domain-delegate-deferred" in scenario_ids
@@ -474,7 +487,7 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
 
     assert result["passed"] is True
     assert result["lane_count"] == 8
-    assert result["scenario_count"] == 51
+    assert result["scenario_count"] == 53
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 
@@ -527,7 +540,7 @@ async def test_cli_knowledge_contract_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["scenario_count"] == 11
+    assert result["scenario_count"] == 12
     scenario_ids = {scenario["id"] for scenario in result["scenarios"]}
     assert "knowledge-memory-ground-truth-preserved" in scenario_ids
     assert "knowledge-rag-kg-semantic-context-grounded" in scenario_ids

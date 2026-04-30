@@ -36,6 +36,13 @@ HOLDOUT_SET_PATH = (
     / "holdout_set"
     / "queries.json"
 )
+MEMORY_HOLDOUT_SET_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "data"
+    / "harness"
+    / "memory_holdout"
+    / "queries.json"
+)
 EVAL_CACHE_PATH = (
     Path(__file__).resolve().parents[2] / "data" / "harness" / "eval_cache.json"
 )
@@ -43,7 +50,9 @@ EVALUATOR_CACHE_VERSION = "search-set-v1"
 EVALUATION_SETS = {
     "search": SEARCH_SET_PATH,
     "holdout": HOLDOUT_SET_PATH,
+    "memory_holdout": MEMORY_HOLDOUT_SET_PATH,
 }
+PROTECTED_EVALUATION_SPLITS = frozenset({"holdout", "memory_holdout"})
 
 
 class EvaluationCache:
@@ -237,11 +246,12 @@ async def evaluate_search_set(
     dashboards to distinguish runs. Pass explicitly only for reruns /
     comparison runs that need to share an id.
     """
-    if split == "holdout" and not allow_holdout:
+    if split in PROTECTED_EVALUATION_SPLITS and not allow_holdout:
+        path = EVALUATION_SETS.get(split, HOLDOUT_SET_PATH)
         return {
             "error": "Holdout set is protected. Pass allow_holdout=True explicitly.",
             "split": split,
-            "path": str(HOLDOUT_SET_PATH),
+            "path": str(path),
         }
 
     queries = load_query_set(split)

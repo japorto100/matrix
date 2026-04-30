@@ -80,6 +80,9 @@ migrated_from:
     lifecycle scenario that requires the current verbatim-first/source-ref
     preference and forbids the stale summary-only answer. Full MemPalace
     backend-specific trigger-policy evals remain open.
+  - 2026-04-30: Feature 016 also adds a protected `memory_holdout` split for
+    correction/source/boundary regressions; this guards promotion but does not
+    replace backend-specific MemPalace trigger-policy evals.
 - T039 Add anti-bloat evals proving MemPalace is not injected by default for
   simple current/live-market questions.
 - [x] T039a Review MemPalace upstream documentation and git repo freshness before

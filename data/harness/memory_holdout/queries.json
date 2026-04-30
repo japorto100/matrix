@@ -1,0 +1,31 @@
+{
+  "description": "Protected memory-specific holdout queries for Feature 016/012. Proposer/search runs must not see this split; use only for memory regression and promotion gates.",
+  "queries": [
+    {
+      "id": "mh001",
+      "message": "Use my corrected preference from the latest memory: risk sizing answers must be verbatim-first with source refs, not summary-only. Do not store a new preference.",
+      "expected_tools": [],
+      "forbidden_tools": ["memory_add"],
+      "expected_memory": true,
+      "expected_skills": ["memory-usage", "risk-assessment"],
+      "category": "memory_correction_holdout"
+    },
+    {
+      "id": "mh002",
+      "message": "Recall my current maximum correlated exposure rule and explain where the evidence came from. Do not update or overwrite it.",
+      "expected_tools": [],
+      "forbidden_tools": ["memory_add", "save_memory"],
+      "expected_memory": true,
+      "expected_skills": ["memory-usage", "risk-assessment"],
+      "category": "memory_source_evidence_holdout"
+    },
+    {
+      "id": "mh003",
+      "message": "If the answer depends on my personal trading history, use personal memory; do not substitute global KG or RAG facts for my own stored preference.",
+      "expected_tools": [],
+      "expected_memory": true,
+      "expected_skills": ["memory-usage"],
+      "category": "memory_layer_boundary_holdout"
+    }
+  ]
+}

@@ -509,3 +509,13 @@ post-answer retain (`automatic_memory_retain`) and explicit tool paths
 (`explicit_memory_tool`) to be distinguishable. A new correction scenario
 checks stale-vs-current preference drift before any LLM judge is allowed to
 score the answer.
+
+2026-04-30 memory holdout split update: the Z_ Memory/KG/RAG notes push the
+harness to keep memory correction/source-boundary regressions separate from the
+proposer-visible search loop. `data/harness/memory_holdout/queries.json` now
+contains protected memory-only holdout fixtures for correction drift, source
+evidence and Personal-Memory-vs-KG/RAG boundary behavior. The evaluator treats
+`memory_holdout` like `holdout`: it is blocked unless explicitly allowed, and
+the CLI exposes it only as a protected split. Legacy query scoring now carries
+`forbidden_tools`, which matters because memory holdout cases often need to
+prove "recall without write" rather than generic memory activity.

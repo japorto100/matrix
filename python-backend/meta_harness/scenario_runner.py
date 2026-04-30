@@ -279,6 +279,7 @@ class TraceExpectations:
     def from_legacy_query(cls, raw: dict[str, Any]) -> TraceExpectations:
         return cls(
             required_tools=tuple(str(x) for x in raw.get("expected_tools", [])),
+            forbidden_tools=tuple(str(x) for x in raw.get("forbidden_tools", [])),
             required_skills=tuple(str(x) for x in raw.get("expected_skills", [])),
             expected_memory=bool(raw.get("expected_memory", False)),
             allow_tool_failures=bool(raw.get("allow_tool_failures", False)),

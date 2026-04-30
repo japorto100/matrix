@@ -352,3 +352,12 @@ used automatic lifecycle hooks or merely called a tool after being prompted.
 The new correction scenario also ties stale-answer detection to source-backed
 memory evidence, which is the first static drift gate before backend-specific
 MemPalace trigger-policy evals.
+
+## 2026-04-30 Memory Holdout Follow-Up
+
+Feature 016 now owns a protected `memory_holdout` evaluator split for memory
+correction, evidence-source and layer-boundary regressions. This is deliberately
+separate from proposer-visible search fixtures: Memory-Fusion improvements can
+learn from search traces, but promotion has to survive hidden cases where the
+correct behavior is recall/source citation without accidental `memory_add` or
+`save_memory` writes.
