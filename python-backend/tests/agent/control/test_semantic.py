@@ -68,3 +68,31 @@ async def test_semantic_correction_endpoint_creates_review_proposal():
     assert reviewed["catalog_mutated"] is False
     assert reviewed["review_recorded"] is True
     assert reviewed["proposal"]["status"] == "accepted"
+
+
+async def test_semantic_correction_endpoint_accepts_memory_feedback():
+    from agent.control import semantic
+
+    semantic._CORRECTION_PROPOSALS.clear()
+
+    proposed = await semantic.semantic_correction_propose(
+        semantic.SemanticCorrectionRequest(
+            target_type="metric",
+            target_id="retrieval_pass_rate",
+            proposed_by="memory_fusion",
+            rationale="Retained canary note says the split wording is unclear.",
+            patch={"description": "Clarify split semantics."},
+            source="memory_fusion",
+            memory_unit_id="mem-456",
+            evidence_ref="audit:event-12",
+        )
+    )
+
+    assert proposed["accepted"] is True
+    assert proposed["catalog_mutated"] is False
+    assert proposed["review_required"] is True
+    assert proposed["proposal"]["patch"]["_feedback_source"] == "memory_fusion"
+    assert proposed["feedback_evidence"]["memory_unit_id"] == "mem-456"
+
+    listed = await semantic.semantic_correction_list(status="proposed")
+    assert listed["proposals"][0]["proposal_id"] == proposed["proposal"]["proposal_id"]

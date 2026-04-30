@@ -56,13 +56,18 @@ feature_id: 025
 - [x] T023 [done-static] Add answer template with definition, value, provenance and freshness.
   - 2026-04-29: matched terms/metrics return an answer template with
     definition/measure, source refs, freshness SLA and `raw_sql_allowed=false`.
-- T024 [partial-static] Add memory feedback path for corrected definitions
+- T024 [done-static] Add memory feedback path for corrected definitions
   without silently promoting them.
   - 2026-04-30: `knowledge-semantic-correction-review-proposal` proves the
     proposal/review contract. Runtime feedback wiring remains open.
   - 2026-04-30: Runtime Control API now preserves the same proposal/review
     contract for user/agent corrections; memory feedback can call this surface
     instead of writing semantic truth directly.
+  - 2026-04-30: `memory_fusion.semantic_feedback` now turns source-linked
+    memory evidence into semantic correction proposals with
+    `_feedback_source=memory_fusion`, durable evidence refs and
+    `catalog_mutated=false`. The Control API accepts this path via
+    `source=memory_fusion` and rejects unreferenced feedback.
 - T025 [done-static] Coordinate semantic terms with Feature 017 claim
   promotion.
   - 2026-04-30: `knowledge-contract` requires `semantic_term_ids` on KG claim

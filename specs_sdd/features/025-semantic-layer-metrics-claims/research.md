@@ -110,3 +110,12 @@ runtime bridge for `Z_Semantik_layer and so on.md`: user or memory feedback can
 propose a term/metric correction, but even an accepted review returns
 `catalog_mutated=false` until a separate catalog publishing step applies it.
 The implementation stays local and provider-agnostic.
+
+2026-04-30 memory feedback follow-up: memory-derived corrections now have an
+actual runtime helper instead of only a Control API placeholder.
+`memory_fusion.semantic_feedback` requires durable evidence metadata, enriches
+it through the Feature 012 evidence-trace contract and creates a normal
+semantic review proposal with `_feedback_source=memory_fusion`. This keeps the
+semantic catalog authoritative: Hindsight/MemPalace observations may propose
+definition changes, but they cannot silently promote a personal memory into
+shared metric/KG/RAG truth.

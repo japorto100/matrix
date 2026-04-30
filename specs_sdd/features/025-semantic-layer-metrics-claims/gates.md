@@ -33,5 +33,8 @@ feature_id: 025
   `knowledge-semantic-correction-review-proposal`.
 - [x] G008 has runtime Control API coverage: corrections create/list/review
   proposals and return `catalog_mutated=false`.
+- [x] G008 has memory-feedback runtime coverage: source-linked memory evidence
+  can create a semantic correction proposal, but unreferenced memory feedback is
+  rejected and the catalog is not mutated.
 - [x] G010 has provider-free static coverage through `knowledge-contract`;
   live agent/Control UI verification remains in `live-verify.md`.

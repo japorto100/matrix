@@ -28,6 +28,13 @@ class SemanticCorrectionRequest(BaseModel):
     proposed_by: str = Field(default="agent", min_length=1)
     rationale: str = Field(min_length=1)
     patch: dict = Field(default_factory=dict)
+    source: Literal["agent", "user", "memory_fusion"] = "agent"
+    memory_unit_id: str = ""
+    evidence_ref: str = ""
+    source_status: str = ""
+    raw_evidence_ref: str = ""
+    operation_log_id: str = ""
+    diff_ref: str = ""
 
 
 class SemanticCorrectionReviewRequest(BaseModel):
@@ -75,6 +82,30 @@ def _target_exists(target_type: Literal["term", "metric"], target_id: str) -> bo
 async def semantic_correction_propose(request: SemanticCorrectionRequest) -> dict:
     if not _target_exists(request.target_type, request.target_id):
         raise HTTPException(status_code=404, detail="semantic-target-not-found")
+    if request.source == "memory_fusion":
+        from memory_fusion.semantic_feedback import (
+            proposal_payload,
+            propose_semantic_correction_from_memory,
+        )
+
+        feedback = propose_semantic_correction_from_memory(
+            target_type=request.target_type,
+            target_id=request.target_id,
+            proposed_by=request.proposed_by,
+            rationale=request.rationale,
+            patch=request.patch,
+            memory_unit_id=request.memory_unit_id,
+            evidence_ref=request.evidence_ref,
+            source_status=request.source_status,
+            raw_evidence_ref=request.raw_evidence_ref,
+            operation_log_id=request.operation_log_id,
+            diff_ref=request.diff_ref,
+        )
+        if not feedback.get("accepted"):
+            raise HTTPException(status_code=422, detail=feedback["reason"])
+        proposal = feedback["proposal"]
+        _CORRECTION_PROPOSALS[proposal.proposal_id] = proposal
+        return proposal_payload(feedback)
     proposal = propose_correction(
         target_type=request.target_type,
         target_id=request.target_id,

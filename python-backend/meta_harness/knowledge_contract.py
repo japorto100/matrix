@@ -7,6 +7,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from memory_fusion.semantic_feedback import (
+    proposal_payload,
+    propose_semantic_correction_from_memory,
+)
 from meta_harness.scenario_runner import TraceExpectations, evaluate_trace_gates
 from semantic_layer.catalog import (
     DEFAULT_SEMANTIC_CATALOG,
@@ -62,6 +66,7 @@ def run_knowledge_contract_scenarios(
         _rag_kg_semantic_context_grounded(),
         _semantic_ambiguity_and_permission_fail_closed(),
         _semantic_correction_stays_review_proposal(),
+        _memory_semantic_feedback_requires_review(),
     ]
     passed = all(scenario["passed"] for scenario in scenarios)
     summary = {
@@ -348,6 +353,46 @@ def _semantic_correction_stays_review_proposal() -> dict[str, Any]:
             "proposal": proposal.as_dict(),
             "promotion_target": "semantic_proposal",
             "silent_kg_promotion": False,
+        },
+    )
+
+
+def _memory_semantic_feedback_requires_review() -> dict[str, Any]:
+    feedback = proposal_payload(
+        propose_semantic_correction_from_memory(
+            target_type="metric",
+            target_id="retrieval_pass_rate",
+            proposed_by="memory-feedback",
+            rationale="Retained memory says the split wording is unclear.",
+            patch={"description": "Clarify search vs holdout split wording."},
+            memory_unit_id="mem-semantic-001",
+            evidence_ref="mempalace:drawer:turn-42",
+        )
+    )
+    failures: list[str] = []
+    proposal = feedback.get("proposal") or {}
+    evidence = feedback.get("feedback_evidence") or {}
+    if feedback.get("accepted") is not True:
+        failures.append("memory-semantic-feedback-not-accepted")
+    if feedback.get("catalog_mutated") is not False:
+        failures.append("memory-semantic-feedback-mutated-catalog")
+    if feedback.get("review_required") is not True:
+        failures.append("memory-semantic-feedback-review-not-required")
+    if proposal.get("status") != "proposed":
+        failures.append("memory-semantic-feedback-auto-promoted")
+    if proposal.get("patch", {}).get("_feedback_source") != "memory_fusion":
+        failures.append("memory-semantic-feedback-source-missing")
+    for key in ("raw_evidence_ref", "operation_log_id", "diff_ref"):
+        if evidence.get(key) in (None, ""):
+            failures.append(f"memory-semantic-feedback-missing-evidence:{key}")
+    return _scenario_result(
+        scenario_id="knowledge-memory-semantic-feedback-review-proposal",
+        passed=not failures,
+        failures=failures,
+        details={
+            "feedback": feedback,
+            "promotion_target": "semantic_proposal",
+            "silent_catalog_mutation": False,
         },
     )
 
