@@ -78,8 +78,15 @@ migrated_from:
 
 ## Skill Feedback And Promotion
 
-- T040 Verify audit events for skill_found/refined/used.
-- T041 Verify usage counters on real sessions.
+- [x] T040 Verify audit events for skill_found/refined/used.
+  - 2026-04-30: Runtime test covers `format_skills_for_prompt_async` emitting
+    ordered `skill_found`, `skill_refined` and `skill_used` audit events with
+    session/thread ids, selected skill ids, body-redacted search traces and
+    coverage metadata.
+- [x] T041 Verify usage counters on real sessions.
+  - 2026-04-30: Static runtime gate verifies rendered skills increment the
+    provider-agnostic filesystem lifecycle sidecar. Live DB roundtrip remains
+    tracked by T038/T039.
 - [x] T041a Add provider-agnostic filesystem skill lifecycle sidecar so
   non-DB skills get prompt usage counts, view counts, pin state and active
   lifecycle metadata.

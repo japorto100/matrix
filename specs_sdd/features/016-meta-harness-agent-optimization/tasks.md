@@ -398,6 +398,9 @@ feature_id: 016
     passed 16/16 scenarios across Features 020, 024, 027 and 030.
   - 2026-04-30: after adding `knowledge-contract`, the same suite passed
     21/21 scenarios across Features 012/017/019/020/022/024/025/027/030.
+  - 2026-04-30: after adding `skill-lifecycle-contract` and later backend
+    contract lanes, the suite covers eight provider-free lanes and 43/43
+    scenarios, including Feature 015 skill audit/lifecycle gates.
 - [x] T122 [done-static-live-smoke] Add Agent Chat stream/UI downstream gates.
   - 2026-04-30: Meta-Harness service runs can target the real
     `/api/agent/chat` Next BFF route headlessly. `StreamGateVerdict` now

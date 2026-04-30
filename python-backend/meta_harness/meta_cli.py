@@ -129,6 +129,13 @@ def build_parser() -> argparse.ArgumentParser:
     prompt_cache_contract.add_argument("--run-id", default="")
     prompt_cache_contract.add_argument("--data-dir", type=Path, default=None)
 
+    skill_lifecycle_contract = sub.add_parser(
+        "skill-lifecycle-contract",
+        help="Run provider-free Feature 015 skill audit/lifecycle scenarios",
+    )
+    skill_lifecycle_contract.add_argument("--run-id", default="")
+    skill_lifecycle_contract.add_argument("--data-dir", type=Path, default=None)
+
     domain_contract = sub.add_parser(
         "domain-contract",
         help="Run provider-free python-backend Meta-Harness domain scenarios",
@@ -410,6 +417,15 @@ async def _main_async(args: argparse.Namespace) -> dict:
         if args.data_dir is not None:
             kwargs["data_dir"] = args.data_dir
         return run_prompt_cache_contract_scenarios(**kwargs)
+    if args.command == "skill-lifecycle-contract":
+        from meta_harness.skill_lifecycle_contract import (
+            run_skill_lifecycle_contract_scenarios,
+        )
+
+        kwargs = {"run_id": args.run_id or "run-skill-lifecycle-contract"}
+        if args.data_dir is not None:
+            kwargs["data_dir"] = args.data_dir
+        return run_skill_lifecycle_contract_scenarios(**kwargs)
     if args.command == "domain-contract":
         from meta_harness.domain_contract import run_domain_contract_scenarios
 

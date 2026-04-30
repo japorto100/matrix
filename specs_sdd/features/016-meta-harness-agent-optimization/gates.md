@@ -26,6 +26,9 @@ feature_id: 016
   Meta-Harness domain lane for Features 015/016/020/023/024 plus Matrix
   transport/session hygiene. The aggregate `contract-suite` now runs 30/30
   scenarios across six lanes.
+- 2026-04-30: `skill-lifecycle-contract` adds a provider-free Feature 015 lane
+  for skill audit trace shape, lifecycle sidecar shape and reload policy. The
+  aggregate `contract-suite` now runs 43/43 scenarios across eight lanes.
 
 ## Stack Gates
 
@@ -87,6 +90,8 @@ PY
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli domain-contract --run-id run-domain-contract-20260430 --data-dir /tmp/matrix-domain-contract`
 - CLI provider-free knowledge contract:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli knowledge-contract --run-id run-knowledge-contract-20260430 --data-dir /tmp/matrix-knowledge-contract`
+- CLI provider-free skill lifecycle contract:
+  `cd python-backend && uv run --frozen python -m meta_harness.meta_cli skill-lifecycle-contract --run-id run-skill-lifecycle-contract-20260430 --data-dir /tmp/matrix-skill-lifecycle-contract`
 - CLI paper-style experience packet:
   `cd python-backend && uv run --frozen python -m meta_harness.meta_cli experience-packet --run-id run-agent-harness-paper-loop-20260430 --limit 80`
 - CLI pending-eval envelope:

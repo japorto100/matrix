@@ -355,3 +355,73 @@ async def test_prompt_render_records_filesystem_skill_usage(
     state = json.loads(usage_path.read_text(encoding="utf-8"))
     assert state["skills"]["global:market-research"]["use_count"] == 1
     assert state["skills"]["global:market-research"]["state"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_prompt_render_emits_skill_lifecycle_audit_and_usage(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    usage_path = tmp_path / "usage.json"
+    events: list[dict] = []
+
+    async def capture_audit_log(**kwargs):
+        action = kwargs["action"]
+        events.append({**kwargs, "action": getattr(action, "value", str(action))})
+
+    async def should_refine(_skills, _query, *, api_key=None):
+        return True, 0.72
+
+    async def refine_skills_for_query(skills, **_kwargs):
+        return skills
+
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    monkeypatch.setenv("AGENT_SKILL_USAGE_STATE_PATH", str(usage_path))
+    monkeypatch.setenv("AGENT_SKILL_REFINEMENT", "1")
+    monkeypatch.setattr("agent.audit.logger.audit_log", capture_audit_log)
+    monkeypatch.setattr("agent.skills.coverage.should_refine", should_refine)
+    monkeypatch.setattr(
+        "agent.skills.refiner.refine_skills_for_query",
+        refine_skills_for_query,
+    )
+    skill = Skill(
+        name="market-research",
+        description="Market sentiment and equity research",
+        category="research",
+        content="AAPL sentiment catalyst analyst positioning",
+        path=tmp_path / "market",
+    )
+
+    prompt = await format_skills_for_prompt_async(
+        skills=[skill],
+        query="current market sentiment for AAPL",
+        user_id="user-1",
+        session_id="session-1",
+        thread_id="thread-1",
+        skills_base=tmp_path,
+    )
+
+    assert "market-research" in prompt
+    assert [event["action"] for event in events] == [
+        "skill_found",
+        "skill_refined",
+        "skill_used",
+    ]
+    found, refined, used = events
+    assert found["session_id"] == "session-1"
+    assert found["thread_id"] == "thread-1"
+    assert found["metadata"]["skill_ids"] == ["global:market-research"]
+    assert found["metadata"]["search_traces"]
+    assert found["metadata"]["query_preview"] == "current market sentiment for AAPL"
+    assert refined["metadata"]["coverage_score"] == 0.72
+    assert refined["metadata"]["source_skills"] == ["global:market-research"]
+    assert used["metadata"]["refined"] is True
+    assert used["metadata"]["coverage_score"] == 0.72
+    assert "AAPL sentiment catalyst analyst positioning" not in json.dumps(events)
+
+    state = json.loads(usage_path.read_text(encoding="utf-8"))
+    entry = state["skills"]["global:market-research"]
+    assert entry["use_count"] == 1
+    assert entry["state"] == "active"
+    assert entry["first_used_at"]
+    assert entry["last_used_at"]

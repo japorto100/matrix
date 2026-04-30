@@ -438,6 +438,32 @@ async def test_cli_prompt_cache_contract_writes_artifacts(tmp_path, monkeypatch)
 
 
 @pytest.mark.asyncio
+async def test_cli_skill_lifecycle_contract_writes_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
+    args = meta_cli.build_parser().parse_args(
+        [
+            "skill-lifecycle-contract",
+            "--run-id",
+            "run-skill-lifecycle",
+            "--data-dir",
+            str(tmp_path),
+        ]
+    )
+
+    result = await meta_cli._main_async(args)
+
+    assert result["passed"] is True
+    assert result["scenario_count"] == 3
+    artifact = (
+        tmp_path
+        / "runs"
+        / "run-skill-lifecycle"
+        / "skill_lifecycle_contract.json"
+    )
+    assert artifact.exists()
+
+
+@pytest.mark.asyncio
 async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(meta_cli, "_load_env_files", lambda: None)
     args = meta_cli.build_parser().parse_args(
@@ -447,8 +473,8 @@ async def test_cli_contract_suite_writes_artifacts(tmp_path, monkeypatch):
     result = await meta_cli._main_async(args)
 
     assert result["passed"] is True
-    assert result["lane_count"] == 7
-    assert result["scenario_count"] == 40
+    assert result["lane_count"] == 8
+    assert result["scenario_count"] == 43
     artifact = tmp_path / "runs" / "run-suite" / "contract_suite.json"
     assert artifact.exists()
 

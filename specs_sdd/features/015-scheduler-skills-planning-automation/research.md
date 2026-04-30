@@ -157,3 +157,27 @@ Matrix now keeps skill retrieval provider-free and explainable:
 - `iterative_find()` preserves per-round search traces and `skill_found` audit
   events carry them. This gives future trigger-quality gates a deterministic
   input before any real-LLM refinement or skill promotion logic runs.
+
+## 2026-04-30 Skill Lifecycle Contract
+
+Inputs: Hermes Agent changelog/delegation review, `Z_Additional_For_Tool_Stuff.md`
+search/find notes and Feature 016 Meta-Harness paper-aligned trace gates.
+
+Runtime skill selection needs to be observable without exposing skill bodies or
+provider-specific prompts. Matrix now treats the prompt render path as the
+lifecycle boundary:
+
+- `skill_found` captures deterministic BM25/RRF search traces, selected skill
+  ids and a bounded query preview.
+- `skill_refined` captures source skills, refinement mode and coverage score
+  when real or mocked refinement runs.
+- `skill_used` captures the final rendered skill set and increments the
+  provider-agnostic lifecycle sidecar.
+- skill reload remains a Control/admin action, not a normal LLM tool, because
+  changing the skill catalog can invalidate cached agent sessions and prompt
+  cache assumptions mid-turn.
+
+The new provider-free Meta-Harness lane
+`python -m meta_harness.meta_cli skill-lifecycle-contract` freezes those trace
+and lifecycle shapes so future skill curation, Hindsight feedback and promotion
+work can evolve behind stable gates.

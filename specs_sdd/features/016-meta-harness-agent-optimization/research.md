@@ -233,6 +233,7 @@ The stable provider-free lanes now have a single `contract-suite` command. This
 keeps static backend agent contracts visible before browser/live work starts:
 
 - Feature 020: route/delegation/loop-guard contract.
+- Feature 015: skill audit lifecycle, usage sidecar and reload-control policy.
 - Feature 024: MCP catalog poisoning and descriptor-drift policy.
 - Feature 027: report artifact grounding, citations and unsupported-claim
   failure.

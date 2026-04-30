@@ -15,6 +15,7 @@ from meta_harness.mcp_catalog_policy import run_mcp_catalog_policy_scenarios
 from meta_harness.prompt_cache_contract import run_prompt_cache_contract_scenarios
 from meta_harness.report_grounding import run_report_grounding_scenarios
 from meta_harness.routing_contract import run_routing_contract_scenarios
+from meta_harness.skill_lifecycle_contract import run_skill_lifecycle_contract_scenarios
 
 DEFAULT_RUN_ID = "run-contract-suite"
 
@@ -34,6 +35,7 @@ def run_contract_suite(
 
     lanes: tuple[tuple[str, str, SuiteRunner], ...] = (
         ("015/016/020/023/024", "domain_contract", run_domain_contract_scenarios),
+        ("015", "skill_lifecycle_contract", run_skill_lifecycle_contract_scenarios),
         ("012/017/019/022/025", "knowledge_contract", run_knowledge_contract_scenarios),
         ("020", "routing_contract", run_routing_contract_scenarios),
         ("032", "prompt_cache_contract", run_prompt_cache_contract_scenarios),

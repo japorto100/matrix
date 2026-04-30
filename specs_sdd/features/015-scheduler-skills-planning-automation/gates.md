@@ -84,6 +84,12 @@ Static gates additionally verified on 2026-04-30:
   selected ids, query terms, ranks/scores, matched terms and shortcut/ranking
   reason. `skill_found` audit events carry the same search traces for
   Meta-Harness and Control diagnostics.
+- `format_skills_for_prompt_async` emits ordered `skill_found`,
+  `skill_refined` and `skill_used` audit events with session/thread ids,
+  selected skill ids, body-redacted search traces and coverage metadata.
+- Meta-Harness `skill-lifecycle-contract` passes with provider-free gates for
+  audit trace shape, lifecycle sidecar shape and admin/control-only reload
+  policy.
 
 Remaining gates:
 
