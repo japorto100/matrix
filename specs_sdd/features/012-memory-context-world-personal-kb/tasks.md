@@ -156,6 +156,13 @@ migrated_from:
   - 2026-04-30: first static cross-feature check exists in
     `knowledge-contract`; full shared-corpus Hindsight/MemPalace/Fusion
     comparison remains open.
+- [x] T039t [done-static] Add stale async memory flush guard for automatic
+  post-answer retain.
+  - 2026-04-30: both LangGraph and SimpleLoop now schedule automatic
+    `_safe_sync_turn` through a per-thread generation guard. Syncs serialize per
+    thread and older generations skip before writing when a newer turn has
+    already scheduled memory persistence. Direct `_safe_sync_turn` remains
+    backwards-compatible for tests and manual callers.
 
 ## Runtime Context
 

@@ -156,6 +156,15 @@ summaries/reflections asynchronously. If embeddings are slow or remote quota is
 exhausted, rows stay durable with `embedding_status=pending` and are hydrated
 later rather than blocking evidence preservation.
 
+2026-04-30 runtime guard update: automatic post-answer memory syncs are still
+fire-and-forget for user latency, but they are now per-thread sequenced.
+Runner scheduling assigns a generation and `_safe_sync_turn` serializes writes
+per thread. If a newer turn has already scheduled persistence, the older
+generation is skipped before calling MemoryManager. This is deliberately a
+runtime harness guard, not a MemoryProvider API change: providers continue to
+own retain semantics, while the agent loop prevents stale background writes
+from racing newer turns.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

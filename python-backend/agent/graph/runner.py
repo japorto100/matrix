@@ -69,6 +69,54 @@ def _int_env(key: str, default: int) -> int:
         return default
 
 
+_memory_sync_generations: dict[str, int] = {}
+_memory_sync_locks: dict[str, tuple[asyncio.AbstractEventLoop, asyncio.Lock]] = {}
+
+
+def _next_memory_sync_generation(thread_id: str) -> int:
+    key = thread_id or "__empty_thread__"
+    generation = _memory_sync_generations.get(key, 0) + 1
+    _memory_sync_generations[key] = generation
+    return generation
+
+
+def _memory_sync_lock(thread_id: str) -> asyncio.Lock:
+    key = thread_id or "__empty_thread__"
+    loop = asyncio.get_running_loop()
+    existing = _memory_sync_locks.get(key)
+    if existing is not None and existing[0] is loop:
+        return existing[1]
+    lock = asyncio.Lock()
+    _memory_sync_locks[key] = (loop, lock)
+    return lock
+
+
+def _memory_sync_is_stale(thread_id: str, generation: int | None) -> bool:
+    if generation is None:
+        return False
+    key = thread_id or "__empty_thread__"
+    return _memory_sync_generations.get(key, 0) != generation
+
+
+def _schedule_safe_sync_turn(
+    *,
+    user_id: str,
+    thread_id: str,
+    messages: list[dict],
+    final_response: str,
+) -> asyncio.Task[None]:
+    generation = _next_memory_sync_generation(thread_id)
+    return asyncio.create_task(
+        _safe_sync_turn(
+            user_id=user_id,
+            thread_id=thread_id,
+            messages=messages,
+            final_response=final_response,
+            generation=generation,
+        )
+    )
+
+
 def _tool_discovery_prompt_block(
     tools: tuple | list,
     query: str,
@@ -678,13 +726,11 @@ async def _run_graph(
             # Phase-C migrates to at-least-once delivery via NATS if
             # measured data-loss impact justifies the complexity.
             try:
-                asyncio.create_task(
-                    _safe_sync_turn(
-                        user_id=ctx.user_id,
-                        thread_id=ctx.thread_id,
-                        messages=messages,
-                        final_response=final,
-                    )
+                _schedule_safe_sync_turn(
+                    user_id=ctx.user_id,
+                    thread_id=ctx.thread_id,
+                    messages=messages,
+                    final_response=final,
                 )
             except Exception:  # noqa: BLE001 — task-create must never block response
                 logger.debug("sync_turn task dispatch failed", exc_info=True)
@@ -735,6 +781,7 @@ async def _safe_sync_turn(
     thread_id: str,
     messages: list[dict],
     final_response: str,
+    generation: int | None = None,
 ) -> None:
     """Fire-and-forget memory-sync wrapper.
 
@@ -750,38 +797,49 @@ async def _safe_sync_turn(
     ADR: see migration ``022_agent_sync_failures`` header-doc for the
     Phase-B debt and Phase-C NATS-JetStream migration path.
     """
-    from memory_fusion.memory_provider import get_memory_manager
+    async with _memory_sync_lock(thread_id):
+        if _memory_sync_is_stale(thread_id, generation):
+            logger.info(
+                "memory sync_turn skipped stale generation user_id=%s thread_id=%s generation=%s current=%s",
+                user_id,
+                thread_id,
+                generation,
+                _memory_sync_generations.get(thread_id or "__empty_thread__", 0),
+            )
+            return
 
-    manager = get_memory_manager()
-    if manager is None:
-        return
+        from memory_fusion.memory_provider import get_memory_manager
 
-    # Extract last user + assistant exchange
-    last_user = ""
-    for msg in reversed(messages):
-        if isinstance(msg, dict) and msg.get("role") == "user":
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                last_user = content
-                break
+        manager = get_memory_manager()
+        if manager is None:
+            return
 
-    try:
-        from memory_fusion.engine import get_bank_id
+        # Extract last user + assistant exchange
+        last_user = ""
+        for msg in reversed(messages):
+            if isinstance(msg, dict) and msg.get("role") == "user":
+                content = msg.get("content", "")
+                if isinstance(content, str):
+                    last_user = content
+                    break
 
-        await manager.sync_turn(
-            user_message=last_user,
-            assistant_message=final_response,
-            user_id=user_id,
-            bank_id=get_bank_id(user_id) if user_id else "",
-        )
-    except Exception as exc:  # noqa: BLE001 — fire-and-forget contract
-        logger.warning(
-            "memory sync_turn failed user_id=%s thread_id=%s: %s",
-            user_id, thread_id, exc,
-        )
-        await _record_sync_failure(
-            user_id=user_id, thread_id=thread_id, error=str(exc),
-        )
+        try:
+            from memory_fusion.engine import get_bank_id
+
+            await manager.sync_turn(
+                user_message=last_user,
+                assistant_message=final_response,
+                user_id=user_id,
+                bank_id=get_bank_id(user_id) if user_id else "",
+            )
+        except Exception as exc:  # noqa: BLE001 — fire-and-forget contract
+            logger.warning(
+                "memory sync_turn failed user_id=%s thread_id=%s: %s",
+                user_id, thread_id, exc,
+            )
+            await _record_sync_failure(
+                user_id=user_id, thread_id=thread_id, error=str(exc),
+            )
 
 
 async def _record_sync_failure(

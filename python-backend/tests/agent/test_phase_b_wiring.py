@@ -558,6 +558,36 @@ async def test_safe_sync_turn_uses_canonical_bank_id():
     assert provider.sync_bank_ids == ["user_u1"]
 
 
+async def test_safe_sync_turn_skips_stale_generation():
+    from agent.graph import runner
+
+    provider = _FakeMemoryProvider()
+    set_memory_manager(MemoryManager([provider]))
+    thread_id = "thread-stale-memory-sync"
+    stale_generation = runner._next_memory_sync_generation(thread_id)
+    current_generation = runner._next_memory_sync_generation(thread_id)
+
+    await runner._safe_sync_turn(
+        user_id="u1",
+        thread_id=thread_id,
+        messages=[{"role": "user", "content": "old"}],
+        final_response="old response",
+        generation=stale_generation,
+    )
+    assert provider.sync_calls == []
+
+    await runner._safe_sync_turn(
+        user_id="u1",
+        thread_id=thread_id,
+        messages=[{"role": "user", "content": "new"}],
+        final_response="new response",
+        generation=current_generation,
+    )
+
+    assert provider.sync_calls == [("new", "new response")]
+    assert provider.sync_bank_ids == ["user_u1"]
+
+
 async def test_safe_sync_turn_none_manager_noops():
     """When MemoryManager is None (not seeded), sync_turn is a no-op."""
     from agent.graph import runner

@@ -78,7 +78,7 @@ async def run_simple_agent_loop(
     from agent.graph.runner import (
         _prepare_messages,
         _prepare_system_prompt,
-        _safe_sync_turn,
+        _schedule_safe_sync_turn,
     )
 
     yield sse(StartPacket(message_id=ctx.thread_id))
@@ -94,13 +94,11 @@ async def run_simple_agent_loop(
     # the final SSE chunk has been yielded.
     try:
         final_response = _last_assistant_text(messages)
-        asyncio.create_task(
-            _safe_sync_turn(
-                user_id=ctx.user_id,
-                thread_id=ctx.thread_id,
-                messages=messages,
-                final_response=final_response,
-            )
+        _schedule_safe_sync_turn(
+            user_id=ctx.user_id,
+            thread_id=ctx.thread_id,
+            messages=messages,
+            final_response=final_response,
         )
     except Exception:  # noqa: BLE001
         logger.debug("sync_turn task dispatch failed", exc_info=True)

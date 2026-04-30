@@ -168,6 +168,10 @@ feature_id: 020
     SimpleLoop and LangGraph, emits `tool_retry_guard_stopped`, and returns a
     bounded final response instead of asking the model for another identical
     tool retry.
+  - 2026-04-30: stale async memory flush guard is now implemented in the
+    runner scheduling path: automatic post-answer sync uses per-thread
+    generations and skips stale generations before MemoryManager writes.
+    Compression retry reset and deeper context-poisoning checks remain open.
 - [x] T037a Add graphless SimpleLoop approval parity: tool calls must pass
   `approval_node`, confirm-level tools fail closed without interrupt/resume, and
   tool-message emission must not duplicate `tool_node` output.

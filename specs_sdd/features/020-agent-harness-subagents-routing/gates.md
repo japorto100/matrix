@@ -24,6 +24,10 @@ feature_id: 020
   - 2026-04-30: `agent.loop_guards.repeated_tool_failure_guard()` is used by
     both SimpleLoop and LangGraph increment routing and surfaces
     `tool_retry_guard_stopped` in degradation metadata.
+- [x] Automatic memory flushes cannot race newer turns for the same thread.
+  - 2026-04-30: runner scheduling assigns per-thread memory-sync generations;
+    `_safe_sync_turn` serializes by thread and unit coverage proves stale
+    generations do not call the MemoryManager.
 - [ ] Subagent behavior remains out of production until search and holdout
   gates prove value.
   - 2026-04-30: domain delegate candidate metadata now records

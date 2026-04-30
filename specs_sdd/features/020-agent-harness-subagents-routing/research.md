@@ -169,6 +169,13 @@ This implements the max-tool-retry part of Feature 020. Compression retry
 reset, stale async memory flush and deeper context-poisoning checks remain
 Feature 012/016 follow-ups.
 
+2026-04-30 memory flush guard update: the stale async flush part is now a
+runner-level guard rather than a provider change. LangGraph and SimpleLoop both
+schedule automatic post-answer memory retain through a per-thread generation
+counter. `_safe_sync_turn` then serializes writes for that thread and skips old
+generations if a newer turn already scheduled persistence. Compression retry
+reset and context-poisoning gates remain separate follow-ups.
+
 ## 2026-04-30 Runtime Tool Discovery Slice
 
 The earlier progressive-disclosure work lived mostly in Control/catalog
