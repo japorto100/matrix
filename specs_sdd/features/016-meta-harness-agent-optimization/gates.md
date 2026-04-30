@@ -229,6 +229,9 @@ PY
 - The dedicated `memory_holdout` split is protected like the global holdout:
   proposer/search runs cannot execute it unless `allow_holdout` is set
   explicitly, and its legacy query fixtures can forbid write/scheduler tools.
+- Runtime anti-bloat gates verify current/live-market prompts without
+  personal-memory cues emit `memory.recall.skipped` before engine lookup,
+  while memory-cued market prompts still enter recall.
 - Memory fixture manifests capture `user_id`, `bank_id`, `palace_path`,
   provider env and seed data for reproduction.
 - Config snapshots expose Memory-Fusion Pareto hypotheses: embedding model/

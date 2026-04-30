@@ -34,6 +34,67 @@ async def test_memory_recall_node_emits_unavailable_runtime_event(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_skips_current_market_without_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("policy skip must happen before memory engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-market",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {"role": "user", "content": "What is the current market sentiment for AAPL?"}
+            ],
+        }
+    )
+
+    assert result["context_blocks"] == []
+    assert result["query_gate"]["action"] == "skip"
+    assert result["query_gate"]["reason"] == "current_market_without_personal_memory_cue"
+    event = result["runtime_events"][0]
+    assert event["status"] == "blocked"
+    assert event["name"] == "memory.recall.skipped"
+    assert event["metadata"]["source"] == "memory_recall_node"
+    assert event["metadata"]["reason"] == "current_market_without_personal_memory_cue"
+
+
+@pytest.mark.asyncio
+async def test_memory_recall_node_keeps_memory_cued_market_queries(monkeypatch):
+    async def _fake_get_memory_engine():
+        return None
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fake_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-market-memory",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Should I reduce my gold allocation today given my "
+                        "previous risk preference?"
+                    ),
+                }
+            ],
+        }
+    )
+
+    assert result["runtime_events"][0]["name"] == "memory.recall.unavailable"
+
+
+@pytest.mark.asyncio
 async def test_memory_retain_node_times_out_without_blocking_turn(monkeypatch):
     audit_events: list[dict] = []
 

@@ -370,3 +370,14 @@ behavior, Fusion evidence-combine behavior and stale-summary conflict behavior
 are separate fixtures with explicit route/provider/evidence gates. This gives
 backend runner work a fixed contract before live Hindsight/MemPalace probes are
 allowed to influence promotion.
+
+## 2026-04-30 Memory Anti-Bloat Runtime Follow-Up
+
+Feature 012's anti-bloat rule is now enforced before the Memory-Fusion engine is
+looked up. Pure current/live-market questions such as current market sentiment
+or latest market/news prompts skip automatic personal-memory prefetch unless
+the user also gives a memory/personal cue such as "my", "previous", "remember",
+"recall", "allocation" or "risk per trade". The runtime still emits
+`memory.recall.skipped` with a provider-agnostic reason so Agent Chat,
+Control UI and Meta-Harness traces can distinguish intentional skip from memory
+unavailability.

@@ -41,6 +41,38 @@ logger = logging.getLogger(__name__)
 # Progressive Context: trackt was schon injiziert wurde pro Thread (Paper 3 Pattern)
 _injected_context: dict[str, set[str]] = {}
 
+_MEMORY_RECALL_CUE_TERMS = (
+    "remember",
+    "recall",
+    "previous",
+    "previously",
+    "earlier",
+    "last week",
+    "last month",
+    "we discussed",
+    "my ",
+    "i said",
+    "i prefer",
+    "preference",
+    "risk per trade",
+    "allocation",
+    "open positions",
+)
+_CURRENT_MARKET_QUERY_TERMS = (
+    "current market",
+    "live market",
+    "latest market",
+    "market sentiment",
+    "current price",
+    "current chart",
+    "recent earnings",
+    "this week",
+    "this quarter",
+    "today",
+    "tomorrow",
+    "news",
+)
+
 
 def _memory_event(
     *,
@@ -66,6 +98,18 @@ def _memory_retain_timeout_seconds() -> float:
         return max(1.0, float(os.environ.get("MEMORY_RETAIN_TIMEOUT_SEC", "20.0")))
     except ValueError:
         return 20.0
+
+
+def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
+    """Skip personal memory prefetch for pure current/live-market requests."""
+    text = f" {user_msg.lower()} "
+    has_memory_cue = any(term in text for term in _MEMORY_RECALL_CUE_TERMS)
+    has_current_market_cue = any(
+        term in text for term in _CURRENT_MARKET_QUERY_TERMS
+    )
+    if has_current_market_cue and not has_memory_cue:
+        return True, "current_market_without_personal_memory_cue"
+    return False, ""
 
 
 def _get_memory_config(role: str) -> dict:
@@ -224,6 +268,43 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
     - tags: Rollen-basiert aus roles.py
     - Progressive Context: Duplikat-Memories nicht nochmal injizieren
     """
+    user_msg = ""
+    for msg in reversed(state.get("messages", [])):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                user_msg = content
+                break
+
+    if not user_msg:
+        return {}
+
+    should_skip, skip_reason = _should_skip_memory_recall(user_msg)
+    if should_skip:
+        return {
+            "context_blocks": [],
+            "source_layer_counts": {},
+            "degradation_flags": [],
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.recall.skipped",
+                    state=state,
+                    summary="Memory recall skipped by query policy",
+                    metadata={
+                        "source": "memory_recall_node",
+                        "reason": skip_reason,
+                    },
+                )
+            ],
+            "query_gate": {
+                "action": "skip",
+                "reason": skip_reason,
+                "needsVerification": False,
+                "degradationFlags": [],
+            },
+        }
+
     from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
@@ -243,17 +324,6 @@ async def memory_recall_node(state: AgentGraphState) -> dict[str, Any]:
                 )
             ],
         }
-
-    user_msg = ""
-    for msg in reversed(state.get("messages", [])):
-        if msg.get("role") == "user":
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                user_msg = content
-                break
-
-    if not user_msg:
-        return {}
 
     from agent.tracing import memory_span
 

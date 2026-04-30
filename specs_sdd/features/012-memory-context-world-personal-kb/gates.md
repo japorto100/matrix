@@ -90,6 +90,9 @@ feature_id: 012
 - [x] Dev/Meta-Harness has an explicit no-network deterministic 384d embedding
   lane for orchestration and trace gates; it is not a production recall-quality
   default.
+- [x] Current/live-market prompts without personal-memory cues skip automatic
+  personal-memory prefetch before Memory-Fusion/MemPalace engine lookup and
+  emit a `memory.recall.skipped` runtime event.
 - [ ] Hindsight and MemPalace share one evaluated embedding dimension or have
   explicitly separated indexes plus a reset/re-embedding migration plan.
 - [ ] Reranker strategy is Pareto-evaluated (`rrf`, local cross-encoder,

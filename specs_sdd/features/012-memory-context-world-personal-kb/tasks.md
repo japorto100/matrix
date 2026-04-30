@@ -87,8 +87,12 @@ migrated_from:
     summary, MemPalace verbatim/loci, Fusion combine and Fusion conflict gates;
     full backend trigger-policy runners for high-risk and old-session recovery
     remain open here.
-- T039 Add anti-bloat evals proving MemPalace is not injected by default for
-  simple current/live-market questions.
+- [x] T039 [done-static] Add anti-bloat evals proving MemPalace is not injected
+  by default for simple current/live-market questions.
+  - 2026-04-30: `memory_recall_node` now skips personal-memory prefetch before
+    engine lookup for pure current/live-market prompts without memory/personal
+    cues and emits `memory.recall.skipped` runtime metadata. Unit gates verify
+    current-market skip and memory-cued market recall preservation.
 - [x] T039a Review MemPalace upstream documentation and git repo freshness before
   schema lock; pull/update `_ref/mempalace` only after checking local changes
   and recording adopted deltas.

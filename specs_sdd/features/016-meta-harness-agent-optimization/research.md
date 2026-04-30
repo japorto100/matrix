@@ -528,3 +528,12 @@ with loci and session/source refs), Fusion combine behavior and Fusion conflict
 behavior where fresh source-backed verbatim evidence overrides a stale summary.
 This is still provider-agnostic at the harness level: route/provider names are
 trace contracts, not vendor APIs.
+
+2026-04-30 memory anti-bloat runtime update: Feature 012 now has an actual
+runtime guard, not only an eval intention. `memory_recall_node` classifies pure
+current/live-market questions without personal-memory cues as
+`current_market_without_personal_memory_cue`, skips the Memory-Fusion engine
+lookup and surfaces `memory.recall.skipped`. Market prompts that mention
+personal allocations, previous preferences or explicit recall still flow into
+normal memory recall. This gives the Meta-Harness a clean upstream signal for
+"no MemPalace injection" without relying on absence of context text alone.
