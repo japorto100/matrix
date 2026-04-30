@@ -293,6 +293,25 @@ def test_subagent_runtime_events_build_run_read_model() -> None:
                                 "spawn_depth": 0,
                                 "next_spawn_depth": 1,
                                 "max_spawn_depth": 1,
+                                "result_digest": "sha256:child-result",
+                            },
+                        },
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "memory",
+                            "status": "accepted",
+                            "name": "subagent.parent_memory_handoff",
+                            "thread_id": "thread-parent",
+                            "timestamp": "2026-04-29T12:00:02+00:00",
+                            "metadata": {
+                                "child_task_id": "task-1",
+                                "child_session_id": "a2a-task-1",
+                                "child_memory_write_allowed": False,
+                                "parent_curated_memory_handoff": True,
+                                "retain_decision": "parent_review_required",
+                                "source_refs": ["a2a:task-1", "a2a-task-1"],
+                                "confidence": "unverified_child_summary",
+                                "result_digest": "sha256:child-result",
                             },
                         },
                     ]
@@ -308,4 +327,82 @@ def test_subagent_runtime_events_build_run_read_model() -> None:
     assert run["role"] == "researcher"
     assert run["status"] == "completed"
     assert run["ended_at"] == "2026-04-29T12:00:01+00:00"
+    assert run["outcome"] == "ok"
+    assert run["terminal_reason"] == "completed"
+    assert run["is_terminal"] is True
+    assert run["result_digest"] == "sha256:child-result"
+    assert run["event_count"] == 3
+    assert run["lifecycle_event_count"] == 2
+    assert run["last_event_name"] == "subagent.delegation.completed"
+    assert run["memory_handoff"] == {
+        "available": True,
+        "status": "accepted",
+        "timestamp": "2026-04-29T12:00:02+00:00",
+        "retain_decision": "parent_review_required",
+        "child_memory_write_allowed": False,
+        "parent_curated_memory_handoff": True,
+        "confidence": "unverified_child_summary",
+        "source_refs": ["a2a:task-1", "a2a-task-1"],
+        "result_digest": "sha256:child-result",
+        "output_digest": "",
+    }
     assert run["controls"]["kill"] == "unsupported"
+    assert run["controls"]["unsupported_reason"] == "non_durable_subagent_registry"
+
+
+def test_subagent_timeout_runtime_event_closes_run_read_model() -> None:
+    model = build_ops_read_model(
+        audit_events=[
+            _audit_event(
+                id=9,
+                action="route_decision",
+                tool_name="",
+                metadata={
+                    "runtime_events": [
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "subagent",
+                            "status": "started",
+                            "name": "subagent.delegation.started",
+                            "thread_id": "thread-parent",
+                            "timestamp": "2026-04-29T12:00:00+00:00",
+                            "metadata": {
+                                "child_task_id": "task-timeout",
+                                "role": "researcher",
+                                "delegate_kind": "domain",
+                                "spawn_depth": 0,
+                                "next_spawn_depth": 1,
+                                "max_spawn_depth": 1,
+                            },
+                        },
+                        {
+                            "contract": "agent-runtime-event/v1",
+                            "kind": "subagent",
+                            "status": "stale",
+                            "name": "subagent.delegation.timeout",
+                            "thread_id": "thread-parent",
+                            "timestamp": "2026-04-29T12:00:05+00:00",
+                            "metadata": {
+                                "child_task_id": "task-timeout",
+                                "role": "researcher",
+                                "delegate_kind": "domain",
+                                "spawn_depth": 0,
+                                "next_spawn_depth": 1,
+                                "max_spawn_depth": 1,
+                                "error": "node_timeout",
+                            },
+                        },
+                    ]
+                },
+            )
+        ],
+        sessions=[],
+    )
+
+    run = model["subagent_runs"][0]
+    assert run["status"] == "stale"
+    assert run["outcome"] == "timeout"
+    assert run["terminal_reason"] == "timeout"
+    assert run["is_terminal"] is True
+    assert run["ended_at"] == "2026-04-29T12:00:05+00:00"
+    assert run["memory_handoff"] == {"available": False}

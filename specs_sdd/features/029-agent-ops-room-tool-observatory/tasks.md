@@ -100,6 +100,10 @@ feature_id: 029
     grouped by child task id and `/control/ops` renders the run list with
     status, depth, timestamps and explicit unsupported control states. Kill
     and pause remain future Control operations.
+  - 2026-04-30: the backend run rows now include normalized outcome, terminal
+    reason, lifecycle-event count, result digest and parent memory-handoff
+    metadata. This lets Ops distinguish completion from timeout/stale states
+    and show parent-side memory curation without parsing assistant text.
 - [x] T039 [done-static] Add tool/model/memory/RAG/KG runtime event lanes with
   capped output tails.
   - 2026-04-30: `/api/v1/control/ops/events` extracts redacted

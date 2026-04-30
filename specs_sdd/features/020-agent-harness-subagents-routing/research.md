@@ -276,6 +276,13 @@ This is still not production-promoted subagent behavior. It is the minimum
 runtime contract that allows Meta-Harness to evaluate single-hop delegation
 without hidden memory/KG pollution or unbounded child tool access.
 
+2026-04-30 Ops correlation update: Feature 020 keeps the handoff as a parent
+memory event, because making it a child lifecycle event would blur the memory
+write boundary. Feature 029 now joins that handoff back into the subagent run
+read model by `child_task_id`, so operators can see result digest, retain
+decision and `child_memory_write_allowed=false` while the runtime still blocks
+direct child writes.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

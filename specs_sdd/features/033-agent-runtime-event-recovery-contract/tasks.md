@@ -64,6 +64,10 @@ feature_id: 033
     audited runtime events, grouped by child task id. This is the static
     registry/read-model bridge; durable process registry and kill/pause remain
     future work.
+  - 2026-04-30: the Ops bridge now correlates `subagent` lifecycle events with
+    the `subagent.parent_memory_handoff` memory event. Run rows expose outcome,
+    terminal reason, result digest, lifecycle count and parent-curation status
+    without changing the child memory-write policy.
 - [x] T012 Add gated single-hop subagent execution with default-off/fail-closed
   policy.
   - 2026-04-30: A2A execution is blocked unless

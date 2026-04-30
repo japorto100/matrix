@@ -109,3 +109,11 @@ such as confirmed session kill. The provider-free routing contract checks this
 directly through `routing-runtime-event-kind-outcome-taxonomy`, keeping replay
 semantics independent of LiteLLM/OpenRouter/provider telemetry and independent
 of the Control/Ops frontend.
+
+2026-04-30 subagent replay rollup update: the Control/Ops backend now joins
+`subagent` lifecycle events with the parent-side
+`subagent.parent_memory_handoff` memory event by `child_task_id`. This is
+important because the handoff deliberately belongs to the parent memory lane,
+not to the child lifecycle lane. The replay row now carries normalized outcome,
+terminal reason, result digest and parent-curation metadata while still showing
+kill/pause/replay as unsupported until a durable child registry exists.

@@ -148,3 +148,10 @@ are now represented as control-plane runtime events. Kill is implemented only
 behind explicit confirmation on the new endpoint; pause and replay return
 unsupported outcomes instead of silent no-ops. Ops can show the control result
 from audit replay without needing browser state.
+
+2026-04-30 subagent rollup follow-up: Ops now correlates child lifecycle events
+with the parent-memory-handoff event that Feature 020 emits after successful
+delegation. The run row exposes normalized outcome, terminal reason, result
+digest, lifecycle-event count and parent-curation metadata. This preserves the
+Hermes-derived observability lesson while keeping Matrix's parent-only memory
+policy intact: the child still cannot write durable memory directly.

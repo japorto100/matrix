@@ -391,14 +391,9 @@ def _runtime_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
 def _subagent_runs_from_runtime_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[str, list[dict[str, Any]]] = {}
     for event in events:
-        if str(event.get("kind") or "") != "subagent":
+        if not _is_subagent_run_event(event):
             continue
-        metadata = _as_dict(event.get("metadata"))
-        key = (
-            str(metadata.get("child_task_id") or "").strip()
-            or str(event.get("audit_ref") or "").strip()
-            or str(event.get("event_id") or "").strip()
-        )
+        key = _subagent_group_key(event)
         if not key:
             continue
         grouped.setdefault(key, []).append(event)
@@ -407,7 +402,10 @@ def _subagent_runs_from_runtime_events(events: list[dict[str, Any]]) -> list[dic
     terminal_statuses = {"blocked", "failed", "completed", "stale", "cancelled"}
     for key, run_events in grouped.items():
         ordered = sorted(run_events, key=lambda item: str(item.get("timestamp") or ""))
-        latest = ordered[-1]
+        lifecycle_events = [
+            event for event in ordered if str(event.get("kind") or "") == "subagent"
+        ]
+        latest = lifecycle_events[-1] if lifecycle_events else ordered[-1]
         metadata = _as_dict(latest.get("metadata"))
         latest_status = str(latest.get("status") or "unknown")
         started_at = next(
@@ -423,6 +421,15 @@ def _subagent_runs_from_runtime_events(events: list[dict[str, Any]]) -> list[dic
             if latest_status in terminal_statuses
             else ""
         )
+        memory_handoff = _subagent_memory_handoff(ordered)
+        terminal_reason = _subagent_terminal_reason(latest)
+        result_digest = str(
+            metadata.get("result_digest")
+            or metadata.get("output_digest")
+            or memory_handoff.get("result_digest")
+            or memory_handoff.get("output_digest")
+            or ""
+        )
         runs.append(
             {
                 "run_id": key,
@@ -434,19 +441,107 @@ def _subagent_runs_from_runtime_events(events: list[dict[str, Any]]) -> list[dic
                 "started_at": started_at,
                 "ended_at": ended_at,
                 "event_count": len(ordered),
+                "lifecycle_event_count": len(lifecycle_events),
+                "outcome": _subagent_outcome(latest),
+                "terminal_reason": terminal_reason,
+                "is_terminal": bool(terminal_reason),
+                "result_digest": result_digest,
+                "memory_handoff": memory_handoff,
                 "spawn_depth": _safe_int(metadata.get("spawn_depth")),
                 "next_spawn_depth": _safe_int(metadata.get("next_spawn_depth")),
                 "max_spawn_depth": _safe_int(metadata.get("max_spawn_depth")),
                 "last_event": latest,
+                "last_event_name": str(latest.get("name") or ""),
                 "controls": {
                     "status": "supported",
                     "kill": "unsupported",
                     "pause": "unsupported",
                     "replay": "unsupported",
+                    "unsupported_reason": "non_durable_subagent_registry",
                 },
             }
         )
     return sorted(runs, key=lambda item: str(item.get("started_at") or ""), reverse=True)
+
+
+def _is_subagent_run_event(event: dict[str, Any]) -> bool:
+    name = str(event.get("name") or "")
+    return str(event.get("kind") or "") == "subagent" or name == "subagent.parent_memory_handoff"
+
+
+def _subagent_group_key(event: dict[str, Any]) -> str:
+    metadata = _as_dict(event.get("metadata"))
+    return (
+        str(metadata.get("child_task_id") or "").strip()
+        or str(metadata.get("child_session_id") or "").strip()
+        or str(event.get("audit_ref") or "").strip()
+        or str(event.get("event_id") or "").strip()
+    )
+
+
+def _subagent_memory_handoff(events: list[dict[str, Any]]) -> dict[str, Any]:
+    handoff_events = [
+        event for event in events if str(event.get("name") or "") == "subagent.parent_memory_handoff"
+    ]
+    if not handoff_events:
+        return {"available": False}
+
+    latest = handoff_events[-1]
+    metadata = _as_dict(latest.get("metadata"))
+    return {
+        "available": True,
+        "status": str(latest.get("status") or ""),
+        "timestamp": str(latest.get("timestamp") or ""),
+        "retain_decision": str(metadata.get("retain_decision") or ""),
+        "child_memory_write_allowed": bool(metadata.get("child_memory_write_allowed", False)),
+        "parent_curated_memory_handoff": bool(
+            metadata.get("parent_curated_memory_handoff", False)
+        ),
+        "confidence": str(metadata.get("confidence") or ""),
+        "source_refs": _as_str_list(metadata.get("source_refs")),
+        "result_digest": str(metadata.get("result_digest") or ""),
+        "output_digest": str(metadata.get("output_digest") or ""),
+    }
+
+
+def _subagent_outcome(event: dict[str, Any]) -> str:
+    metadata = _as_dict(event.get("metadata"))
+    outcome = str(metadata.get("outcome") or "").strip().lower()
+    if outcome:
+        return outcome
+    reason = _subagent_terminal_reason(event)
+    if reason in {"completed", "failed", "blocked", "stale", "cancelled"}:
+        return {
+            "completed": "ok",
+            "failed": "error",
+            "blocked": "error",
+            "stale": "stale",
+            "cancelled": "cancelled",
+        }[reason]
+    if reason in {"timeout", "killed"}:
+        return reason
+    return "deferred"
+
+
+def _subagent_terminal_reason(event: dict[str, Any]) -> str:
+    status = str(event.get("status") or "").strip().lower()
+    name = str(event.get("name") or "").strip().lower()
+    metadata = _as_dict(event.get("metadata"))
+    text = " ".join(
+        [
+            name,
+            str(metadata.get("error") or ""),
+            str(metadata.get("reason") or ""),
+            str(metadata.get("outcome") or ""),
+        ]
+    ).lower()
+    if "timeout" in text:
+        return "timeout"
+    if "kill" in text or "killed" in text:
+        return "killed"
+    if status in {"blocked", "failed", "completed", "stale", "cancelled"}:
+        return status
+    return ""
 
 
 def _safe_int(value: Any) -> int:

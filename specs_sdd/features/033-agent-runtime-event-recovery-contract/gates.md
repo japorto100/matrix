@@ -60,3 +60,6 @@ feature_id: 033
     `routing-runtime-event-kind-outcome-taxonomy`, validating event kind/name
     consistency and stable outcomes across LLM, tool, memory, subagent and
     control events.
+  - 2026-04-30: Ops replay correlates subagent lifecycle events with
+    parent-memory-handoff events and preserves timeout/completion outcomes in
+    the backend read model without browser dependencies.

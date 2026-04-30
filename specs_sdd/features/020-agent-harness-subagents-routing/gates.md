@@ -84,6 +84,8 @@ feature_id: 020
 - [x] Parent-side memory handoff records delegation outcomes.
   - 2026-04-30: completed child result emits a parent memory-handoff runtime
     event with digest and `child_memory_write_allowed=false`.
+  - 2026-04-30: Ops replay consumes that handoff into `subagent_runs`, including
+    result digest, retain decision and `child_memory_write_allowed=false`.
 - [x] Subagent lifecycle emits Feature 033 runtime events.
   - 2026-04-30: accepted/started/completed/failed and timeout-as-stale are
     unit-tested through `a2a_delegate_node`.

@@ -258,10 +258,17 @@ feature_id: 020
     `AGENT_A2A_DELEGATION_TIMEOUT_SECONDS`; even a blocking/faulty client is
     converted into a stale `subagent.delegation.timeout` runtime event and the
     child client is closed.
+  - 2026-04-30: Ops replay now treats completion, stale timeout and parent
+    memory handoff as one correlated run by `child_task_id`, exposing terminal
+    reason and outcome while durable kill/pause remain future work.
 - [x] T049 Add parent-side memory handoff event for delegation outcomes.
   - 2026-04-30: completed child results emit
     `subagent.parent_memory_handoff` as a parent-only memory event with result
     digest; child memory writes stay disabled.
+  - 2026-04-30: the handoff is now consumed by the Ops read model as
+    parent-curation metadata, so the downstream operator view can verify that
+    child output was made available to the parent without permitting a child
+    memory write.
 - [x] T050 [done-static] Ensure A2A context is policy, not prompt-only text.
   - 2026-04-30: `/api/v1/agent/chat` recognizes only Matrix A2A child
     threads (`a2a-*`) with the Matrix delegation prefix, converts role/depth/

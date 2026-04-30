@@ -37,13 +37,17 @@ feature_id: 029
   - 2026-04-30: Ops derives `subagent_runs` from audited Feature-033 runtime
     events and renders active/blocked/completed/failed/stale/cancelled-style
     states. Killed/paused durable controls are still future backend work.
+  - 2026-04-30: subagent run rows preserve timeout as a terminal reason,
+    completion as `ok`, and parent memory-handoff availability/result digest
+    as backend replay fields.
 - [x] Tool/model/memory/RAG/KG event lanes render capped output tails.
   - 2026-04-30: Ops backend redacts/caps nested runtime-event payloads before
     the frontend, and Runtime Lanes render counts plus compact event summaries.
 - [partial-static] Status/kill/pause/replay controls return explicit supported or
   unsupported outcomes.
   - 2026-04-30: Subagent run rows return explicit control availability:
-    status supported; kill, pause and replay unsupported.
+    status supported; kill, pause and replay unsupported with a
+    `non_durable_subagent_registry` reason.
   - 2026-04-30: Session control endpoints return supported status, confirmed
     kill or explicit pause/replay unsupported events with audit replay metadata.
 - [partial-static] Ops events link to Prompt Cache and Report Artifact surfaces.
