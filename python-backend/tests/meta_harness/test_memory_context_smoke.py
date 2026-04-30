@@ -16,6 +16,12 @@ def test_memory_context_smoke_compares_summary_verbatim_and_fusion(tmp_path):
     assert result["provider_calls"] == 0
     assert result["comparison"]["winner_candidate_id"] == "memory-context-fusion"
     assert len(result["comparison"]["candidates"]) == 3
+    assert result["fixture_manifests"]["memory-context-fusion"]["contract"] == (
+        "memory-fixture-manifest/v1"
+    )
+    assert result["fixture_manifests"]["memory-context-fusion"]["memory_refs"][
+        "raw_evidence_ref"
+    ] == "mempalace:drawer:turn-42"
     candidates = {
         item["candidate_id"]: item for item in result["comparison"]["candidates"]
     }
@@ -33,8 +39,18 @@ def test_memory_context_smoke_compares_summary_verbatim_and_fusion(tmp_path):
     comparison = json.loads(
         (run_dir / "memory_context_comparison.json").read_text(encoding="utf-8")
     )
+    fixture_manifest = json.loads(
+        (run_dir / "memory_fixture_manifest.json").read_text(encoding="utf-8")
+    )
     assert comparison["contract"] == "memory-context-comparison/v1"
+    assert fixture_manifest["contract"] == "memory-fixture-manifest/v1"
     assert (run_dir / "candidates" / "memory-context-fusion" / "aggregate.json").exists()
+    assert (
+        run_dir
+        / "candidates"
+        / "memory-context-fusion"
+        / "memory_fixture_manifest.json"
+    ).exists()
     assert (
         run_dir
         / "candidates"

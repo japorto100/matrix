@@ -7,6 +7,7 @@ writer paths used by live Meta-Harness scenarios.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -122,6 +123,7 @@ def run_memory_context_smoke(
     results: list[ScenarioRunResult] = []
     artifact_dirs: dict[str, str] = {}
     aggregates: dict[str, dict[str, Any]] = {}
+    fixture_manifests: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
         scenario = _candidate_scenario(base_scenario, candidate)
         trace_events = _candidate_trace_events(candidate, now=now)
@@ -163,8 +165,15 @@ def run_memory_context_smoke(
             trace_verdict=verdict,
         )
         results.append(result)
-        artifact_dirs[result.candidate_id] = str(
-            write_scenario_artifacts(result, scenario, data_dir=data_dir)
+        artifact_dir = write_scenario_artifacts(result, scenario, data_dir=data_dir)
+        artifact_dirs[result.candidate_id] = str(artifact_dir)
+        fixture_manifests[result.candidate_id] = _write_memory_fixture_manifest(
+            artifact_dir,
+            run_id=run_id,
+            candidate=candidate,
+            scenario=scenario,
+            trace_events=trace_events,
+            created_at=now,
         )
         aggregates[result.candidate_id] = write_run_aggregate([result], data_dir=data_dir)
 
@@ -173,6 +182,19 @@ def run_memory_context_smoke(
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "memory_context_comparison.json").write_text(
         json.dumps(comparison, indent=2, default=str),
+        encoding="utf-8",
+    )
+    (run_dir / "memory_fixture_manifest.json").write_text(
+        json.dumps(
+            {
+                "contract": "memory-fixture-manifest/v1",
+                "run_id": run_id,
+                "created_at": now,
+                "candidate_manifests": fixture_manifests,
+            },
+            indent=2,
+            default=str,
+        ),
         encoding="utf-8",
     )
     (run_dir / "run.json").write_text(
@@ -201,6 +223,7 @@ def run_memory_context_smoke(
         "artifact_dir": artifact_dirs[candidate_id],
         "aggregate": aggregates[candidate_id],
         "comparison": comparison,
+        "fixture_manifests": fixture_manifests,
         "candidate_results": [result.as_dict() for result in results],
         "trace_verdict": fusion_result.trace_verdict.as_dict(),
     }
@@ -302,6 +325,61 @@ def _candidate_trace_events(
             "createdAt": now,
         },
     ]
+
+
+def _write_memory_fixture_manifest(
+    artifact_dir: Path,
+    *,
+    run_id: str,
+    candidate: dict[str, Any],
+    scenario: Scenario,
+    trace_events: list[dict[str, Any]],
+    created_at: str,
+) -> dict[str, Any]:
+    """Write a replayable fixture manifest next to scenario artifacts."""
+
+    evidence = str(candidate.get("evidence") or "")
+    manifest = {
+        "contract": "memory-fixture-manifest/v1",
+        "run_id": run_id,
+        "candidate_id": str(candidate["candidate_id"]),
+        "scenario_id": scenario.id,
+        "created_at": created_at,
+        "user_id": "meta-harness",
+        "thread_id": "mh-memory-context-smoke",
+        "bank_id": "project",
+        "route": str(candidate["route"]),
+        "providers": str(candidate["providers"]),
+        "expected_providers": list(candidate["expected_providers"]),
+        "expected_terms": list(candidate["expected_terms"]),
+        "memory_refs": {
+            "raw_evidence_ref": "mempalace:drawer:turn-42",
+            "operation_log_id": f"memory-op:{candidate['route']}:turn-42",
+            "diff_ref": f"memory-diff:{candidate['route']}:turn-42",
+            "palace_path": "project/room/thread-42/turn-42",
+        },
+        "evidence": {
+            "sha256": hashlib.sha256(evidence.encode("utf-8")).hexdigest(),
+            "preview": evidence[:240],
+            "exact_evidence_available": bool(candidate["exact_evidence_available"]),
+            "summary_available": bool(candidate["summary_available"]),
+        },
+        "trace_event_count": len(trace_events),
+        "trace_actions": [str(event.get("action") or "") for event in trace_events],
+        "replay": {
+            "command": (
+                "cd python-backend && uv run python -m meta_harness.meta_cli "
+                f"memory-smoke --run-id {run_id}"
+            ),
+            "provider_calls_required": False,
+            "frontend_required": False,
+        },
+    }
+    (artifact_dir / "memory_fixture_manifest.json").write_text(
+        json.dumps(manifest, indent=2, default=str),
+        encoding="utf-8",
+    )
+    return manifest
 
 
 def _comparison_summary(

@@ -148,8 +148,13 @@ feature_id: 016
 - [x] T042 Add deterministic memory correctness gates before any LLM judge:
   expected recall terms, forbidden stale terms, evidence/source presence and
   no unrelated mutation.
-- T043 Record memory fixture manifests per run so failed scenarios can be
-  reproduced with the same user, bank, palace path and provider env.
+- [x] T043 [done-static] Record memory fixture manifests per run so failed
+  scenarios can be reproduced with the same user, bank, palace path and
+  provider env.
+  - 2026-04-30: `memory-context-smoke` now writes
+    `memory_fixture_manifest.json` at run and candidate level with user/thread,
+    bank id, route/providers, Palace/evidence refs, evidence digest,
+    expected terms and replay command.
 - T044 Keep old `experiments/memory_eval` A/B evidence linked to the
   Meta-Harness memory scenarios instead of treating it as separate history.
 - [x] T045 Wire `pre_save` stage to call the MemoryManager archive hook without

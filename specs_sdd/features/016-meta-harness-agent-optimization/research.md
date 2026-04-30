@@ -492,3 +492,10 @@ semantic handoff metadata, emits RAG/KG/artifact runtime events, and uses
 tool-specific `to_model_output()` so Meta-Harness can evaluate both upstream
 retrieval behavior and downstream source/path visibility without filling the
 next LLM context with full artifact payloads.
+
+2026-04-30 memory fixture reproducibility update: `memory-context-smoke` now
+writes `memory_fixture_manifest.json` for the run and for each candidate. The
+manifest records the synthetic memory bank/thread, Palace/evidence refs,
+expected providers/terms, evidence digest and replay command. This makes
+memory regressions inspectable as candidate artifacts instead of requiring the
+proposer/evaluator to infer fixtures from trace rows.

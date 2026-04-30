@@ -164,6 +164,10 @@ migrated_from:
     candidates for Hindsight-only, MemPalace-verbatim-only and Fusion. Fusion
     wins only when summary and exact source-backed evidence are both present;
     each candidate writes normal aggregate/results artifacts for Pareto review.
+  - 2026-04-30: each memory-context candidate now writes a replayable fixture
+    manifest with user/thread, bank id, Palace/evidence refs, evidence digest,
+    expected route/providers and replay command so failures can be reproduced
+    without reverse-engineering trace JSON.
 - [x] T039t [done-static] Add stale async memory flush guard for automatic
   post-answer retain.
   - 2026-04-30: both LangGraph and SimpleLoop now schedule automatic

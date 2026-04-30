@@ -328,3 +328,12 @@ event payload carries counts, route/provider, role, source-layer and
 degradation metadata; raw recalled memory text and assistant response bodies
 remain in the existing bounded audit input/output fields, not in runtime event
 metadata.
+
+## 2026-04-30 Fixture Manifest Follow-Up
+
+The provider-free memory-context smoke now writes replayable fixture manifests.
+This follows the Meta-Harness paper direction: evaluator/proposer loops need
+stable artifacts, not just pass/fail summaries. Each candidate manifest records
+the synthetic user/thread, bank id, route/providers, Palace/evidence refs,
+expected terms, evidence digest and replay command. That lets memory regressions
+be debugged without treating trace rows as the only fixture definition.
