@@ -90,3 +90,11 @@ feature_id: 024
     `tool_count=4` (`get_chart_state`, `get_geomap_focus`, `set_chart_state`,
     `tool_search`), `get_chart_state` executed successfully, and trace/stream
     gates passed at `1.0`.
+  - 2026-05-01 live no-browser: the stricter chart no-allowlist rerun
+    `run-local8b-floor-chart-no-allowlist-001-clean` kept the same provider
+    `tool_count=4`, executed `get_chart_state`, surfaced downstream stream
+    events (`tool-input-start`, `tool-output-available`, rich renderer), and
+    passed trace/stream/tool gates at `1.0` with no automatic memory recall or
+    retain side effect. This is the current clean proof that deferred builtin
+    schema selection can drive a normal tool-control turn without memory
+    pollution.

@@ -248,6 +248,22 @@ feature_id: 034
     with `tool_count=0`, `delegation_decision=none`, `spawn_depth=0`,
     `memory_recalls=0`, `memory_retains=0`, no memory routes/providers and
     `fitness_score=0.9995`.
+- [x] T083 [done-live-no-browser] Use the Local-8B no-allowlist direct floor
+  to harden eval-marker turns against accidental Memory-Fusion coupling.
+  - 2026-05-01: a strict no-allowlist run showed the direct marker prompt
+    answered correctly but still emitted automatic memory recall/retain. The
+    bounded fix classifies explicit eval markers such as "answer exactly" and
+    `local_8b_floor_*` as non-personal unless a positive memory cue exists.
+    Unit coverage now blocks both recall and retain before engine lookup.
+- [x] T084 [done-live-no-browser] Use the Local-8B chart/tool-control floor to
+  harden downstream tool rendering without automatic personal-memory coupling.
+  - 2026-05-01: the same no-allowlist suite showed `get_chart_state` passed
+    tool gates but caused automatic recall/retain. After adding a tool-control
+    non-personal boundary, `run-local8b-floor-chart-no-allowlist-001-clean`
+    passed with provider `tool_count=4` (`get_chart_state`,
+    `get_geomap_focus`, `set_chart_state`, `tool_search`),
+    `memory_recalls=0`, `memory_retains=0`, no memory routes/providers,
+    trace/stream/tool pass rates `1.0` and `fitness_score=0.8976`.
 
 ## Documentation
 

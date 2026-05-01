@@ -115,3 +115,26 @@ real Agent LLM path, not a mock. It sends two same-prefix calls through
 fails unless the second call exposes provider cache-read counters. This is a
 live gate because OpenRouter/model support and upstream cache behavior are
 runtime facts, not static guarantees.
+
+2026-05-01 Anthropic Tool Search alignment: official Anthropic/Claude docs
+confirm that deferred tool schemas are excluded from the system-prompt prefix
+and expanded inline only after tool search returns `tool_reference` blocks.
+They also describe regex and BM25 search variants, 3-5 returned tools, and MCP
+tool deferral as the default in Claude Code. Matrix should not copy
+provider-specific request syntax into its domain model, but Feature 032 should
+track the same cache boundary: `tool_count`, sorted `tool_names`, tool catalog
+digest and cache-break reasons must reflect the provider-facing schemas for
+the current turn, not the full server-side ToolRegistry.
+
+## Checked Sources
+
+- Matrix root `Z_Prompt_Cache.md`.
+- Matrix root `Z_Additional_For_Tool_Stuff.md`.
+- Anthropic Tool Search API docs:
+  `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool`.
+- Claude Code Agent SDK Tool Search docs:
+  `https://code.claude.com/docs/en/agent-sdk/tool-search`.
+- Claude Code MCP Tool Search docs:
+  `https://code.claude.com/docs/en/mcp`.
+- Anthropic Tool Reference docs:
+  `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-reference`.

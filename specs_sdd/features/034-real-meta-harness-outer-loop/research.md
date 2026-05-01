@@ -319,6 +319,49 @@ the default LiteLLM gateway instead of llama.cpp. `memory_fusion.providers`
 now restores explicit LLM provider/model/base-url env along with DB and
 embedding env after that import.
 
+## 2026-05-01 Tool Search Web Check
+
+The user's suspicion was correct: official Anthropic/Claude documentation uses
+Tool Search/deferred schemas specifically to avoid loading all tool definitions
+into the active context. The API docs describe `defer_loading`, regex and BM25
+search variants, `tool_reference` expansion and prompt-cache preservation
+because deferred schemas are not part of the system-prompt prefix. The Claude
+Code MCP docs state the same pattern operationally for MCP: tools are deferred
+and discovered on demand, and only actually used tools enter context.
+
+Matrix should keep the implementation provider-agnostic. The transfer is the
+shape, not the vendor API: policy-visible metadata summaries, a normal
+`tool_search` capability, small searched provider-facing schema subsets,
+runtime telemetry for `tool_count`/`tool_names`, and trace gates proving the
+selected tool executed without pulling in unrelated memory/delegation tools.
+
+Sources:
+
+- `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool`
+- `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-reference`
+- `https://code.claude.com/docs/en/agent-sdk/tool-search`
+- `https://code.claude.com/docs/en/mcp`
+
+## 2026-05-01 No-Allowlist Floor Findings
+
+After deferred builtin schema loading was in place, the stricter Local-8B
+floor removed scenario `allowed_tools` and used the real runtime search path.
+The partial full-suite run found two genuine memory-boundary bugs:
+
+- Direct marker turns could answer correctly while still triggering automatic
+  Memory-Fusion recall/retain.
+- Chart tool-control turns could execute `get_chart_state` and emit downstream
+  tool stream parts while still recalling/retaining personal memory.
+
+The bounded fix lives in the product memory nodes, not the harness: eval
+markers and explicit chart/tool-control cues now skip automatic personal-memory
+recall/retain unless a positive memory cue is present. The targeted clean proof
+is `run-local8b-floor-chart-no-allowlist-001-clean`: provider telemetry kept
+only `get_chart_state`, `get_geomap_focus`, `set_chart_state` and
+`tool_search`; `get_chart_state` executed; stream gates observed
+`tool-input-start`, `tool-output-available` and the rich renderer; memory
+recall/retain counts were zero; and fitness was `0.8976`.
+
 Verification:
 
 - `run-provider-smoke-bonsai-local-v3` passed with provider snapshot

@@ -173,8 +173,13 @@ are kept out of the context window, search returns a small set of
 when needed. The docs explicitly name regex and BM25 variants, 3-5 result
 sets, searching over names/descriptions/argument metadata, and prompt-cache
 preservation because deferred schemas do not mutate the system-prompt prefix.
+The Claude Code MCP docs add the operational shape for MCP specifically:
+MCP tool schemas are deferred by default, only names/summaries are cheap to
+keep around, and server instructions should help the model know when to search.
 Matrix should keep our implementation provider-neutral, but this validates the
-runtime direction from `Z_Additional_For_Tool_Stuff.md`.
+runtime direction from `Z_Additional_For_Tool_Stuff.md`: a normal
+policy-filtered `tool_search` primitive, short tool summaries for discovery,
+and provider tool payload expansion only after a search match.
 
 2026-05-01 live note: `run-local8b-floor-chart-deferred-tools-001` removed the
 scenario `allowed_tools` shortcut for the chart/tool-stream floor and relied on

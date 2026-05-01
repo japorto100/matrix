@@ -113,6 +113,22 @@ _NON_PERSONAL_HARNESS_POLICY_CUE_TERMS = (
     "shared memory in this harness",
     "why a child agent cannot write",
 )
+_NON_PERSONAL_EVAL_CUE_TERMS = (
+    "answer exactly",
+    "include marker",
+    "local_8b_floor",
+    "_floor_ack",
+    "risk_floor_ack",
+    "subagent_floor_ack",
+)
+_NON_PERSONAL_TOOL_CONTROL_CUE_TERMS = (
+    "get_chart_state",
+    "set_chart_state",
+    "get_geomap_focus",
+    "chart state",
+    "active symbol and timeframe",
+    "symbol and timeframe",
+)
 
 
 def _memory_event(
@@ -146,6 +162,10 @@ def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
     text = f" {user_msg.lower()} "
     if _has_no_personal_memory_cue(text):
         return True, "user_requested_no_personal_memory"
+    if _has_non_personal_eval_cue(text):
+        return True, "non_personal_eval_marker_without_memory_cue"
+    if _has_non_personal_tool_control_cue(text):
+        return True, "non_personal_tool_control_without_memory_cue"
     if _has_non_personal_harness_policy_cue(text):
         return True, "non_personal_harness_policy_without_memory_cue"
     if _has_non_personal_grounding_cue(text):
@@ -176,6 +196,20 @@ def _has_non_personal_harness_policy_cue(text: str) -> bool:
     if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
         return False
     return any(term in normalized for term in _NON_PERSONAL_HARNESS_POLICY_CUE_TERMS)
+
+
+def _has_non_personal_eval_cue(text: str) -> bool:
+    normalized = f" {text.lower()} "
+    if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
+        return False
+    return any(term in normalized for term in _NON_PERSONAL_EVAL_CUE_TERMS)
+
+
+def _has_non_personal_tool_control_cue(text: str) -> bool:
+    normalized = f" {text.lower()} "
+    if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
+        return False
+    return any(term in normalized for term in _NON_PERSONAL_TOOL_CONTROL_CUE_TERMS)
 
 
 def _get_memory_config(role: str) -> dict:
@@ -649,23 +683,32 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 break
 
     no_personal_memory = _has_no_personal_memory_cue(user_msg)
+    non_personal_eval = _has_non_personal_eval_cue(user_msg)
+    non_personal_tool_control = _has_non_personal_tool_control_cue(user_msg)
     non_personal_grounding = _has_non_personal_grounding_cue(user_msg)
     non_personal_harness_policy = _has_non_personal_harness_policy_cue(user_msg)
-    if no_personal_memory or non_personal_grounding or non_personal_harness_policy:
-        reason = (
-            "user_requested_no_personal_memory"
-            if no_personal_memory
-            else (
-                "non_personal_harness_policy_without_memory_cue"
-                if non_personal_harness_policy
-                else "non_personal_grounding_without_memory_cue"
-            )
-        )
-        summary = (
-            "Memory retain skipped because the turn is non-personal harness policy"
-            if non_personal_harness_policy
-            else "Memory retain skipped because the user requested no personal memory"
-        )
+    if (
+        no_personal_memory
+        or non_personal_eval
+        or non_personal_tool_control
+        or non_personal_grounding
+        or non_personal_harness_policy
+    ):
+        if no_personal_memory:
+            reason = "user_requested_no_personal_memory"
+            summary = "Memory retain skipped because the user requested no personal memory"
+        elif non_personal_eval:
+            reason = "non_personal_eval_marker_without_memory_cue"
+            summary = "Memory retain skipped because the turn is an eval/control marker"
+        elif non_personal_tool_control:
+            reason = "non_personal_tool_control_without_memory_cue"
+            summary = "Memory retain skipped because the turn is non-personal tool control"
+        elif non_personal_harness_policy:
+            reason = "non_personal_harness_policy_without_memory_cue"
+            summary = "Memory retain skipped because the turn is non-personal harness policy"
+        else:
+            reason = "non_personal_grounding_without_memory_cue"
+            summary = "Memory retain skipped because the turn is non-personal grounding"
         return {
             "runtime_events": [
                 _memory_event(

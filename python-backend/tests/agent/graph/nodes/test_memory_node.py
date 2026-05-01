@@ -161,6 +161,67 @@ async def test_memory_recall_node_skips_harness_policy_without_personal_memory_c
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_skips_eval_marker_without_personal_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("eval marker skip must happen before memory engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-direct-floor",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Answer exactly local_8b_floor_direct_ok.",
+                }
+            ],
+        }
+    )
+
+    assert result["query_gate"]["action"] == "skip"
+    assert result["query_gate"]["reason"] == "non_personal_eval_marker_without_memory_cue"
+    assert result["runtime_events"][0]["name"] == "memory.recall.skipped"
+
+
+@pytest.mark.asyncio
+async def test_memory_recall_node_skips_tool_control_without_personal_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("tool-control skip must happen before memory engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-chart",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Use get_chart_state now, then summarize the active "
+                        "symbol and timeframe in one short sentence."
+                    ),
+                }
+            ],
+        }
+    )
+
+    assert result["query_gate"]["action"] == "skip"
+    assert result["query_gate"]["reason"] == "non_personal_tool_control_without_memory_cue"
+    assert result["runtime_events"][0]["name"] == "memory.recall.skipped"
+
+
+@pytest.mark.asyncio
 async def test_memory_recall_node_keeps_memory_cued_market_queries(monkeypatch):
     async def _fake_get_memory_engine():
         return None
@@ -452,6 +513,71 @@ async def test_memory_retain_node_blocks_harness_policy_without_personal_memory_
     event = result["runtime_events"][0]
     assert event["name"] == "memory.retain.blocked"
     assert event["metadata"]["reason"] == "non_personal_harness_policy_without_memory_cue"
+
+
+@pytest.mark.asyncio
+async def test_memory_retain_node_blocks_eval_marker_without_personal_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("eval marker block must happen before engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "t-direct-floor",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Answer exactly local_8b_floor_direct_ok.",
+                }
+            ],
+            "final_response": "local_8b_floor_direct_ok",
+            "agent_class": "advisory",
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["name"] == "memory.retain.blocked"
+    assert event["metadata"]["reason"] == "non_personal_eval_marker_without_memory_cue"
+
+
+@pytest.mark.asyncio
+async def test_memory_retain_node_blocks_tool_control_without_personal_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("tool-control block must happen before engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "t-chart",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Use get_chart_state now, then summarize the active "
+                        "symbol and timeframe in one short sentence."
+                    ),
+                }
+            ],
+            "final_response": "The active symbol is EURUSD and the timeframe is 4H.",
+            "agent_class": "advisory",
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["name"] == "memory.retain.blocked"
+    assert event["metadata"]["reason"] == "non_personal_tool_control_without_memory_cue"
 
 
 @pytest.mark.asyncio

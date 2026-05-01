@@ -124,6 +124,17 @@ feature_id: 012
     `run-local8b-floor-subagent-policy-001-clean` passed with
     `memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers
     and `delegation_decision=none`.
+- [x] Eval-marker and tool-control turns skip automatic personal-memory
+  recall/retain unless the user also gives a positive memory cue.
+  - 2026-05-01: partial full-suite Local-8B no-allowlist traces exposed two
+    non-personal side effects: direct "answer exactly" marker turns and
+    `get_chart_state` tool-control turns were being recalled/retained through
+    Memory-Fusion. The bounded fix blocks automatic recall/retain for explicit
+    eval markers and chart/tool-control requests. Focused unit coverage now
+    covers both recall and retain policy. The clean chart rerun
+    `run-local8b-floor-chart-no-allowlist-001-clean` passed with
+    `memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers
+    and provider tools limited to chart tools plus `tool_search`.
 - [x] Remote embedding audit metadata redacts API keys while preserving
   provider/model/base-url host, key presence, key fingerprint and live-call
   budget for Control/Meta-Harness inspection.

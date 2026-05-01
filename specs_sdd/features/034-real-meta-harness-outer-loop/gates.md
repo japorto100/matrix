@@ -179,3 +179,17 @@ recall/retain wrote the exchange. After the bounded runtime fix,
 only `global:plan` selected, `completion_rate=1.0`,
 `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0` and
 `fitness_score=0.9995`.
+
+2026-05-01 no-allowlist eval/tool-control memory-boundary evidence:
+a stricter Local-8B floor run with scenario `allowed_tools` removed exposed two
+more real side effects. Direct marker turns and chart tool-control turns were
+formally passing their visible response/tool gates while still causing
+automatic Memory-Fusion recall/retain. After the bounded memory policy fix,
+focused unit tests cover recall and retain for both cue classes, and
+`run-local8b-floor-chart-no-allowlist-001-clean` passed with provider
+`tool_count=4`, `get_chart_state` executed, downstream tool stream events
+observed, `memory_recalls=0`, `memory_retains=0`,
+`trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`,
+`tool_success_rate=1.0` and `fitness_score=0.8976`. The partial full-suite
+artifacts remain diagnostic only; promotion evidence is the targeted clean
+rerun.

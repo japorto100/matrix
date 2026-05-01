@@ -220,6 +220,16 @@ default, not personal-memory learning. Positive memory cues such as
 `memory_search`, `remember`, `recall my previous...` still opt back into the
 memory path.
 
+2026-05-01 eval/tool-control extension: the strict Local-8B no-allowlist floor
+showed that visible task success is not enough. Direct marker prompts such as
+"answer exactly local_8b_floor_direct_ok" and chart-control prompts such as
+`get_chart_state` were passing their response/tool gates while still creating
+automatic personal-memory recall/retain traces. The corrected boundary treats
+explicit eval markers and tool-control/chart-state turns as non-personal
+unless the user also asks to remember/recall prior personal context. This was
+drawn from Feature 034 targeted traces and reinforces `Z_Additional_For_Tool_Stuff.md`:
+tool discovery/control should stay separate from memory lifecycle by default.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,
