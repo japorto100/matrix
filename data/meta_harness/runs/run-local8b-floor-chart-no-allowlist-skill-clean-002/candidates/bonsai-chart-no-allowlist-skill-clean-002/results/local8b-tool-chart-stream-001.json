@@ -1,0 +1,1059 @@
+{
+  "run_id": "run-local8b-floor-chart-no-allowlist-skill-clean-002",
+  "candidate_id": "bonsai-chart-no-allowlist-skill-clean-002",
+  "scenario_id": "local8b-tool-chart-stream-001",
+  "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+  "user_id": "mh-local8b-chart-no-allowlist-skill-clean",
+  "category": "local_8b_tool_chart_stream",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence."
+    },
+    {
+      "role": "assistant",
+      "content": "The active symbol is EURUSD, and the timeframe is 4H."
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-local8b-tool-chart-stream-001-a9788c69\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"delta\": \"The active symbol is EURUSD, and the timeframe is 4H.\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+    "data: {\"type\": \"start-step\"}\n\n",
+    "data: {\"toolName\": \"get_chart_state\", \"toolCallId\": \"OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv\", \"type\": \"tool-input-start\"}\n\n",
+    "data: {\"toolCallId\": \"OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv\", \"output\": {\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}, \"type\": \"tool-output-available\"}\n\n",
+    "data: {\"event\": {\"kind\": \"memory\", \"status\": \"blocked\", \"name\": \"memory.recall.skipped\", \"summary\": \"Memory recall skipped by query policy\", \"event_id\": \"evt_fc77e88e01f246c3810d95384856c356\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_fc77e88e01f246c3810d95384856c356\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:56:21.372858+00:00\", \"metadata\": {\"source\": \"memory_recall_node\", \"reason\": \"non_personal_tool_control_without_memory_cue\", \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_28f7fd8a8f06468890e298fc2d29d732\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_28f7fd8a8f06468890e298fc2d29d732\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:57:31.148980+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 0, \"prompt_digest\": \"be0e32129c0238f7f35e30bd401292a12fbefc52811337c8fc9691fdf08574f1\", \"prompt_layout_digest\": \"36577858acfdba56bd54f3b37252ce60b909ba1537d541472298520596bbd5fd\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 69696.464, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 1, \"done\": false, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"tool\", \"status\": \"completed\", \"name\": \"tool.get_chart_state\", \"summary\": \"Tool execution completed\", \"event_id\": \"evt_80c0d12c9f6743f1ae29eea2ddc88923\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_80c0d12c9f6743f1ae29eea2ddc88923\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:57:31.330327+00:00\", \"metadata\": {\"tool_call_id\": \"OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv\", \"tool_name\": \"get_chart_state\", \"result_type\": \"dict\", \"has_error\": false, \"result_keys\": [\"symbol\", \"timeframe\", \"indicators\", \"source\"], \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_b103e09807fd4e368016676ee275f25f\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_b103e09807fd4e368016676ee275f25f\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 2, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:2\", \"timestamp\": \"2026-05-01T04:58:05.488924+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 2, \"prompt_digest\": \"b385f589b9aa007794173500b991abffdd0c0a5328a0f2caab19f92f0719ac50\", \"prompt_layout_digest\": \"b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"prompt_layout_changed\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 34137.772, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 0, \"done\": true, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"llm\", \"status\": \"active\", \"name\": \"llm.prompt_cache_break\", \"summary\": \"Prompt/cache locality changed\", \"event_id\": \"evt_58efc73126f74d478931f7c15be447e4\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_58efc73126f74d478931f7c15be447e4\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 2, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:2\", \"timestamp\": \"2026-05-01T04:58:05.472595+00:00\", \"metadata\": {\"cache_break_reasons\": [\"cache_read_drop\", \"prompt_layout_changed\"], \"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"prompt_layout_digest\": \"b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"cache_read_tokens\": \"[redacted]\", \"previous_cache_read_tokens\": \"[redacted]\", \"request_id\": null, \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"memory\", \"status\": \"blocked\", \"name\": \"memory.retain.blocked\", \"summary\": \"Memory retain skipped because the turn is non-personal tool control\", \"event_id\": \"evt_daa67f71b7dc4981b572cfe9e3762170\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_daa67f71b7dc4981b572cfe9e3762170\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 1, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:1\", \"timestamp\": \"2026-05-01T04:58:05.508226+00:00\", \"metadata\": {\"role\": \"default\", \"reason\": \"non_personal_tool_control_without_memory_cue\", \"source\": \"memory_retain_node\", \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"promptTokens\": 4727, \"completionTokens\": 33, \"reasoningTokens\": 0, \"cachedTokens\": 4643, \"totalTokens\": 4760, \"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"sourceLayerCounts\": {}, \"degradationFlags\": [], \"contextBlocks\": [], \"queryGate\": {}, \"requestTelemetry\": [{\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 0, \"prompt_digest\": \"be0e32129c0238f7f35e30bd401292a12fbefc52811337c8fc9691fdf08574f1\", \"prompt_layout_digest\": \"36577858acfdba56bd54f3b37252ce60b909ba1537d541472298520596bbd5fd\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": 2324, \"input_tokens\": null, \"completion_tokens\": 17, \"output_tokens\": 17, \"total_tokens\": 2341, \"reasoning_tokens\": null, \"cache_read_tokens\": 2323, \"cache_write_tokens\": null, \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 69696.464, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 2, \"prompt_digest\": \"b385f589b9aa007794173500b991abffdd0c0a5328a0f2caab19f92f0719ac50\", \"prompt_layout_digest\": \"b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": 2403, \"input_tokens\": null, \"completion_tokens\": 16, \"output_tokens\": 16, \"total_tokens\": 2419, \"reasoning_tokens\": null, \"cache_read_tokens\": 2320, \"cache_write_tokens\": null, \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"prompt_layout_changed\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 34137.772, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}], \"runtimeEvents\": [{\"kind\": \"memory\", \"status\": \"blocked\", \"name\": \"memory.recall.skipped\", \"summary\": \"Memory recall skipped by query policy\", \"event_id\": \"evt_fc77e88e01f246c3810d95384856c356\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_fc77e88e01f246c3810d95384856c356\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:56:21.372858+00:00\", \"metadata\": {\"source\": \"memory_recall_node\", \"reason\": \"non_personal_tool_control_without_memory_cue\", \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_28f7fd8a8f06468890e298fc2d29d732\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_28f7fd8a8f06468890e298fc2d29d732\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:57:31.148980+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 0, \"prompt_digest\": \"be0e32129c0238f7f35e30bd401292a12fbefc52811337c8fc9691fdf08574f1\", \"prompt_layout_digest\": \"36577858acfdba56bd54f3b37252ce60b909ba1537d541472298520596bbd5fd\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 69696.464, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 1, \"done\": false, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"tool\", \"status\": \"completed\", \"name\": \"tool.get_chart_state\", \"summary\": \"Tool execution completed\", \"event_id\": \"evt_80c0d12c9f6743f1ae29eea2ddc88923\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_80c0d12c9f6743f1ae29eea2ddc88923\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T04:57:31.330327+00:00\", \"metadata\": {\"tool_call_id\": \"OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv\", \"tool_name\": \"get_chart_state\", \"result_type\": \"dict\", \"has_error\": false, \"result_keys\": [\"symbol\", \"timeframe\", \"indicators\", \"source\"], \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_b103e09807fd4e368016676ee275f25f\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_b103e09807fd4e368016676ee275f25f\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 2, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:2\", \"timestamp\": \"2026-05-01T04:58:05.488924+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"iteration\": 2, \"prompt_digest\": \"b385f589b9aa007794173500b991abffdd0c0a5328a0f2caab19f92f0719ac50\", \"prompt_layout_digest\": \"b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d\", \"system_prompt_digest\": \"74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"tool_count\": 4, \"tool_names\": [\"get_chart_state\", \"get_geomap_focus\", \"set_chart_state\", \"tool_search\"], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"prompt_layout_changed\"], \"metadata\": {\"routing_reason\": \"config_absent\", \"routing_used\": false, \"tool_count\": 4, \"capabilities_known\": true, \"response\": {\"duration_ms\": 34137.772, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 0, \"done\": true, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"llm\", \"status\": \"active\", \"name\": \"llm.prompt_cache_break\", \"summary\": \"Prompt/cache locality changed\", \"event_id\": \"evt_58efc73126f74d478931f7c15be447e4\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_58efc73126f74d478931f7c15be447e4\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 2, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:2\", \"timestamp\": \"2026-05-01T04:58:05.472595+00:00\", \"metadata\": {\"cache_break_reasons\": [\"cache_read_drop\", \"prompt_layout_changed\"], \"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"prompt_layout_digest\": \"b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d\", \"tool_catalog_digest\": \"aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394\", \"cache_read_tokens\": \"[redacted]\", \"previous_cache_read_tokens\": \"[redacted]\", \"request_id\": null, \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"memory\", \"status\": \"blocked\", \"name\": \"memory.retain.blocked\", \"summary\": \"Memory retain skipped because the turn is non-personal tool control\", \"event_id\": \"evt_daa67f71b7dc4981b572cfe9e3762170\", \"run_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"span_id\": \"evt_daa67f71b7dc4981b572cfe9e3762170\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"thread_id\": \"mh-local8b-tool-chart-stream-001-a9788c69\", \"turn\": 1, \"turn_id\": \"mh-local8b-tool-chart-stream-001-a9788c69:turn:1\", \"timestamp\": \"2026-05-01T04:58:05.508226+00:00\", \"metadata\": {\"role\": \"default\", \"reason\": \"non_personal_tool_control_without_memory_cue\", \"source\": \"memory_retain_node\", \"outcome\": \"deferred\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}], \"routingUsed\": false, \"routingReason\": \"config_absent\", \"routingPicked\": \"bonsai-8b\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 471,
+      "timestamp": "2026-05-01 04:58:05.489197+00:00",
+      "action": "llm_response",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "<tool_output source=\"get_chart_state\" trusted=\"true\">\n{\"symbol\": \"EURUSD\", \"timeframe\": \"4H\", \"indicators\": [\"RSI\", \"MACD\"], \"source\": \"stub\"}\n</tool_output>",
+      "output": "The active symbol is EURUSD, and the timeframe is 4H.",
+      "duration_ms": 34138,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "bonsai-8b",
+        "done": true,
+        "tool_calls_count": 0,
+        "token_usage": 2419,
+        "content_cleaned": false,
+        "request_telemetry": {
+          "provider": "llamacpp",
+          "model": "bonsai-8b",
+          "router": "langgraph",
+          "transport": "litellm_chat_completions",
+          "cache_retention": "provider_default",
+          "stream_strategy": "non_streaming",
+          "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+          "iteration": 2,
+          "prompt_digest": "b385f589b9aa007794173500b991abffdd0c0a5328a0f2caab19f92f0719ac50",
+          "prompt_layout_digest": "b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d",
+          "system_prompt_digest": "74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c",
+          "tool_catalog_digest": "aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394",
+          "tool_count": 4,
+          "tool_names": [
+            "get_chart_state",
+            "get_geomap_focus",
+            "set_chart_state",
+            "tool_search"
+          ],
+          "usage": {
+            "prompt_tokens": 2403,
+            "input_tokens": null,
+            "completion_tokens": 16,
+            "output_tokens": 16,
+            "total_tokens": 2419,
+            "reasoning_tokens": null,
+            "cache_read_tokens": 2320,
+            "cache_write_tokens": null,
+            "unknown_fields": [
+              "input_tokens",
+              "reasoning_tokens",
+              "cache_write_tokens"
+            ]
+          },
+          "cache_break_reasons": [
+            "prompt_layout_changed"
+          ],
+          "metadata": {
+            "routing_reason": "config_absent",
+            "routing_used": false,
+            "tool_count": 4,
+            "capabilities_known": true,
+            "response": {
+              "duration_ms": 34137.772,
+              "rate_limits": [
+                {
+                  "window": "requests",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "requests-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                }
+              ]
+            }
+          },
+          "contract": "provider-request-telemetry/v1"
+        },
+        "runtime_events": [
+          {
+            "kind": "llm",
+            "status": "completed",
+            "name": "llm_call",
+            "summary": "llamacpp:bonsai-8b",
+            "event_id": "evt_b103e09807fd4e368016676ee275f25f",
+            "run_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "span_id": "evt_b103e09807fd4e368016676ee275f25f",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "turn": 2,
+            "turn_id": "mh-local8b-tool-chart-stream-001-a9788c69:turn:2",
+            "timestamp": "2026-05-01T04:58:05.488924+00:00",
+            "metadata": {
+              "request_telemetry": {
+                "provider": "llamacpp",
+                "model": "bonsai-8b",
+                "router": "langgraph",
+                "transport": "litellm_chat_completions",
+                "cache_retention": "provider_default",
+                "stream_strategy": "non_streaming",
+                "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+                "iteration": 2,
+                "prompt_digest": "b385f589b9aa007794173500b991abffdd0c0a5328a0f2caab19f92f0719ac50",
+                "prompt_layout_digest": "b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d",
+                "system_prompt_digest": "74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c",
+                "tool_catalog_digest": "aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394",
+                "tool_count": 4,
+                "tool_names": [
+                  "get_chart_state",
+                  "get_geomap_focus",
+                  "set_chart_state",
+                  "tool_search"
+                ],
+                "usage": {
+                  "prompt_tokens": "[redacted]",
+                  "input_tokens": "[redacted]",
+                  "completion_tokens": "[redacted]",
+                  "output_tokens": "[redacted]",
+                  "total_tokens": "[redacted]",
+                  "reasoning_tokens": "[redacted]",
+                  "cache_read_tokens": "[redacted]",
+                  "cache_write_tokens": "[redacted]",
+                  "unknown_fields": [
+                    "input_tokens",
+                    "reasoning_tokens",
+                    "cache_write_tokens"
+                  ]
+                },
+                "cache_break_reasons": [
+                  "prompt_layout_changed"
+                ],
+                "metadata": {
+                  "routing_reason": "config_absent",
+                  "routing_used": false,
+                  "tool_count": 4,
+                  "capabilities_known": true,
+                  "response": {
+                    "duration_ms": 34137.772,
+                    "rate_limits": [
+                      {
+                        "window": "requests",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "requests-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      }
+                    ]
+                  }
+                },
+                "contract": "provider-request-telemetry/v1"
+              },
+              "tool_calls_count": 0,
+              "done": true,
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          },
+          {
+            "kind": "llm",
+            "status": "active",
+            "name": "llm.prompt_cache_break",
+            "summary": "Prompt/cache locality changed",
+            "event_id": "evt_58efc73126f74d478931f7c15be447e4",
+            "run_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "span_id": "evt_58efc73126f74d478931f7c15be447e4",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "turn": 2,
+            "turn_id": "mh-local8b-tool-chart-stream-001-a9788c69:turn:2",
+            "timestamp": "2026-05-01T04:58:05.472595+00:00",
+            "metadata": {
+              "cache_break_reasons": [
+                "cache_read_drop",
+                "prompt_layout_changed"
+              ],
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "prompt_layout_digest": "b36f9bc7fe1d18b0683de977b2f6062fa6c5d413e409f22477e58b1269bf889d",
+              "tool_catalog_digest": "aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394",
+              "cache_read_tokens": "[redacted]",
+              "previous_cache_read_tokens": "[redacted]",
+              "request_id": null,
+              "outcome": "deferred"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": 2
+    },
+    {
+      "id": 470,
+      "timestamp": "2026-05-01 04:58:05.472695+00:00",
+      "action": "route_decision",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "runner": "langgraph",
+        "decision": "direct_answer",
+        "route_taxonomy": "direct_answer",
+        "delegation_decision": "none",
+        "delegate_kind": null,
+        "spawn_depth": 0,
+        "max_spawn_depth": 0,
+        "allowed_tools": [],
+        "memory_scope": "current_user",
+        "budget": {},
+        "fallback_reason": "subagents_disabled",
+        "tool_calls_count": 0,
+        "tool_names": [],
+        "routing_reason": "config_absent",
+        "routing_used": false,
+        "routing_picked_model": "bonsai-8b",
+        "memory_route_requested": false,
+        "retrieval_route_requested": false
+      },
+      "iteration": 2
+    },
+    {
+      "id": 469,
+      "timestamp": "2026-05-01 04:57:31.303478+00:00",
+      "action": "tool_result",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_chart_state",
+      "input": null,
+      "output": {
+        "symbol": "EURUSD",
+        "timeframe": "4H",
+        "indicators": [
+          "RSI",
+          "MACD"
+        ],
+        "source": "stub"
+      },
+      "duration_ms": 116,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+        "tool_name": "get_chart_state",
+        "tool_calls_total_before": 0,
+        "tool_calls_total_limit": 50,
+        "tool_calls_for_tool_before": 0,
+        "tool_calls_for_tool_limit": 0,
+        "tokens_used": 2341,
+        "tokens_limit": 100000,
+        "iterations_used": 0,
+        "iterations_limit": 10,
+        "runtime_events": [
+          {
+            "kind": "tool",
+            "status": "completed",
+            "name": "tool.get_chart_state",
+            "summary": "Tool execution completed",
+            "event_id": "evt_021a3ae1297c409b88674d8b01bea86f",
+            "run_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "span_id": "evt_021a3ae1297c409b88674d8b01bea86f",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "turn": 0,
+            "turn_id": "",
+            "timestamp": "2026-05-01T04:57:31.303384+00:00",
+            "metadata": {
+              "tool_call_id": "OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv",
+              "tool_name": "get_chart_state",
+              "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+              "tool_calls_total_before": 0,
+              "tool_calls_total_limit": 50,
+              "tool_calls_for_tool_before": 0,
+              "tool_calls_for_tool_limit": 0,
+              "tokens_used": "[redacted]",
+              "tokens_limit": "[redacted]",
+              "iterations_used": 0,
+              "iterations_limit": 10,
+              "duration_ms": 116.30869601503946,
+              "result_type": "dict",
+              "result_keys": [
+                "symbol",
+                "timeframe",
+                "indicators",
+                "source"
+              ],
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": null
+    },
+    {
+      "id": 468,
+      "timestamp": "2026-05-01 04:57:31.187129+00:00",
+      "action": "tool_call",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_chart_state",
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+        "tool_name": "get_chart_state",
+        "tool_calls_total_before": 0,
+        "tool_calls_total_limit": 50,
+        "tool_calls_for_tool_before": 0,
+        "tool_calls_for_tool_limit": 0,
+        "tokens_used": 2341,
+        "tokens_limit": 100000,
+        "iterations_used": 0,
+        "iterations_limit": 10,
+        "runtime_events": [
+          {
+            "kind": "tool",
+            "status": "started",
+            "name": "tool.get_chart_state",
+            "summary": "Tool execution started",
+            "event_id": "evt_1cd0c4fb7690490a93bc9e645422a4f9",
+            "run_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "span_id": "evt_1cd0c4fb7690490a93bc9e645422a4f9",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "turn": 0,
+            "turn_id": "",
+            "timestamp": "2026-05-01T04:57:31.187058+00:00",
+            "metadata": {
+              "tool_call_id": "OOoEN8CUiOPkuWZ7VLcqEQ2IseCThxLv",
+              "tool_name": "get_chart_state",
+              "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+              "tool_calls_total_before": 0,
+              "tool_calls_total_limit": 50,
+              "tool_calls_for_tool_before": 0,
+              "tool_calls_for_tool_limit": 0,
+              "tokens_used": "[redacted]",
+              "tokens_limit": "[redacted]",
+              "iterations_used": 0,
+              "iterations_limit": 10,
+              "outcome": "deferred"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": null
+    },
+    {
+      "id": 467,
+      "timestamp": "2026-05-01 04:57:31.170293+00:00",
+      "action": "consent_decision",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": "get_chart_state",
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "decision": "auto_allow",
+        "policy_id": "yaml:default"
+      },
+      "iteration": null
+    },
+    {
+      "id": 466,
+      "timestamp": "2026-05-01 04:57:31.149205+00:00",
+      "action": "llm_response",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence.",
+      "output": null,
+      "duration_ms": 69696,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "bonsai-8b",
+        "done": false,
+        "tool_calls_count": 1,
+        "token_usage": 2341,
+        "content_cleaned": false,
+        "request_telemetry": {
+          "provider": "llamacpp",
+          "model": "bonsai-8b",
+          "router": "langgraph",
+          "transport": "litellm_chat_completions",
+          "cache_retention": "provider_default",
+          "stream_strategy": "non_streaming",
+          "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+          "iteration": 0,
+          "prompt_digest": "be0e32129c0238f7f35e30bd401292a12fbefc52811337c8fc9691fdf08574f1",
+          "prompt_layout_digest": "36577858acfdba56bd54f3b37252ce60b909ba1537d541472298520596bbd5fd",
+          "system_prompt_digest": "74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c",
+          "tool_catalog_digest": "aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394",
+          "tool_count": 4,
+          "tool_names": [
+            "get_chart_state",
+            "get_geomap_focus",
+            "set_chart_state",
+            "tool_search"
+          ],
+          "usage": {
+            "prompt_tokens": 2324,
+            "input_tokens": null,
+            "completion_tokens": 17,
+            "output_tokens": 17,
+            "total_tokens": 2341,
+            "reasoning_tokens": null,
+            "cache_read_tokens": 2323,
+            "cache_write_tokens": null,
+            "unknown_fields": [
+              "input_tokens",
+              "reasoning_tokens",
+              "cache_write_tokens"
+            ]
+          },
+          "cache_break_reasons": [
+            "first_request"
+          ],
+          "metadata": {
+            "routing_reason": "config_absent",
+            "routing_used": false,
+            "tool_count": 4,
+            "capabilities_known": true,
+            "response": {
+              "duration_ms": 69696.464,
+              "rate_limits": [
+                {
+                  "window": "requests",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "requests-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                }
+              ]
+            }
+          },
+          "contract": "provider-request-telemetry/v1"
+        },
+        "runtime_events": [
+          {
+            "kind": "llm",
+            "status": "completed",
+            "name": "llm_call",
+            "summary": "llamacpp:bonsai-8b",
+            "event_id": "evt_28f7fd8a8f06468890e298fc2d29d732",
+            "run_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "span_id": "evt_28f7fd8a8f06468890e298fc2d29d732",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+            "turn": 0,
+            "turn_id": "",
+            "timestamp": "2026-05-01T04:57:31.148980+00:00",
+            "metadata": {
+              "request_telemetry": {
+                "provider": "llamacpp",
+                "model": "bonsai-8b",
+                "router": "langgraph",
+                "transport": "litellm_chat_completions",
+                "cache_retention": "provider_default",
+                "stream_strategy": "non_streaming",
+                "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+                "iteration": 0,
+                "prompt_digest": "be0e32129c0238f7f35e30bd401292a12fbefc52811337c8fc9691fdf08574f1",
+                "prompt_layout_digest": "36577858acfdba56bd54f3b37252ce60b909ba1537d541472298520596bbd5fd",
+                "system_prompt_digest": "74fa71ee593515f6ea083f9fcfc89e30e405990cfc1f18120b753399992f659c",
+                "tool_catalog_digest": "aec94a59c79c9af0011daada94495323bf658630da83c33fec2fe3cd2e8ab394",
+                "tool_count": 4,
+                "tool_names": [
+                  "get_chart_state",
+                  "get_geomap_focus",
+                  "set_chart_state",
+                  "tool_search"
+                ],
+                "usage": {
+                  "prompt_tokens": "[redacted]",
+                  "input_tokens": "[redacted]",
+                  "completion_tokens": "[redacted]",
+                  "output_tokens": "[redacted]",
+                  "total_tokens": "[redacted]",
+                  "reasoning_tokens": "[redacted]",
+                  "cache_read_tokens": "[redacted]",
+                  "cache_write_tokens": "[redacted]",
+                  "unknown_fields": [
+                    "input_tokens",
+                    "reasoning_tokens",
+                    "cache_write_tokens"
+                  ]
+                },
+                "cache_break_reasons": [
+                  "first_request"
+                ],
+                "metadata": {
+                  "routing_reason": "config_absent",
+                  "routing_used": false,
+                  "tool_count": 4,
+                  "capabilities_known": true,
+                  "response": {
+                    "duration_ms": 69696.464,
+                    "rate_limits": [
+                      {
+                        "window": "requests",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "requests-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      }
+                    ]
+                  }
+                },
+                "contract": "provider-request-telemetry/v1"
+              },
+              "tool_calls_count": 1,
+              "done": false,
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": 0
+    },
+    {
+      "id": 465,
+      "timestamp": "2026-05-01 04:57:31.128446+00:00",
+      "action": "route_decision",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "runner": "langgraph",
+        "decision": "tool_use",
+        "route_taxonomy": "tool_use",
+        "delegation_decision": "none",
+        "delegate_kind": null,
+        "spawn_depth": 0,
+        "max_spawn_depth": 0,
+        "allowed_tools": [
+          "get_chart_state"
+        ],
+        "memory_scope": "current_user",
+        "budget": {},
+        "fallback_reason": "subagents_disabled",
+        "tool_calls_count": 1,
+        "tool_names": [
+          "get_chart_state"
+        ],
+        "routing_reason": "config_absent",
+        "routing_used": false,
+        "routing_picked_model": "bonsai-8b",
+        "memory_route_requested": false,
+        "retrieval_route_requested": false
+      },
+      "iteration": 0
+    },
+    {
+      "id": 464,
+      "timestamp": "2026-05-01 04:56:16.985466+00:00",
+      "action": "skill_used",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:trading-analysis",
+          "global:plan",
+          "global:market-research"
+        ],
+        "skill_names": [
+          "trading-analysis",
+          "plan",
+          "market-research"
+        ],
+        "query_preview": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence.",
+        "user_id": "mh-local8b-chart-no-allowlist-skill-clean",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 463,
+      "timestamp": "2026-05-01 04:56:16.915495+00:00",
+      "action": "skill_found",
+      "user_id": "local",
+      "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:trading-analysis",
+          "global:plan",
+          "global:market-research"
+        ],
+        "skill_names": [
+          "trading-analysis",
+          "plan",
+          "market-research"
+        ],
+        "query_preview": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence.",
+        "user_id": "mh-local8b-chart-no-allowlist-skill-clean",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true,
+        "search_traces": [
+          {
+            "query_terms": [
+              "active",
+              "chart",
+              "get",
+              "now",
+              "state",
+              "symbol",
+              "timeframe"
+            ],
+            "selected_skill_ids": [
+              "global:trading-analysis",
+              "global:plan",
+              "global:market-research"
+            ],
+            "dense_enabled": false,
+            "reason": "ranked",
+            "top_k": 3,
+            "max_tokens": 2000,
+            "candidates": [
+              {
+                "skill_id": "global:trading-analysis",
+                "name": "trading-analysis",
+                "tier": "global",
+                "category": "trading",
+                "skill_type": "task_specific",
+                "bm25_score": 2.617238,
+                "bm25_rank": 1,
+                "dense_rank": null,
+                "rrf_score": 0.016393,
+                "selected": true,
+                "reason": "selected",
+                "matched_terms": [
+                  "symbol",
+                  "timeframe"
+                ]
+              },
+              {
+                "skill_id": "global:plan",
+                "name": "plan",
+                "tier": "global",
+                "category": "meta",
+                "skill_type": "task_specific",
+                "bm25_score": 2.054277,
+                "bm25_rank": 2,
+                "dense_rank": null,
+                "rrf_score": 0.016129,
+                "selected": true,
+                "reason": "selected",
+                "matched_terms": [
+                  "chart",
+                  "state"
+                ]
+              },
+              {
+                "skill_id": "global:market-research",
+                "name": "market-research",
+                "tier": "global",
+                "category": "research",
+                "skill_type": "task_specific",
+                "bm25_score": 0.838299,
+                "bm25_rank": 3,
+                "dense_rank": null,
+                "rrf_score": 0.015873,
+                "selected": true,
+                "reason": "selected",
+                "matched_terms": [
+                  "timeframe"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-local8b-tool-chart-stream-001-a9788c69",
+    "model": "bonsai-8b",
+    "completed": true,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 2,
+    "turn_efficiency": 0.5,
+    "total_tokens": 4760,
+    "token_efficiency": 2380,
+    "total_duration_ms": 103834,
+    "tool_calls": 1,
+    "tool_success_rate": 1.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 0,
+    "memory_retains": 0,
+    "memory_utilization": false,
+    "skills_loaded": [
+      "global:market-research",
+      "global:plan",
+      "global:trading-analysis"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.01428,
+    "fitness_score": 0.8979,
+    "trace_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "consent_decision",
+        "llm_response",
+        "route_decision",
+        "skill_found",
+        "skill_used",
+        "tool_call",
+        "tool_result"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_skills": [
+        "global:market-research",
+        "global:plan",
+        "global:trading-analysis",
+        "market-research",
+        "plan",
+        "trading-analysis"
+      ],
+      "tool_success_rate": 1.0,
+      "observed_memory_routes": [],
+      "observed_memory_providers": []
+    },
+    "stream_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_parts": [
+        "data-runtime-event",
+        "finish",
+        "message-metadata",
+        "start",
+        "start-step",
+        "text-delta",
+        "text-end",
+        "text-start",
+        "tool-input-start",
+        "tool-output-available"
+      ],
+      "observed_tools": [
+        "get_chart_state"
+      ],
+      "observed_rich_renderers": [
+        "get_chart_state"
+      ],
+      "observed_artifact_files": []
+    },
+    "base_fitness_score": 0.8979,
+    "expectation_gate_passed": true,
+    "trace_gate_passed": true,
+    "stream_gate_passed": true,
+    "fitness_penalties": []
+  },
+  "trace_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "consent_decision",
+      "llm_response",
+      "route_decision",
+      "skill_found",
+      "skill_used",
+      "tool_call",
+      "tool_result"
+    ],
+    "observed_tools": [
+      "get_chart_state"
+    ],
+    "observed_skills": [
+      "global:market-research",
+      "global:plan",
+      "global:trading-analysis",
+      "market-research",
+      "plan",
+      "trading-analysis"
+    ],
+    "tool_success_rate": 1.0,
+    "observed_memory_routes": [],
+    "observed_memory_providers": []
+  },
+  "stream_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_parts": [
+      "data-runtime-event",
+      "finish",
+      "message-metadata",
+      "start",
+      "start-step",
+      "text-delta",
+      "text-end",
+      "text-start",
+      "tool-input-start",
+      "tool-output-available"
+    ],
+    "observed_tools": [
+      "get_chart_state"
+    ],
+    "observed_rich_renderers": [
+      "get_chart_state"
+    ],
+    "observed_artifact_files": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "dispatcher"
+}

@@ -87,6 +87,12 @@ Static gates additionally verified on 2026-04-30:
 - `format_skills_for_prompt_async` emits ordered `skill_found`,
   `skill_refined` and `skill_used` audit events with session/thread ids,
   selected skill ids, body-redacted search traces and coverage metadata.
+- Non-personal eval markers and chart/tool-control prompts suppress
+  `memory-usage` unless the user gives a positive memory cue.
+  - 2026-05-01: `run-local8b-floor-chart-no-allowlist-skill-clean-002`
+    selected `trading-analysis`, `plan` and `market-research`, with no
+    `memory-usage`, while still executing `get_chart_state` and passing
+    trace/stream gates.
 - Meta-Harness `skill-lifecycle-contract` passes with provider-free gates for
   audit trace shape, lifecycle sidecar shape and admin/control-only reload
   policy.

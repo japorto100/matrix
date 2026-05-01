@@ -264,6 +264,16 @@ feature_id: 034
     `get_geomap_focus`, `set_chart_state`, `tool_search`),
     `memory_recalls=0`, `memory_retains=0`, no memory routes/providers,
     trace/stream/tool pass rates `1.0` and `fitness_score=0.8976`.
+- [x] T085 [done-live-no-browser] Use the same chart/tool-control floor to
+  harden Skill Finder against accidental `memory-usage` injection.
+  - 2026-05-01: `run-local8b-floor-chart-no-allowlist-001-clean` still loaded
+    `memory-usage` even though memory recall/retain were blocked. The bounded
+    Skill Finder fix removes memory skills from eval-marker and tool-control
+    candidate sets unless a positive memory cue exists. Unit slice:
+    `uv run pytest tests/agent/test_skill_finder.py` passed with 18 tests.
+    `run-local8b-floor-chart-no-allowlist-skill-clean-002` then passed with
+    skills `trading-analysis`, `plan`, `market-research`, no `memory-usage`,
+    `memory_recalls=0`, `memory_retains=0` and `fitness_score=0.8979`.
 
 ## Documentation
 

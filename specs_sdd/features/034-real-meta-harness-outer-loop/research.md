@@ -362,6 +362,17 @@ only `get_chart_state`, `get_geomap_focus`, `set_chart_state` and
 `tool-input-start`, `tool-output-available` and the rich renderer; memory
 recall/retain counts were zero; and fitness was `0.8976`.
 
+The next trace inspection found a second, more subtle boundary: although memory
+lifecycle was blocked, the prompt still loaded `memory-usage` as a skill due
+lexical overlap with "state". That is still context pollution and violates the
+Tool Search/progressive-disclosure intent. The Skill Finder now applies the
+same non-personal eval/tool-control boundary before ranking memory skills. The
+clean proof is `run-local8b-floor-chart-no-allowlist-skill-clean-002`: selected
+skills were `trading-analysis`, `plan` and `market-research`; no
+`memory-usage`; provider tool payload stayed at four chart/search tools; the
+tool and stream gates passed; memory recall/retain stayed zero; and fitness
+rose slightly to `0.8979`.
+
 Verification:
 
 - `run-provider-smoke-bonsai-local-v3` passed with provider snapshot

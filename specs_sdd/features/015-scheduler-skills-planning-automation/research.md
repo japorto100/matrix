@@ -181,3 +181,22 @@ The new provider-free Meta-Harness lane
 `python -m meta_harness.meta_cli skill-lifecycle-contract` freezes those trace
 and lifecycle shapes so future skill curation, Hindsight feedback and promotion
 work can evolve behind stable gates.
+
+## 2026-05-01 Non-Personal Tool-Control Skill Boundary
+
+Feature 034 Local-8B no-allowlist traces showed that skill search can pollute a
+clean tool-control turn even when memory lifecycle is blocked correctly. The
+chart prompt "Use get_chart_state..." selected `memory-usage` because lexical
+terms such as "state" overlapped with the memory skill. The fix keeps the
+provider-free BM25/RRF path, but removes memory skills from the candidate set
+for explicit eval markers and chart/tool-control phrases unless the prompt has
+a positive memory cue such as `remember`, `recall`, `memory_add` or
+`memory_search`.
+
+This is the same progressive-disclosure lesson from
+`Z_Additional_For_Tool_Stuff.md` and the Anthropic Tool Search web check:
+short search metadata is useful, but the search domain still needs policy
+boundaries so lexical overlap does not load unrelated instructions. The clean
+evidence is `run-local8b-floor-chart-no-allowlist-skill-clean-002`: no
+`memory-usage`, `get_chart_state` still executed, stream/rich renderer gates
+passed, and automatic memory recall/retain stayed at zero.

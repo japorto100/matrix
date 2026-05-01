@@ -63,6 +63,14 @@ migrated_from:
     BM25 ranks/scores, dense ranks when used, RRF score, matched terms and
     selection reason without exposing skill body text. `iterative_find()` now
     carries these traces into `skill_found` audit metadata.
+- [x] T031d Add non-personal eval/tool-control skill precision so direct
+  marker turns and chart-control turns do not load `memory-usage` unless a
+  positive memory cue exists.
+  - 2026-05-01: Local-8B chart no-allowlist evidence first showed
+    `memory-usage` over-selection for `get_chart_state`. The bounded fix
+    suppresses memory skills for eval markers and tool-control phrases while
+    preserving normal BM25/RRF ranking for trading/chart skills. Unit coverage
+    and `run-local8b-floor-chart-no-allowlist-skill-clean-002` verify the path.
 - [x] T032 Verify disabled skills are filtered via current preference path.
 - T033 Verify real LLM refinement with `AGENT_SKILL_REFINEMENT=true`.
 - T034 Verify real LLM iterative search.

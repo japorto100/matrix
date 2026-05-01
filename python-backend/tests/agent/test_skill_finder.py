@@ -362,6 +362,70 @@ def test_harness_policy_suppresses_memory_skill_without_personal_memory_cue(
     assert [skill.name for skill in out] == ["plan"]
 
 
+def test_tool_control_suppresses_memory_skill_without_personal_memory_cue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search chart state",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="trading-analysis",
+            description="Chart and timeframe analysis",
+            category="trading",
+            content="symbol timeframe active chart state",
+            path=tmp_path / "trading",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Use get_chart_state now, then summarize the active symbol and timeframe.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["trading-analysis"]
+
+
+def test_eval_marker_suppresses_memory_skill_without_personal_memory_cue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search local_8b_floor",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="plan",
+            description="General direct response planning",
+            category="meta",
+            content="answer exactly marker direct",
+            path=tmp_path / "plan",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Answer exactly local_8b_floor_direct_ok.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["plan"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

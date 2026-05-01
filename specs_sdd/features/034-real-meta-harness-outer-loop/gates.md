@@ -193,3 +193,14 @@ observed, `memory_recalls=0`, `memory_retains=0`,
 `tool_success_rate=1.0` and `fitness_score=0.8976`. The partial full-suite
 artifacts remain diagnostic only; promotion evidence is the targeted clean
 rerun.
+
+2026-05-01 no-allowlist skill-boundary live evidence:
+after the memory lifecycle fix, the chart/tool-control floor still showed a
+skill-level leak: `memory-usage` was selected for a non-personal chart-state
+turn. After hardening Skill Finder, `run-local8b-floor-chart-no-allowlist-
+skill-clean-002` passed with `completion_rate=1.0`,
+`trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`,
+`tool_success_rate=1.0`, `fitness_score=0.8979`, provider `tool_count=4`,
+`get_chart_state` executed, downstream rich renderer observed, selected skills
+`trading-analysis`, `plan` and `market-research`, no `memory-usage`,
+`memory_recalls=0` and `memory_retains=0`.

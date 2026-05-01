@@ -103,6 +103,22 @@ _NON_MEMORY_HARNESS_POLICY_PHRASES = (
     "shared memory in this harness",
     "why a child agent cannot write",
 )
+_NON_MEMORY_EVAL_PHRASES = (
+    "answer exactly",
+    "include marker",
+    "local_8b_floor",
+    "_floor_ack",
+    "risk_floor_ack",
+    "subagent_floor_ack",
+)
+_NON_MEMORY_TOOL_CONTROL_PHRASES = (
+    "get_chart_state",
+    "set_chart_state",
+    "get_geomap_focus",
+    "chart state",
+    "active symbol and timeframe",
+    "symbol and timeframe",
+)
 
 
 @dataclass(frozen=True)
@@ -278,7 +294,12 @@ def _skill_trace_item(
 
 
 def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
-    if _has_negative_memory_intent(query) or _has_non_memory_harness_policy_intent(query):
+    if (
+        _has_negative_memory_intent(query)
+        or _has_non_memory_eval_intent(query)
+        or _has_non_memory_tool_control_intent(query)
+        or _has_non_memory_harness_policy_intent(query)
+    ):
         return []
     normalized = query.casefold()
     query_terms = set(tokenize(query))
@@ -312,6 +333,20 @@ def _has_non_memory_grounding_intent(query: str) -> bool:
 def _has_non_memory_harness_policy_intent(query: str) -> bool:
     normalized = f" {query.casefold()} "
     return any(phrase in normalized for phrase in _NON_MEMORY_HARNESS_POLICY_PHRASES)
+
+
+def _has_non_memory_eval_intent(query: str) -> bool:
+    normalized = f" {query.casefold()} "
+    if any(term in normalized for term in _MEMORY_INTENT_TERMS):
+        return False
+    return any(phrase in normalized for phrase in _NON_MEMORY_EVAL_PHRASES)
+
+
+def _has_non_memory_tool_control_intent(query: str) -> bool:
+    normalized = f" {query.casefold()} "
+    if any(term in normalized for term in _MEMORY_INTENT_TERMS):
+        return False
+    return any(phrase in normalized for phrase in _NON_MEMORY_TOOL_CONTROL_PHRASES)
 
 
 def _is_memory_skill(skill: Skill) -> bool:
@@ -381,6 +416,8 @@ def find_skills_with_trace(
     if (
         _has_negative_memory_intent(q)
         or _has_non_memory_grounding_intent(q)
+        or _has_non_memory_eval_intent(q)
+        or _has_non_memory_tool_control_intent(q)
         or _has_non_memory_harness_policy_intent(q)
     ):
         skills = [skill for skill in skills if not _is_memory_skill(skill)]
