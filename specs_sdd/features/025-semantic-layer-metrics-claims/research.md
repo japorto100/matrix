@@ -179,3 +179,20 @@ contract is exact or user-confirmed.
 is intentionally narrow: catalog version, term ids and metric id only. That
 keeps semantic routing provider-agnostic and avoids making the model copy raw
 catalog records into retrieval filters.
+
+## 2026-05-01 Local-8B Semantic Floor
+
+The first Local-8B semantic floor without scenario `allowed_tools` passed the
+headline semantic gate but revealed unnecessary harness coupling: pure semantic
+grounding still exposed memory tools and ran automatic Memory-Fusion
+recall/retain. The corrected contract is that explicit `semantic_lookup` is a
+non-personal grounding turn unless the user separately asks to remember or
+recall personal memory.
+
+`run-local8b-floor-semantic-deferred-tools-001-clean` proves the current live
+shape: provider telemetry reported `tool_count=2` with `semantic_lookup` and
+`tool_search`; the tool returned `status=not_found`,
+`authoritative=false`, `raw_sql_allowed=false` and
+`refusal_reason=no-authoritative-definition`; the answer refused to invent a
+metric/SQL definition; and trace/stream gates passed with no observed
+personal-memory routes or providers.

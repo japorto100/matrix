@@ -11,7 +11,28 @@ from agent.tools.base import TradingTool
 from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
 
 TOOL_SEARCH_NAME = "tool_search"
+MEMORY_TOOL_NAMES = frozenset({"memory_add", "memory_search", "save_memory", "load_memory"})
 MEMORY_WRITE_TOOL_NAMES = frozenset({"memory_add", "save_memory"})
+_MEMORY_CUE_TERMS = (
+    "memory_add",
+    "memory_search",
+    "save_memory",
+    "load_memory",
+    "remember",
+    "recall",
+    "previous",
+    "previously",
+    "my preference",
+    "my risk",
+)
+_NON_MEMORY_GROUNDING_CUE_TERMS = (
+    "retrieve_context",
+    "semantic_lookup",
+    "source-grounded",
+    "source grounded",
+    "ground the term",
+    "semantic definition",
+)
 _NO_MEMORY_WRITE_CUE_TERMS = (
     "do not store",
     "don't store",
@@ -231,4 +252,8 @@ def _blocked_tool_names_for_query(query: str) -> set[str]:
     normalized = f" {query.lower()} "
     if any(term in normalized for term in _NO_MEMORY_WRITE_CUE_TERMS):
         return set(MEMORY_WRITE_TOOL_NAMES)
+    if any(term in normalized for term in _NON_MEMORY_GROUNDING_CUE_TERMS) and not any(
+        term in normalized for term in _MEMORY_CUE_TERMS
+    ):
+        return set(MEMORY_TOOL_NAMES)
     return set()

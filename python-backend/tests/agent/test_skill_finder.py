@@ -298,6 +298,38 @@ def test_negative_memory_intent_suppresses_memory_skill(
     assert [skill.name for skill in out] == ["market-research"]
 
 
+def test_semantic_grounding_suppresses_memory_skill_without_memory_cue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="semantic term memory_add memory_search",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="risk-assessment",
+            description="Risk metric definitions",
+            category="risk",
+            content="Sharpe ratio risk adjusted return",
+            path=tmp_path / "risk",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Use semantic_lookup to ground the term Sharpe ratio.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["risk-assessment"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

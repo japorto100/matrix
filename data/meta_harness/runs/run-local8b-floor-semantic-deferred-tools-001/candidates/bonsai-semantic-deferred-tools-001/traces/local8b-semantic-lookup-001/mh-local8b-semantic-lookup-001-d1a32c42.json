@@ -1,0 +1,1019 @@
+[
+  {
+    "id": 363,
+    "timestamp": "2026-05-01 03:43:55.813825+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "User asked: Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence.\nAgent responded: The term \"Sharpe ratio\" does not have an authoritative definition in the Matrix semantic system. I cannot provide a metric or SQL query based on this term. If you have a specific definition in mind, please confirm it with me.",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-semantic-001",
+      "role": "default",
+      "content_length": 339,
+      "conflict": false,
+      "route": "verbatim",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "source": "automatic_memory_retain",
+      "summary_status": "background_queued",
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.retain.completed",
+          "summary": "Memory retain completed",
+          "event_id": "evt_cd40bc168a36442aa3608c8e8e8d6c9a",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_cd40bc168a36442aa3608c8e8e8d6c9a",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 1,
+          "turn_id": "mh-local8b-semantic-lookup-001-d1a32c42:turn:1",
+          "timestamp": "2026-05-01T03:43:55.813737+00:00",
+          "metadata": {
+            "bank_id": "user_mh-local8b-semantic-001",
+            "role": "default",
+            "content_length": 339,
+            "conflict": false,
+            "route": "verbatim",
+            "provider": "fusion",
+            "providers": "verbatim,summary_async",
+            "source": "automatic_memory_retain",
+            "summary_status": "background_queued",
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 362,
+    "timestamp": "2026-05-01 03:43:55.734381+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 89,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-semantic-001",
+      "route": "verbatim",
+      "consumer": "agent_writer",
+      "user_id": "mh-local8b-semantic-001",
+      "actor_role": "default",
+      "item_count": 1,
+      "policy_decision": "write_allowed",
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 361,
+    "timestamp": "2026-05-01 03:43:55.560143+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "<tool_output source=\"semantic_lookup\" trusted=\"true\">\n{\"status\": \"not_found\", \"phrase\": \"Sharpe ratio\", \"authoritative\": false, \"ambiguous\": false, \"refusal_reason\": \"no-authoritative-definition\", \"answer_template\": \"I do not have an authoritative Matrix semantic definition for this phrase, so I should not invent a metric or SQL query. If candidates are present, ask the user to confirm one first.\", \"raw_sql_allowed\": false}\n</tool_output>",
+    "output": "The term \"Sharpe ratio\" does not have an authoritative definition in the Matrix semantic system. I cannot provide a metric or SQL query based on this term. If you have a specific definition in mind, please confirm it with me.",
+    "duration_ms": 91561,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 3139,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+        "iteration": 2,
+        "prompt_digest": "b6ec8731af4bad356800005f138387de9fa929ad509ff5b7e0849dd83f8264e1",
+        "prompt_layout_digest": "bc87e6a36ecbc86a0624adf21f0aa85d0e889cb6b28e0a7b915f28944b095a4b",
+        "system_prompt_digest": "dbb2fcd3c95ccf81a726d8cf01406c3086f1e65a1723dab436c3c9ba822a8618",
+        "tool_catalog_digest": "97f3a60a5d87ab9ecf3a08e3c74ffb94fae7776aa97eb290c88c9cb3c168541c",
+        "tool_count": 4,
+        "tool_names": [
+          "memory_add",
+          "memory_search",
+          "semantic_lookup",
+          "tool_search"
+        ],
+        "usage": {
+          "prompt_tokens": 3091,
+          "input_tokens": null,
+          "completion_tokens": 48,
+          "output_tokens": 48,
+          "total_tokens": 3139,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 2944,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "prompt_layout_changed"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 4,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 91561.215,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_cad802125d6b4503a41288cd36db4ff4",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_cad802125d6b4503a41288cd36db4ff4",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 2,
+          "turn_id": "mh-local8b-semantic-lookup-001-d1a32c42:turn:2",
+          "timestamp": "2026-05-01T03:43:55.559920+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+              "iteration": 2,
+              "prompt_digest": "b6ec8731af4bad356800005f138387de9fa929ad509ff5b7e0849dd83f8264e1",
+              "prompt_layout_digest": "bc87e6a36ecbc86a0624adf21f0aa85d0e889cb6b28e0a7b915f28944b095a4b",
+              "system_prompt_digest": "dbb2fcd3c95ccf81a726d8cf01406c3086f1e65a1723dab436c3c9ba822a8618",
+              "tool_catalog_digest": "97f3a60a5d87ab9ecf3a08e3c74ffb94fae7776aa97eb290c88c9cb3c168541c",
+              "tool_count": 4,
+              "tool_names": [
+                "memory_add",
+                "memory_search",
+                "semantic_lookup",
+                "tool_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "prompt_layout_changed"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 4,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 91561.215,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 0,
+            "done": true,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        },
+        {
+          "kind": "llm",
+          "status": "active",
+          "name": "llm.prompt_cache_break",
+          "summary": "Prompt/cache locality changed",
+          "event_id": "evt_37237019392f4bd29e96f510b72714a3",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_37237019392f4bd29e96f510b72714a3",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 2,
+          "turn_id": "mh-local8b-semantic-lookup-001-d1a32c42:turn:2",
+          "timestamp": "2026-05-01T03:43:55.475407+00:00",
+          "metadata": {
+            "cache_break_reasons": [
+              "prompt_layout_changed"
+            ],
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "prompt_layout_digest": "bc87e6a36ecbc86a0624adf21f0aa85d0e889cb6b28e0a7b915f28944b095a4b",
+            "tool_catalog_digest": "97f3a60a5d87ab9ecf3a08e3c74ffb94fae7776aa97eb290c88c9cb3c168541c",
+            "cache_read_tokens": "[redacted]",
+            "previous_cache_read_tokens": "[redacted]",
+            "request_id": null,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 2
+  },
+  {
+    "id": 360,
+    "timestamp": "2026-05-01 03:43:55.475522+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "direct_answer",
+      "route_taxonomy": "direct_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 0,
+      "tool_names": [],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": false,
+      "retrieval_route_requested": false
+    },
+    "iteration": 2
+  },
+  {
+    "id": 359,
+    "timestamp": "2026-05-01 03:42:23.825285+00:00",
+    "action": "tool_result",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "semantic_lookup",
+    "input": {
+      "phrase": "Sharpe ratio",
+      "include_metric_plan": true
+    },
+    "output": {
+      "ok": true,
+      "phrase": "Sharpe ratio",
+      "matched": false,
+      "ambiguous": false,
+      "authoritative": false,
+      "matches": [],
+      "candidate_matches": [],
+      "raw_sql_allowed": false,
+      "status": "not_found",
+      "refusal_reason": "no-authoritative-definition",
+      "suggested_phrases": [],
+      "answer_template": "I do not have an authoritative Matrix semantic definition for this phrase, so I should not invent a metric or SQL query. If candidates are present, ask the user to confirm one first."
+    },
+    "duration_ms": 79,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+      "tool_name": "semantic_lookup",
+      "tool_calls_total_before": 0,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 2977,
+      "tokens_limit": 100000,
+      "iterations_used": 0,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "completed",
+          "name": "tool.semantic_lookup",
+          "summary": "Tool execution completed",
+          "event_id": "evt_7236a1aef635448ab0f71af1be0982c7",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_7236a1aef635448ab0f71af1be0982c7",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T03:42:23.825188+00:00",
+          "metadata": {
+            "tool_call_id": "0aKM97zyx7r2kuoepfyYrFY0I8slXrDw",
+            "tool_name": "semantic_lookup",
+            "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+            "tool_calls_total_before": 0,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 0,
+            "iterations_limit": 10,
+            "duration_ms": 79.49281999026425,
+            "result_type": "dict",
+            "result_keys": [
+              "ok",
+              "phrase",
+              "matched",
+              "ambiguous",
+              "authoritative",
+              "matches",
+              "candidate_matches",
+              "raw_sql_allowed",
+              "status",
+              "refusal_reason",
+              "suggested_phrases",
+              "answer_template"
+            ],
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 358,
+    "timestamp": "2026-05-01 03:42:23.745748+00:00",
+    "action": "tool_call",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "semantic_lookup",
+    "input": {
+      "phrase": "Sharpe ratio",
+      "include_metric_plan": true
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+      "tool_name": "semantic_lookup",
+      "tool_calls_total_before": 0,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 2977,
+      "tokens_limit": 100000,
+      "iterations_used": 0,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "started",
+          "name": "tool.semantic_lookup",
+          "summary": "Tool execution started",
+          "event_id": "evt_7f3c78102f984e3f985be1fe976ac196",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_7f3c78102f984e3f985be1fe976ac196",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T03:42:23.745676+00:00",
+          "metadata": {
+            "tool_call_id": "0aKM97zyx7r2kuoepfyYrFY0I8slXrDw",
+            "tool_name": "semantic_lookup",
+            "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+            "tool_calls_total_before": 0,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 0,
+            "iterations_limit": 10,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 357,
+    "timestamp": "2026-05-01 03:42:23.665366+00:00",
+    "action": "consent_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "semantic_lookup",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "auto_allow",
+      "policy_id": "yaml:default"
+    },
+    "iteration": null
+  },
+  {
+    "id": 356,
+    "timestamp": "2026-05-01 03:42:23.576600+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence.",
+    "output": null,
+    "duration_ms": 531791,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 2977,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+        "iteration": 0,
+        "prompt_digest": "e05ce03fa7520d9c1e68c8abba41cdac79f9fc88161710f8099383673ff43af4",
+        "prompt_layout_digest": "084486b3540a06189f4ef719afbee7159f1ec5944d6351e6140b22993b38b6c6",
+        "system_prompt_digest": "dbb2fcd3c95ccf81a726d8cf01406c3086f1e65a1723dab436c3c9ba822a8618",
+        "tool_catalog_digest": "97f3a60a5d87ab9ecf3a08e3c74ffb94fae7776aa97eb290c88c9cb3c168541c",
+        "tool_count": 4,
+        "tool_names": [
+          "memory_add",
+          "memory_search",
+          "semantic_lookup",
+          "tool_search"
+        ],
+        "usage": {
+          "prompt_tokens": 2948,
+          "input_tokens": null,
+          "completion_tokens": 29,
+          "output_tokens": 29,
+          "total_tokens": 2977,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 703,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "first_request"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 4,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 531790.998,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_eb7e8a9cda834675a3a42e6fe1ee820b",
+          "run_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "span_id": "evt_eb7e8a9cda834675a3a42e6fe1ee820b",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T03:42:23.576371+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+              "iteration": 0,
+              "prompt_digest": "e05ce03fa7520d9c1e68c8abba41cdac79f9fc88161710f8099383673ff43af4",
+              "prompt_layout_digest": "084486b3540a06189f4ef719afbee7159f1ec5944d6351e6140b22993b38b6c6",
+              "system_prompt_digest": "dbb2fcd3c95ccf81a726d8cf01406c3086f1e65a1723dab436c3c9ba822a8618",
+              "tool_catalog_digest": "97f3a60a5d87ab9ecf3a08e3c74ffb94fae7776aa97eb290c88c9cb3c168541c",
+              "tool_count": 4,
+              "tool_names": [
+                "memory_add",
+                "memory_search",
+                "semantic_lookup",
+                "tool_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "first_request"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 4,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 531790.998,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 1,
+            "done": false,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 0
+  },
+  {
+    "id": 355,
+    "timestamp": "2026-05-01 03:42:23.463585+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "tool_use",
+      "route_taxonomy": "retrieval_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [
+        "semantic_lookup"
+      ],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 1,
+      "tool_names": [
+        "semantic_lookup"
+      ],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": false,
+      "retrieval_route_requested": true
+    },
+    "iteration": 0
+  },
+  {
+    "id": 354,
+    "timestamp": "2026-05-01 03:33:31.500404+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 363,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-semantic-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-semantic-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "source_status": "unreferenced",
+      "query": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence."
+    },
+    "iteration": null
+  },
+  {
+    "id": 353,
+    "timestamp": "2026-05-01 03:33:21.753701+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan"
+      ],
+      "query_preview": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence.",
+      "user_id": "mh-local8b-semantic-001",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 352,
+    "timestamp": "2026-05-01 03:33:21.658538+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-semantic-lookup-001-d1a32c42",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage",
+        "global:risk-assessment",
+        "global:plan"
+      ],
+      "skill_names": [
+        "memory-usage",
+        "risk-assessment",
+        "plan"
+      ],
+      "query_preview": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence.",
+      "user_id": "mh-local8b-semantic-001",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "define",
+            "ground",
+            "lookup",
+            "ratio",
+            "semantic",
+            "sharpe",
+            "term"
+          ],
+          "selected_skill_ids": [
+            "global:memory-usage",
+            "global:risk-assessment",
+            "global:plan"
+          ],
+          "dense_enabled": false,
+          "reason": "ranked",
+          "top_k": 3,
+          "max_tokens": 2000,
+          "candidates": [
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 2.089772,
+              "bm25_rank": 1,
+              "dense_rank": null,
+              "rrf_score": 0.016393,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "term"
+              ]
+            },
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 1.660111,
+              "bm25_rank": 2,
+              "dense_rank": null,
+              "rrf_score": 0.016129,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "ratio"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.963298,
+              "bm25_rank": 3,
+              "dense_rank": null,
+              "rrf_score": 0.015873,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "ground"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  }
+]

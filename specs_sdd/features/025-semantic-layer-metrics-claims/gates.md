@@ -54,3 +54,10 @@ feature_id: 025
   it now includes structured metric lookup, KG/RAG grounding, ambiguity,
   corrections, lexical provenance and downstream artifact visibility. Live
   agent/Control UI verification remains in `live-verify.md`.
+- [x] G010 has live no-browser Agent Harness coverage for the actual
+  `semantic_lookup` tool under deferred builtin schema selection.
+  - 2026-05-01: `run-local8b-floor-semantic-deferred-tools-001-clean` removed
+    scenario `allowed_tools`, exposed only `semantic_lookup` and `tool_search`
+    to Bonsai 8B, executed `semantic_lookup` for "Sharpe ratio", returned
+    fail-closed `no-authoritative-definition`, and passed trace, stream and
+    tool-success gates at `1.0` without personal-memory routes.

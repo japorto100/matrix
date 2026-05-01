@@ -100,6 +100,35 @@ async def test_memory_recall_node_skips_when_user_requests_no_personal_memory(mo
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_skips_semantic_grounding_without_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("semantic grounding skip must happen before memory engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-semantic",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Use semantic_lookup to ground the term Sharpe ratio.",
+                }
+            ],
+        }
+    )
+
+    assert result["query_gate"]["action"] == "skip"
+    assert result["query_gate"]["reason"] == "non_personal_grounding_without_memory_cue"
+    assert result["runtime_events"][0]["name"] == "memory.recall.skipped"
+
+
+@pytest.mark.asyncio
 async def test_memory_recall_node_keeps_memory_cued_market_queries(monkeypatch):
     async def _fake_get_memory_engine():
         return None
@@ -326,6 +355,37 @@ async def test_memory_retain_node_blocks_when_user_requests_no_personal_memory(m
     assert event["status"] == "blocked"
     assert event["name"] == "memory.retain.blocked"
     assert event["metadata"]["reason"] == "user_requested_no_personal_memory"
+
+
+@pytest.mark.asyncio
+async def test_memory_retain_node_blocks_semantic_grounding_without_memory_cue(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("semantic grounding block must happen before engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "t-semantic",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Use semantic_lookup to ground the term Sharpe ratio.",
+                }
+            ],
+            "final_response": "done",
+            "agent_class": "advisory",
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["name"] == "memory.retain.blocked"
+    assert event["metadata"]["reason"] == "non_personal_grounding_without_memory_cue"
 
 
 @pytest.mark.asyncio

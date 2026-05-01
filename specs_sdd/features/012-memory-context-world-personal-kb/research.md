@@ -213,6 +213,13 @@ and suppresses memory-usage skill injection. `retrieve_context` remains
 available as world/RAG context. This keeps RAG/KG retrieval separate from
 personal memory unless the user gives a positive memory cue.
 
+2026-05-01 non-personal grounding extension: the same policy now covers
+explicit `semantic_lookup`/`retrieve_context` grounding turns even when the user
+does not say "do not store". These turns are world/semantic/RAG lookup by
+default, not personal-memory learning. Positive memory cues such as
+`memory_search`, `remember`, `recall my previous...` still opt back into the
+memory path.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

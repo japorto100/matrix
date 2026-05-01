@@ -178,6 +178,29 @@ def test_selected_tools_for_turn_suppresses_memory_writes_on_negative_memory_int
     assert "save_memory" not in names
 
 
+def test_selected_tools_for_turn_suppresses_memory_tools_for_semantic_grounding():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_add", "Remember durable user memory with evidence."),
+        _CatalogTool("memory_search", "Search previous memory."),
+        _CatalogTool("semantic_lookup", "Resolve semantic metric definitions."),
+    )
+
+    selected = selected_tools_for_turn(
+        tools,
+        "Use semantic_lookup to ground the term Sharpe ratio.",
+        defer_schemas=True,
+        limit=3,
+        max_level=2,
+    )
+
+    names = {tool.name for tool in selected}
+    assert "semantic_lookup" in names
+    assert "tool_search" in names
+    assert "memory_add" not in names
+    assert "memory_search" not in names
+
+
 def test_expand_tool_definitions_from_tool_search_results():
     tools = (
         ToolSearchTool(),

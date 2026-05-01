@@ -1,0 +1,66 @@
+{
+  "scenarios": [
+    {
+      "id": "local8b-semantic-lookup-001",
+      "category": "local_8b_semantic_lookup",
+      "turns": [
+        {
+          "user": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence."
+        }
+      ],
+      "expectations": {
+        "required_actions": [],
+        "forbidden_actions": [],
+        "required_tools": [
+          "semantic_lookup"
+        ],
+        "forbidden_tools": [
+          "memory_add",
+          "delegate_task"
+        ],
+        "required_skills": [],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "Sharpe"
+        ],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_event_metadata_values": {},
+        "forbidden_event_metadata_values": {},
+        "required_runtime_event_names": [],
+        "required_runtime_event_metadata_keys": {},
+        "forbidden_runtime_event_metadata_keys": {},
+        "required_runtime_event_metadata_values": {},
+        "forbidden_runtime_event_metadata_values": {},
+        "required_stream_parts": [],
+        "required_stream_rich_renderers": [],
+        "required_stream_artifact_files": [],
+        "required_route_decisions": [],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": null,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": false,
+        "min_tool_success_rate": 1.0,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "Semantic/metric grounding is part of retrieval-adjacent Agent Harness behavior."
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "allowed_tools": [],
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

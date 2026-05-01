@@ -156,3 +156,14 @@ provider `tool_count=2` (`retrieve_context`, `tool_search`),
 `fitness_score=0.8978`. The stream exposed `rag-kg-sources.json`, proving the
 RAG downstream artifact path stayed visible while personal memory remained
 blocked.
+
+2026-05-01 deferred semantic/memory-boundary live gate evidence:
+`run-local8b-floor-semantic-deferred-tools-001` showed the same class of
+boundary issue for semantic grounding: `semantic_lookup` executed, but memory
+tools and automatic Memory-Fusion recall/retain were still present. After the
+bounded runtime fix, `run-local8b-floor-semantic-deferred-tools-001-clean`
+passed with provider `tool_count=2` (`semantic_lookup`, `tool_search`),
+`memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers,
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
+`fitness_score=0.8982`.

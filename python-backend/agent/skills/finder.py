@@ -85,6 +85,14 @@ _NEGATIVE_MEMORY_INTENT_PHRASES = (
     "without saving",
     "without memory",
 )
+_NON_MEMORY_GROUNDING_PHRASES = (
+    "retrieve_context",
+    "semantic_lookup",
+    "source-grounded",
+    "source grounded",
+    "ground the term",
+    "semantic definition",
+)
 
 
 @dataclass(frozen=True)
@@ -284,6 +292,13 @@ def _has_negative_memory_intent(query: str) -> bool:
     return any(phrase in normalized for phrase in _NEGATIVE_MEMORY_INTENT_PHRASES)
 
 
+def _has_non_memory_grounding_intent(query: str) -> bool:
+    normalized = f" {query.casefold()} "
+    if any(term in normalized for term in _MEMORY_INTENT_TERMS):
+        return False
+    return any(phrase in normalized for phrase in _NON_MEMORY_GROUNDING_PHRASES)
+
+
 def _is_memory_skill(skill: Skill) -> bool:
     return skill.name == "memory-usage" or skill.skill_type == "memory"
 
@@ -348,7 +363,7 @@ def find_skills_with_trace(
             },
         )
 
-    if _has_negative_memory_intent(q):
+    if _has_negative_memory_intent(q) or _has_non_memory_grounding_intent(q):
         skills = [skill for skill in skills if not _is_memory_skill(skill)]
         if not skills:
             query_terms = set(tokenize(q))

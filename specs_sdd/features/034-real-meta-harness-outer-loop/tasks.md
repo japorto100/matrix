@@ -221,6 +221,19 @@ feature_id: 034
     skill-clean` then passed with `tool_count=2` (`retrieve_context`,
     `tool_search`), `memory_recalls=0`, `memory_retains=0`, no observed memory
     routes/providers, trace/stream pass rates `1.0` and `fitness_score=0.8978`.
+- [x] T081 [done-live-no-browser] Use the Local-8B semantic floor to harden
+  semantic grounding against accidental personal-memory coupling.
+  - 2026-05-01: `run-local8b-floor-semantic-deferred-tools-001` passed the
+    semantic tool gate but still exposed memory tools and ran automatic memory
+    recall/retain. The bounded fix treats explicit `semantic_lookup` and
+    `retrieve_context` grounding as non-personal by default unless a positive
+    memory cue is present. Unit slice:
+    `uv run pytest tests/agent/tools/test_catalog.py
+    tests/agent/graph/nodes/test_memory_node.py tests/agent/test_skill_finder.py`
+    passed with 37 tests. `run-local8b-floor-semantic-deferred-tools-001-clean`
+    passed with `tool_count=2` (`semantic_lookup`, `tool_search`),
+    `memory_recalls=0`, `memory_retains=0`, no memory routes/providers,
+    trace/stream pass rates `1.0` and `fitness_score=0.8982`.
 
 ## Documentation
 

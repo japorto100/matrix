@@ -190,3 +190,7 @@ feature_id: 024
     retrieval/RAG (`retrieve_context`). The retrieval floor additionally
     proved that negative memory intent suppresses memory write schemas while
     leaving source-grounded retrieval available.
+  - 2026-05-01 live no-browser: semantic grounding now covers the fourth
+    deferred surface. `run-local8b-floor-semantic-deferred-tools-001-clean`
+    exposed only `semantic_lookup` plus `tool_search`, executed
+    `semantic_lookup`, and passed trace/stream/tool gates at `1.0`.

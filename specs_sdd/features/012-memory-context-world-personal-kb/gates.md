@@ -106,6 +106,15 @@ feature_id: 012
     the fix, `run-local8b-floor-retrieval-deferred-tools-001-skill-clean`
     passed with `memory_recalls=0`, `memory_retains=0` and no observed memory
     routes/providers.
+- [x] Non-personal grounding prompts such as explicit `retrieve_context` or
+  `semantic_lookup` skip automatic personal-memory recall/retain unless the
+  user also gives a positive memory cue.
+  - 2026-05-01: `run-local8b-floor-semantic-deferred-tools-001` passed but
+    exposed Memory-Fusion recall/retain around a pure semantic lookup. After
+    the fix, `run-local8b-floor-semantic-deferred-tools-001-clean` passed with
+    `memory_recalls=0`, `memory_retains=0`, no observed memory
+    routes/providers, and provider tools limited to `semantic_lookup` plus
+    `tool_search`.
 - [x] Remote embedding audit metadata redacts API keys while preserving
   provider/model/base-url host, key presence, key fingerprint and live-call
   budget for Control/Meta-Harness inspection.

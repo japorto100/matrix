@@ -95,6 +95,14 @@ _NO_PERSONAL_MEMORY_CUE_TERMS = (
     "without saving",
     "without memory",
 )
+_NON_PERSONAL_GROUNDING_CUE_TERMS = (
+    "retrieve_context",
+    "semantic_lookup",
+    "source-grounded",
+    "source grounded",
+    "ground the term",
+    "semantic definition",
+)
 
 
 def _memory_event(
@@ -128,6 +136,8 @@ def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
     text = f" {user_msg.lower()} "
     if _has_no_personal_memory_cue(text):
         return True, "user_requested_no_personal_memory"
+    if _has_non_personal_grounding_cue(text):
+        return True, "non_personal_grounding_without_memory_cue"
     has_memory_cue = any(term in text for term in _MEMORY_RECALL_CUE_TERMS)
     has_current_market_cue = any(
         term in text for term in _CURRENT_MARKET_QUERY_TERMS
@@ -140,6 +150,13 @@ def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
 def _has_no_personal_memory_cue(text: str) -> bool:
     normalized = f" {text.lower()} "
     return any(term in normalized for term in _NO_PERSONAL_MEMORY_CUE_TERMS)
+
+
+def _has_non_personal_grounding_cue(text: str) -> bool:
+    normalized = f" {text.lower()} "
+    if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
+        return False
+    return any(term in normalized for term in _NON_PERSONAL_GROUNDING_CUE_TERMS)
 
 
 def _get_memory_config(role: str) -> dict:
@@ -612,7 +629,12 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 user_msg = content[:500]
                 break
 
-    if _has_no_personal_memory_cue(user_msg):
+    if _has_no_personal_memory_cue(user_msg) or _has_non_personal_grounding_cue(user_msg):
+        reason = (
+            "user_requested_no_personal_memory"
+            if _has_no_personal_memory_cue(user_msg)
+            else "non_personal_grounding_without_memory_cue"
+        )
         return {
             "runtime_events": [
                 _memory_event(
@@ -622,7 +644,7 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                     summary="Memory retain skipped because the user requested no personal memory",
                     metadata={
                         "role": role,
-                        "reason": "user_requested_no_personal_memory",
+                        "reason": reason,
                         "source": "memory_retain_node",
                     },
                 )
