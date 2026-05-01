@@ -387,6 +387,29 @@ tasks; the remaining six `local_8b_floor` scenarios should be executed in
 separate small rounds because CPU latency is several minutes per Agent Harness
 turn.
 
+## 2026-05-01 Local-8B Skill-Injection Slice
+
+The first targeted post-round slice was `local8b-skill-risk-001`. It proved
+two useful harness facts:
+
+- Running as the shared `anonymous` user can contaminate synthetic scenarios
+  with memories retained by earlier harness runs. The first skill run passed,
+  but its prompt included unrelated Direct-Route recall blocks and took about
+  403s.
+- Running with an isolated synthetic user initially failed before the LLM call
+  because the Meta-Harness env credential resolver did not know local
+  OpenAI-compatible providers. The graph-level CredentialPool correctly found
+  no per-user DB credential for `mh-local8b-skill-risk-001`, but the
+  in-process harness should have passed the process `LITELLM_API_KEY` for
+  `llamacpp`.
+
+Decision: keep synthetic Meta-Harness users isolated and let the harness
+credential resolver support provider-agnostic local routes (`llamacpp`,
+`ollama`, `vllm`, `lmstudio`). This does not change production FastAPI user
+credential semantics. The fixed run passed with real skill search/injection,
+real LLM transport, runtime telemetry, memory/audit writes and SSE finish
+evidence.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature

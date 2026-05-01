@@ -1,0 +1,348 @@
+[
+  {
+    "run_id": "run-local8b-floor-skill-risk-001-isolated",
+    "candidate_id": "bonsai-skill-risk-floor-isolated",
+    "scenario_id": "local8b-skill-risk-001",
+    "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+    "user_id": "mh-local8b-skill-risk-001",
+    "category": "local_8b_skill_injection",
+    "turns": 1,
+    "transcript": [
+      {
+        "role": "user",
+        "content": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%."
+      }
+    ],
+    "sse_chunks": [
+      "data: {\"messageId\": \"mh-local8b-skill-risk-001-8d0a4a9d\", \"type\": \"start\"}\n\n",
+      "data: {\"messageMetadata\": {\"threadId\": \"mh-local8b-skill-risk-001-8d0a4a9d\"}, \"type\": \"message-metadata\"}\n\n",
+      "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+      "data: {\"errorText\": \"LangGraph error: CredentialPool exhausted for user='mh-local8b-skill-risk-001' provider='llamacpp': pool.acquire returned None\", \"type\": \"error\", \"metadata\": {\"failover_reason\": \"unknown\", \"recovery_strategy\": \"backoff_then_retry\", \"retryable\": true, \"status_code\": null}}\n\n"
+    ],
+    "trace_events": [
+      {
+        "id": 214,
+        "timestamp": "2026-05-01 01:43:37.767887+00:00",
+        "action": "memory_recall",
+        "user_id": "local",
+        "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": 219,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "bank_id": "user_mh-local8b-skill-risk-001",
+          "route": "fusion",
+          "consumer": "llm_agent",
+          "user_id": "mh-local8b-skill-risk-001",
+          "actor_role": "default",
+          "item_count": 0,
+          "query_gate": "default_retrieval",
+          "needs_verification": false,
+          "source_status": "unreferenced",
+          "query": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%."
+        },
+        "iteration": null
+      },
+      {
+        "id": 213,
+        "timestamp": "2026-05-01 01:43:29.230088+00:00",
+        "action": "skill_used",
+        "user_id": "local",
+        "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:risk-assessment",
+            "global:plan",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "risk-assessment",
+            "plan",
+            "trading-analysis"
+          ],
+          "query_preview": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%.",
+          "user_id": "mh-local8b-skill-risk-001",
+          "refined": false,
+          "coverage_score": null,
+          "source_skills": null
+        },
+        "iteration": null
+      },
+      {
+        "id": 212,
+        "timestamp": "2026-05-01 01:43:29.114537+00:00",
+        "action": "skill_found",
+        "user_id": "local",
+        "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+        "agent_class": "advisory",
+        "agent_role": null,
+        "tool_name": null,
+        "input": null,
+        "output": null,
+        "duration_ms": null,
+        "success": true,
+        "error": null,
+        "metadata": {
+          "skill_ids": [
+            "global:risk-assessment",
+            "global:plan",
+            "global:trading-analysis"
+          ],
+          "skill_names": [
+            "risk-assessment",
+            "plan",
+            "trading-analysis"
+          ],
+          "query_preview": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%.",
+          "user_id": "mh-local8b-skill-risk-001",
+          "search_rounds": 1,
+          "reformulations": null,
+          "satisfied": true,
+          "search_traces": [
+            {
+              "query_terms": [
+                "20",
+                "80",
+                "ack",
+                "assess",
+                "btc",
+                "eth",
+                "floor",
+                "include",
+                "marker",
+                "portfolio",
+                "risk"
+              ],
+              "selected_skill_ids": [
+                "global:risk-assessment",
+                "global:plan",
+                "global:trading-analysis"
+              ],
+              "dense_enabled": false,
+              "reason": "ranked",
+              "top_k": 3,
+              "max_tokens": 2000,
+              "candidates": [
+                {
+                  "skill_id": "global:risk-assessment",
+                  "name": "risk-assessment",
+                  "tier": "global",
+                  "category": "risk",
+                  "skill_type": "task_specific",
+                  "bm25_score": 4.786377,
+                  "bm25_rank": 1,
+                  "dense_rank": null,
+                  "rrf_score": 0.016393,
+                  "selected": true,
+                  "reason": "selected",
+                  "matched_terms": [
+                    "20",
+                    "portfolio",
+                    "risk"
+                  ]
+                },
+                {
+                  "skill_id": "global:plan",
+                  "name": "plan",
+                  "tier": "global",
+                  "category": "meta",
+                  "skill_type": "task_specific",
+                  "bm25_score": 3.343999,
+                  "bm25_rank": 2,
+                  "dense_rank": null,
+                  "rrf_score": 0.016129,
+                  "selected": true,
+                  "reason": "selected",
+                  "matched_terms": [
+                    "include",
+                    "portfolio",
+                    "risk"
+                  ]
+                },
+                {
+                  "skill_id": "global:trading-analysis",
+                  "name": "trading-analysis",
+                  "tier": "global",
+                  "category": "trading",
+                  "skill_type": "task_specific",
+                  "bm25_score": 0.693514,
+                  "bm25_rank": 3,
+                  "dense_rank": null,
+                  "rrf_score": 0.015873,
+                  "selected": true,
+                  "reason": "selected",
+                  "matched_terms": [
+                    "risk"
+                  ]
+                },
+                {
+                  "skill_id": "global:memory-usage",
+                  "name": "memory-usage",
+                  "tier": "global",
+                  "category": "general",
+                  "skill_type": "general",
+                  "bm25_score": 0.532241,
+                  "bm25_rank": 4,
+                  "dense_rank": null,
+                  "rrf_score": 0.015625,
+                  "selected": false,
+                  "reason": "ranked_not_selected",
+                  "matched_terms": [
+                    "risk"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "iteration": null
+      }
+    ],
+    "score": {
+      "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+      "model": "",
+      "completed": false,
+      "session_status": null,
+      "session_summary": null,
+      "turns": 0,
+      "turn_efficiency": 1.0,
+      "total_tokens": 0,
+      "token_efficiency": 0,
+      "total_duration_ms": 0,
+      "tool_calls": 0,
+      "tool_success_rate": 0.0,
+      "tool_failures": 0,
+      "tools_denied": 0,
+      "memory_recalls": 1,
+      "memory_retains": 0,
+      "memory_utilization": true,
+      "skills_loaded": [
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis"
+      ],
+      "skill_events": 2,
+      "cost_estimate_usd": 0.0,
+      "fitness_score": 0.1715,
+      "trace_gates": {
+        "passed": false,
+        "failures": [
+          "missing required action: llm_response",
+          "missing required response term: risk_floor_ack",
+          "missing required route decision: direct_answer",
+          "missing required delegation decision: none",
+          "missing route spawn depth"
+        ],
+        "warnings": [],
+        "observed_actions": [
+          "memory_recall",
+          "skill_found",
+          "skill_used"
+        ],
+        "observed_tools": [],
+        "observed_skills": [
+          "global:plan",
+          "global:risk-assessment",
+          "global:trading-analysis",
+          "plan",
+          "risk-assessment",
+          "trading-analysis"
+        ],
+        "tool_success_rate": null,
+        "observed_memory_routes": [
+          "fusion"
+        ],
+        "observed_memory_providers": []
+      },
+      "stream_gates": {
+        "passed": false,
+        "failures": [
+          "missing stream finish part"
+        ],
+        "warnings": [
+          "missing stream text-delta part"
+        ],
+        "observed_parts": [
+          "error",
+          "message-metadata",
+          "start",
+          "text-start"
+        ],
+        "observed_tools": [],
+        "observed_rich_renderers": [],
+        "observed_artifact_files": []
+      },
+      "base_fitness_score": 0.7,
+      "expectation_gate_passed": false,
+      "trace_gate_passed": false,
+      "stream_gate_passed": false,
+      "fitness_penalties": [
+        "trace_gate_failed",
+        "stream_gate_failed"
+      ]
+    },
+    "trace_verdict": {
+      "passed": false,
+      "failures": [
+        "missing required action: llm_response",
+        "missing required response term: risk_floor_ack",
+        "missing required route decision: direct_answer",
+        "missing required delegation decision: none",
+        "missing route spawn depth"
+      ],
+      "warnings": [],
+      "observed_actions": [
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:plan",
+        "global:risk-assessment",
+        "global:trading-analysis",
+        "plan",
+        "risk-assessment",
+        "trading-analysis"
+      ],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion"
+      ],
+      "observed_memory_providers": []
+    },
+    "stream_verdict": {
+      "passed": false,
+      "failures": [
+        "missing stream finish part"
+      ],
+      "warnings": [
+        "missing stream text-delta part"
+      ],
+      "observed_parts": [
+        "error",
+        "message-metadata",
+        "start",
+        "text-start"
+      ],
+      "observed_tools": [],
+      "observed_rich_renderers": [],
+      "observed_artifact_files": []
+    },
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-skill-risk-001-isolated/candidates/bonsai-skill-risk-floor-isolated",
+    "runner_variant": "dispatcher"
+  }
+]

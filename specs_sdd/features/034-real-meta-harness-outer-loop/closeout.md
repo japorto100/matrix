@@ -127,3 +127,19 @@ evaluation, decision logging and Pareto update.
 - Practical finding: the direct Local-8B Agent Harness turn used 1212 baseline
   prompt tokens and took about 270s on CPU. Full-suite Local-8B rounds should
   be split into small slices unless hardware changes.
+
+## 2026-05-01 Targeted Skill Floor Hardening
+
+- Added repeatable `--scenario-id` selection to `meta_harness run` and
+  `scenario_ids` to MCP `harness_run_scenarios`, so expensive Local-8B floors
+  can be run one slice at a time.
+- Ran `local8b-skill-risk-001` through the real backend with Bonsai 8B.
+- Finding 1: shared `anonymous` harness user state caused unrelated memory
+  recall from previous Direct-Route runs.
+- Finding 2: isolated synthetic users exposed a local-provider credential
+  resolver gap for `llamacpp`.
+- Fix: Meta-Harness env credentials now include local OpenAI-compatible
+  providers via provider-specific `META_HARNESS_*_API_KEY` vars or
+  `LITELLM_API_KEY`.
+- Verification: `run-local8b-floor-skill-risk-001-isolated-fixed` passed
+  trace/stream/completion gates at `1.0` with fitness `0.9992`.

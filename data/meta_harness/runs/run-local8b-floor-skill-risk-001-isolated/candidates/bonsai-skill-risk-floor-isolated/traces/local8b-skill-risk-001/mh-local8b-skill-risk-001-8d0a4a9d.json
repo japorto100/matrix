@@ -1,0 +1,192 @@
+[
+  {
+    "id": 214,
+    "timestamp": "2026-05-01 01:43:37.767887+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 219,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-skill-risk-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-skill-risk-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "source_status": "unreferenced",
+      "query": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%."
+    },
+    "iteration": null
+  },
+  {
+    "id": 213,
+    "timestamp": "2026-05-01 01:43:29.230088+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:risk-assessment",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "risk-assessment",
+        "plan",
+        "trading-analysis"
+      ],
+      "query_preview": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%.",
+      "user_id": "mh-local8b-skill-risk-001",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 212,
+    "timestamp": "2026-05-01 01:43:29.114537+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-skill-risk-001-8d0a4a9d",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:risk-assessment",
+        "global:plan",
+        "global:trading-analysis"
+      ],
+      "skill_names": [
+        "risk-assessment",
+        "plan",
+        "trading-analysis"
+      ],
+      "query_preview": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%.",
+      "user_id": "mh-local8b-skill-risk-001",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "20",
+            "80",
+            "ack",
+            "assess",
+            "btc",
+            "eth",
+            "floor",
+            "include",
+            "marker",
+            "portfolio",
+            "risk"
+          ],
+          "selected_skill_ids": [
+            "global:risk-assessment",
+            "global:plan",
+            "global:trading-analysis"
+          ],
+          "dense_enabled": false,
+          "reason": "ranked",
+          "top_k": 3,
+          "max_tokens": 2000,
+          "candidates": [
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 4.786377,
+              "bm25_rank": 1,
+              "dense_rank": null,
+              "rrf_score": 0.016393,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "20",
+                "portfolio",
+                "risk"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 3.343999,
+              "bm25_rank": 2,
+              "dense_rank": null,
+              "rrf_score": 0.016129,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "include",
+                "portfolio",
+                "risk"
+              ]
+            },
+            {
+              "skill_id": "global:trading-analysis",
+              "name": "trading-analysis",
+              "tier": "global",
+              "category": "trading",
+              "skill_type": "task_specific",
+              "bm25_score": 0.693514,
+              "bm25_rank": 3,
+              "dense_rank": null,
+              "rrf_score": 0.015873,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "risk"
+              ]
+            },
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 0.532241,
+              "bm25_rank": 4,
+              "dense_rank": null,
+              "rrf_score": 0.015625,
+              "selected": false,
+              "reason": "ranked_not_selected",
+              "matched_terms": [
+                "risk"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  }
+]

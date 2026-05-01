@@ -1,0 +1,72 @@
+{
+  "scenarios": [
+    {
+      "id": "local8b-skill-risk-001",
+      "category": "local_8b_skill_injection",
+      "turns": [
+        {
+          "user": "Assess this portfolio risk in one short sentence and include marker risk_floor_ack: BTC 80%, ETH 20%."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "skill_used",
+          "llm_response"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [],
+        "forbidden_tools": [
+          "memory_add",
+          "delegate_task"
+        ],
+        "required_skills": [
+          "risk-assessment"
+        ],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "risk_floor_ack"
+        ],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_event_metadata_values": {},
+        "forbidden_event_metadata_values": {},
+        "required_runtime_event_names": [],
+        "required_runtime_event_metadata_keys": {},
+        "forbidden_runtime_event_metadata_keys": {},
+        "required_runtime_event_metadata_values": {},
+        "forbidden_runtime_event_metadata_values": {},
+        "required_stream_parts": [],
+        "required_stream_rich_renderers": [],
+        "required_stream_artifact_files": [],
+        "required_route_decisions": [
+          "direct_answer"
+        ],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [
+          "none"
+        ],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": 0,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": false,
+        "min_tool_success_rate": null,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "Skill finder/injection is part of the Agent Harness even when tools are disabled."
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": false,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

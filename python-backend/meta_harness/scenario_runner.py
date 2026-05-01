@@ -69,6 +69,10 @@ def _harness_env_api_key(model: str) -> str | None:
         "groq": ("META_HARNESS_GROQ_API_KEY", "GROQ_API_KEY"),
         "mistral": ("META_HARNESS_MISTRAL_API_KEY", "MISTRAL_API_KEY"),
         "litellm": ("META_HARNESS_LITELLM_API_KEY", "LITELLM_MASTER_KEY"),
+        "llamacpp": ("META_HARNESS_LLAMACPP_API_KEY", "LITELLM_API_KEY"),
+        "ollama": ("META_HARNESS_OLLAMA_API_KEY", "LITELLM_API_KEY"),
+        "vllm": ("META_HARNESS_VLLM_API_KEY", "LITELLM_API_KEY"),
+        "lmstudio": ("META_HARNESS_LMSTUDIO_API_KEY", "LITELLM_API_KEY"),
     }
     for env_name in env_by_provider.get(provider, ()):
         value = os.environ.get(env_name, "").strip()

@@ -1700,6 +1700,13 @@ async def test_default_agent_runner_uses_env_credential_for_simulated_user(monke
     assert captured == {"api_key": "test-openrouter-key", "user_id": "meta-harness"}
 
 
+def test_harness_env_api_key_supports_local_litellm_routes(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "development")
+    monkeypatch.setenv("LITELLM_API_KEY", "local-litellm-key")
+
+    assert scenario_runner._harness_env_api_key("bonsai-8b") == "local-litellm-key"
+
+
 @pytest.mark.asyncio
 async def test_default_agent_runner_can_disable_env_credential(monkeypatch):
     captured = {}

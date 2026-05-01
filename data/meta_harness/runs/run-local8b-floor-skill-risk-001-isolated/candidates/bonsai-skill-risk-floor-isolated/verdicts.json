@@ -1,0 +1,78 @@
+{
+  "passed": false,
+  "failures": [
+    "missing required action: llm_response",
+    "missing required response term: risk_floor_ack",
+    "missing required route decision: direct_answer",
+    "missing required delegation decision: none",
+    "missing route spawn depth"
+  ],
+  "warnings": [],
+  "observed_actions": [
+    "memory_recall",
+    "skill_found",
+    "skill_used"
+  ],
+  "observed_tools": [],
+  "observed_skills": [
+    "global:plan",
+    "global:risk-assessment",
+    "global:trading-analysis",
+    "plan",
+    "risk-assessment",
+    "trading-analysis"
+  ],
+  "tool_success_rate": null,
+  "observed_memory_routes": [
+    "fusion"
+  ],
+  "observed_memory_providers": [],
+  "trace": {
+    "passed": false,
+    "failures": [
+      "missing required action: llm_response",
+      "missing required response term: risk_floor_ack",
+      "missing required route decision: direct_answer",
+      "missing required delegation decision: none",
+      "missing route spawn depth"
+    ],
+    "warnings": [],
+    "observed_actions": [
+      "memory_recall",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:plan",
+      "global:risk-assessment",
+      "global:trading-analysis",
+      "plan",
+      "risk-assessment",
+      "trading-analysis"
+    ],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion"
+    ],
+    "observed_memory_providers": []
+  },
+  "stream": {
+    "passed": false,
+    "failures": [
+      "missing stream finish part"
+    ],
+    "warnings": [
+      "missing stream text-delta part"
+    ],
+    "observed_parts": [
+      "error",
+      "message-metadata",
+      "start",
+      "text-start"
+    ],
+    "observed_tools": [],
+    "observed_rich_renderers": [],
+    "observed_artifact_files": []
+  }
+}

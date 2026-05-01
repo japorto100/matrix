@@ -175,6 +175,19 @@ feature_id: 034
     filters, and the MCP `harness_run_scenarios` tool accepts `scenario_ids`.
     This lets us iterate on Skill, Memory, Tool/SSE, Retrieval, Semantic and
     Subagent floor failures without re-running already-passing scenarios first.
+- [x] T078 [done-live-no-browser] Run and harden the Local-8B skill-injection
+  floor with isolated synthetic user state.
+  - 2026-05-01: `run-local8b-floor-skill-risk-001` passed as `anonymous` but
+    recalled unrelated Direct-Route memories from prior harness runs.
+    `run-local8b-floor-skill-risk-001-isolated` then correctly isolated the
+    memory bank and exposed a real failure:
+    `CredentialPool exhausted for user='mh-local8b-skill-risk-001'
+    provider='llamacpp'`. The bounded fix extends the Meta-Harness env
+    credential resolver for local OpenAI-compatible providers (`llamacpp`,
+    `ollama`, `vllm`, `lmstudio`) via `LITELLM_API_KEY`/provider-specific
+    `META_HARNESS_*_API_KEY`. `run-local8b-floor-skill-risk-001-isolated-fixed`
+    passed with `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`,
+    `completion_rate=1.0` and `fitness_score=0.9992`.
 
 ## Documentation
 

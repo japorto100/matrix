@@ -93,3 +93,16 @@ evaluated then discarded by the decision ledger. Baseline:
 `base_fitness_score` and lower `fitness_score` when trace or stream gates fail.
 This closes the Round-2 exact-recall scoring gap where trace presence could
 look healthy even when the visible answer missed required evidence.
+
+2026-05-01 Local-8B skill-injection gate evidence:
+`run-local8b-floor-skill-risk-001-isolated` failed before the LLM call with
+`CredentialPool exhausted` for isolated synthetic user
+`mh-local8b-skill-risk-001` and provider `llamacpp`. The fix keeps the normal
+production user-credential path untouched and extends only the Meta-Harness
+env credential resolver for local OpenAI-compatible providers. After the fix,
+`run-local8b-floor-skill-risk-001-isolated-fixed` passed:
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `fitness_score=0.9992`, provider `llamacpp`,
+model `bonsai-8b`, prompt tokens `1663`, completion tokens `58`, and
+duration about `98.6s`. The run used isolated user state and selected
+`risk-assessment` via the real skill finder.
