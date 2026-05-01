@@ -1,0 +1,2232 @@
+[
+  {
+    "id": 264,
+    "timestamp": "2026-05-01 02:07:48.542905+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "User asked: Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.\nAgent responded: The exact note you requested is as follows:\n\n**\"User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\\nAgent responded: The note \\\"bonsai_floor_memory_prefers_source_backed_recall\\\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.\"**",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "role": "default",
+      "content_length": 531,
+      "conflict": false,
+      "route": "verbatim",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "source": "automatic_memory_retain",
+      "summary_status": "background_queued",
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.retain.completed",
+          "summary": "Memory retain completed",
+          "event_id": "evt_b79be05d7b7149aa8d2b6adca2473a13",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_b79be05d7b7149aa8d2b6adca2473a13",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 1,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:1",
+          "timestamp": "2026-05-01T02:07:48.542774+00:00",
+          "metadata": {
+            "bank_id": "user_mh-local8b-memory-explicit-002",
+            "role": "default",
+            "content_length": 531,
+            "conflict": false,
+            "route": "verbatim",
+            "provider": "fusion",
+            "providers": "verbatim,summary_async",
+            "source": "automatic_memory_retain",
+            "summary_status": "background_queued",
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 263,
+    "timestamp": "2026-05-01 02:07:48.465101+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 95,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "verbatim",
+      "consumer": "agent_writer",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "actor_role": "default",
+      "item_count": 1,
+      "policy_decision": "write_allowed",
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 262,
+    "timestamp": "2026-05-01 02:07:48.287868+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "<tool_output source=\"memory_search\" trusted=\"true\">\n{\"results\": [{\"text\": \"bonsai_floor_memory_prefers_source_backed_recall\", \"type\": \"experience\", \"entities\": []}, {\"text\": \"User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\\nAgent responded: The note \\\"bonsai_floor_memory_prefers_source_backed_recall\\\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.\", \"type\": \"experience\", \"entities\": []}], \"count\": 2}\n</tool_output>",
+    "output": "The exact note you requested is as follows:\n\n**\"User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\\nAgent responded: The note \\\"bonsai_floor_memory_prefers_source_backed_recall\\\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.\"**",
+    "duration_ms": 116752,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 1783,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+        "iteration": 2,
+        "prompt_digest": "a3f29b0ae1d652ca11eb18286f8fb4e185faa183c6933473233e10748be5b4ba",
+        "prompt_layout_digest": "001bc2532e6821ac577cb224501dcf5688bcb3c23a76784c4ca31c3fdf8afd52",
+        "system_prompt_digest": "00cd33293e669dabb9b5cd9bf9e90a8e7ad295b51e92262c3db2dca0a88de770",
+        "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+        "tool_count": 2,
+        "tool_names": [
+          "memory_add",
+          "memory_search"
+        ],
+        "usage": {
+          "prompt_tokens": 1699,
+          "input_tokens": null,
+          "completion_tokens": 84,
+          "output_tokens": 84,
+          "total_tokens": 1783,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 1510,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "prompt_layout_changed"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 2,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 116752.031,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_126b0a3bd71a4112ba9e25ed1571dc97",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_126b0a3bd71a4112ba9e25ed1571dc97",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 2,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:2",
+          "timestamp": "2026-05-01T02:07:48.287622+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+              "iteration": 2,
+              "prompt_digest": "a3f29b0ae1d652ca11eb18286f8fb4e185faa183c6933473233e10748be5b4ba",
+              "prompt_layout_digest": "001bc2532e6821ac577cb224501dcf5688bcb3c23a76784c4ca31c3fdf8afd52",
+              "system_prompt_digest": "00cd33293e669dabb9b5cd9bf9e90a8e7ad295b51e92262c3db2dca0a88de770",
+              "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+              "tool_count": 2,
+              "tool_names": [
+                "memory_add",
+                "memory_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "prompt_layout_changed"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 2,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 116752.031,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 0,
+            "done": true,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        },
+        {
+          "kind": "llm",
+          "status": "active",
+          "name": "llm.prompt_cache_break",
+          "summary": "Prompt/cache locality changed",
+          "event_id": "evt_9601ab3376b74095adbf7112d215aa81",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_9601ab3376b74095adbf7112d215aa81",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 2,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:2",
+          "timestamp": "2026-05-01T02:07:48.200307+00:00",
+          "metadata": {
+            "cache_break_reasons": [
+              "prompt_layout_changed"
+            ],
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "prompt_layout_digest": "001bc2532e6821ac577cb224501dcf5688bcb3c23a76784c4ca31c3fdf8afd52",
+            "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+            "cache_read_tokens": "[redacted]",
+            "previous_cache_read_tokens": "[redacted]",
+            "request_id": null,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 2
+  },
+  {
+    "id": 261,
+    "timestamp": "2026-05-01 02:07:48.200400+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "direct_answer",
+      "route_taxonomy": "direct_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 0,
+      "tool_names": [],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": false,
+      "retrieval_route_requested": false
+    },
+    "iteration": 2
+  },
+  {
+    "id": 260,
+    "timestamp": "2026-05-01 02:05:51.359693+00:00",
+    "action": "tool_result",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "bonsai_floor_memory_prefers_source_backed_recall",
+      "fact_type": "experience"
+    },
+    "output": {
+      "results": [
+        {
+          "text": "bonsai_floor_memory_prefers_source_backed_recall",
+          "type": "experience",
+          "entities": []
+        },
+        {
+          "text": "User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\nAgent responded: The note \"bonsai_floor_memory_prefers_source_backed_recall\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.",
+          "type": "experience",
+          "entities": []
+        }
+      ],
+      "count": 2
+    },
+    "duration_ms": 637,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+      "tool_name": "memory_search",
+      "tool_calls_total_before": 1,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 4226,
+      "tokens_limit": 100000,
+      "iterations_used": 1,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "completed",
+          "name": "tool.memory_search",
+          "summary": "Tool execution completed",
+          "event_id": "evt_3300e3a1a2e5490f8b76e7a1aebbc369",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_3300e3a1a2e5490f8b76e7a1aebbc369",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:05:51.359597+00:00",
+          "metadata": {
+            "tool_call_id": "K8vGAsuNayj6pDAyDlftFgSYIJESRrJn",
+            "tool_name": "memory_search",
+            "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+            "tool_calls_total_before": 1,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 1,
+            "iterations_limit": 10,
+            "duration_ms": 636.6160540055716,
+            "result_type": "dict",
+            "result_keys": [
+              "results",
+              "count"
+            ],
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 259,
+    "timestamp": "2026-05-01 02:05:51.268985+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "fusion",
+      "query": "bonsai_floor_memory_prefers_source_backed_recall",
+      "fact_type": "experience",
+      "original_fact_type": "experience",
+      "item_count": 2,
+      "engine_item_count": 2,
+      "recent_item_count": 0,
+      "tool_name": "memory_search",
+      "source": "explicit_memory_tool"
+    },
+    "iteration": null
+  },
+  {
+    "id": 257,
+    "timestamp": "2026-05-01 02:05:50.723038+00:00",
+    "action": "tool_call",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": {
+      "query": "bonsai_floor_memory_prefers_source_backed_recall",
+      "fact_type": "experience"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+      "tool_name": "memory_search",
+      "tool_calls_total_before": 1,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 4226,
+      "tokens_limit": 100000,
+      "iterations_used": 1,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "started",
+          "name": "tool.memory_search",
+          "summary": "Tool execution started",
+          "event_id": "evt_26bd0c11aeda4d1e88fd3556accf1fd5",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_26bd0c11aeda4d1e88fd3556accf1fd5",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:05:50.722963+00:00",
+          "metadata": {
+            "tool_call_id": "K8vGAsuNayj6pDAyDlftFgSYIJESRrJn",
+            "tool_name": "memory_search",
+            "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+            "tool_calls_total_before": 1,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 1,
+            "iterations_limit": 10,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 256,
+    "timestamp": "2026-05-01 02:05:50.640313+00:00",
+    "action": "consent_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_search",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "auto_allow",
+      "policy_id": "yaml:default"
+    },
+    "iteration": null
+  },
+  {
+    "id": 255,
+    "timestamp": "2026-05-01 02:05:50.559721+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.",
+    "output": null,
+    "duration_ms": 203629,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 1550,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+        "iteration": 0,
+        "prompt_digest": "044ea252401680ba3f711202c87f00f9bdce4148e99018ab52d6ed203bb981eb",
+        "prompt_layout_digest": "b7b2e7d02838cbe32e1cd99ed8c4e26f31b3d27a0eb9dd225a42b51cdfc04a30",
+        "system_prompt_digest": "00cd33293e669dabb9b5cd9bf9e90a8e7ad295b51e92262c3db2dca0a88de770",
+        "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+        "tool_count": 2,
+        "tool_names": [
+          "memory_add",
+          "memory_search"
+        ],
+        "usage": {
+          "prompt_tokens": 1514,
+          "input_tokens": null,
+          "completion_tokens": 36,
+          "output_tokens": 36,
+          "total_tokens": 1550,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 733,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "first_request"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 2,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 203628.741,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_7979c8c7ed12424f9647a2ef8963f945",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_7979c8c7ed12424f9647a2ef8963f945",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:05:50.559492+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+              "iteration": 0,
+              "prompt_digest": "044ea252401680ba3f711202c87f00f9bdce4148e99018ab52d6ed203bb981eb",
+              "prompt_layout_digest": "b7b2e7d02838cbe32e1cd99ed8c4e26f31b3d27a0eb9dd225a42b51cdfc04a30",
+              "system_prompt_digest": "00cd33293e669dabb9b5cd9bf9e90a8e7ad295b51e92262c3db2dca0a88de770",
+              "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+              "tool_count": 2,
+              "tool_names": [
+                "memory_add",
+                "memory_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "first_request"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 2,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 203628.741,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 1,
+            "done": false,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 0
+  },
+  {
+    "id": 254,
+    "timestamp": "2026-05-01 02:05:50.478943+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "tool_use",
+      "route_taxonomy": "retrieval_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [
+        "memory_search"
+      ],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 1,
+      "tool_names": [
+        "memory_search"
+      ],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": true,
+      "retrieval_route_requested": true
+    },
+    "iteration": 0
+  },
+  {
+    "id": 253,
+    "timestamp": "2026-05-01 02:02:26.667366+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": "### Personal Raw Evidence\n- [available] bonsai_floor_memory_prefers_source_backed_recall (user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4#0)\n- [available] User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\nAgent responded: The note \"bonsai_floor_memory_prefers_source_backed_recall\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later. (mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202#0)",
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "role": "default",
+      "source": "memory_recall_node",
+      "facts_recalled": 2,
+      "entities": 0,
+      "tokens_used": 580,
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.recall.completed",
+          "summary": "Memory recall selected context for prompt assembly",
+          "event_id": "evt_d061ddfd03ea4cd8ada7c94af368f970",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_d061ddfd03ea4cd8ada7c94af368f970",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:02:26.667227+00:00",
+          "metadata": {
+            "bank_id": "user_mh-local8b-memory-explicit-002",
+            "role": "default",
+            "source": "memory_recall_node",
+            "facts_recalled": 2,
+            "entities": 0,
+            "tokens_used": "[redacted]",
+            "source_layer_counts": {
+              "personal_raw": 2
+            },
+            "query_gate_action": "retrieve",
+            "query_gate_reason": "verification_requested",
+            "degradation_flags": [
+              "NO_PERSONAL_KB",
+              "NO_WORLD_EVIDENCE",
+              "MEMORY_VERIFY_REQUIRED"
+            ],
+            "context_refs": [
+              {
+                "id": "fusion:0:user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4#0",
+                "source_refs": [
+                  "user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4#0"
+                ],
+                "raw_evidence_ref": "user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4#0",
+                "operation_log_id": "memory-op:recall:user_mh-local8b-memory-explicit-002__verbatim:verbatim:user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4-0",
+                "diff_ref": "memory-diff:user_mh-local8b-memory-explicit-002__verbatim:verbatim:user_mh-local8b-memory-explicit-002__verbatim:0:4b54b1d6c52c784f747ec7b4-0",
+                "thread_id": "",
+                "session_id": "",
+                "room_id": "",
+                "source_layer": "personal_raw",
+                "context_tier": "L1"
+              },
+              {
+                "id": "fusion:1:mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202#0",
+                "source_refs": [
+                  "mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202#0"
+                ],
+                "raw_evidence_ref": "mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202#0",
+                "operation_log_id": "memory-op:recall:user_mh-local8b-memory-explicit-002__verbatim:verbatim:mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202-0",
+                "diff_ref": "memory-diff:user_mh-local8b-memory-explicit-002__verbatim:verbatim:mh-local8b-memory-explicit-001-3f8c8ea3:default:202605010202-0",
+                "thread_id": "",
+                "session_id": "",
+                "room_id": "",
+                "source_layer": "personal_raw",
+                "context_tier": "L1"
+              }
+            ],
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 252,
+    "timestamp": "2026-05-01 02:02:26.582085+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 695,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "actor_role": "default",
+      "item_count": 2,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note."
+    },
+    "iteration": null
+  },
+  {
+    "id": 251,
+    "timestamp": "2026-05-01 02:02:25.581673+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false,
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 250,
+    "timestamp": "2026-05-01 02:02:25.409449+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 249,
+    "timestamp": "2026-05-01 02:02:25.307370+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "answer",
+            "backed",
+            "bonsai",
+            "exact",
+            "floor",
+            "memory",
+            "note",
+            "now",
+            "prefers",
+            "recall",
+            "search",
+            "source"
+          ],
+          "selected_skill_ids": [
+            "global:memory-usage"
+          ],
+          "dense_enabled": false,
+          "reason": "memory_intent_shortcut",
+          "candidates": [
+            {
+              "skill_id": "global:market-research",
+              "name": "market-research",
+              "tier": "global",
+              "category": "research",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": true,
+              "reason": "memory_intent_match",
+              "matched_terms": [
+                "answer",
+                "exact",
+                "memory",
+                "prefers",
+                "recall",
+                "search"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "answer",
+                "exact",
+                "memory",
+                "search"
+              ]
+            },
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:trading-analysis",
+              "name": "trading-analysis",
+              "tier": "global",
+              "category": "trading",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 248,
+    "timestamp": "2026-05-01 02:02:25.005950+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "User asked: Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.\nAgent responded: The note \"bonsai_floor_memory_prefers_source_backed_recall\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "role": "default",
+      "content_length": 335,
+      "conflict": false,
+      "route": "verbatim",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "source": "automatic_memory_retain",
+      "summary_status": "background_queued",
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.retain.completed",
+          "summary": "Memory retain completed",
+          "event_id": "evt_e27407eb06d849a5a6bb4a8b3dc0b4b5",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_e27407eb06d849a5a6bb4a8b3dc0b4b5",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 1,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:1",
+          "timestamp": "2026-05-01T02:02:25.005869+00:00",
+          "metadata": {
+            "bank_id": "user_mh-local8b-memory-explicit-002",
+            "role": "default",
+            "content_length": 335,
+            "conflict": false,
+            "route": "verbatim",
+            "provider": "fusion",
+            "providers": "verbatim,summary_async",
+            "source": "automatic_memory_retain",
+            "summary_status": "background_queued",
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 247,
+    "timestamp": "2026-05-01 02:02:24.924056+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 94,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "verbatim",
+      "consumer": "agent_writer",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "actor_role": "default",
+      "item_count": 1,
+      "policy_decision": "write_allowed",
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 246,
+    "timestamp": "2026-05-01 02:02:24.739863+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "<tool_output source=\"memory_add\" trusted=\"true\">\n{\"stored\": true, \"facts_extracted\": 1}\n</tool_output>",
+    "output": "The note \"bonsai_floor_memory_prefers_source_backed_recall\" has been successfully stored in your long-term memory as an experience. Let me know if you need to retrieve or reference it later.",
+    "duration_ms": 63445,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 1379,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+        "iteration": 2,
+        "prompt_digest": "2fd077925f5eee74311d99c006a42605ac8e05768669ea6f512c1a8c94000ea8",
+        "prompt_layout_digest": "ea575d294de85b7bc00bdeabff7d625f9f6ac2aaf7ff37c4ef2e72a39056dbda",
+        "system_prompt_digest": "d211367b2b1e1329caa0f7bc66a68a592b4cef5fe96f2dedf4f721512240b4c3",
+        "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+        "tool_count": 2,
+        "tool_names": [
+          "memory_add",
+          "memory_search"
+        ],
+        "usage": {
+          "prompt_tokens": 1338,
+          "input_tokens": null,
+          "completion_tokens": 41,
+          "output_tokens": 41,
+          "total_tokens": 1379,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 1257,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "prompt_layout_changed"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 2,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 63445.323,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_5cc90240e4ba4c8bbc789d33f8e09dba",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_5cc90240e4ba4c8bbc789d33f8e09dba",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 2,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:2",
+          "timestamp": "2026-05-01T02:02:24.739592+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+              "iteration": 2,
+              "prompt_digest": "2fd077925f5eee74311d99c006a42605ac8e05768669ea6f512c1a8c94000ea8",
+              "prompt_layout_digest": "ea575d294de85b7bc00bdeabff7d625f9f6ac2aaf7ff37c4ef2e72a39056dbda",
+              "system_prompt_digest": "d211367b2b1e1329caa0f7bc66a68a592b4cef5fe96f2dedf4f721512240b4c3",
+              "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+              "tool_count": 2,
+              "tool_names": [
+                "memory_add",
+                "memory_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "prompt_layout_changed"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 2,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 63445.323,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 0,
+            "done": true,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        },
+        {
+          "kind": "llm",
+          "status": "active",
+          "name": "llm.prompt_cache_break",
+          "summary": "Prompt/cache locality changed",
+          "event_id": "evt_027d68c847cf4b9692d8f9b3b9a6896a",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_027d68c847cf4b9692d8f9b3b9a6896a",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 2,
+          "turn_id": "mh-local8b-memory-explicit-001-3f8c8ea3:turn:2",
+          "timestamp": "2026-05-01T02:02:24.639422+00:00",
+          "metadata": {
+            "cache_break_reasons": [
+              "prompt_layout_changed"
+            ],
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "prompt_layout_digest": "ea575d294de85b7bc00bdeabff7d625f9f6ac2aaf7ff37c4ef2e72a39056dbda",
+            "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+            "cache_read_tokens": "[redacted]",
+            "previous_cache_read_tokens": "[redacted]",
+            "request_id": null,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 2
+  },
+  {
+    "id": 245,
+    "timestamp": "2026-05-01 02:02:24.639520+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "direct_answer",
+      "route_taxonomy": "direct_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 0,
+      "tool_names": [],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": false,
+      "retrieval_route_requested": false
+    },
+    "iteration": 2
+  },
+  {
+    "id": 244,
+    "timestamp": "2026-05-01 02:01:21.103533+00:00",
+    "action": "tool_result",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "bonsai_floor_memory_prefers_source_backed_recall",
+      "fact_type": "experience"
+    },
+    "output": {
+      "stored": true,
+      "facts_extracted": 1
+    },
+    "duration_ms": 345,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+      "tool_name": "memory_add",
+      "tool_calls_total_before": 0,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 1297,
+      "tokens_limit": 100000,
+      "iterations_used": 0,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "completed",
+          "name": "tool.memory_add",
+          "summary": "Tool execution completed",
+          "event_id": "evt_3c7e8a4e4b62409a9e09ce4c8d44f986",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_3c7e8a4e4b62409a9e09ce4c8d44f986",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:01:21.103433+00:00",
+          "metadata": {
+            "tool_call_id": "6SfF0ltB1id6AEORzK9vpwdikWEYtYTS",
+            "tool_name": "memory_add",
+            "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+            "tool_calls_total_before": 0,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 0,
+            "iterations_limit": 10,
+            "duration_ms": 344.6471999923233,
+            "result_type": "dict",
+            "result_keys": [
+              "stored",
+              "facts_extracted"
+            ],
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 243,
+    "timestamp": "2026-05-01 02:01:21.017919+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "bonsai_floor_memory_prefers_source_backed_recall",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "fusion",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "storage_route": "verbatim",
+      "fact_type": "experience",
+      "original_fact_type": "experience",
+      "item_count": 1,
+      "tool_name": "memory_add",
+      "source": "explicit_memory_tool",
+      "summary_status": "background_queued"
+    },
+    "iteration": null
+  },
+  {
+    "id": 241,
+    "timestamp": "2026-05-01 02:01:20.759019+00:00",
+    "action": "tool_call",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": {
+      "content": "bonsai_floor_memory_prefers_source_backed_recall",
+      "fact_type": "experience"
+    },
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+      "tool_name": "memory_add",
+      "tool_calls_total_before": 0,
+      "tool_calls_total_limit": 50,
+      "tool_calls_for_tool_before": 0,
+      "tool_calls_for_tool_limit": 0,
+      "tokens_used": 1297,
+      "tokens_limit": 100000,
+      "iterations_used": 0,
+      "iterations_limit": 10,
+      "runtime_events": [
+        {
+          "kind": "tool",
+          "status": "started",
+          "name": "tool.memory_add",
+          "summary": "Tool execution started",
+          "event_id": "evt_32b4b6b803ee491fbaac78478911c351",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_32b4b6b803ee491fbaac78478911c351",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:01:20.758848+00:00",
+          "metadata": {
+            "tool_call_id": "6SfF0ltB1id6AEORzK9vpwdikWEYtYTS",
+            "tool_name": "memory_add",
+            "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+            "tool_calls_total_before": 0,
+            "tool_calls_total_limit": 50,
+            "tool_calls_for_tool_before": 0,
+            "tool_calls_for_tool_limit": 0,
+            "tokens_used": "[redacted]",
+            "tokens_limit": "[redacted]",
+            "iterations_used": 0,
+            "iterations_limit": 10,
+            "outcome": "deferred"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 240,
+    "timestamp": "2026-05-01 02:01:20.674116+00:00",
+    "action": "consent_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": "memory_add",
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "decision": "auto_allow",
+      "policy_id": "yaml:default"
+    },
+    "iteration": null
+  },
+  {
+    "id": 239,
+    "timestamp": "2026-05-01 02:01:20.563253+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.",
+    "output": null,
+    "duration_ms": 378851,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": false,
+      "tool_calls_count": 1,
+      "token_usage": 1297,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+        "iteration": 0,
+        "prompt_digest": "c1dfcee6267282ba943f1efc3b5684723c3feb1ea19a187e9ddecf2f89fb6920",
+        "prompt_layout_digest": "39991404c4bfcbd2f22965634f943893e632b8d423565791e7f8dce6616e2793",
+        "system_prompt_digest": "d211367b2b1e1329caa0f7bc66a68a592b4cef5fe96f2dedf4f721512240b4c3",
+        "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+        "tool_count": 2,
+        "tool_names": [
+          "memory_add",
+          "memory_search"
+        ],
+        "usage": {
+          "prompt_tokens": 1261,
+          "input_tokens": null,
+          "completion_tokens": 36,
+          "output_tokens": 36,
+          "total_tokens": 1297,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 192,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "first_request"
+        ],
+        "metadata": {
+          "routing_reason": "config_absent",
+          "routing_used": false,
+          "tool_count": 2,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 378850.929,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_b552de079dbd46549a83d79bf0d73bc8",
+          "run_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "span_id": "evt_b552de079dbd46549a83d79bf0d73bc8",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T02:01:20.562794+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+              "iteration": 0,
+              "prompt_digest": "c1dfcee6267282ba943f1efc3b5684723c3feb1ea19a187e9ddecf2f89fb6920",
+              "prompt_layout_digest": "39991404c4bfcbd2f22965634f943893e632b8d423565791e7f8dce6616e2793",
+              "system_prompt_digest": "d211367b2b1e1329caa0f7bc66a68a592b4cef5fe96f2dedf4f721512240b4c3",
+              "tool_catalog_digest": "254d2c9130e98c9a63ee607c1833f3259a8d9a436fa3ce9f802824462fa81598",
+              "tool_count": 2,
+              "tool_names": [
+                "memory_add",
+                "memory_search"
+              ],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "first_request"
+              ],
+              "metadata": {
+                "routing_reason": "config_absent",
+                "routing_used": false,
+                "tool_count": 2,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 378850.929,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 1,
+            "done": false,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 0
+  },
+  {
+    "id": 238,
+    "timestamp": "2026-05-01 02:01:20.458797+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "tool_use",
+      "route_taxonomy": "tool_use",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [
+        "memory_add"
+      ],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 1,
+      "tool_names": [
+        "memory_add"
+      ],
+      "routing_reason": "config_absent",
+      "routing_used": false,
+      "routing_picked_model": "bonsai-8b",
+      "memory_route_requested": true,
+      "retrieval_route_requested": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 237,
+    "timestamp": "2026-05-01 01:55:01.389976+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 506,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-002",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
+    },
+    "iteration": null
+  },
+  {
+    "id": 236,
+    "timestamp": "2026-05-01 01:54:49.531385+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 235,
+    "timestamp": "2026-05-01 01:54:49.431424+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-3f8c8ea3",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.",
+      "user_id": "mh-local8b-memory-explicit-002",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "add",
+            "backed",
+            "bonsai",
+            "exact",
+            "floor",
+            "local",
+            "memory",
+            "model",
+            "note",
+            "now",
+            "prefers",
+            "recall",
+            "remember",
+            "source"
+          ],
+          "selected_skill_ids": [
+            "global:memory-usage"
+          ],
+          "dense_enabled": false,
+          "reason": "memory_intent_shortcut",
+          "candidates": [
+            {
+              "skill_id": "global:market-research",
+              "name": "market-research",
+              "tier": "global",
+              "category": "research",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": true,
+              "reason": "memory_intent_match",
+              "matched_terms": [
+                "add",
+                "exact",
+                "memory",
+                "prefers",
+                "recall",
+                "remember"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "exact",
+                "memory"
+              ]
+            },
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "add"
+              ]
+            },
+            {
+              "skill_id": "global:trading-analysis",
+              "name": "trading-analysis",
+              "tier": "global",
+              "category": "trading",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  }
+]

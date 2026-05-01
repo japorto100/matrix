@@ -1515,6 +1515,60 @@ async def test_run_scenario_file_filters_by_scenario_ids(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_run_scenario_file_passes_allowed_tools(monkeypatch, tmp_path):
+    scenario_file = tmp_path / "scenarios.json"
+    scenario_file.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {
+                        "id": "memory-only",
+                        "allowed_tools": ["memory_add", "memory_search"],
+                        "turns": [{"user": "remember this"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    captured: dict[str, tuple[str, ...]] = {}
+
+    async def _fake_run_scenario(scenario, **kwargs):
+        captured["allowed_tools"] = scenario.allowed_tools
+        return scenario_runner.ScenarioRunResult(
+            run_id=kwargs["run_id"],
+            candidate_id=kwargs["candidate_id"],
+            scenario_id=scenario.id,
+            thread_id=f"thread-{scenario.id}",
+            user_id=kwargs["user_id"],
+            category=scenario.category,
+            turns=1,
+            transcript=(),
+            sse_chunks=(),
+            trace_events=(),
+            score={"completed": True, "fitness_score": 1.0},
+            trace_verdict=scenario_runner.TraceGateVerdict(
+                passed=True,
+                failures=(),
+                warnings=(),
+                observed_actions=(),
+                observed_tools=(),
+                observed_skills=(),
+            ),
+        )
+
+    monkeypatch.setattr(scenario_runner, "run_scenario", _fake_run_scenario)
+
+    result = await scenario_runner.run_scenario_file(
+        scenario_file,
+        data_dir=tmp_path / "meta",
+    )
+
+    assert result["scenarios_evaluated"] == 1
+    assert captured["allowed_tools"] == ("memory_add", "memory_search")
+
+
+@pytest.mark.asyncio
 async def test_run_scenario_file_rejects_missing_scenario_id(tmp_path):
     scenario_file = tmp_path / "scenarios.json"
     scenario_file.write_text(

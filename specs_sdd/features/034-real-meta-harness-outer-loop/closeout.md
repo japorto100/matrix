@@ -143,3 +143,19 @@ evaluation, decision logging and Pareto update.
   `LITELLM_API_KEY`.
 - Verification: `run-local8b-floor-skill-risk-001-isolated-fixed` passed
   trace/stream/completion gates at `1.0` with fitness `0.9992`.
+
+## 2026-05-01 Targeted Memory Floor Tool Scope
+
+- Finding: `local8b-memory-explicit-001` exposed a real agent-runtime scaling
+  issue. The eager ToolRegistry path filled the 4k llama.cpp context with the
+  full tool grammar, reaching about 7.8k prompt tokens before Bonsai could call
+  `memory_add` or `memory_search`.
+- Fix: Local-8B floor scenarios now support `allowed_tools`, and the dispatcher
+  runner filters the registry for targeted no-browser gates.
+- Verification:
+  `run-local8b-floor-memory-explicit-001-tools-filtered` passed
+  trace/stream/completion gates at `1.0`, exercised both `memory_add` and
+  `memory_search`, reported `tool_success_rate=1.0`, and scored `0.8473`.
+- Follow-up: this is a harness-side containment, not the final architecture.
+  The production Agent Runtime still needs provider-agnostic deferred tool
+  discovery / Tool Search for normal tools and MCP tools.

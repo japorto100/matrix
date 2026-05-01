@@ -1,0 +1,729 @@
+[
+  {
+    "id": 234,
+    "timestamp": "2026-05-01 01:51:20.262104+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 220,
+    "success": false,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "failed",
+          "name": "llm.call.failed",
+          "summary": "LLM call failed",
+          "event_id": "evt_c898c2ca4d6e48c38552bb3734236b76",
+          "run_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "span_id": "evt_c898c2ca4d6e48c38552bb3734236b76",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:51:20.261983+00:00",
+          "metadata": {
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "error_type": "BadRequestError",
+            "reason": "context_overflow",
+            "recovery": "compress",
+            "retryable": true,
+            "status_code": 400,
+            "outcome": "error"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ],
+      "failure": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "error_type": "BadRequestError",
+        "reason": "context_overflow",
+        "recovery": "compress",
+        "retryable": true,
+        "status_code": 400
+      }
+    },
+    "iteration": 0
+  },
+  {
+    "id": 233,
+    "timestamp": "2026-05-01 01:51:19.936443+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 583,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note."
+    },
+    "iteration": null
+  },
+  {
+    "id": 232,
+    "timestamp": "2026-05-01 01:51:19.251899+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 229,
+    "success": false,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "failed",
+          "name": "llm.call.failed",
+          "summary": "LLM call failed",
+          "event_id": "evt_0c57c7d66486434e9ef9c2611421517b",
+          "run_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "span_id": "evt_0c57c7d66486434e9ef9c2611421517b",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:51:19.251769+00:00",
+          "metadata": {
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "error_type": "BadRequestError",
+            "reason": "context_overflow",
+            "recovery": "compress",
+            "retryable": true,
+            "status_code": 400,
+            "outcome": "error"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ],
+      "failure": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "error_type": "BadRequestError",
+        "reason": "context_overflow",
+        "recovery": "compress",
+        "retryable": true,
+        "status_code": 400
+      }
+    },
+    "iteration": 0
+  },
+  {
+    "id": 231,
+    "timestamp": "2026-05-01 01:51:18.918425+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 593,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note."
+    },
+    "iteration": null
+  },
+  {
+    "id": 230,
+    "timestamp": "2026-05-01 01:51:17.933133+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 0,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "actor_role": "advisory",
+      "item_count": 0,
+      "query_gate": "insufficient_query",
+      "needs_verification": false,
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 229,
+    "timestamp": "2026-05-01 01:51:17.703118+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 228,
+    "timestamp": "2026-05-01 01:51:17.562878+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note.",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "answer",
+            "backed",
+            "bonsai",
+            "exact",
+            "floor",
+            "memory",
+            "note",
+            "now",
+            "prefers",
+            "recall",
+            "search",
+            "source"
+          ],
+          "selected_skill_ids": [
+            "global:memory-usage"
+          ],
+          "dense_enabled": false,
+          "reason": "memory_intent_shortcut",
+          "candidates": [
+            {
+              "skill_id": "global:market-research",
+              "name": "market-research",
+              "tier": "global",
+              "category": "research",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": true,
+              "reason": "memory_intent_match",
+              "matched_terms": [
+                "answer",
+                "exact",
+                "memory",
+                "prefers",
+                "recall",
+                "search"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "answer",
+                "exact",
+                "memory",
+                "search"
+              ]
+            },
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:trading-analysis",
+              "name": "trading-analysis",
+              "tier": "global",
+              "category": "trading",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 227,
+    "timestamp": "2026-05-01 01:51:17.208767+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 194,
+    "success": false,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "failed",
+          "name": "llm.call.failed",
+          "summary": "LLM call failed",
+          "event_id": "evt_b3f6a978245f476fabe67001d2cbafa5",
+          "run_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "span_id": "evt_b3f6a978245f476fabe67001d2cbafa5",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:51:17.208648+00:00",
+          "metadata": {
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "error_type": "BadRequestError",
+            "reason": "context_overflow",
+            "recovery": "compress",
+            "retryable": true,
+            "status_code": 400,
+            "outcome": "error"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ],
+      "failure": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "error_type": "BadRequestError",
+        "reason": "context_overflow",
+        "recovery": "compress",
+        "retryable": true,
+        "status_code": 400
+      }
+    },
+    "iteration": 0
+  },
+  {
+    "id": 226,
+    "timestamp": "2026-05-01 01:51:16.897206+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 406,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
+    },
+    "iteration": null
+  },
+  {
+    "id": 225,
+    "timestamp": "2026-05-01 01:51:16.353270+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 1328,
+    "success": false,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "failed",
+          "name": "llm.call.failed",
+          "summary": "LLM call failed",
+          "event_id": "evt_a76d465231f644c3b063750353737e5a",
+          "run_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "span_id": "evt_a76d465231f644c3b063750353737e5a",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:51:16.353157+00:00",
+          "metadata": {
+            "provider": "llamacpp",
+            "model": "bonsai-8b",
+            "error_type": "BadRequestError",
+            "reason": "context_overflow",
+            "recovery": "compress",
+            "retryable": true,
+            "status_code": 400,
+            "outcome": "error"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ],
+      "failure": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "error_type": "BadRequestError",
+        "reason": "context_overflow",
+        "recovery": "compress",
+        "retryable": true,
+        "status_code": 400
+      }
+    },
+    "iteration": 0
+  },
+  {
+    "id": 224,
+    "timestamp": "2026-05-01 01:51:14.755032+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 646,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_mh-local8b-memory-explicit-001",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "actor_role": "default",
+      "item_count": 0,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
+    },
+    "iteration": null
+  },
+  {
+    "id": 223,
+    "timestamp": "2026-05-01 01:50:59.081674+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 222,
+    "timestamp": "2026-05-01 01:50:58.957580+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-memory-explicit-001-11d19cd8",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:memory-usage"
+      ],
+      "skill_names": [
+        "memory-usage"
+      ],
+      "query_preview": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall.",
+      "user_id": "mh-local8b-memory-explicit-001",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "add",
+            "backed",
+            "bonsai",
+            "exact",
+            "floor",
+            "local",
+            "memory",
+            "model",
+            "note",
+            "now",
+            "prefers",
+            "recall",
+            "remember",
+            "source"
+          ],
+          "selected_skill_ids": [
+            "global:memory-usage"
+          ],
+          "dense_enabled": false,
+          "reason": "memory_intent_shortcut",
+          "candidates": [
+            {
+              "skill_id": "global:market-research",
+              "name": "market-research",
+              "tier": "global",
+              "category": "research",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            },
+            {
+              "skill_id": "global:memory-usage",
+              "name": "memory-usage",
+              "tier": "global",
+              "category": "general",
+              "skill_type": "general",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": true,
+              "reason": "memory_intent_match",
+              "matched_terms": [
+                "add",
+                "exact",
+                "memory",
+                "prefers",
+                "recall",
+                "remember"
+              ]
+            },
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "exact",
+                "memory"
+              ]
+            },
+            {
+              "skill_id": "global:risk-assessment",
+              "name": "risk-assessment",
+              "tier": "global",
+              "category": "risk",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": [
+                "add"
+              ]
+            },
+            {
+              "skill_id": "global:trading-analysis",
+              "name": "trading-analysis",
+              "tier": "global",
+              "category": "trading",
+              "skill_type": "task_specific",
+              "bm25_score": 0.0,
+              "bm25_rank": null,
+              "dense_rank": null,
+              "rrf_score": 0.0,
+              "selected": false,
+              "reason": "not_memory_intent",
+              "matched_terms": []
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  }
+]

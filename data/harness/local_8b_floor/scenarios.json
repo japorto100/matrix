@@ -48,6 +48,10 @@
     {
       "id": "local8b-memory-explicit-001",
       "category": "local_8b_memory_explicit",
+      "allowed_tools": [
+        "memory_add",
+        "memory_search"
+      ],
       "turns": [
         {
           "user": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
@@ -73,6 +77,9 @@
     {
       "id": "local8b-tool-chart-stream-001",
       "category": "local_8b_tool_chart_stream",
+      "allowed_tools": [
+        "get_chart_state"
+      ],
       "turns": [
         {
           "user": "Use get_chart_state now, then summarize the active symbol and timeframe in one short sentence."
@@ -93,6 +100,9 @@
     {
       "id": "local8b-retrieval-context-001",
       "category": "local_8b_retrieval_context",
+      "allowed_tools": [
+        "retrieve_context"
+      ],
       "turns": [
         {
           "user": "Use retrieve_context for source-grounded context about how EU sanctions can affect Russian oil shipping finance. Do not store this as personal memory."
@@ -113,6 +123,9 @@
     {
       "id": "local8b-semantic-lookup-001",
       "category": "local_8b_semantic_lookup",
+      "allowed_tools": [
+        "semantic_lookup"
+      ],
       "turns": [
         {
           "user": "Use semantic_lookup to ground the term Sharpe ratio, then define it in one sentence."

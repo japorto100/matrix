@@ -106,3 +106,18 @@ env credential resolver for local OpenAI-compatible providers. After the fix,
 model `bonsai-8b`, prompt tokens `1663`, completion tokens `58`, and
 duration about `98.6s`. The run used isolated user state and selected
 `risk-assessment` via the real skill finder.
+
+2026-05-01 Local-8B memory/tool-scope gate evidence:
+`run-local8b-floor-memory-explicit-001` failed before useful memory behavior
+because the eager ToolRegistry path loaded the full tool grammar into a 4k
+llama.cpp context, producing about 7.8k prompt tokens and no
+`memory_add`/`memory_search` call. The short-term harness fix adds scenario
+`allowed_tools` and filters the runtime registry for targeted floor slices.
+After filtering to `memory_add` and `memory_search`,
+`run-local8b-floor-memory-explicit-001-tools-filtered` passed
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `tool_success_rate=1.0`, and
+`fitness_score=0.8473`. This closes the immediate no-browser gate for the
+memory floor while leaving the real product gate open: provider-agnostic
+deferred tool discovery / Tool Search must replace static allowlists for
+normal runtime turns and MCP tools.

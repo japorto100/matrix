@@ -410,6 +410,40 @@ credential semantics. The fixed run passed with real skill search/injection,
 real LLM transport, runtime telemetry, memory/audit writes and SSE finish
 evidence.
 
+## 2026-05-01 Tool Search / Deferred Tool Loading Finding
+
+The Local-8B memory floor exposed the same scaling issue Anthropic documents
+for large tool sets. In `run-local8b-floor-memory-explicit-001`, the eager
+ToolRegistry path sent the full tool grammar to llama.cpp. The request grew to
+about 7.8k tokens and failed against a 4k context before the model could call
+`memory_add` or `memory_search`.
+
+Relevant references:
+
+- `https://code.claude.com/docs/en/agent-sdk/tool-search`: Claude Code Tool
+  Search withholds tool definitions from context and loads only relevant tools
+  on demand; the docs state that 50 tools can consume 10-20K tokens and that
+  accuracy degrades with more than 30-50 loaded tools.
+- `https://www.anthropic.com/engineering/advanced-tool-use`: Anthropic
+  describes `defer_loading`, a Tool Search Tool, and regex/BM25/custom search
+  strategies; only matching tool definitions are expanded into the model
+  context.
+
+Matrix decision:
+
+- Short term: add per-scenario `allowed_tools` so no-browser Local-8B floors can
+  test the intended tool path without unrelated schemas causing context
+  overflow.
+- Verification: `run-local8b-floor-memory-explicit-001-tools-filtered` reduced
+  the first-turn prompt to about 1.3k tokens, exercised `memory_add` and
+  `memory_search`, and passed trace/stream/completion gates at `1.0` with
+  `fitness_score=0.8473`.
+- Product follow-up: implement provider-agnostic deferred tool discovery in
+  the Agent Runtime. The first prompt should contain a compact searchable
+  catalog or `tool_search` capability, then load only the selected 3-5 full
+  schemas for the current turn. This should apply to normal tools and MCP
+  tools; static scenario allowlists are not the final architecture.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature

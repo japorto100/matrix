@@ -188,6 +188,17 @@ feature_id: 034
     `META_HARNESS_*_API_KEY`. `run-local8b-floor-skill-risk-001-isolated-fixed`
     passed with `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`,
     `completion_rate=1.0` and `fitness_score=0.9992`.
+- [partial-live-no-browser] T079 Add tool-scope filtering for expensive
+  Local-8B tool floors, and promote the finding into a runtime Tool Search
+  follow-up.
+  - 2026-05-01: `local8b-memory-explicit-001` failed with context overflow
+    because the eager full ToolRegistry serialized about 7.8k prompt tokens
+    into a 4k llama.cpp context before `memory_add`/`memory_search` could run.
+    Anthropic Tool Search documentation confirms the intended scalable pattern:
+    defer full tool definitions and load only the 3-5 relevant tools via
+    regex/BM25/custom search. Matrix now uses `allowed_tools` in
+    Meta-Harness scenarios as a short-term floor gate, but the product runtime
+    still needs provider-agnostic deferred tool discovery.
 
 ## Documentation
 

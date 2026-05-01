@@ -1,0 +1,53 @@
+{
+  "run_id": "run-local8b-floor-memory-explicit-001",
+  "candidate_id": "bonsai-memory-explicit-floor",
+  "scenarios_evaluated": 1,
+  "completion_rate": 0.0,
+  "trace_gate_pass_rate": 0.0,
+  "stream_gate_pass_rate": 0.0,
+  "avg_turns": 2.0,
+  "turn_efficiency": 0.5,
+  "tool_success_rate": 1.0,
+  "memory_utilization_rate": 1.0,
+  "avg_fitness_score": 0.1347,
+  "fitness_score": 0.1347,
+  "total_tokens": 0,
+  "avg_tokens": 0.0,
+  "token_efficiency": 1000.0,
+  "total_cost_usd": 0.0,
+  "avg_cost_usd": 0.0,
+  "cost_efficiency": 1.0,
+  "total_duration_ms": 1971.0,
+  "avg_duration_ms": 1971.0,
+  "latency_efficiency": 0.507357,
+  "failed_scenarios": [
+    {
+      "scenario_id": "local8b-memory-explicit-001",
+      "failures": [
+        "missing required action: memory_retain",
+        "missing required tool: memory_add",
+        "missing required tool: memory_search",
+        "missing required response term: bonsai_floor_memory_prefers_source_backed_recall",
+        "missing tool_result events for tool success rate threshold"
+      ],
+      "stream_failures": [
+        "missing stream tool part: memory_add",
+        "missing stream tool part: memory_search",
+        "missing stream tool-output-available part",
+        "missing stream finish part"
+      ],
+      "observed_actions": [
+        "llm_response",
+        "memory_recall",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_stream_tools": [],
+      "observed_skills": [
+        "global:memory-usage",
+        "memory-usage"
+      ]
+    }
+  ]
+}

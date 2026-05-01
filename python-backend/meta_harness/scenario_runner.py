@@ -307,6 +307,7 @@ class Scenario:
     metadata: dict[str, Any] = field(default_factory=dict)
     consent_allow_session_tools: tuple[str, ...] = ()
     enable_tools: bool = True
+    allowed_tools: tuple[str, ...] = ()
     runner_variant: str = "dispatcher"
 
     @classmethod
@@ -336,6 +337,7 @@ class Scenario:
                 for x in (raw.get("consent") or {}).get("allow_session_tools", [])
             ),
             enable_tools=bool(raw.get("enable_tools", True)),
+            allowed_tools=tuple(str(x) for x in raw.get("allowed_tools", [])),
             runner_variant=runner_variant,
         )
 
@@ -1192,6 +1194,7 @@ async def _default_agent_runner(
     system_prompt: str,
     messages: list[dict[str, Any]],
     enable_tools: bool,
+    allowed_tools: tuple[str, ...] = (),
     consent_allow_session_tools: tuple[str, ...] = (),
     run_id: str = "",
     scenario_id: str = "",
@@ -1202,6 +1205,8 @@ async def _default_agent_runner(
 
     del consent_allow_session_tools, run_id, scenario_id
     registry = ToolRegistry.load() if enable_tools else ToolRegistry()
+    if allowed_tools:
+        registry = registry.filter_by_names(set(allowed_tools))
     ctx = AgentExecutionContext(
         user_id=user_id,
         thread_id=thread_id,
@@ -1298,6 +1303,7 @@ def service_agent_runner(agent_url: str) -> AgentRunner:
         system_prompt: str,
         messages: list[dict[str, Any]],
         enable_tools: bool,
+        allowed_tools: tuple[str, ...] = (),
         consent_allow_session_tools: tuple[str, ...] = (),
         run_id: str = "",
         scenario_id: str = "",
@@ -1305,7 +1311,7 @@ def service_agent_runner(agent_url: str) -> AgentRunner:
     ) -> list[str]:
         import httpx
 
-        del enable_tools, runner_variant
+        del enable_tools, allowed_tools, runner_variant
         current_user_message = next(
             (
                 str(message.get("content") or "")
@@ -1407,6 +1413,7 @@ async def run_scenario(
                     system_prompt=system_prompt_override,
                     messages=messages,
                     enable_tools=scenario.enable_tools,
+                    allowed_tools=scenario.allowed_tools,
                     consent_allow_session_tools=scenario.consent_allow_session_tools,
                     run_id=run_id,
                     scenario_id=scenario.id,
