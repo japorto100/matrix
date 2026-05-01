@@ -218,4 +218,23 @@ gap provider-agnostically:
 - It emits metadata-only downstream artifacts for source and KG-path
   inspection.
 - Its `to_model_output()` strips full hits/file contents from the next LLM
-  turn while leaving the complete result available to UI/audit.
+  turn while preserving downstream artifact metadata for UI/Ops.
+
+## 2026-05-01 Local-8B Deferred Retrieval Floor
+
+The first no-browser Local-8B retrieval floor without scenario `allowed_tools`
+was red in a useful way: `retrieve_context` was selected and executed, but the
+surrounding Agent Harness still ran automatic personal Memory-Fusion recall and
+retain because the prompt included "Do not store this as personal memory".
+That proved the retrieval boundary was not only a RAG issue; it crossed tool
+discovery, skill discovery and memory nodes.
+
+After the runtime correction, `run-local8b-floor-retrieval-deferred-tools-001-
+skill-clean` passed with provider telemetry `tool_count=2`:
+`retrieve_context` and `tool_search`. Trace gates observed `rag_retrieval`,
+`tool_call`, `tool_result` and no memory routes/providers. Stream gates
+observed `tool-input-start`, `tool-output-available` and the downstream
+artifact `rag-kg-sources.json`. The query still returned `NO_VECTOR_HITS`, so
+the retrieval corpus itself needs separate quality/data work, but the Agent
+Harness boundary is now correct: source-grounded RAG can degrade without being
+stored as personal memory.

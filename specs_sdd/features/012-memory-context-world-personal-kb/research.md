@@ -202,6 +202,17 @@ blocked memory runtime event before any durable Memory engine lookup/write.
 Delegated outcomes must therefore flow through the parent-side curation handoff
 instead of child-side shared memory writes.
 
+2026-05-01 no-personal-memory runtime correction: the Local-8B retrieval floor
+exposed a real boundary bug. A user asked for source-grounded RAG and explicitly
+said not to store it as personal memory, but the runtime still performed
+automatic Memory-Fusion recall/retain and deferred tool discovery exposed memory
+write schemas because the query contained the word "memory". The corrected
+contract is stricter: negative memory intent blocks automatic personal-memory
+recall/retain before engine lookup/write, suppresses memory write tool schemas
+and suppresses memory-usage skill injection. `retrieve_context` remains
+available as world/RAG context. This keeps RAG/KG retrieval separate from
+personal memory unless the user gives a positive memory cue.
+
 2026-04-30 implementation note: this is now represented in the
 Meta-Harness `knowledge-contract` lane. The static scenario requires
 Memory-Fusion recall/retain events to carry source status, raw evidence refs,

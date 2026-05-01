@@ -207,6 +207,20 @@ feature_id: 034
     slim-long` passed that gate with `AGENT_DEFER_TOOL_SCHEMAS=true`,
     `tool_count=4`, `memory_add` and `memory_search` observed,
     trace/stream/completion pass rates `1.0`, and `fitness_score=0.8465`.
+- [x] T080 [done-live-no-browser] Use a red Local-8B retrieval trace to harden
+  the Agent Harness memory/RAG boundary.
+  - 2026-05-01: `run-local8b-floor-retrieval-deferred-tools-001` proved
+    deferred schema selection could expose and execute `retrieve_context`, but
+    failed trace gates because automatic Memory-Fusion recall/retain still ran
+    despite the prompt saying not to store personal memory. The bounded fix
+    added negative memory intent policy to automatic memory recall/retain,
+    deferred tool schema selection and skill discovery. Unit slice:
+    `uv run pytest tests/agent/tools/test_catalog.py
+    tests/agent/graph/nodes/test_memory_node.py tests/agent/test_skill_finder.py`
+    passed with 33 tests. `run-local8b-floor-retrieval-deferred-tools-001-
+    skill-clean` then passed with `tool_count=2` (`retrieve_context`,
+    `tool_search`), `memory_recalls=0`, `memory_retains=0`, no observed memory
+    routes/providers, trace/stream pass rates `1.0` and `fitness_score=0.8978`.
 
 ## Documentation
 

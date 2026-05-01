@@ -266,6 +266,38 @@ def test_memory_risk_intent_keeps_memory_and_risk_skills(
     assert [skill.name for skill in out] == ["memory-usage", "risk-assessment"]
 
 
+def test_negative_memory_intent_suppresses_memory_skill(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search remember previous conversation",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="market-research",
+            description="Market sentiment and source grounded research",
+            category="research",
+            content="sanctions shipping finance source context",
+            path=tmp_path / "research",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Use retrieve_context for sanctions research. Do not store this as personal memory.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["market-research"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

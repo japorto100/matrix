@@ -1,0 +1,54 @@
+{
+  "files": [
+    {
+      "path": "python-backend/agent/app.py",
+      "sha256": "d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93",
+      "bytes": 38821
+    },
+    {
+      "path": "python-backend/agent/runners/dispatcher.py",
+      "sha256": "feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4",
+      "bytes": 13183
+    },
+    {
+      "path": "python-backend/agent/runners/simple.py",
+      "sha256": "d5ccd2eceb2c19f9c4a6074cbd4cff6cedde55c84317a8595bf4a68f148d6e2b",
+      "bytes": 23403
+    },
+    {
+      "path": "python-backend/agent/graph/runner.py",
+      "sha256": "1e5378a371431a39a8d0ac30b6fd30162f25b1a6f9ea2d8ebe234646c0ca7198",
+      "bytes": 39363
+    },
+    {
+      "path": "python-backend/agent/graph/nodes/llm_node.py",
+      "sha256": "b8c312f3b1504cce40225489060b47d24bade26c040aa21360263adcd5566e91",
+      "bytes": 30641
+    },
+    {
+      "path": "python-backend/agent/graph/nodes/tool_node.py",
+      "sha256": "b1f8f6f2d6758c3c70135d2d82ab639ba405a6c32cb6fc29d4c561dc4b158ff8",
+      "bytes": 20563
+    },
+    {
+      "path": "python-backend/agent/graph/nodes/memory_node.py",
+      "sha256": "81870d37a31223b8d1a84756ad1d489e83288b8f3834482d0486038567463b5e",
+      "bytes": 33321
+    },
+    {
+      "path": "python-backend/agent/tools/registry.py",
+      "sha256": "48855915d75c48e5b382e29b438793cdc88012ae551f8d7207336537473b8b99",
+      "bytes": 4736
+    },
+    {
+      "path": "python-backend/meta_harness/evaluator.py",
+      "sha256": "a579eba1baedc61b4c726d9e41540c55383b90b9e7e7f95185899fb3bd07785a",
+      "bytes": 11128
+    },
+    {
+      "path": "python-backend/meta_harness/scenario_runner.py",
+      "sha256": "ce2bcd7676e75eb7a5ae5de1509b305a032cec4954e201cf2ac0a5e062e095f8",
+      "bytes": 73105
+    }
+  ]
+}

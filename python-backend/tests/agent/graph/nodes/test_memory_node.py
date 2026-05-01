@@ -65,6 +65,41 @@ async def test_memory_recall_node_skips_current_market_without_memory_cue(monkey
 
 
 @pytest.mark.asyncio
+async def test_memory_recall_node_skips_when_user_requests_no_personal_memory(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("policy skip must happen before memory engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_recall_node(
+        {
+            "thread_id": "t-rag",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Use retrieve_context for sanctions research. "
+                        "Do not store this as personal memory."
+                    ),
+                }
+            ],
+        }
+    )
+
+    assert result["context_blocks"] == []
+    assert result["query_gate"]["action"] == "skip"
+    assert result["query_gate"]["reason"] == "user_requested_no_personal_memory"
+    event = result["runtime_events"][0]
+    assert event["status"] == "blocked"
+    assert event["name"] == "memory.recall.skipped"
+
+
+@pytest.mark.asyncio
 async def test_memory_recall_node_keeps_memory_cued_market_queries(monkeypatch):
     async def _fake_get_memory_engine():
         return None
@@ -255,6 +290,42 @@ async def test_memory_retain_node_blocks_child_shared_memory_writes(monkeypatch)
     assert event["metadata"]["reason"] == "child_memory_write_disabled"
     assert event["metadata"]["memory_write_policy"] == "parent_only"
     assert event["metadata"]["parent_thread_id"] == "parent-1"
+
+
+@pytest.mark.asyncio
+async def test_memory_retain_node_blocks_when_user_requests_no_personal_memory(monkeypatch):
+    async def _fail_get_memory_engine():
+        raise AssertionError("no-memory policy block must happen before engine lookup")
+
+    monkeypatch.setattr(
+        "memory_fusion.engine.get_memory_engine",
+        _fail_get_memory_engine,
+    )
+
+    result = await memory_node.memory_retain_node(
+        {
+            "thread_id": "t-rag",
+            "user_id": "u1",
+            "current_role": "default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": (
+                        "Use retrieve_context for sanctions research. "
+                        "Do not store this as personal memory."
+                    ),
+                }
+            ],
+            "final_response": "done",
+            "agent_class": "advisory",
+        }
+    )
+
+    event = result["runtime_events"][0]
+    assert event["kind"] == "memory"
+    assert event["status"] == "blocked"
+    assert event["name"] == "memory.retain.blocked"
+    assert event["metadata"]["reason"] == "user_requested_no_personal_memory"
 
 
 @pytest.mark.asyncio

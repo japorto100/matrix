@@ -72,6 +72,29 @@ _CURRENT_MARKET_QUERY_TERMS = (
     "tomorrow",
     "news",
 )
+_NO_PERSONAL_MEMORY_CUE_TERMS = (
+    "do not store",
+    "don't store",
+    "dont store",
+    "do not save",
+    "don't save",
+    "dont save",
+    "do not remember",
+    "don't remember",
+    "dont remember",
+    "do not retain",
+    "don't retain",
+    "dont retain",
+    "not store",
+    "not save",
+    "not remember",
+    "not retain",
+    "not personal memory",
+    "no personal memory",
+    "without storing",
+    "without saving",
+    "without memory",
+)
 
 
 def _memory_event(
@@ -103,6 +126,8 @@ def _memory_retain_timeout_seconds() -> float:
 def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
     """Skip personal memory prefetch for pure current/live-market requests."""
     text = f" {user_msg.lower()} "
+    if _has_no_personal_memory_cue(text):
+        return True, "user_requested_no_personal_memory"
     has_memory_cue = any(term in text for term in _MEMORY_RECALL_CUE_TERMS)
     has_current_market_cue = any(
         term in text for term in _CURRENT_MARKET_QUERY_TERMS
@@ -110,6 +135,11 @@ def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
     if has_current_market_cue and not has_memory_cue:
         return True, "current_market_without_personal_memory_cue"
     return False, ""
+
+
+def _has_no_personal_memory_cue(text: str) -> bool:
+    normalized = f" {text.lower()} "
+    return any(term in normalized for term in _NO_PERSONAL_MEMORY_CUE_TERMS)
 
 
 def _get_memory_config(role: str) -> dict:
@@ -569,6 +599,36 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
             ]
         }
 
+    role = state.get("current_role", "default")
+    response = state.get("final_response", "")
+    if not response:
+        return {}
+
+    user_msg = ""
+    for msg in reversed(state.get("messages", [])):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                user_msg = content[:500]
+                break
+
+    if _has_no_personal_memory_cue(user_msg):
+        return {
+            "runtime_events": [
+                _memory_event(
+                    status="blocked",
+                    name="memory.retain.blocked",
+                    state=state,
+                    summary="Memory retain skipped because the user requested no personal memory",
+                    metadata={
+                        "role": role,
+                        "reason": "user_requested_no_personal_memory",
+                        "source": "memory_retain_node",
+                    },
+                )
+            ]
+        }
+
     from memory_fusion.engine import get_bank_id, get_memory_engine
 
     engine = await get_memory_engine()
@@ -585,7 +645,6 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
             ]
         }
 
-    role = state.get("current_role", "default")
     mem_config = _get_memory_config(role)
 
     if not mem_config.get("memory_write", True):
@@ -601,18 +660,6 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 )
             ]
         }
-
-    response = state.get("final_response", "")
-    if not response:
-        return {}
-
-    user_msg = ""
-    for msg in reversed(state.get("messages", [])):
-        if msg.get("role") == "user":
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                user_msg = content[:500]
-                break
 
     timeout_s = _memory_retain_timeout_seconds()
     try:

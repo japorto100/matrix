@@ -74,3 +74,11 @@ feature_id: 019
 - `retrieve_context` consumes the compact `semantic_lookup.semantic_context`
   handoff and fails closed through retrieval semantic filters instead of
   asking the model to manually copy source constraints.
+- [x] Agent-facing `retrieve_context` can run through deferred schema selection
+  without contaminating personal-memory routes.
+  - 2026-05-01: `run-local8b-floor-retrieval-deferred-tools-001-skill-clean`
+    removed scenario `allowed_tools`, exposed only `retrieve_context` plus
+    `tool_search` to Bonsai 8B, called `retrieve_context`, emitted
+    `rag.retrieve.*` and downstream `rag-kg-sources.json`, and passed trace,
+    stream and tool-success gates at `1.0`. The result was degraded
+    (`NO_VECTOR_HITS`) but policy-correct and source-artifact-visible.

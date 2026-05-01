@@ -142,3 +142,17 @@ with `get_chart_state`, `get_geomap_focus`, `set_chart_state` and
 `fitness_score=0.8976`. The stream gate observed `tool-input-start`,
 `tool-output-available` and the rich renderer for `get_chart_state`, so this
 also covers downstream no-browser Agent Chat event shape for tool rendering.
+
+2026-05-01 deferred retrieval/memory-boundary live gate evidence:
+`run-local8b-floor-retrieval-deferred-tools-001` was a valid red Meta-Harness
+finding: deferred schemas selected `retrieve_context`, but the trace failed
+because automatic personal-memory recall/retain still ran for a prompt that
+explicitly said not to store personal memory. After the bounded runtime fix,
+`run-local8b-floor-retrieval-deferred-tools-001-skill-clean` passed with
+provider `tool_count=2` (`retrieve_context`, `tool_search`),
+`memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers,
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
+`fitness_score=0.8978`. The stream exposed `rag-kg-sources.json`, proving the
+RAG downstream artifact path stayed visible while personal memory remained
+blocked.

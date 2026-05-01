@@ -97,6 +97,15 @@ feature_id: 012
 - [x] Current/live-market prompts without personal-memory cues skip automatic
   personal-memory prefetch before Memory-Fusion/MemPalace engine lookup and
   emit a `memory.recall.skipped` runtime event.
+- [x] Explicit no-personal-memory prompts skip automatic personal-memory recall
+  and retain before Memory-Fusion/MemPalace engine lookup/write.
+  - 2026-05-01: `memory_recall_node` and `memory_retain_node` now treat
+    phrases such as "do not store this as personal memory" as a hard runtime
+    policy. The Local-8B retrieval floor first failed because RAG requests with
+    negative memory wording still emitted Fusion/Verbatim memory routes; after
+    the fix, `run-local8b-floor-retrieval-deferred-tools-001-skill-clean`
+    passed with `memory_recalls=0`, `memory_retains=0` and no observed memory
+    routes/providers.
 - [x] Remote embedding audit metadata redacts API keys while preserving
   provider/model/base-url host, key presence, key fingerprint and live-call
   budget for Control/Meta-Harness inspection.

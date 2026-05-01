@@ -184,3 +184,9 @@ feature_id: 024
     SimpleLoop expand the provider tool definitions for the next LLM step.
     Execution still uses the full server-side registry and existing approval
     gates.
+  - 2026-05-01 live no-browser: Local-8B floors now cover three separate
+    deferred builtin schema surfaces without scenario `allowed_tools`: memory
+    (`memory_add`/`memory_search`), chart/SSE (`get_chart_state`) and
+    retrieval/RAG (`retrieve_context`). The retrieval floor additionally
+    proved that negative memory intent suppresses memory write schemas while
+    leaving source-grounded retrieval available.

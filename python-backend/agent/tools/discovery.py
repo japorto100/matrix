@@ -11,6 +11,30 @@ from agent.tools.base import TradingTool
 from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
 
 TOOL_SEARCH_NAME = "tool_search"
+MEMORY_WRITE_TOOL_NAMES = frozenset({"memory_add", "save_memory"})
+_NO_MEMORY_WRITE_CUE_TERMS = (
+    "do not store",
+    "don't store",
+    "dont store",
+    "do not save",
+    "don't save",
+    "dont save",
+    "do not remember",
+    "don't remember",
+    "dont remember",
+    "do not retain",
+    "don't retain",
+    "dont retain",
+    "not store",
+    "not save",
+    "not remember",
+    "not retain",
+    "not personal memory",
+    "no personal memory",
+    "without storing",
+    "without saving",
+    "without memory",
+)
 
 
 def bool_env(key: str, default: bool) -> bool:
@@ -42,6 +66,7 @@ def tool_discovery_matches(
     if not q or not tool_list:
         return []
 
+    blocked_names = _blocked_tool_names_for_query(q)
     entries = builtin_tool_catalog(tool_list)
     matches = search_tool_catalog(
         entries,
@@ -49,10 +74,14 @@ def tool_discovery_matches(
         limit=limit,
         max_level=max_level,
     )
-    by_name = {str(item.get("name") or ""): dict(item) for item in matches}
+    by_name = {
+        str(item.get("name") or ""): dict(item)
+        for item in matches
+        if str(item.get("name") or "") not in blocked_names
+    }
     if include_exact_names:
         for tool in tool_list:
-            if tool.name == TOOL_SEARCH_NAME:
+            if tool.name == TOOL_SEARCH_NAME or tool.name in blocked_names:
                 continue
             if _query_mentions_tool(q, tool.name):
                 entry = next((e for e in entries if e.name == tool.name), None)
@@ -196,3 +225,10 @@ def _query_mentions_tool(query: str, tool_name: str) -> bool:
         re.search(rf"(?<![a-z0-9_]){re.escape(normalized_name)}(?![a-z0-9_])", normalized_query)
         or re.search(rf"(?<![a-z0-9]){re.escape(spaced)}(?![a-z0-9])", normalized_query)
     )
+
+
+def _blocked_tool_names_for_query(query: str) -> set[str]:
+    normalized = f" {query.lower()} "
+    if any(term in normalized for term in _NO_MEMORY_WRITE_CUE_TERMS):
+        return set(MEMORY_WRITE_TOOL_NAMES)
+    return set()

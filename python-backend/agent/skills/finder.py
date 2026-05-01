@@ -66,6 +66,25 @@ _RISK_INTENT_TERMS = frozenset(
         "verlust",
     }
 )
+_NEGATIVE_MEMORY_INTENT_PHRASES = (
+    "do not store",
+    "don't store",
+    "dont store",
+    "do not save",
+    "don't save",
+    "dont save",
+    "do not remember",
+    "don't remember",
+    "dont remember",
+    "do not retain",
+    "don't retain",
+    "dont retain",
+    "not personal memory",
+    "no personal memory",
+    "without storing",
+    "without saving",
+    "without memory",
+)
 
 
 @dataclass(frozen=True)
@@ -241,6 +260,8 @@ def _skill_trace_item(
 
 
 def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
+    if _has_negative_memory_intent(query):
+        return []
     normalized = query.casefold()
     query_terms = set(tokenize(query))
     has_memory_intent = any(term in normalized for term in _MEMORY_INTENT_TERMS) or bool(
@@ -256,6 +277,15 @@ def _memory_intent_skill_subset(skills: list[Skill], query: str) -> list[Skill]:
         elif has_risk_intent and skill.name == "risk-assessment":
             picked.append(skill)
     return picked
+
+
+def _has_negative_memory_intent(query: str) -> bool:
+    normalized = f" {query.casefold()} "
+    return any(phrase in normalized for phrase in _NEGATIVE_MEMORY_INTENT_PHRASES)
+
+
+def _is_memory_skill(skill: Skill) -> bool:
+    return skill.name == "memory-usage" or skill.skill_type == "memory"
 
 
 def find_skills_for_query(
@@ -317,6 +347,21 @@ def find_skills_with_trace(
                 ],
             },
         )
+
+    if _has_negative_memory_intent(q):
+        skills = [skill for skill in skills if not _is_memory_skill(skill)]
+        if not skills:
+            query_terms = set(tokenize(q))
+            return SkillSearchResult(
+                [],
+                {
+                    "query_terms": sorted(query_terms),
+                    "selected_skill_ids": [],
+                    "dense_enabled": False,
+                    "reason": "negative_memory_intent",
+                    "candidates": [],
+                },
+            )
 
     memory_intent_skills = _memory_intent_skill_subset(skills, q)
     if memory_intent_skills:

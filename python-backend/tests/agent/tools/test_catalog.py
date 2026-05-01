@@ -155,6 +155,29 @@ def test_selected_tools_for_turn_exact_name_can_load_high_risk_tool():
     assert "sandbox_execute" in {tool.name for tool in selected}
 
 
+def test_selected_tools_for_turn_suppresses_memory_writes_on_negative_memory_intent():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_add", "Remember durable user memory with evidence."),
+        _CatalogTool("save_memory", "Save a short-lived memory note."),
+        _CatalogTool("retrieve_context", "Retrieve source grounded context."),
+    )
+
+    selected = selected_tools_for_turn(
+        tools,
+        "Use retrieve_context, but do not store this as personal memory.",
+        defer_schemas=True,
+        limit=3,
+        max_level=2,
+    )
+
+    names = {tool.name for tool in selected}
+    assert "retrieve_context" in names
+    assert "tool_search" in names
+    assert "memory_add" not in names
+    assert "save_memory" not in names
+
+
 def test_expand_tool_definitions_from_tool_search_results():
     tools = (
         ToolSearchTool(),
