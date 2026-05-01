@@ -1,0 +1,538 @@
+{
+  "baseline": {
+    "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/baseline",
+    "candidate_id": "baseline",
+    "completion_rate": 1.0,
+    "fitness_score": 0.9995,
+    "run_id": "run-metaharness-round-local8b-001",
+    "scenarios_evaluated": 1,
+    "trace_gate_pass_rate": 1.0
+  },
+  "budget": {
+    "iterations": 1,
+    "max_scenarios": 1,
+    "max_wall_clock_minutes": 20,
+    "provider_calls_budget": 4
+  },
+  "contract": "real-meta-harness-outer-loop/v1",
+  "created_at": "2026-05-01T01:27:11.220696+00:00",
+  "domain_id": "agent-harness-local-8b-floor",
+  "dry_run": false,
+  "final_frontier_size": 15,
+  "frozen_evaluator_gate": {
+    "changed_paths": [],
+    "checked_paths": [
+      "/home/lipfi2/code/matrix/python-backend/../data/harness/local_8b_floor/scenarios.json",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/evaluator.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/outer_loop.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/real_outer_loop.py",
+      "/home/lipfi2/code/matrix/python-backend/meta_harness/scenario_runner.py"
+    ],
+    "passed": true
+  },
+  "holdout_visible_to_proposer": false,
+  "iteration_results": [
+    {
+      "candidate": {
+        "artifact_dir": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/iter-001-config-overlay",
+        "candidate_id": "iter-001-config-overlay",
+        "completion_rate": 1.0,
+        "fitness_score": 0.9994,
+        "run_id": "run-metaharness-round-local8b-001",
+        "scenarios_evaluated": 1,
+        "trace_gate_pass_rate": 1.0
+      },
+      "candidate_id": "iter-001-config-overlay",
+      "decision": {
+        "candidate_id": "iter-001-config-overlay",
+        "decided_at": "2026-05-01T01:27:10.791081+00:00",
+        "decision": "discard",
+        "follow_up": "Inspect raw traces for next bounded candidate before holdout.",
+        "metrics": {
+          "baseline": {
+            "completion_rate": 1.0,
+            "fitness_score": 0.9995,
+            "stream_gate_pass_rate": 1.0,
+            "trace_gate_pass_rate": 1.0
+          },
+          "candidate": {
+            "completion_rate": 1.0,
+            "fitness_score": 0.9994,
+            "stream_gate_pass_rate": 1.0,
+            "trace_gate_pass_rate": 1.0
+          },
+          "inspected_files_count": 24,
+          "true_meta_harness_iteration": true
+        },
+        "rationale": "iter-001-config-overlay regressed versus baseline on fitness_score under the frozen search evaluator.",
+        "run_id": "run-metaharness-round-local8b-001"
+      },
+      "dry_run": false,
+      "inspection": {
+        "artifact_classes": [
+          "scores",
+          "source",
+          "trace",
+          "verdicts"
+        ],
+        "candidate_count_seen": 80,
+        "candidate_paths": [
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/baseline",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor",
+          "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback"
+        ],
+        "contract": "proposer-interaction-log/v1",
+        "created_at": "2026-05-01T01:22:09.763703+00:00",
+        "failure_clusters_seen": [
+          {
+            "count": 20,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing tool_result events for tool success rate threshold"
+          },
+          {
+            "count": 16,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free"
+            ],
+            "failure": "missing required action: memory_retain"
+          },
+          {
+            "count": 14,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required tool: memory_add"
+          },
+          {
+            "count": 14,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1/candidates/iter-001-config-overlay"
+            ],
+            "failure": "missing required tool: memory_search"
+          },
+          {
+            "count": 14,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free"
+            ],
+            "failure": "missing required memory route: fusion"
+          },
+          {
+            "count": 12,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free"
+            ],
+            "failure": "missing required response term: memory_lifecycle_probe_prefers_verbatim_evidence_before_compaction"
+          },
+          {
+            "count": 12,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free"
+            ],
+            "failure": "missing required memory metadata key: bank_id"
+          },
+          {
+            "count": 12,
+            "example_candidate_paths": [
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory/candidates/recent-memory-search-fallback",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free",
+              "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-1-db-sanity/candidates/db-sanity-gpt-oss20b-free"
+            ],
+            "failure": "missing required memory metadata key: source"
+          }
+        ],
+        "files_read": [
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-local8b-001/candidates/baseline/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "73a8c4af59b9dbfc4fb544b56b54e5e1875a10bc277f4bf5cece0162c7b2e35b"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 655,
+            "path": "runs/run-metaharness-round-local8b-001/candidates/baseline/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-local8b-001\",\n  \"candidate_id\": \"baseline\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.9995,\n  \"fitness_score\": 0.9995,\n  \"total_tokens\": 1220,\n  \"avg_tokens\": 1220.0,\n  \"token_efficiency\": 0.819672,\n  \"total_cost_usd\": 0.00366,\n  \"avg_cost_usd\": 0.00366,\n",
+            "sha256": "eac687ebd2b55d0b0595ba802b7b226f2136b64e9bcb04a4e4fe1c36d21cacea"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 655,
+            "path": "runs/run-metaharness-round-local8b-001/candidates/baseline/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-local8b-001\",\n  \"candidate_id\": \"baseline\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.9995,\n  \"fitness_score\": 0.9995,\n  \"total_tokens\": 1220,\n  \"avg_tokens\": 1220.0,\n  \"token_efficiency\": 0.819672,\n  \"total_cost_usd\": 0.00366,\n  \"avg_cost_usd\": 0.00366,\n",
+            "sha256": "eac687ebd2b55d0b0595ba802b7b226f2136b64e9bcb04a4e4fe1c36d21cacea"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1350,
+            "path": "runs/run-metaharness-round-local8b-001/candidates/baseline/verdicts.json",
+            "preview": "{\n  \"passed\": true,\n  \"failures\": [],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"llm_response\",\n    \"memory_recall\",\n    \"memory_retain\",\n    \"route_decision\",\n    \"skill_found\",\n    \"skill_used\"\n  ],\n  \"observed_tools\": [],\n  \"observed_skills\": [\n    \"global:plan\",\n    \"plan\"\n  ],\n  \"tool_success_rate\": null,\n  \"observed_memory_routes\": [\n    \"fusion\",\n    \"verbatim\"\n  ],\n  \"observed_memory_providers\": [\n    \"fusion\",\n    \"summary_async\",\n    \"verbatim\"\n  ],\n  \"trace\": {\n    \"passed\": true,",
+            "sha256": "3278d06fa314b778350e759ab1568fa6408f6b1e4282e5eb6f482bed90259317"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 18326,
+            "path": "runs/run-metaharness-round-local8b-001/candidates/baseline/traces/local8b-direct-routing-001/mh-local8b-direct-routing-001-de35cce9.json",
+            "preview": "[\n  {\n    \"id\": 194,\n    \"timestamp\": \"2026-05-01 01:21:57.568158+00:00\",\n    \"action\": \"memory_retain\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": \"User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\\nAgent responded: local_8b_floor_direct_ok\",\n    \"output\": null,\n    \"duration_ms\": null,\n    \"success\": true,\n    \"error\": null",
+            "sha256": "a1bd9848e0cd184e97b9cf020de3ad61851f230acfe867d789a98025d5146a4f"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "a7eb488ad5359ef53460d38caee4eefb4b9180cfcf6071529f31cc3249202325"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 678,
+            "path": "runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-direct-long-timeout\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.9995,\n  \"fitness_score\": 0.9995,\n  \"total_tokens\": 1139,\n  \"avg_tokens\": 1139.0,\n  \"token_efficiency\": 0.877963,\n  \"total_cost_usd\": 0.003417,\n  \"av",
+            "sha256": "f8606f5cdcf33397ca5b4b0d519e60249937075e9e103b60cf892c0a46a4b52c"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 678,
+            "path": "runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor/scores.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-direct-long-timeout\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.9995,\n  \"fitness_score\": 0.9995,\n  \"total_tokens\": 1139,\n  \"avg_tokens\": 1139.0,\n  \"token_efficiency\": 0.877963,\n  \"total_cost_usd\": 0.003417,\n  \"av",
+            "sha256": "f8606f5cdcf33397ca5b4b0d519e60249937075e9e103b60cf892c0a46a4b52c"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1350,
+            "path": "runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor/verdicts.json",
+            "preview": "{\n  \"passed\": true,\n  \"failures\": [],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"llm_response\",\n    \"memory_recall\",\n    \"memory_retain\",\n    \"route_decision\",\n    \"skill_found\",\n    \"skill_used\"\n  ],\n  \"observed_tools\": [],\n  \"observed_skills\": [\n    \"global:plan\",\n    \"plan\"\n  ],\n  \"tool_success_rate\": null,\n  \"observed_memory_routes\": [\n    \"fusion\",\n    \"verbatim\"\n  ],\n  \"observed_memory_providers\": [\n    \"fusion\",\n    \"summary_async\",\n    \"verbatim\"\n  ],\n  \"trace\": {\n    \"passed\": true,",
+            "sha256": "3278d06fa314b778350e759ab1568fa6408f6b1e4282e5eb6f482bed90259317"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 15118,
+            "path": "runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor/traces/local8b-direct-routing-001/mh-local8b-direct-routing-001-f13a78f3.json",
+            "preview": "[\n  {\n    \"id\": 186,\n    \"timestamp\": \"2026-04-30 23:54:31.646104+00:00\",\n    \"action\": \"memory_retain\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-local8b-direct-routing-001-f13a78f3\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": \"User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\\nAgent responded: local_8b_floor_direct_ok\",\n    \"output\": null,\n    \"duration_ms\": null,\n    \"success\": true,\n    \"error\": null",
+            "sha256": "b5ed7e869af1934f298c7d400907a4296a5fc46d6eb713ffce3ba12b44e8eaab"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "a7eb488ad5359ef53460d38caee4eefb4b9180cfcf6071529f31cc3249202325"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1412,
+            "path": "runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-smoke-fixed\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 0.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.1715,\n  \"fitness_score\": 0.1715,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"",
+            "sha256": "70380b955594eb5d1fdcdcc1324ac4ab263d7db1d9d3e78a292324f84f7794a0"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1412,
+            "path": "runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor/scores.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-smoke-fixed\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 0.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.1715,\n  \"fitness_score\": 0.1715,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"",
+            "sha256": "70380b955594eb5d1fdcdcc1324ac4ab263d7db1d9d3e78a292324f84f7794a0"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1687,
+            "path": "runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor/verdicts.json",
+            "preview": "{\n  \"passed\": false,\n  \"failures\": [\n    \"missing required action: route_decision\",\n    \"missing required action: llm_response\",\n    \"missing required response term: local_8b_floor_direct_ok\",\n    \"missing required route decision: direct_answer\",\n    \"missing required delegation decision: none\",\n    \"missing route spawn depth\",\n    \"harness timeout\"\n  ],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"memory_recall\",\n    \"skill_found\",\n    \"skill_used\"\n  ],\n  \"observed_tools\": [],\n  \"observed_ski",
+            "sha256": "b9bdb2adb761765216268f2c64dd0fd3d742d8d6b755682c4f6786d170695c81"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 3227,
+            "path": "runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor/traces/local8b-direct-routing-001/mh-local8b-direct-routing-001-37820fe4.json",
+            "preview": "[\n  {\n    \"id\": 179,\n    \"timestamp\": \"2026-04-30 23:50:13.110116+00:00\",\n    \"action\": \"memory_recall\",\n    \"user_id\": \"local\",\n    \"thread_id\": \"mh-local8b-direct-routing-001-37820fe4\",\n    \"agent_class\": \"advisory\",\n    \"agent_role\": null,\n    \"tool_name\": null,\n    \"input\": null,\n    \"output\": null,\n    \"duration_ms\": 217,\n    \"success\": true,\n    \"error\": null,\n    \"metadata\": {\n      \"bank_id\": \"user_anonymous\",\n      \"route\": \"fusion\",\n      \"consumer\": \"llm_agent\",\n      \"user_id\": \"anon",
+            "sha256": "b63dc956eef7ee2e27625ba75b5de00b67d81723ea6e770c7af81fd4d77245c2"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "a7eb488ad5359ef53460d38caee4eefb4b9180cfcf6071529f31cc3249202325"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1231,
+            "path": "runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-smoke\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 0.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.0367,\n  \"fitness_score\": 0.0367,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"cost_e",
+            "sha256": "95f4dfce269223c3103dcd198da9a4acd9150f081cb928c944a203a26913b8da"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 1231,
+            "path": "runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor/scores.json",
+            "preview": "{\n  \"run_id\": \"run-local8b-floor-bonsai-smoke\",\n  \"candidate_id\": \"bonsai-local-floor\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 0.0,\n  \"trace_gate_pass_rate\": 0.0,\n  \"stream_gate_pass_rate\": 0.0,\n  \"avg_turns\": 1.0,\n  \"turn_efficiency\": 1.0,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 0.0,\n  \"avg_fitness_score\": 0.0367,\n  \"fitness_score\": 0.0367,\n  \"total_tokens\": 0,\n  \"avg_tokens\": 0.0,\n  \"token_efficiency\": 1000.0,\n  \"total_cost_usd\": 0.0,\n  \"avg_cost_usd\": 0.0,\n  \"cost_e",
+            "sha256": "95f4dfce269223c3103dcd198da9a4acd9150f081cb928c944a203a26913b8da"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1458,
+            "path": "runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor/verdicts.json",
+            "preview": "{\n  \"passed\": false,\n  \"failures\": [\n    \"missing required action: route_decision\",\n    \"missing required action: llm_response\",\n    \"missing required response term: local_8b_floor_direct_ok\",\n    \"missing required route decision: direct_answer\",\n    \"missing required delegation decision: none\",\n    \"missing route spawn depth\"\n  ],\n  \"warnings\": [],\n  \"observed_actions\": [],\n  \"observed_tools\": [],\n  \"observed_skills\": [],\n  \"tool_success_rate\": null,\n  \"observed_memory_routes\": [],\n  \"observed_",
+            "sha256": "ab406f1601e43d4f4dbf2de79fd784a1ebac01657d9355d4a4339fb2e5c3b8fd"
+          },
+          {
+            "artifact_class": "trace",
+            "bytes": 2,
+            "path": "runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor/traces/local8b-direct-routing-001/mh-local8b-direct-routing-001-f4e5c1c2.json",
+            "preview": "[]",
+            "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          },
+          {
+            "artifact_class": "source",
+            "bytes": 1781,
+            "path": "runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback/source_snapshot.json",
+            "preview": "{\n  \"files\": [\n    {\n      \"path\": \"python-backend/agent/app.py\",\n      \"sha256\": \"d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93\",\n      \"bytes\": 38821\n    },\n    {\n      \"path\": \"python-backend/agent/runners/dispatcher.py\",\n      \"sha256\": \"feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4\",\n      \"bytes\": 13183\n    },\n    {\n      \"path\": \"python-backend/agent/runners/simple.py\",\n      \"sha256\": \"7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001\"",
+            "sha256": "46d5060df891dd31d85af1c1b4086eb2560e490159cfe50461bb7145002fcb4e"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 688,
+            "path": "runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback/aggregate.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-2-recent-memory-fixed\",\n  \"candidate_id\": \"recent-memory-search-fallback\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8423,\n  \"fitness_score\": 0.8423,\n  \"total_tokens\": 17916,\n  \"avg_tokens\": 17916.0,\n  \"token_efficiency\": 0.055816,\n  \"total_cost_usd\": 0.0",
+            "sha256": "a06e11c589bf8e6d70b48c12b387348c058d14a501bf31e5afc5f3014f8bac77"
+          },
+          {
+            "artifact_class": "scores",
+            "bytes": 688,
+            "path": "runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback/scores.json",
+            "preview": "{\n  \"run_id\": \"run-metaharness-round-2-recent-memory-fixed\",\n  \"candidate_id\": \"recent-memory-search-fallback\",\n  \"scenarios_evaluated\": 1,\n  \"completion_rate\": 1.0,\n  \"trace_gate_pass_rate\": 1.0,\n  \"stream_gate_pass_rate\": 1.0,\n  \"avg_turns\": 2.0,\n  \"turn_efficiency\": 0.5,\n  \"tool_success_rate\": 1.0,\n  \"memory_utilization_rate\": 1.0,\n  \"avg_fitness_score\": 0.8423,\n  \"fitness_score\": 0.8423,\n  \"total_tokens\": 17916,\n  \"avg_tokens\": 17916.0,\n  \"token_efficiency\": 0.055816,\n  \"total_cost_usd\": 0.0",
+            "sha256": "a06e11c589bf8e6d70b48c12b387348c058d14a501bf31e5afc5f3014f8bac77"
+          },
+          {
+            "artifact_class": "verdicts",
+            "bytes": 1684,
+            "path": "runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback/verdicts.json",
+            "preview": "{\n  \"passed\": true,\n  \"failures\": [],\n  \"warnings\": [],\n  \"observed_actions\": [\n    \"consent_decision\",\n    \"llm_response\",\n    \"memory_recall\",\n    \"memory_retain\",\n    \"route_decision\",\n    \"skill_found\",\n    \"skill_used\",\n    \"tool_call\",\n    \"tool_result\"\n  ],\n  \"observed_tools\": [\n    \"memory_add\",\n    \"memory_search\"\n  ],\n  \"observed_skills\": [\n    \"global:memory-usage\",\n    \"memory-usage\"\n  ],\n  \"tool_success_rate\": 1.0,\n  \"observed_memory_routes\": [\n    \"fusion\"\n  ],\n  \"observed_memory_p",
+            "sha256": "27e5f4225d6bad8b76ecb0c7cdf5df6dbd3f97405afff519338f32378ad572ee"
+          }
+        ],
+        "files_read_count": 24,
+        "frontier_size_seen": 15,
+        "notes": "This log records raw artifact reads by the deterministic proposer. It is not a summary-only substitute.",
+        "proposer": "deterministic-matrix-policy"
+      },
+      "iteration": 1,
+      "manifest": {
+        "artifact_inventory": {
+          "benchmark_artifacts": [],
+          "config": true,
+          "decision": false,
+          "pending_eval": true,
+          "proposal": true,
+          "raw_traces": true,
+          "results": true,
+          "run_manifest": true,
+          "scores": true,
+          "source_snapshot": true,
+          "sse": true,
+          "verdicts": true
+        },
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_path": "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "paper_failures": [],
+        "paper_mapping": {
+          "arxiv_id": "2603.28052v1",
+          "execution_traces": "traces/**/*.json plus sse/*.jsonl when available",
+          "paper_ref": "docs/Meta-Harness-2603.28052v1.md",
+          "scores": "scores.json or aggregate.json",
+          "source_code": "source_snapshot.source_files or repository paths",
+          "test_leakage_policy": "holdout paths and scores are excluded from proposer packets"
+        },
+        "paper_ready": true,
+        "result_files": [
+          "results/local8b-direct-routing-001.json"
+        ],
+        "roles": {
+          "evaluator": "frozen Meta-Harness runner and trace gates",
+          "promotion_authority": "Pareto frontier plus explicit decision/holdout gates",
+          "proposer": "Codex or explicitly enabled external proposer",
+          "simulated_user": "scenario fixtures/search-set driver"
+        },
+        "run_id": "run-metaharness-round-local8b-001",
+        "source_files": [
+          {
+            "bytes": 38821,
+            "path": "python-backend/agent/app.py",
+            "sha256": "d5471d98efea3af237adc1abb6d49de50d4945efd233ae35e22fdc80b2ff8f93"
+          },
+          {
+            "bytes": 13183,
+            "path": "python-backend/agent/runners/dispatcher.py",
+            "sha256": "feb6c997ef9345c8c456692048d47da828ff396685a1b9761a8683a46b41b6f4"
+          },
+          {
+            "bytes": 22801,
+            "path": "python-backend/agent/runners/simple.py",
+            "sha256": "7811bebe688e51e2c93c54c0d98b351633c300a8c7e21c99ef376f847e0e4001"
+          },
+          {
+            "bytes": 39288,
+            "path": "python-backend/agent/graph/runner.py",
+            "sha256": "03349a4d743945e5db7b7ca1abb51831a420fec15ee44744461df29320633066"
+          },
+          {
+            "bytes": 30641,
+            "path": "python-backend/agent/graph/nodes/llm_node.py",
+            "sha256": "b8c312f3b1504cce40225489060b47d24bade26c040aa21360263adcd5566e91"
+          },
+          {
+            "bytes": 20563,
+            "path": "python-backend/agent/graph/nodes/tool_node.py",
+            "sha256": "b1f8f6f2d6758c3c70135d2d82ab639ba405a6c32cb6fc29d4c561dc4b158ff8"
+          },
+          {
+            "bytes": 31982,
+            "path": "python-backend/agent/graph/nodes/memory_node.py",
+            "sha256": "dee9df94a1189487756fb6cadda78ebb936f846e0a841a9c30d46071b43d7442"
+          },
+          {
+            "bytes": 4633,
+            "path": "python-backend/agent/tools/registry.py",
+            "sha256": "d0b1e23598c585377e8bc47bde9843f1d2543215064aec1c323349160d2239be"
+          },
+          {
+            "bytes": 11128,
+            "path": "python-backend/meta_harness/evaluator.py",
+            "sha256": "a579eba1baedc61b4c726d9e41540c55383b90b9e7e7f95185899fb3bd07785a"
+          },
+          {
+            "bytes": 72065,
+            "path": "python-backend/meta_harness/scenario_runner.py",
+            "sha256": "9de97992d953f24eb6c0a0226b1ec48568f41e846da0d01419accf3e0b23f537"
+          }
+        ],
+        "trace_event_count": 9,
+        "trace_files": [
+          "traces/local8b-direct-routing-001/mh-local8b-direct-routing-001-ca8658da.json"
+        ],
+        "trace_quality_failures": []
+      },
+      "pending_eval": {
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "created_at": "2026-05-01T01:22:09.765956+00:00",
+        "domain_id": "agent-harness-local-8b-floor",
+        "evaluation": "frozen search scenarios; holdout remains protected",
+        "frozen_evaluator_required": true,
+        "holdout_visible_to_proposer": false,
+        "proposer_self_certification_allowed": false,
+        "rollback_ref": "ref: refs/heads/metaharness_round_1",
+        "run_id": "run-metaharness-round-local8b-001",
+        "write_scope": [
+          "python-backend/agent/",
+          "python-backend/memory_fusion/",
+          "python-backend/rag/",
+          "python-backend/kg/"
+        ]
+      },
+      "proposal": {
+        "candidate_id": "iter-001-config-overlay",
+        "candidate_type": "config_overlay",
+        "config_overlay": {
+          "overlay_type": "system_prompt_override",
+          "provider_agnostic": true,
+          "system_prompt_override": "Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable form. Current search hypothesis: Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+          "write_scope": [
+            "python-backend/agent/",
+            "python-backend/memory_fusion/",
+            "python-backend/rag/",
+            "python-backend/kg/"
+          ]
+        },
+        "created_at": "2026-05-01T01:22:09.763729+00:00",
+        "evidence": "missing tool_result events for tool success rate threshold",
+        "holdout_visible_to_proposer": false,
+        "hypothesis": "Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+        "iteration": 1,
+        "raw_artifact_inspection": {
+          "artifact_classes": [
+            "scores",
+            "source",
+            "trace",
+            "verdicts"
+          ],
+          "candidate_paths": [
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/baseline",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor",
+            "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback"
+          ],
+          "files_read_count": 24
+        },
+        "run_id": "run-metaharness-round-local8b-001",
+        "self_certifies_promotion": false
+      }
+    }
+  ],
+  "iterations_completed": 1,
+  "iterations_requested": 1,
+  "roles": {
+    "evaluator": "frozen scenario runner and trace gates",
+    "promotion_authority": "decision ledger plus protected holdout gate",
+    "proposer": "deterministic Matrix proposer; Codex may inspect same artifacts",
+    "simulated_user": "scenario file"
+  },
+  "run_id": "run-metaharness-round-local8b-001",
+  "runtime_preflight": {
+    "auto_start_attempted": false,
+    "auto_start_enabled": true,
+    "auto_start_succeeded": false,
+    "command": "outer-loop",
+    "db_env_key": "AUDIT_DB_URL",
+    "db_url_configured": true,
+    "enabled": true,
+    "failures": [],
+    "host": "localhost",
+    "local_memory_eval_target": true,
+    "port": 55433,
+    "postgres_ready_after": true,
+    "postgres_ready_before": true,
+    "tcp_ready_after": true,
+    "tcp_ready_before": true,
+    "warnings": []
+  },
+  "scenario_path": "/home/lipfi2/code/matrix/python-backend/../data/harness/local_8b_floor/scenarios.json",
+  "support_lanes_are_not_full_meta_harness": true,
+  "true_meta_harness_iteration": true
+}

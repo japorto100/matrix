@@ -78,6 +78,17 @@ The remaining six scenarios are still live no-browser gates because they will
 deliberately reveal which skills/tools/memory/retrieval paths an 8B target can
 operate through.
 
+2026-05-01 formal Local-8B outer-loop evidence:
+`run-metaharness-round-local8b-001` is a true Feature 034 iteration:
+`true_meta_harness_iteration=true`, frozen evaluator gate passed with no
+changed evaluator/scenario paths, holdout stayed hidden, the proposer
+inspection read 24 raw artifact files, and a config-overlay candidate was
+evaluated then discarded by the decision ledger. Baseline:
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `fitness_score=0.9995`. Candidate:
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `fitness_score=0.9994`.
+
 2026-05-01 expectation-fitness gate evidence: Scenario runs now keep
 `base_fitness_score` and lower `fitness_score` when trace or stream gates fail.
 This closes the Round-2 exact-recall scoring gap where trace presence could

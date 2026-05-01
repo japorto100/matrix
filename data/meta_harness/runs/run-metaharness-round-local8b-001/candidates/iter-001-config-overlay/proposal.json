@@ -1,0 +1,38 @@
+{
+  "candidate_id": "iter-001-config-overlay",
+  "candidate_type": "config_overlay",
+  "config_overlay": {
+    "overlay_type": "system_prompt_override",
+    "provider_agnostic": true,
+    "system_prompt_override": "Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable form. Current search hypothesis: Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+    "write_scope": [
+      "python-backend/agent/",
+      "python-backend/memory_fusion/",
+      "python-backend/rag/",
+      "python-backend/kg/"
+    ]
+  },
+  "created_at": "2026-05-01T01:22:09.763729+00:00",
+  "evidence": "missing tool_result events for tool success rate threshold",
+  "holdout_visible_to_proposer": false,
+  "hypothesis": "Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+  "iteration": 1,
+  "raw_artifact_inspection": {
+    "artifact_classes": [
+      "scores",
+      "source",
+      "trace",
+      "verdicts"
+    ],
+    "candidate_paths": [
+      "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-local8b-001/candidates/baseline",
+      "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-direct-long-timeout/candidates/bonsai-local-floor",
+      "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke-fixed/candidates/bonsai-local-floor",
+      "/home/lipfi2/code/matrix/data/meta_harness/runs/run-local8b-floor-bonsai-smoke/candidates/bonsai-local-floor",
+      "/home/lipfi2/code/matrix/data/meta_harness/runs/run-metaharness-round-2-recent-memory-fixed/candidates/recent-memory-search-fallback"
+    ],
+    "files_read_count": 24
+  },
+  "run_id": "run-metaharness-round-local8b-001",
+  "self_certifies_promotion": false
+}

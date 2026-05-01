@@ -1,0 +1,18 @@
+{
+  "auto_start_attempted": false,
+  "auto_start_enabled": true,
+  "auto_start_succeeded": false,
+  "command": "outer-loop",
+  "db_env_key": "AUDIT_DB_URL",
+  "db_url_configured": true,
+  "enabled": true,
+  "failures": [],
+  "host": "localhost",
+  "local_memory_eval_target": true,
+  "port": 55433,
+  "postgres_ready_after": true,
+  "postgres_ready_before": true,
+  "tcp_ready_after": true,
+  "tcp_ready_before": true,
+  "warnings": []
+}

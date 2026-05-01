@@ -358,6 +358,35 @@ caps `fitness_score` when deterministic gates fail. The raw verdicts remain
 the primary evidence; the scalar change exists so Pareto/frontier code cannot
 accidentally promote a healthy but wrong candidate.
 
+## 2026-05-01 Formal Local-8B Outer-Loop Round
+
+`run-metaharness-round-local8b-001` is the first formal Local-8B Feature 034
+round. It used the frozen Local-8B floor search file with `max_scenarios=1`,
+Codex/deterministic Matrix policy as proposer and Bonsai 8B over llama.cpp as
+the target agent.
+
+Evidence:
+
+- `real_outer_loop_summary.json` reports `true_meta_harness_iteration=true`.
+- Runtime preflight passed with `postgres_ready_before=true` and
+  `postgres_ready_after=true`.
+- Frozen evaluator gate passed; no evaluator or scenario path changed during
+  the run.
+- The proposer inspection read 24 source/score/verdict/trace artifacts from
+  prior candidate history.
+- Baseline passed the direct Local-8B floor:
+  `completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+  `stream_gate_pass_rate=1.0`, `fitness_score=0.9995`.
+- Candidate `iter-001-config-overlay` also passed deterministic gates but
+  scored `0.9994`, so the decision ledger discarded it as a small regression.
+- Final frontier size was 15 and holdout remained hidden from proposer input.
+
+This confirms the loop mechanics now work with a local small target model. It
+does not imply that the local 8B model is good enough for all tool/memory/RAG
+tasks; the remaining six `local_8b_floor` scenarios should be executed in
+separate small rounds because CPU latency is several minutes per Agent Harness
+turn.
+
 ## Decision
 
 Create Feature 034 as the owner of the real iterative outer-loop. Keep Feature

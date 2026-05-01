@@ -1,0 +1,597 @@
+[
+  {
+    "id": 203,
+    "timestamp": "2026-05-01 01:27:10.289051+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\nAgent responded: local_8b_floor_direct_ok",
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "role": "default",
+      "content_length": 133,
+      "conflict": false,
+      "route": "verbatim",
+      "provider": "fusion",
+      "providers": "verbatim,summary_async",
+      "source": "automatic_memory_retain",
+      "summary_status": "background_queued",
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.retain.completed",
+          "summary": "Memory retain completed",
+          "event_id": "evt_f5351625871548e081d6611f8a7b0e4c",
+          "run_id": "mh-local8b-direct-routing-001-ca8658da",
+          "span_id": "evt_f5351625871548e081d6611f8a7b0e4c",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-direct-routing-001-ca8658da",
+          "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+          "turn": 1,
+          "turn_id": "mh-local8b-direct-routing-001-ca8658da:turn:1",
+          "timestamp": "2026-05-01T01:27:10.288931+00:00",
+          "metadata": {
+            "bank_id": "user_anonymous",
+            "role": "default",
+            "content_length": 133,
+            "conflict": false,
+            "route": "verbatim",
+            "provider": "fusion",
+            "providers": "verbatim,summary_async",
+            "source": "automatic_memory_retain",
+            "summary_status": "background_queued",
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 202,
+    "timestamp": "2026-05-01 01:27:10.208681+00:00",
+    "action": "memory_retain",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 83,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "verbatim",
+      "consumer": "agent_writer",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 1,
+      "policy_decision": "write_allowed",
+      "source_status": "unreferenced"
+    },
+    "iteration": null
+  },
+  {
+    "id": 201,
+    "timestamp": "2026-05-01 01:27:10.044040+00:00",
+    "action": "llm_response",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+    "output": "local_8b_floor_direct_ok",
+    "duration_ms": 298751,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "model": "bonsai-8b",
+      "done": true,
+      "tool_calls_count": 0,
+      "token_usage": 1418,
+      "content_cleaned": false,
+      "request_telemetry": {
+        "provider": "llamacpp",
+        "model": "bonsai-8b",
+        "router": "langgraph",
+        "transport": "litellm_chat_completions",
+        "cache_retention": "provider_default",
+        "stream_strategy": "non_streaming",
+        "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+        "iteration": 0,
+        "prompt_digest": "9f6fc8663e79b0ca08abab46a1bd1599d1b2058caad6e02bcd5b64d19a8e3f85",
+        "prompt_layout_digest": "b074c983825c2438f2d678120b1e7cf1808a9ccc1bcd15b295143734061e7141",
+        "system_prompt_digest": "3441a49f8100fb11ac007164f9cb0980fc4add2790f053ce9f87955a62eb2784",
+        "tool_catalog_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "tool_count": 0,
+        "tool_names": [],
+        "usage": {
+          "prompt_tokens": 1410,
+          "input_tokens": null,
+          "completion_tokens": 8,
+          "output_tokens": 8,
+          "total_tokens": 1418,
+          "reasoning_tokens": null,
+          "cache_read_tokens": 2,
+          "cache_write_tokens": null,
+          "unknown_fields": [
+            "input_tokens",
+            "reasoning_tokens",
+            "cache_write_tokens"
+          ]
+        },
+        "cache_break_reasons": [
+          "first_request"
+        ],
+        "metadata": {
+          "routing_reason": "not_evaluated",
+          "routing_used": false,
+          "tool_count": 0,
+          "capabilities_known": true,
+          "response": {
+            "duration_ms": 298750.615,
+            "rate_limits": [
+              {
+                "window": "requests",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "requests-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              },
+              {
+                "window": "tokens-1h",
+                "limit": 0,
+                "remaining": 0,
+                "reset_seconds": 0.0,
+                "usage_pct": 0.0,
+                "provider": "llamacpp",
+                "provider_key_id": "llamacpp"
+              }
+            ]
+          }
+        },
+        "contract": "provider-request-telemetry/v1"
+      },
+      "runtime_events": [
+        {
+          "kind": "llm",
+          "status": "completed",
+          "name": "llm_call",
+          "summary": "llamacpp:bonsai-8b",
+          "event_id": "evt_eb5d2674ec1243098af53fc2cd75cb4f",
+          "run_id": "mh-local8b-direct-routing-001-ca8658da",
+          "span_id": "evt_eb5d2674ec1243098af53fc2cd75cb4f",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-direct-routing-001-ca8658da",
+          "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:27:10.043501+00:00",
+          "metadata": {
+            "request_telemetry": {
+              "provider": "llamacpp",
+              "model": "bonsai-8b",
+              "router": "langgraph",
+              "transport": "litellm_chat_completions",
+              "cache_retention": "provider_default",
+              "stream_strategy": "non_streaming",
+              "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+              "iteration": 0,
+              "prompt_digest": "9f6fc8663e79b0ca08abab46a1bd1599d1b2058caad6e02bcd5b64d19a8e3f85",
+              "prompt_layout_digest": "b074c983825c2438f2d678120b1e7cf1808a9ccc1bcd15b295143734061e7141",
+              "system_prompt_digest": "3441a49f8100fb11ac007164f9cb0980fc4add2790f053ce9f87955a62eb2784",
+              "tool_catalog_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "tool_count": 0,
+              "tool_names": [],
+              "usage": {
+                "prompt_tokens": "[redacted]",
+                "input_tokens": "[redacted]",
+                "completion_tokens": "[redacted]",
+                "output_tokens": "[redacted]",
+                "total_tokens": "[redacted]",
+                "reasoning_tokens": "[redacted]",
+                "cache_read_tokens": "[redacted]",
+                "cache_write_tokens": "[redacted]",
+                "unknown_fields": [
+                  "input_tokens",
+                  "reasoning_tokens",
+                  "cache_write_tokens"
+                ]
+              },
+              "cache_break_reasons": [
+                "first_request"
+              ],
+              "metadata": {
+                "routing_reason": "not_evaluated",
+                "routing_used": false,
+                "tool_count": 0,
+                "capabilities_known": true,
+                "response": {
+                  "duration_ms": 298750.615,
+                  "rate_limits": [
+                    {
+                      "window": "requests",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "requests-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    },
+                    {
+                      "window": "tokens-1h",
+                      "limit": 0,
+                      "remaining": 0,
+                      "reset_seconds": 0.0,
+                      "usage_pct": 0.0,
+                      "provider": "llamacpp",
+                      "provider_key_id": "llamacpp"
+                    }
+                  ]
+                }
+              },
+              "contract": "provider-request-telemetry/v1"
+            },
+            "tool_calls_count": 0,
+            "done": true,
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": 0
+  },
+  {
+    "id": 200,
+    "timestamp": "2026-05-01 01:27:09.958097+00:00",
+    "action": "route_decision",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "runner": "langgraph",
+      "decision": "direct_answer",
+      "route_taxonomy": "direct_answer",
+      "delegation_decision": "none",
+      "delegate_kind": null,
+      "spawn_depth": 0,
+      "max_spawn_depth": 0,
+      "allowed_tools": [],
+      "memory_scope": "current_user",
+      "budget": {},
+      "fallback_reason": "subagents_disabled",
+      "tool_calls_count": 0,
+      "tool_names": [],
+      "routing_reason": "not_evaluated",
+      "routing_used": false,
+      "routing_picked_model": "",
+      "memory_route_requested": false,
+      "retrieval_route_requested": false
+    },
+    "iteration": 0
+  },
+  {
+    "id": 199,
+    "timestamp": "2026-05-01 01:22:11.117110+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": "### Personal Raw Evidence\n- [available] User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\nAgent responded: local_8b_floor_direct_ok (mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0)\n- [available] User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\nAgent responded: local_8b_floor_direct_ok (mh-local8b-direct-routing-001-de35cce9:default:202605010121#0)",
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "role": "default",
+      "source": "memory_recall_node",
+      "facts_recalled": 2,
+      "entities": 0,
+      "tokens_used": 449,
+      "runtime_events": [
+        {
+          "kind": "memory",
+          "status": "completed",
+          "name": "memory.recall.completed",
+          "summary": "Memory recall selected context for prompt assembly",
+          "event_id": "evt_2030c9b3077a44dfbf1c47f35b09a9fa",
+          "run_id": "mh-local8b-direct-routing-001-ca8658da",
+          "span_id": "evt_2030c9b3077a44dfbf1c47f35b09a9fa",
+          "parent_id": "",
+          "parent_event_id": "",
+          "session_id": "mh-local8b-direct-routing-001-ca8658da",
+          "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+          "turn": 0,
+          "turn_id": "",
+          "timestamp": "2026-05-01T01:22:11.116972+00:00",
+          "metadata": {
+            "bank_id": "user_anonymous",
+            "role": "default",
+            "source": "memory_recall_node",
+            "facts_recalled": 2,
+            "entities": 0,
+            "tokens_used": "[redacted]",
+            "source_layer_counts": {
+              "personal_raw": 2
+            },
+            "query_gate_action": "retrieve",
+            "query_gate_reason": "default_retrieval",
+            "degradation_flags": [
+              "NO_PERSONAL_KB",
+              "NO_WORLD_EVIDENCE"
+            ],
+            "context_refs": [
+              {
+                "id": "fusion:0:mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0",
+                "source_refs": [
+                  "mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0"
+                ],
+                "raw_evidence_ref": "mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0",
+                "operation_log_id": "memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0",
+                "diff_ref": "memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0",
+                "thread_id": "",
+                "session_id": "",
+                "room_id": "",
+                "source_layer": "personal_raw",
+                "context_tier": "L1"
+              },
+              {
+                "id": "fusion:1:mh-local8b-direct-routing-001-de35cce9:default:202605010121#0",
+                "source_refs": [
+                  "mh-local8b-direct-routing-001-de35cce9:default:202605010121#0"
+                ],
+                "raw_evidence_ref": "mh-local8b-direct-routing-001-de35cce9:default:202605010121#0",
+                "operation_log_id": "memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-de35cce9:default:202605010121-0",
+                "diff_ref": "memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-de35cce9:default:202605010121-0",
+                "thread_id": "",
+                "session_id": "",
+                "room_id": "",
+                "source_layer": "personal_raw",
+                "context_tier": "L1"
+              }
+            ],
+            "outcome": "ok"
+          },
+          "payload": {},
+          "redaction": {
+            "policy": "runtime-event-redaction/v1",
+            "applied": true,
+            "max_string_chars": 800,
+            "max_items": 80
+          },
+          "contract": "agent-runtime-event/v1"
+        }
+      ]
+    },
+    "iteration": null
+  },
+  {
+    "id": 198,
+    "timestamp": "2026-05-01 01:22:11.038632+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 145,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "default",
+      "item_count": 2,
+      "query_gate": "default_retrieval",
+      "needs_verification": false,
+      "source_status": "unreferenced",
+      "query": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok."
+    },
+    "iteration": null
+  },
+  {
+    "id": 197,
+    "timestamp": "2026-05-01 01:22:10.598611+00:00",
+    "action": "memory_recall",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": 453,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "bank_id": "user_anonymous",
+      "route": "fusion",
+      "consumer": "llm_agent",
+      "user_id": "anonymous",
+      "actor_role": "advisory",
+      "item_count": 2,
+      "query_gate": "verification_requested",
+      "needs_verification": true,
+      "source_status": "unreferenced",
+      "query": "Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable"
+    },
+    "iteration": null
+  },
+  {
+    "id": 196,
+    "timestamp": "2026-05-01 01:22:09.982611+00:00",
+    "action": "skill_used",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:plan"
+      ],
+      "skill_names": [
+        "plan"
+      ],
+      "query_preview": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+      "user_id": "anonymous",
+      "refined": false,
+      "coverage_score": null,
+      "source_skills": null
+    },
+    "iteration": null
+  },
+  {
+    "id": 195,
+    "timestamp": "2026-05-01 01:22:09.855266+00:00",
+    "action": "skill_found",
+    "user_id": "local",
+    "thread_id": "mh-local8b-direct-routing-001-ca8658da",
+    "agent_class": "advisory",
+    "agent_role": null,
+    "tool_name": null,
+    "input": null,
+    "output": null,
+    "duration_ms": null,
+    "success": true,
+    "error": null,
+    "metadata": {
+      "skill_ids": [
+        "global:plan"
+      ],
+      "skill_names": [
+        "plan"
+      ],
+      "query_preview": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+      "user_id": "anonymous",
+      "search_rounds": 1,
+      "reformulations": null,
+      "satisfied": true,
+      "search_traces": [
+        {
+          "query_terms": [
+            "8b",
+            "direct",
+            "exactly",
+            "floor",
+            "local",
+            "marker",
+            "ok"
+          ],
+          "selected_skill_ids": [
+            "global:plan"
+          ],
+          "dense_enabled": false,
+          "reason": "ranked",
+          "top_k": 3,
+          "max_tokens": 2000,
+          "candidates": [
+            {
+              "skill_id": "global:plan",
+              "name": "plan",
+              "tier": "global",
+              "category": "meta",
+              "skill_type": "task_specific",
+              "bm25_score": 0.963298,
+              "bm25_rank": 1,
+              "dense_rank": null,
+              "rrf_score": 0.016393,
+              "selected": true,
+              "reason": "selected",
+              "matched_terms": [
+                "ok"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "iteration": null
+  }
+]

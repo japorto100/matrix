@@ -1,0 +1,11 @@
+{
+  "overlay_type": "system_prompt_override",
+  "provider_agnostic": true,
+  "system_prompt_override": "Meta-Harness candidate overlay. Preserve exact user intent, use tools only when the scenario contract requires them, keep memory writes evidence-backed, and surface RAG/KG/tool provenance in traceable form. Current search hypothesis: Tool-policy candidate should tighten selection/recovery while preserving allowed tool groups.",
+  "write_scope": [
+    "python-backend/agent/",
+    "python-backend/memory_fusion/",
+    "python-backend/rag/",
+    "python-backend/kg/"
+  ]
+}

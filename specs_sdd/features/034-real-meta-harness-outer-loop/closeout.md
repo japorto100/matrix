@@ -109,3 +109,21 @@ evaluation, decision logging and Pareto update.
   and
   `uv run pytest tests/meta_harness/test_scenario_runner.py -q`
   passed.
+
+## 2026-05-01 Formal Local-8B Meta-Harness Round
+
+- Run: `run-metaharness-round-local8b-001`.
+- Contract: `real-meta-harness-outer-loop/v1`.
+- Result: `true_meta_harness_iteration=true`.
+- Baseline: `completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+  `stream_gate_pass_rate=1.0`, `fitness_score=0.9995`.
+- Candidate: `iter-001-config-overlay`, `completion_rate=1.0`,
+  `trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0`,
+  `fitness_score=0.9994`.
+- Decision: `discard`, because the candidate regressed versus baseline under
+  the frozen search evaluator.
+- Proposer evidence: 24 raw source/score/verdict/trace files inspected; holdout
+  hidden; frozen evaluator gate passed.
+- Practical finding: the direct Local-8B Agent Harness turn used 1212 baseline
+  prompt tokens and took about 270s on CPU. Full-suite Local-8B rounds should
+  be split into small slices unless hardware changes.

@@ -1,0 +1,74 @@
+{
+  "scenarios": [
+    {
+      "id": "local8b-direct-routing-001",
+      "category": "local_8b_direct_routing",
+      "turns": [
+        {
+          "user": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "route_decision",
+          "llm_response"
+        ],
+        "forbidden_actions": [
+          "tool_call"
+        ],
+        "required_tools": [],
+        "forbidden_tools": [
+          "memory_search",
+          "memory_add",
+          "sandbox_execute",
+          "delegate_task"
+        ],
+        "required_skills": [],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "local_8b_floor_direct_ok"
+        ],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_event_metadata_values": {},
+        "forbidden_event_metadata_values": {},
+        "required_runtime_event_names": [],
+        "required_runtime_event_metadata_keys": {},
+        "forbidden_runtime_event_metadata_keys": {},
+        "required_runtime_event_metadata_values": {},
+        "forbidden_runtime_event_metadata_values": {},
+        "required_stream_parts": [],
+        "required_stream_rich_renderers": [],
+        "required_stream_artifact_files": [],
+        "required_route_decisions": [
+          "direct_answer"
+        ],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [
+          "none"
+        ],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": 0,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": false,
+        "min_tool_success_rate": null,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "Small local target model can follow a direct no-tool contract through the normal agent runner."
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": false,
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

@@ -1,0 +1,708 @@
+{
+  "run_id": "run-metaharness-round-local8b-001",
+  "candidate_id": "baseline",
+  "scenario_id": "local8b-direct-routing-001",
+  "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+  "user_id": "anonymous",
+  "category": "local_8b_direct_routing",
+  "turns": 1,
+  "transcript": [
+    {
+      "role": "user",
+      "content": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok."
+    },
+    {
+      "role": "assistant",
+      "content": "local_8b_floor_direct_ok"
+    }
+  ],
+  "sse_chunks": [
+    "data: {\"messageId\": \"mh-local8b-direct-routing-001-de35cce9\", \"type\": \"start\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-local8b-direct-routing-001-de35cce9\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-start\"}\n\n",
+    "data: {\"delta\": \"local_8b_floor_direct_ok\", \"id\": \"t1\", \"type\": \"text-delta\"}\n\n",
+    "data: {\"event\": {\"kind\": \"memory\", \"status\": \"completed\", \"name\": \"memory.recall.completed\", \"summary\": \"Memory recall selected context for prompt assembly\", \"event_id\": \"evt_bfd92da6406e43729529c2ec3c210793\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_bfd92da6406e43729529c2ec3c210793\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T01:17:26.249269+00:00\", \"metadata\": {\"bank_id\": \"user_anonymous\", \"role\": \"default\", \"source\": \"memory_recall_node\", \"facts_recalled\": 1, \"entities\": 0, \"tokens_used\": \"[redacted]\", \"source_layer_counts\": {\"personal_raw\": 1}, \"query_gate_action\": \"retrieve\", \"query_gate_reason\": \"default_retrieval\", \"degradation_flags\": [\"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"context_refs\": [{\"id\": \"fusion:0:mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"source_refs\": [\"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\"], \"raw_evidence_ref\": \"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"operation_log_id\": \"memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"diff_ref\": \"memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"thread_id\": \"\", \"session_id\": \"\", \"room_id\": \"\", \"source_layer\": \"personal_raw\", \"context_tier\": \"L1\"}], \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_b71a5531e41e479f810bcb69c761617d\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_b71a5531e41e479f810bcb69c761617d\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T01:21:57.317070+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"iteration\": 0, \"prompt_digest\": \"218fbdf9003b6d55d6ed1c97cb9d259dbd97a04d3464a01113f4cdc235f33754\", \"prompt_layout_digest\": \"b227a6d3a6507b08ec96d1ddc5155188321a7eaaef2b953aa65b5f5755c0d76b\", \"system_prompt_digest\": \"b007c7e94de1eb0c9600915e6d34d3dad1d7140e3e40f1fe1258be74dd611a37\", \"tool_catalog_digest\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"tool_count\": 0, \"tool_names\": [], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"not_evaluated\", \"routing_used\": false, \"tool_count\": 0, \"capabilities_known\": true, \"response\": {\"duration_ms\": 270849.756, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 0, \"done\": true, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"event\": {\"kind\": \"memory\", \"status\": \"completed\", \"name\": \"memory.retain.completed\", \"summary\": \"Memory retain completed\", \"event_id\": \"evt_95c60f23fd9d48ef907c6005936cff5c\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_95c60f23fd9d48ef907c6005936cff5c\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 1, \"turn_id\": \"mh-local8b-direct-routing-001-de35cce9:turn:1\", \"timestamp\": \"2026-05-01T01:22:07.999671+00:00\", \"metadata\": {\"bank_id\": \"user_anonymous\", \"role\": \"default\", \"content_length\": 133, \"conflict\": false, \"route\": \"verbatim\", \"provider\": \"fusion\", \"providers\": \"verbatim,summary_async\", \"source\": \"automatic_memory_retain\", \"summary_status\": \"background_queued\", \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, \"type\": \"data-runtime-event\"}\n\n",
+    "data: {\"id\": \"t1\", \"type\": \"text-end\"}\n\n",
+    "data: {\"messageMetadata\": {\"threadId\": \"mh-local8b-direct-routing-001-de35cce9\", \"promptTokens\": 1212, \"completionTokens\": 8, \"reasoningTokens\": 0, \"cachedTokens\": 0, \"totalTokens\": 1220, \"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"sourceLayerCounts\": {\"personal_raw\": 1}, \"degradationFlags\": [\"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"contextBlocks\": [{\"id\": \"fusion:0:mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"title\": \"Chat Turn\", \"preview\": \"User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\\nAgent responded: local_8b_floor_direct_ok\", \"sourceLayer\": \"personal_raw\", \"sourceType\": \"user_input\", \"artifactType\": \"chat_turn\", \"groundingStatus\": \"not_applicable\", \"promotionStatus\": \"not_applicable\", \"provenanceRef\": \"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"sourceRefs\": [\"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\"], \"rawEvidenceRef\": \"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"operationLogId\": \"memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"diffRef\": \"memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"threadId\": \"\", \"sessionId\": \"\", \"roomId\": \"\", \"sourceConfidence\": \"1\", \"actorRole\": \"default\", \"status\": \"available\", \"freshness\": null, \"supportCount\": null, \"conflictCount\": null, \"factType\": \"experience\", \"route\": \"fusion\", \"tokenCount\": 15, \"contextTier\": \"L1\"}], \"queryGate\": {}, \"requestTelemetry\": [{\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"iteration\": 0, \"prompt_digest\": \"218fbdf9003b6d55d6ed1c97cb9d259dbd97a04d3464a01113f4cdc235f33754\", \"prompt_layout_digest\": \"b227a6d3a6507b08ec96d1ddc5155188321a7eaaef2b953aa65b5f5755c0d76b\", \"system_prompt_digest\": \"b007c7e94de1eb0c9600915e6d34d3dad1d7140e3e40f1fe1258be74dd611a37\", \"tool_catalog_digest\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"tool_count\": 0, \"tool_names\": [], \"usage\": {\"prompt_tokens\": 1212, \"input_tokens\": null, \"completion_tokens\": 8, \"output_tokens\": 8, \"total_tokens\": 1220, \"reasoning_tokens\": null, \"cache_read_tokens\": 0, \"cache_write_tokens\": null, \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"not_evaluated\", \"routing_used\": false, \"tool_count\": 0, \"capabilities_known\": true, \"response\": {\"duration_ms\": 270849.756, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}], \"runtimeEvents\": [{\"kind\": \"memory\", \"status\": \"completed\", \"name\": \"memory.recall.completed\", \"summary\": \"Memory recall selected context for prompt assembly\", \"event_id\": \"evt_bfd92da6406e43729529c2ec3c210793\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_bfd92da6406e43729529c2ec3c210793\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T01:17:26.249269+00:00\", \"metadata\": {\"bank_id\": \"user_anonymous\", \"role\": \"default\", \"source\": \"memory_recall_node\", \"facts_recalled\": 1, \"entities\": 0, \"tokens_used\": \"[redacted]\", \"source_layer_counts\": {\"personal_raw\": 1}, \"query_gate_action\": \"retrieve\", \"query_gate_reason\": \"default_retrieval\", \"degradation_flags\": [\"NO_PERSONAL_KB\", \"NO_WORLD_EVIDENCE\"], \"context_refs\": [{\"id\": \"fusion:0:mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"source_refs\": [\"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\"], \"raw_evidence_ref\": \"mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0\", \"operation_log_id\": \"memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"diff_ref\": \"memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0\", \"thread_id\": \"\", \"session_id\": \"\", \"room_id\": \"\", \"source_layer\": \"personal_raw\", \"context_tier\": \"L1\"}], \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"llm\", \"status\": \"completed\", \"name\": \"llm_call\", \"summary\": \"llamacpp:bonsai-8b\", \"event_id\": \"evt_b71a5531e41e479f810bcb69c761617d\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_b71a5531e41e479f810bcb69c761617d\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 0, \"turn_id\": \"\", \"timestamp\": \"2026-05-01T01:21:57.317070+00:00\", \"metadata\": {\"request_telemetry\": {\"provider\": \"llamacpp\", \"model\": \"bonsai-8b\", \"router\": \"langgraph\", \"transport\": \"litellm_chat_completions\", \"cache_retention\": \"provider_default\", \"stream_strategy\": \"non_streaming\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"iteration\": 0, \"prompt_digest\": \"218fbdf9003b6d55d6ed1c97cb9d259dbd97a04d3464a01113f4cdc235f33754\", \"prompt_layout_digest\": \"b227a6d3a6507b08ec96d1ddc5155188321a7eaaef2b953aa65b5f5755c0d76b\", \"system_prompt_digest\": \"b007c7e94de1eb0c9600915e6d34d3dad1d7140e3e40f1fe1258be74dd611a37\", \"tool_catalog_digest\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\", \"tool_count\": 0, \"tool_names\": [], \"usage\": {\"prompt_tokens\": \"[redacted]\", \"input_tokens\": \"[redacted]\", \"completion_tokens\": \"[redacted]\", \"output_tokens\": \"[redacted]\", \"total_tokens\": \"[redacted]\", \"reasoning_tokens\": \"[redacted]\", \"cache_read_tokens\": \"[redacted]\", \"cache_write_tokens\": \"[redacted]\", \"unknown_fields\": [\"input_tokens\", \"reasoning_tokens\", \"cache_write_tokens\"]}, \"cache_break_reasons\": [\"first_request\"], \"metadata\": {\"routing_reason\": \"not_evaluated\", \"routing_used\": false, \"tool_count\": 0, \"capabilities_known\": true, \"response\": {\"duration_ms\": 270849.756, \"rate_limits\": [{\"window\": \"requests\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"requests-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}, {\"window\": \"tokens-1h\", \"limit\": 0, \"remaining\": 0, \"reset_seconds\": 0.0, \"usage_pct\": 0.0, \"provider\": \"llamacpp\", \"provider_key_id\": \"llamacpp\"}]}}, \"contract\": \"provider-request-telemetry/v1\"}, \"tool_calls_count\": 0, \"done\": true, \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}, {\"kind\": \"memory\", \"status\": \"completed\", \"name\": \"memory.retain.completed\", \"summary\": \"Memory retain completed\", \"event_id\": \"evt_95c60f23fd9d48ef907c6005936cff5c\", \"run_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"span_id\": \"evt_95c60f23fd9d48ef907c6005936cff5c\", \"parent_id\": \"\", \"parent_event_id\": \"\", \"session_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"thread_id\": \"mh-local8b-direct-routing-001-de35cce9\", \"turn\": 1, \"turn_id\": \"mh-local8b-direct-routing-001-de35cce9:turn:1\", \"timestamp\": \"2026-05-01T01:22:07.999671+00:00\", \"metadata\": {\"bank_id\": \"user_anonymous\", \"role\": \"default\", \"content_length\": 133, \"conflict\": false, \"route\": \"verbatim\", \"provider\": \"fusion\", \"providers\": \"verbatim,summary_async\", \"source\": \"automatic_memory_retain\", \"summary_status\": \"background_queued\", \"outcome\": \"ok\"}, \"payload\": {}, \"redaction\": {\"policy\": \"runtime-event-redaction/v1\", \"applied\": true, \"max_string_chars\": 800, \"max_items\": 80}, \"contract\": \"agent-runtime-event/v1\"}], \"routingUsed\": false, \"routingReason\": \"not_evaluated\", \"routingPicked\": \"\"}, \"type\": \"message-metadata\"}\n\n",
+    "data: {\"finishReason\": \"stop\", \"type\": \"finish\"}\n\n"
+  ],
+  "trace_events": [
+    {
+      "id": 194,
+      "timestamp": "2026-05-01 01:21:57.568158+00:00",
+      "action": "memory_retain",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\nAgent responded: local_8b_floor_direct_ok",
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "role": "default",
+        "content_length": 133,
+        "conflict": false,
+        "route": "verbatim",
+        "provider": "fusion",
+        "providers": "verbatim,summary_async",
+        "source": "automatic_memory_retain",
+        "summary_status": "background_queued",
+        "runtime_events": [
+          {
+            "kind": "memory",
+            "status": "completed",
+            "name": "memory.retain.completed",
+            "summary": "Memory retain completed",
+            "event_id": "evt_eba46bd561d742108e90f669ec2ee874",
+            "run_id": "mh-local8b-direct-routing-001-de35cce9",
+            "span_id": "evt_eba46bd561d742108e90f669ec2ee874",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-direct-routing-001-de35cce9",
+            "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+            "turn": 1,
+            "turn_id": "mh-local8b-direct-routing-001-de35cce9:turn:1",
+            "timestamp": "2026-05-01T01:21:57.568079+00:00",
+            "metadata": {
+              "bank_id": "user_anonymous",
+              "role": "default",
+              "content_length": 133,
+              "conflict": false,
+              "route": "verbatim",
+              "provider": "fusion",
+              "providers": "verbatim,summary_async",
+              "source": "automatic_memory_retain",
+              "summary_status": "background_queued",
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": null
+    },
+    {
+      "id": 193,
+      "timestamp": "2026-05-01 01:21:57.488906+00:00",
+      "action": "memory_retain",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 85,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "verbatim",
+        "consumer": "agent_writer",
+        "user_id": "anonymous",
+        "actor_role": "default",
+        "item_count": 1,
+        "policy_decision": "write_allowed",
+        "source_status": "unreferenced"
+      },
+      "iteration": null
+    },
+    {
+      "id": 192,
+      "timestamp": "2026-05-01 01:21:57.317302+00:00",
+      "action": "llm_response",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+      "output": "local_8b_floor_direct_ok",
+      "duration_ms": 270850,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "model": "bonsai-8b",
+        "done": true,
+        "tool_calls_count": 0,
+        "token_usage": 1220,
+        "content_cleaned": false,
+        "request_telemetry": {
+          "provider": "llamacpp",
+          "model": "bonsai-8b",
+          "router": "langgraph",
+          "transport": "litellm_chat_completions",
+          "cache_retention": "provider_default",
+          "stream_strategy": "non_streaming",
+          "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+          "iteration": 0,
+          "prompt_digest": "218fbdf9003b6d55d6ed1c97cb9d259dbd97a04d3464a01113f4cdc235f33754",
+          "prompt_layout_digest": "b227a6d3a6507b08ec96d1ddc5155188321a7eaaef2b953aa65b5f5755c0d76b",
+          "system_prompt_digest": "b007c7e94de1eb0c9600915e6d34d3dad1d7140e3e40f1fe1258be74dd611a37",
+          "tool_catalog_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "tool_count": 0,
+          "tool_names": [],
+          "usage": {
+            "prompt_tokens": 1212,
+            "input_tokens": null,
+            "completion_tokens": 8,
+            "output_tokens": 8,
+            "total_tokens": 1220,
+            "reasoning_tokens": null,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": null,
+            "unknown_fields": [
+              "input_tokens",
+              "reasoning_tokens",
+              "cache_write_tokens"
+            ]
+          },
+          "cache_break_reasons": [
+            "first_request"
+          ],
+          "metadata": {
+            "routing_reason": "not_evaluated",
+            "routing_used": false,
+            "tool_count": 0,
+            "capabilities_known": true,
+            "response": {
+              "duration_ms": 270849.756,
+              "rate_limits": [
+                {
+                  "window": "requests",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "requests-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                },
+                {
+                  "window": "tokens-1h",
+                  "limit": 0,
+                  "remaining": 0,
+                  "reset_seconds": 0.0,
+                  "usage_pct": 0.0,
+                  "provider": "llamacpp",
+                  "provider_key_id": "llamacpp"
+                }
+              ]
+            }
+          },
+          "contract": "provider-request-telemetry/v1"
+        },
+        "runtime_events": [
+          {
+            "kind": "llm",
+            "status": "completed",
+            "name": "llm_call",
+            "summary": "llamacpp:bonsai-8b",
+            "event_id": "evt_b71a5531e41e479f810bcb69c761617d",
+            "run_id": "mh-local8b-direct-routing-001-de35cce9",
+            "span_id": "evt_b71a5531e41e479f810bcb69c761617d",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-direct-routing-001-de35cce9",
+            "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+            "turn": 0,
+            "turn_id": "",
+            "timestamp": "2026-05-01T01:21:57.317070+00:00",
+            "metadata": {
+              "request_telemetry": {
+                "provider": "llamacpp",
+                "model": "bonsai-8b",
+                "router": "langgraph",
+                "transport": "litellm_chat_completions",
+                "cache_retention": "provider_default",
+                "stream_strategy": "non_streaming",
+                "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+                "iteration": 0,
+                "prompt_digest": "218fbdf9003b6d55d6ed1c97cb9d259dbd97a04d3464a01113f4cdc235f33754",
+                "prompt_layout_digest": "b227a6d3a6507b08ec96d1ddc5155188321a7eaaef2b953aa65b5f5755c0d76b",
+                "system_prompt_digest": "b007c7e94de1eb0c9600915e6d34d3dad1d7140e3e40f1fe1258be74dd611a37",
+                "tool_catalog_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "tool_count": 0,
+                "tool_names": [],
+                "usage": {
+                  "prompt_tokens": "[redacted]",
+                  "input_tokens": "[redacted]",
+                  "completion_tokens": "[redacted]",
+                  "output_tokens": "[redacted]",
+                  "total_tokens": "[redacted]",
+                  "reasoning_tokens": "[redacted]",
+                  "cache_read_tokens": "[redacted]",
+                  "cache_write_tokens": "[redacted]",
+                  "unknown_fields": [
+                    "input_tokens",
+                    "reasoning_tokens",
+                    "cache_write_tokens"
+                  ]
+                },
+                "cache_break_reasons": [
+                  "first_request"
+                ],
+                "metadata": {
+                  "routing_reason": "not_evaluated",
+                  "routing_used": false,
+                  "tool_count": 0,
+                  "capabilities_known": true,
+                  "response": {
+                    "duration_ms": 270849.756,
+                    "rate_limits": [
+                      {
+                        "window": "requests",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "requests-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      },
+                      {
+                        "window": "tokens-1h",
+                        "limit": 0,
+                        "remaining": 0,
+                        "reset_seconds": 0.0,
+                        "usage_pct": 0.0,
+                        "provider": "llamacpp",
+                        "provider_key_id": "llamacpp"
+                      }
+                    ]
+                  }
+                },
+                "contract": "provider-request-telemetry/v1"
+              },
+              "tool_calls_count": 0,
+              "done": true,
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": 0
+    },
+    {
+      "id": 191,
+      "timestamp": "2026-05-01 01:21:57.226908+00:00",
+      "action": "route_decision",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "runner": "langgraph",
+        "decision": "direct_answer",
+        "route_taxonomy": "direct_answer",
+        "delegation_decision": "none",
+        "delegate_kind": null,
+        "spawn_depth": 0,
+        "max_spawn_depth": 0,
+        "allowed_tools": [],
+        "memory_scope": "current_user",
+        "budget": {},
+        "fallback_reason": "subagents_disabled",
+        "tool_calls_count": 0,
+        "tool_names": [],
+        "routing_reason": "not_evaluated",
+        "routing_used": false,
+        "routing_picked_model": "",
+        "memory_route_requested": false,
+        "retrieval_route_requested": false
+      },
+      "iteration": 0
+    },
+    {
+      "id": 190,
+      "timestamp": "2026-05-01 01:17:26.249501+00:00",
+      "action": "memory_recall",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": "### Personal Raw Evidence\n- [available] User asked: Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.\nAgent responded: local_8b_floor_direct_ok (mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0)",
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "role": "default",
+        "source": "memory_recall_node",
+        "facts_recalled": 1,
+        "entities": 0,
+        "tokens_used": 237,
+        "runtime_events": [
+          {
+            "kind": "memory",
+            "status": "completed",
+            "name": "memory.recall.completed",
+            "summary": "Memory recall selected context for prompt assembly",
+            "event_id": "evt_bfd92da6406e43729529c2ec3c210793",
+            "run_id": "mh-local8b-direct-routing-001-de35cce9",
+            "span_id": "evt_bfd92da6406e43729529c2ec3c210793",
+            "parent_id": "",
+            "parent_event_id": "",
+            "session_id": "mh-local8b-direct-routing-001-de35cce9",
+            "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+            "turn": 0,
+            "turn_id": "",
+            "timestamp": "2026-05-01T01:17:26.249269+00:00",
+            "metadata": {
+              "bank_id": "user_anonymous",
+              "role": "default",
+              "source": "memory_recall_node",
+              "facts_recalled": 1,
+              "entities": 0,
+              "tokens_used": "[redacted]",
+              "source_layer_counts": {
+                "personal_raw": 1
+              },
+              "query_gate_action": "retrieve",
+              "query_gate_reason": "default_retrieval",
+              "degradation_flags": [
+                "NO_PERSONAL_KB",
+                "NO_WORLD_EVIDENCE"
+              ],
+              "context_refs": [
+                {
+                  "id": "fusion:0:mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0",
+                  "source_refs": [
+                    "mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0"
+                  ],
+                  "raw_evidence_ref": "mh-local8b-direct-routing-001-f13a78f3:default:202604302354#0",
+                  "operation_log_id": "memory-op:recall:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0",
+                  "diff_ref": "memory-diff:user_anonymous__verbatim:verbatim:mh-local8b-direct-routing-001-f13a78f3:default:202604302354-0",
+                  "thread_id": "",
+                  "session_id": "",
+                  "room_id": "",
+                  "source_layer": "personal_raw",
+                  "context_tier": "L1"
+                }
+              ],
+              "outcome": "ok"
+            },
+            "payload": {},
+            "redaction": {
+              "policy": "runtime-event-redaction/v1",
+              "applied": true,
+              "max_string_chars": 800,
+              "max_items": 80
+            },
+            "contract": "agent-runtime-event/v1"
+          }
+        ]
+      },
+      "iteration": null
+    },
+    {
+      "id": 189,
+      "timestamp": "2026-05-01 01:17:26.149303+00:00",
+      "action": "memory_recall",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": 310,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "bank_id": "user_anonymous",
+        "route": "fusion",
+        "consumer": "llm_agent",
+        "user_id": "anonymous",
+        "actor_role": "default",
+        "item_count": 1,
+        "query_gate": "default_retrieval",
+        "needs_verification": false,
+        "source_status": "unreferenced",
+        "query": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok."
+      },
+      "iteration": null
+    },
+    {
+      "id": 188,
+      "timestamp": "2026-05-01 01:17:14.373736+00:00",
+      "action": "skill_used",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:plan"
+        ],
+        "skill_names": [
+          "plan"
+        ],
+        "query_preview": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+        "user_id": "anonymous",
+        "refined": false,
+        "coverage_score": null,
+        "source_skills": null
+      },
+      "iteration": null
+    },
+    {
+      "id": 187,
+      "timestamp": "2026-05-01 01:17:14.260274+00:00",
+      "action": "skill_found",
+      "user_id": "local",
+      "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+      "agent_class": "advisory",
+      "agent_role": null,
+      "tool_name": null,
+      "input": null,
+      "output": null,
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "metadata": {
+        "skill_ids": [
+          "global:plan"
+        ],
+        "skill_names": [
+          "plan"
+        ],
+        "query_preview": "Reply with exactly this marker in one short sentence: local_8b_floor_direct_ok.",
+        "user_id": "anonymous",
+        "search_rounds": 1,
+        "reformulations": null,
+        "satisfied": true,
+        "search_traces": [
+          {
+            "query_terms": [
+              "8b",
+              "direct",
+              "exactly",
+              "floor",
+              "local",
+              "marker",
+              "ok"
+            ],
+            "selected_skill_ids": [
+              "global:plan"
+            ],
+            "dense_enabled": false,
+            "reason": "ranked",
+            "top_k": 3,
+            "max_tokens": 2000,
+            "candidates": [
+              {
+                "skill_id": "global:plan",
+                "name": "plan",
+                "tier": "global",
+                "category": "meta",
+                "skill_type": "task_specific",
+                "bm25_score": 0.963298,
+                "bm25_rank": 1,
+                "dense_rank": null,
+                "rrf_score": 0.016393,
+                "selected": true,
+                "reason": "selected",
+                "matched_terms": [
+                  "ok"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "iteration": null
+    }
+  ],
+  "score": {
+    "thread_id": "mh-local8b-direct-routing-001-de35cce9",
+    "model": "bonsai-8b",
+    "completed": true,
+    "session_status": null,
+    "session_summary": null,
+    "turns": 1,
+    "turn_efficiency": 1.0,
+    "total_tokens": 1220,
+    "token_efficiency": 1220,
+    "total_duration_ms": 270850,
+    "tool_calls": 0,
+    "tool_success_rate": 0.0,
+    "tool_failures": 0,
+    "tools_denied": 0,
+    "memory_recalls": 2,
+    "memory_retains": 2,
+    "memory_utilization": true,
+    "skills_loaded": [
+      "global:plan"
+    ],
+    "skill_events": 2,
+    "cost_estimate_usd": 0.00366,
+    "fitness_score": 0.9995,
+    "trace_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_actions": [
+        "llm_response",
+        "memory_recall",
+        "memory_retain",
+        "route_decision",
+        "skill_found",
+        "skill_used"
+      ],
+      "observed_tools": [],
+      "observed_skills": [
+        "global:plan",
+        "plan"
+      ],
+      "tool_success_rate": null,
+      "observed_memory_routes": [
+        "fusion",
+        "verbatim"
+      ],
+      "observed_memory_providers": [
+        "fusion",
+        "summary_async",
+        "verbatim"
+      ]
+    },
+    "stream_gates": {
+      "passed": true,
+      "failures": [],
+      "warnings": [],
+      "observed_parts": [
+        "data-runtime-event",
+        "finish",
+        "message-metadata",
+        "start",
+        "text-delta",
+        "text-end",
+        "text-start"
+      ],
+      "observed_tools": [],
+      "observed_rich_renderers": [],
+      "observed_artifact_files": []
+    },
+    "base_fitness_score": 0.9995,
+    "expectation_gate_passed": true,
+    "trace_gate_passed": true,
+    "stream_gate_passed": true,
+    "fitness_penalties": []
+  },
+  "trace_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "llm_response",
+      "memory_recall",
+      "memory_retain",
+      "route_decision",
+      "skill_found",
+      "skill_used"
+    ],
+    "observed_tools": [],
+    "observed_skills": [
+      "global:plan",
+      "plan"
+    ],
+    "tool_success_rate": null,
+    "observed_memory_routes": [
+      "fusion",
+      "verbatim"
+    ],
+    "observed_memory_providers": [
+      "fusion",
+      "summary_async",
+      "verbatim"
+    ]
+  },
+  "stream_verdict": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_parts": [
+      "data-runtime-event",
+      "finish",
+      "message-metadata",
+      "start",
+      "text-delta",
+      "text-end",
+      "text-start"
+    ],
+    "observed_tools": [],
+    "observed_rich_renderers": [],
+    "observed_artifact_files": []
+  },
+  "artifact_dir": null,
+  "runner_variant": "dispatcher"
+}

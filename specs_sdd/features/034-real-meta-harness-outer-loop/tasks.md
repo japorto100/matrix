@@ -161,6 +161,14 @@ feature_id: 034
     `expectation_gate_passed`, per-gate booleans and `fitness_penalties`, then
     caps failed trace/stream runs. The outer loop can no longer treat a
     healthy-but-wrong response as Pareto-equivalent to a correct response.
+- [x] T069 [done-live-no-browser] Run a formal Local-8B Meta-Harness outer-loop
+  round with Bonsai as the target agent.
+  - 2026-05-01: `run-metaharness-round-local8b-001` completed
+    baseline -> proposer artifact inspection -> config-overlay candidate ->
+    frozen search eval -> decision ledger -> final frontier. Summary reports
+    `true_meta_harness_iteration=true`; frozen evaluator gate passed; baseline
+    scored `0.9995`, candidate scored `0.9994`, and the candidate was
+    discarded as a regression.
 
 ## Documentation
 
@@ -176,3 +184,5 @@ feature_id: 034
   routes only for cheap target-agent rollouts.
 - [x] T075 [done-static] Record local Bonsai/llama.cpp provider path and floor
   scenario contract in `research.md`.
+- [x] T076 [done-live-no-browser] Record formal Local-8B outer-loop evidence in
+  `research.md`, `gates.md` and `closeout.md`.

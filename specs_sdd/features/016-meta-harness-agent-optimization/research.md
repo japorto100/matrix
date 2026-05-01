@@ -583,6 +583,10 @@ but any OpenAI-compatible small model can be evaluated against the same file.
 `run-local8b-floor-bonsai-direct-long-timeout` proves the first direct-routing
 case through the real backend path, including Memory-Fusion hooks, route
 decision, audit trace, SSE stream and exact response term.
+`run-metaharness-round-local8b-001` then used that same floor as a formal
+Feature 034 outer-loop search slice: baseline and config-overlay candidate both
+passed deterministic trace/stream gates, the candidate was discarded by the
+decision ledger, and the run summary recorded `true_meta_harness_iteration=true`.
 
 2026-05-01 scoring update: deterministic gates are now part of scalar scenario
 fitness. Generic session health remains visible as `base_fitness_score`, but

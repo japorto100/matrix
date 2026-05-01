@@ -1,0 +1,18 @@
+{
+  "candidate_id": "iter-001-config-overlay",
+  "candidate_type": "config_overlay",
+  "created_at": "2026-05-01T01:22:09.765956+00:00",
+  "domain_id": "agent-harness-local-8b-floor",
+  "evaluation": "frozen search scenarios; holdout remains protected",
+  "frozen_evaluator_required": true,
+  "holdout_visible_to_proposer": false,
+  "proposer_self_certification_allowed": false,
+  "rollback_ref": "ref: refs/heads/metaharness_round_1",
+  "run_id": "run-metaharness-round-local8b-001",
+  "write_scope": [
+    "python-backend/agent/",
+    "python-backend/memory_fusion/",
+    "python-backend/rag/",
+    "python-backend/kg/"
+  ]
+}
