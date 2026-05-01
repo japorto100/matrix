@@ -234,6 +234,20 @@ feature_id: 034
     passed with `tool_count=2` (`semantic_lookup`, `tool_search`),
     `memory_recalls=0`, `memory_retains=0`, no memory routes/providers,
     trace/stream pass rates `1.0` and `fitness_score=0.8982`.
+- [x] T082 [done-live-no-browser] Use the Local-8B subagent-policy floor to
+  harden fail-closed delegation against accidental personal-memory coupling.
+  - 2026-05-01: `run-local8b-floor-subagent-policy-001` passed the
+    route/delegation gate but still selected `memory-usage` and retained the
+    harness-policy exchange through Memory-Fusion. The bounded fix treats
+    agent-harness/subagent-policy questions as non-personal policy context and
+    blocks deferred memory/delegation schemas for explicit no-delegation turns.
+    Unit slice:
+    `uv run pytest tests/agent/tools/test_catalog.py
+    tests/agent/graph/nodes/test_memory_node.py tests/agent/test_skill_finder.py`
+    passed with 41 tests. `run-local8b-floor-subagent-policy-001-clean` passed
+    with `tool_count=0`, `delegation_decision=none`, `spawn_depth=0`,
+    `memory_recalls=0`, `memory_retains=0`, no memory routes/providers and
+    `fitness_score=0.9995`.
 
 ## Documentation
 

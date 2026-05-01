@@ -115,6 +115,15 @@ feature_id: 012
     `memory_recalls=0`, `memory_retains=0`, no observed memory
     routes/providers, and provider tools limited to `semantic_lookup` plus
     `tool_search`.
+- [x] Harness/subagent policy prompts such as "why a child agent cannot write
+  shared memory" skip automatic personal-memory recall/retain unless the user
+  also gives a positive memory cue.
+  - 2026-05-01: `run-local8b-floor-subagent-policy-001` passed the delegation
+    route gate but showed `memory-usage` and Memory-Fusion recall/retain for a
+    non-personal harness-policy prompt. After the fix,
+    `run-local8b-floor-subagent-policy-001-clean` passed with
+    `memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers
+    and `delegation_decision=none`.
 - [x] Remote embedding audit metadata redacts API keys while preserving
   provider/model/base-url host, key presence, key fingerprint and live-call
   budget for Control/Meta-Harness inspection.

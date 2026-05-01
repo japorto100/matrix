@@ -201,6 +201,32 @@ def test_selected_tools_for_turn_suppresses_memory_tools_for_semantic_grounding(
     assert "memory_search" not in names
 
 
+def test_selected_tools_for_turn_suppresses_memory_tools_for_harness_policy():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_add", "Remember durable user memory with evidence."),
+        _CatalogTool("memory_search", "Search previous memory."),
+        _CatalogTool("delegate_task", "Delegate work to a child agent."),
+    )
+
+    selected = selected_tools_for_turn(
+        tools,
+        (
+            "Do not delegate. Explain why a child agent cannot write shared "
+            "memory in this harness."
+        ),
+        defer_schemas=True,
+        limit=3,
+        max_level=2,
+    )
+
+    names = {tool.name for tool in selected}
+    assert names == {"tool_search"}
+    assert "delegate_task" not in names
+    assert "memory_add" not in names
+    assert "memory_search" not in names
+
+
 def test_expand_tool_definitions_from_tool_search_results():
     tools = (
         ToolSearchTool(),

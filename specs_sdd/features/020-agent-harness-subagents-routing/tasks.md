@@ -304,3 +304,13 @@ feature_id: 020
     passes it to `A2AClient.send_message()` as child task/thread id, and writes
     completion/failed/timeout status plus compact result/error payloads for the
     Control A2A read API.
+- [x] T052 Harden no-delegation / subagent-policy turns against accidental
+  personal memory and deferred delegation tools.
+  - 2026-05-01: `run-local8b-floor-subagent-policy-001` passed the route gate
+    but exposed a real boundary issue: a prompt about child shared-memory policy
+    selected `memory-usage` and auto-retained the harness explanation as user
+    memory.
+  - 2026-05-01: the runtime now treats explicit harness/subagent policy
+    questions as non-personal policy context. Memory recall/retain skip before
+    engine lookup, skill search suppresses `memory-usage`, and deferred tool
+    selection blocks memory/delegation tools for "do not delegate" turns.

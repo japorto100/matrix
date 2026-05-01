@@ -13,6 +13,7 @@ from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
 TOOL_SEARCH_NAME = "tool_search"
 MEMORY_TOOL_NAMES = frozenset({"memory_add", "memory_search", "save_memory", "load_memory"})
 MEMORY_WRITE_TOOL_NAMES = frozenset({"memory_add", "save_memory"})
+DELEGATION_TOOL_NAMES = frozenset({"delegate_task", "delegate_to_agent", "wait_for_agent"})
 _MEMORY_CUE_TERMS = (
     "memory_add",
     "memory_search",
@@ -32,6 +33,16 @@ _NON_MEMORY_GROUNDING_CUE_TERMS = (
     "source grounded",
     "ground the term",
     "semantic definition",
+)
+_NON_MEMORY_HARNESS_POLICY_CUE_TERMS = (
+    "agent harness",
+    "child agent cannot write shared memory",
+    "child agent can't write shared memory",
+    "subagent policy",
+    "subagent floor",
+    "memory_write_policy",
+    "shared memory in this harness",
+    "why a child agent cannot write",
 )
 _NO_MEMORY_WRITE_CUE_TERMS = (
     "do not store",
@@ -55,6 +66,13 @@ _NO_MEMORY_WRITE_CUE_TERMS = (
     "without storing",
     "without saving",
     "without memory",
+)
+_NO_DELEGATION_CUE_TERMS = (
+    "do not delegate",
+    "don't delegate",
+    "dont delegate",
+    "no delegation",
+    "without delegation",
 )
 
 
@@ -250,10 +268,15 @@ def _query_mentions_tool(query: str, tool_name: str) -> bool:
 
 def _blocked_tool_names_for_query(query: str) -> set[str]:
     normalized = f" {query.lower()} "
+    blocked: set[str] = set()
+    if any(term in normalized for term in _NO_DELEGATION_CUE_TERMS):
+        blocked.update(DELEGATION_TOOL_NAMES)
     if any(term in normalized for term in _NO_MEMORY_WRITE_CUE_TERMS):
-        return set(MEMORY_WRITE_TOOL_NAMES)
+        blocked.update(MEMORY_WRITE_TOOL_NAMES)
+    if any(term in normalized for term in _NON_MEMORY_HARNESS_POLICY_CUE_TERMS):
+        blocked.update(MEMORY_TOOL_NAMES)
     if any(term in normalized for term in _NON_MEMORY_GROUNDING_CUE_TERMS) and not any(
         term in normalized for term in _MEMORY_CUE_TERMS
     ):
-        return set(MEMORY_TOOL_NAMES)
-    return set()
+        blocked.update(MEMORY_TOOL_NAMES)
+    return blocked

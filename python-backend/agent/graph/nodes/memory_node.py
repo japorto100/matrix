@@ -103,6 +103,16 @@ _NON_PERSONAL_GROUNDING_CUE_TERMS = (
     "ground the term",
     "semantic definition",
 )
+_NON_PERSONAL_HARNESS_POLICY_CUE_TERMS = (
+    "agent harness",
+    "child agent cannot write shared memory",
+    "child agent can't write shared memory",
+    "subagent policy",
+    "subagent floor",
+    "memory_write_policy",
+    "shared memory in this harness",
+    "why a child agent cannot write",
+)
 
 
 def _memory_event(
@@ -136,6 +146,8 @@ def _should_skip_memory_recall(user_msg: str) -> tuple[bool, str]:
     text = f" {user_msg.lower()} "
     if _has_no_personal_memory_cue(text):
         return True, "user_requested_no_personal_memory"
+    if _has_non_personal_harness_policy_cue(text):
+        return True, "non_personal_harness_policy_without_memory_cue"
     if _has_non_personal_grounding_cue(text):
         return True, "non_personal_grounding_without_memory_cue"
     has_memory_cue = any(term in text for term in _MEMORY_RECALL_CUE_TERMS)
@@ -157,6 +169,13 @@ def _has_non_personal_grounding_cue(text: str) -> bool:
     if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
         return False
     return any(term in normalized for term in _NON_PERSONAL_GROUNDING_CUE_TERMS)
+
+
+def _has_non_personal_harness_policy_cue(text: str) -> bool:
+    normalized = f" {text.lower()} "
+    if any(term in normalized for term in _MEMORY_RECALL_CUE_TERMS):
+        return False
+    return any(term in normalized for term in _NON_PERSONAL_HARNESS_POLICY_CUE_TERMS)
 
 
 def _get_memory_config(role: str) -> dict:
@@ -629,11 +648,23 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                 user_msg = content[:500]
                 break
 
-    if _has_no_personal_memory_cue(user_msg) or _has_non_personal_grounding_cue(user_msg):
+    no_personal_memory = _has_no_personal_memory_cue(user_msg)
+    non_personal_grounding = _has_non_personal_grounding_cue(user_msg)
+    non_personal_harness_policy = _has_non_personal_harness_policy_cue(user_msg)
+    if no_personal_memory or non_personal_grounding or non_personal_harness_policy:
         reason = (
             "user_requested_no_personal_memory"
-            if _has_no_personal_memory_cue(user_msg)
-            else "non_personal_grounding_without_memory_cue"
+            if no_personal_memory
+            else (
+                "non_personal_harness_policy_without_memory_cue"
+                if non_personal_harness_policy
+                else "non_personal_grounding_without_memory_cue"
+            )
+        )
+        summary = (
+            "Memory retain skipped because the turn is non-personal harness policy"
+            if non_personal_harness_policy
+            else "Memory retain skipped because the user requested no personal memory"
         )
         return {
             "runtime_events": [
@@ -641,7 +672,7 @@ async def memory_retain_node(state: AgentGraphState) -> dict[str, Any]:
                     status="blocked",
                     name="memory.retain.blocked",
                     state=state,
-                    summary="Memory retain skipped because the user requested no personal memory",
+                    summary=summary,
                     metadata={
                         "role": role,
                         "reason": reason,

@@ -105,3 +105,11 @@ feature_id: 020
     stable delegation/task id, parent thread, user id, target role, status and
     compact result/error JSON. Unit coverage proves both DB-write and no-DB
     behavior.
+- [x] Harness/subagent policy explanations are not treated as personal memory.
+  - 2026-05-01: `run-local8b-floor-subagent-policy-001` was a green route gate
+    but showed `memory-usage` plus Memory-Fusion recall/retain for a
+    non-personal harness-policy prompt. The clean run
+    `run-local8b-floor-subagent-policy-001-clean` passes with
+    `delegation_decision=none`, `spawn_depth=0`, provider `tool_count=0`,
+    `memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers,
+    and only `global:plan` selected.

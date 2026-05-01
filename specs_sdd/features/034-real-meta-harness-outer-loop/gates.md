@@ -167,3 +167,15 @@ passed with provider `tool_count=2` (`semantic_lookup`, `tool_search`),
 `completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
 `stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
 `fitness_score=0.8982`.
+
+2026-05-01 subagent-policy/memory-boundary live gate evidence:
+`run-local8b-floor-subagent-policy-001` passed the route/delegation headline
+gate, but found a real boundary issue: the prompt was a non-personal harness
+policy question, yet `memory-usage` was selected and Memory-Fusion
+recall/retain wrote the exchange. After the bounded runtime fix,
+`run-local8b-floor-subagent-policy-001-clean` passed with provider
+`tool_count=0`, `delegation_decision=none`, `spawn_depth=0`,
+`memory_recalls=0`, `memory_retains=0`, no observed memory routes/providers,
+only `global:plan` selected, `completion_rate=1.0`,
+`trace_gate_pass_rate=1.0`, `stream_gate_pass_rate=1.0` and
+`fitness_score=0.9995`.

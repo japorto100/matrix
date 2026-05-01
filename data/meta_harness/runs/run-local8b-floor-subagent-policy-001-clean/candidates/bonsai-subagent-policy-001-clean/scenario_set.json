@@ -1,0 +1,72 @@
+{
+  "scenarios": [
+    {
+      "id": "local8b-subagent-policy-001",
+      "category": "local_8b_subagent_policy",
+      "turns": [
+        {
+          "user": "Do not delegate. Explain in one short sentence why a child agent cannot write shared memory in this harness, and include marker subagent_floor_ack."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "route_decision",
+          "llm_response"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [],
+        "forbidden_tools": [
+          "delegate_task",
+          "memory_add",
+          "send_message"
+        ],
+        "required_skills": [],
+        "required_memory_routes": [],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "subagent_floor_ack"
+        ],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_event_metadata_values": {},
+        "forbidden_event_metadata_values": {},
+        "required_runtime_event_names": [],
+        "required_runtime_event_metadata_keys": {},
+        "forbidden_runtime_event_metadata_keys": {},
+        "required_runtime_event_metadata_values": {},
+        "forbidden_runtime_event_metadata_values": {},
+        "required_stream_parts": [],
+        "required_stream_rich_renderers": [],
+        "required_stream_artifact_files": [],
+        "required_route_decisions": [
+          "direct_answer"
+        ],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [
+          "none"
+        ],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": 0,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": false,
+        "min_tool_success_rate": null,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "Subagent policy remains fail-closed and parent-owned while real delegation is product-deferred."
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": false,
+      "allowed_tools": [],
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

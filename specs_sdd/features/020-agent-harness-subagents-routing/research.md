@@ -318,6 +318,21 @@ can correlate without parsing child output. Persistence is intentionally
 fail-open for local/dev/no-DB runs; Meta-Harness still evaluates the audit
 runtime events, while Control gains durable history when Postgres is present.
 
+2026-05-01 Local-8B subagent policy floor: the first Bonsai-8B run
+`run-local8b-floor-subagent-policy-001` proved the no-delegation route
+contract, but also found a boundary bug: the phrase "shared memory" caused the
+skill finder to inject `memory-usage` and automatic Memory-Fusion retained the
+policy explanation as user memory. This is not a real child-memory write, but
+it still pollutes personal memory with harness documentation. Matrix now treats
+agent-harness/subagent-policy questions as non-personal policy context unless
+there is an explicit personal-memory cue. That keeps the Hermes-derived
+invariant precise: children cannot write shared memory, and parent turns about
+that policy are not silently stored as personal user facts either. Clean
+evidence: `run-local8b-floor-subagent-policy-001-clean` with provider
+`tool_count=0`, `memory_recalls=0`, `memory_retains=0`, no observed memory
+routes/providers, `delegation_decision=none`, `spawn_depth=0` and
+`fitness_score=0.9995`.
+
 ## Sources To Read
 
 - `_ref/hermes-agent`

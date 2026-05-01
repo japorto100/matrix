@@ -330,6 +330,38 @@ def test_semantic_grounding_suppresses_memory_skill_without_memory_cue(
     assert [skill.name for skill in out] == ["risk-assessment"]
 
 
+def test_harness_policy_suppresses_memory_skill_without_personal_memory_cue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("AGENT_SKILL_FINDER_DENSE", "0")
+    skills = [
+        Skill(
+            name="memory-usage",
+            description="Use when deciding whether to store vs recall long-term memory",
+            category="general",
+            content="memory_add memory_search shared memory",
+            path=tmp_path / "memory",
+            skill_type="general",
+        ),
+        Skill(
+            name="plan",
+            description="Explain agent harness policy",
+            category="meta",
+            content="subagent child agent harness policy",
+            path=tmp_path / "plan",
+        ),
+    ]
+
+    out = find_skills_for_query(
+        skills,
+        "Do not delegate. Explain why a child agent cannot write shared memory in this harness.",
+        top_k=3,
+    )
+
+    assert [skill.name for skill in out] == ["plan"]
+
+
 @pytest.mark.asyncio
 async def test_general_skills_are_query_gated_by_default(
     monkeypatch: pytest.MonkeyPatch,

@@ -305,3 +305,8 @@ PY
 - Local-8B floor scenarios must cover direct routing, skill injection, memory,
   tools/SSE, retrieval/KG boundary, semantic lookup and subagent policy before
   larger live/browser gates are considered representative.
+  - 2026-05-01: subagent policy now has red/green evidence. The first run
+    passed route/delegation but exposed accidental `memory-usage` and
+    Memory-Fusion retain; `run-local8b-floor-subagent-policy-001-clean`
+    passes with no delegation, no tools, no memory recall/retain counts and no
+    memory routes/providers.

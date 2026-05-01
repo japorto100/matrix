@@ -194,3 +194,8 @@ feature_id: 024
     deferred surface. `run-local8b-floor-semantic-deferred-tools-001-clean`
     exposed only `semantic_lookup` plus `tool_search`, executed
     `semantic_lookup`, and passed trace/stream/tool gates at `1.0`.
+  - 2026-05-01 static/no-browser: explicit no-delegation harness-policy turns
+    now block delegation and memory schemas during deferred tool selection.
+    The Local-8B subagent-policy clean run used tools disabled by scenario and
+    passed with provider `tool_count=0`; unit coverage proves the same prompt
+    exposes only `tool_search` when memory/delegation tools are available.

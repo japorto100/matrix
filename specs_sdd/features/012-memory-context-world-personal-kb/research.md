@@ -417,3 +417,21 @@ key with `[redacted]`. This is intentionally separate from model-quality
 promotion: it satisfies the redaction/quota visibility gate, but T039e still
 requires retrieval-quality and cost evidence before changing production
 embedding defaults.
+
+## 2026-05-01 Harness Policy Memory Boundary
+
+The Local-8B subagent-policy floor showed that "memory" language in an agent
+harness policy question is not necessarily personal memory intent. The first
+run, `run-local8b-floor-subagent-policy-001`, kept delegation fail-closed but
+still selected `memory-usage` and retained the policy explanation through
+Memory-Fusion. This is a pollution vector for user memory: the user asked about
+the harness contract, not about a personal fact to remember.
+
+The runtime now classifies explicit agent-harness/subagent-policy questions as
+non-personal policy context unless there is a positive personal-memory cue.
+That extends the same boundary used for `retrieve_context` and
+`semantic_lookup`: recall and retain skip before engine lookup/write, and the
+skip reason remains observable as
+`non_personal_harness_policy_without_memory_cue`. Clean evidence:
+`run-local8b-floor-subagent-policy-001-clean` with `memory_recalls=0`,
+`memory_retains=0` and no observed memory routes/providers.
