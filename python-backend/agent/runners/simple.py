@@ -128,10 +128,16 @@ async def _run_simple(
         _compress_messages_for_context_overflow_retry,
         _context_overflow_retry_event,
         _is_context_overflow_recovery,
+        _last_user_text,
         _memory_bank_id_for_user,
     )
     from agent.security.credentials import get_user_role_model
     from agent.sessions import create_session, update_session
+    from agent.tools.discovery import (
+        expand_tool_definitions_from_results,
+        selected_tools_for_turn,
+    )
+    from agent.tools.registry import ToolRegistry
     from agent.tracing import session_span, set_session_summary
 
     model = ctx.model
@@ -154,10 +160,11 @@ async def _run_simple(
     except Exception:  # noqa: BLE001
         pass
 
+    turn_tools = selected_tools_for_turn(ctx.tools, _last_user_text(messages))
     state: dict[str, Any] = {
         "messages": list(messages),
         "tool_calls": [],
-        "tool_definitions": [tool.definition() for tool in ctx.tools],
+        "tool_definitions": [tool.definition() for tool in turn_tools],
         "tool_results": [],
         "iteration": 0,
         "max_iterations": MAX_ITERATIONS,
@@ -265,6 +272,13 @@ async def _run_simple(
                 all_tool_results.extend(new_results)
                 tool_node_emitted_messages = bool(tool_out.get("messages"))
                 _merge(state, tool_out)
+                expanded = expand_tool_definitions_from_results(
+                    state.get("tool_definitions"),
+                    new_results,
+                    all_tools=ToolRegistry.load().all(),
+                )
+                if expanded is not None:
+                    state["tool_definitions"] = expanded
                 if not tool_node_emitted_messages:
                     _append_tool_messages(state, approved_tool_calls, new_results)
                 from agent.loop_guards import repeated_tool_failure_guard

@@ -9,7 +9,13 @@ from agent.tools.catalog import (
     search_tool_catalog,
     visible_tool_summaries,
 )
+from agent.tools.discovery import (
+    expand_tool_definitions_from_results,
+    selected_tools_for_turn,
+    tool_names_from_search_results,
+)
 from agent.tools.registry import ToolRegistry
+from agent.tools.tool_search import ToolSearchTool
 
 
 class _CatalogTool(TradingTool):
@@ -66,6 +72,7 @@ def test_builtin_catalog_covers_real_registry_tools():
     assert "retrieve_context" in by_name
     assert "sandbox_execute" in by_name
     assert "get_portfolio_summary" in by_name
+    assert "tool_search" in by_name
     assert by_name["semantic_lookup"].group == "semantic"
     assert by_name["retrieve_context"].group == "retrieval"
     assert by_name["sandbox_execute"].risk == "critical"
@@ -104,3 +111,74 @@ def test_search_tool_catalog_returns_progressively_disclosed_matches():
     ]
     assert matches[0]["matched_terms"]
     assert "input_schema" not in matches[0]
+
+
+def test_selected_tools_for_turn_defers_to_relevant_schemas_and_search_tool():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_search", "Search memory."),
+        _CatalogTool("sandbox_execute", "Execute code."),
+        _CatalogTool("get_portfolio_summary", "Read portfolio."),
+    )
+
+    selected = selected_tools_for_turn(
+        tools,
+        "remember my portfolio memory",
+        defer_schemas=True,
+        limit=2,
+        max_level=2,
+    )
+
+    assert [tool.name for tool in selected] == [
+        "tool_search",
+        "memory_search",
+        "get_portfolio_summary",
+    ]
+    assert "sandbox_execute" not in {tool.name for tool in selected}
+
+
+def test_selected_tools_for_turn_exact_name_can_load_high_risk_tool():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_search", "Search memory."),
+        _CatalogTool("sandbox_execute", "Execute code."),
+    )
+
+    selected = selected_tools_for_turn(
+        tools,
+        "use sandbox_execute for this code",
+        defer_schemas=True,
+        limit=2,
+        max_level=2,
+    )
+
+    assert "sandbox_execute" in {tool.name for tool in selected}
+
+
+def test_expand_tool_definitions_from_tool_search_results():
+    tools = (
+        ToolSearchTool(),
+        _CatalogTool("memory_search", "Search memory."),
+        _CatalogTool("get_portfolio_summary", "Read portfolio."),
+    )
+    current = [ToolSearchTool().definition()]
+    results = [
+        {
+            "tool_call_id": "call-1",
+            "tool_name": "tool_search",
+            "result": {"tool_names": ["memory_search", "get_portfolio_summary"]},
+            "error": None,
+        }
+    ]
+
+    expanded = expand_tool_definitions_from_results(current, results, all_tools=tools)
+
+    assert tool_names_from_search_results(results) == [
+        "memory_search",
+        "get_portfolio_summary",
+    ]
+    assert [item["name"] for item in expanded or []] == [
+        "tool_search",
+        "memory_search",
+        "get_portfolio_summary",
+    ]

@@ -443,6 +443,18 @@ Matrix decision:
   catalog or `tool_search` capability, then load only the selected 3-5 full
   schemas for the current turn. This should apply to normal tools and MCP
   tools; static scenario allowlists are not the final architecture.
+- Implementation follow-up: Feature 024 now adds the normal-tool runtime
+  version of this pattern. Large builtin tool sets start with searched full
+  schemas plus a normal `tool_search` fallback; `tool_search` returns
+  metadata-only matches; LangGraph and SimpleLoop expand provider
+  `tool_definitions` after the search result. Feature 034 still needs a
+  Local-8B no-browser gate that removes scenario `allowed_tools` and proves the
+  deferred path live.
+- Live follow-up: `run-local8b-floor-memory-explicit-001-deferred-tools-
+  slim-long` passed the no-allowlist version of the memory floor. The provider
+  telemetry showed `tool_count=4` for the active turn instead of the full
+  registry, while trace and stream gates still observed `memory_add` and
+  `memory_search` with `tool_success_rate=1.0`.
 
 ## Decision
 

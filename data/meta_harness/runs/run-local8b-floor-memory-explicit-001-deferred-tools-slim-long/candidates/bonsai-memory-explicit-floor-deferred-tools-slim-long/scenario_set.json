@@ -1,0 +1,75 @@
+{
+  "scenarios": [
+    {
+      "id": "local8b-memory-explicit-001",
+      "category": "local_8b_memory_explicit",
+      "turns": [
+        {
+          "user": "Use memory_add now to remember this exact local model floor note: bonsai_floor_memory_prefers_source_backed_recall."
+        },
+        {
+          "user": "Use memory_search now to recall bonsai_floor_memory_prefers_source_backed_recall and answer with the exact note."
+        }
+      ],
+      "expectations": {
+        "required_actions": [
+          "memory_retain"
+        ],
+        "forbidden_actions": [],
+        "required_tools": [
+          "memory_add",
+          "memory_search"
+        ],
+        "forbidden_tools": [],
+        "required_skills": [
+          "memory-usage"
+        ],
+        "required_memory_routes": [
+          "fusion"
+        ],
+        "required_memory_providers": [],
+        "forbidden_memory_routes": [],
+        "forbidden_memory_providers": [],
+        "required_response_terms": [
+          "bonsai_floor_memory_prefers_source_backed_recall"
+        ],
+        "forbidden_response_terms": [],
+        "required_memory_evidence_terms": [
+          "bonsai_floor_memory_prefers_source_backed_recall"
+        ],
+        "required_memory_metadata_keys": [],
+        "required_event_metadata_keys": {},
+        "forbidden_event_metadata_keys": {},
+        "required_event_metadata_values": {},
+        "forbidden_event_metadata_values": {},
+        "required_runtime_event_names": [],
+        "required_runtime_event_metadata_keys": {},
+        "forbidden_runtime_event_metadata_keys": {},
+        "required_runtime_event_metadata_values": {},
+        "forbidden_runtime_event_metadata_values": {},
+        "required_stream_parts": [],
+        "required_stream_rich_renderers": [],
+        "required_stream_artifact_files": [],
+        "required_route_decisions": [],
+        "required_runner_variants": [],
+        "required_delegation_decisions": [],
+        "allowed_tool_groups": [],
+        "max_tool_disclosure_level": null,
+        "max_spawn_depth": null,
+        "max_repeated_tool_failures_per_tool": null,
+        "max_provider_retry_events": null,
+        "expected_memory": true,
+        "min_tool_success_rate": 1.0,
+        "allow_tool_failures": false
+      },
+      "judge": {},
+      "metadata": {
+        "focus": "Explicit long-term memory add/search must work for the local 8B target model without relying on frontend interaction."
+      },
+      "consent_allow_session_tools": [],
+      "enable_tools": true,
+      "allowed_tools": [],
+      "runner_variant": "dispatcher"
+    }
+  ]
+}

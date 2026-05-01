@@ -159,3 +159,14 @@ evaluation, decision logging and Pareto update.
 - Follow-up: this is a harness-side containment, not the final architecture.
   The production Agent Runtime still needs provider-agnostic deferred tool
   discovery / Tool Search for normal tools and MCP tools.
+
+## 2026-05-01 Deferred Tool Schema Runtime Gate
+
+- Implemented the builtin-tool runtime side in Feature 024: normal `tool_search`,
+  searched provider schema subsets and schema expansion in both LangGraph and
+  SimpleLoop.
+- Live verification:
+  `run-local8b-floor-memory-explicit-001-deferred-tools-slim-long` removed the
+  scenario `allowed_tools` shortcut and passed with real Bonsai 8B,
+  `tool_count=4`, observed `memory_add`/`memory_search`, trace/stream gates at
+  `1.0`, and fitness `0.8465`.

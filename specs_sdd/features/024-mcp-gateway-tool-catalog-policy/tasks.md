@@ -172,7 +172,15 @@ feature_id: 024
     the prior digest is unknown/changed, and `cache.invalidated` runtime event.
     Static regression covers the no-browser path in
     `tests/agent/mcp_gateway/test_policy.py`.
-- T051 Keep progressive search metadata-only until policy allows full schema
+- [x] T051 [done-static] Keep progressive search metadata-only until policy allows full schema
   exposure.
   - 2026-04-30: runtime prompt injection now reuses builtin tool search as
     metadata-only `Tool Discovery Hints`; no schemas/descriptors are injected.
+- [x] T052 [done-static] Add provider-agnostic deferred schema loading for
+  builtin tools in the real agent runtime.
+  - 2026-05-01: the Agent Runtime now starts large tool catalogs with a
+    searched schema subset plus the normal `tool_search` tool. `tool_search`
+    returns policy-visible matches only; after it runs, LangGraph and
+    SimpleLoop expand the provider tool definitions for the next LLM step.
+    Execution still uses the full server-side registry and existing approval
+    gates.

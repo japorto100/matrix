@@ -61,9 +61,26 @@ feature_id: 024
 - [x] Descriptor diffs and reload decisions emit Feature 033 runtime events.
   - 2026-04-30: reload impact is mirrored as `cache.invalidated`/
     `cache.unchanged` runtime event metadata for Ops replay.
-- [ ] Progressive discovery remains metadata-only until full schema exposure is
+- [x] Progressive discovery remains metadata-only until full schema exposure is
   policy-approved.
   - 2026-04-30: the agent runtime now consumes builtin tool discovery only as
     `Tool Discovery Hints` with name/group/risk/approval/summary; provider tool
     schemas remain in the normal tool-calling payload and are not duplicated in
     the prompt.
+  - 2026-05-01: full schema exposure is now approved only for selected builtin
+    tools after local policy search or explicit `tool_search`; external MCP
+    descriptors remain metadata-only until their own execution policy allows
+    promotion.
+- [x] Provider-facing builtin tool schemas can be deferred without losing a
+  discovery path.
+  - 2026-05-01: `selected_tools_for_turn()` reduces large active tool sets to
+    query-relevant schemas plus `tool_search`; `tool_search` returns
+    metadata-only matches, and both LangGraph and SimpleLoop expand
+    `tool_definitions` after the search result. Unit tests cover searched
+    subsets, exact-name high-risk override and schema expansion.
+  - 2026-05-01 live no-browser: Local-8B memory floor without scenario
+    `allowed_tools` passed through the real dispatcher with
+    `AGENT_DEFER_TOOL_SCHEMAS=true`. The provider request telemetry reported
+    `tool_count=4` (`memory_add`, `memory_search`, `save_memory`,
+    `tool_search`) instead of the full builtin registry, and trace/stream gates
+    passed at `1.0`.

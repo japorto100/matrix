@@ -112,6 +112,15 @@ explicit credential scopes, approval gates and audit evidence.
   tool search directly for the active `AgentExecutionContext.tools` and injects
   compact `Tool Discovery Hints`. This keeps the same metadata-only boundary
   while moving the benefit from Control into the real agent loop.
+- 2026-05-01 runtime schema transfer: the Local-8B Meta-Harness memory floor
+  proved that metadata-only hints are not enough when the provider tool payload
+  still contains every full schema. The runtime now uses provider-agnostic
+  deferred schema loading for builtin tools: select relevant schemas with the
+  same regex/BM25 catalog search, always expose a normal `tool_search` fallback,
+  and expand provider tool definitions after `tool_search` returns matches.
+  This mirrors the Anthropic Tool Search pattern without binding Matrix to
+  Anthropic SDKs; execution remains server-side through `ToolRegistry`,
+  approval, policy and audit gates.
 
 ## Design Consequence
 
@@ -140,6 +149,21 @@ MCP/tool reloads must be treated as prompt-cache and runtime-cache events:
 - runtime telemetry links MCP catalog digest/tool digest to each call or denial.
 
 The same pattern applies to builtin tools so MCP is not a special policy island.
+
+2026-05-01 implementation note: builtin `tool_search` is now a normal
+`TradingTool`. Large active tool sets begin with a relevant schema subset plus
+`tool_search`; LangGraph `_increment_iteration()` and SimpleLoop both expand
+`tool_definitions` after a successful search result. This makes deferred
+loading available to OpenAI-compatible, Anthropic-compatible and local
+llama.cpp routes because it only changes the provider-neutral tool-definition
+payload.
+
+2026-05-01 live note: `run-local8b-floor-memory-explicit-001-deferred-tools-
+slim-long` removed the scenario `allowed_tools` shortcut and relied on runtime
+deferred schema selection. Bonsai 8B saw 4 provider tools for the memory turn,
+called `memory_add` and `memory_search`, and passed trace, stream and
+completion gates. This is the first proof that the builtin-tool path no longer
+needs to stuff all schemas into the model context.
 
 2026-04-30 implementation note: Matrix now exposes MCP reload as a
 confirmation-first control action rather than a model-visible tool. The reload

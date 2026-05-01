@@ -121,3 +121,12 @@ After filtering to `memory_add` and `memory_search`,
 memory floor while leaving the real product gate open: provider-agnostic
 deferred tool discovery / Tool Search must replace static allowlists for
 normal runtime turns and MCP tools.
+
+2026-05-01 deferred schema live gate evidence:
+`run-local8b-floor-memory-explicit-001-deferred-tools-slim-long` removed the
+scenario `allowed_tools` shortcut and used `AGENT_DEFER_TOOL_SCHEMAS=true`.
+The provider telemetry reported `tool_count=4` with `memory_add`,
+`memory_search`, `save_memory` and `tool_search`, rather than the full builtin
+registry. The run passed `completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
+`fitness_score=0.8465`.

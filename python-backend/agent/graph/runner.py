@@ -190,11 +190,10 @@ def _tool_discovery_prompt_block(
     if not q or not tools:
         return ""
     try:
-        from agent.tools.catalog import builtin_tool_catalog, search_tool_catalog
+        from agent.tools.discovery import tool_discovery_matches
 
-        entries = builtin_tool_catalog(list(tools))
-        matches = search_tool_catalog(
-            entries,
+        matches = tool_discovery_matches(
+            tools,
             q,
             limit=limit
             if limit is not None
@@ -594,11 +593,14 @@ async def _run_graph(
         pass
 
     graph = create_agent_graph()
+    from agent.tools.discovery import selected_tools_for_turn
+
+    turn_tools = selected_tools_for_turn(ctx.tools, _last_user_text(messages))
 
     initial_state: AgentGraphState = {
         "messages": messages,
         "tool_calls": [],
-        "tool_definitions": [tool.definition() for tool in ctx.tools],
+        "tool_definitions": [tool.definition() for tool in turn_tools],
         "tool_results": [],
         "iteration": 0,
         "max_iterations": MAX_ITERATIONS,

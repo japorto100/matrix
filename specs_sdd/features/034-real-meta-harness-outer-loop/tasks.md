@@ -199,6 +199,14 @@ feature_id: 034
     regex/BM25/custom search. Matrix now uses `allowed_tools` in
     Meta-Harness scenarios as a short-term floor gate, but the product runtime
     still needs provider-agnostic deferred tool discovery.
+  - 2026-05-01 follow-up: Feature 024 now implements the static runtime piece:
+    builtin `tool_search`, searched provider schema subsets, and LangGraph /
+    SimpleLoop schema expansion after search. Remaining Feature 034 work is a
+    no-browser Local-8B live gate without scenario `allowed_tools`.
+  - 2026-05-01 live: `run-local8b-floor-memory-explicit-001-deferred-tools-
+    slim-long` passed that gate with `AGENT_DEFER_TOOL_SCHEMAS=true`,
+    `tool_count=4`, `memory_add` and `memory_search` observed,
+    trace/stream/completion pass rates `1.0`, and `fitness_score=0.8465`.
 
 ## Documentation
 

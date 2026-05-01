@@ -88,6 +88,7 @@ ADVISORY_ENVELOPE = CapabilityEnvelope(
     allowed_tools=frozenset(
         {
             "get_chart_state",
+            "tool_search",
             "get_portfolio_summary",
             "get_geomap_focus",
             "save_memory",

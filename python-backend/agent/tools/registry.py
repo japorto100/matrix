@@ -68,8 +68,10 @@ class ToolRegistry:
             ScheduleTaskTool,
         )
         from agent.tools.semantic_lookup import SemanticLookupTool
+        from agent.tools.tool_search import ToolSearchTool
 
         registry = cls()
+        registry.register(ToolSearchTool())
         registry.register(GetChartStateTool())
         registry.register(SetChartStateTool())
         registry.register(GetPortfolioSummaryTool())

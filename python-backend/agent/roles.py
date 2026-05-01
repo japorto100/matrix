@@ -79,6 +79,7 @@ TRADING_ROLE_PROMPTS: dict[TradingRole, str] = {
 # Tools pro Rolle (Name → erlaubte Tool-Namen)
 TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
     TradingRole.FUNDAMENTALS: {
+        "tool_search",
         "get_portfolio_summary",
         "get_chart_state",
         "save_memory",
@@ -89,6 +90,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "sandbox_execute",
     },
     TradingRole.SENTIMENT: {
+        "tool_search",
         "get_chart_state",
         "save_memory",
         "load_memory",
@@ -97,6 +99,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "report_validate",
     },
     TradingRole.TECHNICAL: {
+        "tool_search",
         "get_chart_state",
         "save_memory",
         "load_memory",
@@ -106,6 +109,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "sandbox_execute",
     },
     TradingRole.RESEARCHER: {
+        "tool_search",
         "get_chart_state",
         "get_portfolio_summary",
         "save_memory",
@@ -118,6 +122,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "sandbox_browser",
     },
     TradingRole.TRADER: {
+        "tool_search",
         "get_chart_state",
         "set_chart_state",
         "get_portfolio_summary",
@@ -128,6 +133,7 @@ TRADING_ROLE_TOOLS: dict[TradingRole, set[str]] = {
         "report_validate",
     },
     TradingRole.RISK_MANAGER: {
+        "tool_search",
         "get_portfolio_summary",
         "save_memory",
         "load_memory",

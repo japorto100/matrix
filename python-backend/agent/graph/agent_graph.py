@@ -84,6 +84,19 @@ async def _increment_iteration(state: AgentGraphState) -> dict[str, Any]:
                 "loop_guard": guard,
             }
         )
+    try:
+        from agent.tools.discovery import expand_tool_definitions_from_results
+        from agent.tools.registry import ToolRegistry
+
+        expanded = expand_tool_definitions_from_results(
+            state.get("tool_definitions"),
+            state.get("tool_results"),
+            all_tools=ToolRegistry.load().all(),
+        )
+        if expanded is not None:
+            update["tool_definitions"] = expanded
+    except Exception:  # noqa: BLE001
+        logger.debug("deferred tool schema expansion skipped", exc_info=True)
     return update
 
 
