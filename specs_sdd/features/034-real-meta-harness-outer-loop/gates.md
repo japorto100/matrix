@@ -130,3 +130,15 @@ The provider telemetry reported `tool_count=4` with `memory_add`,
 registry. The run passed `completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
 `stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
 `fitness_score=0.8465`.
+
+2026-05-01 deferred chart/schema live gate evidence:
+`run-local8b-floor-chart-deferred-tools-001` removed the scenario
+`allowed_tools` shortcut for the chart/tool-stream floor and used
+`AGENT_DEFER_TOOL_SCHEMAS=true`. Provider telemetry reported `tool_count=4`
+with `get_chart_state`, `get_geomap_focus`, `set_chart_state` and
+`tool_search`, rather than the full builtin registry. The run passed
+`completion_rate=1.0`, `trace_gate_pass_rate=1.0`,
+`stream_gate_pass_rate=1.0`, `tool_success_rate=1.0` and
+`fitness_score=0.8976`. The stream gate observed `tool-input-start`,
+`tool-output-available` and the rich renderer for `get_chart_state`, so this
+also covers downstream no-browser Agent Chat event shape for tool rendering.

@@ -165,6 +165,26 @@ called `memory_add` and `memory_search`, and passed trace, stream and
 completion gates. This is the first proof that the builtin-tool path no longer
 needs to stuff all schemas into the model context.
 
+2026-05-01 Anthropic Tool Search check: Anthropic's current Tool Search docs
+describe the same boundary we want provider-agnostically in Matrix: the model
+initially sees the search tool plus non-deferred tools, deferred tool schemas
+are kept out of the context window, search returns a small set of
+`tool_reference` entries, and those references expand to full definitions only
+when needed. The docs explicitly name regex and BM25 variants, 3-5 result
+sets, searching over names/descriptions/argument metadata, and prompt-cache
+preservation because deferred schemas do not mutate the system-prompt prefix.
+Matrix should keep our implementation provider-neutral, but this validates the
+runtime direction from `Z_Additional_For_Tool_Stuff.md`.
+
+2026-05-01 live note: `run-local8b-floor-chart-deferred-tools-001` removed the
+scenario `allowed_tools` shortcut for the chart/tool-stream floor and relied on
+runtime deferred schema selection. Bonsai 8B saw 4 provider tools
+(`get_chart_state`, `get_geomap_focus`, `set_chart_state`, `tool_search`),
+called `get_chart_state`, and passed completion, trace, stream and tool
+success gates at `1.0` with `fitness_score=0.8976`. This proves the deferred
+schema path is not memory-specific and still preserves rich downstream tool
+events.
+
 2026-04-30 implementation note: Matrix now exposes MCP reload as a
 confirmation-first control action rather than a model-visible tool. The reload
 path computes a deterministic effective-catalog digest from descriptor hashes,
@@ -188,3 +208,9 @@ reload and the agent runtime receives a rebind signal.
   `https://arxiv.org/abs/2603.18063`.
 - FastMCP Apps overview:
   `https://gofastmcp.com/apps/overview`.
+- Anthropic Tool Search API docs:
+  `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool`.
+- Claude Code Agent SDK Tool Search docs:
+  `https://code.claude.com/docs/en/agent-sdk/tool-search`.
+- Anthropic Tool Reference docs:
+  `https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-reference`.

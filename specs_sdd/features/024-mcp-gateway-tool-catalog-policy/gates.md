@@ -84,3 +84,9 @@ feature_id: 024
     `tool_count=4` (`memory_add`, `memory_search`, `save_memory`,
     `tool_search`) instead of the full builtin registry, and trace/stream gates
     passed at `1.0`.
+  - 2026-05-01 live no-browser: Local-8B chart/tool-stream floor without
+    scenario `allowed_tools` passed through the real dispatcher with
+    `AGENT_DEFER_TOOL_SCHEMAS=true`. Provider request telemetry reported
+    `tool_count=4` (`get_chart_state`, `get_geomap_focus`, `set_chart_state`,
+    `tool_search`), `get_chart_state` executed successfully, and trace/stream
+    gates passed at `1.0`.

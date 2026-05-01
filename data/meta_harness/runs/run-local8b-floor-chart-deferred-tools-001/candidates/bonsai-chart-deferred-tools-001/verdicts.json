@@ -1,0 +1,98 @@
+{
+  "passed": true,
+  "failures": [],
+  "warnings": [],
+  "observed_actions": [
+    "consent_decision",
+    "llm_response",
+    "memory_recall",
+    "memory_retain",
+    "route_decision",
+    "skill_found",
+    "skill_used",
+    "tool_call",
+    "tool_result"
+  ],
+  "observed_tools": [
+    "get_chart_state"
+  ],
+  "observed_skills": [
+    "global:memory-usage",
+    "global:plan",
+    "global:trading-analysis",
+    "memory-usage",
+    "plan",
+    "trading-analysis"
+  ],
+  "tool_success_rate": 1.0,
+  "observed_memory_routes": [
+    "fusion",
+    "verbatim"
+  ],
+  "observed_memory_providers": [
+    "fusion",
+    "summary_async",
+    "verbatim"
+  ],
+  "trace": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_actions": [
+      "consent_decision",
+      "llm_response",
+      "memory_recall",
+      "memory_retain",
+      "route_decision",
+      "skill_found",
+      "skill_used",
+      "tool_call",
+      "tool_result"
+    ],
+    "observed_tools": [
+      "get_chart_state"
+    ],
+    "observed_skills": [
+      "global:memory-usage",
+      "global:plan",
+      "global:trading-analysis",
+      "memory-usage",
+      "plan",
+      "trading-analysis"
+    ],
+    "tool_success_rate": 1.0,
+    "observed_memory_routes": [
+      "fusion",
+      "verbatim"
+    ],
+    "observed_memory_providers": [
+      "fusion",
+      "summary_async",
+      "verbatim"
+    ]
+  },
+  "stream": {
+    "passed": true,
+    "failures": [],
+    "warnings": [],
+    "observed_parts": [
+      "data-runtime-event",
+      "finish",
+      "message-metadata",
+      "start",
+      "start-step",
+      "text-delta",
+      "text-end",
+      "text-start",
+      "tool-input-start",
+      "tool-output-available"
+    ],
+    "observed_tools": [
+      "get_chart_state"
+    ],
+    "observed_rich_renderers": [
+      "get_chart_state"
+    ],
+    "observed_artifact_files": []
+  }
+}
