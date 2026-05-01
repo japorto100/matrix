@@ -169,6 +169,12 @@ feature_id: 034
     `true_meta_harness_iteration=true`; frozen evaluator gate passed; baseline
     scored `0.9995`, candidate scored `0.9994`, and the candidate was
     discarded as a regression.
+- [x] T077 [done-static] Add targeted scenario selection for expensive
+  Local-8B floor slices.
+  - 2026-05-01: `meta_harness run` now accepts repeatable `--scenario-id`
+    filters, and the MCP `harness_run_scenarios` tool accepts `scenario_ids`.
+    This lets us iterate on Skill, Memory, Tool/SSE, Retrieval, Semantic and
+    Subagent floor failures without re-running already-passing scenarios first.
 
 ## Documentation
 

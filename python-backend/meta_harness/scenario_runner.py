@@ -1800,6 +1800,7 @@ async def run_scenario_file(
     path: Path,
     *,
     max_scenarios: int = 0,
+    scenario_ids: tuple[str, ...] = (),
     run_id: str | None = None,
     candidate_id: str = "baseline",
     user_id: str = "anonymous",
@@ -1811,6 +1812,13 @@ async def run_scenario_file(
 ) -> dict[str, Any]:
     """Run a JSON scenario file and aggregate trace verdicts."""
     scenarios = load_scenarios(path)
+    if scenario_ids:
+        requested = set(scenario_ids)
+        scenarios = [scenario for scenario in scenarios if scenario.id in requested]
+        found = {scenario.id for scenario in scenarios}
+        missing = sorted(requested - found)
+        if missing:
+            raise ValueError(f"scenario_ids not found in {path}: {', '.join(missing)}")
     if max_scenarios > 0:
         scenarios = scenarios[:max_scenarios]
     run_id = run_id or f"run-{uuid.uuid4().hex[:12]}"

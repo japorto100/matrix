@@ -393,6 +393,7 @@ async def harness_evaluate(
 async def harness_run_scenarios(
     path: str,
     max_scenarios: int = 0,
+    scenario_ids: list[str] | None = None,
     candidate_id: str = "baseline",
     user_id: str = "anonymous",
     model: str = "",
@@ -404,6 +405,7 @@ async def harness_run_scenarios(
     result = await run_scenario_file(
         Path(path),
         max_scenarios=max_scenarios,
+        scenario_ids=tuple(scenario_ids or ()),
         candidate_id=candidate_id,
         user_id=user_id,
         model=model,

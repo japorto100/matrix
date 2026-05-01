@@ -23,6 +23,13 @@ def build_parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="Run a scenario JSON file")
     run.add_argument("path", type=Path)
     run.add_argument("--max-scenarios", type=int, default=0)
+    run.add_argument(
+        "--scenario-id",
+        dest="scenario_ids",
+        action="append",
+        default=[],
+        help="Run only this scenario id. May be passed multiple times.",
+    )
     run.add_argument("--run-id", default="")
     run.add_argument("--candidate-id", default="baseline")
     run.add_argument("--user-id", default="anonymous")
@@ -344,6 +351,7 @@ async def _main_async(args: argparse.Namespace) -> dict:
     if args.command == "run":
         kwargs = {
             "max_scenarios": args.max_scenarios,
+            "scenario_ids": tuple(args.scenario_ids),
             "run_id": args.run_id or None,
             "candidate_id": args.candidate_id,
             "user_id": args.user_id,

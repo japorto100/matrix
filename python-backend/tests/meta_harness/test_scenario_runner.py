@@ -1462,6 +1462,75 @@ async def test_run_scenario_file_pins_default_model_for_all_scenarios(monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_run_scenario_file_filters_by_scenario_ids(monkeypatch, tmp_path):
+    scenario_file = tmp_path / "scenarios.json"
+    scenario_file.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {"id": "s1", "turns": [{"user": "one"}]},
+                    {"id": "s2", "turns": [{"user": "two"}]},
+                    {"id": "s3", "turns": [{"user": "three"}]},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    seen: list[str] = []
+
+    async def _fake_run_scenario(scenario, **kwargs):
+        seen.append(scenario.id)
+        return scenario_runner.ScenarioRunResult(
+            run_id=kwargs["run_id"],
+            candidate_id=kwargs["candidate_id"],
+            scenario_id=scenario.id,
+            thread_id=f"thread-{scenario.id}",
+            user_id=kwargs["user_id"],
+            category=scenario.category,
+            turns=1,
+            transcript=(),
+            sse_chunks=(),
+            trace_events=(),
+            score={"completed": True, "fitness_score": 1.0},
+            trace_verdict=scenario_runner.TraceGateVerdict(
+                passed=True,
+                failures=(),
+                warnings=(),
+                observed_actions=(),
+                observed_tools=(),
+                observed_skills=(),
+            ),
+        )
+
+    monkeypatch.setattr(scenario_runner, "run_scenario", _fake_run_scenario)
+
+    result = await scenario_runner.run_scenario_file(
+        scenario_file,
+        scenario_ids=("s3", "s1"),
+        data_dir=tmp_path / "meta",
+    )
+
+    assert result["scenarios_evaluated"] == 2
+    assert seen == ["s1", "s3"]
+
+
+@pytest.mark.asyncio
+async def test_run_scenario_file_rejects_missing_scenario_id(tmp_path):
+    scenario_file = tmp_path / "scenarios.json"
+    scenario_file.write_text(
+        json.dumps({"scenarios": [{"id": "s1", "turns": [{"user": "one"}]}]}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="missing"):
+        await scenario_runner.run_scenario_file(
+            scenario_file,
+            scenario_ids=("missing",),
+            data_dir=tmp_path / "meta",
+        )
+
+
+@pytest.mark.asyncio
 async def test_runner_parity_file_compares_trace_gates(monkeypatch, tmp_path):
     scenario_file = tmp_path / "scenarios.json"
     scenario_file.write_text(

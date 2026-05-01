@@ -25,6 +25,7 @@ async def test_harness_run_scenarios_tool(monkeypatch):
     raw = await mcp_traces.harness_run_scenarios(
         "/tmp/scenarios.json",
         max_scenarios=2,
+        scenario_ids=["s1", "s3"],
         candidate_id="candidate-a",
         user_id="anonymous",
         model="test-model",
@@ -35,6 +36,7 @@ async def test_harness_run_scenarios_tool(monkeypatch):
     assert result["run_id"] == "run-1"
     assert captured["path"] == Path("/tmp/scenarios.json")
     assert captured["max_scenarios"] == 2
+    assert captured["scenario_ids"] == ("s1", "s3")
     assert captured["candidate_id"] == "candidate-a"
     assert captured["user_id"] == "anonymous"
     assert captured["model"] == "test-model"
